@@ -706,7 +706,10 @@ elif target_platform == 'linux':
     # CLI build directory
     cli_build_dir = f'{build_dir}/cli'
 
-    cli_sources = ['src/platform/linux/cli/laprdus_cli.cpp']
+    cli_sources = [
+        'src/platform/linux/cli/laprdus_cli.cpp',
+        'src/core/user_config.cpp',  # Not exported from shared library
+    ]
 
     # Build CLI executable
     cli = cli_env.Program(

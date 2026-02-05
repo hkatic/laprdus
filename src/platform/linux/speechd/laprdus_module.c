@@ -95,6 +95,35 @@ static SPDVoice **voice_list = NULL;
  * -------------------------------------------------------------------------- */
 
 /**
+ * Strip SSML/XML tags from text in-place.
+ * Speech Dispatcher wraps text in <speak> tags and may include other SSML markup.
+ * Since LaprdusTTS doesn't process SSML, we strip all tags before synthesis.
+ * Returns the new length of the stripped text.
+ */
+static size_t strip_ssml_tags(char *text, size_t len)
+{
+    size_t read_pos = 0, write_pos = 0;
+    int in_tag = 0;
+
+    while (read_pos < len) {
+        if (text[read_pos] == '<') {
+            in_tag = 1;
+            read_pos++;
+        } else if (text[read_pos] == '>' && in_tag) {
+            in_tag = 0;
+            read_pos++;
+        } else if (in_tag) {
+            read_pos++;
+        } else {
+            text[write_pos++] = text[read_pos++];
+        }
+    }
+
+    text[write_pos] = '\0';
+    return write_pos;
+}
+
+/**
  * Map Speech Dispatcher rate (-100 to +100) to Laprdus speed (0.5 to 2.0)
  */
 static float map_rate_to_speed(int rate)
@@ -533,6 +562,22 @@ void module_speak_sync(const char *data, size_t bytes, SPDMessageType msgtype)
     /* Apply current parameters */
     apply_parameters();
 
+    /* Strip SSML tags - Speech Dispatcher wraps text in <speak>...</speak> */
+    char *text = strdup(data);
+    if (!text) {
+        speaking = 0;
+        module_report_event_stop();
+        return;
+    }
+    size_t text_len = strip_ssml_tags(text, bytes);
+
+    if (text_len == 0) {
+        free(text);
+        speaking = 0;
+        module_report_event_stop();
+        return;
+    }
+
     /* Handle different message types */
     int16_t *samples = NULL;
     LaprdusAudioFormat format;
@@ -543,7 +588,7 @@ void module_speak_sync(const char *data, size_t bytes, SPDMessageType msgtype)
         case SPD_MSGTYPE_CHAR:
         case SPD_MSGTYPE_KEY:
             /* Use spelling mode for character/key announcements */
-            num_samples = laprdus_synthesize_spelled(engine, data, &samples, &format);
+            num_samples = laprdus_synthesize_spelled(engine, text, &samples, &format);
             break;
 
         case SPD_MSGTYPE_TEXT:
@@ -551,12 +596,14 @@ void module_speak_sync(const char *data, size_t bytes, SPDMessageType msgtype)
         default:
             /* Normal text synthesis */
             if (spelling_mode) {
-                num_samples = laprdus_synthesize_spelled(engine, data, &samples, &format);
+                num_samples = laprdus_synthesize_spelled(engine, text, &samples, &format);
             } else {
-                num_samples = laprdus_synthesize(engine, data, &samples, &format);
+                num_samples = laprdus_synthesize(engine, text, &samples, &format);
             }
             break;
     }
+
+    free(text);
 
     if (num_samples <= 0 || !samples) {
         ERR("Synthesis failed: %s", laprdus_get_error_message(engine));
