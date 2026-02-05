@@ -1,0 +1,169 @@
+<resources>
+    <!-- App name -->
+    <string name="app_name">Laprdus TTS</string>
+
+    <!-- TTS Service - display name in Android TTS settings -->
+    <string name="tts_service_name">Laprdus</string>
+
+    <!-- Voice names -->
+    <string name="voice_josip">Josip</string>
+    <string name="voice_vlado">Vlado</string>
+    <string name="voice_detence">Dete</string>
+    <string name="voice_baba">Baka</string>
+    <string name="voice_djedo">Deda</string>
+
+    <!-- UI Labels -->
+    <string name="voice_label">Glas</string>
+    <string name="text_input_label">Tekst za izgovaranje</string>
+    <string name="text_input_placeholder">Unesite tekst koji želite da čujete…</string>
+    <string name="speak_button">Laprdaj!</string>
+    <string name="stop_button">Zaustavi</string>
+    <string name="loading">Učitavanje…</string>
+    <string name="select_voice">Izaberite glas</string>
+
+    <!-- Language names -->
+    <string name="language_croatian">Hrvatski</string>
+    <string name="language_serbian">Srpski</string>
+
+    <!-- Voice attributes -->
+    <string name="gender_male">Muški</string>
+    <string name="gender_female">Ženski</string>
+    <string name="age_child">Dete</string>
+    <string name="age_adult">Odrasli</string>
+    <string name="age_senior">Stariji</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">Podešavanja</string>
+    <string name="category_voice">Glas</string>
+    <string name="category_advanced">Napredno</string>
+
+    <!-- Voice settings -->
+    <string name="setting_speech_rate">Brzina govora</string>
+    <string name="setting_speech_pitch">Visina govora</string>
+    <string name="setting_speech_volume">Jačina govora</string>
+
+    <!-- Force settings -->
+    <string name="setting_force_speed_title">Prinudno koristi Laprdus brzinu</string>
+    <string name="setting_force_speed_subtitle">Koristi Laprdus podešavanja brzine umesto podešavanja aplikacije</string>
+    <string name="setting_force_pitch_title">Prinudno koristi Laprdus visinu</string>
+    <string name="setting_force_pitch_subtitle">Koristi Laprdus podešavanja visine umesto podešavanja aplikacije</string>
+    <string name="setting_force_volume_title">Prinudno koristi Laprdus jačinu</string>
+    <string name="setting_force_volume_subtitle">Koristi Laprdus podešavanja jačine umesto podešavanja aplikacije</string>
+    <string name="setting_force_language_title">Prinudno koristi jezik</string>
+    <string name="setting_force_language_subtitle">Koristi izabrani jezik bez obzira na sistemska podešavanja</string>
+
+    <!-- Emoji settings -->
+    <string name="setting_emoji_enabled_title">Omogući čitanje emodžija</string>
+    <string name="setting_emoji_enabled_subtitle">Pretvori emodžije u njihove tekstualne opise</string>
+
+    <!-- Inflection settings -->
+    <string name="setting_inflection_enabled_title">Intonacija glasa</string>
+    <string name="setting_inflection_enabled_subtitle">Menja visinu glasa za pitanja, uzvike i pauze</string>
+
+    <!-- Number mode settings -->
+    <string name="setting_number_mode_title">Čitaj brojeve cifru po cifru</string>
+    <string name="setting_number_mode_subtitle">Čitaj brojeve kao pojedinačne cifre (123 → jedan dva tri)</string>
+
+    <!-- Pause settings -->
+    <string name="category_pause_settings">Pauze prilikom čitanja</string>
+    <string name="setting_sentence_pause">Pauza posle rečenice</string>
+    <string name="setting_sentence_pause_desc">Trajanje tišine posle tačke, uzvičnika i upitnika</string>
+    <string name="setting_comma_pause">Pauza posle zareza</string>
+    <string name="setting_comma_pause_desc">Trajanje tišine posle zareza za prirodni ritam govora</string>
+    <string name="setting_newline_pause">Pauza kod novog reda</string>
+    <string name="setting_newline_pause_desc">Trajanje tišine prilikom prelaska u novi red ili pasus</string>
+
+    <!-- Restore default buttons -->
+    <string name="restore_default_speed">Vrati podrazumevanu brzinu</string>
+    <string name="restore_default_pitch">Vrati podrazumevanu visinu</string>
+    <string name="restore_default_volume">Vrati podrazumevanu jačinu</string>
+
+    <!-- Control descriptions for accessibility -->
+    <string name="cd_voice_dropdown_desc">Izbor glasa za sintezu govora</string>
+    <string name="cd_restore_speed_desc">Postavlja brzinu govora na podrazumevanu vrednost</string>
+    <string name="cd_restore_pitch_desc">Postavlja visinu govora na podrazumevanu vrednost</string>
+    <string name="cd_restore_volume_desc">Postavlja jačinu govora na podrazumevanu vrednost</string>
+    <string name="cd_speak_desc">Izgovara uneseni tekst</string>
+    <string name="cd_stop_desc">Zaustavlja trenutni govor</string>
+    <string name="cd_laprdus_settings_desc">Otvara podešavanja Laprdusa</string>
+    <string name="cd_android_tts_settings_desc">Otvara podešavanja Android sistema za TTS</string>
+
+    <!-- Main screen buttons -->
+    <string name="button_laprdus_settings">Laprdus podešavanja</string>
+    <string name="button_android_tts_settings">Android TTS podešavanja</string>
+
+    <!-- Accessibility descriptions -->
+    <string name="cd_slider_adjust">Prevucite za podešavanje</string>
+
+    <!-- Accessibility control type names (using Android's native naming convention) -->
+    <string name="cd_switch">Prekidač</string>
+    <string name="cd_slider">Klizač</string>
+    <string name="cd_dropdown">Padajuća lista</string>
+    <string name="cd_checkbox">Polje za potvrdu</string>
+
+    <!-- Accessibility state descriptions (using Android's native naming convention) -->
+    <string name="cd_state_on">Uključeno</string>
+    <string name="cd_state_off">Isključeno</string>
+    <string name="cd_button">Dugme</string>
+
+    <!-- Accessibility content descriptions -->
+    <string name="cd_settings_button">Otvori podešavanja govora</string>
+    <string name="cd_tts_settings_button">Otvori Android TTS podešavanja</string>
+    <string name="cd_speak_button">Izgovori tekst</string>
+    <string name="cd_stop_button">Zaustavi govor</string>
+    <string name="cd_text_input">Polje za unos teksta koji će biti izgovoren</string>
+    <string name="cd_voice_selector">Izbor glasa</string>
+    <string name="cd_voice_selector_current">Izbor glasa, trenutno izabrano: %1$s</string>
+    <string name="cd_back_button">Nazad</string>
+    <string name="cd_laprdus_settings_button">Otvori Laprdus podešavanja</string>
+
+    <!-- Error messages -->
+    <string name="error_init_failed">Greška pri pokretanju TTS motora</string>
+    <string name="error_synthesis_failed">Greška pri sintezi govora</string>
+    <string name="error_voice_failed">Greška pri izboru glasa</string>
+    <string name="error_prefix">Greška: %1$s</string>
+
+    <!-- Sample text for testing -->
+    <string name="sample_text">Dobar dan. Ja sam Laprdus, rođen sam 2026. godine, i drago mi je da se možemo upoznati! 😁\nKako si ti? ❤\n</string>
+
+    <!-- Default TTS Dialog -->
+    <string name="dialog_default_tts_title">Postavi kao podrazumevani TTS</string>
+    <string name="dialog_default_tts_message">Laprdus TTS nije postavljen kao vaš podrazumevani motor za sintezu govora. Želite li da ga postavite kao podrazumevani?</string>
+    <string name="dialog_open_tts_settings">Otvori podešavanja</string>
+    <string name="dialog_not_now">Ne sada</string>
+    <string name="dialog_dont_ask_again">Ne pitaj me više</string>
+
+    <!-- Dictionary settings category -->
+    <string name="category_dictionaries">Rečnici</string>
+    <string name="setting_user_dict_enabled_title">Primena korisničkih rečnika</string>
+    <string name="setting_user_dict_enabled_subtitle">Koristi prilagođene izgovore reči iz korisničkih rečnika</string>
+    <string name="setting_manage_dictionaries">Upravljanje rečnicima</string>
+    <string name="setting_manage_dictionaries_desc">Dodaj, uredi i izbriši unose u rečniku</string>
+
+    <!-- Dictionary screen -->
+    <string name="dict_screen_title">Rečnici</string>
+    <string name="dict_type_main">Glavni rečnik</string>
+    <string name="dict_type_spelling">Rečnik slovkanja</string>
+    <string name="dict_type_emoji">Rečnik emodžija</string>
+    <string name="dict_type_label">Vrsta rečnika</string>
+    <string name="dict_empty_list">Nema unosa. Dodirnite + za dodavanje.</string>
+    <string name="dict_add_entry">Dodaj unos</string>
+
+    <!-- Dictionary entry edit screen -->
+    <string name="dict_entry_title_add">Dodaj unos</string>
+    <string name="dict_entry_title_edit">Uredi unos</string>
+    <string name="dict_entry_original">Izvorni tekst</string>
+    <string name="dict_entry_replacement">Zamenska izgovor</string>
+    <string name="dict_entry_comment">Komentar (opciono)</string>
+    <string name="dict_entry_case_sensitive">Razlikuj velika i mala slova</string>
+    <string name="dict_entry_whole_word">Samo cela reč</string>
+    <string name="dict_save">Sačuvaj</string>
+    <string name="dict_delete">Izbriši</string>
+    <string name="dict_duplicate">Dupliciraj</string>
+    <string name="dict_delete_confirm_title">Izbrisati unos?</string>
+    <string name="dict_delete_confirm_message">Da li ste sigurni da želite da izbrišete ovaj unos iz rečnika?</string>
+    <string name="cancel">Otkaži</string>
+    <string name="dict_error_empty_fields">Ovo polje je obavezno</string>
+    <string name="dict_error_load_failed">Učitavanje rečnika nije uspelo</string>
+    <string name="dict_error_save_failed">Čuvanje unosa nije uspelo</string>
+</resources>

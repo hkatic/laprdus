@@ -1,0 +1,20 @@
+HKCR
+{
+    NoRemove CLSID
+    {
+        ForceRemove {D4B5A4E1-8B5C-4C5D-9E6F-1A2B3C4D5E6F} = s 'LaprdusTTS'
+        {
+            InprocServer32 = s '%MODULE%'
+            {
+                val ThreadingModel = s 'Both'
+            }
+            TypeLib = s '{D4B5A4E1-8B5C-4C5D-9E6F-1A2B3C4D5E7F}'
+            Version = s '1.0'
+            ProgID = s 'Laprdus.TTSEngine.1'
+        }
+    }
+    Laprdus.TTSEngine.1 = s 'LaprdusTTS Engine'
+    {
+        CLSID = s '{D4B5A4E1-8B5C-4C5D-9E6F-1A2B3C4D5E6F}'
+    }
+}

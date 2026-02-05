@@ -1,0 +1,57 @@
+#!/bin/bash
+#
+# postrm script for laprdus-speechd
+#
+# Removes LaprdusTTS configuration from Speech Dispatcher on package removal
+#
+
+set -e
+
+SPEECHD_CONF="/etc/speech-dispatcher/speechd.conf"
+MARKER_START="# BEGIN LAPRDUS TTS"
+MARKER_END="# END LAPRDUS TTS"
+
+remove_speechd_config() {
+    # Check if Speech Dispatcher config exists
+    if [ ! -f "$SPEECHD_CONF" ]; then
+        return 0
+    fi
+
+    # Check if our config is present
+    if ! grep -q "$MARKER_START" "$SPEECHD_CONF" 2>/dev/null; then
+        return 0
+    fi
+
+    echo "Removing LaprdusTTS from Speech Dispatcher configuration..."
+
+    # Remove our configuration block
+    sed -i "/$MARKER_START/,/$MARKER_END/d" "$SPEECHD_CONF"
+
+    # Also remove language-only block if present
+    sed -i '/# BEGIN LAPRDUS TTS LANGUAGES/,/# END LAPRDUS TTS LANGUAGES/d' "$SPEECHD_CONF"
+
+    echo "LaprdusTTS removed from Speech Dispatcher configuration."
+
+    # Try to restart speech-dispatcher if it's running
+    if systemctl is-active --quiet speech-dispatcher 2>/dev/null; then
+        systemctl restart speech-dispatcher || true
+    fi
+}
+
+case "$1" in
+    remove|purge)
+        remove_speechd_config
+        ;;
+
+    upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+        ;;
+
+    *)
+        echo "postrm called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

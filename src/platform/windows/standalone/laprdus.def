@@ -1,0 +1,41 @@
+; -*- coding: utf-8 -*-
+; laprdus.def - Module definition file for standalone DLL exports
+; This file defines the functions exported from laprdus.dll
+
+LIBRARY laprdus
+
+EXPORTS
+    ; Lifecycle
+    laprdus_create
+    laprdus_destroy
+    laprdus_init_from_file
+    laprdus_init_from_memory
+    laprdus_init_from_directory
+    laprdus_is_initialized
+
+    ; Voice configuration
+    laprdus_set_voice_params
+    laprdus_get_voice_params
+    laprdus_set_speed
+    laprdus_set_pitch
+    laprdus_set_volume
+    laprdus_set_inflection_enabled
+
+    ; Synthesis
+    laprdus_synthesize
+    laprdus_synthesize_to_buffer
+    laprdus_free_buffer
+    laprdus_cancel
+
+    ; Streaming
+    laprdus_stream_begin
+    laprdus_stream_read
+    laprdus_stream_progress
+    laprdus_stream_is_complete
+    laprdus_stream_destroy
+
+    ; Utility
+    laprdus_get_error_message
+    laprdus_get_version
+    laprdus_get_default_format
+    laprdus_error_to_string

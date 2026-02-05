@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    TTS Engine configuration for Laprdus.
+    This file is referenced by the TTS service's meta-data.
+
+    settingsActivity: Launched when user taps settings icon for Laprdus
+    in Android TTS settings. Now points to SettingsActivity for proper
+    settings screen display instead of MainActivity.
+-->
+<tts-engine xmlns:android="http://schemas.android.com/apk/res/android"
+    android:settingsActivity="com.hrvojekatic.laprdus.SettingsActivity" />

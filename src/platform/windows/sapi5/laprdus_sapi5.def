@@ -1,0 +1,9 @@
+; laprdus_sapi5.def - Module definition for SAPI5 COM DLL
+; LaprdusTTS Croatian Text-to-Speech Engine
+
+EXPORTS
+    DllCanUnloadNow         PRIVATE
+    DllGetClassObject       PRIVATE
+    DllRegisterServer       PRIVATE
+    DllUnregisterServer     PRIVATE
+    DllInstall              PRIVATE

@@ -1,0 +1,406 @@
+// -*- coding: utf-8 -*-
+// laprdus_config.rc - LaprdusTTS configuration GUI resources
+
+#include <windows.h>
+#include <commctrl.h>
+#include "resource.h"
+
+// Tell the resource compiler this file is UTF-8 encoded
+#pragma code_page(65001)
+
+// Application manifest for visual styles and DPI awareness
+1 RT_MANIFEST "laprdus_config.manifest"
+
+// =============================================================================
+// Dialog Template
+// =============================================================================
+
+IDD_CONFIG_DIALOG DIALOGEX 0, 0, 320, 385
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "LaprdusTTS Settings"
+FONT 8, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    // Voice Settings Group
+    GROUPBOX        "", IDC_GROUP_VOICE, 7, 7, 306, 145
+
+    LTEXT           "Voice:", IDC_VOICE_LABEL, 14, 22, 50, 8
+    COMBOBOX        IDC_VOICE_COMBO, 70, 20, 180, 100, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+
+    LTEXT           "Speed:", IDC_SPEED_LABEL, 14, 42, 50, 8
+    CONTROL         "", IDC_SPEED_SLIDER, TRACKBAR_CLASS, TBS_HORZ | TBS_AUTOTICKS | WS_TABSTOP, 70, 40, 180, 18
+    LTEXT           "1.0x", IDC_SPEED_VALUE, 260, 42, 40, 8
+    AUTOCHECKBOX    "", IDC_FORCE_SPEED, 14, 58, 290, 10, WS_TABSTOP
+
+    LTEXT           "Pitch:", IDC_PITCH_LABEL, 14, 75, 50, 8
+    CONTROL         "", IDC_PITCH_SLIDER, TRACKBAR_CLASS, TBS_HORZ | TBS_AUTOTICKS | WS_TABSTOP, 70, 73, 180, 18
+    LTEXT           "1.0x", IDC_PITCH_VALUE, 260, 75, 40, 8
+    AUTOCHECKBOX    "", IDC_FORCE_PITCH, 14, 91, 290, 10, WS_TABSTOP
+
+    LTEXT           "Volume:", IDC_VOLUME_LABEL, 14, 108, 50, 8
+    CONTROL         "", IDC_VOLUME_SLIDER, TRACKBAR_CLASS, TBS_HORZ | TBS_AUTOTICKS | WS_TABSTOP, 70, 106, 180, 18
+    LTEXT           "100%", IDC_VOLUME_VALUE, 260, 108, 40, 8
+    AUTOCHECKBOX    "", IDC_FORCE_VOLUME, 14, 124, 290, 10, WS_TABSTOP
+
+    // Pause Settings Group
+    GROUPBOX        "", IDC_GROUP_PAUSES, 7, 157, 306, 90
+
+    LTEXT           "Comma pause:", IDC_COMMA_LABEL, 14, 172, 80, 8
+    CONTROL         "", IDC_COMMA_SLIDER, TRACKBAR_CLASS, TBS_HORZ | TBS_AUTOTICKS | WS_TABSTOP, 100, 170, 150, 18
+    LTEXT           "100 ms", IDC_COMMA_VALUE, 260, 172, 40, 8
+
+    LTEXT           "Sentence pause:", IDC_SENTENCE_LABEL, 14, 195, 80, 8
+    CONTROL         "", IDC_SENTENCE_SLIDER, TRACKBAR_CLASS, TBS_HORZ | TBS_AUTOTICKS | WS_TABSTOP, 100, 193, 150, 18
+    LTEXT           "100 ms", IDC_SENTENCE_VALUE, 260, 195, 40, 8
+
+    LTEXT           "Newline pause:", IDC_NEWLINE_LABEL, 14, 218, 80, 8
+    CONTROL         "", IDC_NEWLINE_SLIDER, TRACKBAR_CLASS, TBS_HORZ | TBS_AUTOTICKS | WS_TABSTOP, 100, 216, 150, 18
+    LTEXT           "100 ms", IDC_NEWLINE_VALUE, 260, 218, 40, 8
+
+    // Options Group
+    GROUPBOX        "", IDC_GROUP_OPTIONS, 7, 252, 306, 55
+
+    AUTOCHECKBOX    "", IDC_INFLECTION_CHECK, 14, 267, 290, 10, WS_TABSTOP
+    AUTOCHECKBOX    "", IDC_EMOJI_CHECK, 14, 282, 290, 10, WS_TABSTOP
+    AUTOCHECKBOX    "", IDC_DIGITS_CHECK, 14, 297, 290, 10, WS_TABSTOP
+
+    // Dictionaries Group
+    GROUPBOX        "", IDC_GROUP_DICTIONARIES, 7, 312, 306, 40
+
+    AUTOCHECKBOX    "", IDC_USER_DICT_CHECK, 14, 327, 170, 10, WS_TABSTOP
+    PUSHBUTTON      "", IDC_DICT_BUTTON, 213, 325, 90, 14, WS_TABSTOP
+
+    // Buttons
+    PUSHBUTTON      "Test", IDC_TEST_BUTTON, 7, 360, 60, 14, WS_TABSTOP
+    DEFPUSHBUTTON   "OK", IDOK, 140, 360, 50, 14, WS_TABSTOP
+    PUSHBUTTON      "Cancel", IDCANCEL, 196, 360, 50, 14, WS_TABSTOP
+    PUSHBUTTON      "Apply", IDC_APPLY_BUTTON, 252, 360, 50, 14, WS_TABSTOP
+END
+
+// =============================================================================
+// Dictionary Management Dialog
+// =============================================================================
+
+IDD_DICTIONARY_DIALOG DIALOGEX 0, 0, 400, 320
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Rječnici"
+FONT 8, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    LTEXT           "", IDC_DICT_TYPE_LABEL, 7, 10, 80, 8
+    COMBOBOX        IDC_DICT_TYPE_COMBO, 90, 8, 180, 100, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "", IDC_DICT_LISTVIEW, WC_LISTVIEWW, LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS | WS_BORDER | WS_TABSTOP, 7, 28, 386, 252
+    PUSHBUTTON      "", IDC_DICT_ADD, 7, 290, 60, 14, WS_TABSTOP
+    PUSHBUTTON      "", IDC_DICT_EDIT, 73, 290, 60, 14, WS_TABSTOP
+    PUSHBUTTON      "", IDC_DICT_DUPLICATE, 139, 290, 70, 14, WS_TABSTOP
+    PUSHBUTTON      "", IDC_DICT_DELETE, 215, 290, 60, 14, WS_TABSTOP
+    PUSHBUTTON      "", IDC_DICT_CLOSE, 333, 290, 60, 14, WS_TABSTOP
+END
+
+// =============================================================================
+// Dictionary Entry Editor Dialog
+// =============================================================================
+
+IDD_DICT_ENTRY_DIALOG DIALOGEX 0, 0, 300, 190
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Dodaj unos"
+FONT 8, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    LTEXT           "", IDC_ENTRY_ORIGINAL_LABEL, 7, 10, 100, 8
+    EDITTEXT        IDC_ENTRY_ORIGINAL_EDIT, 7, 22, 286, 14, ES_AUTOHSCROLL
+    LTEXT           "", IDC_ENTRY_REPLACEMENT_LABEL, 7, 42, 100, 8
+    EDITTEXT        IDC_ENTRY_REPLACEMENT_EDIT, 7, 54, 286, 14, ES_AUTOHSCROLL
+    LTEXT           "", IDC_ENTRY_COMMENT_LABEL, 7, 74, 250, 8
+    EDITTEXT        IDC_ENTRY_COMMENT_EDIT, 7, 86, 286, 14, ES_AUTOHSCROLL
+    AUTOCHECKBOX    "", IDC_ENTRY_CASE_SENSITIVE, 7, 110, 200, 10, WS_TABSTOP
+    AUTOCHECKBOX    "", IDC_ENTRY_WHOLE_WORD, 7, 125, 200, 10, WS_TABSTOP
+    DEFPUSHBUTTON   "U redu", IDOK, 186, 165, 50, 14, WS_TABSTOP
+    PUSHBUTTON      "Odustani", IDCANCEL, 243, 165, 50, 14, WS_TABSTOP
+END
+
+// =============================================================================
+// Neutral Strings (Default - Croatian)
+// This is the fallback when no language-specific match is found
+// =============================================================================
+
+LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
+
+STRINGTABLE
+BEGIN
+    IDS_APP_TITLE           "LaprdusTTS Postavke"
+    IDS_GROUP_VOICE         "Postavke glasa"
+    IDS_VOICE_LABEL         "&Glas:"
+    IDS_SPEED_LABEL         "&Brzina:"
+    IDS_FORCE_SPEED         "Prisili Laprdusovu brzinu govora za sve aplikacije"
+    IDS_PITCH_LABEL         "&Visina:"
+    IDS_FORCE_PITCH         "Prisili Laprdusovu visinu govora za sve aplikacije"
+    IDS_VOLUME_LABEL        "Glasnoća:"
+    IDS_FORCE_VOLUME        "Prisili Laprdusovu glasnoću govora za sve aplikacije"
+    IDS_GROUP_PAUSES        "Postavke pauza"
+    IDS_COMMA_LABEL         "Pauza kod zareza:"
+    IDS_SENTENCE_LABEL      "Pauza kod rečenice:"
+    IDS_NEWLINE_LABEL       "Pauza kod novog reda:"
+    IDS_GROUP_OPTIONS       "Opcije"
+    IDS_INFLECTION          "&Prirodna intonacija"
+    IDS_EMOJI               "&Izgovori emoji znakove"
+    IDS_DIGITS              "Izgovaraj brojeve znamenku po &znamenku"
+    IDS_TEST                "&Test"
+    IDS_OK                  "U redu"
+    IDS_CANCEL              "Odustani"
+    IDS_APPLY               "Primijeni"
+    IDS_VALUE_SPEED         "%.1fx"
+    IDS_VALUE_PERCENT       "%d%%"
+    IDS_VALUE_MS            "%d ms"
+    IDS_VOICE_JOSIP         "Josip (Hrvatski)"
+    IDS_VOICE_VLADO         "Vlado (Srpski)"
+    IDS_VOICE_DETENCE       "Detenče (Hrvatski, dijete)"
+    IDS_VOICE_BABA          "Baba (Hrvatski, baka)"
+    IDS_VOICE_DJEDO         "Đedo (Srpski, djed)"
+    IDS_TEST_TEXT           "Dobar dan! Ovo je test Laprdus govorne sinteze."
+    // Dictionary dialog strings
+    IDS_USER_DICT_CHECK         "Primjena korisničkih rječnika"
+    IDS_DICT_BUTTON             "&Rječnici..."
+    IDS_DICT_DIALOG_TITLE       "Upravljanje rječnicima"
+    IDS_DICT_TYPE_LABEL         "Vrsta rječnika:"
+    IDS_DICT_TYPE_MAIN          "Glavni korisnički rječnik"
+    IDS_DICT_TYPE_SPELLING      "Rječnik za slovkanje"
+    IDS_DICT_TYPE_EMOJI         "Rječnik za emodžije"
+    IDS_DICT_COL_ORIGINAL       "Originalni niz"
+    IDS_DICT_COL_REPLACEMENT    "Zamjenski niz"
+    IDS_DICT_COL_CASE           "Velika/mala slova"
+    IDS_DICT_COL_WHOLE_WORD     "Cijela riječ"
+    IDS_DICT_COL_COMMENT        "Komentar"
+    IDS_DICT_ADD                "&Dodaj"
+    IDS_DICT_EDIT               "&Uredi"
+    IDS_DICT_DUPLICATE          "D&upliciraj"
+    IDS_DICT_DELETE             "O&briši"
+    IDS_DICT_CLOSE              "&Zatvori"
+    IDS_ENTRY_DIALOG_TITLE_ADD  "Dodaj unos u rječnik"
+    IDS_ENTRY_DIALOG_TITLE_EDIT "Uredi unos u rječniku"
+    IDS_ENTRY_ORIGINAL_LABEL    "Originalan niz:"
+    IDS_ENTRY_REPLACEMENT_LABEL "Zamjenski niz:"
+    IDS_ENTRY_COMMENT_LABEL     "Komentar (Razlog zašto unosite ovaj ispravak?):"
+    IDS_ENTRY_CASE_SENSITIVE    "Osjetljivost na velika i mala slova"
+    IDS_ENTRY_WHOLE_WORD        "Samo cijela riječ"
+    IDS_ERROR_FILE_CREATE       "Nije moguće stvoriti datoteku rječnika."
+    IDS_ERROR_FILE_WRITE        "Greška prilikom pisanja u datoteku rječnika."
+    IDS_ERROR_FILE_READ         "Greška prilikom čitanja datoteke rječnika."
+    IDS_ERROR_INVALID_ENTRY     "Originalan niz i zamjenski niz ne smiju biti prazni."
+    IDS_YES                     "Da"
+    IDS_NO                      "Ne"
+    IDS_GROUP_DICTIONARIES      "Rječnici"
+END
+
+// =============================================================================
+// Croatian Strings (Primary Language)
+// =============================================================================
+
+LANGUAGE LANG_CROATIAN, SUBLANG_CROATIAN_CROATIA
+
+STRINGTABLE
+BEGIN
+    IDS_APP_TITLE           "LaprdusTTS Postavke"
+    IDS_GROUP_VOICE         "Postavke glasa"
+    IDS_VOICE_LABEL         "&Glas:"
+    IDS_SPEED_LABEL         "&Brzina:"
+    IDS_FORCE_SPEED         "Prisili Laprdusovu brzinu govora za sve aplikacije"
+    IDS_PITCH_LABEL         "&Visina:"
+    IDS_FORCE_PITCH         "Prisili Laprdusovu visinu govora za sve aplikacije"
+    IDS_VOLUME_LABEL        "Glasnoća:"
+    IDS_FORCE_VOLUME        "Prisili Laprdusovu glasnoću govora za sve aplikacije"
+    IDS_GROUP_PAUSES        "Postavke pauza"
+    IDS_COMMA_LABEL         "Pauza kod zareza:"
+    IDS_SENTENCE_LABEL      "Pauza kod rečenice:"
+    IDS_NEWLINE_LABEL       "Pauza kod novog reda:"
+    IDS_GROUP_OPTIONS       "Opcije"
+    IDS_INFLECTION          "&Prirodna intonacija"
+    IDS_EMOJI               "&Izgovori emoji znakove"
+    IDS_DIGITS              "Izgovaraj brojeve znamenku po &znamenku"
+    IDS_TEST                "&Test"
+    IDS_OK                  "U redu"
+    IDS_CANCEL              "Odustani"
+    IDS_APPLY               "Primijeni"
+    IDS_VALUE_SPEED         "%.1fx"
+    IDS_VALUE_PERCENT       "%d%%"
+    IDS_VALUE_MS            "%d ms"
+    IDS_VOICE_JOSIP         "Josip (Hrvatski)"
+    IDS_VOICE_VLADO         "Vlado (Srpski)"
+    IDS_VOICE_DETENCE       "Detenče (Hrvatski, dijete)"
+    IDS_VOICE_BABA          "Baba (Hrvatski, baka)"
+    IDS_VOICE_DJEDO         "Đedo (Srpski, djed)"
+    IDS_TEST_TEXT           "Dobar dan! Ovo je test Laprdus govorne sinteze."
+    // Dictionary dialog strings
+    IDS_USER_DICT_CHECK         "Primjena korisničkih rječnika"
+    IDS_DICT_BUTTON             "&Rječnici..."
+    IDS_DICT_DIALOG_TITLE       "Upravljanje rječnicima"
+    IDS_DICT_TYPE_LABEL         "Vrsta rječnika:"
+    IDS_DICT_TYPE_MAIN          "Glavni korisnički rječnik"
+    IDS_DICT_TYPE_SPELLING      "Rječnik za slovkanje"
+    IDS_DICT_TYPE_EMOJI         "Rječnik za emodžije"
+    IDS_DICT_COL_ORIGINAL       "Originalni niz"
+    IDS_DICT_COL_REPLACEMENT    "Zamjenski niz"
+    IDS_DICT_COL_CASE           "Velika/mala slova"
+    IDS_DICT_COL_WHOLE_WORD     "Cijela riječ"
+    IDS_DICT_COL_COMMENT        "Komentar"
+    IDS_DICT_ADD                "&Dodaj"
+    IDS_DICT_EDIT               "&Uredi"
+    IDS_DICT_DUPLICATE          "D&upliciraj"
+    IDS_DICT_DELETE             "O&briši"
+    IDS_DICT_CLOSE              "&Zatvori"
+    IDS_ENTRY_DIALOG_TITLE_ADD  "Dodaj unos u rječnik"
+    IDS_ENTRY_DIALOG_TITLE_EDIT "Uredi unos u rječniku"
+    IDS_ENTRY_ORIGINAL_LABEL    "Originalan niz:"
+    IDS_ENTRY_REPLACEMENT_LABEL "Zamjenski niz:"
+    IDS_ENTRY_COMMENT_LABEL     "Komentar (Razlog zašto unosite ovaj ispravak?):"
+    IDS_ENTRY_CASE_SENSITIVE    "Osjetljivost na velika i mala slova"
+    IDS_ENTRY_WHOLE_WORD        "Samo cijela riječ"
+    IDS_ERROR_FILE_CREATE       "Nije moguće stvoriti datoteku rječnika."
+    IDS_ERROR_FILE_WRITE        "Greška prilikom pisanja u datoteku rječnika."
+    IDS_ERROR_FILE_READ         "Greška prilikom čitanja datoteke rječnika."
+    IDS_ERROR_INVALID_ENTRY     "Originalan niz i zamjenski niz ne smiju biti prazni."
+    IDS_YES                     "Da"
+    IDS_NO                      "Ne"
+    IDS_GROUP_DICTIONARIES      "Rječnici"
+END
+
+// =============================================================================
+// Serbian Strings (Latin)
+// =============================================================================
+
+LANGUAGE LANG_SERBIAN, SUBLANG_SERBIAN_LATIN
+
+STRINGTABLE
+BEGIN
+    IDS_APP_TITLE           "LaprdusTTS Podešavanja"
+    IDS_GROUP_VOICE         "Podešavanja glasa"
+    IDS_VOICE_LABEL         "&Glas:"
+    IDS_SPEED_LABEL         "&Brzina:"
+    IDS_FORCE_SPEED         "Prisili Laprdusovu brzinu govora za sve aplikacije"
+    IDS_PITCH_LABEL         "&Visina:"
+    IDS_FORCE_PITCH         "Prisili Laprdusovu visinu govora za sve aplikacije"
+    IDS_VOLUME_LABEL        "Jačina:"
+    IDS_FORCE_VOLUME        "Prisili Laprdusovu jačinu govora za sve aplikacije"
+    IDS_GROUP_PAUSES        "Podešavanja pauza"
+    IDS_COMMA_LABEL         "Pauza kod zareza:"
+    IDS_SENTENCE_LABEL      "Pauza kod rečenice:"
+    IDS_NEWLINE_LABEL       "Pauza kod novog reda:"
+    IDS_GROUP_OPTIONS       "Opcije"
+    IDS_INFLECTION          "&Prirodna intonacija"
+    IDS_EMOJI               "&Izgovori emoji znakove"
+    IDS_DIGITS              "Izgovaraj brojeve cifru po &cifru"
+    IDS_TEST                "&Test"
+    IDS_OK                  "U redu"
+    IDS_CANCEL              "Odustani"
+    IDS_APPLY               "Primeni"
+    IDS_VALUE_SPEED         "%.1fx"
+    IDS_VALUE_PERCENT       "%d%%"
+    IDS_VALUE_MS            "%d ms"
+    IDS_VOICE_JOSIP         "Josip (Hrvatski)"
+    IDS_VOICE_VLADO         "Vlado (Srpski)"
+    IDS_VOICE_DETENCE       "Detenče (Hrvatski, dete)"
+    IDS_VOICE_BABA          "Baba (Hrvatski, baka)"
+    IDS_VOICE_DJEDO         "Đedo (Srpski, deda)"
+    IDS_TEST_TEXT           "Dobar dan! Ovo je test Laprdus govorne sinteze."
+    // Dictionary dialog strings
+    IDS_USER_DICT_CHECK         "Primena korisničkih rečnika"
+    IDS_DICT_BUTTON             "&Rečnici..."
+    IDS_DICT_DIALOG_TITLE       "Upravljanje rečnicima"
+    IDS_DICT_TYPE_LABEL         "Vrsta rečnika:"
+    IDS_DICT_TYPE_MAIN          "Glavni korisnički rečnik"
+    IDS_DICT_TYPE_SPELLING      "Rečnik za slovkanje"
+    IDS_DICT_TYPE_EMOJI         "Rečnik za emodžije"
+    IDS_DICT_COL_ORIGINAL       "Originalni niz"
+    IDS_DICT_COL_REPLACEMENT    "Zamjenski niz"
+    IDS_DICT_COL_CASE           "Velika/mala slova"
+    IDS_DICT_COL_WHOLE_WORD     "Cela reč"
+    IDS_DICT_COL_COMMENT        "Komentar"
+    IDS_DICT_ADD                "&Dodaj"
+    IDS_DICT_EDIT               "&Uredi"
+    IDS_DICT_DUPLICATE          "D&upliciraj"
+    IDS_DICT_DELETE             "O&briši"
+    IDS_DICT_CLOSE              "&Zatvori"
+    IDS_ENTRY_DIALOG_TITLE_ADD  "Dodaj unos u rečnik"
+    IDS_ENTRY_DIALOG_TITLE_EDIT "Uredi unos u rečniku"
+    IDS_ENTRY_ORIGINAL_LABEL    "Originalan niz:"
+    IDS_ENTRY_REPLACEMENT_LABEL "Zamjenski niz:"
+    IDS_ENTRY_COMMENT_LABEL     "Komentar (Razlog zašto unosite ovaj ispravak?):"
+    IDS_ENTRY_CASE_SENSITIVE    "Osetljivost na velika i mala slova"
+    IDS_ENTRY_WHOLE_WORD        "Samo cela reč"
+    IDS_ERROR_FILE_CREATE       "Nije moguće stvoriti datoteku rečnika."
+    IDS_ERROR_FILE_WRITE        "Greška prilikom pisanja u datoteku rečnika."
+    IDS_ERROR_FILE_READ         "Greška prilikom čitanja datoteke rečnika."
+    IDS_ERROR_INVALID_ENTRY     "Originalan niz i zamjenski niz ne smeju biti prazni."
+    IDS_YES                     "Da"
+    IDS_NO                      "Ne"
+    IDS_GROUP_DICTIONARIES      "Rečnici"
+END
+
+// =============================================================================
+// English Strings (Fallback)
+// =============================================================================
+
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+
+STRINGTABLE
+BEGIN
+    IDS_APP_TITLE           "LaprdusTTS Settings"
+    IDS_GROUP_VOICE         "Voice Settings"
+    IDS_VOICE_LABEL         "&Voice:"
+    IDS_SPEED_LABEL         "&Speed:"
+    IDS_FORCE_SPEED         "Force Laprdus speech speed for all applications"
+    IDS_PITCH_LABEL         "&Pitch:"
+    IDS_FORCE_PITCH         "Force Laprdus speech pitch for all applications"
+    IDS_VOLUME_LABEL        "Volume:"
+    IDS_FORCE_VOLUME        "Force Laprdus speech volume for all applications"
+    IDS_GROUP_PAUSES        "Pause Settings"
+    IDS_COMMA_LABEL         "Comma pause:"
+    IDS_SENTENCE_LABEL      "Sentence pause:"
+    IDS_NEWLINE_LABEL       "Newline pause:"
+    IDS_GROUP_OPTIONS       "Options"
+    IDS_INFLECTION          "&Natural intonation"
+    IDS_EMOJI               "Speak &emoji"
+    IDS_DIGITS              "Read numbers digit by &digit"
+    IDS_TEST                "&Test"
+    IDS_OK                  "OK"
+    IDS_CANCEL              "Cancel"
+    IDS_APPLY               "Apply"
+    IDS_VALUE_SPEED         "%.1fx"
+    IDS_VALUE_PERCENT       "%d%%"
+    IDS_VALUE_MS            "%d ms"
+    IDS_VOICE_JOSIP         "Josip (Croatian)"
+    IDS_VOICE_VLADO         "Vlado (Serbian)"
+    IDS_VOICE_DETENCE       "Detence (Croatian, child)"
+    IDS_VOICE_BABA          "Baba (Croatian, grandma)"
+    IDS_VOICE_DJEDO         "Djedo (Serbian, grandpa)"
+    IDS_TEST_TEXT           "Hello! This is a test of Laprdus speech synthesis."
+    // Dictionary dialog strings
+    IDS_USER_DICT_CHECK         "Apply user dictionaries"
+    IDS_DICT_BUTTON             "&Dictionaries..."
+    IDS_DICT_DIALOG_TITLE       "Dictionary Management"
+    IDS_DICT_TYPE_LABEL         "Dictionary type:"
+    IDS_DICT_TYPE_MAIN          "Main user dictionary"
+    IDS_DICT_TYPE_SPELLING      "Spelling dictionary"
+    IDS_DICT_TYPE_EMOJI         "Emoji dictionary"
+    IDS_DICT_COL_ORIGINAL       "Original"
+    IDS_DICT_COL_REPLACEMENT    "Replacement"
+    IDS_DICT_COL_CASE           "Case sensitive"
+    IDS_DICT_COL_WHOLE_WORD     "Whole word"
+    IDS_DICT_COL_COMMENT        "Comment"
+    IDS_DICT_ADD                "&Add"
+    IDS_DICT_EDIT               "&Edit"
+    IDS_DICT_DUPLICATE          "D&uplicate"
+    IDS_DICT_DELETE             "De&lete"
+    IDS_DICT_CLOSE              "&Close"
+    IDS_ENTRY_DIALOG_TITLE_ADD  "Add dictionary entry"
+    IDS_ENTRY_DIALOG_TITLE_EDIT "Edit dictionary entry"
+    IDS_ENTRY_ORIGINAL_LABEL    "Original string:"
+    IDS_ENTRY_REPLACEMENT_LABEL "Replacement string:"
+    IDS_ENTRY_COMMENT_LABEL     "Comment (Why are you adding this entry?):"
+    IDS_ENTRY_CASE_SENSITIVE    "Case sensitive"
+    IDS_ENTRY_WHOLE_WORD        "Whole word only"
+    IDS_ERROR_FILE_CREATE       "Cannot create dictionary file."
+    IDS_ERROR_FILE_WRITE        "Error writing to dictionary file."
+    IDS_ERROR_FILE_READ         "Error reading dictionary file."
+    IDS_ERROR_INVALID_ENTRY     "Original string and replacement string cannot be empty."
+    IDS_YES                     "Yes"
+    IDS_NO                      "No"
+    IDS_GROUP_DICTIONARIES      "Dictionaries"
+END

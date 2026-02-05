@@ -1,0 +1,169 @@
+<resources>
+    <!-- App name -->
+    <string name="app_name">Laprdus TTS</string>
+
+    <!-- TTS Service - display name in Android TTS settings -->
+    <string name="tts_service_name">Laprdus</string>
+
+    <!-- Voice names -->
+    <string name="voice_josip">Josip</string>
+    <string name="voice_vlado">Vlado</string>
+    <string name="voice_detence">Child</string>
+    <string name="voice_baba">Grandma</string>
+    <string name="voice_djedo">Grandpa</string>
+
+    <!-- UI Labels -->
+    <string name="voice_label">Voice</string>
+    <string name="text_input_label">Text to speak</string>
+    <string name="text_input_placeholder">Enter text you want to hear…</string>
+    <string name="speak_button">Speak</string>
+    <string name="stop_button">Stop</string>
+    <string name="loading">Loading…</string>
+    <string name="select_voice">Select voice</string>
+
+    <!-- Language names -->
+    <string name="language_croatian">Croatian</string>
+    <string name="language_serbian">Serbian</string>
+
+    <!-- Voice attributes -->
+    <string name="gender_male">Male</string>
+    <string name="gender_female">Female</string>
+    <string name="age_child">Child</string>
+    <string name="age_adult">Adult</string>
+    <string name="age_senior">Senior</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">Settings</string>
+    <string name="category_voice">Voice</string>
+    <string name="category_advanced">Advanced</string>
+
+    <!-- Voice settings -->
+    <string name="setting_speech_rate">Speech rate</string>
+    <string name="setting_speech_pitch">Speech pitch</string>
+    <string name="setting_speech_volume">Speech volume</string>
+
+    <!-- Force settings -->
+    <string name="setting_force_speed_title">Force Laprdus speech rate</string>
+    <string name="setting_force_speed_subtitle">Use Laprdus rate settings instead of application settings</string>
+    <string name="setting_force_pitch_title">Force Laprdus speech pitch</string>
+    <string name="setting_force_pitch_subtitle">Use Laprdus pitch settings instead of application settings</string>
+    <string name="setting_force_volume_title">Force Laprdus speech volume</string>
+    <string name="setting_force_volume_subtitle">Use Laprdus volume settings instead of application settings</string>
+    <string name="setting_force_language_title">Force language</string>
+    <string name="setting_force_language_subtitle">Use selected language regardless of system settings</string>
+
+    <!-- Emoji settings -->
+    <string name="setting_emoji_enabled_title">Enable emoji reading</string>
+    <string name="setting_emoji_enabled_subtitle">Convert emojis to their text descriptions</string>
+
+    <!-- Inflection settings -->
+    <string name="setting_inflection_enabled_title">Voice inflection</string>
+    <string name="setting_inflection_enabled_subtitle">Vary pitch for questions, exclamations, and pauses</string>
+
+    <!-- Number mode settings -->
+    <string name="setting_number_mode_title">Digit-by-digit numbers</string>
+    <string name="setting_number_mode_subtitle">Read numbers as individual digits (123 → one two three)</string>
+
+    <!-- Pause settings -->
+    <string name="category_pause_settings">Reading Pauses</string>
+    <string name="setting_sentence_pause">Pause after sentences</string>
+    <string name="setting_sentence_pause_desc">Duration of silence after periods, exclamation marks, and question marks</string>
+    <string name="setting_comma_pause">Pause after commas</string>
+    <string name="setting_comma_pause_desc">Duration of silence after commas for natural breathing rhythm</string>
+    <string name="setting_newline_pause">Pause at new lines</string>
+    <string name="setting_newline_pause_desc">Duration of silence when moving to a new line or paragraph</string>
+
+    <!-- Restore default buttons -->
+    <string name="restore_default_speed">Restore default speech rate</string>
+    <string name="restore_default_pitch">Restore default speech pitch</string>
+    <string name="restore_default_volume">Restore default speech volume</string>
+
+    <!-- Control descriptions for accessibility -->
+    <string name="cd_voice_dropdown_desc">Select voice for speech synthesis</string>
+    <string name="cd_restore_speed_desc">Sets speech rate to default value</string>
+    <string name="cd_restore_pitch_desc">Sets speech pitch to default value</string>
+    <string name="cd_restore_volume_desc">Sets speech volume to default value</string>
+    <string name="cd_speak_desc">Speaks the entered text</string>
+    <string name="cd_stop_desc">Stops current speech</string>
+    <string name="cd_laprdus_settings_desc">Opens Laprdus TTS engine settings</string>
+    <string name="cd_android_tts_settings_desc">Opens Android system TTS settings</string>
+
+    <!-- Main screen buttons -->
+    <string name="button_laprdus_settings">Laprdus Settings</string>
+    <string name="button_android_tts_settings">Android TTS Settings</string>
+
+    <!-- Accessibility descriptions -->
+    <string name="cd_slider_adjust">Slide to adjust</string>
+
+    <!-- Accessibility control type names (using Android's native naming convention) -->
+    <string name="cd_switch">Switch</string>
+    <string name="cd_slider">Slider</string>
+    <string name="cd_dropdown">Dropdown</string>
+    <string name="cd_checkbox">Checkbox</string>
+
+    <!-- Accessibility state descriptions (using Android's native naming convention) -->
+    <string name="cd_state_on">On</string>
+    <string name="cd_state_off">Off</string>
+    <string name="cd_button">Button</string>
+
+    <!-- Accessibility content descriptions -->
+    <string name="cd_settings_button">Open speech settings</string>
+    <string name="cd_tts_settings_button">Open Android TTS settings</string>
+    <string name="cd_speak_button">Speak text</string>
+    <string name="cd_stop_button">Stop speech</string>
+    <string name="cd_text_input">Text input field for text that will be spoken</string>
+    <string name="cd_voice_selector">Voice selection</string>
+    <string name="cd_voice_selector_current">Voice selection, currently selected: %1$s</string>
+    <string name="cd_back_button">Back</string>
+    <string name="cd_laprdus_settings_button">Open Laprdus settings</string>
+
+    <!-- Error messages -->
+    <string name="error_init_failed">Error starting TTS engine</string>
+    <string name="error_synthesis_failed">Error during speech synthesis</string>
+    <string name="error_voice_failed">Error selecting voice</string>
+    <string name="error_prefix">Error: %1$s</string>
+
+    <!-- Sample text for testing -->
+    <string name="sample_text">Hello! This is a test of the speech synthesis.</string>
+
+    <!-- Default TTS Dialog -->
+    <string name="dialog_default_tts_title">Set as Default TTS</string>
+    <string name="dialog_default_tts_message">Laprdus TTS is not set as your default text-to-speech engine. Would you like to set it as default?</string>
+    <string name="dialog_open_tts_settings">Open Settings</string>
+    <string name="dialog_not_now">Not Now</string>
+    <string name="dialog_dont_ask_again">Don\'t ask me again</string>
+
+    <!-- Dictionary settings category -->
+    <string name="category_dictionaries">Dictionaries</string>
+    <string name="setting_user_dict_enabled_title">Apply user dictionaries</string>
+    <string name="setting_user_dict_enabled_subtitle">Use custom word pronunciations from user dictionaries</string>
+    <string name="setting_manage_dictionaries">Manage dictionaries</string>
+    <string name="setting_manage_dictionaries_desc">Add, edit, and delete dictionary entries</string>
+
+    <!-- Dictionary screen -->
+    <string name="dict_screen_title">Dictionaries</string>
+    <string name="dict_type_main">Main Dictionary</string>
+    <string name="dict_type_spelling">Spelling Dictionary</string>
+    <string name="dict_type_emoji">Emoji Dictionary</string>
+    <string name="dict_type_label">Dictionary type</string>
+    <string name="dict_empty_list">No entries yet. Tap + to add one.</string>
+    <string name="dict_add_entry">Add entry</string>
+
+    <!-- Dictionary entry edit screen -->
+    <string name="dict_entry_title_add">Add Entry</string>
+    <string name="dict_entry_title_edit">Edit Entry</string>
+    <string name="dict_entry_original">Original text</string>
+    <string name="dict_entry_replacement">Replacement pronunciation</string>
+    <string name="dict_entry_comment">Comment (optional)</string>
+    <string name="dict_entry_case_sensitive">Case sensitive</string>
+    <string name="dict_entry_whole_word">Match whole word only</string>
+    <string name="dict_save">Save</string>
+    <string name="dict_delete">Delete</string>
+    <string name="dict_duplicate">Duplicate</string>
+    <string name="dict_delete_confirm_title">Delete entry?</string>
+    <string name="dict_delete_confirm_message">Are you sure you want to delete this dictionary entry?</string>
+    <string name="cancel">Cancel</string>
+    <string name="dict_error_empty_fields">This field is required</string>
+    <string name="dict_error_load_failed">Failed to load dictionary</string>
+    <string name="dict_error_save_failed">Failed to save entry</string>
+</resources>

@@ -1,0 +1,49 @@
+Source: laprdus
+Section: sound
+Priority: optional
+Maintainer: Hrvoje Katic <hrvoje.katic@gmail.com>
+Build-Depends: debhelper (>= 12),
+               scons,
+               g++,
+               libpulse-dev,
+               libasound2-dev,
+               libspeechd-dev,
+               libglib2.0-dev
+Standards-Version: 4.5.1
+Homepage: https://hrvojekatic.com/laprdus
+Vcs-Browser: https://github.com/hkatic/laprdus
+Vcs-Git: https://github.com/hkatic/laprdus.git
+Rules-Requires-Root: no
+
+Package: laprdus
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Suggests: speech-dispatcher, orca
+Description: Croatian/Serbian Text-to-Speech Engine
+ LaprdusTTS is a concatenative text-to-speech engine supporting Croatian
+ and Serbian languages. It provides natural-sounding speech synthesis
+ using pre-recorded phoneme samples.
+ .
+ Features:
+  * Multiple voices: Josip (Croatian), Vlado (Serbian), and derived voices
+  * Speech Dispatcher integration for use with Orca screen reader
+  * Command-line utility for terminal-based speech synthesis
+  * Adjustable speech rate, pitch, and volume
+  * Punctuation-based voice inflection
+  * Number-to-words conversion
+
+Package: laprdus-speechd
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, laprdus (= ${binary:Version}), speech-dispatcher
+Description: LaprdusTTS Speech Dispatcher module
+ This package provides the Speech Dispatcher output module for LaprdusTTS,
+ enabling Croatian/Serbian text-to-speech in applications that use
+ Speech Dispatcher, such as Orca screen reader.
+
+Package: laprdus-dev
+Architecture: any
+Depends: laprdus (= ${binary:Version}), ${misc:Depends}
+Description: LaprdusTTS development files
+ This package provides the development headers and static libraries
+ for LaprdusTTS, allowing developers to integrate Croatian/Serbian
+ text-to-speech into their applications.

@@ -1,0 +1,60 @@
+#!/usr/bin/make -f
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	scons --platform=linux --build-config=release linux-all
+
+override_dh_auto_install:
+	# Install library
+	install -D -m 755 build/linux-x64-release/liblaprdus.so \
+		debian/laprdus/usr/lib/$(DEB_HOST_MULTIARCH)/liblaprdus.so.1.0.0
+	ln -s liblaprdus.so.1.0.0 \
+		debian/laprdus/usr/lib/$(DEB_HOST_MULTIARCH)/liblaprdus.so.1
+	ln -s liblaprdus.so.1 \
+		debian/laprdus/usr/lib/$(DEB_HOST_MULTIARCH)/liblaprdus.so
+
+	# Install CLI
+	install -D -m 755 build/linux-x64-release/laprdus \
+		debian/laprdus/usr/bin/laprdus
+
+	# Install voice data
+	install -D -m 644 build/linux-x64-release/Josip.bin \
+		debian/laprdus/usr/share/laprdus/Josip.bin
+	install -D -m 644 build/linux-x64-release/Vlado.bin \
+		debian/laprdus/usr/share/laprdus/Vlado.bin
+
+	# Install dictionaries
+	install -D -m 644 data/dictionary/internal.json \
+		debian/laprdus/usr/share/laprdus/internal.json
+	install -D -m 644 data/dictionary/spelling.json \
+		debian/laprdus/usr/share/laprdus/spelling.json
+
+	# Install Speech Dispatcher module (if built)
+	# Note: On Ubuntu 24.04+, spd_module_main.h is not available in packages,
+	# so the speechd module may not be built. The laprdus-speechd package
+	# will only be available on systems where the module was built.
+	if [ -f build/linux-x64-release/sd_laprdus ]; then \
+		install -D -m 755 build/linux-x64-release/sd_laprdus \
+			debian/laprdus-speechd/usr/lib/speech-dispatcher-modules/sd_laprdus; \
+		install -D -m 644 src/platform/linux/speechd/laprdus.conf \
+			debian/laprdus-speechd/etc/speech-dispatcher/modules/laprdus.conf; \
+	fi
+
+	# Install development files
+	install -D -m 644 include/laprdus/laprdus_api.h \
+		debian/laprdus-dev/usr/include/laprdus/laprdus_api.h
+	install -D -m 644 include/laprdus/types.hpp \
+		debian/laprdus-dev/usr/include/laprdus/types.hpp
+	install -D -m 644 include/laprdus/laprdus.hpp \
+		debian/laprdus-dev/usr/include/laprdus/laprdus.hpp
+
+override_dh_auto_clean:
+	scons -c
+	rm -rf build/
+
+override_dh_auto_test:
+	# Skip tests for now

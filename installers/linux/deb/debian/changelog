@@ -1,0 +1,9 @@
+laprdus (1.0.0-1) unstable; urgency=medium
+
+  * Initial release.
+  * Croatian and Serbian text-to-speech synthesis
+  * Speech Dispatcher integration for Orca screen reader
+  * Command-line utility
+  * Five voices: Josip, Vlado, Detence, Baba, Djedo
+
+ -- Hrvoje Katic <hrvoje.katic@gmail.com>  Fri, 31 Jan 2025 12:00:00 +0100

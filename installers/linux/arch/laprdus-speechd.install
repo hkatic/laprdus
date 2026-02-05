@@ -1,0 +1,72 @@
+# Post-installation and removal hooks for laprdus-speechd
+
+SPEECHD_CONF="/etc/speech-dispatcher/speechd.conf"
+MARKER_START="# BEGIN LAPRDUS TTS"
+MARKER_END="# END LAPRDUS TTS"
+
+configure_speechd() {
+    if [ ! -f "$SPEECHD_CONF" ]; then
+        echo "Note: Speech Dispatcher config not found. Module will be available when speechd is configured."
+        return 0
+    fi
+
+    # Check if already configured
+    if grep -q "$MARKER_START" "$SPEECHD_CONF" 2>/dev/null; then
+        echo "LaprdusTTS already configured in Speech Dispatcher."
+        return 0
+    fi
+
+    # Check for existing manual configuration
+    if grep -q 'AddModule.*"laprdus"' "$SPEECHD_CONF" 2>/dev/null; then
+        echo "Note: Existing LaprdusTTS module entry found."
+        return 0
+    fi
+
+    echo "Configuring Speech Dispatcher for LaprdusTTS..."
+
+    cat >> "$SPEECHD_CONF" << 'EOF'
+
+# BEGIN LAPRDUS TTS
+# LaprdusTTS - Croatian/Serbian Text-to-Speech
+# Added automatically by package installation
+AddModule "laprdus" "sd_laprdus" "laprdus.conf"
+
+# Set LaprdusTTS as default for Croatian and Serbian
+LanguageDefaultModule "hr" "laprdus"
+LanguageDefaultModule "sr" "laprdus"
+LanguageDefaultModule "hr-HR" "laprdus"
+LanguageDefaultModule "sr-RS" "laprdus"
+# END LAPRDUS TTS
+EOF
+
+    echo "LaprdusTTS configured successfully."
+    echo "Restart Speech Dispatcher to apply changes: systemctl --user restart speech-dispatcher"
+}
+
+remove_speechd_config() {
+    if [ ! -f "$SPEECHD_CONF" ]; then
+        return 0
+    fi
+
+    if grep -q "$MARKER_START" "$SPEECHD_CONF" 2>/dev/null; then
+        echo "Removing LaprdusTTS from Speech Dispatcher configuration..."
+        sed -i "/$MARKER_START/,/$MARKER_END/d" "$SPEECHD_CONF"
+        echo "LaprdusTTS removed from Speech Dispatcher configuration."
+        echo "Restart Speech Dispatcher to apply changes: systemctl --user restart speech-dispatcher"
+    fi
+
+    # Also remove language-only block if present
+    sed -i '/# BEGIN LAPRDUS TTS LANGUAGES/,/# END LAPRDUS TTS LANGUAGES/d' "$SPEECHD_CONF" 2>/dev/null || true
+}
+
+post_install() {
+    configure_speechd
+}
+
+post_upgrade() {
+    configure_speechd
+}
+
+pre_remove() {
+    remove_speechd_config
+}

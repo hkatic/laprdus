@@ -1,0 +1,77 @@
+# Maintainer: Hrvoje Katic <hrvoje.katic@gmail.com>
+
+pkgbase=laprdus
+pkgname=('laprdus' 'laprdus-speechd')
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Croatian/Serbian Text-to-Speech Engine"
+arch=('x86_64' 'aarch64')
+url="https://hrvojekatic.com/laprdus"
+license=('GPL3')
+makedepends=('scons' 'gcc' 'libpulse' 'alsa-lib' 'speech-dispatcher' 'glib2')
+source=("$pkgbase-$pkgver.tar.xz"
+        'laprdus-speechd.install')
+sha256sums=('SKIP'
+            'SKIP')
+
+build() {
+    cd "$pkgbase-$pkgver"
+    scons --platform=linux --build-config=release linux-all
+}
+
+package_laprdus() {
+    pkgdesc="Croatian/Serbian Text-to-Speech Engine - core library and CLI"
+    depends=('glibc' 'gcc-libs' 'libpulse')
+    optdepends=('laprdus-speechd: Speech Dispatcher integration for Orca')
+
+    cd "$pkgbase-$pkgver"
+
+    # Install library
+    install -Dm755 build/linux-x64-release/liblaprdus.so \
+        "$pkgdir/usr/lib/liblaprdus.so.1.0.0"
+    ln -s liblaprdus.so.1.0.0 "$pkgdir/usr/lib/liblaprdus.so.1"
+    ln -s liblaprdus.so.1 "$pkgdir/usr/lib/liblaprdus.so"
+
+    # Install CLI
+    install -Dm755 build/linux-x64-release/laprdus \
+        "$pkgdir/usr/bin/laprdus"
+
+    # Install voice data
+    install -Dm644 build/linux-x64-release/Josip.bin \
+        "$pkgdir/usr/share/laprdus/Josip.bin"
+    install -Dm644 build/linux-x64-release/Vlado.bin \
+        "$pkgdir/usr/share/laprdus/Vlado.bin"
+
+    # Install dictionaries
+    install -Dm644 data/dictionary/internal.json \
+        "$pkgdir/usr/share/laprdus/internal.json"
+    install -Dm644 data/dictionary/spelling.json \
+        "$pkgdir/usr/share/laprdus/spelling.json"
+
+    # Install headers for development
+    install -Dm644 include/laprdus/laprdus_api.h \
+        "$pkgdir/usr/include/laprdus/laprdus_api.h"
+    install -Dm644 include/laprdus/types.hpp \
+        "$pkgdir/usr/include/laprdus/types.hpp"
+    install -Dm644 include/laprdus/laprdus.hpp \
+        "$pkgdir/usr/include/laprdus/laprdus.hpp"
+
+    # Install documentation
+    install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+}
+
+package_laprdus-speechd() {
+    pkgdesc="LaprdusTTS Speech Dispatcher module for Orca screen reader"
+    depends=('laprdus' 'speech-dispatcher' 'glib2')
+    install=laprdus-speechd.install
+
+    cd "$pkgbase-$pkgver"
+
+    # Install Speech Dispatcher module
+    install -Dm755 build/linux-x64-release/sd_laprdus \
+        "$pkgdir/usr/lib/speech-dispatcher-modules/sd_laprdus"
+
+    # Install module configuration
+    install -Dm644 src/platform/linux/speechd/laprdus.conf \
+        "$pkgdir/etc/speech-dispatcher/modules/laprdus.conf"
+}

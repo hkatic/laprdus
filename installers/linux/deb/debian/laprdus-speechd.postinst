@@ -1,0 +1,75 @@
+#!/bin/bash
+#
+# postinst script for laprdus-speechd
+#
+# Automatically configures Speech Dispatcher to use LaprdusTTS
+#
+
+set -e
+
+SPEECHD_CONF="/etc/speech-dispatcher/speechd.conf"
+MARKER_START="# BEGIN LAPRDUS TTS"
+MARKER_END="# END LAPRDUS TTS"
+
+configure_speechd() {
+    # Check if Speech Dispatcher config exists
+    if [ ! -f "$SPEECHD_CONF" ]; then
+        echo "Note: Speech Dispatcher config not found. Module will be available when speechd is configured."
+        return 0
+    fi
+
+    # Check if already configured
+    if grep -q "$MARKER_START" "$SPEECHD_CONF" 2>/dev/null; then
+        echo "LaprdusTTS already configured in Speech Dispatcher."
+        return 0
+    fi
+
+    # Check for existing manual configuration
+    if grep -q 'AddModule.*"laprdus"' "$SPEECHD_CONF" 2>/dev/null; then
+        echo "Note: Existing LaprdusTTS module entry found."
+        return 0
+    fi
+
+    echo "Configuring Speech Dispatcher for LaprdusTTS..."
+
+    # Add our configuration
+    cat >> "$SPEECHD_CONF" << 'EOF'
+
+# BEGIN LAPRDUS TTS
+# LaprdusTTS - Croatian/Serbian Text-to-Speech
+# Added automatically by package installation
+AddModule "laprdus" "sd_laprdus" "laprdus.conf"
+
+# Set LaprdusTTS as default for Croatian and Serbian
+LanguageDefaultModule "hr" "laprdus"
+LanguageDefaultModule "sr" "laprdus"
+LanguageDefaultModule "hr-HR" "laprdus"
+LanguageDefaultModule "sr-RS" "laprdus"
+# END LAPRDUS TTS
+EOF
+
+    echo "LaprdusTTS configured successfully."
+
+    # Try to restart speech-dispatcher if it's running
+    if systemctl is-active --quiet speech-dispatcher 2>/dev/null; then
+        systemctl restart speech-dispatcher || true
+    fi
+}
+
+case "$1" in
+    configure)
+        configure_speechd
+        ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+        ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

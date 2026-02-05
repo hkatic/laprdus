@@ -1,0 +1,59 @@
+# Build outputs
+build/
+*.obj
+*.o
+*.os
+*.exp
+*.lib
+*.pdb
+*.ilk
+
+# SCons configuration
+.sconf_temp/
+config.log
+
+# Generated voice data (shared by all platforms)
+data/voices/*.bin
+
+# Installer outputs
+installers/windows/Output/
+
+# Generated documentation
+docs/html/
+installers/linux/deb/output/
+installers/linux/rpm/*.rpm
+installers/linux/source/*.tar.xz
+installers/linux/tarball/*.tar.xz
+
+# NVDA addon build artifacts
+nvda-addon/*.nvda-addon
+nvda-addon/addon/synthDrivers/laprdus/*.dll
+nvda-addon/addon/synthDrivers/laprdus/voices/
+nvda-addon/addon/synthDrivers/laprdus/dictionaries/
+
+# Android generated assets (copied at build time)
+android/app/src/main/assets/voices/
+android/app/src/main/assets/dictionaries/
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE files
+.vs/
+.vscode/
+*.suo
+*.user
+
+# Claude Code local settings (contains user-specific paths)
+.claude/settings.local.json
+
+# SCons
+.sconsign.dblite
+*.sconsign
+
+# Temporary files
+*.tmp
+*.bak
+*~

@@ -1,0 +1,78 @@
+# Croatian translations for NVDA Laprdus TTS addon.
+# Copyright (C) 2024 Hrvoje Katic
+# This file is distributed under the same license as the Laprdus TTS package.
+# Hrvoje Katic <hrvojekatic@gmail.com>, 2024.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Laprdus TTS 1.0.0\n"
+"Report-Msgid-Bugs-To: hrvojekatic@gmail.com\n"
+"POT-Creation-Date: 2024-01-01 12:00+0000\n"
+"PO-Revision-Date: 2024-01-01 12:00+0000\n"
+"Last-Translator: Hrvoje Katic <hrvojekatic@gmail.com>\n"
+"Language-Team: Croatian <hr@li.org>\n"
+"Language: hr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
+
+#. Translators: Summary/title for this add-on
+msgid "Laprdus TTS"
+msgstr "Laprdus TTS"
+
+#. Translators: Long description to be shown for this add-on
+msgid ""
+"Text-to-speech synthesizer for NVDA.\n"
+"Laprdus is a concatenative speech synthesizer using pre-recorded phoneme samples.\n"
+"Supports Croatian and Serbian language with natural-sounding prosody and inflection."
+msgstr ""
+"Sintetizator govora za NVDA.\n"
+"Laprdus je konkatenativni sintetizator govora koji koristi unaprijed snimljene uzorke fonema.\n"
+"Podržava hrvatski i srpski jezik s prirodnom prozodijom i intonacijom."
+
+#. Translators: what's new content for the add-on version
+msgid ""
+"Initial release of Laprdus TTS for NVDA.\n"
+"Features:\n"
+"- Croatian and Serbian text-to-speech synthesis\n"
+"- Available voices: Josip (Croatian) and Vlado (Serbian), plus additional voice presets (Child, Grandma and Grandpa)\n"
+"- Adjustable rate, pitch, and volume\n"
+msgstr ""
+"Prvo izdanje Laprdus TTS-a za NVDA.\n"
+"Značajke:\n"
+"- Sinteza govora za hrvatski i srpski jezik\n"
+"- Dostupni glasovi: Josip (hrvatski) i Vlado (srpski), te dodatni glasovni predlošci (Dijete, Baba i Djed)\n"
+"- Podesiva brzina, visina tona i glasnoća\n"
+
+#. Translators: Name of the Laprdus submenu in NVDA main menu
+msgid "&Laprdus"
+msgstr "&Laprdus"
+
+#. Translators: Menu item label for Laprdus Configurator
+msgid "Laprdus &Configurator..."
+msgstr "Laprdus &konfigurator..."
+
+#. Translators: Description for Laprdus Configurator menu item
+msgid "Open the Laprdus TTS configuration window"
+msgstr "Otvori prozor postavki Laprdus TTS-a"
+
+#. Translators: Menu item to open Laprdus website
+msgid "Laprdus on the &Web"
+msgstr "Laprdus na &webu"
+
+#. Translators: Description for Laprdus on the Web menu item
+msgid "Open the Laprdus website in your browser"
+msgstr "Otvori Laprdus web stranicu u pregledniku"
+
+#. Translators: Error message when configurator fails to launch
+msgid "Failed to launch Laprdus Configurator: {}"
+msgstr "Pokretanje Laprdus konfiguratora nije uspjelo: {}"
+
+#. Translators: Error message when configurator executable not found
+msgid "Laprdus Configurator not found at: {}"
+msgstr "Laprdus konfigurator nije pronađen na: {}"
+
+#. Translators: Error dialog title
+msgid "Error"
+msgstr "Greška"

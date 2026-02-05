@@ -1,0 +1,139 @@
+{
+    "version": "1.0",
+    "description": "Built-in pronunciation dictionary for Laprdus TTS",
+    "entries": [
+        {
+            "grapheme": "ZG",
+            "phoneme": "Ze Ge",
+            "caseSensitive": false,
+            "wholeWord": true,
+            "comment": "Zagreb airport/city code"
+        },
+        {
+            "grapheme": "BG",
+            "phoneme": "Be Ge",
+            "caseSensitive": false,
+            "wholeWord": true,
+            "comment": "Belgrade city code"
+        },
+        {
+            "grapheme": "BH",
+            "phoneme": "Be Ha",
+            "caseSensitive": false,
+            "wholeWord": true,
+            "comment": "Bosnia and Herzegovina country code"
+        },
+        {
+            "grapheme": "RS",
+            "phoneme": "Er Es",
+            "caseSensitive": false,
+            "wholeWord": true,
+            "comment": "Serbia country code"
+        },
+        {
+            "grapheme": "DM",
+            "phoneme": "De Em",
+            "caseSensitive": false,
+            "wholeWord": true,
+            "comment": "Direct message abbreviation"
+        },
+        {
+            "grapheme": "HR",
+            "phoneme": "Ha Er",
+            "caseSensitive": false,
+            "wholeWord": true,
+            "comment": "Croatia country code"
+        },
+        {
+            "grapheme": "TV",
+            "phoneme": "Te Ve",
+            "caseSensitive": false,
+            "wholeWord": true,
+            "comment": "Television"
+        },
+        {
+            "grapheme": "Facebook",
+            "phoneme": "Fejzbuk",
+            "caseSensitive": false,
+            "wholeWord": true,
+            "comment": "Social media platform"
+        },
+        {
+            "grapheme": "Whatsapp",
+            "phoneme": "Watsap",
+            "caseSensitive": false,
+            "wholeWord": true,
+            "comment": "Messaging app"
+        },
+        {
+            "grapheme": "ChatGPT",
+            "phoneme": "ČetDžipiti",
+            "caseSensitive": false,
+            "wholeWord": true,
+            "comment": "AI chatbot"
+        },
+        {
+            "grapheme": "SnapChat",
+            "phoneme": "SnepČet",
+            "caseSensitive": false,
+            "wholeWord": true,
+            "comment": "Social media platform"
+        },
+        {
+            "grapheme": "Messenger",
+            "phoneme": "Mesindžer",
+            "caseSensitive": false,
+            "wholeWord": true,
+            "comment": "Messaging app"
+        },
+        {
+            "grapheme": "Teams",
+            "phoneme": "Tims",
+            "caseSensitive": false,
+            "wholeWord": true,
+            "comment": "Microsoft Teams"
+        },
+        {
+            "grapheme": "Outlook",
+            "phoneme": "Autluk",
+            "caseSensitive": false,
+            "wholeWord": true,
+            "comment": "Microsoft Outlook"
+        },
+        {
+            "grapheme": "Google",
+            "phoneme": "Gugl",
+            "caseSensitive": false,
+            "wholeWord": true,
+            "comment": "Technology company"
+        },
+        {
+            "grapheme": "Microsoft",
+            "phoneme": "Majkrosoft",
+            "caseSensitive": false,
+            "wholeWord": true,
+            "comment": "Technology company"
+        },
+        {
+            "grapheme": "Apple",
+            "phoneme": "Epl",
+            "caseSensitive": false,
+            "wholeWord": true,
+            "comment": "Technology company"
+        },
+        {
+            "grapheme": "Youtube",
+            "phoneme": "Jutjub",
+            "caseSensitive": false,
+            "wholeWord": true,
+            "comment": "Video sharing platform"
+        },
+        {
+            "grapheme": "Gmail",
+            "phoneme": "Džimeil",
+            "caseSensitive": false,
+            "wholeWord": true,
+            "comment": "Email service"
+        }
+    ]
+}
