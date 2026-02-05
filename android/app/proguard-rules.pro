@@ -60,6 +60,7 @@
 # Keep Activities with AndroidEntryPoint
 -keep class com.hrvojekatic.laprdus.MainActivity { *; }
 -keep class com.hrvojekatic.laprdus.SettingsActivity { *; }
+-keep class com.hrvojekatic.laprdus.DictionaryActivity { *; }
 
 # Keep AppModule (Hilt module)
 -keep class com.hrvojekatic.laprdus.di.AppModule { *; }
@@ -69,6 +70,8 @@
 -keep class com.hrvojekatic.laprdus.viewmodel.TTSUiState { *; }
 -keep class com.hrvojekatic.laprdus.viewmodel.SettingsViewModel { *; }
 -keep class com.hrvojekatic.laprdus.viewmodel.SettingsUiState { *; }
+-keep class com.hrvojekatic.laprdus.viewmodel.DictionaryViewModel { *; }
+-keep class com.hrvojekatic.laprdus.viewmodel.DictionaryUiState { *; }
 
 # Keep Hilt-generated Hilt_* and *_Factory classes
 -keep class **_Factory { *; }
@@ -131,6 +134,25 @@
 # Keep Preferences keys
 -keepclassmembers class * {
     static ** KEY_*;
+}
+
+# ============================================================================
+# Dictionary Data Classes
+# ============================================================================
+
+# Keep DictionaryRepository (Hilt singleton)
+-keep class com.hrvojekatic.laprdus.data.DictionaryRepository { *; }
+-keep class com.hrvojekatic.laprdus.data.DictionaryRepository$* { *; }
+
+# Keep DictionaryEntry data class (field names must be preserved for JSON parsing)
+-keep class com.hrvojekatic.laprdus.data.DictionaryEntry {
+    <init>(...);
+    *;
+}
+
+# Keep DictionaryType enum
+-keep enum com.hrvojekatic.laprdus.data.DictionaryType {
+    *;
 }
 
 # ============================================================================
