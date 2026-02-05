@@ -108,7 +108,7 @@ mkdir -p "${PREFIX}/include/laprdus"
 
 # Install files
 cp -v bin/* "${PREFIX}/bin/"
-cp -v lib/* "${PREFIX}/lib/"
+cp -v lib/*.so* "${PREFIX}/lib/"
 cp -v share/laprdus/* "${PREFIX}/share/laprdus/"
 cp -v share/doc/laprdus/* "${PREFIX}/share/doc/laprdus/"
 cp -v include/laprdus/* "${PREFIX}/include/laprdus/"
@@ -120,13 +120,19 @@ if [ -d lib/speech-dispatcher-modules ]; then
     cp -v lib/speech-dispatcher-modules/* "${SD_MODULE_DIR}/"
 fi
 
+# Install Speech Dispatcher config (only if we have permissions)
 if [ -d etc/speech-dispatcher/modules ]; then
-    mkdir -p /etc/speech-dispatcher/modules
-    cp -v etc/speech-dispatcher/modules/* /etc/speech-dispatcher/modules/
+    if [ -w /etc/speech-dispatcher/modules ] || [ $EUID -eq 0 ]; then
+        mkdir -p /etc/speech-dispatcher/modules
+        cp -v etc/speech-dispatcher/modules/* /etc/speech-dispatcher/modules/
+    else
+        echo "Note: Skipping /etc/speech-dispatcher/modules/ (requires root)"
+        echo "      For Speech Dispatcher, run: sudo cp etc/speech-dispatcher/modules/* /etc/speech-dispatcher/modules/"
+    fi
 fi
 
-# Update library cache
-if command -v ldconfig &> /dev/null; then
+# Update library cache (only if we have permissions)
+if command -v ldconfig &> /dev/null && [ $EUID -eq 0 ]; then
     ldconfig
 fi
 
@@ -135,6 +141,14 @@ configure_speechd() {
     if [ ! -f "$SPEECHD_CONF" ]; then
         echo "Note: Speech Dispatcher config not found."
         echo "LaprdusTTS will be available once Speech Dispatcher is configured."
+        return 0
+    fi
+
+    # Check if we have write permissions
+    if [ ! -w "$SPEECHD_CONF" ] && [ $EUID -ne 0 ]; then
+        echo "Note: Cannot configure Speech Dispatcher (requires root)"
+        echo "      To configure manually, add to $SPEECHD_CONF:"
+        echo '      AddModule "laprdus" "sd_laprdus" "laprdus.conf"'
         return 0
     fi
 
@@ -230,10 +244,14 @@ rm -rfv "${PREFIX}/share/laprdus"
 rm -rfv "${PREFIX}/share/doc/laprdus"
 rm -rfv "${PREFIX}/include/laprdus"
 rm -fv "${PREFIX}/lib/speech-dispatcher-modules/sd_laprdus"
-rm -fv /etc/speech-dispatcher/modules/laprdus.conf
 
-# Update library cache
-if command -v ldconfig &> /dev/null; then
+# Remove system config files (only if we have permissions)
+if [ -w /etc/speech-dispatcher/modules ] || [ $EUID -eq 0 ]; then
+    rm -fv /etc/speech-dispatcher/modules/laprdus.conf
+fi
+
+# Update library cache (only if we have permissions)
+if command -v ldconfig &> /dev/null && [ $EUID -eq 0 ]; then
     ldconfig
 fi
 
