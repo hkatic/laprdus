@@ -75,6 +75,7 @@ class LaprdusTTS private constructor() {
     private external fun nativeGetVoiceInfo(index: Int): VoiceInfo?
     private external fun nativeSetVoice(voiceId: String, assetManager: AssetManager): Boolean
     private external fun nativeLoadDictionaryFromAssets(assetManager: AssetManager, assetPath: String): Boolean
+    private external fun nativeAddPronunciation(grapheme: String, phoneme: String, caseSensitive: Boolean, wholeWord: Boolean)
     private external fun nativeLoadSpellingDictionaryFromAssets(assetManager: AssetManager, assetPath: String): Boolean
     private external fun nativeSynthesizeSpelled(text: String): ShortArray?
 
@@ -256,6 +257,21 @@ class LaprdusTTS private constructor() {
             Log.e(TAG, "Failed to load pronunciation dictionary from: $DICTIONARY_ASSET_PATH")
         }
         return result
+    }
+
+    /**
+     * Add a single pronunciation entry to the dictionary.
+     * This appends to the existing dictionary without clearing it,
+     * making it suitable for loading user dictionary entries after
+     * the bundled dictionary has been loaded.
+     *
+     * @param grapheme The text to match
+     * @param phoneme The replacement pronunciation
+     * @param caseSensitive Whether matching is case-sensitive
+     * @param wholeWord Whether to match whole words only
+     */
+    fun addPronunciation(grapheme: String, phoneme: String, caseSensitive: Boolean = false, wholeWord: Boolean = true) {
+        nativeAddPronunciation(grapheme, phoneme, caseSensitive, wholeWord)
     }
 
     /**

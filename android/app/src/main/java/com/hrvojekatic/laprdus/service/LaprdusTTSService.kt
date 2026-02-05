@@ -19,6 +19,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import org.json.JSONObject
+import java.io.File
 import java.text.BreakIterator
 import java.util.Locale
 
@@ -105,16 +107,76 @@ class LaprdusTTSService : TextToSpeechService() {
         currentVoiceId = savedVoiceId
 
         // Initialize with saved voice using setVoice
-        // This ensures proper loading and pitch settings
+        // This ensures proper loading, pitch settings, and user dictionaries
         try {
-            val success = tts?.setVoice(currentVoiceId, assets)
-            if (success == true) {
+            val success = setVoiceAndLoadUserDictionaries(currentVoiceId)
+            if (success) {
                 Log.d(TAG, "Engine initialized with $currentVoiceId voice")
             } else {
                 Log.e(TAG, "Failed to initialize engine with $currentVoiceId voice")
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to initialize engine", e)
+        }
+    }
+
+    /**
+     * Set voice and reload user dictionaries.
+     * Use this instead of calling tts.setVoice() directly to ensure
+     * user dictionary entries are always loaded after the bundled dictionary.
+     */
+    private fun setVoiceAndLoadUserDictionaries(voiceId: String): Boolean {
+        val engine = tts ?: return false
+        val success = engine.setVoice(voiceId, assets)
+        if (success) {
+            loadUserDictionaries()
+        }
+        return success
+    }
+
+    /**
+     * Load user dictionary entries from filesDir/user.json into the native engine.
+     * Entries are appended to the already-loaded bundled dictionary using addPronunciation(),
+     * which does NOT clear existing entries.
+     * Respects the userDictionariesEnabled setting.
+     */
+    private fun loadUserDictionaries() {
+        val settings = cachedSettings
+        if (settings != null && !settings.userDictionariesEnabled) {
+            Log.d(TAG, "User dictionaries disabled, skipping")
+            return
+        }
+
+        val engine = tts ?: return
+
+        val userDictFile = File(filesDir, "user.json")
+        if (!userDictFile.exists()) {
+            Log.d(TAG, "No user dictionary file found")
+            return
+        }
+
+        try {
+            val json = userDictFile.readText(Charsets.UTF_8)
+            val jsonObj = JSONObject(json)
+            val entriesArray = jsonObj.optJSONArray("entries") ?: return
+
+            var count = 0
+            for (i in 0 until entriesArray.length()) {
+                val entryObj = entriesArray.getJSONObject(i)
+                val grapheme = entryObj.optString("grapheme", "")
+                val phoneme = entryObj.optString("phoneme", "")
+
+                if (grapheme.isNotEmpty() && phoneme.isNotEmpty()) {
+                    val caseSensitive = entryObj.optBoolean("caseSensitive", false)
+                    val wholeWord = entryObj.optBoolean("wholeWord", true)
+                    engine.addPronunciation(grapheme, phoneme, caseSensitive, wholeWord)
+                    count++
+                }
+            }
+
+            Log.i(TAG, "Loaded $count user dictionary entries")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to load user dictionary: ${e.message}")
         }
     }
 
@@ -199,7 +261,7 @@ class LaprdusTTSService : TextToSpeechService() {
         }
 
         return try {
-            tts?.setVoice(voiceId, assets)
+            setVoiceAndLoadUserDictionaries(voiceId)
             currentVoiceId = voiceId
             Log.d(TAG, "Loaded language: $lang with voice: $voiceId")
             available
@@ -272,7 +334,7 @@ class LaprdusTTSService : TextToSpeechService() {
         val engine = tts ?: return TextToSpeech.ERROR
 
         return try {
-            val success = engine.setVoice(voiceName, assets)
+            val success = setVoiceAndLoadUserDictionaries(voiceName)
             if (success) {
                 currentVoiceId = voiceName
                 Log.d(TAG, "Loaded voice: $voiceName")
@@ -401,7 +463,7 @@ class LaprdusTTSService : TextToSpeechService() {
                 val savedVoice = settings.defaultVoice
                 if (savedVoice != currentVoiceId) {
                     Log.d(TAG, "Using forced language voice: $savedVoice")
-                    engine.setVoice(savedVoice, assets)
+                    setVoiceAndLoadUserDictionaries(savedVoice)
                     currentVoiceId = savedVoice
                 }
             }

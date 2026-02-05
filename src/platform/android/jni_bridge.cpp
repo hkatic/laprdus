@@ -573,6 +573,33 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeLoadDictionaryFromAssets(
     return success ? JNI_TRUE : JNI_FALSE;
 }
 
+JNIEXPORT void JNICALL
+Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeAddPronunciation(
+    JNIEnv* env,
+    jobject thiz,
+    jstring grapheme,
+    jstring phoneme,
+    jboolean caseSensitive,
+    jboolean wholeWord) {
+
+    (void)thiz;
+    std::lock_guard<std::mutex> lock(g_engine_mutex);
+
+    if (!g_engine || !g_engine->is_initialized()) {
+        LOGE("Cannot add pronunciation - engine not initialized");
+        return;
+    }
+
+    std::string g = jstringToString(env, grapheme);
+    std::string p = jstringToString(env, phoneme);
+
+    if (g.empty() || p.empty()) {
+        return;
+    }
+
+    g_engine->add_pronunciation(g, p, caseSensitive, wholeWord);
+}
+
 // =============================================================================
 // Spelling Dictionary Methods
 // =============================================================================
