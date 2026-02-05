@@ -20,12 +20,32 @@ data/voices/*.bin
 # Installer outputs
 installers/windows/Output/
 
+# Linux package build artifacts
+installers/linux/*.deb
+installers/linux/*.buildinfo
+installers/linux/*.changes
+installers/linux/arch/*.pkg.tar.zst
+installers/linux/arch/*.tar.xz
+installers/linux/arch/pkg/
+installers/linux/arch/src/
+installers/linux/deb/debian/.debhelper/
+installers/linux/deb/debian/debhelper-build-stamp
+installers/linux/deb/debian/files
+installers/linux/deb/debian/*.substvars
+installers/linux/deb/debian/*.triggers
+installers/linux/deb/debian/laprdus/
+installers/linux/deb/debian/laprdus-dev/
+installers/linux/deb/debian/laprdus-speechd/
+installers/linux/rpm/*.rpm
+
 # Generated documentation
 docs/html/
 installers/linux/deb/output/
-installers/linux/rpm/*.rpm
 installers/linux/source/*.tar.xz
 installers/linux/tarball/*.tar.xz
+
+# Stray build directories
+build-tarball*/
 
 # NVDA addon build artifacts
 nvda-addon/*.nvda-addon
