@@ -50,6 +50,12 @@ class DictionaryActivity : ComponentActivity() {
                                 viewModel.setEditingEntry(null)
                                 navController.navigate("edit")
                             },
+                            onDeleteEntry = { entryId ->
+                                viewModel.deleteEntry(entryId)
+                            },
+                            onDuplicateEntry = { entry ->
+                                viewModel.duplicateEntry(entry)
+                            },
                             onClearError = viewModel::clearError
                         )
                     }

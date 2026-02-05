@@ -163,6 +163,9 @@
     <string name="dict_delete_confirm_title">Izbrisati unos?</string>
     <string name="dict_delete_confirm_message">Da li ste sigurni da želite da izbrišete ovaj unos iz rečnika?</string>
     <string name="cancel">Otkaži</string>
+    <string name="dict_action_edit">Uredi</string>
+    <string name="dict_action_duplicate">Dupliciraj</string>
+    <string name="dict_action_delete">Izbriši</string>
     <string name="dict_error_empty_fields">Ovo polje je obavezno</string>
     <string name="dict_error_load_failed">Učitavanje rečnika nije uspelo</string>
     <string name="dict_error_save_failed">Čuvanje unosa nije uspelo</string>

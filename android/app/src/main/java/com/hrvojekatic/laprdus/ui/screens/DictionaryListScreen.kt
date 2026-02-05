@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -33,6 +34,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -63,9 +65,15 @@ fun DictionaryListScreen(
     onTypeSelected: (DictionaryType) -> Unit,
     onEntryClick: (DictionaryEntry) -> Unit,
     onAddEntry: () -> Unit,
+    onDeleteEntry: (String) -> Unit,
+    onDuplicateEntry: (DictionaryEntry) -> Unit,
     onClearError: () -> Unit
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // Action menu state
+    var menuEntry by remember { mutableStateOf<DictionaryEntry?>(null) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
 
     // Show error in snackbar
     LaunchedEffect(uiState.error) {
@@ -152,12 +160,86 @@ fun DictionaryListScreen(
                         ) { entry ->
                             DictionaryEntryItem(
                                 entry = entry,
-                                onClick = { onEntryClick(entry) }
+                                onClick = { menuEntry = entry }
                             )
                         }
                     }
                 }
             }
+        }
+    }
+
+    // Action menu dialog
+    menuEntry?.let { entry ->
+        if (!showDeleteConfirm) {
+            AlertDialog(
+                onDismissRequest = { menuEntry = null },
+                title = { Text(entry.grapheme) },
+                text = {
+                    Column {
+                        TextButton(
+                            onClick = {
+                                menuEntry = null
+                                onEntryClick(entry)
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(stringResource(R.string.dict_action_edit))
+                        }
+                        TextButton(
+                            onClick = {
+                                menuEntry = null
+                                onDuplicateEntry(entry)
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(stringResource(R.string.dict_action_duplicate))
+                        }
+                        TextButton(
+                            onClick = { showDeleteConfirm = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = stringResource(R.string.dict_action_delete),
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                },
+                confirmButton = {}
+            )
+        } else {
+            // Delete confirmation dialog
+            AlertDialog(
+                onDismissRequest = {
+                    showDeleteConfirm = false
+                    menuEntry = null
+                },
+                title = { Text(stringResource(R.string.dict_delete_confirm_title)) },
+                text = { Text(stringResource(R.string.dict_delete_confirm_message)) },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showDeleteConfirm = false
+                            val entryId = entry.id
+                            menuEntry = null
+                            onDeleteEntry(entryId)
+                        }
+                    ) {
+                        Text(stringResource(R.string.dict_delete))
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            showDeleteConfirm = false
+                            menuEntry = null
+                        }
+                    ) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                }
+            )
         }
     }
 }
