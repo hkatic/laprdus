@@ -36,6 +36,7 @@ nvda-addon/addon/synthDrivers/laprdus/dictionaries/
 # Android generated assets (copied at build time)
 android/app/src/main/assets/voices/
 android/app/src/main/assets/dictionaries/
+android/app/release/
 
 # Python bytecode
 __pycache__/
