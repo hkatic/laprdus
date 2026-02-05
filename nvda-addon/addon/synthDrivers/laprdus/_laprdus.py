@@ -244,6 +244,27 @@ def _configure_functions(lib):
     lib.laprdus_clear_emoji_dictionary.argtypes = [LaprdusHandle]
     lib.laprdus_clear_emoji_dictionary.restype = None
 
+    # Append dictionary functions (for layering user dicts on top of internal)
+    lib.laprdus_append_dictionary.argtypes = [LaprdusHandle, ctypes.c_char_p]
+    lib.laprdus_append_dictionary.restype = LaprdusError
+
+    lib.laprdus_append_spelling_dictionary.argtypes = [LaprdusHandle, ctypes.c_char_p]
+    lib.laprdus_append_spelling_dictionary.restype = LaprdusError
+
+    lib.laprdus_append_emoji_dictionary.argtypes = [LaprdusHandle, ctypes.c_char_p]
+    lib.laprdus_append_emoji_dictionary.restype = LaprdusError
+
+    # User dictionary utility functions
+    lib.laprdus_user_dictionary_exists.argtypes = [ctypes.c_char_p]
+    lib.laprdus_user_dictionary_exists.restype = ctypes.c_int
+
+    lib.laprdus_get_user_dictionary_path.argtypes = [
+        ctypes.c_char_p,
+        ctypes.c_char_p,
+        ctypes.c_size_t
+    ]
+    lib.laprdus_get_user_dictionary_path.restype = ctypes.c_size_t
+
     # Pause settings functions
     lib.laprdus_set_sentence_pause.argtypes = [LaprdusHandle, ctypes.c_uint32]
     lib.laprdus_set_sentence_pause.restype = LaprdusError
@@ -384,6 +405,49 @@ def _voice_info_to_dict(info):
         "base_voice_id": decode_str(info.base_voice_id),
         "data_filename": decode_str(info.data_filename),
     }
+
+
+# =============================================================================
+# User Dictionary Utility Functions
+# =============================================================================
+
+def user_dictionary_exists(filename):
+    """Check if a user dictionary file exists in %APPDATA%/Laprdus/.
+
+    Args:
+        filename: Name of the dictionary file (e.g., "user.json").
+
+    Returns:
+        True if the file exists, False otherwise.
+    """
+    lib = _load_library()
+    if isinstance(filename, bytes):
+        filename_bytes = filename
+    else:
+        filename_bytes = filename.encode("utf-8")
+    return bool(lib.laprdus_user_dictionary_exists(filename_bytes))
+
+
+def get_user_dictionary_path(filename):
+    """Get the full path to a user dictionary file.
+
+    Args:
+        filename: Name of the dictionary file (e.g., "user.json").
+
+    Returns:
+        Full path string, or None on failure.
+    """
+    lib = _load_library()
+    if isinstance(filename, bytes):
+        filename_bytes = filename
+    else:
+        filename_bytes = filename.encode("utf-8")
+
+    buffer = ctypes.create_string_buffer(512)
+    length = lib.laprdus_get_user_dictionary_path(filename_bytes, buffer, 512)
+    if length > 0:
+        return buffer.value.decode("utf-8", errors="replace")
+    return None
 
 
 # =============================================================================
@@ -738,6 +802,73 @@ class LaprdusEngine(object):
     def clear_emoji_dictionary(self):
         """Clear all entries from the emoji dictionary."""
         self._lib.laprdus_clear_emoji_dictionary(self._handle)
+
+    # =========================================================================
+    # Append Dictionary Methods (for user dictionaries)
+    # =========================================================================
+
+    def append_dictionary(self, dictionary_path):
+        """Append pronunciation dictionary entries from a JSON file.
+        Keeps existing (internal) entries and adds new ones.
+
+        Args:
+            dictionary_path: Path to the user dictionary JSON file.
+
+        Returns:
+            True on success, False on failure
+        """
+        if not os.path.exists(dictionary_path):
+            return False
+
+        if isinstance(dictionary_path, bytes):
+            path_bytes = dictionary_path
+        else:
+            path_bytes = dictionary_path.encode("utf-8")
+
+        result = self._lib.laprdus_append_dictionary(self._handle, path_bytes)
+        return result == LAPRDUS_OK
+
+    def append_spelling_dictionary(self, dictionary_path):
+        """Append spelling dictionary entries from a JSON file.
+        Keeps existing (internal) entries and adds new ones.
+
+        Args:
+            dictionary_path: Path to the user spelling dictionary JSON file.
+
+        Returns:
+            True on success, False on failure
+        """
+        if not os.path.exists(dictionary_path):
+            return False
+
+        if isinstance(dictionary_path, bytes):
+            path_bytes = dictionary_path
+        else:
+            path_bytes = dictionary_path.encode("utf-8")
+
+        result = self._lib.laprdus_append_spelling_dictionary(self._handle, path_bytes)
+        return result == LAPRDUS_OK
+
+    def append_emoji_dictionary(self, dictionary_path):
+        """Append emoji dictionary entries from a JSON file.
+        Keeps existing (internal) entries and adds new ones.
+
+        Args:
+            dictionary_path: Path to the user emoji dictionary JSON file.
+
+        Returns:
+            True on success, False on failure
+        """
+        if not os.path.exists(dictionary_path):
+            return False
+
+        if isinstance(dictionary_path, bytes):
+            path_bytes = dictionary_path
+        else:
+            path_bytes = dictionary_path.encode("utf-8")
+
+        result = self._lib.laprdus_append_emoji_dictionary(self._handle, path_bytes)
+        return result == LAPRDUS_OK
 
     # =========================================================================
     # Pause Settings Methods

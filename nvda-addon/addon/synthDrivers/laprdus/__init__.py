@@ -194,6 +194,17 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         self._volume = 100
         self._rateBoost = False
 
+        # Force flags - when True, Laprdus config values override NVDA sliders
+        self._forceSpeed = False
+        self._forcePitch = False
+        self._forceVolume = False
+
+        # Config file change detection
+        self._settingsMtime = 0  # Last modification time of settings.json
+        self._userDictMtime = 0  # Last modification time of user.json
+        self._userSpellingMtime = 0
+        self._userEmojiMtime = 0
+
         # Voice selection
         self._voice = "josip"  # Default voice
         self._availableVoices = None  # Cached voice dict
@@ -207,17 +218,16 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         # Initialize with default voice
         self._engine.set_voice(self._voice)
 
-        # Load pronunciation dictionary
+        # Load internal dictionaries
         self._engine.load_dictionary()
-
-        # Load spelling dictionary for character mode
         self._engine.load_spelling_dictionary()
+        self._engine.load_emoji_dictionary()
 
         # Apply initial settings
         self._applySettings()
 
         # Load shared settings from settings.json (written by laprdgui.exe)
-        # This syncs number mode, pause settings, and inflection with the GUI
+        # This also loads user dictionaries if enabled
         self._loadSharedSettings()
 
         # Start background speech thread
@@ -267,6 +277,12 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             if isSpellingItem:
                 self._spellingDone.set()
             return
+
+        # Check if config files changed and reload if needed
+        try:
+            self._checkConfigChanged()
+        except Exception as e:
+            _debug_log("_synthesizeAndPlay: config check error: %s" % str(e))
 
         self._isSpeaking = True
 
@@ -587,15 +603,18 @@ class SynthDriver(synthDriverHandler.SynthDriver):
     def _applySettings(self):
         """Apply current voice settings to the engine."""
         if self._engine:
-            # Apply volume to engine
-            self._engine.set_volume(_nvda_to_laprdus_volume(self._volume))
+            # Apply volume (unless forced by Laprdus config)
+            if not self._forceVolume:
+                self._engine.set_volume(_nvda_to_laprdus_volume(self._volume))
             # Apply user pitch preference - formant-preserving (no chipmunk effect)
             # Voice character pitch (base_pitch) is handled by the voice selection
-            self._engine.set_user_pitch(_nvda_to_laprdus_pitch(self._pitch))
+            if not self._forcePitch:
+                self._engine.set_user_pitch(_nvda_to_laprdus_pitch(self._pitch))
             # Apply speed/rate to engine (Sonic time-stretching)
             # This changes speed WITHOUT affecting pitch
             # Rate boost expands max rate from 2.0x to 4.0x
-            self._engine.set_speed(_nvda_to_rate_factor(self._rate, self._rateBoost))
+            if not self._forceSpeed:
+                self._engine.set_speed(_nvda_to_rate_factor(self._rate, self._rateBoost))
 
     def _loadSharedSettings(self):
         """Load settings from shared settings.json (written by laprdgui.exe).
@@ -603,10 +622,14 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         This allows the NVDA addon to use the same configuration as SAPI5,
         providing a unified settings experience via the GUI configurator.
 
-        Settings loaded:
-        - numbers.mode: 'words' or 'digits'
-        - pauses.sentence, pauses.comma, pauses.newline: pause durations in ms
+        Settings loaded from settings.json structure:
+        - speech.speed, speech.pitch, speech.volume (with force flags)
         - speech.inflection: whether to use pitch variation
+        - speech.emoji: whether to convert emoji to text
+        - numbers.mode: 'words' or 'digits'
+        - pauses.sentence, pauses.comma, pauses.newline, pauses.spelling
+        - force.speed, force.pitch, force.volume: override NVDA slider values
+        - dictionaries.user_enabled: whether to load user dictionaries
         """
         import json
         import os
@@ -622,38 +645,164 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             return
 
         try:
+            # Record file modification time for change detection
+            self._settingsMtime = os.path.getmtime(settings_path)
+
             with open(settings_path, 'r', encoding='utf-8') as f:
                 settings = json.load(f)
 
             _debug_log("_loadSharedSettings: Loaded settings from %s" % settings_path)
 
-            # Apply number mode
+            # Extract sections
+            speech = settings.get('speech', {})
             numbers = settings.get('numbers', {})
+            pauses = settings.get('pauses', {})
+            force = settings.get('force', {})
+            dictionaries = settings.get('dictionaries', {})
+
+            # Apply force flags - when enabled, Laprdus config values override NVDA sliders
+            self._forceSpeed = force.get('speed', False)
+            self._forcePitch = force.get('pitch', False)
+            self._forceVolume = force.get('volume', False)
+            _debug_log("_loadSharedSettings: force speed=%s pitch=%s volume=%s" % (
+                self._forceSpeed, self._forcePitch, self._forceVolume))
+
+            if self._forceSpeed:
+                laprdus_speed = speech.get('speed', 1.0)
+                self._engine.set_speed(laprdus_speed)
+                _debug_log("_loadSharedSettings: forced speed=%.2f" % laprdus_speed)
+
+            if self._forcePitch:
+                laprdus_pitch = speech.get('pitch', 1.0)
+                self._engine.set_user_pitch(laprdus_pitch)
+                _debug_log("_loadSharedSettings: forced pitch=%.2f" % laprdus_pitch)
+
+            if self._forceVolume:
+                laprdus_volume = speech.get('volume', 1.0)
+                self._engine.set_volume(laprdus_volume)
+                _debug_log("_loadSharedSettings: forced volume=%.2f" % laprdus_volume)
+
+            # Apply inflection setting
+            inflection = speech.get('inflection', True)
+            self._engine.set_inflection(inflection)
+            _debug_log("_loadSharedSettings: inflection=%s" % inflection)
+
+            # Apply emoji setting
+            emoji_enabled = speech.get('emoji', False)
+            self._engine.set_emoji_enabled(emoji_enabled)
+            _debug_log("_loadSharedSettings: emoji_enabled=%s" % emoji_enabled)
+
+            # Apply number mode
             mode = numbers.get('mode', 'words')
             number_mode = 1 if mode == 'digits' else 0
             self._engine.set_number_mode(number_mode)
             _debug_log("_loadSharedSettings: number_mode=%s (%d)" % (mode, number_mode))
 
             # Apply pause settings
-            pauses = settings.get('pauses', {})
             sentence_pause = pauses.get('sentence', 100)
             comma_pause = pauses.get('comma', 100)
             newline_pause = pauses.get('newline', 100)
+            spelling_pause = pauses.get('spelling', 200)
             self._engine.set_sentence_pause(sentence_pause)
             self._engine.set_comma_pause(comma_pause)
             self._engine.set_newline_pause(newline_pause)
-            _debug_log("_loadSharedSettings: pauses sentence=%d comma=%d newline=%d" % (
-                sentence_pause, comma_pause, newline_pause))
+            self._engine.set_spelling_pause(spelling_pause)
+            _debug_log("_loadSharedSettings: pauses sentence=%d comma=%d newline=%d spelling=%d" % (
+                sentence_pause, comma_pause, newline_pause, spelling_pause))
 
-            # Apply inflection setting
-            speech = settings.get('speech', {})
-            inflection = speech.get('inflection', True)
-            self._engine.set_inflection(inflection)
-            _debug_log("_loadSharedSettings: inflection=%s" % inflection)
+            # Load user dictionaries if enabled
+            user_dicts_enabled = dictionaries.get('user_enabled', True)
+            _debug_log("_loadSharedSettings: user_dicts_enabled=%s" % user_dicts_enabled)
+
+            if user_dicts_enabled:
+                self._loadUserDictionaries()
 
         except Exception as e:
             _debug_log("_loadSharedSettings: Error loading settings: %s" % str(e))
             log.warning("LaprdusTTS: Failed to load shared settings: %s" % str(e))
+
+    def _loadUserDictionaries(self):
+        """Load user dictionaries from %APPDATA%/Laprdus/.
+
+        Appends user dictionary entries on top of already-loaded internal dictionaries.
+        This matches the SAPI5 driver behavior.
+        """
+        import os
+        from . import _laprdus
+
+        # Append user pronunciation dictionary
+        if _laprdus.user_dictionary_exists("user.json"):
+            path = _laprdus.get_user_dictionary_path("user.json")
+            if path:
+                self._userDictMtime = os.path.getmtime(path) if os.path.exists(path) else 0
+                result = self._engine.append_dictionary(path)
+                _debug_log("_loadUserDictionaries: append user.json from %s -> %s" % (path, result))
+                log.debug("LaprdusTTS: Appended user dictionary: %s" % path)
+
+        # Append user spelling dictionary
+        if _laprdus.user_dictionary_exists("spelling.json"):
+            path = _laprdus.get_user_dictionary_path("spelling.json")
+            if path:
+                self._userSpellingMtime = os.path.getmtime(path) if os.path.exists(path) else 0
+                result = self._engine.append_spelling_dictionary(path)
+                _debug_log("_loadUserDictionaries: append spelling.json from %s -> %s" % (path, result))
+                log.debug("LaprdusTTS: Appended user spelling dictionary: %s" % path)
+
+        # Append user emoji dictionary
+        if _laprdus.user_dictionary_exists("emoji.json"):
+            path = _laprdus.get_user_dictionary_path("emoji.json")
+            if path:
+                self._userEmojiMtime = os.path.getmtime(path) if os.path.exists(path) else 0
+                result = self._engine.append_emoji_dictionary(path)
+                _debug_log("_loadUserDictionaries: append emoji.json from %s -> %s" % (path, result))
+                log.debug("LaprdusTTS: Appended user emoji dictionary: %s" % path)
+
+    def _checkConfigChanged(self):
+        """Check if settings.json or user dictionaries have been modified.
+
+        If any config file changed, reload all settings and dictionaries.
+        Called from the background speech thread before each synthesis.
+        """
+        import os
+        from . import _laprdus
+
+        changed = False
+
+        # Check settings.json
+        settings_path = os.path.join(
+            os.environ.get('APPDATA', ''),
+            'Laprdus',
+            'settings.json'
+        )
+        if os.path.exists(settings_path):
+            mtime = os.path.getmtime(settings_path)
+            if mtime != self._settingsMtime:
+                changed = True
+
+        # Check user dictionary files
+        for filename, attr in [
+            ("user.json", "_userDictMtime"),
+            ("spelling.json", "_userSpellingMtime"),
+            ("emoji.json", "_userEmojiMtime"),
+        ]:
+            if _laprdus.user_dictionary_exists(filename):
+                path = _laprdus.get_user_dictionary_path(filename)
+                if path and os.path.exists(path):
+                    mtime = os.path.getmtime(path)
+                    if mtime != getattr(self, attr):
+                        changed = True
+
+        if changed:
+            _debug_log("_checkConfigChanged: config files changed, reloading")
+            log.debug("LaprdusTTS: Config changed, reloading settings and dictionaries")
+            # Reload internal dictionaries first (clears old entries)
+            self._engine.load_dictionary()
+            self._engine.load_spelling_dictionary()
+            self._engine.load_emoji_dictionary()
+            # Reload shared settings (applies all config + appends user dicts)
+            self._loadSharedSettings()
+            # Re-apply NVDA settings that aren't forced
+            self._applySettings()
 
     # =========================================================================
     # isSpeaking property - NVDA queries this to check if synth is busy
@@ -674,6 +823,9 @@ class SynthDriver(synthDriverHandler.SynthDriver):
 
     def _set_rate(self, value):
         self._rate = value
+        # If force speed is enabled, ignore NVDA slider - keep Laprdus config value
+        if self._forceSpeed:
+            return
         # Apply rate to engine using Sonic-based time-stretching
         # This changes speed WITHOUT affecting pitch
         # Rate boost expands max rate from 2.0x to 4.0x
@@ -692,6 +844,9 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             return
         # Toggle boost and re-apply rate to use new range
         self._rateBoost = enable
+        # If force speed is enabled, ignore NVDA slider - keep Laprdus config value
+        if self._forceSpeed:
+            return
         if self._engine:
             self._engine.set_speed(_nvda_to_rate_factor(self._rate, self._rateBoost))
 
@@ -704,6 +859,9 @@ class SynthDriver(synthDriverHandler.SynthDriver):
 
     def _set_pitch(self, value):
         self._pitch = value
+        # If force pitch is enabled, ignore NVDA slider - keep Laprdus config value
+        if self._forcePitch:
+            return
         # Apply user pitch preference - formant-preserving
         # This changes pitch WITHOUT chipmunk effect (voice character stays the same)
         # Voice character pitch is handled via base_pitch when voice is selected
@@ -719,6 +877,9 @@ class SynthDriver(synthDriverHandler.SynthDriver):
 
     def _set_volume(self, value):
         self._volume = value
+        # If force volume is enabled, ignore NVDA slider - keep Laprdus config value
+        if self._forceVolume:
+            return
         if self._engine:
             self._engine.set_volume(_nvda_to_laprdus_volume(value))
 
@@ -735,8 +896,12 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             if self._engine:
                 # Set the new voice - this may reload phoneme data
                 self._engine.set_voice(value)
-                # Reload pronunciation dictionary (in case it was cleared)
+                # Reload internal dictionaries (in case they were cleared)
                 self._engine.load_dictionary()
+                self._engine.load_spelling_dictionary()
+                self._engine.load_emoji_dictionary()
+                # Re-append user dictionaries on top
+                self._loadUserDictionaries()
                 # Reapply pitch since base pitch may have changed
                 # Reapply user pitch preference (formant-preserving)
                 self._engine.set_user_pitch(_nvda_to_laprdus_pitch(self._pitch))
