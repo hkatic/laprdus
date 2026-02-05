@@ -258,6 +258,7 @@ INT_PTR CALLBACK DictionaryDialog::DialogProc(HWND hDlg, UINT msg, WPARAM wParam
 
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLORBTN:
+    case WM_CTLCOLOREDIT:
         return pThis->OnCtlColor(hDlg, msg, (HDC)wParam, (HWND)lParam);
 
     case WM_CTLCOLORDLG:
@@ -285,6 +286,14 @@ INT_PTR DictionaryDialog::OnInitDialog(HWND hDlg) {
 
     // Populate with current dictionary entries
     PopulateListView(hDlg);
+
+    // Select the first item by default
+    HWND hListView = GetDlgItem(hDlg, IDC_DICT_LISTVIEW);
+    if (hListView && !m_entries.empty()) {
+        ListView_SetItemState(hListView, 0, LVIS_SELECTED | LVIS_FOCUSED,
+            LVIS_SELECTED | LVIS_FOCUSED);
+    }
+
     UpdateButtonStates(hDlg);
 
     // Apply dark mode if enabled
@@ -491,6 +500,14 @@ void DictionaryDialog::OnDictionaryTypeChanged(HWND hDlg) {
 
     // Refresh list view
     PopulateListView(hDlg);
+
+    // Select the first item by default
+    HWND hListView = GetDlgItem(hDlg, IDC_DICT_LISTVIEW);
+    if (hListView && !m_entries.empty()) {
+        ListView_SetItemState(hListView, 0, LVIS_SELECTED | LVIS_FOCUSED,
+            LVIS_SELECTED | LVIS_FOCUSED);
+    }
+
     UpdateButtonStates(hDlg);
 }
 
@@ -542,6 +559,23 @@ INT_PTR DictionaryDialog::OnNotify(HWND hDlg, LPNMHDR pnmh) {
         case NM_DBLCLK:
             OnEditEntry(hDlg);
             return TRUE;
+
+        case NM_CUSTOMDRAW:
+            if (m_darkMode) {
+                LPNMLVCUSTOMDRAW lpcd = reinterpret_cast<LPNMLVCUSTOMDRAW>(pnmh);
+                switch (lpcd->nmcd.dwDrawStage) {
+                case CDDS_PREPAINT:
+                    SetWindowLongPtrW(hDlg, DWLP_MSGRESULT, CDRF_NOTIFYITEMDRAW);
+                    return TRUE;
+                case CDDS_ITEMPREPAINT: {
+                    lpcd->clrText = GetDarkTextColor();
+                    lpcd->clrTextBk = GetDarkControlColor();
+                    SetWindowLongPtrW(hDlg, DWLP_MSGRESULT, CDRF_NEWFONT);
+                    return TRUE;
+                }
+                }
+            }
+            break;
         }
     }
 
@@ -560,6 +594,13 @@ INT_PTR DictionaryDialog::OnCtlColor(HWND hDlg, UINT msg, HDC hdc, HWND hCtrl) {
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLORBTN: {
         HBRUSH hBrush = OnCtlColorStatic(hdc, true);
+        if (hBrush) {
+            return (INT_PTR)hBrush;
+        }
+        break;
+    }
+    case WM_CTLCOLOREDIT: {
+        HBRUSH hBrush = OnCtlColorEdit(hdc, true);
         if (hBrush) {
             return (INT_PTR)hBrush;
         }
@@ -703,6 +744,15 @@ void DictionaryDialog::ApplyDarkMode(HWND hDlg) {
 
     ApplyDarkTitleBar(hDlg, true);
     ApplyDarkModeToAllControls(hDlg, true);
+
+    // Set ListView background color
+    HWND hListView = GetDlgItem(hDlg, IDC_DICT_LISTVIEW);
+    if (hListView) {
+        ListView_SetBkColor(hListView, GetDarkControlColor());
+        ListView_SetTextBkColor(hListView, GetDarkControlColor());
+        ListView_SetTextColor(hListView, GetDarkTextColor());
+    }
+
     InvalidateRect(hDlg, nullptr, TRUE);
 }
 
@@ -780,6 +830,7 @@ INT_PTR CALLBACK DictionaryEntryDialog::DialogProc(HWND hDlg, UINT msg, WPARAM w
 
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLORBTN:
+    case WM_CTLCOLOREDIT:
         return pThis->OnCtlColor(hDlg, msg, (HDC)wParam, (HWND)lParam);
 
     case WM_CTLCOLORDLG:
@@ -867,6 +918,13 @@ INT_PTR DictionaryEntryDialog::OnCtlColor(HWND hDlg, UINT msg, HDC hdc, HWND hCt
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLORBTN: {
         HBRUSH hBrush = OnCtlColorStatic(hdc, true);
+        if (hBrush) {
+            return (INT_PTR)hBrush;
+        }
+        break;
+    }
+    case WM_CTLCOLOREDIT: {
+        HBRUSH hBrush = OnCtlColorEdit(hdc, true);
         if (hBrush) {
             return (INT_PTR)hBrush;
         }

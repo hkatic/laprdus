@@ -149,6 +149,19 @@ HBRUSH OnCtlColorStatic(HDC hdc, bool dark) {
     return nullptr;
 }
 
+HBRUSH OnCtlColorEdit(HDC hdc, bool dark) {
+    if (dark) {
+        SetTextColor(hdc, DARK_TEXT);
+        SetBkColor(hdc, DARK_CONTROL);
+        static HBRUSH hEditBrush = nullptr;
+        if (!hEditBrush) {
+            hEditBrush = CreateSolidBrush(DARK_CONTROL);
+        }
+        return hEditBrush;
+    }
+    return nullptr;
+}
+
 HBRUSH OnCtlColorDlg(bool dark) {
     if (dark) {
         return GetDarkBackgroundBrush();

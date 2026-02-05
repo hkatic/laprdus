@@ -71,6 +71,12 @@ COLORREF GetDarkControlColor();
 HBRUSH OnCtlColorStatic(HDC hdc, bool dark);
 
 /**
+ * Handle WM_CTLCOLOREDIT for dark mode.
+ * Returns brush handle if handled, NULL otherwise.
+ */
+HBRUSH OnCtlColorEdit(HDC hdc, bool dark);
+
+/**
  * Handle WM_CTLCOLORDLG for dark mode.
  * Returns brush handle if handled, NULL otherwise.
  */
