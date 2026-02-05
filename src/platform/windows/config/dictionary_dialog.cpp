@@ -520,6 +520,7 @@ INT_PTR DictionaryDialog::OnCommand(HWND hDlg, WPARAM wParam, LPARAM lParam) {
         OnDeleteEntry(hDlg);
         return TRUE;
 
+    case IDCANCEL:
     case IDC_DICT_CLOSE:
         if (m_modified) {
             SaveDictionary();
