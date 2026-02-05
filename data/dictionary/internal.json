@@ -134,6 +134,34 @@
             "caseSensitive": false,
             "wholeWord": true,
             "comment": "Email service"
+        },
+        {
+            "grapheme": "TTS",
+            "phoneme": "Te Te Es",
+            "caseSensitive": false,
+            "wholeWord": true,
+            "comment": "Text-to-speech abbreviation"
+        },
+        {
+            "grapheme": "Lookout",
+            "phoneme": "Lukaut",
+            "caseSensitive": false,
+            "wholeWord": true,
+            "comment": "Microsoft Lookout"
+        },
+        {
+            "grapheme": "MS",
+            "phoneme": "Em Es",
+            "caseSensitive": false,
+            "wholeWord": true,
+            "comment": "Microsoft abbreviation"
+        },
+        {
+            "grapheme": "Gemini",
+            "phoneme": "Džeminai",
+            "caseSensitive": false,
+            "wholeWord": true,
+            "comment": "Google Gemini AI"
         }
     ]
 }
