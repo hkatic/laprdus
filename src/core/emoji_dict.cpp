@@ -18,8 +18,8 @@ struct EmojiDictionary::Impl {
     std::unordered_map<std::string, std::string> entries;
     bool enabled = false;  // Disabled by default
 
-    // Parse JSON content
-    bool parse_json(const std::string& json);
+    // Parse JSON content (clear=true replaces, clear=false appends)
+    bool parse_json(const std::string& json, bool clear = true);
 
     // Get UTF-8 codepoint length
     static size_t utf8_char_length(unsigned char c) {
@@ -61,11 +61,13 @@ struct EmojiDictionary::Impl {
 // JSON Parsing (simplified, no external dependencies)
 // =============================================================================
 
-bool EmojiDictionary::Impl::parse_json(const std::string& json) {
+bool EmojiDictionary::Impl::parse_json(const std::string& json, bool clear) {
     // Simple JSON parser for emoji dictionary format:
     // { "version": "1.0", "entries": [ { "emoji": "😀", "text": "nasmijano lice" }, ... ] }
 
-    entries.clear();
+    if (clear) {
+        entries.clear();
+    }
 
     // Find entries array
     size_t entries_start = json.find("\"entries\"");
@@ -204,7 +206,41 @@ bool EmojiDictionary::load_from_memory(const char* json_content, size_t length) 
         content.assign(json_content, length);
     }
 
-    return m_impl->parse_json(content);
+    return m_impl->parse_json(content, true);
+}
+
+// =============================================================================
+// Append from File
+// =============================================================================
+
+bool EmojiDictionary::append_from_file(const std::string& path) {
+    std::ifstream file(path, std::ios::binary);
+    if (!file.is_open()) {
+        return false;
+    }
+
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    return append_from_memory(buffer.str().c_str(), 0);
+}
+
+// =============================================================================
+// Append from Memory
+// =============================================================================
+
+bool EmojiDictionary::append_from_memory(const char* json_content, size_t length) {
+    if (!json_content) {
+        return false;
+    }
+
+    std::string content;
+    if (length == 0) {
+        content = json_content;
+    } else {
+        content.assign(json_content, length);
+    }
+
+    return m_impl->parse_json(content, false);
 }
 
 // =============================================================================

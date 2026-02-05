@@ -527,17 +527,17 @@ int main(int argc, char *argv[])
         if (settings.user_dictionaries_enabled) {
             if (userConfig.user_dictionary_exists("user.json")) {
                 std::string userDictPath = userConfig.get_user_dictionary_path();
-                laprdus_load_dictionary(engine, userDictPath.c_str());
+                laprdus_append_dictionary(engine, userDictPath.c_str());
             }
 
             if (userConfig.user_dictionary_exists("spelling.json")) {
                 std::string userSpellingPath = userConfig.get_user_spelling_dictionary_path();
-                laprdus_load_spelling_dictionary(engine, userSpellingPath.c_str());
+                laprdus_append_spelling_dictionary(engine, userSpellingPath.c_str());
             }
 
             if (userConfig.user_dictionary_exists("emoji.json")) {
                 std::string userEmojiPath = userConfig.get_user_emoji_dictionary_path();
-                laprdus_load_emoji_dictionary(engine, userEmojiPath.c_str());
+                laprdus_append_emoji_dictionary(engine, userEmojiPath.c_str());
             }
         }
 

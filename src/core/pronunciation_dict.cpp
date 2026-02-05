@@ -175,6 +175,28 @@ bool PronunciationDictionary::load_from_memory(const char* json_content, size_t 
     // Clear any existing entries before loading new ones
     m_impl->entries.clear();
 
+    return parse_entries(json_content, length);
+}
+
+bool PronunciationDictionary::append_from_file(const std::string& path) {
+    std::filesystem::path fspath(path);
+    std::ifstream file(fspath);
+    if (!file.is_open()) {
+        return false;
+    }
+
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    return append_from_memory(buffer.str().c_str(), 0);
+}
+
+bool PronunciationDictionary::append_from_memory(const char* json_content, size_t length) {
+    if (!json_content) return false;
+
+    return parse_entries(json_content, length);
+}
+
+bool PronunciationDictionary::parse_entries(const char* json_content, size_t length) {
     std::string json = (length > 0) ? std::string(json_content, length) : std::string(json_content);
 
     // Extract and parse entries

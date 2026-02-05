@@ -364,6 +364,13 @@ bool TTSEngine::load_dictionary_from_memory(const char* json_content, size_t len
     return m_impl->dictionary.load_from_memory(json_content, length);
 }
 
+bool TTSEngine::append_dictionary(const std::string& path) {
+    if (!m_impl) {
+        return false;
+    }
+    return m_impl->dictionary.append_from_file(path);
+}
+
 void TTSEngine::add_pronunciation(const std::string& grapheme, const std::string& phoneme,
                                   bool case_sensitive, bool whole_word) {
     if (m_impl) {
@@ -393,6 +400,13 @@ bool TTSEngine::load_spelling_dictionary_from_memory(const char* json_content, s
         return false;
     }
     return m_impl->spelling_dictionary.load_from_memory(json_content, length);
+}
+
+bool TTSEngine::append_spelling_dictionary(const std::string& path) {
+    if (!m_impl) {
+        return false;
+    }
+    return m_impl->spelling_dictionary.append_from_file(path);
 }
 
 void TTSEngine::clear_spelling_dictionary() {
@@ -528,6 +542,13 @@ bool TTSEngine::load_emoji_dictionary_from_memory(const char* json_content, size
         return false;
     }
     return m_impl->emoji_dictionary.load_from_memory(json_content, length);
+}
+
+bool TTSEngine::append_emoji_dictionary(const std::string& path) {
+    if (!m_impl) {
+        return false;
+    }
+    return m_impl->emoji_dictionary.append_from_file(path);
 }
 
 void TTSEngine::clear_emoji_dictionary() {

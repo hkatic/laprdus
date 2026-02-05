@@ -424,17 +424,17 @@ HRESULT LaprdusSAPIDriver::InitializeEngine() {
         if (settings.user_dictionaries_enabled) {
             if (userConfig.user_dictionary_exists("user.json")) {
                 std::string userDictPath = userConfig.get_user_dictionary_path();
-                m_engine->load_dictionary(userDictPath);
+                m_engine->append_dictionary(userDictPath);
             }
 
             if (userConfig.user_dictionary_exists("spelling.json")) {
                 std::string userSpellingPath = userConfig.get_user_spelling_dictionary_path();
-                m_engine->load_spelling_dictionary(userSpellingPath);
+                m_engine->append_spelling_dictionary(userSpellingPath);
             }
 
             if (userConfig.user_dictionary_exists("emoji.json")) {
                 std::string userEmojiPath = userConfig.get_user_emoji_dictionary_path();
-                m_engine->load_emoji_dictionary(userEmojiPath);
+                m_engine->append_emoji_dictionary(userEmojiPath);
             }
         }
     }

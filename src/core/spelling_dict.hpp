@@ -41,19 +41,34 @@ public:
     SpellingDictionary& operator=(SpellingDictionary&&) noexcept;
 
     /**
-     * @brief Load dictionary from a JSON file
+     * @brief Load dictionary from a JSON file (replaces existing entries)
      * @param path Path to the JSON dictionary file
      * @return true if loaded successfully, false otherwise
      */
     bool load_from_file(const std::string& path);
 
     /**
-     * @brief Load dictionary from a memory buffer containing JSON
+     * @brief Load dictionary from a memory buffer containing JSON (replaces existing entries)
      * @param json_content JSON string content
      * @param length Length of the content (0 for null-terminated)
      * @return true if parsed successfully, false otherwise
      */
     bool load_from_memory(const char* json_content, size_t length = 0);
+
+    /**
+     * @brief Append entries from a JSON file (keeps existing entries)
+     * @param path Path to the JSON dictionary file
+     * @return true if loaded successfully, false otherwise
+     */
+    bool append_from_file(const std::string& path);
+
+    /**
+     * @brief Append entries from a memory buffer (keeps existing entries)
+     * @param json_content JSON string content
+     * @param length Length of the content (0 for null-terminated)
+     * @return true if parsed successfully, false otherwise
+     */
+    bool append_from_memory(const char* json_content, size_t length = 0);
 
     /**
      * @brief Get pronunciation for a single character
@@ -95,6 +110,8 @@ public:
     bool empty() const;
 
 private:
+    bool parse_entries(const char* json_content, size_t length);
+
     struct Impl;
     std::unique_ptr<Impl> m_impl;
 };

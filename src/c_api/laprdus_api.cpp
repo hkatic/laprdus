@@ -799,6 +799,24 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_load_dictionary_from_memory(
     return LAPRDUS_OK;
 }
 
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_append_dictionary(
+    LaprdusHandle handle,
+    const char* dictionary_path) {
+
+    if (!handle) {
+        return LAPRDUS_ERROR_INVALID_HANDLE;
+    }
+    if (!dictionary_path) {
+        return LAPRDUS_ERROR_INVALID_PARAMETER;
+    }
+
+    if (!handle->engine.append_dictionary(dictionary_path)) {
+        return LAPRDUS_ERROR_INVALID_PARAMETER;
+    }
+
+    return LAPRDUS_OK;
+}
+
 LAPRDUS_API void LAPRDUS_CALL laprdus_clear_dictionary(LaprdusHandle handle) {
     if (handle) {
         handle->engine.clear_dictionary();
@@ -847,6 +865,24 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_load_spelling_dictionary_from_memo
     if (!handle->engine.load_spelling_dictionary_from_memory(json_content, length)) {
         set_error(handle, "Failed to parse spelling dictionary content");
         return LAPRDUS_ERROR_LOAD_FAILED;
+    }
+
+    return LAPRDUS_OK;
+}
+
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_append_spelling_dictionary(
+    LaprdusHandle handle,
+    const char* dictionary_path) {
+
+    if (!handle) {
+        return LAPRDUS_ERROR_INVALID_HANDLE;
+    }
+    if (!dictionary_path) {
+        return LAPRDUS_ERROR_INVALID_PARAMETER;
+    }
+
+    if (!handle->engine.append_spelling_dictionary(dictionary_path)) {
+        return LAPRDUS_ERROR_INVALID_PARAMETER;
     }
 
     return LAPRDUS_OK;
@@ -973,6 +1009,24 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_load_emoji_dictionary_from_memory(
     if (!handle->engine.load_emoji_dictionary_from_memory(json_content, length)) {
         set_error(handle, "Failed to parse emoji dictionary content");
         return LAPRDUS_ERROR_LOAD_FAILED;
+    }
+
+    return LAPRDUS_OK;
+}
+
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_append_emoji_dictionary(
+    LaprdusHandle handle,
+    const char* dictionary_path) {
+
+    if (!handle) {
+        return LAPRDUS_ERROR_INVALID_HANDLE;
+    }
+    if (!dictionary_path) {
+        return LAPRDUS_ERROR_INVALID_PARAMETER;
+    }
+
+    if (!handle->engine.append_emoji_dictionary(dictionary_path)) {
+        return LAPRDUS_ERROR_INVALID_PARAMETER;
     }
 
     return LAPRDUS_OK;

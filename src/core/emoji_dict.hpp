@@ -40,19 +40,34 @@ public:
     EmojiDictionary& operator=(EmojiDictionary&&) noexcept;
 
     /**
-     * Load emoji dictionary from JSON file.
+     * Load emoji dictionary from JSON file (replaces existing entries).
      * @param path Path to emoji dictionary JSON file.
      * @return true on success.
      */
     bool load_from_file(const std::string& path);
 
     /**
-     * Load emoji dictionary from memory.
+     * Load emoji dictionary from memory (replaces existing entries).
      * @param json_content JSON content string.
      * @param length Length of content (0 for null-terminated).
      * @return true on success.
      */
     bool load_from_memory(const char* json_content, size_t length = 0);
+
+    /**
+     * Append entries from a JSON file (keeps existing entries).
+     * @param path Path to emoji dictionary JSON file.
+     * @return true on success.
+     */
+    bool append_from_file(const std::string& path);
+
+    /**
+     * Append entries from memory (keeps existing entries).
+     * @param json_content JSON content string.
+     * @param length Length of content (0 for null-terminated).
+     * @return true on success.
+     */
+    bool append_from_memory(const char* json_content, size_t length = 0);
 
     /**
      * Replace all emojis in text with their text representations.

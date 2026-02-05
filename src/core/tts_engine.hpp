@@ -123,19 +123,26 @@ public:
     size_t memory_usage() const;
 
     /**
-     * Load pronunciation dictionary from file.
+     * Load pronunciation dictionary from file (replaces existing entries).
      * @param path Path to dictionary JSON file.
      * @return true on success.
      */
     bool load_dictionary(const std::string& path);
 
     /**
-     * Load pronunciation dictionary from memory.
+     * Load pronunciation dictionary from memory (replaces existing entries).
      * @param json_content JSON content.
      * @param length Length of content (0 for null-terminated).
      * @return true on success.
      */
     bool load_dictionary_from_memory(const char* json_content, size_t length = 0);
+
+    /**
+     * Append pronunciation dictionary entries from file (keeps existing entries).
+     * @param path Path to dictionary JSON file.
+     * @return true on success.
+     */
+    bool append_dictionary(const std::string& path);
 
     /**
      * Add a single pronunciation entry.
@@ -157,19 +164,26 @@ public:
     // =========================================================================
 
     /**
-     * Load spelling dictionary from file.
+     * Load spelling dictionary from file (replaces existing entries).
      * @param path Path to spelling dictionary JSON file.
      * @return true on success.
      */
     bool load_spelling_dictionary(const std::string& path);
 
     /**
-     * Load spelling dictionary from memory.
+     * Load spelling dictionary from memory (replaces existing entries).
      * @param json_content JSON content.
      * @param length Length of content (0 for null-terminated).
      * @return true on success.
      */
     bool load_spelling_dictionary_from_memory(const char* json_content, size_t length = 0);
+
+    /**
+     * Append spelling dictionary entries from file (keeps existing entries).
+     * @param path Path to spelling dictionary JSON file.
+     * @return true on success.
+     */
+    bool append_spelling_dictionary(const std::string& path);
 
     /**
      * Clear the spelling dictionary.
@@ -190,19 +204,26 @@ public:
     // =========================================================================
 
     /**
-     * Load emoji dictionary from file.
+     * Load emoji dictionary from file (replaces existing entries).
      * @param path Path to emoji dictionary JSON file.
      * @return true on success.
      */
     bool load_emoji_dictionary(const std::string& path);
 
     /**
-     * Load emoji dictionary from memory.
+     * Load emoji dictionary from memory (replaces existing entries).
      * @param json_content JSON content.
      * @param length Length of content (0 for null-terminated).
      * @return true on success.
      */
     bool load_emoji_dictionary_from_memory(const char* json_content, size_t length = 0);
+
+    /**
+     * Append emoji dictionary entries from file (keeps existing entries).
+     * @param path Path to emoji dictionary JSON file.
+     * @return true on success.
+     */
+    bool append_emoji_dictionary(const std::string& path);
 
     /**
      * Clear the emoji dictionary.

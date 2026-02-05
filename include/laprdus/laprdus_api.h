@@ -456,6 +456,18 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_load_dictionary_from_memory(
 );
 
 /**
+ * Append pronunciation dictionary entries from a JSON file.
+ * Keeps existing entries and adds new ones from the file.
+ * @param handle Engine handle.
+ * @param dictionary_path Path to the dictionary JSON file.
+ * @return LAPRDUS_OK on success, error code on failure.
+ */
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_append_dictionary(
+    LaprdusHandle handle,
+    const char* dictionary_path
+);
+
+/**
  * Clear all entries from the pronunciation dictionary.
  * @param handle Engine handle.
  */
@@ -489,6 +501,18 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_load_spelling_dictionary_from_memo
     LaprdusHandle handle,
     const char* json_content,
     size_t length
+);
+
+/**
+ * Append spelling dictionary entries from a JSON file.
+ * Keeps existing entries and adds new ones from the file.
+ * @param handle Engine handle.
+ * @param dictionary_path Path to the spelling dictionary JSON file.
+ * @return LAPRDUS_OK on success, error code on failure.
+ */
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_append_spelling_dictionary(
+    LaprdusHandle handle,
+    const char* dictionary_path
 );
 
 /**
@@ -542,6 +566,18 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_load_emoji_dictionary_from_memory(
     LaprdusHandle handle,
     const char* json_content,
     size_t length
+);
+
+/**
+ * Append emoji dictionary entries from a JSON file.
+ * Keeps existing entries and adds new ones from the file.
+ * @param handle Engine handle.
+ * @param dictionary_path Path to the emoji dictionary JSON file.
+ * @return LAPRDUS_OK on success, error code on failure.
+ */
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_append_emoji_dictionary(
+    LaprdusHandle handle,
+    const char* dictionary_path
 );
 
 /**
