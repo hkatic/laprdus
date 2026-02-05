@@ -1,3 +1,5 @@
+%global debug_package %{nil}
+
 Name:           laprdus
 Version:        1.0.0
 Release:        1%{?dist}
@@ -150,7 +152,7 @@ fi
 
 %files
 %license LICENSE
-%doc README.md
+%doc readme.md
 %{_libdir}/liblaprdus.so.1*
 %{_bindir}/laprdus
 %{_datadir}/laprdus/
