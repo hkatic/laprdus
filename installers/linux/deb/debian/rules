@@ -52,6 +52,29 @@ override_dh_auto_install:
 	install -D -m 644 include/laprdus/laprdus.hpp \
 		debian/laprdus-dev/usr/include/laprdus/laprdus.hpp
 
+override_dh_builddeb:
+	@if grep -qi microsoft /proc/version 2>/dev/null; then \
+		echo "WSL detected: copying package trees to /tmp to fix NTFS permissions..."; \
+		for pkgdir in debian/laprdus debian/laprdus-speechd debian/laprdus-dev; do \
+			pkg=$$(basename $$pkgdir); \
+			if [ -d "$$pkgdir/DEBIAN" ]; then \
+				tmpdir=$$(mktemp -d /tmp/deb-$$pkg-XXXXXX); \
+				cp -a "$$pkgdir" "$$tmpdir/$$pkg"; \
+				find "$$tmpdir/$$pkg" -type d -exec chmod 0755 {} \;; \
+				find "$$tmpdir/$$pkg" -type f -exec chmod 0644 {} \;; \
+				for s in postinst postrm preinst prerm; do \
+					[ -f "$$tmpdir/$$pkg/DEBIAN/$$s" ] && chmod 0755 "$$tmpdir/$$pkg/DEBIAN/$$s"; \
+				done; \
+				find "$$tmpdir/$$pkg/usr/bin" -type f -exec chmod 0755 {} \; 2>/dev/null || true; \
+				find "$$tmpdir/$$pkg/usr/lib" -type f \( -name "*.so*" -o -name "sd_*" \) -exec chmod 0755 {} \; 2>/dev/null || true; \
+				dpkg-deb --root-owner-group --build "$$tmpdir/$$pkg" ..; \
+				rm -rf "$$tmpdir"; \
+			fi; \
+		done; \
+	else \
+		dh_builddeb; \
+	fi
+
 override_dh_auto_clean:
 	scons -c
 	rm -rf build/
