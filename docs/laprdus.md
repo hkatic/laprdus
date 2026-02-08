@@ -44,10 +44,16 @@ Inačica 1.0
    - [6.1 Dostupni glasovi](#61-dostupni-glasovi)
    - [6.2 Osnovni i izvedeni glasovi](#62-osnovni-i-izvedeni-glasovi)
    - [6.3 Odabir glasa](#63-odabir-glasa)
-7. [Rješavanje problema](#7-rješavanje-problema)
-   - [7.1 Česti problemi](#71-česti-problemi)
-   - [7.2 Dijagnostički zapisnici](#72-dijagnostički-zapisnici)
-   - [7.3 Kontakt i podrška](#73-kontakt-i-podrška)
+7. [Uklanjanje (deinstalacija)](#7-uklanjanje-deinstalacija)
+   - [7.1 Windows SAPI5](#71-windows-sapi5-1)
+   - [7.2 NVDA dodatak](#72-nvda-dodatak-1)
+   - [7.3 Linux](#73-linux)
+   - [7.4 Android](#74-android)
+   - [7.5 Brisanje korisničkih postavki i rječnika](#75-brisanje-korisničkih-postavki-i-rječnika)
+8. [Rješavanje problema](#8-rješavanje-problema)
+   - [8.1 Česti problemi](#81-česti-problemi)
+   - [8.2 Dijagnostički zapisnici](#82-dijagnostički-zapisnici)
+   - [8.3 Kontakt i podrška](#83-kontakt-i-podrška)
 
 ---
 
@@ -1249,9 +1255,198 @@ Za promjenu zadanog glasa u sustavu:
 
 ---
 
-## 7. Rješavanje problema
+## 7. Uklanjanje (deinstalacija)
 
-### 7.1 Česti problemi
+### 7.1 Windows SAPI5
+
+Laprdus se s Windows sustava uklanja putem standardnog Windows programa za uklanjanje.
+
+#### Metoda 1: Putem Upravljačke ploče
+
+1. Otvorite Upravljačku ploču (pritisnite tipku Windows, upišite "Upravljačka ploča" i pritisnite Enter)
+2. Odaberite "Programi" > "Programi i značajke"
+3. U popisu programa pronađite "Laprdus" strelicom dolje
+4. Pritisnite Enter ili kliknite "Deinstaliraj"
+5. Potvrdite uklanjanje kada se pojavi upit
+
+#### Metoda 2: Putem Windows postavki
+
+1. Otvorite Postavke (tipka Windows + I)
+2. Odaberite "Aplikacije" > "Instalirane aplikacije"
+3. Pronađite "Laprdus" u popisu
+4. Kliknite na tri točkice ili pritisnite Enter i odaberite "Deinstaliraj"
+5. Potvrdite uklanjanje
+
+Program za uklanjanje automatski briše:
+- Sve datoteke iz instalacijskog direktorija (`C:\Program Files\Laprdus`)
+- Registracijske ključeve za SAPI5 glasove
+- Prečace iz Start izbornika
+- Prečac s radne površine (ako je bio stvoren)
+
+### 7.2 NVDA dodatak
+
+Za uklanjanje Laprdus dodatka iz NVDA čitača ekrana:
+
+1. Otvorite NVDA izbornik (NVDA tipka + N)
+2. Strelicom dolje pronađite "Alati" i pritisnite Enter
+3. Odaberite "Upravljanje dodacima" i pritisnite Enter
+4. U popisu dodataka strelicom dolje pronađite "Laprdus"
+5. Tipkom Tab pronađite gumb "Ukloni" i pritisnite Enter
+6. Potvrdite uklanjanje
+7. Ponovno pokrenite NVDA kada se to zatraži
+
+NVDA će automatski ukloniti sve datoteke dodatka iz korisničkog direktorija.
+
+### 7.3 Linux
+
+#### Debian i Ubuntu
+
+Pokrenite sljedeću naredbu u terminalu:
+
+```bash
+sudo dpkg -r laprdus
+```
+
+Ili alternativno:
+
+```bash
+sudo apt remove laprdus
+```
+
+Ovo automatski:
+- Uklanja biblioteku `/usr/lib/liblaprdus.so` i pripadajuće simboličke veze
+- Uklanja naredbeni program `/usr/bin/laprdus`
+- Uklanja glasovne podatke iz `/usr/share/laprdus/`
+- Uklanja Speech Dispatcher modul (`sd_laprdus`) i njegovu konfiguraciju
+- Uklanja Laprdus konfiguraciju iz `/etc/speech-dispatcher/speechd.conf`
+- Ponovno pokreće Speech Dispatcher servis
+- Ažurira predmemoriju biblioteka (`ldconfig`)
+
+Za potpuno čišćenje, uključujući konfiguracijske datoteke:
+
+```bash
+sudo dpkg --purge laprdus
+```
+
+#### Fedora
+
+Pokrenite sljedeću naredbu u terminalu:
+
+```bash
+sudo dnf remove laprdus
+```
+
+Ili alternativno:
+
+```bash
+sudo rpm -e laprdus
+```
+
+Ako ste instalirali i razvojni paket:
+
+```bash
+sudo dnf remove laprdus laprdus-devel
+```
+
+Ovo automatski uklanja iste datoteke i konfiguracije kao i za Debian/Ubuntu sustave.
+
+#### Arch Linux
+
+Pokrenite sljedeću naredbu u terminalu:
+
+```bash
+sudo pacman -R laprdus
+```
+
+Za uklanjanje zajedno s ovisnostima koje nisu potrebne drugim paketima:
+
+```bash
+sudo pacman -Rs laprdus
+```
+
+#### Ručna instalacija (iz tarball arhive)
+
+Ako ste Laprdus instalirali iz tarball arhive, koristite instalirani skript za uklanjanje:
+
+```bash
+sudo /usr/local/share/laprdus/uninstall.sh
+```
+
+Ako ste pri instalaciji koristili prilagođeni prefiks (npr. `/usr`), skript se nalazi na odgovarajućoj lokaciji:
+
+```bash
+sudo /usr/share/laprdus/uninstall.sh
+```
+
+Skript za uklanjanje automatski:
+- Uklanja biblioteku, naredbeni program i glasovne podatke
+- Uklanja Speech Dispatcher modul i konfiguraciju
+- Uklanja Laprdus konfiguraciju iz `/etc/speech-dispatcher/speechd.conf`
+- Uklanja konfiguraciju za učitavanje biblioteke iz `/etc/ld.so.conf.d/laprdus.conf` (ako postoji)
+- Ažurira predmemoriju biblioteka (`ldconfig`)
+
+#### Instalacija iz izvornog koda
+
+Ako ste Laprdus instalirali putem `scons install`, koristite odgovarajuću naredbu za uklanjanje:
+
+```bash
+sudo scons --platform=linux --build-config=release uninstall
+```
+
+### 7.4 Android
+
+Za uklanjanje Laprdus aplikacije s Android uređaja:
+
+1. Otvorite Postavke na svom uređaju
+2. Odaberite "Aplikacije" (ili "Upravljanje aplikacijama")
+3. Pronađite "Laprdus" u popisu instaliranih aplikacija
+4. Dodirnite "Deinstaliraj"
+5. Potvrdite uklanjanje
+
+Alternativno:
+
+1. Pronađite ikonu Laprdus aplikacije u ladici aplikacija
+2. Dugo pritisnite ikonu
+3. Povucite na opciju "Deinstaliraj" ili odaberite "Deinstaliraj" iz izbornika
+
+Android automatski uklanja sve podatke aplikacije, uključujući postavke i korisničke rječnike.
+
+**Napomena:** Ako je Laprdus bio postavljen kao zadani TTS, Android će automatski prebaciti na drugi dostupni sintetizator.
+
+### 7.5 Brisanje korisničkih postavki i rječnika
+
+Uklanjanje Laprdusa **ne briše** korisničke postavke i rječnike na Windows i Linux sustavima. Ako želite potpuno ukloniti sve tragove Laprdusa, ručno izbrišite sljedeće direktorije:
+
+**Windows:**
+
+1. Pritisnite tipke Windows+R
+2. Upišite: `%APPDATA%\Laprdus`
+3. Pritisnite Enter
+4. Izbrišite mapu `Laprdus` (ili sve datoteke unutar nje)
+
+Ovaj direktorij sadrži korisničke rječnike (`user.json`, `spelling.json`, `emoji.json`) i postavke (`settings.json`).
+
+**Linux:**
+
+Pokrenite sljedeću naredbu u terminalu:
+
+```bash
+rm -rf ~/.config/Laprdus
+```
+
+Ovaj direktorij sadrži korisničke rječnike i postavke.
+
+**Android:**
+
+Na Androidu se svi podaci aplikacije automatski brišu prilikom deinstalacije. Nije potrebna dodatna akcija.
+
+**Napomena:** Ako planirate ponovno instalirati Laprdus, možda ćete htjeti sačuvati korisničke rječnike jer sadrže vaše prilagodbe izgovora.
+
+---
+
+## 8. Rješavanje problema
+
+### 8.1 Česti problemi
 
 #### Nema zvuka
 
@@ -1290,7 +1485,7 @@ Podesite brzinu govora:
    systemctl --user restart speech-dispatcher
    ```
 
-### 7.2 Dijagnostički zapisnici
+### 8.2 Dijagnostički zapisnici
 
 #### NVDA dodatak
 
@@ -1308,7 +1503,7 @@ Koristite opciju `-w` za opširniji ispis:
 laprdus -w "Test"
 ```
 
-### 7.3 Kontakt i podrška
+### 8.3 Kontakt i podrška
 
 Za pomoć i podršku:
 
