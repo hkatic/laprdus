@@ -226,7 +226,7 @@ Manages voice definitions including physical and derived voices.
 2. **Derived voices** - Use base voice data with pitch modification
    - `detence` - Child voice (base: josip, pitch: 1.5)
    - `baba` - Grandmother voice (base: josip, pitch: 1.2)
-   - `djedo` - Grandfather voice (base: vlado, pitch: 0.75)
+   - `djed` - Grandfather voice (base: vlado, pitch: 0.75)
 
 **Voice Info Structure:**
 ```cpp

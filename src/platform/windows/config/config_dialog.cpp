@@ -23,7 +23,7 @@ static const char* VOICE_IDS[] = {
     "vlado",
     "detence",
     "baba",
-    "djedo"
+    "djed"
 };
 static const int NUM_VOICES = sizeof(VOICE_IDS) / sizeof(VOICE_IDS[0]);
 

@@ -28,7 +28,7 @@ std::mutex g_engine_mutex;
 std::string g_data_directory;
 
 // Store the current voice's base_pitch to preserve it across parameter changes
-// This ensures derived voices (detence=1.5, baba=1.2, djedo=0.75) maintain their
+// This ensures derived voices (detence=1.5, baba=1.2, djed=0.75) maintain their
 // character pitch even when Android TTS requests pitch changes
 float g_voice_base_pitch = 1.0f;
 

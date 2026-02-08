@@ -96,7 +96,7 @@ class SettingsRepository internal constructor(private val dataStore: DataStore<P
 
     /**
      * Set the default voice
-     * @param voiceId Voice ID: "josip", "vlado", "detence", "baba", or "djedo"
+     * @param voiceId Voice ID: "josip", "vlado", "detence", "baba", or "djed"
      */
     suspend fun setDefaultVoice(voiceId: String) {
         dataStore.edit { preferences ->

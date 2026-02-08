@@ -2,7 +2,7 @@
 ; LaprdusTTS SAPI5 Unified Installer
 ; Installs both 32-bit and 64-bit DLLs in a single directory
 ; Voice data is shared between architectures to avoid duplication
-; Supports 5 voices: Josip, Vlado, Detence, Baba, Djedo
+; Supports 5 voices: Josip, Vlado, Detence, Baba, Djed
 ; Works with NVDA, Balabolka, and all SAPI5-compatible applications
 
 #define AppName "Laprdus"
@@ -247,30 +247,30 @@ Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusBaba\Attribu
 Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusBaba\Attributes"; ValueType: string; ValueName: "Name"; ValueData: "Laprdus Baba (Croatian)"; Check: Is64BitInstallMode
 
 ; ============================================================================
-; VOICE 5: Djedo (Serbian, Male, Senior) - Based on Vlado - 32-bit
+; VOICE 5: Djed (Serbian, Male, Senior) - Based on Vlado - 32-bit
 ; ============================================================================
-Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjedo"; ValueType: string; ValueName: ""; ValueData: "Laprdus Djedo (Serbian)"; Flags: uninsdeletekey
-Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjedo"; ValueType: string; ValueName: "CLSID"; ValueData: "{{{#CLSID}}"
-Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjedo"; ValueType: string; ValueName: "VoiceId"; ValueData: "djedo"
-Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjedo"; ValueType: string; ValueName: "PhonemeDataPath"; ValueData: "{app}\voices\Vlado.bin"
-Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjedo"; ValueType: string; ValueName: "BasePitch"; ValueData: "0.75"
-Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjedo\Attributes"; ValueType: string; ValueName: "Language"; ValueData: "{#LANG_SERBIAN}"; Flags: uninsdeletekey
-Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjedo\Attributes"; ValueType: string; ValueName: "Gender"; ValueData: "Male"
-Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjedo\Attributes"; ValueType: string; ValueName: "Age"; ValueData: "Senior"
-Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjedo\Attributes"; ValueType: string; ValueName: "Vendor"; ValueData: "Laprdus"
-Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjedo\Attributes"; ValueType: string; ValueName: "Name"; ValueData: "Laprdus Djedo (Serbian)"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjed"; ValueType: string; ValueName: ""; ValueData: "Laprdus Đedo (Serbian)"; Flags: uninsdeletekey
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjed"; ValueType: string; ValueName: "CLSID"; ValueData: "{{{#CLSID}}"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjed"; ValueType: string; ValueName: "VoiceId"; ValueData: "djed"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjed"; ValueType: string; ValueName: "PhonemeDataPath"; ValueData: "{app}\voices\Vlado.bin"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjed"; ValueType: string; ValueName: "BasePitch"; ValueData: "0.75"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjed\Attributes"; ValueType: string; ValueName: "Language"; ValueData: "{#LANG_SERBIAN}"; Flags: uninsdeletekey
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjed\Attributes"; ValueType: string; ValueName: "Gender"; ValueData: "Male"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjed\Attributes"; ValueType: string; ValueName: "Age"; ValueData: "Senior"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjed\Attributes"; ValueType: string; ValueName: "Vendor"; ValueData: "Laprdus"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjed\Attributes"; ValueType: string; ValueName: "Name"; ValueData: "Laprdus Đedo (Serbian)"
 
-; VOICE 5: Djedo - 64-bit
-Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjedo"; ValueType: string; ValueName: ""; ValueData: "Laprdus Djedo (Serbian)"; Flags: uninsdeletekey; Check: Is64BitInstallMode
-Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjedo"; ValueType: string; ValueName: "CLSID"; ValueData: "{{{#CLSID}}"; Check: Is64BitInstallMode
-Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjedo"; ValueType: string; ValueName: "VoiceId"; ValueData: "djedo"; Check: Is64BitInstallMode
-Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjedo"; ValueType: string; ValueName: "PhonemeDataPath"; ValueData: "{app}\voices\Vlado.bin"; Check: Is64BitInstallMode
-Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjedo"; ValueType: string; ValueName: "BasePitch"; ValueData: "0.75"; Check: Is64BitInstallMode
-Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjedo\Attributes"; ValueType: string; ValueName: "Language"; ValueData: "{#LANG_SERBIAN}"; Flags: uninsdeletekey; Check: Is64BitInstallMode
-Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjedo\Attributes"; ValueType: string; ValueName: "Gender"; ValueData: "Male"; Check: Is64BitInstallMode
-Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjedo\Attributes"; ValueType: string; ValueName: "Age"; ValueData: "Senior"; Check: Is64BitInstallMode
-Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjedo\Attributes"; ValueType: string; ValueName: "Vendor"; ValueData: "Laprdus"; Check: Is64BitInstallMode
-Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjedo\Attributes"; ValueType: string; ValueName: "Name"; ValueData: "Laprdus Djedo (Serbian)"; Check: Is64BitInstallMode
+; VOICE 5: Djed - 64-bit
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjed"; ValueType: string; ValueName: ""; ValueData: "Laprdus Đedo (Serbian)"; Flags: uninsdeletekey; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjed"; ValueType: string; ValueName: "CLSID"; ValueData: "{{{#CLSID}}"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjed"; ValueType: string; ValueName: "VoiceId"; ValueData: "djed"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjed"; ValueType: string; ValueName: "PhonemeDataPath"; ValueData: "{app}\voices\Vlado.bin"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjed"; ValueType: string; ValueName: "BasePitch"; ValueData: "0.75"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjed\Attributes"; ValueType: string; ValueName: "Language"; ValueData: "{#LANG_SERBIAN}"; Flags: uninsdeletekey; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjed\Attributes"; ValueType: string; ValueName: "Gender"; ValueData: "Male"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjed\Attributes"; ValueType: string; ValueName: "Age"; ValueData: "Senior"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjed\Attributes"; ValueType: string; ValueName: "Vendor"; ValueData: "Laprdus"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjed\Attributes"; ValueType: string; ValueName: "Name"; ValueData: "Laprdus Đedo (Serbian)"; Check: Is64BitInstallMode
 
 [Tasks]
 ; Optional desktop shortcut

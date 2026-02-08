@@ -284,7 +284,7 @@ TEST_CASE("Module voice list matches C API", "[speechd][voices]") {
     uint32_t count = laprdus_get_voice_count();
     REQUIRE(count >= 5);
 
-    std::vector<std::string> expected_voices = {"josip", "vlado", "detence", "baba", "djedo"};
+    std::vector<std::string> expected_voices = {"josip", "vlado", "detence", "baba", "djed"};
     std::vector<std::string> found_voices;
 
     for (uint32_t i = 0; i < count; i++) {

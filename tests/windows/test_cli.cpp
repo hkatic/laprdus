@@ -159,7 +159,7 @@ TEST_CASE("CLI lists all five voices", "[cli][voices]") {
     REQUIRE(output.find("vlado") != std::string::npos);
     REQUIRE(output.find("detence") != std::string::npos);
     REQUIRE(output.find("baba") != std::string::npos);
-    REQUIRE(output.find("djedo") != std::string::npos);
+    REQUIRE(output.find("djed") != std::string::npos);
 }
 
 TEST_CASE("CLI fails gracefully without text", "[cli][error]") {
@@ -321,7 +321,7 @@ TEST_CASE("CLI accepts pause settings", "[cli][params]") {
 TEST_CASE("CLI synthesizes with different voices", "[cli][voices]") {
     std::string output_file = get_temp_dir() + "laprdus_test_voice.wav";
 
-    std::vector<std::string> voices = {"josip", "vlado", "detence", "baba", "djedo"};
+    std::vector<std::string> voices = {"josip", "vlado", "detence", "baba", "djed"};
 
     for (const auto& voice : voices) {
         DYNAMIC_SECTION(("Voice: " + voice).c_str()) {

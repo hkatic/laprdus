@@ -119,7 +119,7 @@ laprdus -l
 
 | Option | Description |
 |--------|-------------|
-| `-v, --voice` | Voice (josip, vlado, detence, baba, djedo) |
+| `-v, --voice` | Voice (josip, vlado, detence, baba, djed) |
 | `-r, --speech-rate` | Speech rate (0.5-2.0, default: 1.0) |
 | `-p, --speech-pitch` | Speech pitch (0.5-2.0, default: 1.0) |
 | `-V, --speech-volume` | Volume (0.0-1.0, default: 1.0) |

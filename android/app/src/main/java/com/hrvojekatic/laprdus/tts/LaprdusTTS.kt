@@ -223,7 +223,7 @@ class LaprdusTTS private constructor() {
      * Set the active voice for synthesis
      * For derived voices (child, grandma, grandpa), this also applies the appropriate pitch
      *
-     * @param voiceId Voice ID: "josip", "vlado", "detence", "baba", or "djedo"
+     * @param voiceId Voice ID: "josip", "vlado", "detence", "baba", or "djed"
      * @param assetManager Asset manager to load voice data
      * @return true if voice was set successfully
      */

@@ -110,7 +110,7 @@ void print_help(const char *program_name)
               << "  echo \"Text\" | " << program_name << " [OPTIONS]\n\n"
               << "Options:\n"
               << "  -v, --voice NAME           Select voice (default: josip)\n"
-              << "                             Available: josip, vlado, detence, baba, djedo\n"
+              << "                             Available: josip, vlado, detence, baba, djed\n"
               << "  -r, --speech-rate RATE     Speech rate 0.5-2.0 (default: 1.0)\n"
               << "  -p, --speech-pitch PITCH   Speech pitch 0.5-2.0 (default: 1.0)\n"
               << "  -V, --speech-volume VOL    Volume 0.0-1.0 (default: 1.0)\n"
@@ -138,7 +138,7 @@ void print_help(const char *program_name)
               << "  vlado   - Serbian male adult\n"
               << "  detence - Croatian child\n"
               << "  baba    - Croatian female senior\n"
-              << "  djedo   - Serbian male senior\n";
+              << "  djed    - Serbian male senior\n";
 }
 
 /**

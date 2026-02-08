@@ -201,7 +201,7 @@ std::string generate_settings_json(const UserSettings& settings) {
     json << "    \"description\": \"LaprdusTTS user settings\",\n";
     json << "\n";
     json << "    \"_help\": {\n";
-    json << "        \"voice.default\": \"Default voice ID: josip, vlado, detence, baba, djedo (empty = auto)\",\n";
+    json << "        \"voice.default\": \"Default voice ID: josip, vlado, detence, baba, djed (empty = auto)\",\n";
     json << "        \"speech.speed\": \"Speech rate from 0.5 (slow) to 2.0 (fast), default 1.0\",\n";
     json << "        \"speech.pitch\": \"Voice pitch from 0.5 (low) to 2.0 (high), default 1.0\",\n";
     json << "        \"speech.volume\": \"Volume from 0.0 (silent) to 1.0 (full), default 1.0\",\n";

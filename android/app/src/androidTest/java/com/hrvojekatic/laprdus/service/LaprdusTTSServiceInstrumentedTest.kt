@@ -97,7 +97,7 @@ class LaprdusTTSServiceInstrumentedTest {
         val tts = com.hrvojekatic.laprdus.tts.LaprdusTTS.getInstance()
         val voices = tts.getAllVoices()
 
-        // Should have 5 voices: josip, vlado, detence, baba, djedo
+        // Should have 5 voices: josip, vlado, detence, baba, djed
         assert(voices.size >= 5) { "Should have at least 5 voices, found ${voices.size}" }
 
         val voiceIds = voices.map { it.id }
@@ -105,7 +105,7 @@ class LaprdusTTSServiceInstrumentedTest {
         assert("vlado" in voiceIds) { "Should have vlado voice" }
         assert("detence" in voiceIds) { "Should have detence voice" }
         assert("baba" in voiceIds) { "Should have baba voice" }
-        assert("djedo" in voiceIds) { "Should have djedo voice" }
+        assert("djed" in voiceIds) { "Should have djed voice" }
     }
 
     @Test

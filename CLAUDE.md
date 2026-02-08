@@ -66,7 +66,7 @@ It uses concatenative synthesis by joining pre-recorded phoneme WAV files to pro
 | vlado | Physical | Serbian | 1.0 |
 | detence | Derived (josip) | Croatian | 1.5 (child) |
 | baba | Derived (josip) | Croatian | 1.2 (grandma) |
-| djedo | Derived (vlado) | Serbian | 0.75 (grandpa) |
+| djed | Derived (vlado) | Serbian | 0.75 (grandpa, Đedo) |
 
 ### Audio Parameters (types.hpp)
 
@@ -297,7 +297,7 @@ echo "Text" | laprdus.exe -o output.wav
 **CLI Options:**
 | Option | Description |
 |--------|-------------|
-| `-v, --voice` | Select voice (josip, vlado, detence, baba, djedo) |
+| `-v, --voice` | Select voice (josip, vlado, detence, baba, djed) |
 | `-r, --speech-rate` | Speech rate 0.5-2.0 (default: 1.0) |
 | `-p, --speech-pitch` | Speech pitch 0.5-2.0 (default: 1.0) |
 | `-V, --speech-volume` | Volume 0.0-1.0 (default: 1.0) |
@@ -550,7 +550,7 @@ laprdus -l
 
 | Option | Long Form | Description |
 |--------|-----------|-------------|
-| `-v` | `--voice` | Select voice (josip, vlado, detence, baba, djedo) |
+| `-v` | `--voice` | Select voice (josip, vlado, detence, baba, djed) |
 | `-r` | `--speech-rate` | Speech rate (0.5-2.0, default 1.0) |
 | `-p` | `--speech-pitch` | Speech pitch (0.5-2.0, default 1.0) |
 | `-V` | `--speech-volume` | Volume (0.0-1.0, default 1.0) |
@@ -896,7 +896,7 @@ LD_LIBRARY_PATH=build/linux-x64-release \
 - [ ] CLI `-h` displays help correctly
 - [ ] CLI `-l` lists all 5 voices
 - [ ] CLI synthesizes audio to WAV file correctly
-- [ ] All voices synthesize correctly (josip, vlado, detence, baba, djedo)
+- [ ] All voices synthesize correctly (josip, vlado, detence, baba, djed)
 
 #### Linux Package Testing (if building packages)
 

@@ -10,7 +10,7 @@
     <string name="voice_vlado">Vlado</string>
     <string name="voice_detence">Child</string>
     <string name="voice_baba">Grandma</string>
-    <string name="voice_djedo">Grandpa</string>
+    <string name="voice_djed">Grandpa</string>
 
     <!-- UI Labels -->
     <string name="voice_label">Voice</string>

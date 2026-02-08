@@ -55,10 +55,10 @@ static constexpr VoiceDefinition VOICES[] = {
         1.2f,                               // base_pitch (slightly higher)
         nullptr                             // data_filename (uses base voice)
     },
-    // Derived voice: Djedo (grandpa, based on Vlado)
+    // Derived voice: Đedo (grandpa, based on Vlado)
     {
-        "djedo",                            // id
-        "Laprdus Djedo (Serbian)",          // display_name
+        "djed",                             // id
+        "Laprdus Đedo (Serbian)",           // display_name
         VoiceLanguage::Serbian,             // language
         VoiceGender::Male,                  // gender
         VoiceAge::Senior,                   // age

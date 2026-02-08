@@ -260,7 +260,7 @@ TEST_CASE("CLI accepts pause settings", "[cli][params]") {
 TEST_CASE("CLI synthesizes with different voices", "[cli][voices]") {
     const char* output_file = "/tmp/laprdus_test_voice.wav";
 
-    std::vector<std::string> voices = {"josip", "vlado", "detence", "baba", "djedo"};
+    std::vector<std::string> voices = {"josip", "vlado", "detence", "baba", "djed"};
 
     for (const auto& voice : voices) {
         DYNAMIC_SECTION(("Voice: " + voice).c_str()) {

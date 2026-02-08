@@ -122,7 +122,7 @@ class LaprdusTTSTest {
 
     @Test
     fun `all voice IDs are valid strings`() {
-        val validVoiceIds = listOf("josip", "vlado", "detence", "baba", "djedo")
+        val validVoiceIds = listOf("josip", "vlado", "detence", "baba", "djed")
 
         validVoiceIds.forEach { voiceId ->
             assert(voiceId.isNotEmpty()) { "Voice ID should not be empty" }
@@ -135,7 +135,7 @@ class LaprdusTTSTest {
     @Test
     fun `Croatian voices are correctly identified`() {
         val croatianVoices = listOf("josip", "detence", "baba")
-        val serbianVoices = listOf("vlado", "djedo")
+        val serbianVoices = listOf("vlado", "djed")
 
         croatianVoices.forEach { voiceId ->
             val voiceInfo = VoiceInfo(
@@ -168,11 +168,11 @@ class LaprdusTTSTest {
 
     @Test
     fun `derived voices have non-standard base pitch`() {
-        // Derived voices: detence (child), baba (grandma), djedo (grandpa)
+        // Derived voices: detence (child), baba (grandma), djed (grandpa)
         val derivedVoicePitches = mapOf(
             "detence" to 1.5f,  // Child - higher pitch
             "baba" to 1.2f,     // Grandma - slightly higher
-            "djedo" to 0.75f    // Grandpa - lower pitch
+            "djed" to 0.75f    // Grandpa - lower pitch
         )
 
         derivedVoicePitches.forEach { (voiceId, expectedPitch) ->

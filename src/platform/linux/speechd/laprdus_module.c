@@ -189,6 +189,20 @@ static void apply_parameters(void)
 }
 
 /**
+ * Get display name for a voice ID.
+ * Returns the user-facing name (e.g., "Josip", "Đedo") for Orca/SSIP clients.
+ */
+static const char* get_voice_display_name(const char *id)
+{
+    if (strcmp(id, "josip") == 0) return "Josip";
+    if (strcmp(id, "vlado") == 0) return "Vlado";
+    if (strcmp(id, "detence") == 0) return "Detence";
+    if (strcmp(id, "baba") == 0) return "Baba";
+    if (strcmp(id, "djed") == 0) return "\xc4\x90" "edo";  /* Đedo in UTF-8 */
+    return id;
+}
+
+/**
  * Build the voice list from Laprdus API
  */
 static void build_voice_list(void)
@@ -211,19 +225,11 @@ static void build_voice_list(void)
         if (laprdus_get_voice_info(i, &info) == LAPRDUS_OK) {
             voice_list[i] = malloc(sizeof(SPDVoice));
             if (voice_list[i]) {
-                voice_list[i]->name = strdup(info.id);
+                /* Use display name so Orca shows proper voice names */
+                voice_list[i]->name = strdup(get_voice_display_name(info.id));
                 voice_list[i]->language = strdup(info.language_code);
-                /* Variant describes the voice type */
-                if (info.base_voice_id) {
-                    /* Derived voice */
-                    char variant[64];
-                    snprintf(variant, sizeof(variant), "%s-%s",
-                             info.age ? info.age : "adult",
-                             info.gender ? info.gender : "unknown");
-                    voice_list[i]->variant = strdup(variant);
-                } else {
-                    voice_list[i]->variant = strdup(info.gender ? info.gender : "male");
-                }
+                /* Variant stores the internal voice ID for selection */
+                voice_list[i]->variant = strdup(info.id);
                 DBG("Registered voice: %s (%s) [%s]",
                     voice_list[i]->name, voice_list[i]->language,
                     voice_list[i]->variant);
@@ -399,7 +405,7 @@ int module_set(const char *var, const char *val)
         } else if (strcasecmp(val, "male2") == 0) {
             return set_voice("vlado");
         } else if (strcasecmp(val, "male3") == 0) {
-            return set_voice("djedo");
+            return set_voice("djed");
         } else if (strcasecmp(val, "female1") == 0 || strcasecmp(val, "female3") == 0) {
             return set_voice("baba");
         } else if (strcasecmp(val, "child_male") == 0 || strcasecmp(val, "child_female") == 0) {
@@ -413,7 +419,29 @@ int module_set(const char *var, const char *val)
         if (strcmp(val, "NULL") == 0 || strlen(val) == 0) {
             return 0;  /* Keep current voice */
         }
-        return set_voice(val);
+        /* Try as internal voice ID first */
+        if (set_voice(val) == 0) {
+            return 0;
+        }
+        /* Map display name to internal ID (Orca sends the name field) */
+        if (strcasecmp(val, "Josip") == 0) return set_voice("josip");
+        if (strcasecmp(val, "Vlado") == 0) return set_voice("vlado");
+        if (strcasecmp(val, "Detence") == 0) return set_voice("detence");
+        if (strcasecmp(val, "Baba") == 0) return set_voice("baba");
+        /* Đedo - try both UTF-8 and ASCII forms */
+        if (strcasecmp(val, "\xc4\x90" "edo") == 0 ||
+            strcasecmp(val, "Djed") == 0 ||
+            strcasecmp(val, "Djedo") == 0) return set_voice("djed");
+        /* Try as variant (internal ID) from voice list */
+        if (voice_list) {
+            for (int i = 0; voice_list[i] != NULL; i++) {
+                if (strcasecmp(voice_list[i]->variant, val) == 0) {
+                    return set_voice(voice_list[i]->variant);
+                }
+            }
+        }
+        ERR("Unknown synthesis voice: %s", val);
+        return -1;
     }
     else if (strcmp(var, "language") == 0) {
         /* Set voice by language code */

@@ -4,7 +4,7 @@ package com.hrvojekatic.laprdus.tts
  * Voice information returned from native engine.
  * Matches LaprdusVoiceInfo structure in C++.
  *
- * @property id Internal voice ID: "josip", "vlado", "detence", "baba", "djedo"
+ * @property id Internal voice ID: "josip", "vlado", "detence", "baba", "djed"
  * @property displayName User-visible name: "Laprdus Josip (Croatian)"
  * @property languageCode BCP-47 language tag: "hr-HR" or "sr-RS"
  * @property gender Voice gender: "Male" or "Female"
@@ -22,7 +22,7 @@ data class VoiceInfo(
     /**
      * Whether this is a physical voice (has its own .bin file)
      * Physical voices: josip, vlado
-     * Derived voices: detence (child), baba (grandma), djedo (grandpa)
+     * Derived voices: detence (child), baba (grandma), djed (grandpa)
      */
     val isPhysicalVoice: Boolean
         get() = basePitch == 1.0f
@@ -48,7 +48,7 @@ data class VoiceInfo(
             "vlado" -> "Vlado"
             "detence" -> "Dijete"
             "baba" -> "Baka"
-            "djedo" -> "Djed"
+            "djed" -> "Đedo"
             else -> displayName
         }
 }

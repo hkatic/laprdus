@@ -443,7 +443,7 @@ Voices
   vlado   - Serbian male adult
   detence - Croatian child
   baba    - Croatian female senior
-  djedo   - Serbian male senior
+  djed    - Serbian male senior
 
 Uninstallation
 --------------

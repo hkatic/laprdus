@@ -174,7 +174,7 @@ class LaprdusTTSServiceTest {
 
     @Test
     fun `all voice IDs are lowercase`() {
-        val validVoices = listOf("josip", "vlado", "detence", "baba", "djedo")
+        val validVoices = listOf("josip", "vlado", "detence", "baba", "djed")
         validVoices.forEach { voice ->
             assertEquals(voice, voice.lowercase())
         }

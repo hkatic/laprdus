@@ -342,7 +342,7 @@ echo "Tekst" | laprdus
 
 | Opcija | Opis |
 |--------|------|
-| `-v, --voice` | Odabir glasa (josip, vlado, detence, baba, djedo) |
+| `-v, --voice` | Odabir glasa (josip, vlado, detence, baba, djed) |
 | `-r, --speech-rate` | Brzina govora (0.5-2.0, zadano: 1.0) |
 | `-p, --speech-pitch` | Visina glasa (0.5-2.0, zadano: 1.0) |
 | `-V, --speech-volume` | Glasnoća (0.0-1.0, zadano: 1.0) |

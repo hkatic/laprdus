@@ -237,7 +237,7 @@ class LaprdusTTSService : TextToSpeechService() {
     override fun onGetLanguage(): Array<String> {
         return when {
             currentVoiceId in listOf("josip", "detence", "baba") -> arrayOf("hr", "HR", "")
-            currentVoiceId in listOf("vlado", "djedo") -> arrayOf("sr", "RS", "")
+            currentVoiceId in listOf("vlado", "djed") -> arrayOf("sr", "RS", "")
             else -> arrayOf("hr", "HR", "")
         }
     }
