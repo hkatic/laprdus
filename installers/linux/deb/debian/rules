@@ -74,6 +74,9 @@ override_dh_builddeb:
 		dh_builddeb; \
 	fi
 
+override_dh_shlibdeps:
+	dh_shlibdeps --dpkg-shlibdeps-params=--ignore-missing-info
+
 override_dh_auto_clean:
 	scons -c
 	rm -rf build/
