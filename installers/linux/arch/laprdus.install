@@ -1,4 +1,4 @@
-# Post-installation and removal hooks for laprdus-speechd
+# Post-installation and removal hooks for laprdus
 
 SPEECHD_CONF="/etc/speech-dispatcher/speechd.conf"
 MARKER_START="# BEGIN LAPRDUS TTS"
@@ -60,13 +60,19 @@ remove_speechd_config() {
 }
 
 post_install() {
+    ldconfig
     configure_speechd
 }
 
 post_upgrade() {
+    ldconfig
     configure_speechd
 }
 
 pre_remove() {
     remove_speechd_config
+}
+
+post_remove() {
+    ldconfig
 }

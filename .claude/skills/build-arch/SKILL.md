@@ -20,49 +20,47 @@ sudo pacman -S --needed base-devel scons libpulse alsa-lib speech-dispatcher gli
 ## Build Steps
 
 ```bash
-cd installers/linux/arch && makepkg -s && cd ../../..
+cd installers/linux/arch && makepkg -sf && cd ../../..
 ```
 
 **Options:**
 - `-s` - Install missing dependencies
-- `-i` - Install package after building
 - `-f` - Force rebuild even if package exists
+- `-i` - Install package after building
 
-## Expected Output
+## Expected Output (single package)
 
-Two packages are created in `installers/linux/arch/`:
-- `laprdus-1.0.0-1-x86_64.pkg.tar.zst` - Core package
-- `laprdus-speechd-1.0.0-1-x86_64.pkg.tar.zst` - Speech Dispatcher module
+One package is created in `installers/linux/arch/`:
+- `laprdus-1.0.0-1-x86_64.pkg.tar.zst` - Complete package
+
+## Key Design Decisions
+
+- **Single package**: CLI, library, Speech Dispatcher module, voice data, all 3 dictionaries, AND dev headers all in ONE package
+- **ldconfig**: Called in `post_install()`, `post_upgrade()`, and `post_remove()` hooks via `laprdus.install`
+- **speechd.conf**: Auto-configured in `post_install()`/`post_upgrade()` with BEGIN/END markers, cleaned up in `pre_remove()`
+- **speech-dispatcher dependency**: Declared in `depends` array
+- **README filename**: Must reference `readme.md` (lowercase), NOT `README.md`
 
 ## Package Contents
 
 ### laprdus
-- `/usr/lib/liblaprdus.so*` - Shared library
+- `/usr/lib/liblaprdus.so*` - Shared library (versioned)
 - `/usr/bin/laprdus` - CLI tool
 - `/usr/share/laprdus/` - Voice data and dictionaries
+- `/usr/lib/speech-dispatcher-modules/sd_laprdus` - Speech Dispatcher module
+- `/etc/speech-dispatcher/modules/laprdus.conf` - Module config
 - `/usr/include/laprdus/` - Development headers
 
-### laprdus-speechd
-- `/usr/lib/speech-dispatcher-modules/sd_laprdus` - SD module
-- `/etc/speech-dispatcher/modules/laprdus.conf` - Configuration
-- Post-install hook auto-configures Speech Dispatcher
-
-## Verification
+## Copy to ~/downloads
 
 ```bash
-ls -la installers/linux/arch/laprdus*.pkg.tar.zst
-```
-
-## Installation
-
-```bash
-sudo pacman -U installers/linux/arch/laprdus-1.0.0-1-x86_64.pkg.tar.zst
-sudo pacman -U installers/linux/arch/laprdus-speechd-1.0.0-1-x86_64.pkg.tar.zst
+cp installers/linux/arch/laprdus-1.0.0-1-x86_64.pkg.tar.zst ~/downloads/
 ```
 
 ## Test
 
 ```bash
+sudo pacman -U installers/linux/arch/laprdus-1.0.0-1-x86_64.pkg.tar.zst
 laprdus -l  # List voices
 laprdus "Dobar dan"  # Speak text
 spd-say -o laprdus "Zdravo"  # Via Speech Dispatcher

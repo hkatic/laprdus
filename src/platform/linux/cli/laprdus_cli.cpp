@@ -494,6 +494,23 @@ int main(int argc, char *argv[])
         std::cout << "Text length: " << opts.text.length() << " characters\n";
     }
 
+    /* Auto-detect data directory if user didn't specify one */
+    if (opts.data_dir == LAPRDUS_DATA_DIR) {
+        /* Check candidate paths in order of preference */
+        const char* candidates[] = {
+            "/usr/share/laprdus",
+            "/usr/local/share/laprdus",
+            NULL
+        };
+        for (int i = 0; candidates[i]; i++) {
+            std::string test = std::string(candidates[i]) + "/Josip.bin";
+            if (access(test.c_str(), R_OK) == 0) {
+                opts.data_dir = candidates[i];
+                break;
+            }
+        }
+    }
+
     /* Create TTS engine */
     LaprdusHandle engine = laprdus_create();
     if (!engine) {

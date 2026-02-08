@@ -7,7 +7,7 @@ argument-hint: "[version]"
 
 # Build Generic Linux Tarball
 
-Build a portable tarball package that works on any Linux distribution. Includes both compiled binaries and an install script.
+Build a portable tarball package that works on any Linux distribution. Includes compiled binaries and install/uninstall scripts.
 
 ## Build Steps
 
@@ -28,51 +28,63 @@ cd installers/linux/tarball && ./build-tarball.sh 1.0.0 && cd ../../..
 laprdus-1.0.0-linux-x86_64/
 ├── bin/laprdus              # CLI tool
 ├── lib/
-│   ├── liblaprdus.so        # Symlink
-│   ├── liblaprdus.so.1      # Symlink
-│   └── liblaprdus.so.1.0.0  # Library
+│   ├── liblaprdus.so        # Symlink → .so.1
+│   ├── liblaprdus.so.1      # Symlink → .so.1.0.0
+│   └── liblaprdus.so.1.0.0  # Library (with SONAME)
 ├── lib/speech-dispatcher-modules/
 │   └── sd_laprdus           # Speech Dispatcher module
 ├── share/laprdus/
 │   ├── Josip.bin            # Voice data
 │   ├── Vlado.bin
-│   └── *.json               # Dictionaries
+│   ├── internal.json        # Pronunciation dictionary
+│   ├── spelling.json        # Spelling dictionary
+│   └── emoji.json           # Emoji dictionary
 ├── etc/speech-dispatcher/modules/
 │   └── laprdus.conf         # Module config
 ├── include/laprdus/         # Headers
 ├── share/doc/laprdus/       # Documentation
 ├── install.sh               # Installation script
-├── uninstall.sh             # Removal script
+├── uninstall.sh             # Convenience removal script
 └── README                   # Usage instructions
 ```
 
-## Verification
+## Key Design Decisions
+
+- **Single package**: Everything in one tarball
+- **Speech Dispatcher module**: Install script detects system speechd module dir via `pkg-config --variable=modulebindir speech-dispatcher` and installs `sd_laprdus` THERE (not under the prefix). This is critical — SD only looks in its own module dir (e.g., `/usr/lib64/speech-dispatcher-modules/`)
+- **ldconfig**: For non-standard prefixes (e.g., `/usr/local`), install script creates `/etc/ld.so.conf.d/laprdus.conf` so the library is discoverable
+- **Persistent uninstall**: After install, uninstall script is saved to `<prefix>/share/laprdus/uninstall.sh` so it survives tarball directory deletion
+- **Data dir auto-detection**: Both CLI and speechd module check `/usr/share/laprdus` and `/usr/local/share/laprdus`
+- **Library symlinks**: Use `cp -Pv` (preserve symlinks) when copying library files
+
+## Copy to ~/downloads
 
 ```bash
-ls -la installers/linux/tarball/laprdus-*.tar.xz
-tar -tvf installers/linux/tarball/laprdus-1.0.0-linux-x86_64.tar.xz | head -20
+cp installers/linux/tarball/laprdus-1.0.0-linux-x86_64.tar.xz ~/downloads/
 ```
 
-## Installation from Tarball
+## Installation
 
 ```bash
 # Extract
 tar xf laprdus-1.0.0-linux-x86_64.tar.xz
 cd laprdus-1.0.0-linux-x86_64
 
-# System-wide install (requires root)
-sudo ./install.sh /usr/local
+# System-wide install (default: /usr/local, requires root)
+sudo ./install.sh
 
-# User install (no root needed)
-./install.sh ~/.local
+# Custom prefix
+sudo ./install.sh /usr
 ```
 
 ## Uninstallation
 
 ```bash
-sudo ./uninstall.sh /usr/local
-# or
-./uninstall.sh ~/.local
+# After install, use the persisted script:
+sudo /usr/local/share/laprdus/uninstall.sh
+
+# Or if tarball directory still exists:
+sudo ./uninstall.sh
 ```
 
 ## Test
@@ -80,13 +92,5 @@ sudo ./uninstall.sh /usr/local
 ```bash
 laprdus -l  # List voices
 laprdus "Dobar dan"  # Speak text
-```
-
-## Source Tarball
-
-For a source-only tarball (for compilation on target system):
-```bash
-tar --transform='s,^\.,laprdus-1.0.0,' -czf laprdus-1.0.0-source.tar.gz \
-    --exclude='.git' --exclude='build' --exclude='*.pyc' \
-    --exclude='android/.gradle' --exclude='android/app/build' .
+spd-say -o laprdus "Zdravo"  # Via Speech Dispatcher
 ```

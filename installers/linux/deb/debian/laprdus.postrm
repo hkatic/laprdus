@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# postrm script for laprdus-speechd
+# postrm script for laprdus
 #
 # Removes LaprdusTTS configuration from Speech Dispatcher on package removal
 #

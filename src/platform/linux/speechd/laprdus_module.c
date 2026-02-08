@@ -298,9 +298,24 @@ int module_config(const char *configfile)
      * - LaprdusDebug: enable debug output
      */
 
-    /* For now, use defaults */
+    /* Auto-detect data directory from candidate paths */
     if (!laprdus_data_dir) {
-        laprdus_data_dir = strdup(DEFAULT_DATA_DIR);
+        const char *candidates[] = {
+            "/usr/share/laprdus",
+            "/usr/local/share/laprdus",
+            NULL
+        };
+        for (int i = 0; candidates[i]; i++) {
+            char test_path[512];
+            snprintf(test_path, sizeof(test_path), "%s/Josip.bin", candidates[i]);
+            if (access(test_path, R_OK) == 0) {
+                laprdus_data_dir = strdup(candidates[i]);
+                break;
+            }
+        }
+        if (!laprdus_data_dir) {
+            laprdus_data_dir = strdup(DEFAULT_DATA_DIR);
+        }
     }
     if (!laprdus_default_voice) {
         laprdus_default_voice = strdup(DEFAULT_VOICE);

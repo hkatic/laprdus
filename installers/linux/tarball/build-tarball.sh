@@ -41,7 +41,7 @@ mkdir -p "${PKG}/etc/speech-dispatcher/modules"
 # Copy files
 echo "Copying files..."
 
-# Library
+# Library (versioned with symlinks)
 cp build/linux-x64-release/liblaprdus.so "${PKG}/lib/liblaprdus.so.${VERSION}"
 cd "${PKG}/lib"
 ln -sf "liblaprdus.so.${VERSION}" "liblaprdus.so.1"
@@ -58,6 +58,7 @@ cp build/linux-x64-release/Vlado.bin "${PKG}/share/laprdus/"
 # Dictionaries
 cp data/dictionary/internal.json "${PKG}/share/laprdus/"
 cp data/dictionary/spelling.json "${PKG}/share/laprdus/"
+cp data/dictionary/emoji.json "${PKG}/share/laprdus/"
 
 # Speech Dispatcher module (if built)
 if [ -f build/linux-x64-release/sd_laprdus ]; then
@@ -71,7 +72,7 @@ cp include/laprdus/types.hpp "${PKG}/include/laprdus/"
 cp include/laprdus/laprdus.hpp "${PKG}/include/laprdus/"
 
 # Documentation
-cp README.md "${PKG}/share/doc/laprdus/"
+cp readme.md "${PKG}/share/doc/laprdus/"
 [ -f LICENSE ] && cp LICENSE "${PKG}/share/doc/laprdus/"
 
 # Create install script
@@ -108,20 +109,35 @@ mkdir -p "${PREFIX}/include/laprdus"
 
 # Install files
 cp -v bin/* "${PREFIX}/bin/"
-cp -v lib/*.so* "${PREFIX}/lib/"
+cp -Pv lib/*.so* "${PREFIX}/lib/"
 cp -v share/laprdus/* "${PREFIX}/share/laprdus/"
 cp -v share/doc/laprdus/* "${PREFIX}/share/doc/laprdus/"
 cp -v include/laprdus/* "${PREFIX}/include/laprdus/"
 
-# Install Speech Dispatcher module if present
-if [ -d lib/speech-dispatcher-modules ]; then
-    SD_MODULE_DIR="${PREFIX}/lib/speech-dispatcher-modules"
-    mkdir -p "${SD_MODULE_DIR}"
-    cp -v lib/speech-dispatcher-modules/* "${SD_MODULE_DIR}/"
+# Install Speech Dispatcher module to the SYSTEM modules directory
+# Speech Dispatcher only looks in its own module dir (e.g. /usr/lib64/speech-dispatcher-modules/)
+if [ -d lib/speech-dispatcher-modules ] && [ -n "$(ls -A lib/speech-dispatcher-modules/ 2>/dev/null)" ]; then
+    # Detect the system speechd module directory
+    SD_MODULE_DIR=$(pkg-config --variable=modulebindir speech-dispatcher 2>/dev/null)
+    if [ -z "$SD_MODULE_DIR" ]; then
+        # Fallback: check common locations
+        for dir in /usr/lib64/speech-dispatcher-modules /usr/lib/speech-dispatcher-modules; do
+            if [ -d "$dir" ]; then
+                SD_MODULE_DIR="$dir"
+                break
+            fi
+        done
+    fi
+    if [ -n "$SD_MODULE_DIR" ] && { [ -w "$SD_MODULE_DIR" ] || [ $EUID -eq 0 ]; }; then
+        mkdir -p "${SD_MODULE_DIR}"
+        cp -v lib/speech-dispatcher-modules/* "${SD_MODULE_DIR}/"
+    else
+        echo "Note: Cannot install Speech Dispatcher module (requires root or speechd not found)"
+    fi
 fi
 
 # Install Speech Dispatcher config (only if we have permissions)
-if [ -d etc/speech-dispatcher/modules ]; then
+if [ -d etc/speech-dispatcher/modules ] && [ -n "$(ls -A etc/speech-dispatcher/modules/ 2>/dev/null)" ]; then
     if [ -w /etc/speech-dispatcher/modules ] || [ $EUID -eq 0 ]; then
         mkdir -p /etc/speech-dispatcher/modules
         cp -v etc/speech-dispatcher/modules/* /etc/speech-dispatcher/modules/
@@ -131,10 +147,109 @@ if [ -d etc/speech-dispatcher/modules ]; then
     fi
 fi
 
+# Ensure the library is findable by the dynamic linker
+# For non-standard prefixes, add to ldconfig search path
+if [ $EUID -eq 0 ]; then
+    LIB_DIR="${PREFIX}/lib"
+
+    # /usr/lib and /usr/lib64 are always in the default search path
+    if [[ "${LIB_DIR}" != "/usr/lib" && "${LIB_DIR}" != "/usr/lib64" ]]; then
+        if [ -d /etc/ld.so.conf.d ]; then
+            echo "${LIB_DIR}" > /etc/ld.so.conf.d/laprdus.conf
+            echo "Added ${LIB_DIR} to library search path (/etc/ld.so.conf.d/laprdus.conf)"
+        fi
+    fi
+
+    ldconfig
+fi
+
+# Install uninstall script to a known location so it persists after tarball cleanup
+UNINSTALL_DEST="${PREFIX}/share/laprdus/uninstall.sh"
+cat > "${UNINSTALL_DEST}" << 'UNINSTALL_INNER_EOF'
+#!/bin/bash
+#
+# LaprdusTTS Uninstallation Script
+#
+
+set -e
+
+# Determine PREFIX from this script's location
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PREFIX="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+
+SPEECHD_CONF="/etc/speech-dispatcher/speechd.conf"
+MARKER_START="# BEGIN LAPRDUS TTS"
+MARKER_END="# END LAPRDUS TTS"
+
+echo "Uninstalling LaprdusTTS from ${PREFIX}..."
+
+# Check for root if uninstalling from system directories
+if [[ "${PREFIX}" == "/usr" || "${PREFIX}" == "/usr/local" ]]; then
+    if [[ $EUID -ne 0 ]]; then
+        echo "Error: Uninstalling from ${PREFIX} requires root privileges."
+        echo "Run: sudo $0"
+        exit 1
+    fi
+fi
+
+# Remove Speech Dispatcher configuration
+if [ -f "$SPEECHD_CONF" ]; then
+    if grep -q "$MARKER_START" "$SPEECHD_CONF" 2>/dev/null; then
+        echo "Removing LaprdusTTS from Speech Dispatcher configuration..."
+        sed -i "/$MARKER_START/,/$MARKER_END/d" "$SPEECHD_CONF"
+    fi
+    # Also remove language-only block if present
+    sed -i '/# BEGIN LAPRDUS TTS LANGUAGES/,/# END LAPRDUS TTS LANGUAGES/d' "$SPEECHD_CONF" 2>/dev/null || true
+fi
+
+# Remove files
+rm -fv "${PREFIX}/bin/laprdus"
+rm -fv "${PREFIX}/lib/liblaprdus.so"*
+
+# Remove Speech Dispatcher module from system modules directory
+SD_MODULE_DIR=$(pkg-config --variable=modulebindir speech-dispatcher 2>/dev/null)
+if [ -z "$SD_MODULE_DIR" ]; then
+    for dir in /usr/lib64/speech-dispatcher-modules /usr/lib/speech-dispatcher-modules; do
+        if [ -d "$dir" ]; then
+            SD_MODULE_DIR="$dir"
+            break
+        fi
+    done
+fi
+if [ -n "$SD_MODULE_DIR" ]; then
+    rm -fv "${SD_MODULE_DIR}/sd_laprdus"
+fi
+# Also remove from prefix in case it was installed there
+rm -fv "${PREFIX}/lib/speech-dispatcher-modules/sd_laprdus"
+
+# Remove system config files (only if we have permissions)
+if [ -w /etc/speech-dispatcher/modules ] || [ $EUID -eq 0 ]; then
+    rm -fv /etc/speech-dispatcher/modules/laprdus.conf
+fi
+
+# Remove ldconfig conf if it exists
+if [ $EUID -eq 0 ] && [ -f /etc/ld.so.conf.d/laprdus.conf ]; then
+    rm -fv /etc/ld.so.conf.d/laprdus.conf
+fi
+
+# Remove include files
+rm -rfv "${PREFIX}/include/laprdus"
+
+# Remove data and doc directories (removes uninstall script too)
+rm -rfv "${PREFIX}/share/doc/laprdus"
+rm -rfv "${PREFIX}/share/laprdus"
+
 # Update library cache (only if we have permissions)
 if command -v ldconfig &> /dev/null && [ $EUID -eq 0 ]; then
     ldconfig
 fi
+
+echo ""
+echo "LaprdusTTS uninstalled."
+echo "Restart Speech Dispatcher to apply changes: systemctl --user restart speech-dispatcher"
+UNINSTALL_INNER_EOF
+chmod +x "${UNINSTALL_DEST}"
+echo "Installed uninstall script to ${UNINSTALL_DEST}"
 
 # Configure Speech Dispatcher automatically
 configure_speechd() {
@@ -185,7 +300,7 @@ SPEECHD_EOF
 }
 
 # Configure Speech Dispatcher if module was installed
-if [ -d lib/speech-dispatcher-modules ]; then
+if [ -d lib/speech-dispatcher-modules ] && [ -n "$(ls -A lib/speech-dispatcher-modules/ 2>/dev/null)" ]; then
     configure_speechd
 fi
 
@@ -198,15 +313,21 @@ echo ""
 echo "For Orca screen reader users:"
 echo "  Speech Dispatcher has been configured automatically."
 echo "  Restart Speech Dispatcher: systemctl --user restart speech-dispatcher"
+echo ""
+echo "To uninstall later, run:"
+echo "  sudo ${PREFIX}/share/laprdus/uninstall.sh"
 INSTALL_EOF
 
 chmod +x "${PKG}/install.sh"
 
-# Create uninstall script
+# Create uninstall script (included in tarball for convenience)
 cat > "${PKG}/uninstall.sh" << 'UNINSTALL_EOF'
 #!/bin/bash
 #
 # LaprdusTTS Uninstallation Script
+#
+# This is a convenience copy. After installation, the authoritative
+# uninstall script is at: <PREFIX>/share/laprdus/uninstall.sh
 #
 
 set -e
@@ -240,14 +361,33 @@ fi
 # Remove files
 rm -fv "${PREFIX}/bin/laprdus"
 rm -fv "${PREFIX}/lib/liblaprdus.so"*
+
+# Remove Speech Dispatcher module from system modules directory
+SD_MODULE_DIR=$(pkg-config --variable=modulebindir speech-dispatcher 2>/dev/null)
+if [ -z "$SD_MODULE_DIR" ]; then
+    for dir in /usr/lib64/speech-dispatcher-modules /usr/lib/speech-dispatcher-modules; do
+        if [ -d "$dir" ]; then
+            SD_MODULE_DIR="$dir"
+            break
+        fi
+    done
+fi
+if [ -n "$SD_MODULE_DIR" ]; then
+    rm -fv "${SD_MODULE_DIR}/sd_laprdus"
+fi
+rm -fv "${PREFIX}/lib/speech-dispatcher-modules/sd_laprdus"
 rm -rfv "${PREFIX}/share/laprdus"
 rm -rfv "${PREFIX}/share/doc/laprdus"
 rm -rfv "${PREFIX}/include/laprdus"
-rm -fv "${PREFIX}/lib/speech-dispatcher-modules/sd_laprdus"
 
 # Remove system config files (only if we have permissions)
 if [ -w /etc/speech-dispatcher/modules ] || [ $EUID -eq 0 ]; then
     rm -fv /etc/speech-dispatcher/modules/laprdus.conf
+fi
+
+# Remove ldconfig conf if it exists
+if [ $EUID -eq 0 ] && [ -f /etc/ld.so.conf.d/laprdus.conf ]; then
+    rm -fv /etc/ld.so.conf.d/laprdus.conf
 fi
 
 # Update library cache (only if we have permissions)
@@ -255,6 +395,7 @@ if command -v ldconfig &> /dev/null && [ $EUID -eq 0 ]; then
     ldconfig
 fi
 
+echo ""
 echo "LaprdusTTS uninstalled."
 echo "Restart Speech Dispatcher to apply changes: systemctl --user restart speech-dispatcher"
 UNINSTALL_EOF
@@ -307,6 +448,10 @@ Voices
 Uninstallation
 --------------
 
+After installation, run:
+  sudo /usr/local/share/laprdus/uninstall.sh
+
+Or if you still have the extracted tarball directory:
   cd laprdus-VERSION-linux-x86_64
   sudo ./uninstall.sh
 

@@ -8,6 +8,8 @@ allowed-tools: Bash, Read
 
 Build .deb packages for Debian-based Linux distributions (Debian, Ubuntu, Linux Mint, etc.).
 
+**Note:** This build must be run on a Debian/Ubuntu system (native or WSL).
+
 ## Prerequisites
 
 Install build dependencies:
@@ -21,57 +23,48 @@ sudo apt install -y build-essential debhelper devscripts scons \
 The debian directory lives under `installers/linux/deb/debian/` but `dpkg-buildpackage` expects it at the project root alongside `SConstruct`. Use a symlink:
 
 ```bash
+cd /home/hrvojekatic/.repo/hkatic/laprdus
 ln -sfn installers/linux/deb/debian debian && dpkg-buildpackage -us -uc -b -rfakeroot -d; rm -f debian
 ```
 
 **WSL note:** The build automatically detects WSL and handles NTFS permission issues (777 on all files) by copying package trees to `/tmp` for correct `dpkg-deb` packaging.
 
-## Expected Output
+## Expected Output (single package + dev)
 
-The build creates three packages in the parent directory (`..`):
-- `laprdus_1.0.0-1_amd64.deb` - Core library and CLI
-- `laprdus-speechd_1.0.0-1_amd64.deb` - Speech Dispatcher module
+The build creates packages in the parent directory (`..`):
+- `laprdus_1.0.0-1_amd64.deb` - Main package (CLI + library + Speech Dispatcher module + voice data + dictionaries)
 - `laprdus-dev_1.0.0-1_amd64.deb` - Development headers
 
-After building, move the packages to `installers/linux/`:
-```bash
-mv ../laprdus_1.0.0-1_amd64.deb ../laprdus-speechd_1.0.0-1_amd64.deb ../laprdus-dev_1.0.0-1_amd64.deb ../laprdus_1.0.0-1_amd64.buildinfo ../laprdus_1.0.0-1_amd64.changes installers/linux/ 2>/dev/null || true
-```
+## Key Design Decisions
+
+- **Single package**: CLI, library, Speech Dispatcher module, voice data, and all 3 dictionaries (internal.json, spelling.json, emoji.json) are in ONE `laprdus` package
+- **Multiarch library path**: Library installs to `/usr/lib/$(DEB_HOST_MULTIARCH)/` for proper Debian multiarch support
+- **ldconfig**: Handled automatically by debhelper triggers when library is in multiarch path
+- **speechd.conf**: Auto-configured in `postinst` with BEGIN/END markers, cleaned up in `postrm`
+- **speech-dispatcher dependency**: Declared in `Depends:` field
 
 ## Package Contents
 
 ### laprdus
-- `/usr/lib/liblaprdus.so*` - Shared library (with ldconfig trigger)
+- `/usr/lib/<multiarch>/liblaprdus.so*` - Shared library
 - `/usr/bin/laprdus` - CLI tool
-- `/usr/share/laprdus/` - Voice data and dictionaries
-
-### laprdus-speechd
-- `/usr/lib/speech-dispatcher-modules/sd_laprdus` - SD module
-- `/etc/speech-dispatcher/modules/laprdus.conf` - Configuration
-- Auto-configures Speech Dispatcher on install
+- `/usr/share/laprdus/` - Voice data (Josip.bin, Vlado.bin) and dictionaries
+- `/usr/lib/speech-dispatcher-modules/sd_laprdus` - Speech Dispatcher module
+- `/etc/speech-dispatcher/modules/laprdus.conf` - Module config
 
 ### laprdus-dev
 - `/usr/include/laprdus/` - C API headers
 
-## Verification
+## Copy to ~/downloads
 
 ```bash
-# Check package contents and permissions
-dpkg-deb -c installers/linux/laprdus_1.0.0-1_amd64.deb
-# Verify control scripts (should show postinst, postrm, triggers)
-dpkg-deb -I installers/linux/laprdus_1.0.0-1_amd64.deb
-```
-
-## Installation
-
-```bash
-sudo dpkg -i installers/linux/laprdus_1.0.0-1_amd64.deb
-sudo dpkg -i installers/linux/laprdus-speechd_1.0.0-1_amd64.deb
+mv ../laprdus_1.0.0-1_amd64.deb ../laprdus-dev_1.0.0-1_amd64.deb ~/downloads/
 ```
 
 ## Test
 
 ```bash
+sudo dpkg -i laprdus_1.0.0-1_amd64.deb
 laprdus -l  # List voices
 laprdus "Dobar dan"  # Speak text
 spd-say -o laprdus "Zdravo"  # Via Speech Dispatcher

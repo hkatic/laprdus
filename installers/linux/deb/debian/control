@@ -17,8 +17,7 @@ Rules-Requires-Root: no
 
 Package: laprdus
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
-Suggests: speech-dispatcher, orca
+Depends: ${shlibs:Depends}, ${misc:Depends}, speech-dispatcher
 Description: Croatian/Serbian Text-to-Speech Engine
  LaprdusTTS is a concatenative text-to-speech engine supporting Croatian
  and Serbian languages. It provides natural-sounding speech synthesis
@@ -31,14 +30,6 @@ Description: Croatian/Serbian Text-to-Speech Engine
   * Adjustable speech rate, pitch, and volume
   * Punctuation-based voice inflection
   * Number-to-words conversion
-
-Package: laprdus-speechd
-Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, laprdus (= ${binary:Version}), speech-dispatcher
-Description: LaprdusTTS Speech Dispatcher module
- This package provides the Speech Dispatcher output module for LaprdusTTS,
- enabling Croatian/Serbian text-to-speech in applications that use
- Speech Dispatcher, such as Orca screen reader.
 
 Package: laprdus-dev
 Architecture: any

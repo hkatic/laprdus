@@ -16,6 +16,8 @@ BuildRequires:  alsa-lib-devel
 BuildRequires:  speech-dispatcher-devel
 BuildRequires:  glib2-devel
 
+Requires:       speech-dispatcher
+
 %description
 LaprdusTTS is a concatenative text-to-speech engine supporting Croatian
 and Serbian languages. It provides natural-sounding speech synthesis
@@ -28,16 +30,6 @@ Features:
 * Adjustable speech rate, pitch, and volume
 * Punctuation-based voice inflection
 * Number-to-words conversion
-
-%package speechd
-Summary:        LaprdusTTS Speech Dispatcher module
-Requires:       %{name}%{?_isa} = %{version}-%{release}
-Requires:       speech-dispatcher
-
-%description speechd
-This package provides the Speech Dispatcher output module for LaprdusTTS,
-enabling Croatian/Serbian text-to-speech in applications that use
-Speech Dispatcher, such as Orca screen reader.
 
 %package devel
 Summary:        Development files for LaprdusTTS
@@ -55,10 +47,10 @@ into their applications.
 scons --platform=linux --build-config=release linux-all
 
 %install
-# Install library
+# Install library with versioned naming
 install -D -m 755 build/linux-x64-release/liblaprdus.so \
-    %{buildroot}%{_libdir}/liblaprdus.so.1.0.0
-ln -s liblaprdus.so.1.0.0 %{buildroot}%{_libdir}/liblaprdus.so.1
+    %{buildroot}%{_libdir}/liblaprdus.so.%{version}
+ln -s liblaprdus.so.%{version} %{buildroot}%{_libdir}/liblaprdus.so.1
 ln -s liblaprdus.so.1 %{buildroot}%{_libdir}/liblaprdus.so
 
 # Install CLI
@@ -76,8 +68,10 @@ install -D -m 644 data/dictionary/internal.json \
     %{buildroot}%{_datadir}/laprdus/internal.json
 install -D -m 644 data/dictionary/spelling.json \
     %{buildroot}%{_datadir}/laprdus/spelling.json
+install -D -m 644 data/dictionary/emoji.json \
+    %{buildroot}%{_datadir}/laprdus/emoji.json
 
-# Install Speech Dispatcher module
+# Install Speech Dispatcher module and config
 install -D -m 755 build/linux-x64-release/sd_laprdus \
     %{buildroot}%{_libdir}/speech-dispatcher-modules/sd_laprdus
 install -D -m 644 src/platform/linux/speechd/laprdus.conf \
@@ -93,7 +87,7 @@ install -D -m 644 include/laprdus/laprdus.hpp \
 
 %ldconfig_scriptlets
 
-%post speechd
+%post
 # Configure Speech Dispatcher for LaprdusTTS
 SPEECHD_CONF="/etc/speech-dispatcher/speechd.conf"
 MARKER_START="# BEGIN LAPRDUS TTS"
@@ -127,7 +121,7 @@ fi
 # Restart speech-dispatcher if running
 systemctl try-restart speech-dispatcher 2>/dev/null || true
 
-%preun speechd
+%preun
 # Remove configuration on package removal (not upgrade)
 if [ $1 -eq 0 ]; then
     SPEECHD_CONF="/etc/speech-dispatcher/speechd.conf"
@@ -144,7 +138,7 @@ if [ $1 -eq 0 ]; then
     fi
 fi
 
-%postun speechd
+%postun
 # Restart speech-dispatcher after removal
 if [ $1 -eq 0 ]; then
     systemctl try-restart speech-dispatcher 2>/dev/null || true
@@ -156,8 +150,6 @@ fi
 %{_libdir}/liblaprdus.so.1*
 %{_bindir}/laprdus
 %{_datadir}/laprdus/
-
-%files speechd
 %{_libdir}/speech-dispatcher-modules/sd_laprdus
 %config(noreplace) %{_sysconfdir}/speech-dispatcher/modules/laprdus.conf
 
@@ -166,6 +158,11 @@ fi
 %{_includedir}/laprdus/
 
 %changelog
+* Sun Feb 08 2026 Hrvoje Katic <hrvoje.katic@gmail.com> - 1.0.0-1
+- Merge speechd module into main package for single-package installation
+- Add SONAME to shared library for proper dependency resolution
+- Include emoji dictionary
+
 * Fri Jan 31 2025 Hrvoje Katic <hrvoje.katic@gmail.com> - 1.0.0-1
 - Initial package
 - Croatian and Serbian text-to-speech synthesis

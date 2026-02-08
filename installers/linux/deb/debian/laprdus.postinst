@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# postinst script for laprdus-speechd
+# postinst script for laprdus
 #
 # Automatically configures Speech Dispatcher to use LaprdusTTS
 #

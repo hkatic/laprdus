@@ -668,6 +668,11 @@ elif target_platform == 'linux':
     env.Append(LIBS=['pthread', 'dl', 'm'])
     env.Append(CPPDEFINES=['LAPRDUS_EXPORTS'])
 
+    # Set SONAME for proper shared library versioning
+    # This ensures binaries record 'liblaprdus.so.1' as their NEEDED library,
+    # allowing versioned symlinks (liblaprdus.so.1 -> liblaprdus.so.1.0.0) to work
+    env.Append(SHLINKFLAGS=['-Wl,-soname,liblaprdus.so.1'])
+
     lib = env.SharedLibrary(
         target=f'{build_dir}/liblaprdus',
         source=core_sources
@@ -675,8 +680,16 @@ elif target_platform == 'linux':
 
     env.Depends(lib, phonemes_packed)
 
+    # Create versioned symlinks (liblaprdus.so.1 -> liblaprdus.so) for runtime linking
+    lib_symlink = env.Command(
+        f'{build_dir}/liblaprdus.so.1',
+        lib,
+        f'ln -sf liblaprdus.so $TARGET'
+    )
+    env.Clean(lib, lib_symlink)
+
     # Include voice_data_targets so data/voices/ is always populated
-    Default(lib, phonemes_packed, voice_data_targets)
+    Default(lib, lib_symlink, phonemes_packed, voice_data_targets)
 
     # =========================================================================
     # Linux Command-Line Interface
@@ -796,8 +809,25 @@ elif target_platform == 'linux':
     lib_dir = f'{prefix}/lib'
     bin_dir = f'{prefix}/bin'
     data_dir = f'{prefix}/share/laprdus'
-    speechd_module_dir = f'{prefix}/lib/speech-dispatcher-modules'
     speechd_conf_dir = '/etc/speech-dispatcher/modules'
+
+    # Detect system Speech Dispatcher module directory via pkg-config
+    # SD only looks in its own module dir, not under a custom prefix
+    import subprocess
+    try:
+        result = subprocess.run(['pkg-config', '--variable=modulebindir', 'speech-dispatcher'],
+                                capture_output=True, text=True)
+        speechd_module_dir = result.stdout.strip().rstrip('/')
+    except (FileNotFoundError, OSError):
+        speechd_module_dir = ''
+    if not speechd_module_dir:
+        # Fallback: check common locations
+        for candidate in ['/usr/lib64/speech-dispatcher-modules', '/usr/lib/speech-dispatcher-modules']:
+            if os.path.isdir(candidate):
+                speechd_module_dir = candidate
+                break
+        else:
+            speechd_module_dir = f'{prefix}/lib/speech-dispatcher-modules'
 
     # Install library
     install_lib = env.Install(lib_dir, lib)
@@ -815,6 +845,7 @@ elif target_platform == 'linux':
     install_dicts = [
         env.Install(data_dir, 'data/dictionary/internal.json'),
         env.Install(data_dir, 'data/dictionary/spelling.json'),
+        env.Install(data_dir, 'data/dictionary/emoji.json'),
     ]
 
     # Install Speech Dispatcher module and config

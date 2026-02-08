@@ -32,16 +32,15 @@ override_dh_auto_install:
 		debian/laprdus/usr/share/laprdus/internal.json
 	install -D -m 644 data/dictionary/spelling.json \
 		debian/laprdus/usr/share/laprdus/spelling.json
+	install -D -m 644 data/dictionary/emoji.json \
+		debian/laprdus/usr/share/laprdus/emoji.json
 
-	# Install Speech Dispatcher module (if built)
-	# Note: On Ubuntu 24.04+, spd_module_main.h is not available in packages,
-	# so the speechd module may not be built. The laprdus-speechd package
-	# will only be available on systems where the module was built.
+	# Install Speech Dispatcher module (if built) - into main package
 	if [ -f build/linux-x64-release/sd_laprdus ]; then \
 		install -D -m 755 build/linux-x64-release/sd_laprdus \
-			debian/laprdus-speechd/usr/lib/speech-dispatcher-modules/sd_laprdus; \
+			debian/laprdus/usr/lib/speech-dispatcher-modules/sd_laprdus; \
 		install -D -m 644 src/platform/linux/speechd/laprdus.conf \
-			debian/laprdus-speechd/etc/speech-dispatcher/modules/laprdus.conf; \
+			debian/laprdus/etc/speech-dispatcher/modules/laprdus.conf; \
 	fi
 
 	# Install development files
@@ -55,7 +54,7 @@ override_dh_auto_install:
 override_dh_builddeb:
 	@if grep -qi microsoft /proc/version 2>/dev/null; then \
 		echo "WSL detected: copying package trees to /tmp to fix NTFS permissions..."; \
-		for pkgdir in debian/laprdus debian/laprdus-speechd debian/laprdus-dev; do \
+		for pkgdir in debian/laprdus debian/laprdus-dev; do \
 			pkg=$$(basename $$pkgdir); \
 			if [ -d "$$pkgdir/DEBIAN" ]; then \
 				tmpdir=$$(mktemp -d /tmp/deb-$$pkg-XXXXXX); \
