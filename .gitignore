@@ -45,7 +45,7 @@ installers/linux/source/*.tar.xz
 installers/linux/tarball/*.tar.xz
 
 # Stray build directories
-build-tarball*/
+/build-tarball*/
 
 # NVDA addon build artifacts
 nvda-addon/*.nvda-addon

@@ -25,14 +25,22 @@ MODULE_NAME="laprdus"
 MARKER_START="# BEGIN LAPRDUS TTS"
 MARKER_END="# END LAPRDUS TTS"
 
-# Configuration lines to add
-read -r -d '' LAPRDUS_CONFIG << 'EOF' || true
+# Configuration lines to add (explicit module mode - when AddModule lines exist)
+read -r -d '' LAPRDUS_CONFIG_EXPLICIT << 'EOF' || true
 # BEGIN LAPRDUS TTS
 # LaprdusTTS - Croatian/Serbian Text-to-Speech
-# Added automatically by package installation
 AddModule "laprdus" "sd_laprdus" "laprdus.conf"
+LanguageDefaultModule "hr" "laprdus"
+LanguageDefaultModule "sr" "laprdus"
+LanguageDefaultModule "hr-HR" "laprdus"
+LanguageDefaultModule "sr-RS" "laprdus"
+# END LAPRDUS TTS
+EOF
 
-# Set LaprdusTTS as default for Croatian and Serbian
+# Configuration lines to add (autodetection mode - no AddModule, SD 0.12+)
+read -r -d '' LAPRDUS_CONFIG_AUTODETECT << 'EOF' || true
+# BEGIN LAPRDUS TTS
+# LaprdusTTS - Croatian/Serbian Text-to-Speech
 LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"
@@ -114,39 +122,19 @@ EOF
     # Backup before modifying
     backup_config
 
-    # Find a good place to add our config (after other AddModule lines if they exist)
-    # If there are AddModule lines, add after the last one
-    # Otherwise, add at the end
-
-    if grep -q "^AddModule" "$SPEECHD_CONF"; then
-        # Add after the last AddModule line
-        # Use awk to insert after the last AddModule block
-        awk -v config="$LAPRDUS_CONFIG" '
-        {
-            print
-            if (/^AddModule/ && !added) {
-                last_addmodule = NR
-            }
-        }
-        END {
-            if (!added) {
-                print ""
-                print config
-            }
-        }
-        ' "$SPEECHD_CONF" > "${SPEECHD_CONF}.new"
-
-        # Actually, simpler approach - just append to end
+    # SD 0.12+ autodetects modules when no AddModule lines are present.
+    # Adding AddModule disables autodetection for all other modules.
+    if grep -q '^[[:space:]]*AddModule' "$SPEECHD_CONF"; then
+        # Explicit mode: other AddModule lines exist, add ours too
         echo "" >> "$SPEECHD_CONF"
-        echo "$LAPRDUS_CONFIG" >> "$SPEECHD_CONF"
+        echo "$LAPRDUS_CONFIG_EXPLICIT" >> "$SPEECHD_CONF"
     else
-        # No existing AddModule lines, append to end
+        # Autodetection mode: only add language defaults
         echo "" >> "$SPEECHD_CONF"
-        echo "$LAPRDUS_CONFIG" >> "$SPEECHD_CONF"
+        echo "$LAPRDUS_CONFIG_AUTODETECT" >> "$SPEECHD_CONF"
     fi
 
     echo "LaprdusTTS configured successfully."
-    echo "Restart Speech Dispatcher to apply changes: systemctl --user restart speech-dispatcher"
 
     return 0
 }
@@ -179,18 +167,27 @@ remove_config() {
     sed -i '/^$/N;/^\n$/d' "$SPEECHD_CONF"
 
     echo "LaprdusTTS removed from Speech Dispatcher configuration."
-    echo "Restart Speech Dispatcher to apply changes: systemctl --user restart speech-dispatcher"
 
     return 0
+}
+
+restart_speechd() {
+    # Try system service first, then user services
+    systemctl try-restart speech-dispatcher 2>/dev/null || true
+    for uid in $(loginctl list-users --no-legend 2>/dev/null | awk '{print $1}'); do
+        systemctl --user -M "${uid}@" try-restart speech-dispatcher 2>/dev/null || true
+    done
 }
 
 # Main
 case "${1:-}" in
     install)
         install_config
+        restart_speechd
         ;;
     remove)
         remove_config
+        restart_speechd
         ;;
     *)
         usage

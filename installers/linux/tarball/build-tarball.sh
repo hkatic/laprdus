@@ -100,16 +100,44 @@ if [[ "${PREFIX}" == "/usr" || "${PREFIX}" == "/usr/local" ]]; then
     fi
 fi
 
+# Detect the correct library directory.
+# Debian/Ubuntu use multiarch paths (e.g. /usr/lib/x86_64-linux-gnu/).
+# Fedora/RHEL use /usr/lib64/ for 64-bit.
+detect_lib_dir() {
+    local prefix="$1"
+
+    # For /usr prefix, try to use the distro's native library path
+    if [[ "${prefix}" == "/usr" ]]; then
+        # Try Debian/Ubuntu multiarch path first
+        local multiarch
+        multiarch=$(dpkg-architecture -qDEB_HOST_MULTIARCH 2>/dev/null || true)
+        if [ -n "$multiarch" ] && [ -d "/usr/lib/${multiarch}" ]; then
+            echo "/usr/lib/${multiarch}"
+            return
+        fi
+        # Try Fedora/RHEL lib64
+        if [ -d "/usr/lib64" ] && [ "$(uname -m)" = "x86_64" ]; then
+            echo "/usr/lib64"
+            return
+        fi
+    fi
+
+    # Default: PREFIX/lib
+    echo "${prefix}/lib"
+}
+
+LIB_DIR=$(detect_lib_dir "${PREFIX}")
+
 # Create directories
 mkdir -p "${PREFIX}/bin"
-mkdir -p "${PREFIX}/lib"
+mkdir -p "${LIB_DIR}"
 mkdir -p "${PREFIX}/share/laprdus"
 mkdir -p "${PREFIX}/share/doc/laprdus"
 mkdir -p "${PREFIX}/include/laprdus"
 
 # Install files
 cp -v bin/* "${PREFIX}/bin/"
-cp -Pv lib/*.so* "${PREFIX}/lib/"
+cp -Pv lib/*.so* "${LIB_DIR}/"
 cp -v share/laprdus/* "${PREFIX}/share/laprdus/"
 cp -v share/doc/laprdus/* "${PREFIX}/share/doc/laprdus/"
 cp -v include/laprdus/* "${PREFIX}/include/laprdus/"
@@ -148,17 +176,19 @@ if [ -d etc/speech-dispatcher/modules ] && [ -n "$(ls -A etc/speech-dispatcher/m
 fi
 
 # Ensure the library is findable by the dynamic linker
-# For non-standard prefixes, add to ldconfig search path
 if [ $EUID -eq 0 ]; then
-    LIB_DIR="${PREFIX}/lib"
-
-    # /usr/lib and /usr/lib64 are always in the default search path
-    if [[ "${LIB_DIR}" != "/usr/lib" && "${LIB_DIR}" != "/usr/lib64" ]]; then
-        if [ -d /etc/ld.so.conf.d ]; then
-            echo "${LIB_DIR}" > /etc/ld.so.conf.d/laprdus.conf
-            echo "Added ${LIB_DIR} to library search path (/etc/ld.so.conf.d/laprdus.conf)"
-        fi
-    fi
+    # Standard paths that ldconfig always searches don't need ld.so.conf.d entries
+    case "${LIB_DIR}" in
+        /lib|/usr/lib|/lib64|/usr/lib64|/lib/x86_64-linux-gnu|/usr/lib/x86_64-linux-gnu)
+            # Built-in or already configured path, no extra config needed
+            ;;
+        *)
+            if [ -d /etc/ld.so.conf.d ]; then
+                echo "${LIB_DIR}" > /etc/ld.so.conf.d/laprdus.conf
+                echo "Added ${LIB_DIR} to library search path (/etc/ld.so.conf.d/laprdus.conf)"
+            fi
+            ;;
+    esac
 
     ldconfig
 fi
@@ -204,7 +234,16 @@ fi
 
 # Remove files
 rm -fv "${PREFIX}/bin/laprdus"
+
+# Remove library from all possible locations
 rm -fv "${PREFIX}/lib/liblaprdus.so"*
+# Debian/Ubuntu multiarch path
+multiarch=$(dpkg-architecture -qDEB_HOST_MULTIARCH 2>/dev/null || true)
+if [ -n "$multiarch" ]; then
+    rm -fv "${PREFIX}/lib/${multiarch}/liblaprdus.so"*
+fi
+# Fedora lib64 path
+rm -fv "${PREFIX}/lib64/liblaprdus.so"* 2>/dev/null || true
 
 # Remove Speech Dispatcher module from system modules directory
 SD_MODULE_DIR=$(pkg-config --variable=modulebindir speech-dispatcher 2>/dev/null)
@@ -244,12 +283,28 @@ if command -v ldconfig &> /dev/null && [ $EUID -eq 0 ]; then
     ldconfig
 fi
 
+# Restart Speech Dispatcher so it stops using the removed module
+restart_speechd() {
+    systemctl try-restart speech-dispatcher 2>/dev/null || true
+    for uid in $(loginctl list-users --no-legend 2>/dev/null | awk '{print $1}'); do
+        systemctl --user -M "${uid}@" try-restart speech-dispatcher 2>/dev/null || true
+    done
+}
+restart_speechd
+
 echo ""
 echo "LaprdusTTS uninstalled."
-echo "Restart Speech Dispatcher to apply changes: systemctl --user restart speech-dispatcher"
 UNINSTALL_INNER_EOF
 chmod +x "${UNINSTALL_DEST}"
 echo "Installed uninstall script to ${UNINSTALL_DEST}"
+
+# Restart Speech Dispatcher so it picks up the new module
+restart_speechd() {
+    systemctl try-restart speech-dispatcher 2>/dev/null || true
+    for uid in $(loginctl list-users --no-legend 2>/dev/null | awk '{print $1}'); do
+        systemctl --user -M "${uid}@" try-restart speech-dispatcher 2>/dev/null || true
+    done
+}
 
 # Configure Speech Dispatcher automatically
 configure_speechd() {
@@ -262,8 +317,6 @@ configure_speechd() {
     # Check if we have write permissions
     if [ ! -w "$SPEECHD_CONF" ] && [ $EUID -ne 0 ]; then
         echo "Note: Cannot configure Speech Dispatcher (requires root)"
-        echo "      To configure manually, add to $SPEECHD_CONF:"
-        echo '      AddModule "laprdus" "sd_laprdus" "laprdus.conf"'
         return 0
     fi
 
@@ -281,7 +334,12 @@ configure_speechd() {
 
     echo "Configuring Speech Dispatcher for LaprdusTTS..."
 
-    cat >> "$SPEECHD_CONF" << 'SPEECHD_EOF'
+    # Speech Dispatcher 0.12+ uses module autodetection when no AddModule
+    # lines are present. Adding an AddModule disables autodetection and
+    # hides other modules (espeak-ng, RHVoice, etc.).
+    if grep -q '^[[:space:]]*AddModule' "$SPEECHD_CONF" 2>/dev/null; then
+        # Explicit module mode: other modules are listed, add ours too
+        cat >> "$SPEECHD_CONF" << 'SPEECHD_EOF'
 
 # BEGIN LAPRDUS TTS
 # LaprdusTTS - Croatian/Serbian Text-to-Speech
@@ -295,6 +353,22 @@ LanguageDefaultModule "hr-HR" "laprdus"
 LanguageDefaultModule "sr-RS" "laprdus"
 # END LAPRDUS TTS
 SPEECHD_EOF
+    else
+        # Autodetection mode (SD 0.12+): do NOT add AddModule
+        cat >> "$SPEECHD_CONF" << 'SPEECHD_EOF'
+
+# BEGIN LAPRDUS TTS
+# LaprdusTTS - Croatian/Serbian Text-to-Speech
+# Module is auto-detected by Speech Dispatcher (no AddModule needed)
+
+# Set LaprdusTTS as default for Croatian and Serbian
+LanguageDefaultModule "hr" "laprdus"
+LanguageDefaultModule "sr" "laprdus"
+LanguageDefaultModule "hr-HR" "laprdus"
+LanguageDefaultModule "sr-RS" "laprdus"
+# END LAPRDUS TTS
+SPEECHD_EOF
+    fi
 
     echo "LaprdusTTS configured in Speech Dispatcher."
 }
@@ -304,6 +378,9 @@ if [ -d lib/speech-dispatcher-modules ] && [ -n "$(ls -A lib/speech-dispatcher-m
     configure_speechd
 fi
 
+# Restart Speech Dispatcher to pick up new module
+restart_speechd
+
 echo ""
 echo "LaprdusTTS installed successfully!"
 echo ""
@@ -311,8 +388,9 @@ echo "To test, run:"
 echo "  laprdus \"Dobar dan!\""
 echo ""
 echo "For Orca screen reader users:"
-echo "  Speech Dispatcher has been configured automatically."
-echo "  Restart Speech Dispatcher: systemctl --user restart speech-dispatcher"
+echo "  Speech Dispatcher has been configured and restarted."
+echo "  If Orca still doesn't see LaprdusTTS, restart Orca or run:"
+echo "    systemctl --user restart speech-dispatcher"
 echo ""
 echo "To uninstall later, run:"
 echo "  sudo ${PREFIX}/share/laprdus/uninstall.sh"
@@ -360,7 +438,16 @@ fi
 
 # Remove files
 rm -fv "${PREFIX}/bin/laprdus"
+
+# Remove library from all possible locations
 rm -fv "${PREFIX}/lib/liblaprdus.so"*
+# Debian/Ubuntu multiarch path
+multiarch=$(dpkg-architecture -qDEB_HOST_MULTIARCH 2>/dev/null || true)
+if [ -n "$multiarch" ]; then
+    rm -fv "${PREFIX}/lib/${multiarch}/liblaprdus.so"*
+fi
+# Fedora lib64 path
+rm -fv "${PREFIX}/lib64/liblaprdus.so"* 2>/dev/null || true
 
 # Remove Speech Dispatcher module from system modules directory
 SD_MODULE_DIR=$(pkg-config --variable=modulebindir speech-dispatcher 2>/dev/null)
@@ -395,9 +482,17 @@ if command -v ldconfig &> /dev/null && [ $EUID -eq 0 ]; then
     ldconfig
 fi
 
+# Restart Speech Dispatcher so it stops using the removed module
+restart_speechd() {
+    systemctl try-restart speech-dispatcher 2>/dev/null || true
+    for uid in $(loginctl list-users --no-legend 2>/dev/null | awk '{print $1}'); do
+        systemctl --user -M "${uid}@" try-restart speech-dispatcher 2>/dev/null || true
+    done
+}
+restart_speechd
+
 echo ""
 echo "LaprdusTTS uninstalled."
-echo "Restart Speech Dispatcher to apply changes: systemctl --user restart speech-dispatcher"
 UNINSTALL_EOF
 
 chmod +x "${PKG}/uninstall.sh"

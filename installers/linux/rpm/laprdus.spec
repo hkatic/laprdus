@@ -99,27 +99,44 @@ if [ -f "$SPEECHD_CONF" ]; then
         # Check for existing manual configuration
         if ! grep -q 'AddModule.*"laprdus"' "$SPEECHD_CONF" 2>/dev/null; then
             echo "Configuring Speech Dispatcher for LaprdusTTS..."
-            cat >> "$SPEECHD_CONF" << 'EOF'
+            # SD 0.12+ autodetects modules when no AddModule lines are present.
+            # Adding AddModule disables autodetection for all other modules.
+            if grep -q '^[[:space:]]*AddModule' "$SPEECHD_CONF" 2>/dev/null; then
+                # Explicit mode: add our AddModule too
+                cat >> "$SPEECHD_CONF" << 'EOF'
 
 # BEGIN LAPRDUS TTS
 # LaprdusTTS - Croatian/Serbian Text-to-Speech
-# Added automatically by package installation
 AddModule "laprdus" "sd_laprdus" "laprdus.conf"
-
-# Set LaprdusTTS as default for Croatian and Serbian
 LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"
 LanguageDefaultModule "sr-RS" "laprdus"
 # END LAPRDUS TTS
 EOF
+            else
+                # Autodetection mode: only add language defaults
+                cat >> "$SPEECHD_CONF" << 'EOF'
+
+# BEGIN LAPRDUS TTS
+# LaprdusTTS - Croatian/Serbian Text-to-Speech
+LanguageDefaultModule "hr" "laprdus"
+LanguageDefaultModule "sr" "laprdus"
+LanguageDefaultModule "hr-HR" "laprdus"
+LanguageDefaultModule "sr-RS" "laprdus"
+# END LAPRDUS TTS
+EOF
+            fi
             echo "LaprdusTTS configured successfully."
         fi
     fi
 fi
 
-# Restart speech-dispatcher if running
+# Restart speech-dispatcher if running (try system service, then user services)
 systemctl try-restart speech-dispatcher 2>/dev/null || true
+for uid in $(loginctl list-users --no-legend 2>/dev/null | awk '{print $1}'); do
+    systemctl --user -M "${uid}@" try-restart speech-dispatcher 2>/dev/null || true
+done
 
 %preun
 # Remove configuration on package removal (not upgrade)
@@ -142,6 +159,9 @@ fi
 # Restart speech-dispatcher after removal
 if [ $1 -eq 0 ]; then
     systemctl try-restart speech-dispatcher 2>/dev/null || true
+    for uid in $(loginctl list-users --no-legend 2>/dev/null | awk '{print $1}'); do
+        systemctl --user -M "${uid}@" try-restart speech-dispatcher 2>/dev/null || true
+    done
 fi
 
 %files

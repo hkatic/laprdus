@@ -32,10 +32,16 @@ remove_speechd_config() {
 
     echo "LaprdusTTS removed from Speech Dispatcher configuration."
 
-    # Try to restart speech-dispatcher if it's running
-    if systemctl is-active --quiet speech-dispatcher 2>/dev/null; then
-        systemctl restart speech-dispatcher || true
-    fi
+    # Restart speech-dispatcher to pick up the removal
+    restart_speechd
+}
+
+restart_speechd() {
+    # Try system service first, then user services
+    systemctl try-restart speech-dispatcher 2>/dev/null || true
+    for uid in $(loginctl list-users --no-legend 2>/dev/null | awk '{print $1}'); do
+        systemctl --user -M "${uid}@" try-restart speech-dispatcher 2>/dev/null || true
+    done
 }
 
 case "$1" in

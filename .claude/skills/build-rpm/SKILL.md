@@ -57,7 +57,8 @@ rpmbuild -ba ~/rpmbuild/SPECS/laprdus.spec
 - **Single package**: CLI, library, Speech Dispatcher module, voice data, and all 3 dictionaries (internal.json, spelling.json, emoji.json) are in ONE package
 - **SONAME**: Library has `-Wl,-soname,liblaprdus.so.1` so RPM auto-dependency resolves correctly
 - **Versioned library**: `liblaprdus.so.1.0.0` → `liblaprdus.so.1` → `liblaprdus.so` (unversioned in -devel only)
-- **speechd.conf**: Auto-configured in `%post` with BEGIN/END markers, cleaned up in `%preun`
+- **speechd.conf**: Auto-configured in `%post` with BEGIN/END markers, cleaned up in `%preun`. Detects SD 0.12+ autodetection mode (no uncommented AddModule lines) and only adds LanguageDefaultModule entries to avoid disabling autodetection for other modules
+- **Speech Dispatcher restart**: Uses `try-restart` for both system and user services (SD runs as user service on modern distros). Iterates logged-in users via `loginctl list-users`
 - **Spec must have Unix line endings (LF)** — CRLF causes `$'\r': command not found`
 
 ## Copy to ~/downloads

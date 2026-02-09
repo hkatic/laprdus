@@ -886,13 +886,26 @@ elif target_platform == 'linux':
 
         print("Configuring Speech Dispatcher for LaprdusTTS...")
 
-        config_block = '''
+        # SD 0.12+ autodetects modules when no AddModule lines are present.
+        # Adding AddModule disables autodetection for all other modules.
+        import re
+        has_explicit_modules = bool(re.search(r'^\s*AddModule', content, re.MULTILINE))
+
+        if has_explicit_modules:
+            config_block = '''
 # BEGIN LAPRDUS TTS
 # LaprdusTTS - Croatian/Serbian Text-to-Speech
-# Added automatically by scons install
 AddModule "laprdus" "sd_laprdus" "laprdus.conf"
-
-# Set LaprdusTTS as default for Croatian and Serbian
+LanguageDefaultModule "hr" "laprdus"
+LanguageDefaultModule "sr" "laprdus"
+LanguageDefaultModule "hr-HR" "laprdus"
+LanguageDefaultModule "sr-RS" "laprdus"
+# END LAPRDUS TTS
+'''
+        else:
+            config_block = '''
+# BEGIN LAPRDUS TTS
+# LaprdusTTS - Croatian/Serbian Text-to-Speech
 LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"
@@ -903,7 +916,10 @@ LanguageDefaultModule "sr-RS" "laprdus"
             with open(speechd_conf, 'a') as f:
                 f.write(config_block)
             print("LaprdusTTS configured successfully.")
-            print("Restart Speech Dispatcher to apply changes: systemctl --user restart speech-dispatcher")
+            # Restart speech-dispatcher (try system service, then user services)
+            os.system("systemctl try-restart speech-dispatcher 2>/dev/null || true")
+            os.system("for uid in $(loginctl list-users --no-legend 2>/dev/null | awk '{print $1}'); do "
+                       "systemctl --user -M \"${uid}@\" try-restart speech-dispatcher 2>/dev/null || true; done")
         except PermissionError:
             print("Warning: Could not modify speechd.conf (permission denied).")
             print("Run with sudo to configure Speech Dispatcher automatically.")

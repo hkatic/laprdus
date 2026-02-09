@@ -37,7 +37,8 @@ One package is created in `installers/linux/arch/`:
 
 - **Single package**: CLI, library, Speech Dispatcher module, voice data, all 3 dictionaries, AND dev headers all in ONE package
 - **ldconfig**: Called in `post_install()`, `post_upgrade()`, and `post_remove()` hooks via `laprdus.install`
-- **speechd.conf**: Auto-configured in `post_install()`/`post_upgrade()` with BEGIN/END markers, cleaned up in `pre_remove()`
+- **speechd.conf**: Auto-configured in `post_install()`/`post_upgrade()` with BEGIN/END markers, cleaned up in `pre_remove()`. Detects SD 0.12+ autodetection mode (no uncommented AddModule lines) and only adds LanguageDefaultModule entries to avoid disabling autodetection for other modules
+- **Speech Dispatcher restart**: Uses `try-restart` for both system and user services (SD runs as user service on modern distros). Iterates logged-in users via `loginctl list-users`
 - **speech-dispatcher dependency**: Declared in `depends` array
 - **README filename**: Must reference `readme.md` (lowercase), NOT `README.md`
 

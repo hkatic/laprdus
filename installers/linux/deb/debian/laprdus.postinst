@@ -21,19 +21,26 @@ configure_speechd() {
     # Check if already configured
     if grep -q "$MARKER_START" "$SPEECHD_CONF" 2>/dev/null; then
         echo "LaprdusTTS already configured in Speech Dispatcher."
+        restart_speechd
         return 0
     fi
 
     # Check for existing manual configuration
     if grep -q 'AddModule.*"laprdus"' "$SPEECHD_CONF" 2>/dev/null; then
         echo "Note: Existing LaprdusTTS module entry found."
+        restart_speechd
         return 0
     fi
 
     echo "Configuring Speech Dispatcher for LaprdusTTS..."
 
-    # Add our configuration
-    cat >> "$SPEECHD_CONF" << 'EOF'
+    # Speech Dispatcher 0.12+ uses module autodetection when no AddModule
+    # lines are present. If we add an AddModule line, it disables autodetection
+    # and other modules (espeak-ng, RHVoice, etc.) become invisible.
+    # Detect if autodetection is active (no uncommented AddModule lines).
+    if grep -q '^[[:space:]]*AddModule' "$SPEECHD_CONF" 2>/dev/null; then
+        # Explicit module mode: other modules are already listed, add ours too
+        cat >> "$SPEECHD_CONF" << 'EOF'
 
 # BEGIN LAPRDUS TTS
 # LaprdusTTS - Croatian/Serbian Text-to-Speech
@@ -47,13 +54,38 @@ LanguageDefaultModule "hr-HR" "laprdus"
 LanguageDefaultModule "sr-RS" "laprdus"
 # END LAPRDUS TTS
 EOF
+    else
+        # Autodetection mode (SD 0.12+): do NOT add AddModule (it would
+        # disable autodetection for all other modules). Just add language
+        # defaults so Laprdus is used for Croatian/Serbian.
+        cat >> "$SPEECHD_CONF" << 'EOF'
+
+# BEGIN LAPRDUS TTS
+# LaprdusTTS - Croatian/Serbian Text-to-Speech
+# Module is auto-detected by Speech Dispatcher (no AddModule needed)
+
+# Set LaprdusTTS as default for Croatian and Serbian
+LanguageDefaultModule "hr" "laprdus"
+LanguageDefaultModule "sr" "laprdus"
+LanguageDefaultModule "hr-HR" "laprdus"
+LanguageDefaultModule "sr-RS" "laprdus"
+# END LAPRDUS TTS
+EOF
+    fi
 
     echo "LaprdusTTS configured successfully."
 
-    # Try to restart speech-dispatcher if it's running
-    if systemctl is-active --quiet speech-dispatcher 2>/dev/null; then
-        systemctl restart speech-dispatcher || true
-    fi
+    # Restart speech-dispatcher so it picks up the new module.
+    # On modern distros (Ubuntu, Fedora), speechd runs as a user service.
+    restart_speechd
+}
+
+restart_speechd() {
+    # Try system service first, then user services
+    systemctl try-restart speech-dispatcher 2>/dev/null || true
+    for uid in $(loginctl list-users --no-legend 2>/dev/null | awk '{print $1}'); do
+        systemctl --user -M "${uid}@" try-restart speech-dispatcher 2>/dev/null || true
+    done
 }
 
 case "$1" in

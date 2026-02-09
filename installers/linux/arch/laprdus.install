@@ -24,23 +24,42 @@ configure_speechd() {
 
     echo "Configuring Speech Dispatcher for LaprdusTTS..."
 
-    cat >> "$SPEECHD_CONF" << 'EOF'
+    # SD 0.12+ autodetects modules when no AddModule lines are present.
+    # Adding AddModule disables autodetection for all other modules.
+    if grep -q '^[[:space:]]*AddModule' "$SPEECHD_CONF" 2>/dev/null; then
+        cat >> "$SPEECHD_CONF" << 'EOF'
 
 # BEGIN LAPRDUS TTS
 # LaprdusTTS - Croatian/Serbian Text-to-Speech
-# Added automatically by package installation
 AddModule "laprdus" "sd_laprdus" "laprdus.conf"
-
-# Set LaprdusTTS as default for Croatian and Serbian
 LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"
 LanguageDefaultModule "sr-RS" "laprdus"
 # END LAPRDUS TTS
 EOF
+    else
+        cat >> "$SPEECHD_CONF" << 'EOF'
+
+# BEGIN LAPRDUS TTS
+# LaprdusTTS - Croatian/Serbian Text-to-Speech
+LanguageDefaultModule "hr" "laprdus"
+LanguageDefaultModule "sr" "laprdus"
+LanguageDefaultModule "hr-HR" "laprdus"
+LanguageDefaultModule "sr-RS" "laprdus"
+# END LAPRDUS TTS
+EOF
+    fi
 
     echo "LaprdusTTS configured successfully."
-    echo "Restart Speech Dispatcher to apply changes: systemctl --user restart speech-dispatcher"
+}
+
+restart_speechd() {
+    # Try system service first, then user services
+    systemctl try-restart speech-dispatcher 2>/dev/null || true
+    for uid in $(loginctl list-users --no-legend 2>/dev/null | awk '{print $1}'); do
+        systemctl --user -M "${uid}@" try-restart speech-dispatcher 2>/dev/null || true
+    done
 }
 
 remove_speechd_config() {
@@ -52,7 +71,6 @@ remove_speechd_config() {
         echo "Removing LaprdusTTS from Speech Dispatcher configuration..."
         sed -i "/$MARKER_START/,/$MARKER_END/d" "$SPEECHD_CONF"
         echo "LaprdusTTS removed from Speech Dispatcher configuration."
-        echo "Restart Speech Dispatcher to apply changes: systemctl --user restart speech-dispatcher"
     fi
 
     # Also remove language-only block if present
@@ -62,11 +80,13 @@ remove_speechd_config() {
 post_install() {
     ldconfig
     configure_speechd
+    restart_speechd
 }
 
 post_upgrade() {
     ldconfig
     configure_speechd
+    restart_speechd
 }
 
 pre_remove() {
@@ -75,4 +95,5 @@ pre_remove() {
 
 post_remove() {
     ldconfig
+    restart_speechd
 }
