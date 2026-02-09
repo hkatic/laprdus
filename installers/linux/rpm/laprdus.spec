@@ -162,6 +162,11 @@ if [ $1 -eq 0 ]; then
     for uid in $(loginctl list-users --no-legend 2>/dev/null | awk '{print $1}'); do
         systemctl --user -M "${uid}@" try-restart speech-dispatcher 2>/dev/null || true
     done
+    # Fallback: kill any remaining speech-dispatcher processes to force
+    # a clean restart on next client connection (via socket activation).
+    # This handles cases where systemctl cannot reach the user's service
+    # (e.g., socket-activated user services on Fedora).
+    killall speech-dispatcher 2>/dev/null || true
 fi
 
 %files
