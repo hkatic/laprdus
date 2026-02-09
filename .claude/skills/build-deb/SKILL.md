@@ -56,10 +56,10 @@ The build creates packages in the parent directory (`..`):
 ### laprdus-dev
 - `/usr/include/laprdus/` - C API headers
 
-## Copy to ~/downloads
+## Copy to ~/Downloads
 
 ```bash
-mv ../laprdus_1.0.0-1_amd64.deb ../laprdus-dev_1.0.0-1_amd64.deb ~/downloads/
+mv ../laprdus_1.0.0-1_amd64.deb ../laprdus-dev_1.0.0-1_amd64.deb ~/Downloads/
 ```
 
 ## Test

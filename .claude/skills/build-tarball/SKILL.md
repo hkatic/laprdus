@@ -60,10 +60,10 @@ laprdus-1.0.0-linux-x86_64/
 - **Data dir auto-detection**: Both CLI and speechd module check `/usr/share/laprdus` and `/usr/local/share/laprdus`
 - **Library symlinks**: Use `cp -Pv` (preserve symlinks) when copying library files
 
-## Copy to ~/downloads
+## Copy to ~/Downloads
 
 ```bash
-cp installers/linux/tarball/laprdus-1.0.0-linux-x86_64.tar.xz ~/downloads/
+cp installers/linux/tarball/laprdus-1.0.0-linux-x86_64.tar.xz ~/Downloads/
 ```
 
 ## Installation

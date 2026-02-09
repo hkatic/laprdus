@@ -61,10 +61,10 @@ rpmbuild -ba ~/rpmbuild/SPECS/laprdus.spec
 - **Speech Dispatcher restart**: Uses `try-restart` for both system and user services (SD runs as user service on modern distros). Iterates logged-in users via `loginctl list-users`
 - **Spec must have Unix line endings (LF)** — CRLF causes `$'\r': command not found`
 
-## Copy to ~/downloads
+## Copy to ~/Downloads
 
 ```bash
-cp ~/rpmbuild/RPMS/x86_64/laprdus*.rpm ~/downloads/
+cp ~/rpmbuild/RPMS/x86_64/laprdus*.rpm ~/Downloads/
 ```
 
 ## Installation & Test

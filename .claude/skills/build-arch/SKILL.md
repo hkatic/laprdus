@@ -52,10 +52,10 @@ One package is created in `installers/linux/arch/`:
 - `/etc/speech-dispatcher/modules/laprdus.conf` - Module config
 - `/usr/include/laprdus/` - Development headers
 
-## Copy to ~/downloads
+## Copy to ~/Downloads
 
 ```bash
-cp installers/linux/arch/laprdus-1.0.0-1-x86_64.pkg.tar.zst ~/downloads/
+cp installers/linux/arch/laprdus-1.0.0-1-x86_64.pkg.tar.zst ~/Downloads/
 ```
 
 ## Test
