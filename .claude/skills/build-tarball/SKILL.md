@@ -56,7 +56,7 @@ laprdus-1.0.0-linux-x86_64/
 - **Persistent uninstall**: After install, uninstall script is saved to `<prefix>/share/laprdus/uninstall.sh` so it survives tarball directory deletion
 - **Multiarch library paths**: Install script detects Debian/Ubuntu multiarch via `dpkg-architecture -qDEB_HOST_MULTIARCH`, Fedora `/usr/lib64/`, or falls back to `<prefix>/lib`
 - **speechd.conf**: Auto-configured with BEGIN/END markers. Detects SD 0.12+ autodetection mode (no uncommented AddModule lines) and only adds LanguageDefaultModule entries to avoid disabling autodetection for other modules
-- **Speech Dispatcher restart**: Uses `try-restart` for both system and user services (SD runs as user service on modern distros)
+- **Speech Dispatcher restart**: Uses `try-restart` for both system and user services, iterates logged-in users via `loginctl list-users`. On removal, also uses `killall speech-dispatcher` as fallback to ensure SD is fully stopped (socket activation restarts it clean)
 - **Data dir auto-detection**: Both CLI and speechd module check `/usr/share/laprdus` and `/usr/local/share/laprdus`
 - **Library symlinks**: Use `cp -Pv` (preserve symlinks) when copying library files
 

@@ -41,7 +41,7 @@ The build creates packages in the parent directory (`..`):
 - **Multiarch library path**: Library installs to `/usr/lib/$(DEB_HOST_MULTIARCH)/` for proper Debian multiarch support
 - **ldconfig**: Handled automatically by debhelper triggers when library is in multiarch path
 - **speechd.conf**: Auto-configured in `postinst` with BEGIN/END markers, cleaned up in `postrm`. Detects SD 0.12+ autodetection mode (no uncommented AddModule lines) and only adds LanguageDefaultModule entries to avoid disabling autodetection for other modules (espeak-ng, RHVoice, etc.)
-- **Speech Dispatcher restart**: Uses `try-restart` for both system and user services (SD runs as user service on modern distros). Iterates logged-in users via `loginctl list-users`
+- **Speech Dispatcher restart**: Uses `try-restart` for both system and user services, iterates logged-in users via `loginctl list-users`. On removal, also uses `killall speech-dispatcher` as fallback to ensure SD is fully stopped (socket activation restarts it clean)
 - **speech-dispatcher dependency**: Declared in `Depends:` field
 
 ## Package Contents

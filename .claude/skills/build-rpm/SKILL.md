@@ -58,7 +58,7 @@ rpmbuild -ba ~/rpmbuild/SPECS/laprdus.spec
 - **SONAME**: Library has `-Wl,-soname,liblaprdus.so.1` so RPM auto-dependency resolves correctly
 - **Versioned library**: `liblaprdus.so.1.0.0` → `liblaprdus.so.1` → `liblaprdus.so` (unversioned in -devel only)
 - **speechd.conf**: Auto-configured in `%post` with BEGIN/END markers, cleaned up in `%preun`. Detects SD 0.12+ autodetection mode (no uncommented AddModule lines) and only adds LanguageDefaultModule entries to avoid disabling autodetection for other modules
-- **Speech Dispatcher restart**: Uses `try-restart` for both system and user services (SD runs as user service on modern distros). Iterates logged-in users via `loginctl list-users`
+- **Speech Dispatcher restart**: Uses `try-restart` for both system and user services, iterates logged-in users via `loginctl list-users`. On removal, also uses `killall speech-dispatcher` as fallback to ensure SD is fully stopped (socket activation restarts it clean)
 - **Spec must have Unix line endings (LF)** — CRLF causes `$'\r': command not found`
 
 ## Copy to ~/Downloads
