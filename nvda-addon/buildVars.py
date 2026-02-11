@@ -45,7 +45,7 @@ Features:
     # Minimum NVDA version supported (e.g. "2019.3.0", minor version is optional)
     addon_minimumNVDAVersion="2019.3",
     # Last NVDA version supported/tested (e.g. "2024.4.0", ideally more recent than minimum version)
-    addon_lastTestedNVDAVersion="2025.3",
+    addon_lastTestedNVDAVersion="2026.1",
     # Add-on update channel (default is None, denoting stable releases,
     # and for development releases, use "dev".)
     addon_updateChannel=None,

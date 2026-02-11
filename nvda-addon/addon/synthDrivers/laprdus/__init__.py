@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # LaprdusTTS NVDA SynthDriver
 # Croatian/Serbian text-to-speech synthesizer for NVDA
-# Compatible with NVDA 2019.3 to 2025.3
+# Compatible with NVDA 2019.3 to 2026.1
 
 import queue as Queue
 import threading
@@ -212,11 +212,12 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         # Current playback sample rate (for rate changes)
         self._currentSampleRate = SAMPLE_RATE
 
-        # Character mode tracking
-        self._characterMode = False
-
         # Initialize with default voice
         self._engine.set_voice(self._voice)
+
+        # Apply voice character pitch (Issue 2: voice derivatives)
+        # set_pitch(1.0) triggers effective_pitch = voice_base_pitch * 1.0
+        self._engine.set_pitch(1.0)
 
         # Load internal dictionaries
         self._engine.load_dictionary()
@@ -286,6 +287,24 @@ class SynthDriver(synthDriverHandler.SynthDriver):
 
         self._isSpeaking = True
 
+        # Handle empty/whitespace-only text (e.g., orphaned trailing IndexCommand)
+        # Just report the index and done - no synthesis needed
+        if not text or not text.strip():
+            if index is not None:
+                _debug_log("synthIndexReached for empty text, index=%s" % index)
+                synthDriverHandler.synthIndexReached.notify(synth=self, index=index)
+            if isSpellingItem:
+                self._spellingDone.set()
+            with self._speakLock:
+                if self._speakQueue.empty():
+                    self._isSpeaking = False
+                    do_notify_done = True
+                else:
+                    do_notify_done = False
+            if do_notify_done:
+                synthDriverHandler.synthDoneSpeaking.notify(synth=self)
+            return
+
         # Check if text is a single character - always use spelled synthesis for single chars
         stripped_text = text.strip()
         is_single_char = len(stripped_text) == 1
@@ -308,17 +327,17 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                 # Still notify index reached if we have one
                 if index is not None:
                     synthDriverHandler.synthIndexReached.notify(synth=self, index=index)
-                # Check if queue is empty and notify done
+                if isSpellingItem:
+                    self._spellingDone.set()
+                # Immediate synthDoneSpeaking (like eSpeak, OneCore, SAPI5)
                 with self._speakLock:
                     if self._speakQueue.empty():
                         self._isSpeaking = False
-                        do_notify = True
+                        do_notify_done = True
                     else:
-                        do_notify = False
-                if do_notify:
+                        do_notify_done = False
+                if do_notify_done:
                     synthDriverHandler.synthDoneSpeaking.notify(synth=self)
-                if isSpellingItem:
-                    self._spellingDone.set()
                 return
 
             samples, sample_rate, bits_per_sample, channels = result
@@ -364,8 +383,8 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             if isSpellingItem:
                 self._spellingDone.set()
 
-            # Only notify synthDoneSpeaking when the queue is empty
-            # Use lock to prevent race condition with isSpeaking property
+            # Immediate synthDoneSpeaking (like eSpeak, OneCore, SAPI5)
+            # Say All is driven by synthIndexReached, not synthDoneSpeaking
             with self._speakLock:
                 if self._speakQueue.empty():
                     self._isSpeaking = False
@@ -374,36 +393,20 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                     do_notify_done = False
             if do_notify_done:
                 synthDriverHandler.synthDoneSpeaking.notify(synth=self)
-                _debug_log("synthDoneSpeaking notified")
-
-    # Known symbol names that NVDA sends during spelling mode (Croatian/Serbian)
-    # These are multi-character strings that represent single symbols
-    _SPELLING_SYMBOL_NAMES = frozenset([
-        'razmak', 'točka', 'zarez', 'uskličnik', 'upitnik', 'točka zarez',
-        'dvotočka', 'crtica', 'donja crtica', 'apostrof', 'navodnik',
-        'otvorena zagrada', 'zatvorena zagrada', 'otvorena uglata zagrada',
-        'zatvorena uglata zagrada', 'otvorena vitičasta zagrada',
-        'zatvorena vitičasta zagrada', 'kosa crta', 'obrnuta kosa crta',
-        'at', 'ljestve', 'dolar', 'posto', 'karet', 'i', 'zvjezdica',
-        'plus', 'jednako', 'manje od', 'veće od', 'okomita crta', 'tilda',
-        'akcent', 'nula', 'jedan', 'dva', 'tri', 'četiri', 'pet', 'šest',
-        'sedam', 'osam', 'devet', 'blank', 'novi red', 'tabulator',
-        # English variants NVDA might use
-        'space', 'dot', 'comma', 'exclamation', 'question', 'semicolon',
-        'colon', 'dash', 'underscore', 'apostrophe', 'quote', 'tab',
-        'new line', 'newline',
-    ])
 
     def speak(self, speechSequence):
         """
         Speak the given speech sequence.
 
+        Processes the sequence in a single pass, tracking CharacterModeCommand
+        state per-item. Only single characters in CharacterMode blocks use
+        spelled synthesis; multi-character text always uses normal synthesis.
+
         Args:
             speechSequence: List of text strings and speech commands
         """
         # Debug: Log the speech sequence to file
-        _debug_log("speak() called with %d items, characterMode=%s" % (
-            len(speechSequence), self._characterMode))
+        _debug_log("speak() called with %d items" % len(speechSequence))
         for i, item in enumerate(speechSequence):
             if isinstance(item, string_types):
                 _debug_log("  [%d] Text: '%s'" % (i, item[:50] if len(item) > 50 else item))
@@ -416,76 +419,52 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             else:
                 _debug_log("  [%d] Unknown: %s" % (i, type(item).__name__))
 
-        # FIRST: Check if this sequence contains CharacterModeCommand(True)
-        # When NVDA spells text, it wraps characters in CharacterModeCommand.
-        # We must process CharacterModeCommand BEFORE any early-return logic.
-        has_char_mode = False
+        # Unified single-pass processing of the speech sequence
+        # Tracks CharacterModeCommand state to correctly handle spelling vs normal speech
+        char_mode = False
+        pendingIndex = None  # Index that will be associated with the NEXT text
+        textParts = []
+
         for item in speechSequence:
             if CharacterModeCommand is not None and isinstance(item, CharacterModeCommand):
-                if item.state:
-                    has_char_mode = True
-                self._characterMode = item.state
-                _debug_log("CharacterModeCommand detected, state=%s" % item.state)
+                # Flush accumulated text before mode change
+                if textParts:
+                    text = " ".join(textParts)
+                    if text.strip():
+                        self._speakQueue.put((text, pendingIndex, False, False))
+                        pendingIndex = None
+                    textParts = []
+                char_mode = item.state
+                _debug_log("CharacterMode changed to %s" % char_mode)
 
-        # If CharacterModeCommand(True) is in the sequence, queue for async playback
-        if has_char_mode:
-            for item in speechSequence:
-                if isinstance(item, string_types):
-                    text = item.strip() if item.strip() else item  # Keep spaces
-                    if text:
-                        _debug_log("Queue spelling (charMode=True): '%s'" % text)
-                        # Queue with spelled synthesis, background thread will notify when done
-                        self._speakQueue.put((text, None, True, False))
-                elif IndexCommand is not None and isinstance(item, IndexCommand):
-                    pass
-            # Don't notify synthDoneSpeaking here - let background thread do it
-            return
-
-        # Check if this is a spelling request (single char OR symbol name)
-        # NVDA's spell review sends each character/symbol as a separate speak() call
-        # Symbol names like "razmak" (space) must also go through spelling path
-        text_items = [item for item in speechSequence if isinstance(item, string_types)]
-        if len(text_items) == 1:
-            text = text_items[0].strip()
-            is_single_char = len(text) == 1
-            is_symbol_name = text.lower() in self._SPELLING_SYMBOL_NAMES
-
-            if is_single_char or is_symbol_name:
-                # Find index
-                idx = None
-                for item in speechSequence:
-                    if IndexCommand is not None and isinstance(item, IndexCommand):
-                        idx = item.index
-                        break
-
-                _debug_log("Queue spelling (async): '%s' idx=%s single=%s symbol=%s" % (
-                    text, idx, is_single_char, is_symbol_name))
-
-                # Queue to background thread - use spelled synthesis only for single chars
-                # Symbol names should use normal synthesis (we want to say "razmak" not spell it)
-                use_spelled = is_single_char
-                self._speakQueue.put((text, idx, use_spelled, True))
-                return
-
-        # Normal async path for multi-word speech
-        # IMPORTANT for Say All: In NVDA's speech sequence, IndexCommand typically
-        # comes BEFORE the text it marks. This allows NVDA to track which segment
-        # is currently being spoken and request the next segment when needed.
-        textParts = []
-        pendingIndex = None  # Index that will be associated with the NEXT text
-
-        for item in speechSequence:
-            if isinstance(item, string_types):
-                textParts.append(item)
+            elif isinstance(item, string_types):
+                if char_mode:
+                    # In character mode: spell single chars, speak multi-char normally
+                    stripped = item.strip()
+                    if stripped:
+                        if len(stripped) == 1:
+                            _debug_log("Queue char-mode single char: '%s'" % stripped)
+                            self._speakQueue.put((stripped, pendingIndex, True, False))
+                        else:
+                            _debug_log("Queue char-mode multi-char: '%s'" % stripped[:50])
+                            self._speakQueue.put((stripped, pendingIndex, False, False))
+                        pendingIndex = None
+                else:
+                    textParts.append(item)
 
             elif IndexCommand is not None and isinstance(item, IndexCommand):
-                # Index command marks the NEXT text segment
                 # Flush any accumulated text with the pending index
                 if textParts:
                     text = " ".join(textParts)
                     if text.strip():
-                        self._speakQueue.put((text, pendingIndex, False))
+                        self._speakQueue.put((text, pendingIndex, False, False))
+                        pendingIndex = None
                     textParts = []
+                # Report orphaned pending index (consecutive IndexCommands)
+                # NVDA tracks every index in _indexesSpeaking; unreported ones
+                # make _synthStillSpeaking() return True, blocking Say All
+                if pendingIndex is not None:
+                    self._speakQueue.put(("", pendingIndex, False, False))
                 # Store this index for the NEXT text segment
                 pendingIndex = item.index
                 _debug_log("IndexCommand: pendingIndex=%s" % pendingIndex)
@@ -498,7 +477,16 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         if textParts:
             text = " ".join(textParts)
             if text.strip():
-                self._speakQueue.put((text, pendingIndex, False))
+                self._speakQueue.put((text, pendingIndex, False, False))
+                pendingIndex = None
+
+        # Handle orphaned trailing index - CRITICAL for Say All
+        # NVDA's speech manager adds IndexCommand at end of every utterance
+        # via _ensureEndUtterance() and tracks it in _indexesSpeaking.
+        # If we don't report it, _synthStillSpeaking() stays True
+        # and no new speech is ever pushed to the synth.
+        if pendingIndex is not None:
+            self._speakQueue.put(("", pendingIndex, False, False))
 
     def cancel(self):
         """Cancel current speech."""
@@ -528,8 +516,6 @@ class SynthDriver(synthDriverHandler.SynthDriver):
 
         with self._speakLock:
             self._isSpeaking = False
-        # Reset character mode on cancel
-        self._characterMode = False
 
     def speakCharacter(self, character):
         """
@@ -603,11 +589,15 @@ class SynthDriver(synthDriverHandler.SynthDriver):
     def _applySettings(self):
         """Apply current voice settings to the engine."""
         if self._engine:
+            # Apply voice character pitch (base_pitch for derived voices)
+            # set_pitch(1.0) → effective_pitch = voice_base_pitch * 1.0
+            # This ensures derived voices (detence, baba, djed) sound correct
+            self._engine.set_pitch(1.0)
             # Apply volume (unless forced by Laprdus config)
             if not self._forceVolume:
                 self._engine.set_volume(_nvda_to_laprdus_volume(self._volume))
             # Apply user pitch preference - formant-preserving (no chipmunk effect)
-            # Voice character pitch (base_pitch) is handled by the voice selection
+            # This is the NVDA pitch slider, separate from voice character pitch
             if not self._forcePitch:
                 self._engine.set_user_pitch(_nvda_to_laprdus_pitch(self._pitch))
             # Apply speed/rate to engine (Sonic time-stretching)
@@ -896,13 +886,16 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             if self._engine:
                 # Set the new voice - this may reload phoneme data
                 self._engine.set_voice(value)
+                # Apply the voice's character pitch (base_pitch)
+                # set_pitch(1.0) → effective_pitch = voice_base_pitch * 1.0
+                # This makes derived voices (detence, baba, djed) sound correct
+                self._engine.set_pitch(1.0)
                 # Reload internal dictionaries (in case they were cleared)
                 self._engine.load_dictionary()
                 self._engine.load_spelling_dictionary()
                 self._engine.load_emoji_dictionary()
                 # Re-append user dictionaries on top
                 self._loadUserDictionaries()
-                # Reapply pitch since base pitch may have changed
                 # Reapply user pitch preference (formant-preserving)
                 self._engine.set_user_pitch(_nvda_to_laprdus_pitch(self._pitch))
 
