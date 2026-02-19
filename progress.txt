@@ -3,6 +3,50 @@ LAPRDUS TTS - PROGRESS LOG
 ================================================================================
 
 ================================================================================
+2026-02-19: Android - TalkBack list recognition investigation + code review skill
+================================================================================
+
+SUMMARY: Investigated TalkBack not recognizing dictionary entry list as a list
+control. Tried 7 different approaches (CollectionInfo/CollectionItemInfo,
+Column+verticalScroll, scrollAxisRange overrides, Box wrapper with
+mergeDescendants, and even native RecyclerView via AndroidView). None worked -
+even native RecyclerView wasn't announced as a list by Samsung TalkBack on
+Android 16. Concluded as Samsung TalkBack bug. All changes reverted to clean
+state. Added new android-code-review Claude Code skill.
+
+FILES MODIFIED:
+- .claude/skills/android-code-review/SKILL.md (NEW)
+
+DETAILED CHANGES:
+
+--- android-code-review skill (NEW) ---
+Added comprehensive Android code review skill for Claude Code. Covers 9 review
+areas: source code bugs/logic, build configuration, resources/localization,
+API compatibility, deprecation warnings, runtime correctness, test coverage,
+build verification, and findings summary table.
+
+--- TalkBack List Investigation (ALL REVERTED) ---
+Attempted 7 approaches to make TalkBack announce dictionary entries as a list:
+1. Remove custom contentDescription, let native semantics work -> failed
+2. Explicit CollectionInfo on LazyColumn + CollectionItemInfo on items -> failed
+3. Replace LazyColumn with Column+verticalScroll -> failed (scrollable=false)
+4. verticalScrollAxisRange override with maxValue>=1 -> failed (wrong node)
+5. Box wrapper with mergeDescendants+scrollBy+collectionInfo -> scrollable=true
+   but class still "android.view.View" not "android.widget.ListView"
+6. Simplest CollectionInfo+CollectionItemInfo pattern from docs -> failed
+7. Native RecyclerView via AndroidView -> still not announced as list
+
+Root cause: Samsung TalkBack (com.samsung.android.accessibility.talkback) on
+Android 16 (SDK 36) does not announce list role for Compose or native
+RecyclerView list controls. Confirmed as TalkBack bug.
+
+All changes reverted via git checkout. Codebase clean at commit b4a3a25.
+
+BUILD STATUS: assembleDebug BUILD SUCCESSFUL (26s)
+APK installed on physical device (R3CT30GYXHM)
+COMMIT: 3c82921 pushed to main
+
+================================================================================
 2026-02-19: Android - Accessibility re-audit, SliderSettingItem fix
 ================================================================================
 
