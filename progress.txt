@@ -3,6 +3,35 @@ LAPRDUS TTS - PROGRESS LOG
 ================================================================================
 
 ================================================================================
+2026-02-19: Android - Accessibility re-audit, SliderSettingItem fix
+================================================================================
+
+SUMMARY: Full accessibility re-audit of all 4 Compose UI screens against 18
+TalkBack rules. Found 1 violation in SettingsScreen.kt and fixed it. All string
+resources verified across 3 locales - no missing keys.
+
+FILES MODIFIED:
+- android/app/src/main/java/com/hrvojekatic/laprdus/ui/screens/SettingsScreen.kt
+
+DETAILED CHANGES:
+
+--- SettingsScreen.kt ---
+[RULE 1] SliderSettingItem: Added missing `isTraversalGroup = true` as first
+         property inside `semantics(mergeDescendants = true)` block on the
+         Slider composable. Required for proper TalkBack swipe navigation
+         grouping. Affects all 6 sliders (rate, pitch, volume, sentence/comma/
+         newline pauses).
+
+FILES AUDITED (no changes needed):
+- MainScreen.kt: All 18 rules pass
+- DictionaryListScreen.kt: All 18 rules pass
+- DictionaryEditScreen.kt: All 18 rules pass
+- String resources: All 3 locales (values, values-hr, values-sr) have matching keys
+
+BUILD STATUS: assembleDebug BUILD SUCCESSFUL (10s)
+COMMIT: cf376b2 pushed to main
+
+================================================================================
 2026-02-19: Android - Fix dict entry double TalkBack, fix build skill
 ================================================================================
 
