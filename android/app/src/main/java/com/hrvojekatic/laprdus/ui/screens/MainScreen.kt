@@ -322,7 +322,7 @@ private fun AccessibleButton(
             )
     ) {
         Button(
-            onClick = { }, // Click handled by parent Row
+            onClick = onClick,
             enabled = enabled,
             modifier = Modifier
                 .fillMaxWidth()
@@ -370,7 +370,7 @@ private fun AccessibleOutlinedButton(
             )
     ) {
         OutlinedButton(
-            onClick = { }, // Click handled by parent Row
+            onClick = onClick,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(64.dp)

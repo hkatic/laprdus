@@ -677,7 +677,7 @@ fun RestoreDefaultButton(
     ) {
         // Visual button appearance without its own semantics
         Button(
-            onClick = { }, // Click handled by parent Row
+            onClick = onClick,
             modifier = Modifier
                 .fillMaxWidth()
                 .clearAndSetSemantics { },

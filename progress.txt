@@ -3,6 +3,76 @@ LAPRDUS TTS - PROGRESS LOG
 ================================================================================
 
 ================================================================================
+2026-02-19: Android - Fix buttons unresponsive without TalkBack
+================================================================================
+
+SUMMARY: Fixed critical bug where all Button/OutlinedButton composables were
+unresponsive when TalkBack was OFF. Root cause: accessibility pattern used
+Row(clickable) wrapping Button(onClick = {empty}), causing Button to consume
+touch events with empty handler. Fix: pass real onClick to inner Button.
+
+FILES MODIFIED:
+- android/app/src/main/java/com/hrvojekatic/laprdus/ui/screens/MainScreen.kt
+- android/app/src/main/java/com/hrvojekatic/laprdus/ui/screens/SettingsScreen.kt
+
+DETAILED CHANGES:
+
+--- MainScreen.kt ---
+[FIX] AccessibleButton (line 325): Changed Button onClick from { } to onClick
+      Fixes: Speak/Stop button now works without TalkBack
+[FIX] AccessibleOutlinedButton (line 373): Changed OutlinedButton onClick from { } to onClick
+      Fixes: Laprdus Settings and Android TTS Settings buttons now work without TalkBack
+
+--- SettingsScreen.kt ---
+[FIX] RestoreDefaultButton (line 680): Changed Button onClick from { } to onClick
+      Fixes: Restore Default Speed/Pitch/Volume buttons now work without TalkBack
+
+BUILD STATUS:
+- Android debug APK: BUILD SUCCESSFUL
+- APK installed on physical device (R3CT30GYXHM)
+
+NOTES:
+- TalkBack behavior is preserved (Row's accessibility action still works)
+- No double invocation: inner Button consumes touch, Row's clickable doesn't fire
+- Other settings components (Switch, Slider, Dropdown, Navigation) were verified
+  as unaffected since their inner elements either don't consume clicks or have
+  real click handlers
+- App icon replaced with custom Laprdus branding (see below)
+
+================================================================================
+2026-02-19: Android - Replace app icon with custom Laprdus branding
+================================================================================
+
+SUMMARY: Replaced default Android Studio bugdroid icon with custom "LAPRDUS"
+text icon. Processed source PNG (1024x500) to generate properly-sized icons
+for all screen densities, with adaptive icon safe zone padding.
+
+FILES MODIFIED:
+- android/app/src/main/res/drawable/ic_launcher_background.xml (solid white)
+- android/app/src/main/res/drawable-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/ic_launcher_foreground.png (NEW)
+- android/app/src/main/res/mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/ic_launcher.png (NEW)
+- android/app/src/main/res/mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/ic_launcher_round.png (NEW)
+
+FILES DELETED:
+- android/app/src/main/res/drawable/ic_launcher_foreground.xml (old bugdroid vector)
+- android/app/src/main/res/mipmap-*/ic_launcher.webp (old bugdroid bitmaps)
+- android/app/src/main/res/mipmap-*/ic_launcher_round.webp (old bugdroid bitmaps)
+
+DETAILED CHANGES:
+- Cropped source PNG to text area, centered in square canvas
+- Created transparent-bg foreground (luminance->alpha for smooth anti-aliasing)
+- Padded foreground for adaptive icon safe zone (66dp content in 108dp canvas)
+- Generated density-specific foreground PNGs (108-432px)
+- Generated legacy mipmap PNGs for pre-API 26 (48-192px)
+- Simplified background from green grid to solid white vector
+- Adaptive icon XML unchanged (already references correct drawables)
+- Monochrome/themed icon layer works correctly (text alpha -> theme color)
+
+BUILD STATUS:
+- Android debug APK: BUILD SUCCESSFUL
+- APK installed on physical device (R3CT30GYXHM)
+
+================================================================================
 2026-02-19: Android Accessibility Audit & Fix
 ================================================================================
 
