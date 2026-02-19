@@ -35,12 +35,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.hrvojekatic.laprdus.R
 import com.hrvojekatic.laprdus.data.DictionaryEntry
@@ -175,20 +176,19 @@ fun DictionaryEditScreen(
 
             // Case sensitive checkbox
             val caseSensitiveLabel = stringResource(R.string.dict_entry_case_sensitive)
-            val checkboxRole = stringResource(R.string.cd_checkbox)
-            val caseSensitiveState = if (caseSensitive) {
-                stringResource(R.string.cd_state_on)
-            } else {
-                stringResource(R.string.cd_state_off)
-            }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { caseSensitive = !caseSensitive }
                     .semantics(mergeDescendants = true) {
-                        stateDescription = "$caseSensitiveLabel. $checkboxRole. $caseSensitiveState"
+                        isTraversalGroup = true
+                        contentDescription = caseSensitiveLabel
                     }
+                    .toggleable(
+                        value = caseSensitive,
+                        onValueChange = { caseSensitive = it },
+                        role = Role.Checkbox
+                    )
             ) {
                 Checkbox(
                     checked = caseSensitive,
@@ -204,19 +204,19 @@ fun DictionaryEditScreen(
 
             // Whole word checkbox
             val wholeWordLabel = stringResource(R.string.dict_entry_whole_word)
-            val wholeWordState = if (wholeWord) {
-                stringResource(R.string.cd_state_on)
-            } else {
-                stringResource(R.string.cd_state_off)
-            }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { wholeWord = !wholeWord }
                     .semantics(mergeDescendants = true) {
-                        stateDescription = "$wholeWordLabel. $checkboxRole. $wholeWordState"
+                        isTraversalGroup = true
+                        contentDescription = wholeWordLabel
                     }
+                    .toggleable(
+                        value = wholeWord,
+                        onValueChange = { wholeWord = it },
+                        role = Role.Checkbox
+                    )
             ) {
                 Checkbox(
                     checked = wholeWord,
@@ -263,7 +263,12 @@ fun DictionaryEditScreen(
     if (showDeleteDialog && entry != null) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text(stringResource(R.string.dict_delete_confirm_title)) },
+            title = {
+                Text(
+                    text = stringResource(R.string.dict_delete_confirm_title),
+                    modifier = Modifier.semantics { heading() }
+                )
+            },
             text = { Text(stringResource(R.string.dict_delete_confirm_message)) },
             confirmButton = {
                 TextButton(

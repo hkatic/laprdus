@@ -45,9 +45,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.hrvojekatic.laprdus.R
 import com.hrvojekatic.laprdus.data.DictionaryEntry
@@ -174,7 +178,12 @@ fun DictionaryListScreen(
         if (!showDeleteConfirm) {
             AlertDialog(
                 onDismissRequest = { menuEntry = null },
-                title = { Text(entry.grapheme) },
+                title = {
+                    Text(
+                        text = entry.grapheme,
+                        modifier = Modifier.semantics { heading() }
+                    )
+                },
                 text = {
                     Column {
                         TextButton(
@@ -215,7 +224,12 @@ fun DictionaryListScreen(
                     showDeleteConfirm = false
                     menuEntry = null
                 },
-                title = { Text(stringResource(R.string.dict_delete_confirm_title)) },
+                title = {
+                    Text(
+                        text = stringResource(R.string.dict_delete_confirm_title),
+                        modifier = Modifier.semantics { heading() }
+                    )
+                },
                 text = { Text(stringResource(R.string.dict_delete_confirm_message)) },
                 confirmButton = {
                     TextButton(
@@ -246,6 +260,9 @@ fun DictionaryListScreen(
 
 /**
  * Dropdown for selecting dictionary type.
+ *
+ * Accessibility: Uses Role.DropdownList for native TalkBack role announcement.
+ * Parent Row merges descendants and provides contentDescription + stateDescription.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -260,22 +277,32 @@ private fun DictionaryTypeSelector(
         DictionaryType.SPELLING -> stringResource(R.string.dict_type_spelling)
         DictionaryType.EMOJI -> stringResource(R.string.dict_type_emoji)
     }
+    val label = stringResource(R.string.dict_type_label)
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(16.dp)
+            .semantics(mergeDescendants = true) {
+                isTraversalGroup = true
+                contentDescription = label
+                stateDescription = typeLabel
+            }
+            .clickable(role = Role.DropdownList) { expanded = true },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = stringResource(R.string.dict_type_label),
-            style = MaterialTheme.typography.bodyLarge
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.clearAndSetSemantics {}
         )
         Spacer(modifier = Modifier.width(8.dp))
         ExposedDropdownMenuBox(
             expanded = expanded,
             onExpandedChange = { expanded = it },
-            modifier = Modifier.weight(1f)
+            modifier = Modifier
+                .weight(1f)
+                .clearAndSetSemantics {}
         ) {
             OutlinedTextField(
                 value = typeLabel,
@@ -286,6 +313,7 @@ private fun DictionaryTypeSelector(
                 modifier = Modifier
                     .fillMaxWidth()
                     .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                    .clearAndSetSemantics {}
             )
             ExposedDropdownMenu(
                 expanded = expanded,
@@ -326,12 +354,13 @@ private fun DictionaryEntryItem(
     onClick: () -> Unit
 ) {
     val entryDescription = "${entry.grapheme}, ${entry.phoneme}"
+    val actionLabel = stringResource(R.string.dict_action_edit)
 
     ListItem(
         headlineContent = { Text(entry.grapheme) },
         supportingContent = { Text(entry.phoneme) },
         modifier = Modifier
-            .clickable(onClick = onClick)
+            .clickable(onClickLabel = actionLabel, onClick = onClick)
             .semantics { contentDescription = entryDescription }
     )
     HorizontalDivider()

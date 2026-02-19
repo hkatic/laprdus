@@ -45,7 +45,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.hrvojekatic.laprdus.R
@@ -89,7 +89,8 @@ fun MainScreen(
                     Text(
                         text = stringResource(R.string.app_name),
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.semantics { heading() }
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -145,9 +146,6 @@ fun MainScreen(
                 )
 
                 // Button section - three buttons stacked vertically
-                // Same pattern as switches: Row wrapper with clickable + stateDescription
-                val buttonRole = stringResource(R.string.cd_button)
-
                 Column(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
@@ -158,7 +156,6 @@ fun MainScreen(
                         AccessibleButton(
                             text = stopText,
                             description = stopDesc,
-                            buttonRole = buttonRole,
                             onClick = onStop,
                             containerColor = MaterialTheme.colorScheme.error,
                             contentColor = MaterialTheme.colorScheme.onError,
@@ -171,7 +168,6 @@ fun MainScreen(
                         AccessibleButton(
                             text = speakText,
                             description = speakDesc,
-                            buttonRole = buttonRole,
                             onClick = onSpeak,
                             enabled = isEnabled,
                             icon = Icons.Default.PlayArrow
@@ -184,7 +180,6 @@ fun MainScreen(
                     AccessibleOutlinedButton(
                         text = laprdusSettingsText,
                         description = laprdusSettingsDesc,
-                        buttonRole = buttonRole,
                         onClick = onOpenSettings,
                         icon = Icons.Default.Settings
                     )
@@ -195,7 +190,6 @@ fun MainScreen(
                     AccessibleOutlinedButton(
                         text = ttsSettingsText,
                         description = ttsSettingsDesc,
-                        buttonRole = buttonRole,
                         onClick = onOpenTTSSettings,
                         icon = Icons.Outlined.RecordVoiceOver
                     )
@@ -260,14 +254,15 @@ private fun DefaultTtsDialog(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .semantics(mergeDescendants = true) {
+                            isTraversalGroup = true
+                            contentDescription = checkboxDescription
+                        }
                         .toggleable(
                             value = dontAskAgainChecked,
                             onValueChange = onDontAskAgainChange,
                             role = Role.Checkbox
-                        )
-                        .semantics(mergeDescendants = true) {
-                            contentDescription = checkboxDescription
-                        },
+                        ),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Checkbox(
@@ -297,15 +292,14 @@ private fun DefaultTtsDialog(
 }
 
 /**
- * Accessible button with proper TalkBack announcement order.
- * Uses Row wrapper with clickable for TalkBack activation.
- * Announcement: "Text. Button. Description"
+ * Accessible button with proper TalkBack announcement.
+ * Uses Row wrapper with Role.Button for native role announcement.
+ * TalkBack: "Text, Button, Double-tap to Description"
  */
 @Composable
 private fun AccessibleButton(
     text: String,
     description: String,
-    buttonRole: String,
     onClick: () -> Unit,
     enabled: Boolean = true,
     containerColor: Color = MaterialTheme.colorScheme.primary,
@@ -316,10 +310,16 @@ private fun AccessibleButton(
         modifier = Modifier
             .fillMaxWidth()
             .height(64.dp)
-            .clickable(enabled = enabled, onClick = onClick)
             .semantics(mergeDescendants = true) {
-                stateDescription = "$text. $buttonRole. $description"
+                isTraversalGroup = true
+                contentDescription = text
             }
+            .clickable(
+                enabled = enabled,
+                role = Role.Button,
+                onClickLabel = description,
+                onClick = onClick
+            )
     ) {
         Button(
             onClick = { }, // Click handled by parent Row
@@ -344,15 +344,14 @@ private fun AccessibleButton(
 }
 
 /**
- * Accessible outlined button with proper TalkBack announcement order.
- * Uses Row wrapper with clickable for TalkBack activation.
- * Announcement: "Text. Button. Description"
+ * Accessible outlined button with proper TalkBack announcement.
+ * Uses Row wrapper with Role.Button for native role announcement.
+ * TalkBack: "Text, Button, Double-tap to Description"
  */
 @Composable
 private fun AccessibleOutlinedButton(
     text: String,
     description: String,
-    buttonRole: String,
     onClick: () -> Unit,
     icon: ImageVector
 ) {
@@ -360,10 +359,15 @@ private fun AccessibleOutlinedButton(
         modifier = Modifier
             .fillMaxWidth()
             .height(64.dp)
-            .clickable(onClick = onClick)
             .semantics(mergeDescendants = true) {
-                stateDescription = "$text. $buttonRole. $description"
+                isTraversalGroup = true
+                contentDescription = text
             }
+            .clickable(
+                role = Role.Button,
+                onClickLabel = description,
+                onClick = onClick
+            )
     ) {
         OutlinedButton(
             onClick = { }, // Click handled by parent Row

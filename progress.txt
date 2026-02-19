@@ -1,0 +1,94 @@
+================================================================================
+LAPRDUS TTS - PROGRESS LOG
+================================================================================
+
+================================================================================
+2026-02-19: Android Accessibility Audit & Fix
+================================================================================
+
+SUMMARY: Scanned all Compose UI files and fixed accessibility violations against
+18 TalkBack rules. All fixes use native Compose Role.* constants and proper
+semantic patterns for optimal screen reader experience.
+
+FILES MODIFIED:
+- android/app/src/main/java/com/hrvojekatic/laprdus/ui/screens/MainScreen.kt
+- android/app/src/main/java/com/hrvojekatic/laprdus/ui/screens/SettingsScreen.kt
+- android/app/src/main/java/com/hrvojekatic/laprdus/ui/screens/DictionaryListScreen.kt
+- android/app/src/main/java/com/hrvojekatic/laprdus/ui/screens/DictionaryEditScreen.kt
+- android/app/src/main/res/values/strings.xml
+- android/app/src/main/res/values-hr/strings.xml
+- android/app/src/main/res/values-sr/strings.xml
+
+DETAILED CHANGES:
+
+--- MainScreen.kt ---
+[RULE 1] Added isTraversalGroup = true to DefaultTtsDialog checkbox,
+         AccessibleButton, AccessibleOutlinedButton merged semantics blocks.
+[RULE 3] Replaced custom cd_button string with native Role.Button via
+         .clickable(role = Role.Button). Removed buttonRole parameter from
+         AccessibleButton and AccessibleOutlinedButton functions.
+[RULE 8] Added onClickLabel = description to button clickables so TalkBack
+         announces what happens on activation.
+[RULE 9] Added Modifier.semantics { heading() } to TopAppBar title for
+         TalkBack heading navigation.
+[RULE 13] Reordered DefaultTtsDialog checkbox modifiers: .semantics() now
+          comes before .toggleable() in the modifier chain.
+
+--- SettingsScreen.kt ---
+[RULE 3] Removed all custom role strings (cd_switch, cd_slider, cd_dropdown,
+         cd_button). Replaced with native Role.Switch, Role.Button,
+         Role.DropdownList via Compose Role.* constants.
+[RULE 5] SwitchSettingItem: Changed from .clickable{} to
+         .toggleable(value, onValueChange, role = Role.Switch) for native
+         switch role announcement and automatic On/Off state.
+[RULE 6] VoiceSettingItem: Added .clickable(role = Role.DropdownList,
+         onClickLabel = dropdownDesc). Set contentDescription = label,
+         stateDescription = selectedVoiceName.
+[RULE 8] Added onClickLabel to RestoreDefaultButton and NavigationSettingItem.
+[RULE 18] SliderSettingItem: Removed custom cd_slider role string. Changed to
+          contentDescription = title, stateDescription = "$title. $valueLabel"
+          per slider pattern.
+
+--- DictionaryListScreen.kt ---
+[RULE 6] DictionaryTypeSelector: Added merged semantics with isTraversalGroup,
+         contentDescription, stateDescription. Added .clickable(role =
+         Role.DropdownList). Added clearAndSetSemantics on Text label,
+         ExposedDropdownMenuBox, and OutlinedTextField children.
+[RULE 8] DictionaryEntryItem: Added onClickLabel = actionLabel to clickable.
+[RULE 9] Added heading() semantics to action menu dialog title and delete
+         confirmation dialog title.
+
+--- DictionaryEditScreen.kt ---
+[RULE 1] Added isTraversalGroup = true to both checkbox merged semantics.
+[RULE 3/4] Both checkboxes (case sensitive, whole word): Replaced .clickable{}
+           with .toggleable(value, onValueChange, role = Role.Checkbox).
+           Removed custom cd_checkbox and cd_state_on/cd_state_off strings.
+           Set contentDescription = label.
+[RULE 9] Added heading() semantics to delete confirmation dialog title.
+[RULE 13] Reordered modifiers: .semantics() before .toggleable() on both
+          checkboxes.
+
+--- String Resources (all 3 locales) ---
+Removed 7 unused custom accessibility strings from values/strings.xml,
+values-hr/strings.xml, and values-sr/strings.xml:
+  - cd_switch (Switch / Prekidac / Prekidac)
+  - cd_slider (Slider / Klizac / Klizac)
+  - cd_dropdown (Dropdown / Padajuci popis / Padajuca lista)
+  - cd_checkbox (Checkbox / Potvrdni okvir / Polje za potvrdu)
+  - cd_button (Button / Gumb / Dugme)
+  - cd_state_on (On / Ukljuceno / Ukljuceno)
+  - cd_state_off (Off / Iskljuceno / Iskljuceno)
+
+IMPORT CLEANUP:
+- MainScreen.kt: Added isTraversalGroup import, removed unused stateDescription
+- SettingsScreen.kt: Added Role and toggleable imports
+- DictionaryListScreen.kt: Added Role, clearAndSetSemantics, isTraversalGroup,
+  stateDescription imports
+- DictionaryEditScreen.kt: Added Role, isTraversalGroup, toggleable imports.
+  Removed unused clickable and stateDescription imports.
+
+BUILD STATUS: Android debug APK builds successfully (no errors, only
+pre-existing warning about always-true condition in DictionaryEditScreen.kt:102).
+
+TESTING: No device was connected at time of build. Manual TalkBack testing
+required to verify announcement order and behavior.

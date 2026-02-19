@@ -95,16 +95,6 @@
     <!-- Accessibility descriptions -->
     <string name="cd_slider_adjust">Prevucite za podešavanje</string>
 
-    <!-- Accessibility control type names (using Android's native naming convention) -->
-    <string name="cd_switch">Prekidač</string>
-    <string name="cd_slider">Klizač</string>
-    <string name="cd_dropdown">Padajuća lista</string>
-    <string name="cd_checkbox">Polje za potvrdu</string>
-
-    <!-- Accessibility state descriptions (using Android's native naming convention) -->
-    <string name="cd_state_on">Uključeno</string>
-    <string name="cd_state_off">Isključeno</string>
-    <string name="cd_button">Dugme</string>
 
     <!-- Accessibility content descriptions -->
     <string name="cd_settings_button">Otvori podešavanja govora</string>

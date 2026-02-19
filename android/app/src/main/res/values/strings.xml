@@ -95,16 +95,6 @@
     <!-- Accessibility descriptions -->
     <string name="cd_slider_adjust">Slide to adjust</string>
 
-    <!-- Accessibility control type names (using Android's native naming convention) -->
-    <string name="cd_switch">Switch</string>
-    <string name="cd_slider">Slider</string>
-    <string name="cd_dropdown">Dropdown</string>
-    <string name="cd_checkbox">Checkbox</string>
-
-    <!-- Accessibility state descriptions (using Android's native naming convention) -->
-    <string name="cd_state_on">On</string>
-    <string name="cd_state_off">Off</string>
-    <string name="cd_button">Button</string>
 
     <!-- Accessibility content descriptions -->
     <string name="cd_settings_button">Open speech settings</string>

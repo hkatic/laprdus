@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -47,6 +48,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
@@ -415,20 +417,22 @@ fun VoiceSettingItem(
     val voiceSelectorLabel = stringResource(R.string.voice_label)
     val selectVoiceText = stringResource(R.string.select_voice)
     val selectedVoiceName = selectedVoice?.localizedDisplayName ?: selectVoiceText
-    val dropdownRole = stringResource(R.string.cd_dropdown)
     val dropdownDesc = stringResource(R.string.cd_voice_dropdown_desc)
 
-    // Row wrapper with clickable handles TalkBack activation
-    // clearAndSetSemantics prevents native dropdown role duplication
+    // Row wrapper with Role.DropdownList for native TalkBack role announcement
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
-            .clickable { expanded = true }
             .semantics(mergeDescendants = true) {
                 isTraversalGroup = true
-                stateDescription = "$voiceSelectorLabel. $dropdownRole. $selectedVoiceName. $dropdownDesc"
+                contentDescription = voiceSelectorLabel
+                stateDescription = selectedVoiceName
             }
+            .clickable(
+                role = Role.DropdownList,
+                onClickLabel = dropdownDesc
+            ) { expanded = true }
     ) {
         ExposedDropdownMenuBox(
             expanded = expanded,
@@ -534,8 +538,6 @@ fun SliderSettingItem(
     valueLabel: String,
     description: String = ""
 ) {
-    val sliderRole = stringResource(R.string.cd_slider)
-
     // The entire Column is a single accessible element
     Column(
         modifier = Modifier
@@ -543,12 +545,8 @@ fun SliderSettingItem(
             .padding(vertical = 8.dp)
             .semantics(mergeDescendants = true) {
                 isTraversalGroup = true
-                stateDescription = if (description.isNotEmpty()) {
-                    "$title. $sliderRole. $valueLabel. $description"
-                } else {
-                    "$title. $sliderRole. $valueLabel"
-                }
-                // progressBarRangeInfo for TalkBack adjustability
+                contentDescription = title
+                stateDescription = "$title. $valueLabel"
                 progressBarRangeInfo = ProgressBarRangeInfo(
                     current = value,
                     range = valueRange,
@@ -594,12 +592,9 @@ fun SliderSettingItem(
  * Switch setting item for toggles.
  *
  * Accessibility for TalkBack:
- * - Uses clickable() instead of toggleable() to avoid native role announcement
+ * - Uses toggleable(role = Role.Switch) for native role announcement
  * - Uses isTraversalGroup to ensure proper navigation order
- * - All accessibility info is in stateDescription for correct order
- * - TalkBack will announce: "Title. Switch. On/Off. Description"
- *
- * Note: Do NOT use toggleable(role=Role.Switch) - it adds role that gets announced at end
+ * - TalkBack announces: "Title. Subtitle, Switch, On/Off, Double-tap to toggle"
  */
 @Composable
 fun SwitchSettingItem(
@@ -608,23 +603,19 @@ fun SwitchSettingItem(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
-    // Get localized strings for switch role and states
-    val switchRole = stringResource(R.string.cd_switch)
-    val stateOn = stringResource(R.string.cd_state_on)
-    val stateOff = stringResource(R.string.cd_state_off)
-    val currentState = if (checked) stateOn else stateOff
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 12.dp)
-            .clickable { onCheckedChange(!checked) }
             .semantics(mergeDescendants = true) {
                 isTraversalGroup = true
-                // Single announcement with all info in correct order
-                // "Title. Switch. On/Off. Description"
-                stateDescription = "$title. $switchRole. $currentState. $subtitle"
-            },
+                contentDescription = "$title. $subtitle"
+            }
+            .toggleable(
+                value = checked,
+                onValueChange = onCheckedChange,
+                role = Role.Switch
+            ),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -654,10 +645,9 @@ fun SwitchSettingItem(
  * Button to restore default values.
  *
  * Accessibility for TalkBack:
- * - Same pattern as SwitchSettingItem: all text in stateDescription
- * - Uses clickable Row wrapper to preserve click action while controlling semantics
+ * - Uses Role.Button for native role announcement
  * - Uses isTraversalGroup to ensure proper navigation order
- * - Announcement: "Text. Button. Description"
+ * - TalkBack: "Text, Button, Double-tap to Description"
  */
 @Composable
 fun RestoreDefaultButton(
@@ -665,18 +655,19 @@ fun RestoreDefaultButton(
     description: String,
     onClick: () -> Unit
 ) {
-    val buttonRole = stringResource(R.string.cd_button)
-
-    // Use Row wrapper with clickable and clearAndSetSemantics for full control
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
-            .clickable(onClick = onClick)
             .semantics(mergeDescendants = true) {
                 isTraversalGroup = true
-                stateDescription = "$text. $buttonRole. $description"
-            },
+                contentDescription = text
+            }
+            .clickable(
+                role = Role.Button,
+                onClickLabel = description,
+                onClick = onClick
+            ),
         horizontalArrangement = Arrangement.Center
     ) {
         // Visual button appearance without its own semantics
@@ -699,9 +690,9 @@ fun RestoreDefaultButton(
  * Navigation setting item that opens another screen.
  *
  * Accessibility for TalkBack:
- * - Uses clickable Row wrapper with merged semantics
+ * - Uses Role.Button for native role announcement
  * - Uses isTraversalGroup to ensure proper navigation order
- * - Announcement: "Title. Button. Description"
+ * - TalkBack: "Title, Button, Double-tap to Subtitle"
  */
 @Composable
 fun NavigationSettingItem(
@@ -709,17 +700,20 @@ fun NavigationSettingItem(
     subtitle: String,
     onClick: () -> Unit
 ) {
-    val buttonRole = stringResource(R.string.cd_button)
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 12.dp)
-            .clickable(onClick = onClick)
             .semantics(mergeDescendants = true) {
                 isTraversalGroup = true
-                stateDescription = "$title. $buttonRole. $subtitle"
-            },
+                contentDescription = title
+                stateDescription = subtitle
+            }
+            .clickable(
+                role = Role.Button,
+                onClickLabel = subtitle,
+                onClick = onClick
+            ),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
