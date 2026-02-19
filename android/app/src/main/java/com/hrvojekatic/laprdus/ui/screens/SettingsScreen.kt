@@ -41,15 +41,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.isTraversalGroup
-import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -529,10 +526,10 @@ private fun getVoiceDescription(voice: VoiceInfo): String {
  * Slider setting item for rate, pitch, and volume.
  *
  * Accessibility for TalkBack:
- * - The entire Column is a single focusable element with merged semantics
- * - Uses isTraversalGroup to ensure proper navigation order
- * - Manually adds progressBarRangeInfo and setProgress for adjustability
- * - Announcement: "Title. Slider. Value. Description"
+ * - Visual text row is hidden; Slider keeps native SeekBar accessibility
+ * - mergeDescendants on Slider merges internal thumb/track into one node
+ * - contentDescription provides the label, stateDescription the formatted value
+ * - Announcement: "Title, Slider, Value, Use volume keys to adjust"
  */
 @Composable
 fun SliderSettingItem(
@@ -543,33 +540,16 @@ fun SliderSettingItem(
     valueLabel: String,
     description: String = ""
 ) {
-    // The entire Column is a single accessible element
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
-            .semantics(mergeDescendants = true) {
-                isTraversalGroup = true
-                contentDescription = title
-                stateDescription = "$title. $valueLabel"
-                progressBarRangeInfo = ProgressBarRangeInfo(
-                    current = value,
-                    range = valueRange,
-                    steps = 0
-                )
-                // setProgress action for volume key/swipe adjustment
-                setProgress { targetValue ->
-                    val newValue = targetValue.coerceIn(valueRange)
-                    onValueChange(newValue)
-                    true
-                }
-            }
     ) {
-        // Visual row - hidden from accessibility (merged into parent)
+        // Visual text row - hidden from TalkBack
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clearAndSetSemantics { },
+                .clearAndSetSemantics {},
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -583,12 +563,18 @@ fun SliderSettingItem(
                 color = MaterialTheme.colorScheme.primary
             )
         }
-        // Slider with cleared semantics - parent Column handles accessibility
+        // Slider keeps its native SeekBar accessibility (className, role, range, setProgress).
+        // mergeDescendants merges internal thumb/track into one node.
+        // contentDescription provides the label, stateDescription overrides the default
+        // percentage with our formatted value (e.g. "1.0x", "500 ms").
         Slider(
             value = value,
             onValueChange = onValueChange,
             valueRange = valueRange,
-            modifier = Modifier.clearAndSetSemantics { }
+            modifier = Modifier.semantics(mergeDescendants = true) {
+                contentDescription = title
+                stateDescription = valueLabel
+            }
         )
     }
 }

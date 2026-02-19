@@ -3,6 +3,36 @@ LAPRDUS TTS - PROGRESS LOG
 ================================================================================
 
 ================================================================================
+2026-02-19: Android - Accessibility re-audit (18-rule scan)
+================================================================================
+
+SUMMARY: Full accessibility audit of all 4 Compose UI screens against 18 rules.
+Only 1 issue found - codebase was already in excellent shape from prior audits.
+
+FILES MODIFIED:
+- android/app/src/main/java/com/hrvojekatic/laprdus/ui/screens/DictionaryListScreen.kt
+
+CHANGES:
+- DictionaryEntryItem: Added `mergeDescendants = true` and `isTraversalGroup = true`
+  to ListItem semantics. Previously used plain `.semantics { contentDescription = ... }`
+  which left headline/supporting Text as separate TalkBack-focusable nodes, causing
+  potential duplicate announcements when swiping through dictionary entries.
+- SliderSettingItem: Removed manual slider semantics from parent Column. Instead, let
+  the Slider composable keep its native SeekBar accessibility (className, role, range
+  info, setProgress) which TalkBack needs to announce "Slider" role and "Use volume
+  keys to adjust" hint. Added `semantics(mergeDescendants = true)` on the Slider with
+  contentDescription (label) and stateDescription (formatted value like "1.0x").
+  Visual text Row hidden via clearAndSetSemantics. Previous approach of manually
+  setting progressBarRangeInfo/setProgress on a Column created a generic View node
+  that TalkBack didn't recognize as an interactive slider.
+  Affects all 6 sliders: speech rate, pitch, volume, sentence/comma/newline pauses.
+
+STRING RESOURCES: All 3 locale files (values, values-hr, values-sr) verified -
+no missing keys. No new strings needed.
+
+BUILD STATUS: assembleDebug SUCCESSFUL
+
+================================================================================
 2026-02-19: Android - Fix buttons unresponsive without TalkBack
 ================================================================================
 

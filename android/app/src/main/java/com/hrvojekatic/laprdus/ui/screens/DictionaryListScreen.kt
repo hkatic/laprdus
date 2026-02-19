@@ -364,8 +364,11 @@ private fun DictionaryEntryItem(
         headlineContent = { Text(entry.grapheme) },
         supportingContent = { Text(entry.phoneme) },
         modifier = Modifier
+            .semantics(mergeDescendants = true) {
+                isTraversalGroup = true
+                contentDescription = entryDescription
+            }
             .clickable(onClickLabel = actionLabel, onClick = onClick)
-            .semantics { contentDescription = entryDescription }
     )
     HorizontalDivider()
 }
