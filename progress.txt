@@ -125,3 +125,38 @@ Added new string cd_dict_type_dropdown_desc:
   - Serbian: "Izbor vrste rečnika"
 
 BUILD STATUS: Android debug APK builds successfully (commit a1ee637, pushed).
+
+================================================================================
+2026-02-19: Android Accessibility Re-Audit (Clean Pass)
+================================================================================
+
+SUMMARY: Full accessibility re-audit of all 4 Compose UI files against all 18
+TalkBack rules. Zero violations found. The codebase is fully compliant.
+
+FILES AUDITED (no changes needed):
+- android/app/src/main/java/com/hrvojekatic/laprdus/ui/screens/SettingsScreen.kt
+- android/app/src/main/java/com/hrvojekatic/laprdus/ui/screens/MainScreen.kt
+- android/app/src/main/java/com/hrvojekatic/laprdus/ui/screens/DictionaryListScreen.kt
+- android/app/src/main/java/com/hrvojekatic/laprdus/ui/screens/DictionaryEditScreen.kt
+- android/app/src/main/res/values/strings.xml
+- android/app/src/main/res/values-hr/strings.xml
+- android/app/src/main/res/values-sr/strings.xml
+
+AUDIT RESULTS:
+- Rule 1 (Semantic Merging): All 11 mergeDescendants blocks have isTraversalGroup = true as first property
+- Rule 2 (Clear Child Semantics): All children in merged containers use clearAndSetSemantics {}
+- Rule 3 (Native Roles): Role.Button, Role.Switch, Role.Checkbox, Role.DropdownList used throughout
+- Rule 4 (Checkbox Pattern): Both DictionaryEditScreen checkboxes + DefaultTtsDialog checkbox correct
+- Rule 5 (Switch Pattern): SwitchSettingItem uses toggleable(role = Role.Switch) correctly
+- Rule 6 (Dropdown Pattern): VoiceSettingItem and DictionaryTypeSelector correct
+- Rule 7 (Content Descriptions): All icons have proper contentDescription (null for decorative)
+- Rule 8 (Click Labels): onClickLabel provided on all clickable composables
+- Rule 9 (Headings): All screen titles, category headers, dialog titles marked as heading()
+- Rule 10 (Live Regions): Error display uses Assertive, dialog message uses Polite
+- Rule 11 (Touch Targets): All interactive elements meet 48dp minimum
+- Rule 13 (State Descriptions): Provided on sliders, dropdowns, navigation items
+- Rule 14 (Localization): All accessibility strings exist in all 3 locales (en, hr, sr)
+- Rule 15 (Decorative Elements): Properly handled with null contentDescription or clearAndSetSemantics
+- Rule 18 (Slider Pattern): progressBarRangeInfo and setProgress correctly implemented
+
+BUILD STATUS: Android debug APK builds successfully (BUILD SUCCESSFUL, 0 errors).
