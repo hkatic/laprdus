@@ -92,3 +92,36 @@ pre-existing warning about always-true condition in DictionaryEditScreen.kt:102)
 
 TESTING: No device was connected at time of build. Manual TalkBack testing
 required to verify announcement order and behavior.
+
+================================================================================
+2026-02-19: Android Accessibility Follow-up Fix
+================================================================================
+
+SUMMARY: Follow-up accessibility audit found 2 remaining issues and fixed them.
+The codebase was already in excellent shape from the prior audit.
+
+FILES MODIFIED:
+- android/app/src/main/java/com/hrvojekatic/laprdus/ui/screens/SettingsScreen.kt
+- android/app/src/main/java/com/hrvojekatic/laprdus/ui/screens/DictionaryListScreen.kt
+- android/app/src/main/res/values/strings.xml
+- android/app/src/main/res/values-hr/strings.xml
+- android/app/src/main/res/values-sr/strings.xml
+
+DETAILED CHANGES:
+
+--- SettingsScreen.kt ---
+[RULE 9] Added Modifier.semantics { heading() } to Settings TopAppBar title.
+         Previously the MainScreen title had heading() but SettingsScreen did not.
+
+--- DictionaryListScreen.kt ---
+[RULE 8] Added onClickLabel to DictionaryTypeSelector's .clickable() so TalkBack
+         announces "Double-tap to select dictionary type" instead of generic
+         "Double-tap to activate".
+
+--- String Resources (all 3 locales) ---
+Added new string cd_dict_type_dropdown_desc:
+  - English: "Select dictionary type"
+  - Croatian: "Odabir vrste rječnika"
+  - Serbian: "Izbor vrste rečnika"
+
+BUILD STATUS: Android debug APK builds successfully (commit a1ee637, pushed).
