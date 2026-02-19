@@ -361,8 +361,8 @@ private fun DictionaryEntryItem(
     val actionLabel = stringResource(R.string.dict_action_edit)
 
     ListItem(
-        headlineContent = { Text(entry.grapheme) },
-        supportingContent = { Text(entry.phoneme) },
+        headlineContent = { Text(entry.grapheme, modifier = Modifier.clearAndSetSemantics {}) },
+        supportingContent = { Text(entry.phoneme, modifier = Modifier.clearAndSetSemantics {}) },
         modifier = Modifier
             .semantics(mergeDescendants = true) {
                 isTraversalGroup = true

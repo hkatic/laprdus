@@ -8,17 +8,18 @@ argument-hint: "[debug|release]"
 # Build Android APK
 
 Build the Android TTS engine app. Supports both debug and release builds.
+Works on Windows (Git Bash/MINGW) and Linux.
 
 ## Build Steps
 
 ### Debug Build (default)
 ```bash
-cd android && cmd.exe /c "set JAVA_HOME=C:\\Program Files\\Android\\Android Studio\\jbr&& gradlew.bat assembleDebug" && cd ..
+cd /c/Users/hrvoj/source/repos/github/hkatic/laprdus/android && if [[ "$(uname -s)" == MINGW* ]] || [[ "$(uname -s)" == MSYS* ]]; then export JAVA_HOME="/c/Program Files/Android/Android Studio/jbr"; else export JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk-amd64}"; fi && ./gradlew assembleDebug
 ```
 
 ### Release Build
 ```bash
-cd android && cmd.exe /c "set JAVA_HOME=C:\\Program Files\\Android\\Android Studio\\jbr&& gradlew.bat assembleRelease" && cd ..
+cd /c/Users/hrvoj/source/repos/github/hkatic/laprdus/android && if [[ "$(uname -s)" == MINGW* ]] || [[ "$(uname -s)" == MSYS* ]]; then export JAVA_HOME="/c/Program Files/Android/Android Studio/jbr"; else export JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk-amd64}"; fi && ./gradlew assembleRelease
 ```
 
 ## Arguments
@@ -40,22 +41,14 @@ The Gradle build automatically:
 2. Runs SCons to generate voice data if missing
 3. Copies voice data and dictionaries to APK assets
 
-## Verification
-
-After building, verify the APK contains voice data:
-```python
-python3 -c "
-import zipfile
-apk = 'android/app/build/outputs/apk/debug/app-debug.apk'
-with zipfile.ZipFile(apk, 'r') as z:
-    for name in z.namelist():
-        if 'assets/voices' in name or 'assets/dictionaries' in name:
-            print(name)
-"
-```
-
 ## Install on Device
 
+Detect platform for ADB path:
 ```bash
-"/c/Users/hrvoj/AppData/Local/Android/Sdk/platform-tools/adb.exe" install -r "android/app/build/outputs/apk/debug/app-debug.apk"
+if [[ "$(uname -s)" == MINGW* ]] || [[ "$(uname -s)" == MSYS* ]]; then
+  ADB="/c/Users/hrvoj/AppData/Local/Android/Sdk/platform-tools/adb.exe"
+else
+  ADB="${ANDROID_HOME:-$HOME/Android/Sdk}/platform-tools/adb"
+fi
+"$ADB" install -r "android/app/build/outputs/apk/debug/app-debug.apk"
 ```

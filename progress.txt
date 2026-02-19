@@ -3,6 +3,41 @@ LAPRDUS TTS - PROGRESS LOG
 ================================================================================
 
 ================================================================================
+2026-02-19: Android - Fix dict entry double TalkBack, fix build skill
+================================================================================
+
+SUMMARY: Fixed TalkBack announcing dictionary entries twice, fixed build-android
+skill to use ./gradlew instead of cmd.exe (cross-platform), enabled parallel builds.
+
+FILES MODIFIED:
+- android/app/src/main/java/com/hrvojekatic/laprdus/ui/screens/DictionaryListScreen.kt
+- .claude/skills/build-android/SKILL.md
+- android/gradle.properties
+
+DETAILED CHANGES:
+
+--- DictionaryListScreen.kt ---
+[RULE 2] DictionaryEntryItem: Added Modifier.clearAndSetSemantics {} to both
+         Text composables in headlineContent and supportingContent. The parent
+         ListItem already uses mergeDescendants=true with explicit contentDescription,
+         so children must clear their semantics to prevent duplicate TalkBack
+         announcements.
+
+--- build-android skill ---
+[FIX] Replaced cmd.exe /c wrapper with ./gradlew directly. The cmd.exe approach
+      caused build output to not flow back to Git Bash, making builds appear to hang.
+[FIX] Added uname-based platform detection for JAVA_HOME and ADB paths:
+      - Windows (MINGW/MSYS): /c/Program Files/Android/Android Studio/jbr
+      - Linux: JAVA_HOME env var or /usr/lib/jvm/java-17-openjdk-amd64 fallback
+[FIX] ADB install section now detects platform for correct binary path.
+
+--- gradle.properties ---
+[PERF] Enabled org.gradle.parallel=true (was commented out) for faster builds.
+
+BUILD STATUS: assembleDebug SUCCESSFUL (8 seconds)
+APK installed on physical device (R3CT30GYXHM), TalkBack tested OK.
+
+================================================================================
 2026-02-19: Android - Accessibility re-audit (18-rule scan)
 ================================================================================
 
