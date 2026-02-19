@@ -3,6 +3,48 @@ LAPRDUS TTS - PROGRESS LOG
 ================================================================================
 
 ================================================================================
+2026-02-19: Android - Full code review (2 minor fixes)
+================================================================================
+
+SUMMARY: Comprehensive pre-release Android code review. Read every Kotlin source
+file, build config, resources, localization, and all tests. Codebase is in
+excellent shape — found only 2 minor code quality issues. All other areas
+verified clean (build config, SDK versions, ProGuard, manifest, localization,
+accessibility, API compat, thread safety, lifecycle management, 170+ tests).
+
+FILES MODIFIED:
+- android/app/src/main/java/com/hrvojekatic/laprdus/data/DictionaryRepository.kt
+- android/app/src/main/java/com/hrvojekatic/laprdus/tts/LaprdusTTS.kt
+
+DETAILED CHANGES:
+
+--- Fix 1: DictionaryRepository - Add logging to silent catch (MEDIUM) ---
+parseDictionaryJson() was silently catching Exception without any logging.
+Parse errors were completely invisible to debugging. Added Log.w() call.
+
+--- Fix 2: LaprdusTTS - Remove unnecessary backing field (LOW) ---
+emojiEnabled property setter wrote to backing field (field = value) but getter
+read from native (nativeIsEmojiEnabled()), so the backing field was never read.
+Removed the unnecessary backing field write.
+
+VERIFIED OK (no changes needed):
+- Build config: AGP 8.13.2, Kotlin 2.0.21, KSP, Hilt 2.54, Compose BOM 2024.12
+- SDK: compileSdk 36, targetSdk 36, minSdk 24
+- ProGuard: Comprehensive rules for JNI, Hilt, Compose, DataStore, TTS
+- Manifest: All components, intent filters, TTS service correct
+- Localization: 162 strings x 3 locales (en, hr, sr) - perfect parity
+- Backup rules: Both data_extraction_rules.xml and backup_rules.xml exist
+- API compat: No unguarded API calls
+- Deprecated APIs: None (LocalLifecycleOwner uses correct import)
+- Accessibility: Excellent TalkBack support throughout
+- Thread safety: All ViewModel calls on Main dispatcher
+- AudioPlayer: Correct lifecycle (release in onCleared)
+- Service: settingsScope cancelled in onDestroy
+- Tests: 135+ unit, 18+ instrumented, 20+ accessibility
+
+BUILD STATUS: All unit tests PASS, debug APK builds successfully
+
+================================================================================
 2026-02-19: Android - TalkBack list recognition investigation + code review skill
 ================================================================================
 

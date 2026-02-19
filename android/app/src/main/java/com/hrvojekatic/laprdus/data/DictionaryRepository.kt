@@ -1,6 +1,7 @@
 package com.hrvojekatic.laprdus.data
 
 import android.content.Context
+import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -182,7 +183,7 @@ class DictionaryRepository @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            // Return empty list on parse error
+            Log.w("DictionaryRepository", "Failed to parse dictionary JSON: ${e.message}")
         }
 
         return entries

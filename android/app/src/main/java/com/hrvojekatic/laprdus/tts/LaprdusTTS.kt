@@ -335,9 +335,8 @@ class LaprdusTTS private constructor() {
      * When enabled, emojis are converted to their text representations.
      * Disabled by default.
      */
-    var emojiEnabled: Boolean = false
+    var emojiEnabled: Boolean
         set(value) {
-            field = value
             nativeSetEmojiEnabled(value)
         }
         get() = nativeIsEmojiEnabled()
