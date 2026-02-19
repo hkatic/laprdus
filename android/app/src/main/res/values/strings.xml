@@ -80,6 +80,7 @@
 
     <!-- Control descriptions for accessibility -->
     <string name="cd_voice_dropdown_desc">Select voice for speech synthesis</string>
+    <string name="cd_dict_type_dropdown_desc">Select dictionary type</string>
     <string name="cd_restore_speed_desc">Sets speech rate to default value</string>
     <string name="cd_restore_pitch_desc">Sets speech pitch to default value</string>
     <string name="cd_restore_volume_desc">Sets speech volume to default value</string>

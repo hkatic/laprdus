@@ -80,6 +80,7 @@
 
     <!-- Control descriptions for accessibility -->
     <string name="cd_voice_dropdown_desc">Izbor glasa za sintezu govora</string>
+    <string name="cd_dict_type_dropdown_desc">Izbor vrste rečnika</string>
     <string name="cd_restore_speed_desc">Postavlja brzinu govora na podrazumevanu vrednost</string>
     <string name="cd_restore_pitch_desc">Postavlja visinu govora na podrazumevanu vrednost</string>
     <string name="cd_restore_volume_desc">Postavlja jačinu govora na podrazumevanu vrednost</string>

@@ -278,6 +278,7 @@ private fun DictionaryTypeSelector(
         DictionaryType.EMOJI -> stringResource(R.string.dict_type_emoji)
     }
     val label = stringResource(R.string.dict_type_label)
+    val selectTypeLabel = stringResource(R.string.cd_dict_type_dropdown_desc)
 
     Row(
         modifier = Modifier
@@ -288,7 +289,10 @@ private fun DictionaryTypeSelector(
                 contentDescription = label
                 stateDescription = typeLabel
             }
-            .clickable(role = Role.DropdownList) { expanded = true },
+            .clickable(
+                role = Role.DropdownList,
+                onClickLabel = selectTypeLabel
+            ) { expanded = true },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
