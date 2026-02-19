@@ -572,6 +572,7 @@ fun SliderSettingItem(
             onValueChange = onValueChange,
             valueRange = valueRange,
             modifier = Modifier.semantics(mergeDescendants = true) {
+                isTraversalGroup = true
                 contentDescription = title
                 stateDescription = valueLabel
             }
