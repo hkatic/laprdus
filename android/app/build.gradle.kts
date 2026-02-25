@@ -16,8 +16,8 @@ android {
         applicationId = "com.hrvojekatic.laprdus"
         minSdk = 24
         targetSdk = 36
-        versionCode = 4
-        versionName = "1.0"
+        versionCode = 6
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -45,6 +45,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     // Only use main assets directory - voice data and dictionaries are copied

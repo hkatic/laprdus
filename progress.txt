@@ -410,3 +410,68 @@ AUDIT RESULTS:
 - Rule 18 (Slider Pattern): progressBarRangeInfo and setProgress correctly implemented
 
 BUILD STATUS: Android debug APK builds successfully (BUILD SUCCESSFUL, 0 errors).
+
+================================================================================
+2026-02-25: Android - Add About Screen to Settings
+================================================================================
+
+SUMMARY: Added About section to Android settings screen with a dedicated About
+screen showing application information, legal links, and support contact.
+Version and build numbers are dynamic from Gradle BuildConfig.
+
+FILES CREATED:
+- android/app/src/main/java/com/hrvojekatic/laprdus/AboutActivity.kt
+- android/app/src/main/java/com/hrvojekatic/laprdus/ui/screens/AboutScreen.kt
+
+FILES MODIFIED:
+- android/app/build.gradle.kts (added buildConfig = true)
+- android/app/src/main/res/values/strings.xml (12 About strings - English)
+- android/app/src/main/res/values-hr/strings.xml (12 About strings - Croatian)
+- android/app/src/main/res/values-sr/strings.xml (12 About strings - Serbian)
+- android/app/src/main/java/.../ui/screens/SettingsScreen.kt (About category + nav item)
+- android/app/src/main/AndroidManifest.xml (registered AboutActivity)
+
+DETAILED CHANGES:
+
+--- build.gradle.kts ---
+Added buildConfig = true to buildFeatures block. Enables BuildConfig.VERSION_NAME
+and BuildConfig.VERSION_CODE for dynamic version display in About screen.
+
+--- AboutActivity.kt (NEW) ---
+Simple single-screen activity following SettingsActivity pattern. Uses
+@AndroidEntryPoint, enableEdgeToEdge(), LaprdusTheme. Passes finish() as
+onNavigateBack callback.
+
+--- AboutScreen.kt (NEW) ---
+Compose UI with 3 sections using SettingsCategoryHeader (reused from SettingsScreen):
+
+Application Information:
+- App name: "Laprdus Retro TTS (Text-To-Speech)"
+- Version: dynamic from BuildConfig.VERSION_NAME + VERSION_CODE
+- Copyright: "Copyright (C) 2026., Hrvoje Katic"
+
+Legal:
+- Privacy Policy button -> opens https://hrvojekatic.com/laprdus/privacy-statement.php
+- GPL 3.0 License button -> opens https://www.gnu.org/licenses/gpl-3.0.en.html
+
+Support:
+- Contact via E-Mail button -> opens mailto:hrvojekatic@gmail.com
+
+Accessibility: heading() on section titles, Role.Button on interactive items,
+merged semantics with clearAndSetSemantics on children.
+
+--- SettingsScreen.kt ---
+Added About category section after Dictionary section with NavigationSettingItem
+that launches AboutActivity via Intent.
+
+--- AndroidManifest.xml ---
+Registered AboutActivity with parentActivityName=".SettingsActivity".
+
+--- String Resources (all 3 locales) ---
+Added 12 strings per locale:
+- Croatian: "O Laprdusu", "Inacica: %1$s (Build %2$d)", "Autorska prava"
+- Serbian: "O Laprdusu", "Verzija: %1$s (Build %2$d)", "Autorska prava"
+- English: "About Laprdus", "Version: %1$s (Build %2$d)", "Copyright"
+
+BUILD STATUS: Android debug APK: BUILD SUCCESSFUL
+No device connected at time of build for installation.

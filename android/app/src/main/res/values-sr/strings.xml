@@ -160,4 +160,19 @@
     <string name="dict_error_empty_fields">Ovo polje je obavezno</string>
     <string name="dict_error_load_failed">Učitavanje rečnika nije uspelo</string>
     <string name="dict_error_save_failed">Čuvanje unosa nije uspelo</string>
+
+    <!-- About screen -->
+    <string name="category_about">O Laprdusu</string>
+    <string name="setting_about">O Laprdusu</string>
+    <string name="setting_about_desc">Informacije o aplikaciji, pravne informacije i podrška</string>
+    <string name="about_title">O Laprdusu</string>
+    <string name="about_app_name">Laprdus Retro TTS (Text-To-Speech)</string>
+    <string name="about_version">Verzija: %1$s (Build %2$d)</string>
+    <string name="about_copyright">Autorska prava \u00A9 2026., Hrvoje Katić</string>
+    <string name="about_heading_app_info">Informacije o aplikaciji</string>
+    <string name="about_heading_legal">Pravne informacije</string>
+    <string name="about_heading_support">Podrška</string>
+    <string name="about_privacy_policy">Pročitajte Pravila privatnosti na mreži</string>
+    <string name="about_license">Pročitajte GPL 3.0 licencu na mreži</string>
+    <string name="about_contact_email">Kontaktirajte autora putem e-pošte</string>
 </resources>

@@ -52,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import android.content.Intent
 import androidx.compose.material.icons.filled.ChevronRight
+import com.hrvojekatic.laprdus.AboutActivity
 import com.hrvojekatic.laprdus.DictionaryActivity
 import com.hrvojekatic.laprdus.R
 import com.hrvojekatic.laprdus.tts.VoiceInfo
@@ -368,6 +369,23 @@ fun SettingsScreen(
                         subtitle = stringResource(R.string.setting_manage_dictionaries_desc),
                         onClick = {
                             context.startActivity(Intent(context, DictionaryActivity::class.java))
+                        }
+                    )
+                }
+
+                // About Category
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    SettingsCategoryHeader(title = stringResource(R.string.category_about))
+                }
+
+                // About Laprdus Button
+                item {
+                    NavigationSettingItem(
+                        title = stringResource(R.string.setting_about),
+                        subtitle = stringResource(R.string.setting_about_desc),
+                        onClick = {
+                            context.startActivity(Intent(context, AboutActivity::class.java))
                         }
                     )
                 }

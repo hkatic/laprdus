@@ -50,6 +50,18 @@
                 android:value=".SettingsActivity" />
         </activity>
 
+        <!-- About Activity -->
+        <activity
+            android:name=".AboutActivity"
+            android:exported="false"
+            android:label="@string/about_title"
+            android:theme="@style/Theme.Laprdus"
+            android:parentActivityName=".SettingsActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".SettingsActivity" />
+        </activity>
+
         <!-- TTS Service for system-wide text-to-speech -->
         <service
             android:name=".service.LaprdusTTSService"
