@@ -1,0 +1,33 @@
+2026-02-25: Android Pre-Release Code Review (9-step comprehensive review)
+
+## Summary
+Performed full code review of all 23 Kotlin source files, 6 unit test files, 3 instrumented test files,
+build configuration, resources, and API compatibility for the Android app.
+
+## Files Modified
+- android/app/src/main/java/com/hrvojekatic/laprdus/viewmodel/TTSViewModel.kt
+  - FIXED: Removed tts.shutdown() from onCleared() - singleton shared with TTS service
+  - FIXED: Removed unused variable `appContext` in selectVoice()
+
+## Review Results
+
+### Issues Found and Fixed
+1. HIGH - TTSViewModel.onCleared() called tts.shutdown() on singleton LaprdusTTS shared with
+   LaprdusTTSService. When user closed the app, it would shut down the native TTS engine that
+   the system TTS service was still using, breaking speech synthesis for other apps. FIXED.
+2. LOW - Unused variable `val appContext = context` in TTSViewModel.selectVoice(). FIXED.
+
+### Verified OK
+- Build configuration: AGP 8.13.2, Kotlin 2.0.21, KSP 2.0.21-1.0.28, Hilt 2.54, Compose BOM 2024.12.01
+- API compatibility: All APIs compatible with minSdk 24 through targetSdk 36
+- Dynamic color properly gated on Build.VERSION_CODES.S (API 31)
+- AudioTrack constructor uses AudioAttributes/AudioFormat (available since API 21, safe for minSdk 24)
+- No getParcelableExtra() or startForeground() needing version checks
+- String resources: All keys present in default, hr, and sr locale files
+- AndroidManifest: Correct service declarations, intent filters, activity registrations
+- ProGuard rules: Comprehensive keep rules for JNI, Hilt, Compose, DataStore
+- DataStore thread safety: All writes use suspend functions with edit{}
+- TTS service: Proper reinitialization handling, START_STICKY, onTaskRemoved
+- Accessibility: TalkBack-optimized with merged semantics, heading(), Role.Switch/Button/DropdownList
+- Unit tests: All passing (6 test files)
+- Build: assembleDebug and testDebugUnitTest both pass with zero errors

@@ -219,8 +219,6 @@ class TTSViewModel @Inject constructor(
     fun selectVoice(voiceId: String) {
         viewModelScope.launch {
             try {
-                val appContext = context
-
                 // Set the voice (this loads the correct .bin and applies pitch)
                 val success = tts.setVoice(voiceId, context.assets)
 
@@ -422,6 +420,8 @@ class TTSViewModel @Inject constructor(
         Log.d(TAG, "ViewModel cleared, releasing resources")
         playbackJob?.cancel()
         audioPlayer.release()
-        tts.shutdown()
+        // Do NOT call tts.shutdown() here - LaprdusTTS is a singleton shared with
+        // LaprdusTTSService. The service manages its own lifecycle independently.
+        // Shutting down here would break the system TTS service for other apps.
     }
 }
