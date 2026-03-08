@@ -3,6 +3,66 @@ LAPRDUS TTS - PROGRESS LOG
 ================================================================================
 
 ================================================================================
+2026-03-08: Android - Replace app icons and add splash screen
+================================================================================
+
+SUMMARY: Replaced placeholder "LAPRDUS" text icons with the new professional
+Laprdus logo (metallic speaker/robot with sunglasses and "L" letter). Added
+splash screen using core-splashscreen library. Generated proper adaptive icon
+foregrounds with safe zone padding, circular-masked round icons, and matching
+dark navy background (#19212E). Deleted orphaned ic_launcher_custom.png.
+
+FILES CREATED:
+- scripts/generate_android_icons.py (Python icon generator using Pillow)
+- android/app/src/main/ic_launcher-playstore.png (512x512 Play Store icon)
+
+FILES MODIFIED:
+- android/app/src/main/res/drawable-*/ic_launcher_foreground.png (5 densities)
+- android/app/src/main/res/mipmap-*/ic_launcher.png (5 densities)
+- android/app/src/main/res/mipmap-*/ic_launcher_round.png (5 densities, circular)
+- android/app/src/main/res/drawable/ic_launcher_background.xml (#FFFFFF -> #19212E)
+- android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml (removed monochrome)
+- android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml (removed monochrome)
+- android/app/src/main/res/values/colors.xml (added ic_launcher_background color)
+- android/app/src/main/res/values/themes.xml (added Theme.Laprdus.Splash)
+- android/app/src/main/AndroidManifest.xml (MainActivity theme -> Splash)
+- android/app/src/main/java/.../MainActivity.kt (installSplashScreen())
+- android/gradle/libs.versions.toml (added core-splashscreen 1.0.1)
+- android/app/build.gradle.kts (added splashscreen dependency)
+
+FILES DELETED:
+- android/app/src/main/res/drawable-nodpi/ic_launcher_custom.png (orphaned)
+- android/app/src/main/res/drawable-nodpi/ directory (empty)
+
+DETAILED CHANGES:
+
+--- Icon generation (scripts/generate_android_icons.py) ---
+Python/Pillow script generates adaptive icon foregrounds with 80% scaling
+(keeps metallic circle within 66.67% safe zone) and circular-masked round
+icons. Extracts exact background color from source image corner pixels.
+
+--- Adaptive icon foreground layers ---
+Logo scaled to 80% of 108dp canvas at each density, centered on background-
+colored canvas. Ensures the main circular element stays within the safe zone
+regardless of device icon mask shape (circle, squircle, rounded square).
+
+--- Adaptive icon background ---
+Changed from white (#FFFFFF) to dark navy (#19212E) matching the logo's
+background. Ensures seamless blending at mask boundaries.
+
+--- Monochrome layer removed ---
+Removed from both ic_launcher.xml and ic_launcher_round.xml. With an opaque
+bitmap, monochrome would render as a solid colored block. Without it, themed
+icons fall back to showing the full-color icon.
+
+--- Splash screen ---
+Added core-splashscreen 1.0.1 with Theme.Laprdus.Splash theme. Dark navy
+background with app icon centered. installSplashScreen() called before
+super.onCreate() in MainActivity. Transitions to Theme.Laprdus after splash.
+
+BUILD STATUS: Android debug APK builds successfully. Installed on device.
+
+================================================================================
 2026-02-19: Android - Full code review (2 minor fixes)
 ================================================================================
 
