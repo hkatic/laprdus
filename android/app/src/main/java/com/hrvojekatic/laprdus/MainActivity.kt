@@ -1,5 +1,6 @@
 package com.hrvojekatic.laprdus
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
@@ -7,11 +8,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import com.hrvojekatic.laprdus.ui.screens.MainScreen
@@ -42,6 +45,22 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(lifecycleOwner) {
                     lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
                         viewModel.checkDefaultTtsEngine()
+                    }
+                }
+
+                // Stop in-app preview playback when activity goes to background
+                DisposableEffect(lifecycleOwner) {
+                    val observer = LifecycleEventObserver { source, event ->
+                        if (event == Lifecycle.Event.ON_STOP) {
+                            val activity = source as? Activity
+                            if (activity == null || !activity.isChangingConfigurations) {
+                                viewModel.stop()
+                            }
+                        }
+                    }
+                    lifecycleOwner.lifecycle.addObserver(observer)
+                    onDispose {
+                        lifecycleOwner.lifecycle.removeObserver(observer)
                     }
                 }
 

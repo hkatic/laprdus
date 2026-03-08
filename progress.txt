@@ -3,6 +3,50 @@ LAPRDUS TTS - PROGRESS LOG
 ================================================================================
 
 ================================================================================
+2026-03-08: Android - Fix stop button error and playback on app close
+================================================================================
+
+SUMMARY: Fixed three UX bugs in the main screen's in-app TTS preview:
+1. Pressing Stop while speaking displayed a false error message ("Greška pri
+   sintezi: ...") because CancellationException was caught by a generic catch
+   block and treated as a synthesis error.
+2. Pressing Back or closing the app while speaking didn't stop playback because
+   onCleared() runs too late (after activity destruction).
+3. Screen rotation stopped playback because ON_STOP fires during configuration
+   changes. Fixed by checking isChangingConfigurations before stopping.
+
+FILES MODIFIED:
+- android/app/src/main/java/com/hrvojekatic/laprdus/viewmodel/TTSViewModel.kt
+- android/app/src/main/java/com/hrvojekatic/laprdus/MainActivity.kt
+
+DETAILED CHANGES:
+
+--- TTSViewModel.kt ---
+[FIX] speak() method: Added catch for CancellationException that rethrows it
+      before the generic Exception catch. Prevents coroutine cancellation (from
+      user pressing Stop) from being treated as a synthesis error.
+
+[FIX] onCleared(): Added tts.cancel() and audioPlayer.stop() before
+      audioPlayer.release(). Ensures any active playback is terminated when
+      ViewModel is destroyed.
+
+--- MainActivity.kt ---
+[FIX] Added DisposableEffect with LifecycleEventObserver that calls
+      viewModel.stop() on Lifecycle.Event.ON_STOP. This fires immediately when
+      the activity goes to background (Back press, home, task switch), unlike
+      onCleared() which is delayed. Added imports for DisposableEffect and
+      LifecycleEventObserver.
+
+[FIX] Added isChangingConfigurations check in the ON_STOP observer. Casts the
+      LifecycleOwner source to Activity and skips stop() if the activity is
+      being recreated for a configuration change (rotation, locale, etc.).
+      The ViewModel and its playback job survive config changes, so playback
+      should continue uninterrupted.
+
+BUILD STATUS: All unit tests PASS (37 tasks), debug APK builds successfully.
+APK installed on physical device (R3CT30GYXHM).
+
+================================================================================
 2026-03-08: Android - Replace app icons and add splash screen
 ================================================================================
 

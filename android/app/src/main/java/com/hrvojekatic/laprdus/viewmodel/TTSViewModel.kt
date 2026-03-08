@@ -303,6 +303,8 @@ class TTSViewModel @Inject constructor(
                 } else {
                     Log.w(TAG, "Synthesis returned empty or null samples")
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Error during synthesis/playback", e)
                 _uiState.update { it.copy(error = "Greška pri sintezi: ${e.message}") }
@@ -419,6 +421,8 @@ class TTSViewModel @Inject constructor(
         super.onCleared()
         Log.d(TAG, "ViewModel cleared, releasing resources")
         playbackJob?.cancel()
+        tts.cancel()
+        audioPlayer.stop()
         audioPlayer.release()
         // Do NOT call tts.shutdown() here - LaprdusTTS is a singleton shared with
         // LaprdusTTSService. The service manages its own lifecycle independently.
