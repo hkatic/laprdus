@@ -42,6 +42,7 @@ class LaprdusTTSService : TextToSpeechService() {
 
     // Settings repository and cached settings (avoids blocking on every synthesis)
     private lateinit var settingsRepo: SettingsRepository
+    @Volatile
     private var cachedSettings: SettingsRepository.TTSSettings? = null
     private val settingsScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -63,7 +64,8 @@ class LaprdusTTSService : TextToSpeechService() {
         Log.d(TAG, "onStartCommand called, intent: $intent, flags: $flags")
 
         // Ensure engine is initialized (handles process restart case)
-        if (tts == null || !tts!!.isInitialized()) {
+        val engine = tts
+        if (engine == null || !engine.isInitialized()) {
             Log.d(TAG, "Engine not initialized, reinitializing...")
             initializeEngine()
         }
@@ -468,10 +470,12 @@ class LaprdusTTSService : TextToSpeechService() {
             }
             engine.pitch = pitch
 
-            // Apply volume - use Laprdus settings if force is enabled
+            // Apply volume - use Laprdus settings if force is enabled, reset to 1.0 if not
             if (settings?.forceVolume == true) {
                 Log.d(TAG, "Using forced Laprdus volume: ${settings.volume}")
                 engine.volume = settings.volume
+            } else {
+                engine.volume = 1.0f
             }
 
             // Apply force language - use saved voice regardless of request

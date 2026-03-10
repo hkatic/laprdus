@@ -118,23 +118,23 @@ class DictionaryRepositoryTest {
 
     @Test
     fun `DictionaryType enum has three values`() {
-        val types = DictionaryType.values()
+        val types = DictionaryType.entries
         assertEquals(3, types.size)
     }
 
     @Test
     fun `DictionaryType MAIN is first value`() {
-        assertEquals(DictionaryType.MAIN, DictionaryType.values()[0])
+        assertEquals(DictionaryType.MAIN, DictionaryType.entries[0])
     }
 
     @Test
     fun `DictionaryType SPELLING is second value`() {
-        assertEquals(DictionaryType.SPELLING, DictionaryType.values()[1])
+        assertEquals(DictionaryType.SPELLING, DictionaryType.entries[1])
     }
 
     @Test
     fun `DictionaryType EMOJI is third value`() {
-        assertEquals(DictionaryType.EMOJI, DictionaryType.values()[2])
+        assertEquals(DictionaryType.EMOJI, DictionaryType.entries[2])
     }
 
     // ==========================================================================

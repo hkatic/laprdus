@@ -24,8 +24,8 @@ import dagger.hilt.android.AndroidEntryPoint
 class DictionaryActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        super.onCreate(savedInstanceState)
 
         setContent {
             LaprdusTheme {

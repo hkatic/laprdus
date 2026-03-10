@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.hrvojekatic.laprdus.R
 import javax.inject.Inject
 
 /**
@@ -98,7 +99,7 @@ class SettingsViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = e.message ?: "Failed to load settings"
+                        error = context.getString(R.string.error_prefix, e.message ?: "")
                     )
                 }
             }
@@ -123,10 +124,10 @@ class SettingsViewModel @Inject constructor(
                     settings.setDefaultVoice(voiceId)
                     _uiState.update { it.copy(selectedVoiceId = voiceId, error = null) }
                 } else {
-                    _uiState.update { it.copy(error = "Failed to set voice: $voiceId") }
+                    _uiState.update { it.copy(error = context.getString(R.string.error_voice_failed)) }
                 }
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message ?: "Failed to set voice") }
+                _uiState.update { it.copy(error = context.getString(R.string.error_prefix, e.message ?: "")) }
             }
         }
     }

@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.hrvojekatic.laprdus.R
 import javax.inject.Inject
 
 /**
@@ -99,7 +100,7 @@ class TTSViewModel @Inject constructor(
                 val success = tts.setVoice(savedSettings.defaultVoice, context.assets)
                 if (!success) {
                     Log.e(TAG, "Failed to switch voice in settings observer")
-                    _uiState.update { it.copy(isInitialized = false, error = "Greška pri odabiru glasa") }
+                    _uiState.update { it.copy(isInitialized = false, error = context.getString(R.string.error_voice_failed)) }
                 }
             }
 
@@ -185,7 +186,7 @@ class TTSViewModel @Inject constructor(
                         speed = savedSettings.speed,
                         pitch = savedSettings.pitch,
                         volume = savedSettings.volume,
-                        error = "Greška pri pokretanju TTS motora. Provjerite da su glasovne datoteke instalirane."
+                        error = context.getString(R.string.error_init_failed)
                     )
                 }
                 Log.e(TAG, "Failed to initialize TTS engine with voice: $defaultVoiceId")
@@ -201,7 +202,7 @@ class TTSViewModel @Inject constructor(
                 it.copy(
                     isLoading = false,
                     availableVoices = voices,
-                    error = "Greška: ${e.message}"
+                    error = context.getString(R.string.error_prefix, e.message ?: "")
                 )
             }
 
@@ -237,11 +238,11 @@ class TTSViewModel @Inject constructor(
                     settings.setDefaultVoice(voiceId)
                     Log.d(TAG, "Voice selected: $voiceId")
                 } else {
-                    _uiState.update { it.copy(error = "Greška pri odabiru glasa") }
+                    _uiState.update { it.copy(error = context.getString(R.string.error_voice_failed)) }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error selecting voice", e)
-                _uiState.update { it.copy(error = "Greška: ${e.message}") }
+                _uiState.update { it.copy(error = context.getString(R.string.error_prefix, e.message ?: "")) }
             }
         }
     }
@@ -304,7 +305,7 @@ class TTSViewModel @Inject constructor(
                     Log.w(TAG, "Engine was destroyed, reinitializing...")
                     val success = tts.setVoice(_uiState.value.selectedVoiceId, context.assets)
                     if (!success) {
-                        _uiState.update { it.copy(error = "Greška pri pokretanju TTS motora.") }
+                        _uiState.update { it.copy(error = context.getString(R.string.error_init_failed)) }
                         return@launch
                     }
                 }
@@ -322,7 +323,7 @@ class TTSViewModel @Inject constructor(
                 throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Error during synthesis/playback", e)
-                _uiState.update { it.copy(error = "Greška pri sintezi: ${e.message}") }
+                _uiState.update { it.copy(error = context.getString(R.string.error_synthesis_failed)) }
             } finally {
                 _uiState.update { it.copy(isPlaying = false) }
             }

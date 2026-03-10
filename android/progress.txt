@@ -1,3 +1,70 @@
+2026-03-10: Android Code Review #3 - Crash Fix + ProGuard Optimization
+
+## Summary
+Full 9-step code review of all 23 Kotlin source files, 6 unit test files, build configuration,
+resources, proguard, and API compatibility.
+
+## Issues Found and Fixed
+1. HIGH - AudioPlayer.play() finally block crash: When TTSViewModel.onCleared() cancels playback
+   and immediately calls release(), the coroutine's finally block calls track.stop() on an
+   already-released AudioTrack (STATE_UNINITIALIZED), throwing IllegalStateException. Also
+   added safety to stop() method for the same race condition. FIXED.
+2. MEDIUM - ProGuard rules defeated R8 optimization: Kept entire Compose, DataStore, Coroutines,
+   Hilt, and Kotlin packages (~200+ rules), preventing R8 from shrinking/obfuscating ANY class
+   in those packages. These libraries already ship consumer ProGuard rules. Reduced to only
+   app-specific rules (JNI, TTS service, dictionary JSON data classes). FIXED.
+
+## Files Modified
+- android/app/src/main/java/com/hrvojekatic/laprdus/audio/AudioPlayer.kt
+  - FIXED: Wrapped play() finally block in try-catch for IllegalStateException
+  - FIXED: Wrapped stop() method in try-catch for concurrent release() race
+- android/app/proguard-rules.pro
+  - FIXED: Removed ~170 lines of redundant library keep rules
+  - Kept: JNI rules, TTS service rules, dictionary JSON rules, optimization settings
+
+## Build Status
+- assembleDebug: PASSED
+- assembleRelease: PASSED (R8 minification with new rules)
+- testDebugUnitTest: PASSED (37 tests)
+
+---
+
+2026-03-10: Android Code Review + Edge-to-Edge Compatibility Fix
+
+## Summary
+Full 9-step code review of all 23 Kotlin source files, 6 unit test files, 3 instrumented test files,
+build configuration, resources, proguard, and API compatibility. Also fixed edge-to-edge for Android 15.
+
+## Additional Fixes (Code Review)
+- android/app/proguard-rules.pro
+  - FIXED: Added missing -keep rule for AboutActivity (would crash in release builds)
+- android/app/src/main/java/com/hrvojekatic/laprdus/ui/screens/DictionaryEditScreen.kt
+  - FIXED: Removed redundant `entry != null` check (compiler warning "Condition is always true")
+
+## Edge-to-Edge Fixes
+
+## Files Modified
+- android/gradle/libs.versions.toml
+  - Bumped core-splashscreen from 1.0.1 to 1.2.0-alpha02 (required for Android 15 display cutout handling)
+- android/app/src/main/java/com/hrvojekatic/laprdus/MainActivity.kt
+  - Moved enableEdgeToEdge() before super.onCreate() (was after)
+- android/app/src/main/java/com/hrvojekatic/laprdus/SettingsActivity.kt
+  - Moved enableEdgeToEdge() before super.onCreate() (was after)
+- android/app/src/main/java/com/hrvojekatic/laprdus/DictionaryActivity.kt
+  - Moved enableEdgeToEdge() before super.onCreate() (was after)
+- android/app/src/main/java/com/hrvojekatic/laprdus/AboutActivity.kt
+  - Moved enableEdgeToEdge() before super.onCreate() (was after)
+- android/app/src/main/java/com/hrvojekatic/laprdus/ui/screens/MainScreen.kt
+  - Added imePadding() so keyboard doesn't overlap text input and buttons
+- android/app/src/main/java/com/hrvojekatic/laprdus/ui/screens/DictionaryEditScreen.kt
+  - Added imePadding() so keyboard doesn't overlap form fields and Save button
+
+## Build Status
+- assembleDebug: PASSED
+- No physical device connected for install test
+
+---
+
 2026-02-25: Android Pre-Release Code Review (9-step comprehensive review)
 
 ## Summary

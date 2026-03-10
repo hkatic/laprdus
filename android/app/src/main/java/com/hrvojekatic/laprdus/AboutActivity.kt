@@ -16,8 +16,8 @@ import dagger.hilt.android.AndroidEntryPoint
 class AboutActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        super.onCreate(savedInstanceState)
 
         setContent {
             LaprdusTheme {

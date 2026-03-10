@@ -24,6 +24,7 @@ class AudioPlayer(
         private const val TAG = "AudioPlayer"
     }
 
+    @Volatile
     private var audioTrack: AudioTrack? = null
 
     private val bufferSize = AudioTrack.getMinBufferSize(
@@ -116,8 +117,13 @@ class AudioPlayer(
             }
 
         } finally {
-            track.stop()
-            track.flush()
+            try {
+                track.stop()
+                track.flush()
+            } catch (e: IllegalStateException) {
+                // Track may have been released concurrently by release()
+                Log.d(TAG, "AudioTrack already stopped/released")
+            }
             Log.d(TAG, "Playback complete")
         }
     }
@@ -127,10 +133,15 @@ class AudioPlayer(
      */
     fun stop() {
         audioTrack?.let { track ->
-            if (track.playState == AudioTrack.PLAYSTATE_PLAYING) {
-                track.stop()
-                track.flush()
-                Log.d(TAG, "Playback stopped")
+            try {
+                if (track.playState == AudioTrack.PLAYSTATE_PLAYING) {
+                    track.stop()
+                    track.flush()
+                    Log.d(TAG, "Playback stopped")
+                }
+            } catch (e: IllegalStateException) {
+                // Track may have been released concurrently
+                Log.d(TAG, "AudioTrack already released")
             }
         }
     }
