@@ -96,7 +96,11 @@ class TTSViewModel @Inject constructor(
             // If voice changed, reload it
             if (_uiState.value.selectedVoiceId != savedSettings.defaultVoice &&
                 _uiState.value.isInitialized) {
-                tts.setVoice(savedSettings.defaultVoice, context.assets)
+                val success = tts.setVoice(savedSettings.defaultVoice, context.assets)
+                if (!success) {
+                    Log.e(TAG, "Failed to switch voice in settings observer")
+                    _uiState.update { it.copy(isInitialized = false, error = "Greška pri odabiru glasa") }
+                }
             }
 
             // Update UI state
@@ -294,6 +298,17 @@ class TTSViewModel @Inject constructor(
             _uiState.update { it.copy(isPlaying = true, error = null) }
 
             try {
+                // Check if native engine is still alive (may have been destroyed
+                // by service lifecycle). Re-initialize if needed.
+                if (!tts.isInitialized()) {
+                    Log.w(TAG, "Engine was destroyed, reinitializing...")
+                    val success = tts.setVoice(_uiState.value.selectedVoiceId, context.assets)
+                    if (!success) {
+                        _uiState.update { it.copy(error = "Greška pri pokretanju TTS motora.") }
+                        return@launch
+                    }
+                }
+
                 Log.d(TAG, "Synthesizing: $text")
                 val samples = tts.synthesize(text)
 

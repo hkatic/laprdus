@@ -36,6 +36,7 @@ class LaprdusTTSService : TextToSpeechService() {
         private const val TAG = "LaprdusTTSService"
     }
 
+    @Volatile
     private var tts: LaprdusTTS? = null
     private var currentVoiceId: String = "josip"
 
@@ -45,6 +46,10 @@ class LaprdusTTSService : TextToSpeechService() {
     private val settingsScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     override fun onCreate() {
+        // Set tts BEFORE super.onCreate() starts the synthesis thread,
+        // so callbacks like onGetVoices/onLoadVoice can access it immediately.
+        // System.loadLibrary() runs in companion object init (class loading).
+        tts = LaprdusTTS.getInstance()
         super.onCreate()
         Log.d(TAG, "Service created")
         initializeEngine()
@@ -75,7 +80,9 @@ class LaprdusTTSService : TextToSpeechService() {
      * Called from onCreate and onStartCommand to handle process restart.
      */
     private fun initializeEngine() {
-        tts = LaprdusTTS.getInstance()
+        if (tts == null) {
+            tts = LaprdusTTS.getInstance()
+        }
 
         // Initialize settings repository and start collecting settings
         if (!::settingsRepo.isInitialized) {
@@ -86,6 +93,7 @@ class LaprdusTTSService : TextToSpeechService() {
                     // Apply advanced settings to engine when loaded
                     tts?.let { engine ->
                         engine.emojiEnabled = settings.emojiEnabled
+                        engine.inflectionEnabled = settings.inflectionEnabled
                         engine.sentencePause = settings.sentencePause
                         engine.commaPause = settings.commaPause
                         engine.newlinePause = settings.newlinePause
@@ -183,7 +191,10 @@ class LaprdusTTSService : TextToSpeechService() {
     override fun onDestroy() {
         Log.d(TAG, "Service destroyed")
         settingsScope.cancel()
-        tts?.shutdown()
+        // Do NOT call tts?.shutdown() — LaprdusTTS is a shared singleton.
+        // shutdown() destroys the native engine (g_engine.reset()), which breaks
+        // TTSViewModel and any other consumer sharing the same instance.
+        // Same pattern as TTSViewModel.onCleared() (commit 827f0a1).
         tts = null
         super.onDestroy()
     }
@@ -261,10 +272,15 @@ class LaprdusTTSService : TextToSpeechService() {
         }
 
         return try {
-            setVoiceAndLoadUserDictionaries(voiceId)
-            currentVoiceId = voiceId
-            Log.d(TAG, "Loaded language: $lang with voice: $voiceId")
-            available
+            val success = setVoiceAndLoadUserDictionaries(voiceId)
+            if (success) {
+                currentVoiceId = voiceId
+                Log.d(TAG, "Loaded language: $lang with voice: $voiceId")
+                available
+            } else {
+                Log.e(TAG, "Failed to load voice $voiceId for language $lang")
+                TextToSpeech.LANG_NOT_SUPPORTED
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load language", e)
             TextToSpeech.LANG_NOT_SUPPORTED
