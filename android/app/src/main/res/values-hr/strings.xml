@@ -5,13 +5,6 @@
     <!-- TTS Service - display name in Android TTS settings -->
     <string name="tts_service_name">Laprdus</string>
 
-    <!-- Voice names -->
-    <string name="voice_josip">Josip</string>
-    <string name="voice_vlado">Vlado</string>
-    <string name="voice_detence">Dijete</string>
-    <string name="voice_baba">Baka</string>
-    <string name="voice_djed">Djed</string>
-
     <!-- UI Labels -->
     <string name="voice_label">Glas</string>
     <string name="text_input_label">Tekst za izgovor</string>
@@ -96,26 +89,15 @@
     <!-- Accessibility descriptions -->
     <string name="cd_slider_adjust">Povucite za podešavanje</string>
 
-
     <!-- Accessibility content descriptions -->
-    <string name="cd_settings_button">Otvori postavke govora</string>
-    <string name="cd_tts_settings_button">Otvori Android TTS postavke</string>
-    <string name="cd_speak_button">Izgovori tekst</string>
-    <string name="cd_stop_button">Zaustavi govor</string>
     <string name="cd_text_input">Polje za unos teksta koji će biti izgovoren</string>
-    <string name="cd_voice_selector">Odabir glasa</string>
-    <string name="cd_voice_selector_current">Odabir glasa, trenutno odabrano: %1$s</string>
     <string name="cd_back_button">Natrag</string>
-    <string name="cd_laprdus_settings_button">Otvori Laprdus postavke</string>
 
     <!-- Error messages -->
     <string name="error_init_failed">Greška pri pokretanju TTS motora</string>
     <string name="error_synthesis_failed">Greška pri sintezi govora</string>
     <string name="error_voice_failed">Greška pri odabiru glasa</string>
     <string name="error_prefix">Greška: %1$s</string>
-
-    <!-- Sample text for testing -->
-    <string name="sample_text">Dobar dan. Ja sam Laprdus, rođen sam 2026. godine, i drago mi je da se možemo upoznati! 😁\nKako si ti? ❤\n</string>
 
     <!-- Default TTS Dialog -->
     <string name="dialog_default_tts_title">Postavi kao zadani TTS</string>
@@ -158,8 +140,6 @@
     <string name="dict_action_duplicate">Dupliciraj</string>
     <string name="dict_action_delete">Izbriši</string>
     <string name="dict_error_empty_fields">Ovo polje je obavezno</string>
-    <string name="dict_error_load_failed">Učitavanje rječnika nije uspjelo</string>
-    <string name="dict_error_save_failed">Spremanje unosa nije uspjelo</string>
 
     <!-- About screen -->
     <string name="category_about">O Laprdusu</string>

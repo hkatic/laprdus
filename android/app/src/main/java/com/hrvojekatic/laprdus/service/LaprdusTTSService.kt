@@ -38,6 +38,7 @@ class LaprdusTTSService : TextToSpeechService() {
 
     @Volatile
     private var tts: LaprdusTTS? = null
+    @Volatile
     private var currentVoiceId: String = "josip"
 
     // Settings repository and cached settings (avoids blocking on every synthesis)
@@ -483,14 +484,17 @@ class LaprdusTTSService : TextToSpeechService() {
                 val savedVoice = settings.defaultVoice
                 if (savedVoice != currentVoiceId) {
                     Log.d(TAG, "Using forced language voice: $savedVoice")
-                    setVoiceAndLoadUserDictionaries(savedVoice)
-                    currentVoiceId = savedVoice
+                    if (setVoiceAndLoadUserDictionaries(savedVoice)) {
+                        currentVoiceId = savedVoice
+                    } else {
+                        Log.e(TAG, "Failed to switch to forced voice: $savedVoice")
+                    }
                 }
             }
 
             // Synthesize - use spelled mode for single characters (TalkBack accessibility)
-            val useSpeledMode = isSingleGrapheme(text)
-            val samples = if (useSpeledMode) {
+            val useSpelledMode = isSingleGrapheme(text)
+            val samples = if (useSpelledMode) {
                 Log.d(TAG, "Using spelled synthesis for single character: '$text'")
                 engine.synthesizeSpelled(text)
             } else {
@@ -503,7 +507,7 @@ class LaprdusTTSService : TextToSpeechService() {
                 return
             }
 
-            Log.d(TAG, "Synthesized ${samples.size} samples (spelled=$useSpeledMode)")
+            Log.d(TAG, "Synthesized ${samples.size} samples (spelled=$useSpelledMode)")
 
             // Start audio output
             val result = callback.start(
