@@ -368,12 +368,19 @@ The Apple port lives in `Lapplerdus/Laprdus/Laprdus.xcodeproj` and contains thre
 
 ##### Preparing a physical iPhone or iPad
 
-1. **Enable Developer Mode on the device** (required since iOS 16): Settings > Privacy & Security > Developer Mode > on, then restart the device and confirm. If the Developer Mode item is not visible, connect the device to Xcode once (step 2) and it will appear.
-2. **Pair the device with Xcode**: connect the iPhone/iPad to the Mac with a cable. On the device, tap **Trust This Computer** and enter the passcode. In Xcode, open Window > Devices and Simulators and wait until the device shows as ready (first-time preparation can take a few minutes).
+1. **Pair the device with Xcode first**: connect the iPhone/iPad to the Mac with a cable (the first pairing is much more reliable over USB than over Wi-Fi). Unlock the device, tap **Trust This Computer** and enter the passcode. In Xcode, open Window > Devices and Simulators and wait until the device shows as ready — the first-time preparation copies debug symbols and can take several minutes.
+2. **Enable Developer Mode on the device** (required since iOS 16): Settings > Privacy & Security > Developer Mode > on. The device restarts and asks you to confirm.
+
+   **If the Developer Mode item is not visible** in Settings > Privacy & Security: iOS hides it until the device has been paired with Xcode or has received a development-signed app. Complete step 1 first, then check again. If it still does not appear:
+   - try pressing **Run** in Xcode once anyway — the install attempt itself usually makes the option appear, or
+   - reboot the device while it is still connected to the Mac, or
+   - run `xcrun devmodectl streaming` on the Mac with the device plugged in — it prompts the device to offer Developer Mode.
 3. Optional — **wireless debugging**: in Window > Devices and Simulators, select the device and check **Connect via network**. After that, the cable is only needed for the initial pairing.
-4. Select the device as the run destination in the Xcode toolbar and press **Run** (Cmd+R).
+4. **Select the right scheme and destination**: in the Xcode toolbar, make sure the **Laprdus** scheme is selected (Product > Scheme > Laprdus), then select your device as the run destination next to it, and press **Run** (Cmd+R).
+
+   > **Note:** If Xcode asks you to "choose an app to run", the **LaprdusVoices** scheme is selected instead of **Laprdus**. LaprdusVoices is an app extension, which cannot run on its own, so Xcode asks for a host app. Switch to the Laprdus scheme (that dialog is only useful when deliberately debugging the extension — see [Debugging](#debugging)).
 5. **Free (personal team) accounts only**: the first install fails to launch until you trust the developer certificate on the device: Settings > General > VPN & Device Management > select your developer certificate > Trust. Then launch again. Apps signed with a free account expire after 7 days — just run from Xcode again to refresh.
-6. After the first launch of the app, enable the voices: Settings > Accessibility > Spoken Content > Voices > Others > Laprdus. VoiceOver users: VoiceOver Settings > Speech > Voice.
+6. After the first launch of the app, the LaprdusVoices extension registers with the system. Enable the voices: Settings > Accessibility > Spoken Content > Voices > Others > Laprdus. VoiceOver users: VoiceOver Settings > Speech > Voice.
 
 Command-line build for a connected device:
 
