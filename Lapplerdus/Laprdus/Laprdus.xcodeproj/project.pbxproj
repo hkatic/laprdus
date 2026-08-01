@@ -1,0 +1,860 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		FA0000000000000000000001 /* phoneme_mapper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000001 /* phoneme_mapper.cpp */; };
+		FA0000000000000000000002 /* croatian_numbers.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000002 /* croatian_numbers.cpp */; };
+		FA0000000000000000000003 /* inflection.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000003 /* inflection.cpp */; };
+		FA0000000000000000000004 /* tts_engine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000004 /* tts_engine.cpp */; };
+		FA0000000000000000000005 /* voice_registry.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000005 /* voice_registry.cpp */; };
+		FA0000000000000000000006 /* pronunciation_dict.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000006 /* pronunciation_dict.cpp */; };
+		FA0000000000000000000007 /* spelling_dict.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000007 /* spelling_dict.cpp */; };
+		FA0000000000000000000008 /* emoji_dict.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000008 /* emoji_dict.cpp */; };
+		FA0000000000000000000009 /* user_config.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000009 /* user_config.cpp */; };
+		FA000000000000000000000A /* phoneme_data.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000A /* phoneme_data.cpp */; };
+		FA000000000000000000000B /* audio_synthesizer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000B /* audio_synthesizer.cpp */; };
+		FA000000000000000000000C /* sonic_processor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000C /* sonic_processor.cpp */; };
+		FA000000000000000000000D /* formant_pitch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000D /* formant_pitch.cpp */; };
+		FA000000000000000000000E /* sonic.c in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000E /* sonic.c */; };
+		FA000000000000000000000F /* laprdus_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000F /* laprdus_api.cpp */; };
+		FA0000000000000000000021 /* Josip.bin in Resources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000021 /* Josip.bin */; };
+		FA0000000000000000000022 /* Vlado.bin in Resources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000022 /* Vlado.bin */; };
+		FA0000000000000000000023 /* internal.json in Resources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000023 /* internal.json */; };
+		FA0000000000000000000024 /* spelling.json in Resources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000024 /* spelling.json */; };
+		FA0000000000000000000025 /* emoji.json in Resources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000025 /* emoji.json */; };
+		FA0000000000000000000030 /* LaprdusVoices.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000030 /* LaprdusVoices.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		FB0000000000000000000001 /* phoneme_mapper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000001 /* phoneme_mapper.cpp */; };
+		FB0000000000000000000002 /* croatian_numbers.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000002 /* croatian_numbers.cpp */; };
+		FB0000000000000000000003 /* inflection.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000003 /* inflection.cpp */; };
+		FB0000000000000000000004 /* tts_engine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000004 /* tts_engine.cpp */; };
+		FB0000000000000000000005 /* voice_registry.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000005 /* voice_registry.cpp */; };
+		FB0000000000000000000006 /* pronunciation_dict.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000006 /* pronunciation_dict.cpp */; };
+		FB0000000000000000000007 /* spelling_dict.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000007 /* spelling_dict.cpp */; };
+		FB0000000000000000000008 /* emoji_dict.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000008 /* emoji_dict.cpp */; };
+		FB0000000000000000000009 /* user_config.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000009 /* user_config.cpp */; };
+		FB000000000000000000000A /* phoneme_data.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000A /* phoneme_data.cpp */; };
+		FB000000000000000000000B /* audio_synthesizer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000B /* audio_synthesizer.cpp */; };
+		FB000000000000000000000C /* sonic_processor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000C /* sonic_processor.cpp */; };
+		FB000000000000000000000D /* formant_pitch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000D /* formant_pitch.cpp */; };
+		FB000000000000000000000E /* sonic.c in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000E /* sonic.c */; };
+		FB000000000000000000000F /* laprdus_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000F /* laprdus_api.cpp */; };
+		FB0000000000000000000021 /* Josip.bin in Resources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000021 /* Josip.bin */; };
+		FB0000000000000000000022 /* Vlado.bin in Resources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000022 /* Vlado.bin */; };
+		FB0000000000000000000023 /* internal.json in Resources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000023 /* internal.json */; };
+		FB0000000000000000000024 /* spelling.json in Resources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000024 /* spelling.json */; };
+		FB0000000000000000000025 /* emoji.json in Resources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000025 /* emoji.json */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		EE8A57E2301DD71100716E81 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EE8A57CC301DD71100716E81 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = EE8A57D4301DD71100716E81;
+			remoteInfo = Laprdus;
+		};
+		FE000000000000000000000A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EE8A57CC301DD71100716E81 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FE0000000000000000000001;
+			remoteInfo = LaprdusVoices;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		FE0000000000000000000008 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				FA0000000000000000000030 /* LaprdusVoices.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		EE8A57D5301DD71100716E81 /* Laprdus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Laprdus.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		EE8A57E0301DD71100716E81 /* LaprdusTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LaprdusTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		FC0000000000000000000001 /* phoneme_mapper.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = phoneme_mapper.cpp; path = ../../src/core/phoneme_mapper.cpp; sourceTree = "<group>"; };
+		FC0000000000000000000002 /* croatian_numbers.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = croatian_numbers.cpp; path = ../../src/core/croatian_numbers.cpp; sourceTree = "<group>"; };
+		FC0000000000000000000003 /* inflection.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = inflection.cpp; path = ../../src/core/inflection.cpp; sourceTree = "<group>"; };
+		FC0000000000000000000004 /* tts_engine.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = tts_engine.cpp; path = ../../src/core/tts_engine.cpp; sourceTree = "<group>"; };
+		FC0000000000000000000005 /* voice_registry.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = voice_registry.cpp; path = ../../src/core/voice_registry.cpp; sourceTree = "<group>"; };
+		FC0000000000000000000006 /* pronunciation_dict.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = pronunciation_dict.cpp; path = ../../src/core/pronunciation_dict.cpp; sourceTree = "<group>"; };
+		FC0000000000000000000007 /* spelling_dict.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = spelling_dict.cpp; path = ../../src/core/spelling_dict.cpp; sourceTree = "<group>"; };
+		FC0000000000000000000008 /* emoji_dict.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = emoji_dict.cpp; path = ../../src/core/emoji_dict.cpp; sourceTree = "<group>"; };
+		FC0000000000000000000009 /* user_config.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = user_config.cpp; path = ../../src/core/user_config.cpp; sourceTree = "<group>"; };
+		FC000000000000000000000A /* phoneme_data.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = phoneme_data.cpp; path = ../../src/audio/phoneme_data.cpp; sourceTree = "<group>"; };
+		FC000000000000000000000B /* audio_synthesizer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = audio_synthesizer.cpp; path = ../../src/audio/audio_synthesizer.cpp; sourceTree = "<group>"; };
+		FC000000000000000000000C /* sonic_processor.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = sonic_processor.cpp; path = ../../src/audio/sonic_processor.cpp; sourceTree = "<group>"; };
+		FC000000000000000000000D /* formant_pitch.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = formant_pitch.cpp; path = ../../src/audio/formant_pitch.cpp; sourceTree = "<group>"; };
+		FC000000000000000000000E /* sonic.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = sonic.c; path = ../../src/audio/sonic/sonic.c; sourceTree = "<group>"; };
+		FC000000000000000000000F /* laprdus_api.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = laprdus_api.cpp; path = ../../src/c_api/laprdus_api.cpp; sourceTree = "<group>"; };
+		FC0000000000000000000021 /* Josip.bin */ = {isa = PBXFileReference; lastKnownFileType = file; name = Josip.bin; path = ../../data/voices/Josip.bin; sourceTree = "<group>"; };
+		FC0000000000000000000022 /* Vlado.bin */ = {isa = PBXFileReference; lastKnownFileType = file; name = Vlado.bin; path = ../../data/voices/Vlado.bin; sourceTree = "<group>"; };
+		FC0000000000000000000023 /* internal.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = internal.json; path = ../../data/dictionary/internal.json; sourceTree = "<group>"; };
+		FC0000000000000000000024 /* spelling.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = spelling.json; path = ../../data/dictionary/spelling.json; sourceTree = "<group>"; };
+		FC0000000000000000000025 /* emoji.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = emoji.json; path = ../../data/dictionary/emoji.json; sourceTree = "<group>"; };
+		FC0000000000000000000030 /* LaprdusVoices.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = LaprdusVoices.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		EE8A57D7301DD71100716E81 /* Laprdus */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Laprdus;
+			sourceTree = "<group>";
+		};
+		EE8A57E4301DD71100716E81 /* LaprdusTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = LaprdusTests;
+			sourceTree = "<group>";
+		};
+		FD0000000000000000000001 /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		FD0000000000000000000002 /* LaprdusVoices */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = LaprdusVoices;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		EE8A57D2301DD71100716E81 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EE8A57DD301DD71100716E81 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FE0000000000000000000006 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		EE8A57CB301DD71100716E81 = {
+			isa = PBXGroup;
+			children = (
+				EE8A57D7301DD71100716E81 /* Laprdus */,
+				FD0000000000000000000001 /* Shared */,
+				FD0000000000000000000002 /* LaprdusVoices */,
+				EE8A57E4301DD71100716E81 /* LaprdusTests */,
+				FC0000000000000000000040 /* Engine */,
+				FC0000000000000000000041 /* VoiceData */,
+				EE8A57D6301DD71100716E81 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		EE8A57D6301DD71100716E81 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				EE8A57D5301DD71100716E81 /* Laprdus.app */,
+				EE8A57E0301DD71100716E81 /* LaprdusTests.xctest */,
+				FC0000000000000000000030 /* LaprdusVoices.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		FC0000000000000000000040 /* Engine */ = {
+			isa = PBXGroup;
+			children = (
+				FC0000000000000000000001 /* phoneme_mapper.cpp */,
+				FC0000000000000000000002 /* croatian_numbers.cpp */,
+				FC0000000000000000000003 /* inflection.cpp */,
+				FC0000000000000000000004 /* tts_engine.cpp */,
+				FC0000000000000000000005 /* voice_registry.cpp */,
+				FC0000000000000000000006 /* pronunciation_dict.cpp */,
+				FC0000000000000000000007 /* spelling_dict.cpp */,
+				FC0000000000000000000008 /* emoji_dict.cpp */,
+				FC0000000000000000000009 /* user_config.cpp */,
+				FC000000000000000000000A /* phoneme_data.cpp */,
+				FC000000000000000000000B /* audio_synthesizer.cpp */,
+				FC000000000000000000000C /* sonic_processor.cpp */,
+				FC000000000000000000000D /* formant_pitch.cpp */,
+				FC000000000000000000000E /* sonic.c */,
+				FC000000000000000000000F /* laprdus_api.cpp */,
+			);
+			name = Engine;
+			sourceTree = "<group>";
+		};
+		FC0000000000000000000041 /* VoiceData */ = {
+			isa = PBXGroup;
+			children = (
+				FC0000000000000000000021 /* Josip.bin */,
+				FC0000000000000000000022 /* Vlado.bin */,
+				FC0000000000000000000023 /* internal.json */,
+				FC0000000000000000000024 /* spelling.json */,
+				FC0000000000000000000025 /* emoji.json */,
+			);
+			name = VoiceData;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		EE8A57D4301DD71100716E81 /* Laprdus */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EE8A57E9301DD71100716E81 /* Build configuration list for PBXNativeTarget "Laprdus" */;
+			buildPhases = (
+				EE8A57D1301DD71100716E81 /* Sources */,
+				EE8A57D2301DD71100716E81 /* Frameworks */,
+				EE8A57D3301DD71100716E81 /* Resources */,
+				FE0000000000000000000008 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				FE0000000000000000000009 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				EE8A57D7301DD71100716E81 /* Laprdus */,
+				FD0000000000000000000001 /* Shared */,
+			);
+			name = Laprdus;
+			packageProductDependencies = (
+			);
+			productName = Laprdus;
+			productReference = EE8A57D5301DD71100716E81 /* Laprdus.app */;
+			productType = "com.apple.product-type.application";
+		};
+		EE8A57DF301DD71100716E81 /* LaprdusTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EE8A57EC301DD71100716E81 /* Build configuration list for PBXNativeTarget "LaprdusTests" */;
+			buildPhases = (
+				EE8A57DC301DD71100716E81 /* Sources */,
+				EE8A57DD301DD71100716E81 /* Frameworks */,
+				EE8A57DE301DD71100716E81 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				EE8A57E3301DD71100716E81 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				EE8A57E4301DD71100716E81 /* LaprdusTests */,
+			);
+			name = LaprdusTests;
+			packageProductDependencies = (
+			);
+			productName = LaprdusTests;
+			productReference = EE8A57E0301DD71100716E81 /* LaprdusTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		FE0000000000000000000001 /* LaprdusVoices */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FE0000000000000000000002 /* Build configuration list for PBXNativeTarget "LaprdusVoices" */;
+			buildPhases = (
+				FE0000000000000000000005 /* Sources */,
+				FE0000000000000000000006 /* Frameworks */,
+				FE0000000000000000000007 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				FD0000000000000000000002 /* LaprdusVoices */,
+				FD0000000000000000000001 /* Shared */,
+			);
+			name = LaprdusVoices;
+			packageProductDependencies = (
+			);
+			productName = LaprdusVoices;
+			productReference = FC0000000000000000000030 /* LaprdusVoices.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		EE8A57CC301DD71100716E81 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2660;
+				LastUpgradeCheck = 2660;
+				TargetAttributes = {
+					EE8A57D4301DD71100716E81 = {
+						CreatedOnToolsVersion = 26.6;
+					};
+					EE8A57DF301DD71100716E81 = {
+						CreatedOnToolsVersion = 26.6;
+						TestTargetID = EE8A57D4301DD71100716E81;
+					};
+					FE0000000000000000000001 = {
+						CreatedOnToolsVersion = 26.6;
+					};
+				};
+			};
+			buildConfigurationList = EE8A57CF301DD71100716E81 /* Build configuration list for PBXProject "Laprdus" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				hr,
+				sr,
+				Base,
+			);
+			mainGroup = EE8A57CB301DD71100716E81;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = EE8A57D6301DD71100716E81 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				EE8A57D4301DD71100716E81 /* Laprdus */,
+				FE0000000000000000000001 /* LaprdusVoices */,
+				EE8A57DF301DD71100716E81 /* LaprdusTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		EE8A57D3301DD71100716E81 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FA0000000000000000000021 /* Josip.bin in Resources */,
+				FA0000000000000000000022 /* Vlado.bin in Resources */,
+				FA0000000000000000000023 /* internal.json in Resources */,
+				FA0000000000000000000024 /* spelling.json in Resources */,
+				FA0000000000000000000025 /* emoji.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EE8A57DE301DD71100716E81 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FE0000000000000000000007 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FB0000000000000000000021 /* Josip.bin in Resources */,
+				FB0000000000000000000022 /* Vlado.bin in Resources */,
+				FB0000000000000000000023 /* internal.json in Resources */,
+				FB0000000000000000000024 /* spelling.json in Resources */,
+				FB0000000000000000000025 /* emoji.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		EE8A57D1301DD71100716E81 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FA0000000000000000000001 /* phoneme_mapper.cpp in Sources */,
+				FA0000000000000000000002 /* croatian_numbers.cpp in Sources */,
+				FA0000000000000000000003 /* inflection.cpp in Sources */,
+				FA0000000000000000000004 /* tts_engine.cpp in Sources */,
+				FA0000000000000000000005 /* voice_registry.cpp in Sources */,
+				FA0000000000000000000006 /* pronunciation_dict.cpp in Sources */,
+				FA0000000000000000000007 /* spelling_dict.cpp in Sources */,
+				FA0000000000000000000008 /* emoji_dict.cpp in Sources */,
+				FA0000000000000000000009 /* user_config.cpp in Sources */,
+				FA000000000000000000000A /* phoneme_data.cpp in Sources */,
+				FA000000000000000000000B /* audio_synthesizer.cpp in Sources */,
+				FA000000000000000000000C /* sonic_processor.cpp in Sources */,
+				FA000000000000000000000D /* formant_pitch.cpp in Sources */,
+				FA000000000000000000000E /* sonic.c in Sources */,
+				FA000000000000000000000F /* laprdus_api.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EE8A57DC301DD71100716E81 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FE0000000000000000000005 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FB0000000000000000000001 /* phoneme_mapper.cpp in Sources */,
+				FB0000000000000000000002 /* croatian_numbers.cpp in Sources */,
+				FB0000000000000000000003 /* inflection.cpp in Sources */,
+				FB0000000000000000000004 /* tts_engine.cpp in Sources */,
+				FB0000000000000000000005 /* voice_registry.cpp in Sources */,
+				FB0000000000000000000006 /* pronunciation_dict.cpp in Sources */,
+				FB0000000000000000000007 /* spelling_dict.cpp in Sources */,
+				FB0000000000000000000008 /* emoji_dict.cpp in Sources */,
+				FB0000000000000000000009 /* user_config.cpp in Sources */,
+				FB000000000000000000000A /* phoneme_data.cpp in Sources */,
+				FB000000000000000000000B /* audio_synthesizer.cpp in Sources */,
+				FB000000000000000000000C /* sonic_processor.cpp in Sources */,
+				FB000000000000000000000D /* formant_pitch.cpp in Sources */,
+				FB000000000000000000000E /* sonic.c in Sources */,
+				FB000000000000000000000F /* laprdus_api.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		EE8A57E3301DD71100716E81 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = EE8A57D4301DD71100716E81 /* Laprdus */;
+			targetProxy = EE8A57E2301DD71100716E81 /* PBXContainerItemProxy */;
+		};
+		FE0000000000000000000009 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FE0000000000000000000001 /* LaprdusVoices */;
+			targetProxy = FE000000000000000000000A /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		EE8A57E7301DD71100716E81 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 9;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 3GAM6Z3A2W;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Debug;
+		};
+		EE8A57E8301DD71100716E81 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 9;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 3GAM6Z3A2W;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Release;
+		};
+		EE8A57EA301DD71100716E81 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Config/Laprdus.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 9;
+				DEVELOPMENT_TEAM = 3GAM6Z3A2W;
+				ENABLE_PREVIEWS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"LAPRDUS_VERSION_MAJOR=1",
+					"LAPRDUS_VERSION_MINOR=0",
+					"LAPRDUS_VERSION_PATCH=0",
+					"LAPRDUS_VERSION_STRING=\\\"1.0.0\\\"",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../../include",
+					"$(SRCROOT)/../../src",
+					"$(SRCROOT)/../../src/audio/sonic",
+				);
+				INFOPLIST_KEY_CFBundleDisplayName = "Laprdus TTS";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026., Hrvoje Katić";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"@executable_path/Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hrvojekatic.Laprdus;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "Shared/LaprdusC.h";
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 26.5;
+			};
+			name = Debug;
+		};
+		EE8A57EB301DD71100716E81 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "Config/Laprdus.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 9;
+				DEVELOPMENT_TEAM = 3GAM6Z3A2W;
+				ENABLE_PREVIEWS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"LAPRDUS_VERSION_MAJOR=1",
+					"LAPRDUS_VERSION_MINOR=0",
+					"LAPRDUS_VERSION_PATCH=0",
+					"LAPRDUS_VERSION_STRING=\\\"1.0.0\\\"",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../../include",
+					"$(SRCROOT)/../../src",
+					"$(SRCROOT)/../../src/audio/sonic",
+				);
+				INFOPLIST_KEY_CFBundleDisplayName = "Laprdus TTS";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026., Hrvoje Katić";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"@executable_path/Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hrvojekatic.Laprdus;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "Shared/LaprdusC.h";
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 26.5;
+			};
+			name = Release;
+		};
+		EE8A57ED301DD71100716E81 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 9;
+				DEVELOPMENT_TEAM = 3GAM6Z3A2W;
+								HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../../include",
+					"$(SRCROOT)/../../src",
+					"$(SRCROOT)/../../src/audio/sonic",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				MACOSX_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hrvojekatic.LaprdusTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Laprdus.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Laprdus";
+				XROS_DEPLOYMENT_TARGET = 26.5;
+			};
+			name = Debug;
+		};
+		EE8A57EE301DD71100716E81 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 9;
+				DEVELOPMENT_TEAM = 3GAM6Z3A2W;
+								HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../../include",
+					"$(SRCROOT)/../../src",
+					"$(SRCROOT)/../../src/audio/sonic",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				MACOSX_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hrvojekatic.LaprdusTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Laprdus.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Laprdus";
+				XROS_DEPLOYMENT_TARGET = 26.5;
+			};
+			name = Release;
+		};
+		FE0000000000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
+				CODE_SIGN_ENTITLEMENTS = "Config/LaprdusVoices.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 9;
+				DEVELOPMENT_TEAM = 3GAM6Z3A2W;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"LAPRDUS_VERSION_MAJOR=1",
+					"LAPRDUS_VERSION_MINOR=0",
+					"LAPRDUS_VERSION_PATCH=0",
+					"LAPRDUS_VERSION_STRING=\\\"1.0.0\\\"",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../../include",
+					"$(SRCROOT)/../../src",
+					"$(SRCROOT)/../../src/audio/sonic",
+				);
+				INFOPLIST_FILE = "Config/LaprdusVoices-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Laprdus Voices";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026., Hrvoje Katić";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hrvojekatic.Laprdus.voices;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "Shared/LaprdusC.h";
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 26.5;
+			};
+			name = Debug;
+		};
+		FE0000000000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
+				CODE_SIGN_ENTITLEMENTS = "Config/LaprdusVoices.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 9;
+				DEVELOPMENT_TEAM = 3GAM6Z3A2W;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"LAPRDUS_VERSION_MAJOR=1",
+					"LAPRDUS_VERSION_MINOR=0",
+					"LAPRDUS_VERSION_PATCH=0",
+					"LAPRDUS_VERSION_STRING=\\\"1.0.0\\\"",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../../include",
+					"$(SRCROOT)/../../src",
+					"$(SRCROOT)/../../src/audio/sonic",
+				);
+				INFOPLIST_FILE = "Config/LaprdusVoices-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Laprdus Voices";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026., Hrvoje Katić";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hrvojekatic.Laprdus.voices;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "Shared/LaprdusC.h";
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				XROS_DEPLOYMENT_TARGET = 26.5;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		EE8A57CF301DD71100716E81 /* Build configuration list for PBXProject "Laprdus" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EE8A57E7301DD71100716E81 /* Debug */,
+				EE8A57E8301DD71100716E81 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		EE8A57E9301DD71100716E81 /* Build configuration list for PBXNativeTarget "Laprdus" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EE8A57EA301DD71100716E81 /* Debug */,
+				EE8A57EB301DD71100716E81 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		EE8A57EC301DD71100716E81 /* Build configuration list for PBXNativeTarget "LaprdusTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EE8A57ED301DD71100716E81 /* Debug */,
+				EE8A57EE301DD71100716E81 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FE0000000000000000000002 /* Build configuration list for PBXNativeTarget "LaprdusVoices" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FE0000000000000000000003 /* Debug */,
+				FE0000000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = EE8A57CC301DD71100716E81 /* Project object */;
+}

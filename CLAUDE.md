@@ -1061,3 +1061,57 @@ SynthesisResult result = engine.synthesize_spelled("ABC");
 laprdus_load_spelling_dictionary(handle, "/path/to/spelling.json");
 laprdus_synthesize_spelled(handle, "ABC", &samples, &format);
 ```
+
+## Apple (iOS / iPadOS / macOS / visionOS)
+
+### Overview
+
+The Apple port lives in `Lapplerdus/Laprdus/Laprdus.xcodeproj` (Xcode 26+) and mirrors the Android app:
+
+| Target | Purpose |
+|--------|---------|
+| `Laprdus` | Multiplatform SwiftUI app (iOS, iPadOS, macOS, visionOS): main speak screen, settings, dictionary manager, about |
+| `LaprdusVoices` | Speech synthesis provider app extension (`AVSpeechSynthesisProviderAudioUnit`, `ausp` Audio Unit) — exposes the 5 voices system-wide to VoiceOver/Spoken Content, like the Android `TextToSpeechService` |
+| `LaprdusTests` | Unit tests (Swift Testing), hosted in the app |
+
+### Structure
+
+```
+Lapplerdus/Laprdus/
+├── Laprdus/         App-only code (views, AppModel, AudioPlayer, assets, Localizable.xcstrings)
+├── Shared/          Code compiled into BOTH app and extension:
+│                    LaprdusC.h (bridging header), LaprdusEngine.swift (C API wrapper),
+│                    SettingsStore.swift, DictionaryStore.swift, VoiceCatalog.swift, AppGroup.swift
+├── LaprdusVoices/   Extension-only code (LaprdusAudioUnit.swift, SSMLParser.swift)
+├── Config/          LaprdusVoices-Info.plist + entitlements (app group: group.com.hrvojekatic.laprdus)
+└── LaprdusTests/    Unit tests
+```
+
+- The C++ engine is compiled **directly into both targets** from `src/core`, `src/audio`, `src/c_api` (same approach as the Android CMake build; file references in the Xcode project point at `../../src/...`). C++17, `LAPRDUS_VERSION_*` defines set in build settings.
+- Voice data (`data/voices/*.bin`) and dictionaries (`data/dictionary/*.json`) are bundle resources of both targets. **On a fresh checkout, generate voice data first** (`scons ... voice-data` or `./scripts/build-all.sh voice-data`) — `.bin` files are gitignored.
+- Settings use the shared app-group `UserDefaults` suite with the **same keys and defaults as the Android DataStore** (`default_voice`, `speed`, `pitch`, `volume`, `force_*`, `emoji_enabled`, `inflection_enabled`, `*_pause`, `number_mode`, `user_dictionaries_enabled`). The user pitch slider maps to `laprdus_set_user_pitch`; voice-character pitch comes from the registry via `laprdus_set_voice`.
+- User dictionaries are stored in the app group container (`Dictionaries/user.json`, `spelling.json`, `emoji.json`) in the **same JSON format as Android**, and are applied both in-app and in the extension.
+- Localization: `Localizable.xcstrings` string catalog with en/hr/sr (translations taken from the Android `values-hr`/`values-sr`).
+
+### Building
+
+```bash
+cd Lapplerdus/Laprdus
+
+# macOS app (signed, automatic provisioning)
+xcodebuild -scheme Laprdus -destination 'platform=macOS' build -allowProvisioningUpdates
+
+# iOS Simulator
+xcodebuild -scheme Laprdus -destination 'generic/platform=iOS Simulator' build
+
+# Unit tests (12 tests: engine synthesis, dictionary store, settings)
+xcodebuild test -scheme Laprdus -destination 'platform=macOS'
+```
+
+### Testing the system voices
+
+After installing/running the app once, the `LaprdusVoices` extension registers with the system. Voices appear under:
+- **iOS**: Settings → Accessibility → Spoken Content → Voices
+- **macOS**: System Settings → Accessibility → Spoken Content → System voice → Manage Voices
+
+The extension mirrors the Android service behavior: honors host rate/pitch unless the "Force" settings are on, pins volume to 1.0 unless forced, uses the persisted default voice when "Force language" is on, and speaks single grapheme clusters through the spelling dictionary.

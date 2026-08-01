@@ -80,3 +80,8 @@ __pycache__/
 *.tmp
 *.bak
 *~
+
+# Apple (Xcode)
+.DS_Store
+xcuserdata/
+DerivedData/

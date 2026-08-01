@@ -26,6 +26,7 @@ In short: modern synthesizers offer quality at the cost of resources; Laprdus of
 - **[NVDA](https://github.com/nvaccess/nvda) Screen Reader** - dedicated addon for the free and open-source NVDA screen reader
 - **Linux** - via Speech Dispatcher for Orca screen reader, plus command-line interface
 - **Android** - built-in TTS engine for Android devices
+- **Apple (iOS, iPadOS, macOS, visionOS)** - SwiftUI app with a speech synthesis provider extension that makes Laprdus voices available system-wide to VoiceOver and Spoken Content
 
 ## Features
 
@@ -93,6 +94,16 @@ sudo ./install.sh
 2. Go to Settings > Accessibility > Text-to-speech
 3. Select "Laprdus TTS" as the preferred engine
 
+### Apple (iOS, iPadOS, macOS, visionOS)
+
+Laprdus for Apple platforms is currently distributed as source code only — it is not yet on the App Store or TestFlight. Build and install it with Xcode as described in [Apple (iOS / iPadOS / macOS / visionOS)](#apple-ios--ipados--macos--visionos) below.
+
+After the app has been launched once, the Laprdus voices become available system-wide:
+
+- **iOS/iPadOS**: Settings > Accessibility > Spoken Content > Voices > Others
+- **macOS**: System Settings > Accessibility > Spoken Content > System voice > Manage Voices
+- VoiceOver users can select the voices in the VoiceOver speech settings
+
 ## Command Line Usage
 
 ```bash
@@ -140,6 +151,7 @@ Laprdus stores user settings and custom dictionaries in platform-specific locati
 | Windows | `%APPDATA%\Laprdus\` |
 | Linux | `~/.config/Laprdus/` |
 | Android | Managed through the app interface |
+| Apple | Managed through the app interface (stored in the app group container, shared with the speech extension) |
 
 ### Configuration Files
 
@@ -183,6 +195,7 @@ For detailed dictionary documentation, see the [User Guide (Croatian language on
 | Android SDK/NDK | Android build |
 | libpulse-dev, libasound2-dev | Linux audio |
 | libspeechd-dev, libglib2.0-dev | Linux Speech Dispatcher |
+| Xcode 26+ (on macOS) | Apple build (iOS, iPadOS, macOS, visionOS) |
 
 ### Voice Data Generation
 
@@ -308,6 +321,99 @@ cd android
 
 Output: `android/app/build/outputs/apk/*/app-*.apk`
 
+#### Apple (iOS / iPadOS / macOS / visionOS)
+
+The Apple port lives in `Lapplerdus/Laprdus/Laprdus.xcodeproj` and contains three targets:
+
+| Target | Purpose |
+|--------|---------|
+| `Laprdus` | Multiplatform SwiftUI app (main screen, settings, dictionaries, about) |
+| `LaprdusVoices` | Speech synthesis provider extension — registers the voices with the system for VoiceOver/Spoken Content |
+| `LaprdusTests` | Unit tests |
+
+##### Prerequisites
+
+1. A Mac with **Xcode 26 or newer**. For visionOS, also install the visionOS platform in Xcode > Settings > Components.
+2. An **Apple ID** signed into Xcode (Xcode > Settings > Accounts). A free account is enough for development on your own devices; a paid Apple Developer Program membership is only needed for App Store/TestFlight distribution and removes the 7-day provisioning expiry of free accounts.
+3. **Voice data**. The packed voice files (`data/voices/*.bin`) are generated, not checked in. On a fresh checkout, generate them once from the repository root:
+
+   ```bash
+   pip install scons
+   scons --platform=linux --arch=x64 --build-config=release voice-data
+   # or: ./scripts/build-all.sh voice-data
+   ```
+
+   The `linux` platform configuration compiles fine on macOS with clang; it is only used to build the `phoneme_packer` tool that packs the voices. The Xcode project references `data/voices/Josip.bin`, `data/voices/Vlado.bin` and the dictionaries in `data/dictionary/` directly, so this step must happen before the first build.
+
+##### Code signing setup (first time only)
+
+1. Open `Lapplerdus/Laprdus/Laprdus.xcodeproj` in Xcode.
+2. Select the project in the navigator, then for **each** of the `Laprdus` and `LaprdusVoices` targets, open **Signing & Capabilities** and pick your team under **Team**. Signing is automatic.
+3. If Xcode reports that the bundle identifier is already in use (it is registered to the original author), change the bundle identifiers to your own reverse-DNS prefix. Keep the pattern: the extension identifier must be prefixed by the app identifier (e.g. `com.example.Laprdus` and `com.example.Laprdus.voices`).
+4. The app and the extension share settings and user dictionaries through the app group `group.com.hrvojekatic.laprdus`. If you changed the bundle identifiers, also change the app group identifier in both targets' Signing & Capabilities and in `Shared/AppGroup.swift` so they match. The app still works without a valid app group — it falls back to local storage — but then the extension cannot see settings and dictionaries saved by the app.
+
+##### Running on a Mac
+
+1. In Xcode's run destination chooser (toolbar, next to the scheme), select **My Mac**.
+2. Press **Run** (Cmd+R). The app launches with the debugger attached.
+3. Or from the command line:
+
+   ```bash
+   cd Lapplerdus/Laprdus
+   xcodebuild -scheme Laprdus -destination 'platform=macOS' build -allowProvisioningUpdates
+   ```
+
+4. On the first launch macOS may ask you to confirm opening an app from an identified developer — allow it in System Settings > Privacy & Security if prompted.
+5. After the first launch, the voices appear in System Settings > Accessibility > Spoken Content > System voice > Manage Voices, and in VoiceOver's voice settings.
+
+##### Preparing a physical iPhone or iPad
+
+1. **Enable Developer Mode on the device** (required since iOS 16): Settings > Privacy & Security > Developer Mode > on, then restart the device and confirm. If the Developer Mode item is not visible, connect the device to Xcode once (step 2) and it will appear.
+2. **Pair the device with Xcode**: connect the iPhone/iPad to the Mac with a cable. On the device, tap **Trust This Computer** and enter the passcode. In Xcode, open Window > Devices and Simulators and wait until the device shows as ready (first-time preparation can take a few minutes).
+3. Optional — **wireless debugging**: in Window > Devices and Simulators, select the device and check **Connect via network**. After that, the cable is only needed for the initial pairing.
+4. Select the device as the run destination in the Xcode toolbar and press **Run** (Cmd+R).
+5. **Free (personal team) accounts only**: the first install fails to launch until you trust the developer certificate on the device: Settings > General > VPN & Device Management > select your developer certificate > Trust. Then launch again. Apps signed with a free account expire after 7 days — just run from Xcode again to refresh.
+6. After the first launch of the app, enable the voices: Settings > Accessibility > Spoken Content > Voices > Others > Laprdus. VoiceOver users: VoiceOver Settings > Speech > Voice.
+
+Command-line build for a connected device:
+
+```bash
+cd Lapplerdus/Laprdus
+xcodebuild -scheme Laprdus -destination 'generic/platform=iOS' build -allowProvisioningUpdates
+```
+
+##### Preparing an Apple Vision Pro
+
+1. Install the visionOS platform in Xcode > Settings > Components.
+2. On the headset, enable Developer Mode: Settings > Privacy & Security > Developer Mode.
+3. Pair over Wi-Fi: both devices on the same network, then Xcode > Window > Devices and Simulators > Discovered, select the Vision Pro and enter the pairing code shown in the headset.
+4. Select the Vision Pro as the run destination and press **Run**.
+
+##### Debugging
+
+- **App**: run from Xcode (Cmd+R); breakpoints, the console, and the memory/thread debugger work as usual. The C++ engine sources (`src/core`, `src/audio`, `src/c_api`) are part of the project, so you can set breakpoints in C++ files too — the Swift and C++ code run in the same process.
+- **Speech extension**: the `LaprdusVoices` extension runs in its own process, started on demand by the system. To debug it, use the `LaprdusVoices` scheme (Run > it asks for a host app — choose Settings on iOS or any speech client on macOS), or attach to the running process via Debug > Attach to Process when a client (e.g. VoiceOver or Spoken Content) is using a Laprdus voice.
+- **Logs**: the extension's `os_log`/`print` output is visible in Console.app — filter by process `LaprdusVoices` (on iOS, select the device in Console.app's sidebar).
+- **Unit tests**: Product > Test in Xcode, or:
+
+  ```bash
+  cd Lapplerdus/Laprdus
+  xcodebuild test -scheme Laprdus -destination 'platform=macOS'
+  ```
+
+  The tests exercise real synthesis through the C++ engine, the dictionary store, and the settings store.
+- **After changing the engine or voices**: if you change a voice's phoneme recordings, regenerate voice data (see prerequisites) and rebuild — the `.bin` files are copied into the app and extension bundles at build time. C++ engine changes are picked up automatically since the sources are compiled directly into both targets.
+
+##### Testing checklist for Apple
+
+- [ ] App builds and launches on macOS and on a physical iPhone/iPad
+- [ ] Speak/Stop works on the main screen with each of the 5 voices
+- [ ] Settings changes (rate, pitch, volume, pauses) are audible in the app
+- [ ] Dictionary entries affect pronunciation
+- [ ] Laprdus voices appear in the system voice list after the first app launch
+- [ ] VoiceOver can read with a Laprdus voice, including character-by-character (spelling) navigation
+- [ ] UI is fully usable with VoiceOver on iOS and macOS
+
 ### Build Output Locations
 
 | Platform | Output |
@@ -321,6 +427,7 @@ Output: `android/app/build/outputs/apk/*/app-*.apk`
 | Linux CLI | `build/linux-x64-release/laprdus` |
 | Linux Speech Dispatcher | `build/linux-x64-release/sd_laprdus` |
 | Android APK | `android/app/build/outputs/apk/*/app-*.apk` |
+| Apple app + extension | Xcode DerivedData (`Laprdus.app` with embedded `LaprdusVoices.appex`); use Product > Archive for distributable builds |
 
 ### Clean Build
 
