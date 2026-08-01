@@ -155,4 +155,9 @@
     <string name="about_privacy_policy">Read the Privacy Policy Online</string>
     <string name="about_license">Read the GPL 3.0 License Online</string>
     <string name="about_contact_email">Contact author via E-Mail</string>
+
+    <!-- Sample text returned to TTS settings ("Listen to an example").
+         Always in the voice's own language, so not translatable. -->
+    <string name="tts_sample_text_hr" translatable="false">Ovo je primjer govora na hrvatskom jeziku.</string>
+    <string name="tts_sample_text_sr" translatable="false">Ovo je primer govora na srpskom jeziku.</string>
 </resources>

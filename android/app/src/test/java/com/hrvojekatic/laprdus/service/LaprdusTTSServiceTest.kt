@@ -123,9 +123,17 @@ class LaprdusTTSServiceTest {
     }
 
     @Test
-    fun `English language code en is not supported`() {
+    fun `English language code en is not a native language`() {
         val isSupported = isLanguageSupported("en", null)
         assertEquals(false, isSupported)
+    }
+
+    @Test
+    fun `unknown language still reports availability so engine is never skipped`() {
+        // TTS settings and screen readers probe with the device locale;
+        // LANG_NOT_SUPPORTED would make them disable the engine entirely
+        val level = getLanguageSupportLevel("en", "US")
+        assertEquals(TextToSpeech.LANG_AVAILABLE, level)
     }
 
     @Test
@@ -135,8 +143,21 @@ class LaprdusTTSServiceTest {
     }
 
     @Test
+    fun `Croatian with ISO3 country HRV has full support`() {
+        // The Android framework passes ISO3 codes to the engine boundary
+        val level = getLanguageSupportLevel("hrv", "HRV")
+        assertEquals(TextToSpeech.LANG_COUNTRY_AVAILABLE, level)
+    }
+
+    @Test
     fun `Serbian with country RS has full support`() {
         val level = getLanguageSupportLevel("sr", "RS")
+        assertEquals(TextToSpeech.LANG_COUNTRY_AVAILABLE, level)
+    }
+
+    @Test
+    fun `Serbian with ISO3 country SRB has full support`() {
+        val level = getLanguageSupportLevel("srp", "SRB")
         assertEquals(TextToSpeech.LANG_COUNTRY_AVAILABLE, level)
     }
 
@@ -192,22 +213,23 @@ class LaprdusTTSServiceTest {
 
     private fun getLanguageSupportLevel(lang: String, country: String?): Int {
         val normalizedLang = lang.lowercase()
-        return when {
-            normalizedLang == "hr" || normalizedLang == "hrv" -> {
-                if (country?.lowercase() == "hr") {
+        val normalizedCountry = country?.lowercase() ?: ""
+        return when (normalizedLang) {
+            "hr", "hrv" -> {
+                if (normalizedCountry == "hr" || normalizedCountry == "hrv") {
                     TextToSpeech.LANG_COUNTRY_AVAILABLE
                 } else {
                     TextToSpeech.LANG_AVAILABLE
                 }
             }
-            normalizedLang == "sr" || normalizedLang == "srp" -> {
-                if (country?.lowercase() == "rs") {
+            "sr", "srp" -> {
+                if (normalizedCountry == "rs" || normalizedCountry == "srb") {
                     TextToSpeech.LANG_COUNTRY_AVAILABLE
                 } else {
                     TextToSpeech.LANG_AVAILABLE
                 }
             }
-            else -> TextToSpeech.LANG_NOT_SUPPORTED
+            else -> TextToSpeech.LANG_AVAILABLE
         }
     }
 

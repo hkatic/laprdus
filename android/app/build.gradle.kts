@@ -16,7 +16,7 @@ android {
         applicationId = "com.hrvojekatic.laprdus"
         minSdk = 24
         targetSdk = 36
-        versionCode = 8
+        versionCode = 9
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -46,6 +46,13 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+    packaging {
+        resources {
+            // JUnit 5 jars each bundle META-INF license files; exclude them
+            // so the androidTest APK can merge its java resources
+            excludes += "META-INF/LICENSE*.md"
+        }
     }
 
     // Only use main assets directory - voice data and dictionaries are copied

@@ -24,6 +24,12 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Voice data is bundled in the APK; opening the app is all an
+                 "install TTS data" request needs to do -->
+            <intent-filter>
+                <action android:name="android.speech.tts.engine.INSTALL_TTS_DATA" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
         </activity>
 
         <!-- Settings Activity - opened from TTS settings and main app -->
@@ -60,6 +66,31 @@
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".SettingsActivity" />
+        </activity>
+
+        <!-- Voice data check - TTS settings (AOSP and OEM forks) launch this
+             when the user selects the engine and use its result to build the
+             engine's language list. Required for the engine to activate on
+             some OEM systems (e.g. Honor MagicOS). -->
+        <activity
+            android:name=".service.CheckVoiceDataActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="android.speech.tts.engine.CHECK_TTS_DATA" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <!-- Sample text for "Listen to an example" in TTS settings -->
+        <activity
+            android:name=".service.GetSampleTextActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="android.speech.tts.engine.GET_SAMPLE_TEXT" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
         </activity>
 
         <!-- TTS Service for system-wide text-to-speech -->

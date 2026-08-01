@@ -1455,6 +1455,24 @@ Na Androidu se svi podaci aplikacije automatski brišu prilikom deinstalacije. N
 3. Provjerite sistemsku glasnoću računala
 4. Ponovno pokrenite program koji koristite
 
+#### Laprdus je vidljiv na popisu Android sintetizatora, ali ne govori
+
+Ovaj problem je zabilježen na Honor uređajima (MagicOS), a moguć je i na Huawei
+(EMUI) te drugim uređajima s agresivnim upravljanjem aplikacijama.
+
+1. Ažurirajte Laprdus na najnoviju verziju (ispravak je uključen od builda 9)
+2. Ponovno odaberite Laprdus kao željeni sintetizator:
+   **Postavke > Pristupačnost > Tekst-u-govor** (naziv se može razlikovati
+   ovisno o uređaju), zatim provjerite radi li opcija "Poslušaj primjer"
+3. Na Honor/Huawei uređajima isključite automatsko upravljanje pokretanjem
+   aplikacije:
+   - **Postavke > Aplikacije > Pokretanje aplikacija** > Laprdus > isključite
+     **"Upravljaj automatski"** te uključite sve tri opcije: **Automatsko
+     pokretanje**, **Sekundarno pokretanje** i **Izvođenje u pozadini**
+   - **Postavke > Baterija > Optimizacija baterije** > Laprdus > odaberite
+     **"Ne dopusti"** (ne optimiziraj)
+4. Ponovno pokrenite uređaj i provjerite govor
+
 #### Govor je prebrz ili prespor
 
 Podesite brzinu govora:
@@ -1520,4 +1538,4 @@ Pri prijavi problema, molimo navedite:
 
 ---
 
-Zadnja izmjena: veljača 2026.
+Zadnja izmjena: kolovoz 2026.

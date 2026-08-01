@@ -379,7 +379,9 @@ class SettingsScreenAccessibilityTest {
                 onSentencePauseChange = {},
                 onCommaPauseChange = {},
                 onNewlinePauseChange = {},
-                onNumberModeChange = {}
+                onNumberModeChange = {},
+                onInflectionEnabledChange = {},
+                onUserDictionariesEnabledChange = {}
             )
         }
 
@@ -418,7 +420,9 @@ class SettingsScreenAccessibilityTest {
                 onSentencePauseChange = {},
                 onCommaPauseChange = {},
                 onNewlinePauseChange = {},
-                onNumberModeChange = {}
+                onNumberModeChange = {},
+                onInflectionEnabledChange = {},
+                onUserDictionariesEnabledChange = {}
             )
         }
 
@@ -456,7 +460,9 @@ class SettingsScreenAccessibilityTest {
                 onSentencePauseChange = {},
                 onCommaPauseChange = {},
                 onNewlinePauseChange = {},
-                onNumberModeChange = {}
+                onNumberModeChange = {},
+                onInflectionEnabledChange = {},
+                onUserDictionariesEnabledChange = {}
             )
         }
 
@@ -497,7 +503,9 @@ class SettingsScreenAccessibilityTest {
                 onSentencePauseChange = {},
                 onCommaPauseChange = {},
                 onNewlinePauseChange = {},
-                onNumberModeChange = {}
+                onNumberModeChange = {},
+                onInflectionEnabledChange = {},
+                onUserDictionariesEnabledChange = {}
             )
         }
 
