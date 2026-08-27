@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
@@ -8,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.hrvojekatic.laprdus"
-    compileSdk = 36
+    compileSdk = 37
 
     ndkVersion = "26.1.10909125"
 
@@ -40,9 +39,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    kotlinOptions {
-        jvmTarget = "11"
-    }
     buildFeatures {
         compose = true
         buildConfig = true
@@ -52,14 +48,6 @@ android {
             // JUnit 5 jars each bundle META-INF license files; exclude them
             // so the androidTest APK can merge its java resources
             excludes += "META-INF/LICENSE*.md"
-        }
-    }
-
-    // Only use main assets directory - voice data and dictionaries are copied
-    // to subdirectories by the copyVoiceData and copyDictionaries tasks below
-    sourceSets {
-        getByName("main") {
-            assets.srcDirs("src/main/assets")
         }
     }
 
@@ -131,7 +119,7 @@ dependencies {
 // =============================================================================
 
 // Clean old asset files from previous folder structure (pre-1.0.0)
-val cleanOldAssets by tasks.registering(Delete::class) {
+val cleanOldAssets = tasks.register<Delete>("cleanOldAssets") {
     description = "Remove old asset files from previous folder structure"
     delete(
         // Old voice files at root
@@ -145,7 +133,7 @@ val cleanOldAssets by tasks.registering(Delete::class) {
 }
 
 // Generate voice data using SCons if not already present
-val generateVoiceData by tasks.registering(Exec::class) {
+val generateVoiceData = tasks.register<Exec>("generateVoiceData") {
     description = "Generate voice data files using SCons phoneme packer"
     workingDir = file("../../")
 
@@ -177,7 +165,7 @@ val generateVoiceData by tasks.registering(Exec::class) {
 }
 
 // Verify voice data exists before copying
-val verifyVoiceData by tasks.registering {
+val verifyVoiceData = tasks.register("verifyVoiceData") {
     description = "Verify that voice data files exist"
     dependsOn(generateVoiceData)
 
@@ -208,7 +196,7 @@ val verifyVoiceData by tasks.registering {
     }
 }
 
-val copyVoiceData by tasks.registering(Copy::class) {
+val copyVoiceData = tasks.register<Copy>("copyVoiceData") {
     description = "Copy voice data files to assets/voices subdirectory"
     dependsOn(cleanOldAssets, verifyVoiceData)
     from("../../data/voices") {
@@ -217,7 +205,7 @@ val copyVoiceData by tasks.registering(Copy::class) {
     into("src/main/assets/voices")
 }
 
-val copyDictionaries by tasks.registering(Copy::class) {
+val copyDictionaries = tasks.register<Copy>("copyDictionaries") {
     description = "Copy dictionary files to assets/dictionaries subdirectory"
     dependsOn(cleanOldAssets)
     from("../../data/dictionary") {

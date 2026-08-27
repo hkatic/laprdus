@@ -46,7 +46,7 @@ data class TTSUiState(
  */
 @HiltViewModel
 class TTSViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val tts: LaprdusTTS,
     private val audioPlayer: AudioPlayer,
     private val settings: SettingsRepository
