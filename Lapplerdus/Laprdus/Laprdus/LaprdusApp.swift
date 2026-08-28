@@ -4,26 +4,26 @@ import SwiftUI
 
 @main
 struct LaprdusApp: App {
-    @State private var model = AppModel()
+    @StateObject private var model = AppModel()
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
-            MainView()
-                .environment(model)
+            RootView()
+                .environmentObject(model)
+                .environmentObject(model.settings)
                 .task {
                     await model.initialize()
                 }
         }
-        .onChange(of: scenePhase) { _, newPhase in
-            // Mirrors Android: preview playback stops when the app leaves
-            // the foreground.
+        .onChange(of: scenePhase) { newPhase in
+            // Preview playback stops when the app leaves the foreground.
             if newPhase == .background {
                 model.stop()
             }
         }
         #if os(macOS)
-        .defaultSize(width: 560, height: 640)
+        .defaultSize(width: 640, height: 720)
         #endif
     }
 }

@@ -1,46 +1,44 @@
-// SettingsView.swift - Engine settings, ported 1:1 from the Android app.
+// SettingsView.swift - Settings tab: engine configuration.
 
 import SwiftUI
 
 struct SettingsView: View {
-    @Environment(AppModel.self) private var model
-    @State private var selectedVoice = ""
+    @EnvironmentObject private var model: AppModel
+    @EnvironmentObject private var settings: SettingsStore
+
+    /// The picker binds straight to the persisted default voice, so there is
+    /// no mirrored state to keep in sync. selectVoice persists only on
+    /// success; on failure nothing changes and the next render (triggered by
+    /// the published errorMessage) snaps the picker back automatically.
+    private var selectedVoice: Binding<String> {
+        Binding(
+            get: { settings.defaultVoice },
+            set: { newValue in
+                guard newValue != settings.defaultVoice else { return }
+                Task {
+                    await model.selectVoice(newValue)
+                }
+            }
+        )
+    }
 
     var body: some View {
-        @Bindable var settings = model.settings
         Form {
             voiceSection
             advancedSection
             pausesSection
             dictionariesSection
-            aboutSection
         }
         .formStyle(.grouped)
         .navigationTitle("Settings")
-        #if !os(macOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
-        .onAppear {
-            selectedVoice = model.settings.defaultVoice
-        }
-        .onChange(of: selectedVoice) { oldValue, newValue in
-            guard !oldValue.isEmpty, newValue != model.settings.defaultVoice else { return }
-            Task {
-                await model.selectVoice(newValue)
-                // Revert the picker if the engine rejected the voice.
-                if model.settings.defaultVoice != newValue {
-                    selectedVoice = model.settings.defaultVoice
-                }
-            }
-        }
+        .inlineNavigationBarTitle()
     }
 
     // MARK: Voice
 
     private var voiceSection: some View {
-        @Bindable var settings = model.settings
-        return Section("Voice") {
-            Picker(selection: $selectedVoice) {
+        Section("Voice") {
+            Picker(selection: selectedVoice) {
                 ForEach(VoiceCatalog.all) { voice in
                     VStack(alignment: .leading) {
                         Text(voice.localizedName)
@@ -55,6 +53,15 @@ struct SettingsView: View {
                 Text("Voice")
             }
             .accessibilityHint(Text("Select voice for speech synthesis"))
+
+            // Voice selection errors must be visible on this tab; the Main
+            // tab's error area is not on screen while Settings is active.
+            if let error = model.errorMessage {
+                Text("Error: \(error)")
+                    .font(.callout)
+                    .foregroundStyle(.red)
+                    .accessibilityAddTraits(.updatesFrequently)
+            }
 
             SliderRow(
                 title: String(localized: "Speech rate"),
@@ -103,8 +110,7 @@ struct SettingsView: View {
     // MARK: Advanced
 
     private var advancedSection: some View {
-        @Bindable var settings = model.settings
-        return Section("Advanced") {
+        Section("Advanced") {
             ToggleRow(
                 title: String(localized: "Force language"),
                 subtitle: String(localized: "Use selected language regardless of system settings"),
@@ -134,8 +140,7 @@ struct SettingsView: View {
     // MARK: Reading pauses
 
     private var pausesSection: some View {
-        @Bindable var settings = model.settings
-        return Section("Reading Pauses") {
+        Section("Reading Pauses") {
             PauseSliderRow(
                 title: String(localized: "Pause after sentences"),
                 subtitle: String(localized: "Duration of silence after periods, exclamation marks, and question marks"),
@@ -157,40 +162,12 @@ struct SettingsView: View {
     // MARK: Dictionaries
 
     private var dictionariesSection: some View {
-        @Bindable var settings = model.settings
-        return Section("Dictionaries") {
+        Section("Dictionaries") {
             ToggleRow(
                 title: String(localized: "Apply user dictionaries"),
                 subtitle: String(localized: "Use custom word pronunciations from user dictionaries"),
                 isOn: $settings.userDictionariesEnabled
             )
-            NavigationLink {
-                DictionaryListView()
-            } label: {
-                VStack(alignment: .leading) {
-                    Text("Manage dictionaries")
-                    Text("Add, edit, and delete dictionary entries")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            }
-        }
-    }
-
-    // MARK: About
-
-    private var aboutSection: some View {
-        Section {
-            NavigationLink {
-                AboutView()
-            } label: {
-                VStack(alignment: .leading) {
-                    Text("About Laprdus")
-                    Text("Application information, legal, and support")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            }
         }
     }
 }
@@ -270,8 +247,10 @@ private struct ToggleRow: View {
 }
 
 #Preview {
+    let model = AppModel()
     NavigationStack {
         SettingsView()
-            .environment(AppModel())
     }
+    .environmentObject(model)
+    .environmentObject(model.settings)
 }

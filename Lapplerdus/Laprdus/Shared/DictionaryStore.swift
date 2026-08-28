@@ -1,5 +1,6 @@
 // DictionaryStore.swift - User dictionary persistence.
-// File format is identical to the Android app so files are interchangeable.
+// The JSON file format is identical across all Laprdus platforms, so
+// dictionary files are interchangeable between them.
 
 import Foundation
 
@@ -19,7 +20,7 @@ enum DictionaryType: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    /// Same filenames as the Android app writes into its files directory.
+    /// File names are shared across all Laprdus platforms.
     var fileName: String {
         switch self {
         case .main: return "user.json"
@@ -41,7 +42,7 @@ final class DictionaryStore: @unchecked Sendable {
         directory.appendingPathComponent(type.fileName)
     }
 
-    /// Missing file yields an empty list, matching Android behavior.
+    /// A missing file yields an empty list.
     func load(_ type: DictionaryType) throws -> [DictionaryEntry] {
         try queue.sync {
             let url = fileURL(for: type)

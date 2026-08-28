@@ -1,46 +1,37 @@
-// MainView.swift - Main screen: text input and speak/stop, like the Android app.
+// MainView.swift - Main tab: sample text input and the play button.
 
 import SwiftUI
 
 struct MainView: View {
-    @Environment(AppModel.self) private var model
+    @EnvironmentObject private var model: AppModel
+
+    /// Default demo text (not persisted). Kept as view state so typing does
+    /// not republish the app-wide model on every keystroke.
+    @State private var inputText = "Dobar dan. Ja sam Laprdus, rođen sam 2026. godine, i drago mi je da se možemo upoznati! 😁\nKako si ti? ❤\n"
 
     var body: some View {
-        @Bindable var model = model
-        NavigationStack {
-            Group {
-                if model.isLoading {
-                    ProgressView("Loading…")
-                        .controlSize(.large)
-                } else {
-                    content
-                }
-            }
-            .navigationTitle("Laprdus TTS")
-            .toolbar {
-                ToolbarItem {
-                    NavigationLink {
-                        SettingsView()
-                    } label: {
-                        Label("Laprdus Settings", systemImage: "gearshape")
-                    }
-                    .accessibilityHint(Text("Opens Laprdus TTS engine settings"))
-                }
+        Group {
+            if model.isLoading {
+                ProgressView("Loading…")
+                    .controlSize(.large)
+            } else {
+                content
             }
         }
+        .navigationTitle("Laprdus TTS")
+        .inlineNavigationBarTitle()
     }
 
     @ViewBuilder
     private var content: some View {
-        @Bindable var model = model
         VStack(spacing: 16) {
-            TextEditor(text: $model.inputText)
+            TextEditor(text: $inputText)
                 .font(.body)
                 .scrollContentBackground(.hidden)
                 .padding(8)
-                .background(.background.secondary, in: RoundedRectangle(cornerRadius: 10))
+                .background(editorBackground, in: RoundedRectangle(cornerRadius: 10))
                 .overlay(alignment: .topLeading) {
-                    if model.inputText.isEmpty {
+                    if inputText.isEmpty {
                         Text("Enter text you want to hear…")
                             .foregroundStyle(.secondary)
                             .padding(.horizontal, 12)
@@ -61,19 +52,17 @@ struct MainView: View {
                     .accessibilityAddTraits(.updatesFrequently)
             }
 
-            speakButton
-
-            systemSpeechSettingsButton
+            playButton
         }
         .padding()
     }
 
-    private var speakButton: some View {
+    private var playButton: some View {
         Button {
             if model.isPlaying {
                 model.stop()
             } else {
-                model.speak()
+                model.speak(inputText)
             }
         } label: {
             Label {
@@ -86,39 +75,23 @@ struct MainView: View {
         }
         .buttonStyle(.borderedProminent)
         .tint(model.isPlaying ? .red : .accentColor)
-        .disabled(!model.isPlaying && (!model.isInitialized || model.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty))
+        .disabled(!model.isPlaying && (!model.isInitialized || inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty))
         .accessibilityHint(model.isPlaying ? Text("Stops current speech") : Text("Speaks the entered text"))
         .keyboardShortcut(.defaultAction)
     }
 
-    /// Apple counterpart of the Android "Android TTS Settings" button.
-    private var systemSpeechSettingsButton: some View {
-        Button {
-            openSystemSpeechSettings()
-        } label: {
-            Label("System Speech Settings", systemImage: "person.wave.2")
-                .frame(maxWidth: .infinity, minHeight: 36)
-        }
-        .buttonStyle(.bordered)
-        .accessibilityHint(Text("Opens the system speech settings"))
-    }
-
-    private func openSystemSpeechSettings() {
+    private var editorBackground: Color {
         #if os(macOS)
-        // Accessibility > Spoken Content pane, where Laprdus voices appear
-        // once the extension is registered.
-        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.universalaccess") {
-            NSWorkspace.shared.open(url)
-        }
-        #elseif os(iOS) || os(visionOS)
-        if let url = URL(string: UIApplication.openSettingsURLString) {
-            UIApplication.shared.open(url)
-        }
+        Color(nsColor: .textBackgroundColor)
+        #else
+        Color(uiColor: .secondarySystemBackground)
         #endif
     }
 }
 
 #Preview {
-    MainView()
-        .environment(AppModel())
+    NavigationStack {
+        MainView()
+    }
+    .environmentObject(AppModel())
 }

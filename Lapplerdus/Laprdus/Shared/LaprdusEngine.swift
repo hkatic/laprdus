@@ -58,7 +58,7 @@ final class LaprdusEngine: @unchecked Sendable {
     }
 
     /// Loads a voice from the bundle's resources and (re)loads the bundled
-    /// dictionaries, mirroring the Android engine wrapper.
+    /// dictionaries.
     func loadVoice(_ voiceID: String) throws {
         let bundle = Bundle(for: LaprdusEngine.self)
         guard let resourcePath = bundle.resourceURL?.path else {

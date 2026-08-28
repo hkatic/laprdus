@@ -103,7 +103,7 @@ struct DictionaryStoreTests {
         #expect(loaded[0].comment == "Zagreb plates")
     }
 
-    @Test func writtenFormatMatchesAndroid() throws {
+    @Test func writtenFormatMatchesSharedDictionaryFormat() throws {
         let (store, dir) = try makeStore()
         defer { try? FileManager.default.removeItem(at: dir) }
 
@@ -114,11 +114,11 @@ struct DictionaryStoreTests {
         let entries = try #require(root["entries"] as? [[String: Any]])
         #expect(entries.count == 1)
         #expect(entries[0]["grapheme"] as? String == "Facebook")
-        // Empty comment is omitted, same as the Android writer.
+        // An empty comment is omitted from the written file.
         #expect(entries[0]["comment"] == nil)
     }
 
-    @Test func dictionaryTypesUseAndroidFileNames() {
+    @Test func dictionaryTypesUseSharedFileNames() {
         #expect(DictionaryType.main.fileName == "user.json")
         #expect(DictionaryType.spelling.fileName == "spelling.json")
         #expect(DictionaryType.emoji.fileName == "emoji.json")
@@ -129,7 +129,7 @@ struct DictionaryStoreTests {
 
 struct SettingsTests {
 
-    @Test func defaultsMatchAndroid() throws {
+    @Test func snapshotHasExpectedDefaults() throws {
         let suiteName = "LaprdusTests-\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }

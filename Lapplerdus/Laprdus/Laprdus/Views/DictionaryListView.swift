@@ -1,9 +1,10 @@
-// DictionaryListView.swift - User dictionary management (main/spelling/emoji).
+// DictionaryListView.swift - Dictionaries tab: dictionary selection and
+// entry management (main/spelling/emoji).
 
 import SwiftUI
 
 struct DictionaryListView: View {
-    @Environment(AppModel.self) private var model
+    @EnvironmentObject private var model: AppModel
 
     @State private var selectedType: DictionaryType = .main
     @State private var entries: [DictionaryEntry] = []
@@ -12,7 +13,7 @@ struct DictionaryListView: View {
     @State private var editorRoute: EditorRoute?
     @State private var entryPendingDeletion: DictionaryEntry?
 
-    private struct EditorRoute: Identifiable, Hashable {
+    private struct EditorRoute: Identifiable {
         let id = UUID()
         var entry: DictionaryEntry?
     }
@@ -83,6 +84,9 @@ struct DictionaryListView: View {
                             }
                         }
                     }
+                    .onDelete { offsets in
+                        delete(at: offsets)
+                    }
                 }
             }
 
@@ -94,11 +98,14 @@ struct DictionaryListView: View {
             }
         }
         .navigationTitle("Dictionaries")
-        #if !os(macOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+        .inlineNavigationBarTitle()
         .toolbar {
-            ToolbarItem {
+            #if os(iOS)
+            ToolbarItem(placement: .navigationBarLeading) {
+                EditButton()
+            }
+            #endif
+            ToolbarItem(placement: .primaryAction) {
                 Button {
                     editorRoute = EditorRoute(entry: nil)
                 } label: {
@@ -106,13 +113,17 @@ struct DictionaryListView: View {
                 }
             }
         }
-        .navigationDestination(item: $editorRoute) { route in
-            DictionaryEditView(
-                entry: route.entry,
-                onSave: { upsert($0) },
-                onDelete: { delete($0) },
-                onDuplicate: { duplicate($0) }
-            )
+        .sheet(item: $editorRoute) { route in
+            NavigationStack {
+                DictionaryEditView(
+                    entry: route.entry,
+                    onSave: { upsert($0) },
+                    onDelete: { delete($0) }
+                )
+            }
+            #if os(macOS)
+            .frame(minWidth: 420, minHeight: 420)
+            #endif
         }
         .alert(
             Text("Delete entry?"),
@@ -174,6 +185,13 @@ struct DictionaryListView: View {
         persist()
     }
 
+    private func delete(at offsets: IndexSet) {
+        // Route edit-mode deletion through the same "Delete entry?"
+        // confirmation every other delete gesture uses.
+        guard let index = offsets.first, entries.indices.contains(index) else { return }
+        entryPendingDeletion = entries[index]
+    }
+
     private func duplicate(_ entry: DictionaryEntry) {
         var copy = entry
         copy.id = UUID()
@@ -186,6 +204,6 @@ struct DictionaryListView: View {
 #Preview {
     NavigationStack {
         DictionaryListView()
-            .environment(AppModel())
     }
+    .environmentObject(AppModel())
 }

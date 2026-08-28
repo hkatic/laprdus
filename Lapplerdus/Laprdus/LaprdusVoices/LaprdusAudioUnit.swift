@@ -1,6 +1,6 @@
 // LaprdusAudioUnit.swift - AVSpeechSynthesisProvider audio unit.
-// Apple counterpart of the Android LaprdusTTSService: exposes the five
-// Laprdus voices to the system (VoiceOver, Spoken Content, AVSpeechSynthesizer).
+// Exposes the five Laprdus voices to the system (VoiceOver, Spoken Content,
+// AVSpeechSynthesizer).
 
 import AVFAudio
 import AudioToolbox
@@ -81,7 +81,7 @@ public class LaprdusAudioUnit: AVSpeechSynthesisProviderAudioUnit {
             let engine = try ensureEngine()
 
             // Voice resolution: the host's requested voice, unless
-            // "Force language" pins the user's default voice (Android parity).
+            // "Force language" pins the user's default voice.
             var voiceID = voiceID(fromIdentifier: speechRequest.voice.identifier)
             if settings.forceLanguage {
                 voiceID = settings.defaultVoice
@@ -94,7 +94,7 @@ public class LaprdusAudioUnit: AVSpeechSynthesisProviderAudioUnit {
             engine.apply(settings)
             // Rate/pitch/volume: honor the host request unless forced.
             // Without force, volume is pinned to 1.0 and the system output
-            // volume governs — same as the Android service.
+            // volume governs.
             engine.setTransientParameters(
                 speed: settings.forceSpeed ? settings.speed : utterance.rate,
                 userPitch: settings.forcePitch ? settings.pitch : utterance.pitch,
@@ -141,8 +141,7 @@ public class LaprdusAudioUnit: AVSpeechSynthesisProviderAudioUnit {
         if let voice = VoiceCatalog.all.first(where: { $0.providerIdentifier == identifier }) {
             return voice.id
         }
-        // Never refuse an unknown voice: fall back to the persisted default,
-        // matching the Android service's permissive language policy.
+        // Never refuse an unknown voice: fall back to the persisted default.
         return SettingsSnapshot.load().defaultVoice
     }
 

@@ -56,8 +56,11 @@ final class AudioPlayer {
     }
 
     /// Stops playback; pending buffer completion handlers fire, which resumes
-    /// any awaiting `play(_:)` call.
+    /// any awaiting `play(_:)` call. Calling AVAudioPlayerNode methods on a
+    /// node that was never attached raises an NSException, so stop() before
+    /// the first play() (e.g. backgrounding at launch) must be a no-op.
     func stop() {
+        guard audioEngine.attachedNodes.contains(playerNode) else { return }
         playerNode.stop()
     }
 }

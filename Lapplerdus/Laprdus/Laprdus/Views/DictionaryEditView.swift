@@ -1,4 +1,4 @@
-// DictionaryEditView.swift - Add/edit a single dictionary entry.
+// DictionaryEditView.swift - Modal form for adding or editing a dictionary entry.
 
 import SwiftUI
 
@@ -6,7 +6,6 @@ struct DictionaryEditView: View {
     let entry: DictionaryEntry?
     let onSave: (DictionaryEntry) -> Void
     let onDelete: (DictionaryEntry) -> Void
-    let onDuplicate: (DictionaryEntry) -> Void
 
     @Environment(\.dismiss) private var dismiss
 
@@ -20,6 +19,19 @@ struct DictionaryEditView: View {
     @State private var showDeleteConfirmation = false
 
     private var isEditing: Bool { entry != nil }
+
+    /// True when the form differs from what it started with; used to block
+    /// the accidental swipe-down dismissal that would silently discard input.
+    private var hasUnsavedChanges: Bool {
+        if let entry {
+            return grapheme != entry.grapheme
+                || phoneme != entry.phoneme
+                || comment != entry.comment
+                || caseSensitive != entry.caseSensitive
+                || wholeWord != entry.wholeWord
+        }
+        return !grapheme.isEmpty || !phoneme.isEmpty || !comment.isEmpty
+    }
 
     var body: some View {
         Form {
@@ -47,37 +59,30 @@ struct DictionaryEditView: View {
                 Toggle("Match whole word only", isOn: $wholeWord)
             }
 
-            Section {
-                Button {
-                    save()
-                } label: {
-                    Text("Save")
-                        .frame(maxWidth: .infinity)
-                        .fontWeight(.semibold)
+            if isEditing {
+                Section {
+                    Button(role: .destructive) {
+                        showDeleteConfirmation = true
+                    } label: {
+                        Text("Delete Entry")
+                            .frame(maxWidth: .infinity)
+                    }
                 }
             }
         }
         .formStyle(.grouped)
         .navigationTitle(isEditing ? Text("Edit Entry") : Text("Add Entry"))
-        #if !os(macOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+        .inlineNavigationBarTitle()
+        .interactiveDismissDisabled(hasUnsavedChanges)
         .toolbar {
-            if let entry {
-                ToolbarItem {
-                    Button {
-                        onDuplicate(entry)
-                        dismiss()
-                    } label: {
-                        Label("Duplicate", systemImage: "doc.on.doc")
-                    }
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Cancel") {
+                    dismiss()
                 }
-                ToolbarItem {
-                    Button(role: .destructive) {
-                        showDeleteConfirmation = true
-                    } label: {
-                        Label("Delete", systemImage: "trash")
-                    }
+            }
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Save") {
+                    save()
                 }
             }
         }
@@ -101,8 +106,8 @@ struct DictionaryEditView: View {
                 wholeWord = entry.wholeWord
             }
         }
-        .onChange(of: grapheme) { _, _ in graphemeMissing = false }
-        .onChange(of: phoneme) { _, _ in phonemeMissing = false }
+        .onChange(of: grapheme) { _ in graphemeMissing = false }
+        .onChange(of: phoneme) { _ in phonemeMissing = false }
     }
 
     private func save() {
@@ -126,6 +131,6 @@ struct DictionaryEditView: View {
 
 #Preview {
     NavigationStack {
-        DictionaryEditView(entry: nil, onSave: { _ in }, onDelete: { _ in }, onDuplicate: { _ in })
+        DictionaryEditView(entry: nil, onSave: { _ in }, onDelete: { _ in })
     }
 }

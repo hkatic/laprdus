@@ -1062,15 +1062,15 @@ laprdus_load_spelling_dictionary(handle, "/path/to/spelling.json");
 laprdus_synthesize_spelled(handle, "ABC", &samples, &format);
 ```
 
-## Apple (iOS / iPadOS / macOS / visionOS)
+## Apple (iOS / iPadOS / macOS)
 
 ### Overview
 
-The Apple port lives in `Lapplerdus/Laprdus/Laprdus.xcodeproj` (Xcode 26+) and mirrors the Android app:
+The Apple port lives in `Lapplerdus/Laprdus/Laprdus.xcodeproj` (Xcode 26+) and mirrors the Android app. Deployment targets: **iOS 16.0** and **macOS 13.0** — the minimum versions supporting `AVSpeechSynthesisProviderAudioUnit`; the SwiftUI code deliberately uses only iOS 16 / macOS 13 APIs (`ObservableObject`/`@Published`, single-parameter `onChange`, no `@Observable`/`@Bindable`, no `navigationDestination(item:)`). visionOS is not supported.
 
 | Target | Purpose |
 |--------|---------|
-| `Laprdus` | Multiplatform SwiftUI app (iOS, iPadOS, macOS, visionOS): main speak screen, settings, dictionary manager, about |
+| `Laprdus` | Multiplatform SwiftUI app (iOS, iPadOS, macOS) with a 4-tab layout: Main (sample text + play button), Settings, Dictionaries, About |
 | `LaprdusVoices` | Speech synthesis provider app extension (`AVSpeechSynthesisProviderAudioUnit`, `ausp` Audio Unit) — exposes the 5 voices system-wide to VoiceOver/Spoken Content, like the Android `TextToSpeechService` |
 | `LaprdusTests` | Unit tests (Swift Testing), hosted in the app |
 

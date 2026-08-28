@@ -1,22 +1,17 @@
 // AppModel.swift - App-wide state: engine lifecycle, playback, settings.
-// Plays the role of the Android TTSViewModel + Hilt singletons.
 
+import Combine
 import Foundation
-import Observation
 
 @MainActor
-@Observable
-final class AppModel {
+final class AppModel: ObservableObject {
     let settings = SettingsStore()
     let dictionaries = DictionaryStore()
 
-    private(set) var isLoading = true
-    private(set) var isInitialized = false
-    private(set) var isPlaying = false
-    var errorMessage: String?
-
-    /// Same default demo text as the Android app (not persisted).
-    var inputText = "Dobar dan. Ja sam Laprdus, rođen sam 2026. godine, i drago mi je da se možemo upoznati! 😁\nKako si ti? ❤\n"
+    @Published private(set) var isLoading = true
+    @Published private(set) var isInitialized = false
+    @Published private(set) var isPlaying = false
+    @Published var errorMessage: String?
 
     private var engine: LaprdusEngine?
     private let player = AudioPlayer()
@@ -38,15 +33,21 @@ final class AppModel {
         isLoading = false
     }
 
-    func speak() {
-        let text = inputText
+    func speak(_ text: String) {
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         guard let engine else { return }
         stop()
         isPlaying = true
         errorMessage = nil
         playbackTask = Task {
-            defer { isPlaying = false }
+            // A cancelled task may resume after a newer speak() has already
+            // set isPlaying back to true; stop() resets the flag itself, so
+            // only a task that ran to completion may clear it here.
+            defer {
+                if !Task.isCancelled {
+                    isPlaying = false
+                }
+            }
             do {
                 if !engine.isInitialized {
                     let voiceID = settings.defaultVoice
@@ -78,8 +79,7 @@ final class AppModel {
         isPlaying = false
     }
 
-    /// Switches the active voice; persists the choice only on success,
-    /// mirroring the Android settings screen.
+    /// Switches the active voice; persists the choice only on success.
     func selectVoice(_ voiceID: String) async {
         guard let engine else { return }
         do {
@@ -91,8 +91,8 @@ final class AppModel {
         }
     }
 
-    /// Unlike Android (where only the system service applied user
-    /// dictionaries), the in-app preview applies them too.
+    /// User dictionaries apply to the in-app preview as well as to the
+    /// system speech extension.
     private func applyUserDictionaries() {
         guard settings.userDictionariesEnabled,
               let engine,

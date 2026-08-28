@@ -35,9 +35,7 @@ struct AboutView: View {
             }
         }
         .navigationTitle("About Laprdus")
-        #if !os(macOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+        .inlineNavigationBarTitle()
     }
 }
 

@@ -14,7 +14,7 @@ struct Voice: Identifiable, Hashable {
     /// Stable identifier used for AVSpeechSynthesisProviderVoice.
     var providerIdentifier: String { "com.hrvojekatic.laprdus.\(id)" }
 
-    /// Short localized name shown in pickers (mirrors the Android app).
+    /// Short localized name shown in pickers.
     var localizedName: String {
         switch id {
         case "josip": return "Josip"
@@ -68,7 +68,7 @@ enum VoiceCatalog {
         all.first { $0.id == id }
     }
 
-    /// Default voice for a BCP-47 language tag (mirrors the Android service).
+    /// Default voice for a BCP-47 language tag.
     static func defaultVoiceID(forLanguage tag: String) -> String {
         let lowered = tag.lowercased()
         if lowered.hasPrefix("sr") || lowered.hasPrefix("srp") { return "vlado" }
