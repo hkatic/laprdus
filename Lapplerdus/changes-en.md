@@ -19,3 +19,7 @@
 - The app now works on iPhones and iPads running iOS 16 or newer, and on Macs running macOS 13 Ventura or newer.
 - In the system voice list, Laprdus voices are now grouped under "Laprdus" instead of the developer's name.
 - The child, grandma and grandpa voices are now called Detence, Baba and Đedo everywhere, matching the names used on the other platforms.
+- Pronunciation entries you add or change in the app now take effect in the system voices right away. Previously VoiceOver and Spoken Content kept using the old pronunciation until you switched voices.
+- Fixed the speech rate and pitch changing on their own when reading text that itself contains markup, such as a web page's source or a code listing.
+- The About screen now warns you if the app and the system voices have stopped sharing settings and dictionaries, instead of letting it pass unnoticed.
+- Reworked how synthesized audio is handed to the system, removing a rare source of audio glitches.

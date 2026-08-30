@@ -19,3 +19,7 @@
 - Aplikacija sada radi na iPhone i iPad uređajima s iOS-om 16 ili novijim te na Mac računalima s macOS-om 13 Ventura ili novijim.
 - U popisu glasova sustava Laprdusovi glasovi sada su svrstani pod „Laprdus” umjesto pod ime autora.
 - Glasovi djeteta, bake i djeda sada se posvuda zovu Detence, Baba i Đedo, jednako kao na ostalim platformama.
+- Unosi izgovora koje dodate ili promijenite u aplikaciji sada odmah vrijede i za glasove sustava. Ranije su VoiceOver i Izgovoreni sadržaj zadržavali stari izgovor sve dok ne biste promijenili glas.
+- Ispravljena je pojava da su se brzina i visina govora same mijenjale pri čitanju teksta koji sadrži oznake, primjerice izvornog koda web stranice.
+- Zaslon O aplikaciji sada upozorava ako aplikacija i glasovi sustava prestanu dijeliti postavke i rječnike, umjesto da to prođe nezapaženo.
+- Prerađen je način na koji se sintetizirani zvuk predaje sustavu, čime je uklonjen rijedak uzrok isprekidanog zvuka.

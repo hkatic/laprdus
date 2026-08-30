@@ -91,4 +91,31 @@ final class DictionaryStore: @unchecked Sendable {
         let url = fileURL(for: .main)
         return FileManager.default.fileExists(atPath: url.path) ? url : nil
     }
+
+    /// Current state of the user dictionary, used to detect edits made in the
+    /// app while the engine (in particular the long-lived speech extension)
+    /// already has an older copy loaded.
+    func dictionaryState(userDictionariesEnabled: Bool) -> DictionaryState {
+        guard userDictionariesEnabled else {
+            return DictionaryState(userDictionaryURL: nil, stamp: "disabled")
+        }
+        guard let url = userDictionaryURLIfPresent else {
+            return DictionaryState(userDictionaryURL: nil, stamp: "absent")
+        }
+        let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
+        let modified = (attributes?[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
+        let size = (attributes?[.size] as? Int) ?? 0
+        return DictionaryState(userDictionaryURL: url, stamp: "\(modified)-\(size)")
+    }
+}
+
+/// The user dictionary as the engine should see it, plus a stamp that changes
+/// whenever the file does. Comparing stamps is what lets the engine reload
+/// dictionaries only when they actually changed.
+struct DictionaryState: Equatable, Sendable {
+    let userDictionaryURL: URL?
+    let stamp: String
+
+    /// Bundled dictionaries only, with no user dictionary layered on top.
+    static let bundledOnly = DictionaryState(userDictionaryURL: nil, stamp: "disabled")
 }

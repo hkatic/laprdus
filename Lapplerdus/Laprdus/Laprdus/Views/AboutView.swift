@@ -19,6 +19,16 @@ struct AboutView: View {
                 Text("Copyright © 2026., Hrvoje Katić")
             }
 
+            // The app and the system voices share settings and dictionaries
+            // through the app group. Without it each side silently keeps its
+            // own copy, so say so rather than letting it pass unnoticed.
+            if !AppGroup.isShared {
+                Section("Diagnostics") {
+                    Text("Settings and dictionaries are not being shared with the system voices. Reinstalling Laprdus should resolve this.")
+                        .foregroundStyle(.red)
+                }
+            }
+
             Section("Legal") {
                 Link(destination: URL(string: "https://hrvojekatic.com/laprdus/privacy-statement.php")!) {
                     LinkRow(title: String(localized: "Read the Privacy Policy Online"))

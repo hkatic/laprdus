@@ -381,6 +381,22 @@
         }
       }
     },
+    "Diagnostics": {
+      "localizations": {
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dijagnostika"
+          }
+        },
+        "sr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dijagnostika"
+          }
+        }
+      }
+    },
     "Dictionaries": {
       "localizations": {
         "hr": {
@@ -1117,6 +1133,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Podešavanja"
+          }
+        }
+      }
+    },
+    "Settings and dictionaries are not being shared with the system voices. Reinstalling Laprdus should resolve this.": {
+      "localizations": {
+        "hr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Postavke i rječnici ne dijele se s glasovima sustava. Ponovna instalacija Laprdusa trebala bi to riješiti."
+          }
+        },
+        "sr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Podešavanja i rečnici ne dele se sa glasovima sistema. Ponovna instalacija Laprdusa trebalo bi da to reši."
           }
         }
       }

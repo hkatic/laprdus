@@ -17,10 +17,11 @@ enum SSMLParser {
     static func parse(_ ssml: String) -> SSMLUtterance {
         var utterance = SSMLUtterance()
 
-        if let rateAttribute = firstAttribute("rate", in: ssml) {
+        let prosody = prosodyTags(in: ssml)
+        if let rateAttribute = firstAttribute("rate", inTags: prosody) {
             utterance.rate = rateMultiplier(from: rateAttribute)
         }
-        if let pitchAttribute = firstAttribute("pitch", in: ssml) {
+        if let pitchAttribute = firstAttribute("pitch", inTags: prosody) {
             utterance.pitch = pitchMultiplier(from: pitchAttribute)
         }
 
@@ -37,14 +38,38 @@ enum SSMLParser {
         return utterance
     }
 
-    private static func firstAttribute(_ name: String, in ssml: String) -> String? {
-        let pattern = "\(name)\\s*=\\s*\"([^\"]*)\""
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
-              let match = regex.firstMatch(in: ssml, range: NSRange(ssml.startIndex..., in: ssml)),
-              let range = Range(match.range(at: 1), in: ssml) else {
+    /// The opening <prosody> tags, so prosody attributes are never read out of
+    /// the spoken text itself — reading markup or source code aloud otherwise
+    /// let a literal rate="..." in the content change the speech rate.
+    private static func prosodyTags(in ssml: String) -> [String] {
+        let pattern = "<prosody\\b[^>]*>"
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else {
+            return []
+        }
+        let range = NSRange(ssml.startIndex..., in: ssml)
+        return regex.matches(in: ssml, range: range).compactMap { match in
+            Range(match.range, in: ssml).map { String(ssml[$0]) }
+        }
+    }
+
+    /// First value of `name` across the given tags. Both quote styles are
+    /// accepted; the lookbehind keeps "rate" from matching inside another
+    /// attribute name such as x-rate.
+    private static func firstAttribute(_ name: String, inTags tags: [String]) -> String? {
+        let pattern = "(?<![-\\w])\(name)\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)')"
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else {
             return nil
         }
-        return String(ssml[range])
+        for tag in tags {
+            let range = NSRange(tag.startIndex..., in: tag)
+            guard let match = regex.firstMatch(in: tag, range: range) else { continue }
+            for group in 1...2 {
+                if let valueRange = Range(match.range(at: group), in: tag) {
+                    return String(tag[valueRange])
+                }
+            }
+        }
+        return nil
     }
 
     /// "50%" → 0.5, "1.5" → 1.5, plus the SSML keyword scale.

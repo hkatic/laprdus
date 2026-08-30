@@ -24,8 +24,8 @@ final class AppModel: ObservableObject {
             let engine = try LaprdusEngine()
             self.engine = engine
             let voiceID = settings.defaultVoice
-            try await runOnEngineQueue { try engine.loadVoice(voiceID) }
-            applyUserDictionaries()
+            let state = dictionaryState
+            try await runOnEngineQueue { try engine.loadVoice(voiceID, dictionaries: state) }
             isInitialized = true
         } catch {
             errorMessage = String(localized: "Error starting TTS engine")
@@ -49,13 +49,15 @@ final class AppModel: ObservableObject {
                 }
             }
             do {
+                let state = dictionaryState
                 if !engine.isInitialized {
                     let voiceID = settings.defaultVoice
-                    try await runOnEngineQueue { try engine.loadVoice(voiceID) }
-                    applyUserDictionaries()
+                    try await runOnEngineQueue { try engine.loadVoice(voiceID, dictionaries: state) }
                 }
                 let snapshot = settings.snapshot
                 let chunk = try await runOnEngineQueue {
+                    // Picks up dictionary entries edited since the last speak.
+                    engine.syncDictionaries(state)
                     engine.apply(snapshot)
                     return try engine.synthesize(text)
                 }
@@ -83,8 +85,8 @@ final class AppModel: ObservableObject {
     func selectVoice(_ voiceID: String) async {
         guard let engine else { return }
         do {
-            try await runOnEngineQueue { try engine.loadVoice(voiceID) }
-            applyUserDictionaries()
+            let state = dictionaryState
+            try await runOnEngineQueue { try engine.loadVoice(voiceID, dictionaries: state) }
             settings.defaultVoice = voiceID
         } catch {
             errorMessage = String(localized: "Error selecting voice")
@@ -93,11 +95,8 @@ final class AppModel: ObservableObject {
 
     /// User dictionaries apply to the in-app preview as well as to the
     /// system speech extension.
-    private func applyUserDictionaries() {
-        guard settings.userDictionariesEnabled,
-              let engine,
-              let url = dictionaries.userDictionaryURLIfPresent else { return }
-        engine.appendUserDictionary(at: url)
+    private var dictionaryState: DictionaryState {
+        dictionaries.dictionaryState(userDictionariesEnabled: settings.userDictionariesEnabled)
     }
 
     /// Runs blocking engine work off the main actor.

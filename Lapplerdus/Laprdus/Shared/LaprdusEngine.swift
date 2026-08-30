@@ -29,6 +29,7 @@ final class LaprdusEngine: @unchecked Sendable {
     private let handle: LaprdusHandle
     private let queue = DispatchQueue(label: "com.hrvojekatic.laprdus.engine")
     private var currentVoiceID: String?
+    private var appliedDictionaryStamp: String?
 
     init() throws {
         guard let created = laprdus_create() else {
@@ -58,36 +59,50 @@ final class LaprdusEngine: @unchecked Sendable {
     }
 
     /// Loads a voice from the bundle's resources and (re)loads the bundled
-    /// dictionaries.
-    func loadVoice(_ voiceID: String) throws {
+    /// dictionaries, then layers the user dictionary on top.
+    func loadVoice(_ voiceID: String, dictionaries state: DictionaryState) throws {
+        try queue.sync {
+            try performLoadVoice(voiceID, dictionaries: state)
+        }
+    }
+
+    /// Reloads dictionaries when the user dictionary has changed since the last
+    /// load. Editing an entry in the app must take effect in the already
+    /// running speech extension, and appending alone cannot remove or amend an
+    /// entry, so a changed stamp reloads the voice to reset dictionary state
+    /// before re-applying the file.
+    func syncDictionaries(_ state: DictionaryState) {
+        queue.sync {
+            guard state.stamp != appliedDictionaryStamp, let voiceID = currentVoiceID else { return }
+            try? performLoadVoice(voiceID, dictionaries: state)
+        }
+    }
+
+    /// Must be called on `queue`.
+    private func performLoadVoice(_ voiceID: String, dictionaries state: DictionaryState) throws {
         let bundle = Bundle(for: LaprdusEngine.self)
         guard let resourcePath = bundle.resourceURL?.path else {
             throw LaprdusEngineError.resourcesMissing
         }
-        try queue.sync {
-            guard laprdus_set_voice(handle, voiceID, resourcePath) == LAPRDUS_OK else {
-                throw LaprdusEngineError.api(lastErrorMessage)
-            }
-            currentVoiceID = voiceID
-            // set_voice may reinitialize the engine and drop dictionary state,
-            // so the bundled dictionaries are reloaded after every switch.
-            if let path = bundle.path(forResource: "internal", ofType: "json") {
-                _ = laprdus_load_dictionary(handle, path)
-            }
-            if let path = bundle.path(forResource: "spelling", ofType: "json") {
-                _ = laprdus_load_spelling_dictionary(handle, path)
-            }
-            if let path = bundle.path(forResource: "emoji", ofType: "json") {
-                _ = laprdus_load_emoji_dictionary(handle, path)
-            }
+        guard laprdus_set_voice(handle, voiceID, resourcePath) == LAPRDUS_OK else {
+            throw LaprdusEngineError.api(lastErrorMessage)
         }
-    }
-
-    /// Appends user pronunciation entries on top of the bundled dictionary.
-    func appendUserDictionary(at url: URL) {
-        queue.sync {
+        currentVoiceID = voiceID
+        // set_voice may reinitialize the engine and drop dictionary state,
+        // so the bundled dictionaries are reloaded after every switch.
+        if let path = bundle.path(forResource: "internal", ofType: "json") {
+            _ = laprdus_load_dictionary(handle, path)
+        }
+        if let path = bundle.path(forResource: "spelling", ofType: "json") {
+            _ = laprdus_load_spelling_dictionary(handle, path)
+        }
+        if let path = bundle.path(forResource: "emoji", ofType: "json") {
+            _ = laprdus_load_emoji_dictionary(handle, path)
+        }
+        if let url = state.userDictionaryURL {
             _ = laprdus_append_dictionary(handle, url.path)
         }
+        appliedDictionaryStamp = state.stamp
     }
 
     /// Applies persisted settings. The user pitch slider maps to

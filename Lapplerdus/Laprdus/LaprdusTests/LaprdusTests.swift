@@ -27,7 +27,7 @@ struct EngineTests {
 
     @Test func synthesizesAudioForCroatianText() throws {
         let engine = try LaprdusEngine()
-        try engine.loadVoice("josip")
+        try engine.loadVoice("josip", dictionaries: .bundledOnly)
         #expect(engine.isInitialized)
         let chunk = try engine.synthesize("Dobar dan!")
         #expect(chunk.samples.count > 0)
@@ -37,14 +37,14 @@ struct EngineTests {
 
     @Test func synthesizesSpelledCharacter() throws {
         let engine = try LaprdusEngine()
-        try engine.loadVoice("josip")
+        try engine.loadVoice("josip", dictionaries: .bundledOnly)
         let chunk = try engine.synthesize("Č", spelled: true)
         #expect(chunk.samples.count > 0)
     }
 
     @Test func switchingToDerivedVoiceWorks() throws {
         let engine = try LaprdusEngine()
-        try engine.loadVoice("baba")
+        try engine.loadVoice("baba", dictionaries: .bundledOnly)
         #expect(engine.currentVoice == "baba")
         let chunk = try engine.synthesize("Dobar dan")
         #expect(chunk.samples.count > 0)
@@ -52,7 +52,7 @@ struct EngineTests {
 
     @Test func appliesSettingsWithoutError() throws {
         let engine = try LaprdusEngine()
-        try engine.loadVoice("josip")
+        try engine.loadVoice("josip", dictionaries: .bundledOnly)
         var snapshot = SettingsSnapshot()
         snapshot.speed = 1.5
         snapshot.pitch = 1.2
@@ -122,6 +122,66 @@ struct DictionaryStoreTests {
         #expect(DictionaryType.main.fileName == "user.json")
         #expect(DictionaryType.spelling.fileName == "spelling.json")
         #expect(DictionaryType.emoji.fileName == "emoji.json")
+    }
+
+    @Test func stateIsEmptyWhenUserDictionariesAreDisabled() throws {
+        let (store, dir) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        try store.save([DictionaryEntry(grapheme: "ZG", phoneme: "Ze Ge")], type: .main)
+        let state = store.dictionaryState(userDictionariesEnabled: false)
+        #expect(state.userDictionaryURL == nil)
+        #expect(state.stamp == DictionaryState.bundledOnly.stamp)
+    }
+
+    @Test func stateReportsMissingFile() throws {
+        let (store, dir) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let state = store.dictionaryState(userDictionariesEnabled: true)
+        #expect(state.userDictionaryURL == nil)
+        #expect(state.stamp == "absent")
+    }
+
+    /// The stamp is what tells the running speech extension that entries were
+    /// edited in the app, so editing must change it.
+    @Test func stampChangesWhenEntriesAreEdited() throws {
+        let (store, dir) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        try store.save([DictionaryEntry(grapheme: "ZG", phoneme: "Ze Ge")], type: .main)
+        let first = store.dictionaryState(userDictionariesEnabled: true)
+        #expect(first.userDictionaryURL != nil)
+        #expect(first.stamp != "absent")
+
+        #expect(store.dictionaryState(userDictionariesEnabled: true).stamp == first.stamp)
+
+        try store.save(
+            [
+                DictionaryEntry(grapheme: "ZG", phoneme: "Ze Ge"),
+                DictionaryEntry(grapheme: "Facebook", phoneme: "Fejzbuk"),
+            ],
+            type: .main
+        )
+        #expect(store.dictionaryState(userDictionariesEnabled: true).stamp != first.stamp)
+    }
+
+    @Test func engineReloadsChangedUserDictionary() throws {
+        let (store, dir) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let engine = try LaprdusEngine()
+        try store.save([DictionaryEntry(grapheme: "ZG", phoneme: "Ze Ge")], type: .main)
+        try engine.loadVoice("josip", dictionaries: store.dictionaryState(userDictionariesEnabled: true))
+        #expect(engine.currentVoice == "josip")
+
+        // A changed dictionary is reloaded without losing the current voice,
+        // and an unchanged one is a no-op.
+        try store.save([DictionaryEntry(grapheme: "ZG", phoneme: "Zagreb")], type: .main)
+        engine.syncDictionaries(store.dictionaryState(userDictionariesEnabled: true))
+        #expect(engine.currentVoice == "josip")
+        #expect(engine.isInitialized)
+        #expect(try engine.synthesize("ZG").samples.count > 0)
     }
 }
 
