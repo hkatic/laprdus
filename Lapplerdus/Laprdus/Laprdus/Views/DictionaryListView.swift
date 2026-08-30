@@ -42,13 +42,21 @@ struct DictionaryListView: View {
                         Button {
                             editorRoute = EditorRoute(entry: entry)
                         } label: {
-                            VStack(alignment: .leading) {
-                                Text(entry.grapheme)
-                                Text(entry.phoneme)
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
+                            HStack {
+                                VStack(alignment: .leading) {
+                                    Text(entry.grapheme)
+                                    Text(entry.phoneme)
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                // Rows open an editor sheet rather than push,
+                                // so they need an explicit tap affordance.
+                                Image(systemName: "chevron.right")
+                                    .font(.footnote.weight(.semibold))
+                                    .foregroundStyle(.tertiary)
+                                    .accessibilityHidden(true)
                             }
-                            .frame(maxWidth: .infinity, alignment: .leading)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)

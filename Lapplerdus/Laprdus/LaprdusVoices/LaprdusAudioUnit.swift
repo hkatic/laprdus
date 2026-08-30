@@ -80,12 +80,9 @@ public class LaprdusAudioUnit: AVSpeechSynthesisProviderAudioUnit {
         do {
             let engine = try ensureEngine()
 
-            // Voice resolution: the host's requested voice, unless
-            // "Force language" pins the user's default voice.
-            var voiceID = voiceID(fromIdentifier: speechRequest.voice.identifier)
-            if settings.forceLanguage {
-                voiceID = settings.defaultVoice
-            }
+            // The host always picks a concrete voice on Apple platforms
+            // (Spoken Content / VoiceOver), so honor its request.
+            let voiceID = voiceID(fromIdentifier: speechRequest.voice.identifier)
             if engine.currentVoice != voiceID || !engine.isInitialized {
                 try engine.loadVoice(voiceID)
                 loadUserDictionaries(into: engine, settings: settings)

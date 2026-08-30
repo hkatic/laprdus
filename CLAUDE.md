@@ -1089,7 +1089,7 @@ Lapplerdus/Laprdus/
 
 - The C++ engine is compiled **directly into both targets** from `src/core`, `src/audio`, `src/c_api` (same approach as the Android CMake build; file references in the Xcode project point at `../../src/...`). C++17, `LAPRDUS_VERSION_*` defines set in build settings.
 - Voice data (`data/voices/*.bin`) and dictionaries (`data/dictionary/*.json`) are bundle resources of both targets. **On a fresh checkout, generate voice data first** (`scons ... voice-data` or `./scripts/build-all.sh voice-data`) — `.bin` files are gitignored.
-- Settings use the shared app-group `UserDefaults` suite with the **same keys and defaults as the Android DataStore** (`default_voice`, `speed`, `pitch`, `volume`, `force_*`, `emoji_enabled`, `inflection_enabled`, `*_pause`, `number_mode`, `user_dictionaries_enabled`). The user pitch slider maps to `laprdus_set_user_pitch`; voice-character pitch comes from the registry via `laprdus_set_voice`.
+- Settings use the shared app-group `UserDefaults` suite with the **same keys and defaults as the Android DataStore** (`default_voice`, `speed`, `pitch`, `volume`, `force_speed`/`force_pitch`/`force_volume`, `emoji_enabled`, `inflection_enabled`, `*_pause`, `number_mode`, `user_dictionaries_enabled`). The user pitch slider maps to `laprdus_set_user_pitch`; voice-character pitch comes from the registry via `laprdus_set_voice`.
 - User dictionaries are stored in the app group container (`Dictionaries/user.json`, `spelling.json`, `emoji.json`) in the **same JSON format as Android**, and are applied both in-app and in the extension.
 - Localization: `Localizable.xcstrings` string catalog with en/hr/sr (translations taken from the Android `values-hr`/`values-sr`).
 
@@ -1114,4 +1114,4 @@ After installing/running the app once, the `LaprdusVoices` extension registers w
 - **iOS**: Settings → Accessibility → Spoken Content → Voices
 - **macOS**: System Settings → Accessibility → Spoken Content → System voice → Manage Voices
 
-The extension mirrors the Android service behavior: honors host rate/pitch unless the "Force" settings are on, pins volume to 1.0 unless forced, uses the persisted default voice when "Force language" is on, and speaks single grapheme clusters through the spelling dictionary.
+The extension mirrors the Android service behavior: honors host rate/pitch unless the "Force" settings are on, pins volume to 1.0 unless forced, and speaks single grapheme clusters through the spelling dictionary. It always synthesizes with the voice the host requested — Android's "Force language" setting has no Apple equivalent (Spoken Content always names a concrete voice) and is not part of this port.

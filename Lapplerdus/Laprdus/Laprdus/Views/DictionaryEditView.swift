@@ -36,22 +36,21 @@ struct DictionaryEditView: View {
     var body: some View {
         Form {
             Section {
-                TextField("Original text", text: $grapheme)
-                    .autocorrectionDisabled()
-                if graphemeMissing {
-                    Text("This field is required")
-                        .font(.footnote)
-                        .foregroundStyle(.red)
+                LabeledField(label: String(localized: "Original text"), isMissing: graphemeMissing) {
+                    TextField("", text: $grapheme)
+                        .autocorrectionDisabled()
+                        .accessibilityLabel(Text("Original text"))
                 }
-                TextField("Replacement pronunciation", text: $phoneme)
-                    .autocorrectionDisabled()
-                if phonemeMissing {
-                    Text("This field is required")
-                        .font(.footnote)
-                        .foregroundStyle(.red)
+                LabeledField(label: String(localized: "Replacement pronunciation"), isMissing: phonemeMissing) {
+                    TextField("", text: $phoneme)
+                        .autocorrectionDisabled()
+                        .accessibilityLabel(Text("Replacement pronunciation"))
                 }
-                TextField("Comment (optional)", text: $comment, axis: .vertical)
-                    .lineLimit(1...3)
+                LabeledField(label: String(localized: "Comment (optional)"), isMissing: false) {
+                    TextField("", text: $comment, axis: .vertical)
+                        .lineLimit(1...3)
+                        .accessibilityLabel(Text("Comment (optional)"))
+                }
             }
 
             Section {
@@ -126,6 +125,58 @@ struct DictionaryEditView: View {
             comment: comment.trimmingCharacters(in: .whitespacesAndNewlines)
         ))
         dismiss()
+    }
+}
+
+/// A text field that always shows what it is for. A plain placeholder would
+/// vanish as soon as the field has content, leaving an entry being edited as
+/// unlabeled boxes.
+///
+/// The two platforms want different shapes for this. A macOS grouped Form
+/// splits every row into a label column and a trailing control column, so it
+/// gets a real LabeledContent row; fighting that layout leaves the field
+/// stranded on the right with its text jammed against the bezel. iOS has no
+/// such column, so the name sits above the field as a caption. Either way the
+/// name is hidden from VoiceOver, which reads it from the field itself.
+private struct LabeledField<Content: View>: View {
+    let label: String
+    let isMissing: Bool
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        #if os(macOS)
+        LabeledContent {
+            VStack(alignment: .leading, spacing: 2) {
+                content
+                    .textFieldStyle(.roundedBorder)
+                    .multilineTextAlignment(.leading)
+                requiredNote
+            }
+        } label: {
+            Text(label)
+                .foregroundStyle(isMissing ? Color.red : Color.primary)
+                .accessibilityHidden(true)
+        }
+        #else
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label)
+                .font(.caption)
+                .foregroundStyle(isMissing ? Color.red : Color.secondary)
+                .accessibilityHidden(true)
+            content
+            requiredNote
+        }
+        .padding(.vertical, 2)
+        #endif
+    }
+
+    @ViewBuilder
+    private var requiredNote: some View {
+        if isMissing {
+            Text("This field is required")
+                .font(.footnote)
+                .foregroundStyle(.red)
+        }
     }
 }
 

@@ -29,7 +29,17 @@ struct MainView: View {
                 .font(.body)
                 .scrollContentBackground(.hidden)
                 .padding(8)
-                .background(editorBackground, in: RoundedRectangle(cornerRadius: 10))
+                .background {
+                    // In dark mode on macOS the editor background is all but
+                    // identical to the window, so the field needs an outline
+                    // to read as a text area at all.
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(editorBackground)
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 10)
+                                .strokeBorder(Color.secondary.opacity(0.35), lineWidth: 1)
+                        }
+                }
                 .overlay(alignment: .topLeading) {
                     if inputText.isEmpty {
                         Text("Enter text you want to hear…")
