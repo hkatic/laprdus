@@ -185,6 +185,73 @@ struct DictionaryStoreTests {
     }
 }
 
+// MARK: - SSML
+
+/// The system hands the speech extension SSML, so these cover what Spoken
+/// Content and VoiceOver actually send, plus the prosody-scoping rules.
+struct SSMLParserTests {
+
+    @Test func readsProsodyRateAndPitch() {
+        let utterance = SSMLParser.parse(
+            "<speak><prosody rate=\"1.5\" pitch=\"0.75\">Dobar dan</prosody></speak>"
+        )
+        #expect(utterance.rate == 1.5)
+        #expect(utterance.pitch == 0.75)
+        #expect(utterance.text == "Dobar dan")
+    }
+
+    /// Reading markup or source code aloud must not let a literal rate="..."
+    /// in the spoken text change how fast the text is read.
+    @Test func ignoresAttributesInSpokenText() {
+        let escaped = SSMLParser.parse(
+            "<speak><prosody rate=\"1.5\">Atribut rate=&quot;2.0&quot; u tekstu</prosody></speak>"
+        )
+        #expect(escaped.rate == 1.5)
+        #expect(escaped.pitch == 1.0)
+        #expect(escaped.text == "Atribut rate=\"2.0\" u tekstu")
+
+        let unescaped = SSMLParser.parse("<speak>citam rate=\"2.0\" i pitch=\"2.0\" naglas</speak>")
+        #expect(unescaped.rate == 1.0)
+        #expect(unescaped.pitch == 1.0)
+        #expect(unescaped.text == "citam rate=\"2.0\" i pitch=\"2.0\" naglas")
+    }
+
+    @Test func acceptsSingleQuotedAttributes() {
+        let utterance = SSMLParser.parse("<speak><prosody rate='fast' pitch='low'>Test</prosody></speak>")
+        #expect(utterance.rate == 1.5)
+        #expect(utterance.pitch == 0.75)
+    }
+
+    @Test func readsRelativePitch() {
+        #expect(SSMLParser.parse("<speak><prosody pitch=\"+50%\">Test</prosody></speak>").pitch == 1.5)
+        #expect(SSMLParser.parse("<speak><prosody pitch=\"-25%\">Test</prosody></speak>").pitch == 0.75)
+    }
+
+    @Test func clampsOutOfRangeValues() {
+        #expect(SSMLParser.parse("<speak><prosody rate=\"9.0\">Test</prosody></speak>").rate == 2.0)
+        #expect(SSMLParser.parse("<speak><prosody rate=\"0.01\">Test</prosody></speak>").rate == 0.5)
+    }
+
+    @Test func breakBecomesNewlineSoTheEnginePauses() {
+        let utterance = SSMLParser.parse(
+            "<speak><prosody rate=\"1.0\">Prvi<break time=\"300ms\"/>drugi</prosody></speak>"
+        )
+        #expect(utterance.text == "Prvi\ndrugi")
+    }
+
+    @Test func plainTextKeepsDefaults() {
+        let utterance = SSMLParser.parse("<speak>Samo tekst</speak>")
+        #expect(utterance.rate == 1.0)
+        #expect(utterance.pitch == 1.0)
+        #expect(utterance.text == "Samo tekst")
+    }
+
+    @Test func decodesEntitiesWithoutDoubleDecoding() {
+        let utterance = SSMLParser.parse("<speak>Ivan &amp;lt; Marko &amp; Ana</speak>")
+        #expect(utterance.text == "Ivan &lt; Marko & Ana")
+    }
+}
+
 // MARK: - Settings
 
 struct SettingsTests {

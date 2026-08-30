@@ -1,6 +1,9 @@
 // SSMLParser.swift - Minimal SSML handling for AVSpeechSynthesisProviderRequest.
 // The system hands the utterance to the provider as SSML; Laprdus synthesizes
 // plain text, so the prosody attributes are extracted and the tags stripped.
+//
+// Used only by the LaprdusVoices extension, but it lives in Shared so the
+// app-hosted test bundle can reach it.
 
 import Foundation
 
