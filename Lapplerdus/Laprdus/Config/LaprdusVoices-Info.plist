@@ -23,8 +23,11 @@
 					</array>
 					<key>type</key>
 					<string>ausp</string>
+					<!-- Bump whenever the exposed voice list or voice names
+					     change: the system caches them per component version,
+					     so without this an update keeps serving old names. -->
 					<key>version</key>
-					<integer>1</integer>
+					<integer>2</integer>
 				</dict>
 			</array>
 		</dict>
