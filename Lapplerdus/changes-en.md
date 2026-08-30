@@ -17,3 +17,5 @@
 - On Mac, settings sliders and dictionary fields now sit next to their names in a single row, the way Mac settings normally look. Previously they were pushed to the right edge, far from the name they belonged to, and text typed into a field was pushed against its right border.
 - On Mac in dark mode the sample text box was invisible against the window background. It now has a visible outline.
 - The app now works on iPhones and iPads running iOS 16 or newer, and on Macs running macOS 13 Ventura or newer.
+- In the system voice list, Laprdus voices are now grouped under "Laprdus" instead of the developer's name.
+- The child, grandma and grandpa voices are now called Detence, Baba and Đedo everywhere, matching the names used on the other platforms.

@@ -17,3 +17,5 @@
 - Na Macu klizači postavki i polja rječnika sada stoje uz svoj naziv u jednom retku, onako kako Mac postavke inače izgledaju. Ranije su bili gurnuti uz desni rub, daleko od naziva kojemu pripadaju, a tekst upisan u polje bio je priljubljen uz njegov desni rub.
 - Na Macu u tamnom načinu rada okvir za ogledni tekst bio je neprimjetan na pozadini prozora. Sada ima vidljiv obrub.
 - Aplikacija sada radi na iPhone i iPad uređajima s iOS-om 16 ili novijim te na Mac računalima s macOS-om 13 Ventura ili novijim.
+- U popisu glasova sustava Laprdusovi glasovi sada su svrstani pod „Laprdus” umjesto pod ime autora.
+- Glasovi djeteta, bake i djeda sada se posvuda zovu Detence, Baba i Đedo, jednako kao na ostalim platformama.

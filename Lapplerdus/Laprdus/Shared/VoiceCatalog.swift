@@ -19,9 +19,9 @@ struct Voice: Identifiable, Hashable {
         switch id {
         case "josip": return "Josip"
         case "vlado": return "Vlado"
-        case "detence": return String(localized: "Dijete")
-        case "baba": return String(localized: "Baka")
-        case "djed": return String(localized: "Đedo")
+        case "detence": return "Detence"
+        case "baba": return "Baba"
+        case "djed": return "Đedo"
         default: return displayName
         }
     }

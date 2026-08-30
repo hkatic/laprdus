@@ -205,22 +205,6 @@
         }
       }
     },
-    "Baka": {
-      "localizations": {
-        "hr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Baka"
-          }
-        },
-        "sr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Baka"
-          }
-        }
-      }
-    },
     "Cancel": {
       "localizations": {
         "hr": {
@@ -441,22 +425,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Čitaj brojeve cifru po cifru"
-          }
-        }
-      }
-    },
-    "Dijete": {
-      "localizations": {
-        "hr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dijete"
-          }
-        },
-        "sr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dete"
           }
         }
       }
@@ -1485,22 +1453,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Intonacija glasa"
-          }
-        }
-      }
-    },
-    "Đedo": {
-      "localizations": {
-        "hr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Đedo"
-          }
-        },
-        "sr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Đedo"
           }
         }
       }
