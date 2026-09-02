@@ -98,6 +98,8 @@
     <string name="error_synthesis_failed">Greška pri sintezi govora</string>
     <string name="error_voice_failed">Greška pri izboru glasa</string>
     <string name="error_prefix">Greška: %1$s</string>
+    <string name="error_storage_migration">Podešavanja sačuvana u ranijoj verziji nije bilo moguće premestiti na novo mesto skladištenja. Do sledećeg uspešnog pokušaja koriste se podrazumevana podešavanja.</string>
+    <string name="error_dictionary_migration">Rečnike sačuvane u ranijoj verziji nije bilo moguće premestiti na novo mesto skladištenja. Pokušaj će se automatski ponoviti.</string>
 
     <!-- Default TTS Dialog -->
     <string name="dialog_default_tts_title">Postavi kao podrazumevani TTS</string>

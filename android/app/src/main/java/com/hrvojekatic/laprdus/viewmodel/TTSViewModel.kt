@@ -5,6 +5,7 @@ import android.provider.Settings
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.hrvojekatic.laprdus.BuildConfig
 import com.hrvojekatic.laprdus.audio.AudioPlayer
 import com.hrvojekatic.laprdus.data.SettingsRepository
 import com.hrvojekatic.laprdus.tts.LaprdusTTS
@@ -54,6 +55,14 @@ class TTSViewModel @Inject constructor(
 
     companion object {
         private const val TAG = "TTSViewModel"
+    }
+
+    /**
+     * Debug-only logging: the message below carries the text the user asked to
+     * have spoken, and R8 keeps android.util.Log calls in release builds.
+     */
+    private inline fun logDebug(message: () -> String) {
+        if (BuildConfig.DEBUG) Log.d(TAG, message())
     }
 
     private val _uiState = MutableStateFlow(TTSUiState())
@@ -310,7 +319,7 @@ class TTSViewModel @Inject constructor(
                     }
                 }
 
-                Log.d(TAG, "Synthesizing: $text")
+                logDebug { "Synthesizing: $text" }
                 val samples = tts.synthesize(text)
 
                 if (samples != null && samples.isNotEmpty()) {

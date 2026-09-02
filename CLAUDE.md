@@ -143,6 +143,10 @@ Two separate pitch parameters serve different purposes:
 |------|------|
 | **InnoSetup ISCC** | `"C:\Program Files (x86)\Inno Setup 6\ISCC.exe"` |
 | **JAVA_HOME** | `C:\Program Files\Android\Android Studio\jbr` |
+| **JAVA_HOME (macOS)** | `/Applications/Android Studio.app/Contents/jbr/Contents/Home` |
+| **adb (macOS)** | `~/Library/Android/sdk/platform-tools/adb` |
+
+On the macOS machine `./gradlew` runs directly from `android/` once `JAVA_HOME` points at the Android Studio JBR; no wrapper or path tricks are needed.
 
 ### Running InnoSetup from Command Line
 
@@ -156,6 +160,10 @@ Two separate pitch parameters serve different purposes:
 ```bash
 # Set JAVA_HOME before running Gradle
 export JAVA_HOME="/c/Program Files/Android/Android Studio/jbr"
+cd android && ./gradlew assembleRelease
+
+# macOS
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 cd android && ./gradlew assembleRelease
 ```
 
@@ -480,6 +488,21 @@ phonemes/Vlado/*.wav  ──┘
 ### 16KB Page Size Compatibility
 
 The native library uses `-Wl,-z,max-page-size=16384` linker flag for Android 15+ compatibility with 16KB page size devices (required for Google Play starting November 2025).
+
+### Android storage layout (Direct Boot)
+
+`LaprdusTTSService` is `android:directBootAware="true"` so TalkBack can use Laprdus on the lock screen after a reboot, before the first unlock. Everything the service needs at that point lives in **device-protected (DE) storage** under `/data/user_de/0/<pkg>/files`:
+
+- settings DataStore: `datastore/laprdus_settings.preferences_pb` (opened via `deviceProtectedDataStoreFile`, process singleton in `LaprdusStorage`)
+- user dictionaries: `user.json`, `spelling.json`, `emoji.json` (written atomically via `AtomicFiles`)
+
+Voice data and bundled dictionaries load from APK assets, so synthesis itself never depends on storage.
+
+**Migration.** Builds 10 and earlier stored this data in credential-encrypted (CE) storage (`/data/user/0/<pkg>/files`), which is unreadable while locked. `SettingsMigrator` and `DictionaryMigrator` copy it once after unlock: DE values win, legacy values only fill missing keys, every step is crash-safe and idempotent (re-running after a crash converges), and the migrators are re-armed on `ACTION_USER_UNLOCKED`, on a rate-limited delayed retry, and on the next process start. Debug builds can force a crash at a named step by writing a `MigrationCrashPoint` name into `files/debug/crash_point` in the DE directory.
+
+**Failure policy.** Storage problems (unreadable or corrupt DE/legacy files, failed copies) never crash: they are logged, defaults are used, a localized notice is shown in the Settings screen (settings) or the Dictionaries screen (dictionaries), and migration is retried later. Only "no voice loadable at all" (requested voice and the `josip` fallback both fail) throws `LaprdusEngineUnavailableException`, and only from the synthesis path, so `speak()` returns ERROR and TalkBack can switch engines. A DE crash marker bounds this to 3 throws per 10 minutes; after that the service reports `callback.error()` per utterance instead.
+
+**Backup rules.** `backup_rules.xml` and `data_extraction_rules.xml` must stay empty: with no rules the framework backs up both CE and DE files, while adding any `<include>` flips the file to include-only and silently drops everything not listed.
 
 ## Linux
 
@@ -817,6 +840,11 @@ The Android SDK platform-tools are located at:
 C:\Users\hrvoj\AppData\Local\Android\Sdk\platform-tools\adb.exe
 ```
 
+On the macOS machine:
+```
+~/Library/Android/sdk/platform-tools/adb
+```
+
 #### Device Testing Commands
 
 ```bash
@@ -848,6 +876,20 @@ cd android && export JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" && 
 "/c/Users/hrvoj/AppData/Local/Android/Sdk/platform-tools/adb.exe" install -r "android/app/build/outputs/apk/debug/app-debug.apk"
 ```
 
+#### Android Test Commands
+
+Run from `android/` with `JAVA_HOME` set (Windows: `/c/Program Files/Android/Android Studio/jbr`, macOS: `/Applications/Android Studio.app/Contents/jbr/Contents/Home`):
+
+```bash
+cd android
+./gradlew testDebugUnitTest            # JVM unit tests (storage, migration, engine runtime)
+./gradlew connectedDebugAndroidTest    # instrumented tests on the connected, unlocked device
+```
+
+Notes:
+- The first `testDebugUnitTest` run downloads Robolectric's android-all SDK 36 jar (~213 MB) into `~/.m2`; the Robolectric tests pin `@Config(sdk = [36])`.
+- `SettingsScreenAccessibilityTest` (pre-existing Compose UI tests) fails on the S22 test device regardless of code changes (TalkBack is active there). Everything else is green; to run only the storage/engine classes use `-Pandroid.testInstrumentationRunnerArguments.package=com.hrvojekatic.laprdus.data` (and `.service`).
+
 #### Testing Checklist for Android
 
 - [ ] Device connected and recognized by `adb devices`
@@ -857,6 +899,8 @@ cd android && export JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" && 
 - [ ] Voice synthesis works correctly
 - [ ] Settings screen is accessible with TalkBack
 - [ ] All controls (sliders, switches, dropdowns) work with TalkBack
+- [ ] Direct Boot: with a PIN set, reboot and do NOT unlock; TalkBack must speak through Laprdus on the lock screen with the saved voice/speed; `logcat -s LaprdusTTSService` shows `userUnlocked=false`; after unlock the receiver fires and dictionaries reload
+- [ ] Migration: install the previous build, save settings and a dictionary entry, update, verify values survive (`SettingsMigrator`/`DictionaryMigrator` "Migrated" in logcat) and that a forced crash via `/data/user_de/0/com.hrvojekatic.laprdus/files/debug/crash_point` (debug builds) recovers on the next start
 
 ### Linux Testing
 

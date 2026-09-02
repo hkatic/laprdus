@@ -1,30 +1,34 @@
 package com.hrvojekatic.laprdus.data
 
 import android.content.Context
-import android.util.Log
-import dagger.hilt.android.qualifiers.ApplicationContext
+import com.hrvojekatic.laprdus.data.migration.DictionaryMigrator
+import com.hrvojekatic.laprdus.data.migration.LegacyMigrator
+import com.hrvojekatic.laprdus.data.migration.MigrationResult
+import com.hrvojekatic.laprdus.data.migration.SimulatedMigrationCrashException
+import com.hrvojekatic.laprdus.data.storage.LaprdusStorage
+import com.hrvojekatic.laprdus.data.storage.StorageLogger
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import org.json.JSONArray
-import org.json.JSONObject
 import java.io.File
 import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * Types of user dictionaries supported by Laprdus.
  */
-enum class DictionaryType {
+enum class DictionaryType(val fileName: String) {
     /** Main pronunciation dictionary (user.json) */
-    MAIN,
+    MAIN("user.json"),
     /** Spelling dictionary for character-by-character reading (spelling.json) */
-    SPELLING,
+    SPELLING("spelling.json"),
     /** Emoji dictionary for emoji to text conversion (emoji.json) */
-    EMOJI
+    EMOJI("emoji.json")
 }
 
 /**
@@ -48,29 +52,76 @@ data class DictionaryEntry(
 /**
  * Repository for managing user dictionaries.
  * Handles loading, saving, and CRUD operations on dictionary entries.
- * Dictionary files are stored in the app's internal files directory.
+ *
+ * Dictionary files are stored in the app's device-protected files directory
+ * (see [LaprdusStorage]) so the TTS service can apply them on the lock screen.
+ * Files written by older versions into credential-encrypted storage are moved
+ * by [DictionaryMigrator] before the first load or save; migration problems
+ * are logged and reported through [storageError], never thrown.
+ *
+ * Writes are atomic (temp file + rename) because the TTS service reads
+ * `user.json` on its synthesis thread while the UI edits it, and all
+ * operations are serialized by a mutex.
  */
-@Singleton
-class DictionaryRepository @Inject constructor(
-    @param:ApplicationContext private val context: Context
+class DictionaryRepository internal constructor(
+    private val dictionaryDir: File,
+    private val migrator: LegacyMigrator? = null,
+    private val logger: StorageLogger = StorageLogger.None,
 ) {
+    companion object {
+        /** Production repository over device-protected storage with the shared migrator. */
+        fun create(context: Context): DictionaryRepository = DictionaryRepository(
+            dictionaryDir = LaprdusStorage.dictionaryDir(context),
+            migrator = LaprdusStorage.dictionaryMigrator(context),
+            logger = LaprdusStorage.logger("DictionaryRepository")
+        )
+    }
+
+    private val mutex = Mutex()
+
     private val _entries = MutableStateFlow<List<DictionaryEntry>>(emptyList())
 
     /** Flow of current dictionary entries */
     val entries: Flow<List<DictionaryEntry>> = _entries.asStateFlow()
 
+    private val _storageError = MutableStateFlow<String?>(null)
+
+    /** Human-readable description of the last storage/migration failure, or null. */
+    val storageError: StateFlow<String?> = _storageError.asStateFlow()
+
+    /** Result of the most recent migration attempt (diagnostics and tests). */
+    @Volatile
+    var lastMigrationResult: MigrationResult? = null
+        private set
+
+    @Volatile
     private var currentType: DictionaryType = DictionaryType.MAIN
 
     /**
      * Get the file for a dictionary type.
      */
-    private fun getDictionaryFile(type: DictionaryType): File {
-        val filename = when (type) {
-            DictionaryType.MAIN -> "user.json"
-            DictionaryType.SPELLING -> "spelling.json"
-            DictionaryType.EMOJI -> "emoji.json"
+    internal fun getDictionaryFile(type: DictionaryType): File = File(dictionaryDir, type.fileName)
+
+    /**
+     * Runs the legacy-storage migration if it is still pending. Never throws
+     * (except for simulated crashes in debug/test builds).
+     */
+    internal suspend fun ensureMigrated(): MigrationResult? {
+        val migrator = migrator ?: return null
+        return try {
+            val result = migrator.migrateIfNeeded()
+            if (result is MigrationResult.Migrated) _storageError.value = null
+            lastMigrationResult = result
+            result
+        } catch (e: SimulatedMigrationCrashException) {
+            throw e
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            logger.error("Dictionary migration failed; continuing with current dictionaries", e)
+            _storageError.value = e.message ?: e.javaClass.simpleName
+            MigrationResult.RetryLater(e).also { lastMigrationResult = it }
         }
-        return File(context.filesDir, filename)
     }
 
     /**
@@ -80,22 +131,28 @@ class DictionaryRepository @Inject constructor(
      */
     suspend fun loadDictionary(type: DictionaryType): Result<List<DictionaryEntry>> =
         withContext(Dispatchers.IO) {
-            currentType = type
-            val file = getDictionaryFile(type)
+            mutex.withLock {
+                currentType = type
+                ensureMigrated()
+                val file = getDictionaryFile(type)
 
-            if (!file.exists()) {
-                _entries.value = emptyList()
-                return@withContext Result.success(emptyList())
-            }
+                if (!file.exists()) {
+                    _entries.value = emptyList()
+                    return@withLock Result.success(emptyList())
+                }
 
-            try {
-                val json = file.readText(Charsets.UTF_8)
-                val entries = parseDictionaryJson(json)
-                _entries.value = entries
-                Result.success(entries)
-            } catch (e: Exception) {
-                _entries.value = emptyList()
-                Result.failure(e)
+                try {
+                    val json = file.readText(Charsets.UTF_8)
+                    val entries = DictionaryJson.parse(json)
+                    _entries.value = entries
+                    Result.success(entries)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    logger.warn("Failed to load dictionary ${type.fileName}", e)
+                    _entries.value = emptyList()
+                    Result.failure(e)
+                }
             }
         }
 
@@ -107,21 +164,27 @@ class DictionaryRepository @Inject constructor(
      * @return Result indicating success or failure
      */
     suspend fun saveEntry(entry: DictionaryEntry): Result<Unit> = withContext(Dispatchers.IO) {
-        try {
-            val current = _entries.value.toMutableList()
-            val existingIndex = current.indexOfFirst { it.id == entry.id }
+        mutex.withLock {
+            try {
+                ensureMigrated()
+                val current = _entries.value.toMutableList()
+                val existingIndex = current.indexOfFirst { it.id == entry.id }
 
-            if (existingIndex >= 0) {
-                current[existingIndex] = entry
-            } else {
-                current.add(entry)
+                if (existingIndex >= 0) {
+                    current[existingIndex] = entry
+                } else {
+                    current.add(entry)
+                }
+
+                saveDictionary(currentType, current)
+                _entries.value = current
+                Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                logger.error("Failed to save dictionary entry", e)
+                Result.failure(e)
             }
-
-            _entries.value = current
-            saveDictionary(currentType, current)
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
         }
     }
 
@@ -131,13 +194,19 @@ class DictionaryRepository @Inject constructor(
      * @return Result indicating success or failure
      */
     suspend fun deleteEntry(entryId: String): Result<Unit> = withContext(Dispatchers.IO) {
-        try {
-            val current = _entries.value.filterNot { it.id == entryId }
-            _entries.value = current
-            saveDictionary(currentType, current)
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
+        mutex.withLock {
+            try {
+                ensureMigrated()
+                val current = _entries.value.filterNot { it.id == entryId }
+                saveDictionary(currentType, current)
+                _entries.value = current
+                Result.success(Unit)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                logger.error("Failed to delete dictionary entry", e)
+                Result.failure(e)
+            }
         }
     }
 
@@ -147,69 +216,9 @@ class DictionaryRepository @Inject constructor(
     fun getCurrentType(): DictionaryType = currentType
 
     /**
-     * Save dictionary entries to file.
+     * Save dictionary entries to file atomically.
      */
     private fun saveDictionary(type: DictionaryType, entries: List<DictionaryEntry>) {
-        val file = getDictionaryFile(type)
-        val json = generateDictionaryJson(entries)
-        file.writeText(json, Charsets.UTF_8)
-    }
-
-    /**
-     * Parse dictionary JSON into entries.
-     */
-    private fun parseDictionaryJson(json: String): List<DictionaryEntry> {
-        val entries = mutableListOf<DictionaryEntry>()
-
-        try {
-            val jsonObj = JSONObject(json)
-            val entriesArray = jsonObj.optJSONArray("entries") ?: return entries
-
-            for (i in 0 until entriesArray.length()) {
-                val entryObj = entriesArray.getJSONObject(i)
-                val grapheme = entryObj.optString("grapheme", "")
-                val phoneme = entryObj.optString("phoneme", "")
-
-                if (grapheme.isNotEmpty()) {
-                    entries.add(
-                        DictionaryEntry(
-                            grapheme = grapheme,
-                            phoneme = phoneme,
-                            caseSensitive = entryObj.optBoolean("caseSensitive", false),
-                            wholeWord = entryObj.optBoolean("wholeWord", true),
-                            comment = entryObj.optString("comment", "")
-                        )
-                    )
-                }
-            }
-        } catch (e: Exception) {
-            Log.w("DictionaryRepository", "Failed to parse dictionary JSON: ${e.message}")
-        }
-
-        return entries
-    }
-
-    /**
-     * Generate dictionary JSON from entries.
-     */
-    private fun generateDictionaryJson(entries: List<DictionaryEntry>): String {
-        val root = JSONObject()
-        root.put("version", "1.0")
-
-        val entriesArray = JSONArray()
-        entries.forEach { entry ->
-            val entryObj = JSONObject()
-            entryObj.put("grapheme", entry.grapheme)
-            entryObj.put("phoneme", entry.phoneme)
-            entryObj.put("caseSensitive", entry.caseSensitive)
-            entryObj.put("wholeWord", entry.wholeWord)
-            if (entry.comment.isNotEmpty()) {
-                entryObj.put("comment", entry.comment)
-            }
-            entriesArray.put(entryObj)
-        }
-        root.put("entries", entriesArray)
-
-        return root.toString(4)
+        AtomicFiles.writeTextAtomically(getDictionaryFile(type), DictionaryJson.generate(entries))
     }
 }

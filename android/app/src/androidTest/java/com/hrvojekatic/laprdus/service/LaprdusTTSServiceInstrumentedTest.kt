@@ -15,6 +15,11 @@ import org.junit.runner.RunWith
  * Instrumented tests for LaprdusTTSService.
  * These tests run on an actual Android device/emulator to verify
  * TTS service functionality with real asset loading.
+ *
+ * Assets are packaged under `assets/voices/` and `assets/dictionaries/`
+ * (see copyVoiceData/copyDictionaries in build.gradle.kts and the constants
+ * in LaprdusTTS). All checks use JUnit assertions: Kotlin's `assert()` is a
+ * no-op on ART because assertions are disabled at runtime.
  */
 @RunWith(AndroidJUnit4::class)
 class LaprdusTTSServiceInstrumentedTest {
@@ -35,12 +40,12 @@ class LaprdusTTSServiceInstrumentedTest {
         val assetManager = context.assets
 
         // Check voice binary files
-        val josipAsset = assetManager.open("Josip.bin")
-        assertNotNull("Josip.bin should be available in assets", josipAsset)
+        val josipAsset = assetManager.open("voices/Josip.bin")
+        assertNotNull("voices/Josip.bin should be available in assets", josipAsset)
         josipAsset.close()
 
-        val vladoAsset = assetManager.open("Vlado.bin")
-        assertNotNull("Vlado.bin should be available in assets", vladoAsset)
+        val vladoAsset = assetManager.open("voices/Vlado.bin")
+        assertNotNull("voices/Vlado.bin should be available in assets", vladoAsset)
         vladoAsset.close()
     }
 
@@ -49,16 +54,16 @@ class LaprdusTTSServiceInstrumentedTest {
         val assetManager = context.assets
 
         // Check dictionary files
-        val internalDict = assetManager.open("internal.json")
-        assertNotNull("internal.json should be available in assets", internalDict)
+        val internalDict = assetManager.open("dictionaries/internal.json")
+        assertNotNull("dictionaries/internal.json should be available in assets", internalDict)
         internalDict.close()
 
-        val spellingDict = assetManager.open("spelling.json")
-        assertNotNull("spelling.json should be available in assets", spellingDict)
+        val spellingDict = assetManager.open("dictionaries/spelling.json")
+        assertNotNull("dictionaries/spelling.json should be available in assets", spellingDict)
         spellingDict.close()
 
-        val emojiDict = assetManager.open("emoji.json")
-        assertNotNull("emoji.json should be available in assets", emojiDict)
+        val emojiDict = assetManager.open("dictionaries/emoji.json")
+        assertNotNull("dictionaries/emoji.json should be available in assets", emojiDict)
         emojiDict.close()
     }
 
@@ -67,17 +72,17 @@ class LaprdusTTSServiceInstrumentedTest {
         val assetManager = context.assets
 
         // Verify internal.json has entries
-        val internalContent = assetManager.open("internal.json").bufferedReader().readText()
-        assert(internalContent.contains("entries")) { "internal.json should contain 'entries' array" }
-        assert(internalContent.contains("grapheme")) { "internal.json should have grapheme entries" }
+        val internalContent = assetManager.open("dictionaries/internal.json").bufferedReader().readText()
+        assertTrue("internal.json should contain 'entries' array", internalContent.contains("entries"))
+        assertTrue("internal.json should have grapheme entries", internalContent.contains("grapheme"))
 
         // Verify spelling.json has entries
-        val spellingContent = assetManager.open("spelling.json").bufferedReader().readText()
-        assert(spellingContent.contains("character")) { "spelling.json should contain character entries" }
+        val spellingContent = assetManager.open("dictionaries/spelling.json").bufferedReader().readText()
+        assertTrue("spelling.json should contain character entries", spellingContent.contains("character"))
 
         // Verify emoji.json has entries
-        val emojiContent = assetManager.open("emoji.json").bufferedReader().readText()
-        assert(emojiContent.contains("emoji")) { "emoji.json should contain emoji entries" }
+        val emojiContent = assetManager.open("dictionaries/emoji.json").bufferedReader().readText()
+        assertTrue("emoji.json should contain emoji entries", emojiContent.contains("emoji"))
     }
 
     // ==========================================================================
@@ -88,8 +93,8 @@ class LaprdusTTSServiceInstrumentedTest {
     fun ttsEngineCanBeInitialized() {
         val tts = com.hrvojekatic.laprdus.tts.LaprdusTTS.getInstance()
         val success = tts.setVoice("josip", context.assets)
-        assert(success) { "TTS engine should initialize successfully with josip voice" }
-        assert(tts.isInitialized()) { "TTS engine should report as initialized" }
+        assertTrue("TTS engine should initialize successfully with josip voice", success)
+        assertTrue("TTS engine should report as initialized", tts.isInitialized())
     }
 
     @Test
@@ -98,14 +103,14 @@ class LaprdusTTSServiceInstrumentedTest {
         val voices = tts.getAllVoices()
 
         // Should have 5 voices: josip, vlado, detence, baba, djed
-        assert(voices.size >= 5) { "Should have at least 5 voices, found ${voices.size}" }
+        assertTrue("Should have at least 5 voices, found ${voices.size}", voices.size >= 5)
 
         val voiceIds = voices.map { it.id }
-        assert("josip" in voiceIds) { "Should have josip voice" }
-        assert("vlado" in voiceIds) { "Should have vlado voice" }
-        assert("detence" in voiceIds) { "Should have detence voice" }
-        assert("baba" in voiceIds) { "Should have baba voice" }
-        assert("djed" in voiceIds) { "Should have djed voice" }
+        assertTrue("Should have josip voice", "josip" in voiceIds)
+        assertTrue("Should have vlado voice", "vlado" in voiceIds)
+        assertTrue("Should have detence voice", "detence" in voiceIds)
+        assertTrue("Should have baba voice", "baba" in voiceIds)
+        assertTrue("Should have djed voice", "djed" in voiceIds)
     }
 
     @Test
@@ -129,7 +134,7 @@ class LaprdusTTSServiceInstrumentedTest {
 
         val samples = tts.synthesize("Dobar dan")
         assertNotNull("Synthesis should return samples", samples)
-        assert(samples!!.isNotEmpty()) { "Samples array should not be empty" }
+        assertTrue("Samples array should not be empty", samples!!.isNotEmpty())
     }
 
     // ==========================================================================
@@ -144,7 +149,7 @@ class LaprdusTTSServiceInstrumentedTest {
         // Single letter should be spelled (pronounced as letter name)
         val samples = tts.synthesizeSpelled("A")
         assertNotNull("Spelled synthesis should return samples for letter A", samples)
-        assert(samples!!.isNotEmpty()) { "Spelled samples should not be empty" }
+        assertTrue("Spelled samples should not be empty", samples!!.isNotEmpty())
     }
 
     @Test
@@ -155,7 +160,7 @@ class LaprdusTTSServiceInstrumentedTest {
         // Croatian letter with diacritic
         val samples = tts.synthesizeSpelled("Č")
         assertNotNull("Spelled synthesis should return samples for Č", samples)
-        assert(samples!!.isNotEmpty()) { "Spelled samples for Č should not be empty" }
+        assertTrue("Spelled samples for Č should not be empty", samples!!.isNotEmpty())
     }
 
     @Test
@@ -166,7 +171,7 @@ class LaprdusTTSServiceInstrumentedTest {
         // Digit should be spelled (pronounced as number word)
         val samples = tts.synthesizeSpelled("5")
         assertNotNull("Spelled synthesis should return samples for digit 5", samples)
-        assert(samples!!.isNotEmpty()) { "Spelled samples for digit should not be empty" }
+        assertTrue("Spelled samples for digit should not be empty", samples!!.isNotEmpty())
     }
 
     @Test
@@ -177,7 +182,7 @@ class LaprdusTTSServiceInstrumentedTest {
         // Punctuation should be spelled (pronounced as punctuation name)
         val samples = tts.synthesizeSpelled(".")
         assertNotNull("Spelled synthesis should return samples for period", samples)
-        assert(samples!!.isNotEmpty()) { "Spelled samples for period should not be empty" }
+        assertTrue("Spelled samples for period should not be empty", samples!!.isNotEmpty())
     }
 
     @Test
@@ -195,8 +200,8 @@ class LaprdusTTSServiceInstrumentedTest {
 
         // Spelled version should be different (typically longer as it says the letter name)
         // Note: We can't compare exact content, but we can verify both produce output
-        assert(normalSamples!!.isNotEmpty()) { "Normal samples should not be empty" }
-        assert(spelledSamples!!.isNotEmpty()) { "Spelled samples should not be empty" }
+        assertTrue("Normal samples should not be empty", normalSamples!!.isNotEmpty())
+        assertTrue("Spelled samples should not be empty", spelledSamples!!.isNotEmpty())
     }
 
     @Test
@@ -207,7 +212,7 @@ class LaprdusTTSServiceInstrumentedTest {
         // Space should be spelled as "razmak"
         val samples = tts.synthesizeSpelled(" ")
         assertNotNull("Spelled synthesis should return samples for space", samples)
-        assert(samples!!.isNotEmpty()) { "Spelled samples for space should not be empty" }
+        assertTrue("Spelled samples for space should not be empty", samples!!.isNotEmpty())
     }
 
     // ==========================================================================

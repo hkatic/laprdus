@@ -40,7 +40,9 @@ data class SettingsUiState(
     val numberMode: Int = SettingsRepository.DEFAULT_NUMBER_MODE,
     // Dictionary settings
     val userDictionariesEnabled: Boolean = SettingsRepository.DEFAULT_USER_DICTIONARIES_ENABLED,
-    val error: String? = null
+    val error: String? = null,
+    /** Persistent notice that saved settings could not be migrated (null when fine). */
+    val storageError: String? = null
 )
 
 /**
@@ -59,6 +61,24 @@ class SettingsViewModel @Inject constructor(
 
     init {
         loadSettings()
+        observeStorageErrors()
+    }
+
+    /**
+     * Surface storage/migration problems reported by the repository (for example
+     * when settings saved by an older version could not be moved into
+     * device-protected storage) so the user learns why defaults are in use.
+     */
+    private fun observeStorageErrors() {
+        viewModelScope.launch {
+            settings.storageError.collect { message ->
+                _uiState.update {
+                    it.copy(
+                        storageError = message?.let { context.getString(R.string.error_storage_migration) }
+                    )
+                }
+            }
+        }
     }
 
     /**

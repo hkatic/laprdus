@@ -297,6 +297,10 @@ Ovo je potrebno samo ako instalirate aplikaciju izvan Google Play trgovine.
 4. Odaberite "Laprdus TTS" iz popisa
 5. Vratite se na prethodni zaslon i dodirnite "Slušaj primjer" za testiranje
 
+#### Govor na zaključanom zaslonu
+
+Nakon ponovnog pokretanja uređaja Laprdus govori uz TalkBack već na zaključanom zaslonu, prije unosa PIN-a, uzorka ili lozinke, i to spremljenim glasom, brzinom, visinom i rječnicima. Da bi to radilo, Laprdus mora biti postavljen kao preferirani mehanizam za pretvaranje teksta u govor (vidi Korak 4). Postavke i rječnici iz starijih verzija aplikacije automatski se prenose pri prvom pokretanju nakon nadogradnje, bez ikakve dodatne radnje.
+
 #### Napomena za korisnike TalkBack čitača ekrana
 
 Ako koristite TalkBack, sva sučelja Laprdus aplikacije su potpuno pristupačna:

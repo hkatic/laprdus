@@ -1,11 +1,14 @@
 package com.hrvojekatic.laprdus.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.hrvojekatic.laprdus.R
 import com.hrvojekatic.laprdus.data.DictionaryEntry
 import com.hrvojekatic.laprdus.data.DictionaryRepository
 import com.hrvojekatic.laprdus.data.DictionaryType
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -36,6 +39,7 @@ data class DictionaryUiState(
  */
 @HiltViewModel
 class DictionaryViewModel @Inject constructor(
+    @param:ApplicationContext private val context: Context,
     private val repository: DictionaryRepository
 ) : ViewModel() {
 
@@ -45,6 +49,21 @@ class DictionaryViewModel @Inject constructor(
     init {
         loadDictionary(DictionaryType.MAIN)
         observeEntries()
+        observeStorageErrors()
+    }
+
+    /**
+     * Surface a failed migration of dictionaries saved by an older version
+     * (the repository logs the technical details).
+     */
+    private fun observeStorageErrors() {
+        viewModelScope.launch {
+            repository.storageError.collect { message ->
+                if (message != null) {
+                    _uiState.update { it.copy(error = context.getString(R.string.error_dictionary_migration)) }
+                }
+            }
+        }
     }
 
     /**

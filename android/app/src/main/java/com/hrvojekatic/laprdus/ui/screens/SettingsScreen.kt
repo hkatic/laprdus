@@ -45,6 +45,8 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.isTraversalGroup
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.stateDescription
@@ -150,6 +152,22 @@ fun SettingsScreen(
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                // Storage problem reported by the repository (e.g. settings from an
+                // older version could not be moved to device-protected storage)
+                uiState.storageError?.let { errorMessage ->
+                    item {
+                        Text(
+                            text = errorMessage,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp)
+                                .semantics { liveRegion = LiveRegionMode.Polite }
+                        )
+                    }
+                }
+
                 // Voice Category
                 item {
                     Spacer(modifier = Modifier.height(8.dp))

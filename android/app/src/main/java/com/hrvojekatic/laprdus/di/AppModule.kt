@@ -2,6 +2,7 @@ package com.hrvojekatic.laprdus.di
 
 import android.content.Context
 import com.hrvojekatic.laprdus.audio.AudioPlayer
+import com.hrvojekatic.laprdus.data.DictionaryRepository
 import com.hrvojekatic.laprdus.data.SettingsRepository
 import com.hrvojekatic.laprdus.tts.LaprdusTTS
 import dagger.Module
@@ -29,13 +30,26 @@ object AppModule {
 
     /**
      * Provides the SettingsRepository for persisting TTS settings.
+     * The same process-wide instance is used by the TTS service, so the UI and
+     * the service share one device-protected DataStore.
      */
     @Provides
     @Singleton
     fun provideSettingsRepository(
         @ApplicationContext context: Context
     ): SettingsRepository {
-        return SettingsRepository(context)
+        return SettingsRepository.getInstance(context)
+    }
+
+    /**
+     * Provides the DictionaryRepository over device-protected storage.
+     */
+    @Provides
+    @Singleton
+    fun provideDictionaryRepository(
+        @ApplicationContext context: Context
+    ): DictionaryRepository {
+        return DictionaryRepository.create(context)
     }
 
     /**

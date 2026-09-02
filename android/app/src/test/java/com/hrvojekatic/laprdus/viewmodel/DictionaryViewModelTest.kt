@@ -3,11 +3,14 @@ package com.hrvojekatic.laprdus.viewmodel
 import com.hrvojekatic.laprdus.data.DictionaryEntry
 import com.hrvojekatic.laprdus.data.DictionaryRepository
 import com.hrvojekatic.laprdus.data.DictionaryType
+import android.content.Context
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -29,6 +32,7 @@ import org.junit.Test
 class DictionaryViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
+    private lateinit var mockContext: Context
     private lateinit var mockRepository: DictionaryRepository
     private lateinit var viewModel: DictionaryViewModel
 
@@ -36,6 +40,8 @@ class DictionaryViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         mockRepository = mockk(relaxed = true)
+        every { mockRepository.storageError } returns MutableStateFlow(null)
+        mockContext = mockk(relaxed = true)
     }
 
     @After
@@ -50,7 +56,7 @@ class DictionaryViewModelTest {
     @Test
     fun `initial state has correct defaults`() = runTest {
         coEvery { mockRepository.loadDictionary(any()) } returns Result.success(emptyList())
-        viewModel = DictionaryViewModel(mockRepository)
+        viewModel = DictionaryViewModel(mockContext, mockRepository)
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
@@ -74,7 +80,7 @@ class DictionaryViewModelTest {
         )
         coEvery { mockRepository.loadDictionary(DictionaryType.MAIN) } returns Result.success(testEntries)
 
-        viewModel = DictionaryViewModel(mockRepository)
+        viewModel = DictionaryViewModel(mockContext, mockRepository)
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
@@ -86,7 +92,7 @@ class DictionaryViewModelTest {
     fun `loadDictionary sets error on failure`() = runTest {
         coEvery { mockRepository.loadDictionary(any()) } returns Result.failure(Exception("Load failed"))
 
-        viewModel = DictionaryViewModel(mockRepository)
+        viewModel = DictionaryViewModel(mockContext, mockRepository)
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
@@ -102,7 +108,7 @@ class DictionaryViewModelTest {
             listOf(DictionaryEntry(id = "spell-1", grapheme = "A", phoneme = "a"))
         )
 
-        viewModel = DictionaryViewModel(mockRepository)
+        viewModel = DictionaryViewModel(mockContext, mockRepository)
         advanceUntilIdle()
 
         viewModel.loadDictionary(DictionaryType.SPELLING)
@@ -122,7 +128,7 @@ class DictionaryViewModelTest {
         coEvery { mockRepository.loadDictionary(any()) } returns Result.success(emptyList())
         coEvery { mockRepository.saveEntry(any()) } returns Result.success(Unit)
 
-        viewModel = DictionaryViewModel(mockRepository)
+        viewModel = DictionaryViewModel(mockContext, mockRepository)
         advanceUntilIdle()
 
         val newEntry = DictionaryEntry(
@@ -142,7 +148,7 @@ class DictionaryViewModelTest {
         coEvery { mockRepository.loadDictionary(any()) } returns Result.success(listOf(existingEntry))
         coEvery { mockRepository.saveEntry(any()) } returns Result.success(Unit)
 
-        viewModel = DictionaryViewModel(mockRepository)
+        viewModel = DictionaryViewModel(mockContext, mockRepository)
         advanceUntilIdle()
 
         val updatedEntry = existingEntry.copy(phoneme = "new")
@@ -162,7 +168,7 @@ class DictionaryViewModelTest {
         coEvery { mockRepository.loadDictionary(any()) } returns Result.success(listOf(entry))
         coEvery { mockRepository.deleteEntry(any()) } returns Result.success(Unit)
 
-        viewModel = DictionaryViewModel(mockRepository)
+        viewModel = DictionaryViewModel(mockContext, mockRepository)
         advanceUntilIdle()
 
         viewModel.deleteEntry("del-1")
@@ -188,7 +194,7 @@ class DictionaryViewModelTest {
         coEvery { mockRepository.loadDictionary(any()) } returns Result.success(listOf(original))
         coEvery { mockRepository.saveEntry(any()) } returns Result.success(Unit)
 
-        viewModel = DictionaryViewModel(mockRepository)
+        viewModel = DictionaryViewModel(mockContext, mockRepository)
         advanceUntilIdle()
 
         viewModel.duplicateEntry(original)
@@ -218,7 +224,7 @@ class DictionaryViewModelTest {
     fun `setEditingEntry updates editing state`() = runTest {
         coEvery { mockRepository.loadDictionary(any()) } returns Result.success(emptyList())
 
-        viewModel = DictionaryViewModel(mockRepository)
+        viewModel = DictionaryViewModel(mockContext, mockRepository)
         advanceUntilIdle()
 
         val entry = DictionaryEntry(id = "edit-1", grapheme = "edit", phoneme = "edt")
@@ -231,7 +237,7 @@ class DictionaryViewModelTest {
     fun `setEditingEntry null clears editing state`() = runTest {
         coEvery { mockRepository.loadDictionary(any()) } returns Result.success(emptyList())
 
-        viewModel = DictionaryViewModel(mockRepository)
+        viewModel = DictionaryViewModel(mockContext, mockRepository)
         advanceUntilIdle()
 
         val entry = DictionaryEntry(id = "edit-1", grapheme = "edit", phoneme = "edt")
@@ -249,7 +255,7 @@ class DictionaryViewModelTest {
     fun `clearError removes error from state`() = runTest {
         coEvery { mockRepository.loadDictionary(any()) } returns Result.failure(Exception("Error"))
 
-        viewModel = DictionaryViewModel(mockRepository)
+        viewModel = DictionaryViewModel(mockContext, mockRepository)
         advanceUntilIdle()
 
         assertEquals("Error", viewModel.uiState.value.error)
@@ -264,7 +270,7 @@ class DictionaryViewModelTest {
         coEvery { mockRepository.loadDictionary(any()) } returns Result.success(emptyList())
         coEvery { mockRepository.saveEntry(any()) } returns Result.failure(Exception("Save failed"))
 
-        viewModel = DictionaryViewModel(mockRepository)
+        viewModel = DictionaryViewModel(mockContext, mockRepository)
         advanceUntilIdle()
 
         val entry = DictionaryEntry(id = "err-1", grapheme = "error", phoneme = "err")
@@ -280,7 +286,7 @@ class DictionaryViewModelTest {
         coEvery { mockRepository.loadDictionary(any()) } returns Result.success(listOf(entry))
         coEvery { mockRepository.deleteEntry(any()) } returns Result.failure(Exception("Delete failed"))
 
-        viewModel = DictionaryViewModel(mockRepository)
+        viewModel = DictionaryViewModel(mockContext, mockRepository)
         advanceUntilIdle()
 
         viewModel.deleteEntry("del-err-1")

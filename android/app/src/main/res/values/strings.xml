@@ -98,6 +98,8 @@
     <string name="error_synthesis_failed">Error during speech synthesis</string>
     <string name="error_voice_failed">Error selecting voice</string>
     <string name="error_prefix">Error: %1$s</string>
+    <string name="error_storage_migration">Settings saved by an earlier version could not be moved to the new storage location. Default settings are used until the next successful attempt.</string>
+    <string name="error_dictionary_migration">Dictionaries saved by an earlier version could not be moved to the new storage location. The attempt will be repeated automatically.</string>
 
     <!-- Default TTS Dialog -->
     <string name="dialog_default_tts_title">Set as Default TTS</string>

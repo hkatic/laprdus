@@ -302,7 +302,8 @@ class LaprdusTTS private constructor() {
      * @return Array of 16-bit PCM samples at 22050 Hz, or null on error
      */
     fun synthesizeSpelled(text: String): ShortArray? {
-        if (text.isBlank()) {
+        // Only an empty string is skipped: whitespace has spelling entries (" " -> "razmak")
+        if (text.isEmpty()) {
             return ShortArray(0)
         }
         return nativeSynthesizeSpelled(text)
