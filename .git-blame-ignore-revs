@@ -1,0 +1,7 @@
+# Revisions to skip in `git blame` because they only reformat, never change
+# behaviour. Enabled locally with:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+# GitHub honours this file automatically.
+
+# Normalize line endings to LF across the repository
+3b6d59997b4c8b5ed67afbdf065a16f3ef2c5e8b
