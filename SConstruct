@@ -413,6 +413,15 @@ for voice_name in voice_dirs:
                 source=packed,
                 action=Copy('$TARGET', '$SOURCE')
             )
+            # data/voices/ is the shared hand-off point for every other build
+            # system: the Xcode, InnoSetup and NVDA builds all read the .bin
+            # files from here and cannot regenerate them (only Gradle re-runs
+            # SCons when they are missing). A `scons -c` for one platform must
+            # therefore not wipe them, or an unrelated Apple/NVDA/installer
+            # build fails afterwards with a missing-file error that gives no
+            # hint about the cause. The copies are still rebuilt normally
+            # whenever the packed phonemes change.
+            env.NoClean(copy_voice)
             voice_data_targets.append(copy_voice)
             break
 
