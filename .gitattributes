@@ -1,0 +1,77 @@
+# Line-ending policy for LaprdusTTS.
+#
+# The repository stores every text file with LF, and checks it out with LF on
+# every platform (Windows included), regardless of each developer's
+# core.autocrlf setting. The exceptions below are formats that are consumed
+# only by Windows tooling and are kept CRLF, plus binaries that must never be
+# rewritten at all.
+#
+# Git auto-detects text vs binary; the explicit rules only override that.
+
+* text=auto eol=lf
+
+# ---------------------------------------------------------------------------
+# Windows-only formats - kept CRLF
+# ---------------------------------------------------------------------------
+*.bat               text eol=crlf
+*.cmd               text eol=crlf
+*.ps1               text eol=crlf
+*.psm1              text eol=crlf
+*.rc                text eol=crlf
+*.rc2               text eol=crlf
+*.rgs               text eol=crlf
+*.def               text eol=crlf
+*.manifest          text eol=crlf
+*.iss               text eol=crlf
+*.isl               text eol=crlf
+*.sln               text eol=crlf
+*.vcxproj           text eol=crlf
+*.vcxproj.filters   text eol=crlf
+*.props             text eol=crlf
+*.targets           text eol=crlf
+
+# ---------------------------------------------------------------------------
+# Files that must be LF or they break at runtime (already the default; listed
+# so an added CRLF exception can never accidentally catch them)
+# ---------------------------------------------------------------------------
+*.sh                text eol=lf
+gradlew             text eol=lf
+configure           text eol=lf
+PKGBUILD            text eol=lf
+*.install           text eol=lf
+*.spec              text eol=lf
+installers/linux/deb/debian/** text eol=lf
+
+# ---------------------------------------------------------------------------
+# Binary - never converted, never diffed as text
+# ---------------------------------------------------------------------------
+*.wav               binary
+*.bin               binary
+*.png               binary
+*.jpg               binary
+*.jpeg              binary
+*.gif               binary
+*.ico               binary
+*.icns              binary
+*.pdf               binary
+*.jar               binary
+*.zip               binary
+*.7z                binary
+*.gz                binary
+*.xz                binary
+*.bz2               binary
+*.mo                binary
+*.dll               binary
+*.exe               binary
+*.so                binary
+*.dylib             binary
+*.a                 binary
+*.lib               binary
+*.o                 binary
+*.obj               binary
+*.apk               binary
+*.aab               binary
+*.aar               binary
+*.jks               binary
+*.keystore          binary
+*.nvda-addon        binary
