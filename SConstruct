@@ -4,6 +4,7 @@
 
 import os
 import sys
+import platform as platform_module
 from SCons.Script import *
 
 # =============================================================================
@@ -22,16 +23,16 @@ VERSION_STRING = f"{VERSION_MAJOR}.{VERSION_MINOR}.{VERSION_PATCH}"
 AddOption('--platform',
           dest='platform',
           type='choice',
-          choices=['auto', 'windows', 'linux', 'android'],
+          choices=['auto', 'windows', 'linux', 'macos', 'android'],
           default='auto',
-          help='Target platform (auto, windows, linux, android)')
+          help='Target platform (auto, windows, linux, macos, android)')
 
 AddOption('--arch',
           dest='arch',
           type='choice',
-          choices=['x64', 'x86', 'arm64', 'arm'],
-          default='x64',
-          help='Target architecture')
+          choices=['auto', 'x64', 'x86', 'arm64', 'arm'],
+          default='auto',
+          help='Target architecture (auto picks the host architecture)')
 
 AddOption('--build-config',
           dest='build_config',
@@ -88,7 +89,21 @@ if target_platform == 'auto':
     target_platform = detect_platform()
 
 build_config = GetOption('build_config')
+
+def detect_arch(for_platform):
+    """Host architecture, used when --arch is not given.
+
+    Only macOS follows the host: an Apple Silicon Mac must build arm64, not the
+    historical x64 default. Windows, Linux and Android keep x64 so existing
+    command lines and build/ directory names are unchanged.
+    """
+    if for_platform != 'macos':
+        return 'x64'
+    return 'arm64' if platform_module.machine() in ('arm64', 'aarch64') else 'x64'
+
 arch = GetOption('arch')
+if arch == 'auto':
+    arch = detect_arch(target_platform)
 
 print(f"Building LaprdusTTS {VERSION_STRING}")
 print(f"  Platform: {target_platform}")
@@ -185,6 +200,40 @@ elif target_platform == 'linux':
         env.Append(LINKFLAGS=['-flto', '-s'])
     else:
         env.Append(CCFLAGS=common_flags + ['-O2', '-g', '-DNDEBUG'])
+
+elif target_platform == 'macos':
+    # macOS clang environment (Intel and Apple Silicon)
+    env = Environment()
+
+    mac_arch = 'arm64' if arch == 'arm64' else 'x86_64'
+    # Matches the Apple app/extension deployment target in Lapplerdus/.
+    min_version = '13.0'
+
+    # -std=c++17 must not land in CCFLAGS: clang treats it as an error when
+    # compiling C (src/audio/sonic/sonic.c), unlike gcc which only warns.
+    common_flags = [
+        '-Wall',
+        '-Wextra',
+        '-Wpedantic',
+        '-fPIC',
+        '-fvisibility=hidden',
+        '-arch', mac_arch,
+        f'-mmacosx-version-min={min_version}',
+    ]
+
+    env.Append(CCFLAGS=common_flags)
+    env.Append(CXXFLAGS=['-std=c++17'])
+    env.Append(LINKFLAGS=['-arch', mac_arch,
+                          f'-mmacosx-version-min={min_version}'])
+
+    if build_config == 'debug':
+        env.Append(CCFLAGS=['-O0', '-g3', '-D_DEBUG'])
+    elif build_config == 'release':
+        # No -flto/-s here: Apple's ld warns on -s and LTO buys little for a
+        # library this size, while making crash reports much harder to read.
+        env.Append(CCFLAGS=['-O3', '-DNDEBUG'])
+    else:
+        env.Append(CCFLAGS=['-O2', '-g', '-DNDEBUG'])
 
 elif target_platform == 'android':
     ndk_path = GetOption('android_ndk')
@@ -948,6 +997,57 @@ LanguageDefaultModule "sr-RS" "laprdus"
 
     env.Alias('linux-all', linux_all_targets)
 
+elif target_platform == 'macos':
+    # =========================================================================
+    # macOS Shared Library (liblaprdus.dylib)
+    # =========================================================================
+    # No 'dl' on macOS: dlopen lives in libSystem and -ldl fails to link.
+    env.Append(LIBS=['pthread', 'm'])
+    env.Append(CPPDEFINES=['LAPRDUS_EXPORTS'])
+
+    # @rpath install name so the CLI (and anything else) can find the dylib
+    # next to itself without DYLD_LIBRARY_PATH.
+    env.Append(SHLINKFLAGS=['-Wl,-install_name,@rpath/liblaprdus.dylib'])
+
+    lib = env.SharedLibrary(
+        target=f'{build_dir}/liblaprdus',
+        source=core_sources
+    )
+
+    env.Depends(lib, phonemes_packed)
+
+    Default(lib, phonemes_packed, voice_data_targets)
+
+    # =========================================================================
+    # macOS Command-Line Interface
+    # =========================================================================
+    cli_env = env.Clone()
+
+    # CoreAudio is part of the base system, so there is nothing to probe for.
+    cli_env.Append(CPPDEFINES=['HAVE_COREAUDIO'])
+    cli_env.Append(LINKFLAGS=['-framework', 'AudioToolbox',
+                              '-framework', 'CoreFoundation'])
+    print("  Audio backend: CoreAudio")
+
+    cli_sources = [
+        'src/platform/linux/cli/laprdus_cli.cpp',
+        'src/core/user_config.cpp',  # Not exported from shared library
+    ]
+
+    cli = cli_env.Program(
+        target=f'{build_dir}/laprdus',
+        source=cli_sources,
+        LIBS=cli_env['LIBS'] + ['laprdus'],
+        LIBPATH=[build_dir],
+        # Resolve @rpath/liblaprdus.dylib relative to the executable.
+        LINKFLAGS=cli_env['LINKFLAGS'] + ['-Wl,-rpath,@loader_path']
+    )
+
+    env.Depends(cli, lib)
+
+    env.Alias('cli', [cli, lib, phonemes_packed])
+    env.Alias('macos-all', [lib, cli, phonemes_packed, voice_data_targets])
+
 elif target_platform == 'android':
     # JNI shared library
     android_sources = core_sources + [
@@ -1253,14 +1353,15 @@ LaprdusTTS Build System - Version {VERSION_STRING}
 
 Targets:
   scons                    Build default target for detected platform
-  scons --platform=X       Build for specific platform (windows, linux, android)
+  scons --platform=X       Build for specific platform (windows, linux, macos, android)
   scons --build-config=X   Build configuration (debug, release, relwithdebinfo)
-  scons --arch=X           Target architecture (x64, x86, arm64, arm)
+  scons --arch=X           Target architecture (auto, x64, x86, arm64, arm)
   scons sapi5              Build SAPI5 DLL (Windows only)
   scons nvda-addon         Build NVDA add-on (Windows only, requires both x86 and x64 builds)
-  scons cli                Build command-line utility (Linux only)
+  scons cli                Build command-line utility (Linux and macOS)
   scons speechd            Build Speech Dispatcher module (Linux only)
   scons linux-all          Build all Linux targets (library, CLI, Speech Dispatcher)
+  scons macos-all          Build all macOS targets (library, CLI)
   scons docs               Generate HTML documentation from Markdown files
   scons install            Install (Linux only)
   scons -c                 Clean build artifacts
@@ -1268,6 +1369,7 @@ Targets:
 Examples:
   scons --platform=windows --build-config=release --arch=x64
   scons --platform=linux --build-config=release
+  scons --platform=macos --build-config=release
   scons --platform=android --arch=arm64 --android-ndk=/path/to/ndk
 
 Linux Build:
@@ -1279,6 +1381,14 @@ Linux Build:
 
   # Test with Speech Dispatcher:
   spd-say -o laprdus "Dobar dan!"
+
+macOS Build:
+  # Build the shared library and CLI (arch defaults to the host: arm64 or x64):
+  scons --platform=macos --build-config=release macos-all
+
+  # Speak through CoreAudio, or write a WAV:
+  ./build/macos-arm64-release/laprdus -D build/macos-arm64-release "Dobar dan!"
+  ./build/macos-arm64-release/laprdus -D build/macos-arm64-release -o out.wav "Dobar dan!"
 
 NVDA Add-on Build (Windows):
   # First build both architectures:

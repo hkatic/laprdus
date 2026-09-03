@@ -36,6 +36,10 @@
 #include <pulse/error.h>
 #endif
 
+#ifdef HAVE_COREAUDIO
+#include <AudioToolbox/AudioToolbox.h>
+#endif
+
 /* LaprdusTTS C API */
 #include <laprdus/laprdus_api.h>
 
@@ -404,6 +408,88 @@ bool play_audio_alsa(const int16_t *samples, int32_t num_samples, const LaprdusA
 }
 #endif
 
+#ifdef HAVE_COREAUDIO
+/**
+ * Play audio using CoreAudio (macOS)
+ *
+ * Queues the whole utterance as a single AudioQueue buffer and waits for the
+ * queue to drain, which mirrors the blocking behaviour of the PulseAudio and
+ * ALSA backends above.
+ */
+bool play_audio_coreaudio(const int16_t *samples, int32_t num_samples, const LaprdusAudioFormat &format)
+{
+    if (num_samples <= 0) {
+        return true;
+    }
+
+    AudioStreamBasicDescription desc = {};
+    desc.mSampleRate = format.sample_rate;
+    desc.mFormatID = kAudioFormatLinearPCM;
+    desc.mFormatFlags = kLinearPCMFormatFlagIsSignedInteger | kLinearPCMFormatFlagIsPacked;
+    desc.mBitsPerChannel = format.bits_per_sample;
+    desc.mChannelsPerFrame = format.channels;
+    desc.mFramesPerPacket = 1;
+    desc.mBytesPerFrame = (format.bits_per_sample / 8) * format.channels;
+    desc.mBytesPerPacket = desc.mBytesPerFrame;
+
+    // Signalled from the callback once the buffer has been played.
+    __block bool finished = false;
+
+    AudioQueueRef queue = nullptr;
+    OSStatus status = AudioQueueNewOutputWithDispatchQueue(
+        &queue, &desc, 0, dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0),
+        ^(AudioQueueRef q, AudioQueueBufferRef) {
+            // The only buffer has been consumed; stopping drains the device.
+            AudioQueueStop(q, false);
+            finished = true;
+        });
+
+    if (status != noErr || !queue) {
+        std::cerr << "CoreAudio error: could not create output queue (" << status << ")\n";
+        return false;
+    }
+
+    const UInt32 byte_size = static_cast<UInt32>(num_samples * sizeof(int16_t));
+
+    AudioQueueBufferRef buffer = nullptr;
+    status = AudioQueueAllocateBuffer(queue, byte_size, &buffer);
+    if (status != noErr) {
+        std::cerr << "CoreAudio error: could not allocate buffer (" << status << ")\n";
+        AudioQueueDispose(queue, true);
+        return false;
+    }
+
+    memcpy(buffer->mAudioData, samples, byte_size);
+    buffer->mAudioDataByteSize = byte_size;
+
+    status = AudioQueueEnqueueBuffer(queue, buffer, 0, nullptr);
+    if (status != noErr) {
+        std::cerr << "CoreAudio error: could not enqueue buffer (" << status << ")\n";
+        AudioQueueDispose(queue, true);
+        return false;
+    }
+
+    status = AudioQueueStart(queue, nullptr);
+    if (status != noErr) {
+        std::cerr << "CoreAudio error: could not start playback (" << status << ")\n";
+        AudioQueueDispose(queue, true);
+        return false;
+    }
+
+    // Wait for the callback, bounded by the utterance length plus a margin so a
+    // wedged audio device can never hang the CLI indefinitely.
+    const double seconds = static_cast<double>(num_samples)
+                         / (format.sample_rate * (format.channels > 0 ? format.channels : 1));
+    const int max_ticks = static_cast<int>((seconds + 2.0) * 100) + 1;
+    for (int i = 0; i < max_ticks && !finished; ++i) {
+        usleep(10000);  // 10 ms
+    }
+
+    AudioQueueDispose(queue, true);
+    return true;
+}
+#endif
+
 /**
  * Play audio (auto-detect backend)
  */
@@ -413,6 +499,8 @@ bool play_audio(const int16_t *samples, int32_t num_samples, const LaprdusAudioF
     return play_audio_pulse(samples, num_samples, format);
 #elif defined(HAVE_ALSA)
     return play_audio_alsa(samples, num_samples, format);
+#elif defined(HAVE_COREAUDIO)
+    return play_audio_coreaudio(samples, num_samples, format);
 #else
     (void)samples;
     (void)num_samples;

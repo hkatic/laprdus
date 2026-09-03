@@ -12,6 +12,7 @@
 #   ./scripts/build-all.sh nvda               # Build NVDA addon only
 #   ./scripts/build-all.sh android            # Build Android APK only
 #   ./scripts/build-all.sh linux              # Build Linux only
+#   ./scripts/build-all.sh macos              # Build macOS only
 #   ./scripts/build-all.sh voice-data         # Generate voice data only
 #
 # =============================================================================
@@ -55,6 +56,22 @@ check_prerequisites() {
     log_success "Prerequisites check passed"
 }
 
+# Detect the host so we only attempt builds this machine can actually do.
+detect_host() {
+    case "$(uname -s)" in
+        Darwin)             HOST_PLATFORM="macos"   ;;
+        Linux)              HOST_PLATFORM="linux"   ;;
+        MINGW*|MSYS*|CYGWIN*) HOST_PLATFORM="windows" ;;
+        *)
+            if [[ -n "$WINDIR" ]]; then
+                HOST_PLATFORM="windows"
+            else
+                HOST_PLATFORM="linux"
+            fi
+            ;;
+    esac
+}
+
 # Step 1: Generate voice data (pack phonemes into .bin files)
 generate_voice_data() {
     log_info "Step 1: Generating voice data..."
@@ -63,9 +80,9 @@ generate_voice_data() {
     mkdir -p "$PROJECT_ROOT/data/voices"
 
     # Build phoneme packer and pack voice data
-    # This builds the packer, then uses it to create .bin files
-    scons --platform=linux --build-config=release voice-data 2>/dev/null || \
-    scons --platform=windows --arch=x64 --build-config=release voice-data
+    # This builds the packer, then uses it to create .bin files.
+    # The packer is a host tool, so it must be built for the host platform.
+    scons --platform="$HOST_PLATFORM" --build-config=release voice-data
 
     # Verify voice data was created
     if [[ -f "$PROJECT_ROOT/data/voices/Josip.bin" ]] && [[ -f "$PROJECT_ROOT/data/voices/Vlado.bin" ]]; then
@@ -165,6 +182,24 @@ build_linux() {
     fi
 }
 
+# Build macOS components (shared library + CLI)
+build_macos() {
+    log_info "Building macOS components..."
+
+    scons --platform=macos --build-config=release macos-all
+
+    # SCons defaults --arch to the host architecture on macOS.
+    local mac_arch build_dir
+    [[ "$(uname -m)" == "arm64" ]] && mac_arch="arm64" || mac_arch="x64"
+    build_dir="$PROJECT_ROOT/build/macos-${mac_arch}-release"
+
+    if [[ -f "$build_dir/liblaprdus.dylib" ]] && [[ -f "$build_dir/laprdus" ]]; then
+        log_success "macOS components built successfully"
+    else
+        log_warning "Some macOS components may not have been built"
+    fi
+}
+
 # Step 7: Build Android APK
 build_android() {
     log_info "Step 7: Building Android APK..."
@@ -198,7 +233,9 @@ main() {
     echo "=============================================="
     echo ""
 
+    detect_host
     check_prerequisites
+    log_info "Host platform: $HOST_PLATFORM"
 
     TARGET="${1:-all}"
 
@@ -225,18 +262,37 @@ main() {
             generate_voice_data
             build_linux
             ;;
-        all)
+        macos)
             generate_voice_data
-            build_sapi5_dlls
-            build_sapi5_installer
-            copy_dlls_to_nvda
-            build_nvda_addon
-            build_linux
+            build_macos
+            ;;
+        all)
+            # Only build what this host can: the SAPI5/NVDA targets need MSVC,
+            # and each of linux/macos needs its own toolchain. Skipping is a
+            # warning, not an error, so 'all' stays useful on every platform.
+            generate_voice_data
+            case "$HOST_PLATFORM" in
+                windows)
+                    build_sapi5_dlls
+                    build_sapi5_installer
+                    copy_dlls_to_nvda
+                    build_nvda_addon
+                    ;;
+                linux)
+                    build_linux
+                    ;;
+                macos)
+                    build_macos
+                    ;;
+            esac
+            if [[ "$HOST_PLATFORM" != "windows" ]]; then
+                log_warning "Skipping SAPI5 and NVDA targets: they require MSVC on Windows"
+            fi
             build_android
             ;;
         *)
             log_error "Unknown target: $TARGET"
-            echo "Usage: $0 [all|sapi5|nvda|android|linux|voice-data]"
+            echo "Usage: $0 [all|sapi5|nvda|android|linux|macos|voice-data]"
             exit 1
             ;;
     esac

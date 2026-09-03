@@ -14,7 +14,7 @@ It uses concatenative synthesis by joining pre-recorded phoneme WAV files to pro
 
 ### Build System
 - **SCons** (Python-based) - see `SConstruct`
-- Platforms: Windows, Linux, Android
+- Platforms: Windows, Linux, macOS, Android
 - Architectures: x64, x86, ARM64, ARM
 - Build: `scons --platform=windows --arch=x64 --build-config=release sapi5`
 
@@ -190,6 +190,7 @@ scripts\build-all.cmd                 # Windows CMD
 ./scripts/build-all.sh nvda           # NVDA addon only
 ./scripts/build-all.sh android        # Android APK only
 ./scripts/build-all.sh linux          # Linux only
+./scripts/build-all.sh macos          # macOS only
 ./scripts/build-all.sh voice-data     # Generate voice data only
 ```
 
@@ -408,8 +409,8 @@ scons -c --platform=windows --arch=x64  # Clean specific config
 
 | Option | Values |
 |--------|--------|
-| `--platform` | `windows`, `linux`, `android` |
-| `--arch` | `x64`, `x86`, `arm64`, `arm` |
+| `--platform` | `windows`, `linux`, `macos`, `android` |
+| `--arch` | `auto` (default, host arch), `x64`, `x86`, `arm64`, `arm` |
 | `--build-config` | `release`, `debug` |
 
 ## Testing
@@ -1105,6 +1106,47 @@ SynthesisResult result = engine.synthesize_spelled("ABC");
 laprdus_load_spelling_dictionary(handle, "/path/to/spelling.json");
 laprdus_synthesize_spelled(handle, "ABC", &samples, &format);
 ```
+
+## macOS (native library and CLI)
+
+Separate from the Apple app in `Lapplerdus/` (which builds with Xcode), the SCons
+build supports macOS as a first-class platform for the shared library and CLI.
+
+```bash
+# Builds liblaprdus.dylib + laprdus CLI. --arch defaults to the host
+# architecture (arm64 on Apple Silicon, x64 on Intel).
+scons --platform=macos --build-config=release macos-all
+
+# Or via the master script
+./scripts/build-all.sh macos
+```
+
+| Component | Output |
+|-----------|--------|
+| Shared library | `build/macos-<arch>-release/liblaprdus.dylib` |
+| CLI | `build/macos-<arch>-release/laprdus` |
+
+The CLI is the same source as Linux (`src/platform/linux/cli/laprdus_cli.cpp`)
+and plays audio through **CoreAudio** (`HAVE_COREAUDIO`), alongside the existing
+PulseAudio and ALSA backends:
+
+```bash
+B=build/macos-arm64-release
+$B/laprdus -D $B -l                         # list voices
+$B/laprdus -D $B "Dobar dan!"               # speak via CoreAudio
+$B/laprdus -D $B -o out.wav "Dobar dan!"    # write a WAV
+```
+
+The dylib records `@rpath/liblaprdus.dylib` as its install name and the CLI is
+linked with `-rpath @loader_path`, so the binary finds the library sitting next
+to it without `DYLD_LIBRARY_PATH`.
+
+Cross-compiling to Intel from Apple Silicon works: `--arch=x64`.
+
+**Not built on macOS:** SAPI5, the NVDA addon, the Windows config GUI and the
+Speech Dispatcher module are all platform-specific and remain Windows/Linux only.
+`./scripts/build-all.sh all` detects the host and skips what it cannot build,
+warning rather than failing.
 
 ## Apple (iOS / iPadOS / macOS)
 

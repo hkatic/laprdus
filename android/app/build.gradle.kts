@@ -137,12 +137,16 @@ val generateVoiceData = tasks.register<Exec>("generateVoiceData") {
     description = "Generate voice data files using SCons phoneme packer"
     workingDir = file("../../")
 
-    // Determine the correct SCons command based on OS
-    val isWindows = System.getProperty("os.name").lowercase().contains("windows")
-    if (isWindows) {
-        commandLine("cmd", "/c", "scons", "--platform=windows", "--arch=x64", "--build-config=release", "voice-data")
-    } else {
-        commandLine("scons", "--platform=linux", "--arch=x64", "--build-config=release", "voice-data")
+    // Determine the correct SCons command based on OS. The phoneme packer is a
+    // host tool, so it has to be built for the host platform.
+    val osName = System.getProperty("os.name").lowercase()
+    when {
+        osName.contains("windows") ->
+            commandLine("cmd", "/c", "scons", "--platform=windows", "--arch=x64", "--build-config=release", "voice-data")
+        osName.contains("mac") || osName.contains("darwin") ->
+            commandLine("scons", "--platform=macos", "--build-config=release", "voice-data")
+        else ->
+            commandLine("scons", "--platform=linux", "--arch=x64", "--build-config=release", "voice-data")
     }
 
     // Only run if voice data files don't exist
@@ -185,6 +189,7 @@ val verifyVoiceData = tasks.register("verifyVoiceData") {
                 |
                 |  Windows:  scons --platform=windows --arch=x64 --build-config=release voice-data
                 |  Linux:    scons --platform=linux --arch=x64 --build-config=release voice-data
+                |  macOS:    scons --platform=macos --build-config=release voice-data
                 |
                 |Or use the master build script:
                 |  ./scripts/build-all.sh android
