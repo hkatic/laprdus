@@ -81,13 +81,13 @@ typedef struct LaprdusVoiceParams {
 typedef struct LaprdusVoiceInfo {
     const char* id;              // Internal ID: "josip", "vlado", etc.
     const char* display_name;    // Display name: "Laprdus Josip (Croatian)"
-    const char* language_code;   // Language code: "hr-HR" or "sr-RS"
-    uint16_t language_lcid;      // Windows LCID: 0x041A or 0x081A
+    const char* language_code;   // Language code: "hr-HR", "sr-RS" or "bs-BA"
+    uint16_t language_lcid;      // Windows LCID: 0x041A, 0x081A or 0x141A
     const char* gender;          // "Male" or "Female"
     const char* age;             // "Child", "Adult", or "Senior"
     float base_pitch;            // Base pitch multiplier (1.0 for normal)
     const char* base_voice_id;   // Base voice ID for derived voices (NULL if physical)
-    const char* data_filename;   // Phoneme data file (NULL for derived voices)
+    const char* data_filename;   // Phoneme data file (NULL for formant voices, which need none)
 } LaprdusVoiceInfo;
 
 // =============================================================================

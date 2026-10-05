@@ -17,6 +17,7 @@
     <!-- Language names -->
     <string name="language_croatian">Croatian</string>
     <string name="language_serbian">Serbian</string>
+    <string name="language_bosnian">Bosnian</string>
 
     <!-- Voice attributes -->
     <string name="gender_male">Male</string>
@@ -162,4 +163,5 @@
          Always in the voice's own language, so not translatable. -->
     <string name="tts_sample_text_hr" translatable="false">Ovo je primjer govora na hrvatskom jeziku.</string>
     <string name="tts_sample_text_sr" translatable="false">Ovo je primer govora na srpskom jeziku.</string>
+    <string name="tts_sample_text_bs" translatable="false">Ovo je primjer govora na bosanskom jeziku.</string>
 </resources>

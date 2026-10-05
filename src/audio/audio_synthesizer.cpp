@@ -203,10 +203,6 @@ void AudioSynthesizer::emit_chunk(const AudioBuffer& chunk) {
     }
 }
 
-void AudioSynthesizer::flush_stream() {
-    // Nothing to do - chunks are emitted as they're ready
-}
-
 // =============================================================================
 // Phoneme Truncation
 // =============================================================================

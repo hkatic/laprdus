@@ -5,6 +5,8 @@
 #include "../core/tts_engine.hpp"
 #include "../core/voice_registry.hpp"
 #include "../core/user_config.hpp"
+#include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <new>
 #include <mutex>
@@ -21,6 +23,7 @@ struct LaprdusEngine {
     std::string current_voice_id;     // Currently active voice ID
     std::string data_directory;       // Directory containing voice .bin files
     float voice_base_pitch = 1.0f;    // Base pitch of current voice
+    float character_pitch = 1.0f;     // Last value given to laprdus_set_pitch
     std::mutex mutex;  // For thread-safe error message access
 
     LaprdusEngine() = default;
@@ -221,6 +224,15 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_speed(
     return LAPRDUS_OK;
 }
 
+// Effective voice-character pitch: the base pitch of the current voice
+// (derived voices: child, grandma, grandpa) times the caller's own setting.
+// On concatenative voices this shifts formants too.
+static void apply_character_pitch(LaprdusHandle handle) {
+    laprdus::VoiceParams vp = handle->engine.voice_params();
+    vp.pitch = std::clamp(handle->voice_base_pitch * handle->character_pitch, 0.25f, 4.0f);
+    handle->engine.set_voice_params(vp);
+}
+
 LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_pitch(
     LaprdusHandle handle,
     float pitch) {
@@ -229,18 +241,8 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_pitch(
         return LAPRDUS_ERROR_INVALID_HANDLE;
     }
 
-    // Apply effective pitch: voice base pitch * user pitch
-    // This allows derived voices (child, grandma, grandpa) to have their
-    // own base pitch while still allowing user adjustment
-    // Note: This shifts formants (chipmunk effect) - for voice character changes
-    float effective_pitch = handle->voice_base_pitch * pitch;
-
-    // Clamp to valid range (wider range for better compatibility)
-    effective_pitch = std::clamp(effective_pitch, 0.25f, 4.0f);
-
-    laprdus::VoiceParams vp = handle->engine.voice_params();
-    vp.pitch = effective_pitch;
-    handle->engine.set_voice_params(vp);
+    handle->character_pitch = std::isfinite(pitch) ? pitch : 1.0f;
+    apply_character_pitch(handle);
     return LAPRDUS_OK;
 }
 
@@ -682,6 +684,21 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_voice(
         return LAPRDUS_ERROR_INVALID_PARAMETER;
     }
 
+    // Formant voices are synthesized by rule and have no data file to load
+    if (laprdus::VoiceRegistry::is_formant_voice(voice)) {
+        if (handle->current_voice_id != voice_id || !handle->engine.is_formant()) {
+            if (!handle->engine.initialize_formant(voice->id)) {
+                set_error(handle, "Failed to initialize formant voice: " + std::string(voice_id));
+                return LAPRDUS_ERROR_LOAD_FAILED;
+            }
+        }
+        handle->data_directory = data_directory;
+        handle->current_voice_id = voice_id;
+        handle->voice_base_pitch = voice->base_pitch;
+        apply_character_pitch(handle);
+        return LAPRDUS_OK;
+    }
+
     // Get the physical voice (same as voice if it's physical, or base voice if derived)
     const laprdus::VoiceDefinition* physical = laprdus::VoiceRegistry::get_physical_voice(voice);
     if (!physical) {
@@ -707,6 +724,7 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_voice(
         laprdus::VoiceRegistry::get_physical_voice(current_voice) : nullptr;
 
     bool need_reload = !handle->engine.is_initialized() ||
+                       handle->engine.is_formant() ||
                        current_physical != physical ||
                        handle->data_directory != data_directory;
 
@@ -727,15 +745,12 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_voice(
         handle->data_directory = data_directory;
     }
 
-    // Store current voice and apply base pitch
+    // Store current voice and apply its base pitch, so that a derived voice
+    // sounds like itself (and its base voice like itself again) without the
+    // caller having to set the pitch after every voice change.
     handle->current_voice_id = voice_id;
     handle->voice_base_pitch = voice->base_pitch;
-
-    // Apply the voice's base pitch to the engine
-    laprdus::VoiceParams params = handle->engine.voice_params();
-    // The effective pitch will be base_pitch * user_pitch
-    // We store base_pitch separately and apply it in synthesis
-    handle->engine.set_voice_params(params);
+    apply_character_pitch(handle);
 
     return LAPRDUS_OK;
 }

@@ -352,11 +352,25 @@ HRESULT LaprdusSAPIDriver::InitializeEngine() {
     // Create engine
     m_engine = std::make_unique<TTSEngine>();
 
-    // Convert path to UTF-8 and initialize
-    std::string utf8Path = WideToUtf8(dataPath);
-    if (!m_engine->initialize(utf8Path)) {
-        m_engine.reset();
-        return E_FAIL;
+    // Formant voices are synthesized by rule and load no phoneme data; for
+    // them dataPath only locates the install directory (dictionaries below).
+    const laprdus::VoiceDefinition* voiceDef = nullptr;
+    if (voiceId && voiceId.m_psz) {
+        voiceDef = laprdus::VoiceRegistry::find_by_id(WideToUtf8(voiceId.m_psz).c_str());
+    }
+
+    if (laprdus::VoiceRegistry::is_formant_voice(voiceDef)) {
+        if (!m_engine->initialize_formant(voiceDef->id)) {
+            m_engine.reset();
+            return E_FAIL;
+        }
+    } else {
+        // Convert path to UTF-8 and initialize
+        std::string utf8Path = WideToUtf8(dataPath);
+        if (!m_engine->initialize(utf8Path)) {
+            m_engine.reset();
+            return E_FAIL;
+        }
     }
 
     // Apply base pitch for derived voices

@@ -4,6 +4,7 @@
 #include "tts_engine.hpp"
 #include "spelling_dict.hpp"
 #include "emoji_dict.hpp"
+#include "../formant/formant_synthesizer.hpp"
 #include <filesystem>
 
 namespace laprdus {
@@ -23,6 +24,11 @@ struct TTSEngine::Impl {
     EmojiDictionary emoji_dictionary;
     VoiceParams voice_params;
     bool initialized = false;
+
+    // Formant voice (replaces phoneme_data/synthesizer when set)
+    std::unique_ptr<formant::FormantSynthesizer> formant;
+    std::function<void(const AudioBuffer&)> formant_stream_callback;
+    uint32_t formant_stream_chunk_samples = 0;
 
     Impl() = default;
 };
@@ -52,7 +58,11 @@ bool TTSEngine::initialize(const std::string& phoneme_path,
         m_impl = std::make_unique<Impl>();
     }
 
-    m_impl->initialized = false;
+    // A formant voice stays usable if the data of the requested voice cannot
+    // be loaded; it does not depend on the phoneme data replaced here.
+    if (!m_impl->formant) {
+        m_impl->initialized = false;
+    }
 
     // Determine if path is a directory or file
     std::filesystem::path path(phoneme_path);
@@ -74,6 +84,9 @@ bool TTSEngine::initialize(const std::string& phoneme_path,
         return false;
     }
 
+    m_impl->formant.reset();
+    m_impl->number_converter.set_dialect(CroatianNumbers::Dialect::Croatian);
+
     // Create synthesizer
     m_impl->synthesizer = std::make_unique<AudioSynthesizer>(m_impl->phoneme_data);
     m_impl->synthesizer->set_voice_params(m_impl->voice_params);
@@ -92,7 +105,9 @@ bool TTSEngine::initialize_from_memory(const uint8_t* data, size_t size,
         m_impl = std::make_unique<Impl>();
     }
 
-    m_impl->initialized = false;
+    if (!m_impl->formant) {
+        m_impl->initialized = false;
+    }
 
     if (!data || size == 0) {
         return false;
@@ -102,12 +117,55 @@ bool TTSEngine::initialize_from_memory(const uint8_t* data, size_t size,
         return false;
     }
 
+    m_impl->formant.reset();
+    m_impl->number_converter.set_dialect(CroatianNumbers::Dialect::Croatian);
+
     // Create synthesizer
     m_impl->synthesizer = std::make_unique<AudioSynthesizer>(m_impl->phoneme_data);
     m_impl->synthesizer->set_voice_params(m_impl->voice_params);
 
     m_impl->initialized = true;
     return true;
+}
+
+// =============================================================================
+// Initialize Formant Voice
+// =============================================================================
+
+bool TTSEngine::initialize_formant(const char* voice_id) {
+    if (!m_impl) {
+        m_impl = std::make_unique<Impl>();
+    }
+
+    const formant::FormantVoice* voice = formant::find_formant_voice(voice_id);
+    if (!voice) {
+        return false;
+    }
+
+    m_impl->formant = std::make_unique<formant::FormantSynthesizer>(*voice);
+    m_impl->synthesizer.reset();
+    m_impl->phoneme_data.clear();   // a formant voice needs no recordings
+
+    // Number words follow the voice's language (tisuća / hiljada, ...)
+    switch (voice->language) {
+        case VoiceLanguage::Serbian:
+            m_impl->number_converter.set_dialect(CroatianNumbers::Dialect::Serbian);
+            break;
+        case VoiceLanguage::Bosnian:
+            m_impl->number_converter.set_dialect(CroatianNumbers::Dialect::Bosnian);
+            break;
+        case VoiceLanguage::Croatian:
+        default:
+            m_impl->number_converter.set_dialect(CroatianNumbers::Dialect::Croatian);
+            break;
+    }
+
+    m_impl->initialized = true;
+    return true;
+}
+
+bool TTSEngine::is_formant() const {
+    return m_impl && m_impl->formant != nullptr;
 }
 
 // =============================================================================
@@ -183,9 +241,20 @@ SynthesisResult TTSEngine::synthesize_streaming(
         return result;
     }
 
+    auto set_callback = [&](std::function<void(const AudioBuffer&)> cb) {
+        if (m_impl->formant) {
+            m_impl->formant_stream_chunk_samples = cb ? (SAMPLE_RATE * chunk_ms) / 1000 : 0;
+            m_impl->formant_stream_callback = std::move(cb);
+        } else if (cb) {
+            m_impl->synthesizer->set_stream_callback(std::move(cb), chunk_ms);
+        } else {
+            m_impl->synthesizer->clear_stream_callback();
+        }
+    };
+
     try {
         // Set up streaming callback
-        m_impl->synthesizer->set_stream_callback(callback, chunk_ms);
+        set_callback(callback);
 
         // Step 1: Preprocess text
         std::string processed = preprocess_text(text);
@@ -197,13 +266,18 @@ SynthesisResult TTSEngine::synthesize_streaming(
         result.audio = synthesize_segments(segments);
 
         // Clear callback
-        m_impl->synthesizer->clear_stream_callback();
+        set_callback(nullptr);
 
         result.success = true;
     } catch (const std::exception& e) {
-        m_impl->synthesizer->clear_stream_callback();
+        set_callback(nullptr);
         result.success = false;
         result.error_message = e.what();
+    } catch (...) {
+        // Whatever the caller's callback threw, it must not stay installed.
+        set_callback(nullptr);
+        result.success = false;
+        result.error_message = "Unknown error during synthesis";
     }
 
     return result;
@@ -244,7 +318,7 @@ const char* TTSEngine::version() {
 }
 
 uint32_t TTSEngine::sample_rate() const {
-    if (m_impl && m_impl->phoneme_data.is_loaded()) {
+    if (m_impl && !m_impl->formant && m_impl->phoneme_data.is_loaded()) {
         return m_impl->phoneme_data.sample_rate();
     }
     return SAMPLE_RATE;
@@ -307,6 +381,41 @@ AudioBuffer TTSEngine::synthesize_segments(const std::vector<TextSegment>& segme
 
     for (const auto& segment : segments) {
         if (segment.text.empty()) {
+            continue;
+        }
+
+        if (m_impl->formant) {
+            // Formant voice: the clause is synthesized by rule. Rate, pitch,
+            // volume and intonation are all handled at the source.
+            AudioBuffer clause = m_impl->formant->synthesize_clause(
+                segment.text, segment.trailing_punct, m_impl->voice_params);
+            if (clause.empty()) {
+                continue;
+            }
+            if (segment.trailing_punct != Punctuation::NONE) {
+                clause.append_silence(
+                    m_impl->inflection.get_pause_duration(segment.trailing_punct));
+            }
+
+            if (m_impl->formant_stream_callback) {
+                // Streaming: hand the clause over in chunks, keep nothing.
+                // A chunk size of 0 means "do not split".
+                const size_t chunk_size = m_impl->formant_stream_chunk_samples > 0
+                    ? m_impl->formant_stream_chunk_samples
+                    : clause.samples.size();
+                for (size_t pos = 0; pos < clause.samples.size(); pos += chunk_size) {
+                    AudioBuffer chunk;
+                    chunk.sample_rate = clause.sample_rate;
+                    chunk.bits_per_sample = clause.bits_per_sample;
+                    chunk.channels = clause.channels;
+                    size_t end = std::min(pos + chunk_size, clause.samples.size());
+                    chunk.samples.assign(clause.samples.begin() + static_cast<std::ptrdiff_t>(pos),
+                                         clause.samples.begin() + static_cast<std::ptrdiff_t>(end));
+                    m_impl->formant_stream_callback(chunk);
+                }
+            } else {
+                result.append(clause);
+            }
             continue;
         }
 

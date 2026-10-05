@@ -117,6 +117,7 @@ class EngineRuntime(
     companion object {
         const val DEFAULT_MAX_CRASHES = 3
         const val DEFAULT_WINDOW_MILLIS: Long = 10L * 60L * 1000L
-        const val DEFAULT_FALLBACK_VOICE = "josip"
+        // A formant voice: it needs no voice data, so it can always be loaded.
+        const val DEFAULT_FALLBACK_VOICE = "zvonko"
     }
 }

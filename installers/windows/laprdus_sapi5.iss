@@ -16,6 +16,7 @@
 ; Language codes
 #define LANG_CROATIAN "41A"
 #define LANG_SERBIAN "81A"
+#define LANG_BOSNIAN "141A"
 
 [Setup]
 AppId={{{#CLSID}}
@@ -271,6 +272,84 @@ Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjed\Attribu
 Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjed\Attributes"; ValueType: string; ValueName: "Age"; ValueData: "Senior"; Check: Is64BitInstallMode
 Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjed\Attributes"; ValueType: string; ValueName: "Vendor"; ValueData: "Laprdus"; Check: Is64BitInstallMode
 Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusDjed\Attributes"; ValueType: string; ValueName: "Name"; ValueData: "Laprdus Đedo (Serbian)"; Check: Is64BitInstallMode
+
+; ============================================================================
+; VOICE 6: Zvonko (Croatian, Male, Adult) - Formant synthesis - 32-bit
+; ============================================================================
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusZvonko"; ValueType: string; ValueName: ""; ValueData: "Laprdus Zvonko (Croatian)"; Flags: uninsdeletekey
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusZvonko"; ValueType: string; ValueName: "CLSID"; ValueData: "{{{#CLSID}}"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusZvonko"; ValueType: string; ValueName: "VoiceId"; ValueData: "zvonko"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusZvonko"; ValueType: string; ValueName: "PhonemeDataPath"; ValueData: "{app}\voices\formant"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusZvonko"; ValueType: string; ValueName: "BasePitch"; ValueData: "1.0"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusZvonko\Attributes"; ValueType: string; ValueName: "Language"; ValueData: "{#LANG_CROATIAN}"; Flags: uninsdeletekey
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusZvonko\Attributes"; ValueType: string; ValueName: "Gender"; ValueData: "Male"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusZvonko\Attributes"; ValueType: string; ValueName: "Age"; ValueData: "Adult"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusZvonko\Attributes"; ValueType: string; ValueName: "Vendor"; ValueData: "Laprdus"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusZvonko\Attributes"; ValueType: string; ValueName: "Name"; ValueData: "Laprdus Zvonko (Croatian)"
+
+; VOICE 6: Zvonko - 64-bit
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusZvonko"; ValueType: string; ValueName: ""; ValueData: "Laprdus Zvonko (Croatian)"; Flags: uninsdeletekey; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusZvonko"; ValueType: string; ValueName: "CLSID"; ValueData: "{{{#CLSID}}"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusZvonko"; ValueType: string; ValueName: "VoiceId"; ValueData: "zvonko"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusZvonko"; ValueType: string; ValueName: "PhonemeDataPath"; ValueData: "{app}\voices\formant"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusZvonko"; ValueType: string; ValueName: "BasePitch"; ValueData: "1.0"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusZvonko\Attributes"; ValueType: string; ValueName: "Language"; ValueData: "{#LANG_CROATIAN}"; Flags: uninsdeletekey; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusZvonko\Attributes"; ValueType: string; ValueName: "Gender"; ValueData: "Male"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusZvonko\Attributes"; ValueType: string; ValueName: "Age"; ValueData: "Adult"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusZvonko\Attributes"; ValueType: string; ValueName: "Vendor"; ValueData: "Laprdus"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusZvonko\Attributes"; ValueType: string; ValueName: "Name"; ValueData: "Laprdus Zvonko (Croatian)"; Check: Is64BitInstallMode
+
+; ============================================================================
+; VOICE 7: Stojan (Serbian, Male, Adult) - Formant synthesis - 32-bit
+; ============================================================================
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusStojan"; ValueType: string; ValueName: ""; ValueData: "Laprdus Stojan (Serbian)"; Flags: uninsdeletekey
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusStojan"; ValueType: string; ValueName: "CLSID"; ValueData: "{{{#CLSID}}"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusStojan"; ValueType: string; ValueName: "VoiceId"; ValueData: "stojan"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusStojan"; ValueType: string; ValueName: "PhonemeDataPath"; ValueData: "{app}\voices\formant"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusStojan"; ValueType: string; ValueName: "BasePitch"; ValueData: "1.0"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusStojan\Attributes"; ValueType: string; ValueName: "Language"; ValueData: "{#LANG_SERBIAN}"; Flags: uninsdeletekey
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusStojan\Attributes"; ValueType: string; ValueName: "Gender"; ValueData: "Male"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusStojan\Attributes"; ValueType: string; ValueName: "Age"; ValueData: "Adult"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusStojan\Attributes"; ValueType: string; ValueName: "Vendor"; ValueData: "Laprdus"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusStojan\Attributes"; ValueType: string; ValueName: "Name"; ValueData: "Laprdus Stojan (Serbian)"
+
+; VOICE 7: Stojan - 64-bit
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusStojan"; ValueType: string; ValueName: ""; ValueData: "Laprdus Stojan (Serbian)"; Flags: uninsdeletekey; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusStojan"; ValueType: string; ValueName: "CLSID"; ValueData: "{{{#CLSID}}"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusStojan"; ValueType: string; ValueName: "VoiceId"; ValueData: "stojan"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusStojan"; ValueType: string; ValueName: "PhonemeDataPath"; ValueData: "{app}\voices\formant"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusStojan"; ValueType: string; ValueName: "BasePitch"; ValueData: "1.0"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusStojan\Attributes"; ValueType: string; ValueName: "Language"; ValueData: "{#LANG_SERBIAN}"; Flags: uninsdeletekey; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusStojan\Attributes"; ValueType: string; ValueName: "Gender"; ValueData: "Male"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusStojan\Attributes"; ValueType: string; ValueName: "Age"; ValueData: "Adult"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusStojan\Attributes"; ValueType: string; ValueName: "Vendor"; ValueData: "Laprdus"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusStojan\Attributes"; ValueType: string; ValueName: "Name"; ValueData: "Laprdus Stojan (Serbian)"; Check: Is64BitInstallMode
+
+; ============================================================================
+; VOICE 8: Mirsad (Bosnian, Male, Adult) - Formant synthesis - 32-bit
+; ============================================================================
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusMirsad"; ValueType: string; ValueName: ""; ValueData: "Laprdus Mirsad (Bosnian)"; Flags: uninsdeletekey
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusMirsad"; ValueType: string; ValueName: "CLSID"; ValueData: "{{{#CLSID}}"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusMirsad"; ValueType: string; ValueName: "VoiceId"; ValueData: "mirsad"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusMirsad"; ValueType: string; ValueName: "PhonemeDataPath"; ValueData: "{app}\voices\formant"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusMirsad"; ValueType: string; ValueName: "BasePitch"; ValueData: "1.0"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusMirsad\Attributes"; ValueType: string; ValueName: "Language"; ValueData: "{#LANG_BOSNIAN}"; Flags: uninsdeletekey
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusMirsad\Attributes"; ValueType: string; ValueName: "Gender"; ValueData: "Male"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusMirsad\Attributes"; ValueType: string; ValueName: "Age"; ValueData: "Adult"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusMirsad\Attributes"; ValueType: string; ValueName: "Vendor"; ValueData: "Laprdus"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusMirsad\Attributes"; ValueType: string; ValueName: "Name"; ValueData: "Laprdus Mirsad (Bosnian)"
+
+; VOICE 8: Mirsad - 64-bit
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusMirsad"; ValueType: string; ValueName: ""; ValueData: "Laprdus Mirsad (Bosnian)"; Flags: uninsdeletekey; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusMirsad"; ValueType: string; ValueName: "CLSID"; ValueData: "{{{#CLSID}}"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusMirsad"; ValueType: string; ValueName: "VoiceId"; ValueData: "mirsad"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusMirsad"; ValueType: string; ValueName: "PhonemeDataPath"; ValueData: "{app}\voices\formant"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusMirsad"; ValueType: string; ValueName: "BasePitch"; ValueData: "1.0"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusMirsad\Attributes"; ValueType: string; ValueName: "Language"; ValueData: "{#LANG_BOSNIAN}"; Flags: uninsdeletekey; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusMirsad\Attributes"; ValueType: string; ValueName: "Gender"; ValueData: "Male"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusMirsad\Attributes"; ValueType: string; ValueName: "Age"; ValueData: "Adult"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusMirsad\Attributes"; ValueType: string; ValueName: "Vendor"; ValueData: "Laprdus"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusMirsad\Attributes"; ValueType: string; ValueName: "Name"; ValueData: "Laprdus Mirsad (Bosnian)"; Check: Is64BitInstallMode
 
 [Tasks]
 ; Optional desktop shortcut

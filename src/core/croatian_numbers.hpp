@@ -30,6 +30,16 @@ public:
     ~CroatianNumbers() = default;
 
     /**
+     * Regional number words.
+     * Croatian: tisuća, milijun, dvjesto
+     * Serbian:  hiljada, milion, dvesta
+     * Bosnian:  hiljada, milion, dvjesto
+     */
+    enum class Dialect { Croatian, Serbian, Bosnian };
+
+    void set_dialect(Dialect dialect) { m_dialect = dialect; }
+
+    /**
      * Convert all numbers in text to Croatian words (whole number mode).
      * Example: "123" -> "sto dvadeset tri"
      * @param text Input text possibly containing numbers.
@@ -81,6 +91,8 @@ private:
     // Utility
     std::string_view remove_leading_zeros(std::string_view number);
     bool is_valid_number(std::string_view str);
+
+    Dialect m_dialect = Dialect::Croatian;
 };
 
 } // namespace laprdus

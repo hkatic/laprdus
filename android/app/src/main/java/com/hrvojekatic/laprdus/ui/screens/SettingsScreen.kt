@@ -539,10 +539,10 @@ fun VoiceSettingItem(
  */
 @Composable
 private fun getVoiceDescription(voice: VoiceInfo): String {
-    val language = if (voice.isCroatian) {
-        stringResource(R.string.language_croatian)
-    } else {
-        stringResource(R.string.language_serbian)
+    val language = when {
+        voice.isCroatian -> stringResource(R.string.language_croatian)
+        voice.isBosnian -> stringResource(R.string.language_bosnian)
+        else -> stringResource(R.string.language_serbian)
     }
     val ageDesc = when (voice.age) {
         "Child" -> stringResource(R.string.age_child)

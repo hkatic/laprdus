@@ -22,15 +22,23 @@ struct Voice: Identifiable, Hashable {
         case "detence": return "Detence"
         case "baba": return "Baba"
         case "djed": return "Đedo"
+        case "zvonko": return "Zvonko"
+        case "stojan": return "Stojan"
+        case "mirsad": return "Mirsad"
         default: return displayName
         }
     }
 
     /// Secondary line: "Croatian - Male, Adult" (localized).
     var localizedDetails: String {
-        let language = languageCode.hasPrefix("sr")
-            ? String(localized: "Serbian")
-            : String(localized: "Croatian")
+        let language: String
+        if languageCode.hasPrefix("sr") {
+            language = String(localized: "Serbian")
+        } else if languageCode.hasPrefix("bs") {
+            language = String(localized: "Bosnian")
+        } else {
+            language = String(localized: "Croatian")
+        }
         let localizedGender = gender == "Female"
             ? String(localized: "Female")
             : String(localized: "Male")
@@ -68,10 +76,22 @@ enum VoiceCatalog {
         all.first { $0.id == id }
     }
 
-    /// Default voice for a BCP-47 language tag.
+    /// Default voice for a BCP-47 language tag: the formant voice of that
+    /// language, Croatian for anything else.
     static func defaultVoiceID(forLanguage tag: String) -> String {
         let lowered = tag.lowercased()
-        if lowered.hasPrefix("sr") || lowered.hasPrefix("srp") { return "vlado" }
-        return "josip"
+        if lowered.hasPrefix("sr") { return "stojan" }
+        if lowered.hasPrefix("bs") || lowered.hasPrefix("bos") { return "mirsad" }
+        return "zvonko"
+    }
+
+    /// Voice of a new installation: the one matching the first of the user's
+    /// preferred languages that Laprdus speaks.
+    static var defaultVoiceID: String {
+        let spoken = Locale.preferredLanguages.first { tag in
+            let lowered = tag.lowercased()
+            return ["hr", "sr", "bs"].contains { lowered.hasPrefix($0) }
+        }
+        return defaultVoiceID(forLanguage: spoken ?? "hr")
     }
 }

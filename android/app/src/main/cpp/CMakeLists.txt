@@ -38,6 +38,11 @@ set(CORE_SOURCES
     ${LAPRDUS_ROOT}/src/audio/sonic_processor.cpp
     ${LAPRDUS_ROOT}/src/audio/sonic/sonic.c
     ${LAPRDUS_ROOT}/src/audio/formant_pitch.cpp
+    ${LAPRDUS_ROOT}/src/formant/klatt_synth.cpp
+    ${LAPRDUS_ROOT}/src/formant/formant_phonemes.cpp
+    ${LAPRDUS_ROOT}/src/formant/formant_lexicon.cpp
+    ${LAPRDUS_ROOT}/src/formant/formant_frontend.cpp
+    ${LAPRDUS_ROOT}/src/formant/formant_synthesizer.cpp
     ${LAPRDUS_ROOT}/src/c_api/laprdus_api.cpp
     ${LAPRDUS_ROOT}/src/platform/android/jni_bridge.cpp
 )

@@ -54,7 +54,7 @@
 /* Command-line options */
 struct Options {
     std::string text;
-    std::string voice = "josip";
+    std::string voice = "zvonko";
     float speech_rate = 1.0f;
     float speech_pitch = 1.0f;
     float speech_volume = 1.0f;
@@ -121,15 +121,16 @@ void print_help(const char *program_name)
 {
     std::string default_data_dir = get_exe_directory();
 
-    std::cout << "LaprdusTTS - Croatian/Serbian Text-to-Speech Engine\n"
+    std::cout << "LaprdusTTS - Croatian/Serbian/Bosnian Text-to-Speech Engine\n"
               << "Version " << CLI_VERSION << "\n\n"
               << "Usage:\n"
               << "  " << program_name << " [OPTIONS] \"Text to speak\"\n"
               << "  " << program_name << " [OPTIONS] -i input.txt\n"
               << "  echo \"Text\" | " << program_name << " [OPTIONS]\n\n"
               << "Options:\n"
-              << "  -v, --voice NAME           Select voice (default: josip)\n"
-              << "                             Available: josip, vlado, detence, baba, djed\n"
+              << "  -v, --voice NAME           Select voice (default: zvonko)\n"
+              << "                             Available: zvonko, stojan, mirsad, josip,\n"
+              << "                             vlado, detence, baba, djed\n"
               << "  -r, --speech-rate RATE     Speech rate 0.5-2.0 (default: 1.0)\n"
               << "  -p, --speech-pitch PITCH   Speech pitch 0.5-2.0 (default: 1.0)\n"
               << "  -V, --speech-volume VOL    Volume 0.0-1.0 (default: 1.0)\n"
@@ -153,7 +154,10 @@ void print_help(const char *program_name)
               << "  " << program_name << " -i document.txt -o speech.wav\n"
               << "  echo \"Jedan, dva, tri\" | " << program_name << "\n\n"
               << "Voices:\n"
-              << "  josip   - Croatian male adult (default)\n"
+              << "  zvonko  - Croatian male adult (formant synthesis, default)\n"
+              << "  stojan  - Serbian male adult (formant synthesis)\n"
+              << "  mirsad  - Bosnian male adult (formant synthesis)\n"
+              << "  josip   - Croatian male adult\n"
               << "  vlado   - Serbian male adult\n"
               << "  detence - Croatian child\n"
               << "  baba    - Croatian female senior\n"

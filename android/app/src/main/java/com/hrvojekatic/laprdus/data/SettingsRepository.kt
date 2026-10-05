@@ -74,7 +74,7 @@ class SettingsRepository internal constructor(
         private val KEY_USER_DICTIONARIES_ENABLED = booleanPreferencesKey("user_dictionaries_enabled")
 
         // Default values
-        const val DEFAULT_VOICE = "josip"
+        const val DEFAULT_VOICE = "zvonko"
         const val DEFAULT_SPEED = 1.0f
         const val DEFAULT_PITCH = 1.0f
         const val DEFAULT_VOLUME = 1.0f
@@ -210,7 +210,7 @@ class SettingsRepository internal constructor(
 
     /**
      * Set the default voice
-     * @param voiceId Voice ID: "josip", "vlado", "detence", "baba", or "djed"
+     * @param voiceId Voice ID: "zvonko", "stojan", "mirsad", "josip", "vlado", "detence", "baba" or "djed"
      */
     suspend fun setDefaultVoice(voiceId: String) {
         ensureMigrated()

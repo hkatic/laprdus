@@ -4,11 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-LaprdusTTS is a Croatian/Serbian text-to-speech (TTS) engine supporting:
+LaprdusTTS is a Croatian/Serbian/Bosnian text-to-speech (TTS) engine supporting:
 - **SAPI5** (Windows Speech API) for system-wide TTS integration
 - **NVDA** screen reader synthesizer driver
 
-It uses concatenative synthesis by joining pre-recorded phoneme WAV files to produce speech output.
+It has two kinds of voices:
+- **Concatenative** voices (Josip, Vlado and the voices derived from them) join pre-recorded phoneme WAV files.
+- **Formant** voices (Zvonko, Stojan, Mirsad) are synthesized entirely by rule and need no data files. See "Formant Voices" below.
 
 ## Architecture
 
@@ -30,6 +32,11 @@ It uses concatenative synthesis by joining pre-recorded phoneme WAV files to pro
 | `src/audio/audio_synthesizer.cpp` | Phoneme concatenation with crossfade |
 | `src/audio/phoneme_data.cpp` | WAV file loading from .bin or directory |
 | `src/c_api/laprdus_api.cpp` | C API for external consumers |
+| `src/formant/formant_frontend.cpp` | Formant voices: text → phones (letter-to-sound, stress, clitics, assimilation) |
+| `src/formant/formant_lexicon.cpp` | Formant voices: built-in accent lexicon |
+| `src/formant/formant_phonemes.cpp` | Formant voices: acoustic targets of every phone |
+| `src/formant/formant_synthesizer.cpp` | Formant voices: durations, formant tracks, intonation |
+| `src/formant/klatt_synth.cpp` | Formant voices: cascade/parallel (Klatt) synthesizer |
 
 ### Platform-Specific Code
 
@@ -67,6 +74,15 @@ It uses concatenative synthesis by joining pre-recorded phoneme WAV files to pro
 | detence | Derived (josip) | Croatian | 1.5 (child) |
 | baba | Derived (josip) | Croatian | 1.2 (grandma) |
 | djed | Derived (vlado) | Serbian | 0.75 (grandpa, Đedo) |
+| zvonko | Formant | Croatian | 1.0 |
+| stojan | Formant | Serbian | 1.0 |
+| mirsad | Formant | Bosnian | 1.0 |
+
+**Default voices.** The formant voice of a language is its default on every platform: Zvonko for Croatian, Stojan for Serbian, Mirsad for Bosnian (CLI `-v` default, Speech Dispatcher `MALE1` and language requests, Android `DEFAULT_VOICE` / `onLoadLanguage` / fallback voice, NVDA by NVDA's language, Apple by the device's preferred language, Windows config GUI). A voice the user has chosen is never replaced when it already speaks the requested language. The recorded voices stay available. SAPI5 has no Laprdus-side default: Windows picks among the registered tokens.
+
+`laprdus_set_voice()` applies the voice's base pitch itself (times the last `laprdus_set_pitch()` value), so derived voices sound right without a pitch call after every voice change.
+
+`VoiceDefinition::synthesis` (`VoiceSynthesis::Concatenative` / `Formant`) tells the two kinds apart. Formant voices have no `data_filename`; `laprdus_set_voice()` accepts any data directory for them. New voices must be appended to the registry: existing code and saved settings rely on the order of the first five.
 
 ### Audio Parameters (types.hpp)
 
@@ -78,6 +94,30 @@ struct VoiceParams {
     float volume = 1.0f;      // 0.0 - 1.0
     bool inflection_enabled = true;
 };
+```
+
+## Formant Voices
+
+Zvonko (hr), Stojan (sr) and Mirsad (bs) live in `src/formant/` and share the text preprocessing of the concatenative voices (emoji and pronunciation dictionaries, number expansion, clause segmentation). From there `TTSEngine::synthesize_segments()` hands each clause to `FormantSynthesizer::synthesize_clause()`:
+
+1. `Frontend::process()` - Cyrillic → Latin, digraphs (lj, nj, dž), the ijekavian *ije* diphthong, syllabic r, spelled-out abbreviations; stress from accent marks in the text, the lexicon, suffix rules, or the first syllable; proclitics/enclitics; voicing and place assimilation.
+2. `ClauseBuilder` - segment durations, formant targets and locus-based transitions, source amplitudes, and the F0 contour (word accents, declination, boundary movement chosen by the clause's punctuation).
+3. `KlattSynth::render()` - glottal source, cascade formants for voiced sound and aspiration, parallel resonators for frication and bursts.
+
+Things to know before changing them:
+
+- **Speed, pitch and volume are applied at the source** (durations, F0, gain). Sonic is not involved, so `VoiceParams::pitch` and `user_pitch` both simply scale F0.
+- **Number words follow the voice language**: `CroatianNumbers::set_dialect()` is set by `TTSEngine::initialize_formant()` (tisuća/milijun/dvjesto, hiljada/milion/dvesta, hiljada/milion/dvjesto) and reset to Croatian when a concatenative voice is loaded, so Josip and Vlado are unchanged.
+- **Synthesis is deterministic**: the same text and settings give the same samples (`tests/linux/test_formant.cpp` relies on it).
+- **Acoustic values come from measurements**, not from taste: vowel formants and durations from Bakran's work on standard Croatian, consonant spectra, levels and transitions from analysis of recorded Croatian speech. `docs/formant.md` records the sources, the measured values and how to repeat the measurements. Change numbers in `formant_phonemes.cpp` only with a measurement or a listening test behind them.
+- **Stress** is lexical and cannot be fully predicted. To fix a word, add it to `formant_lexicon.cpp` (notation at the top of the file); users can do the same from a pronunciation dictionary by writing accent marks in the replacement (`telèfon`).
+- Platform code that bypasses `laprdus_set_voice()` must check `VoiceRegistry::is_formant_voice()` and call `TTSEngine::initialize_formant()` (see the Android JNI bridge and the SAPI5 driver).
+
+```bash
+B=build/macos-arm64-release
+$B/laprdus -D $B -v zvonko "Dobar dan, kako ste?"
+$B/laprdus -D $B -v stojan -o out.wav "Добар дан!"
+$B/laprdus -D $B -v mirsad -r 2.0 "Brzo, ali razgovijetno."
 ```
 
 ## C API
@@ -306,7 +346,7 @@ echo "Text" | laprdus.exe -o output.wav
 **CLI Options:**
 | Option | Description |
 |--------|-------------|
-| `-v, --voice` | Select voice (josip, vlado, detence, baba, djed) |
+| `-v, --voice` | Select voice (zvonko (default), stojan, mirsad, josip, vlado, detence, baba, djed) |
 | `-r, --speech-rate` | Speech rate 0.5-2.0 (default: 1.0) |
 | `-p, --speech-pitch` | Speech pitch 0.5-2.0 (default: 1.0) |
 | `-V, --speech-volume` | Volume 0.0-1.0 (default: 1.0) |
@@ -574,7 +614,7 @@ laprdus -l
 
 | Option | Long Form | Description |
 |--------|-----------|-------------|
-| `-v` | `--voice` | Select voice (josip, vlado, detence, baba, djed) |
+| `-v` | `--voice` | Select voice (zvonko (default), stojan, mirsad, josip, vlado, detence, baba, djed) |
 | `-r` | `--speech-rate` | Speech rate (0.5-2.0, default 1.0) |
 | `-p` | `--speech-pitch` | Speech pitch (0.5-2.0, default 1.0) |
 | `-V` | `--speech-volume` | Volume (0.0-1.0, default 1.0) |
@@ -923,6 +963,18 @@ LD_LIBRARY_PATH=build/linux-x64-release \
     LAPRDUS_DATA=./build/linux-x64-release \
     ./build/linux-x64-release/test_cli
 
+# Formant voice tests (need no voice data except for one voice-switching test)
+g++ -std=c++17 -I include -I tests/linux tests/linux/test_formant.cpp \
+    -o build/linux-x64-release/test_formant -L build/linux-x64-release -llaprdus -lpthread
+LD_LIBRARY_PATH=build/linux-x64-release LAPRDUS_DATA=./build/linux-x64-release \
+    ./build/linux-x64-release/test_formant
+
+# The same tests on macOS (the dylib is found through @rpath next to the binary)
+B=build/macos-arm64-release
+clang++ -std=c++17 -I include -I tests/linux tests/linux/test_formant.cpp \
+    -o $B/test_formant -L $B -llaprdus -Wl,-rpath,@loader_path
+LAPRDUS_DATA=$B $B/test_formant
+
 # Run Speech Dispatcher tests (should show "5 passed, 0 failed")
 LD_LIBRARY_PATH=build/linux-x64-release \
     ./build/linux-x64-release/test_speechd_module
@@ -939,9 +991,10 @@ LD_LIBRARY_PATH=build/linux-x64-release \
 - [ ] CLI tests pass (20/20)
 - [ ] Speech Dispatcher tests pass (5/5 mapping tests, integration tests may skip)
 - [ ] CLI `-h` displays help correctly
-- [ ] CLI `-l` lists all 5 voices
+- [ ] CLI `-l` lists all 8 voices
 - [ ] CLI synthesizes audio to WAV file correctly
-- [ ] All voices synthesize correctly (josip, vlado, detence, baba, djed)
+- [ ] All voices synthesize correctly (josip, vlado, detence, baba, djed, zvonko, stojan, mirsad)
+- [ ] Formant voice tests pass (`test_formant`)
 
 #### Linux Package Testing (if building packages)
 
@@ -1157,7 +1210,7 @@ The Apple port lives in `Lapplerdus/Laprdus/Laprdus.xcodeproj` (Xcode 26+) and m
 | Target | Purpose |
 |--------|---------|
 | `Laprdus` | Multiplatform SwiftUI app (iOS, iPadOS, macOS) with a 4-tab layout: Main (sample text + play button), Settings, Dictionaries, About |
-| `LaprdusVoices` | Speech synthesis provider app extension (`AVSpeechSynthesisProviderAudioUnit`, `ausp` Audio Unit) — exposes the 5 voices system-wide to VoiceOver/Spoken Content, like the Android `TextToSpeechService` |
+| `LaprdusVoices` | Speech synthesis provider app extension (`AVSpeechSynthesisProviderAudioUnit`, `ausp` Audio Unit) — exposes the 8 voices system-wide to VoiceOver/Spoken Content, like the Android `TextToSpeechService` |
 | `LaprdusTests` | Unit tests (Swift Testing), hosted in the app |
 
 ### Structure
@@ -1175,8 +1228,14 @@ Lapplerdus/Laprdus/
 
 - The C++ engine is compiled **directly into both targets** from `src/core`, `src/audio`, `src/c_api` (same approach as the Android CMake build; file references in the Xcode project point at `../../src/...`). C++17, `LAPRDUS_VERSION_*` defines set in build settings.
 - Voice data (`data/voices/*.bin`) and dictionaries (`data/dictionary/*.json`) are bundle resources of both targets. **On a fresh checkout, generate voice data first** (`scons ... voice-data` or `./scripts/build-all.sh voice-data`) — `.bin` files are gitignored.
+- **What the system needs before it lists the voices** (from Apple's "Creating a custom speech synthesizer" sample and from other working speech extensions; all three were missing until October 2026). Note: on macOS 27 the voice load was still failing after these were added (`TextToSpeech.MultiError`, extension never launched), with the cause not yet found:
+  - the extension's `AudioComponents` entry declares `sandboxSafe` (`Config/LaprdusVoices-Info.plist`);
+  - the app calls `AVSpeechSynthesisProviderVoice.updateSpeechVoices()` (`SystemVoices.update()` in `LaprdusApp.swift`); registering the extension alone is not enough;
+  - the app group is one the platform actually grants: `group.com.hrvojekatic.laprdus` on iOS, `<team id>.com.hrvojekatic.laprdus` on macOS. Both come from the build setting `LAPRDUS_APP_GROUP` (per-SDK in the project file), are expanded into the entitlements, and are read back at run time by `AppGroup.identifier`. A `group.` identifier that the macOS provisioning profile does not list is refused by the system.
+- To check what the system did with the voices: `/usr/bin/log show --last 10m --predicate 'process == "axassetsd" AND category == "VoiceDB"'` ("Set N records for loader: ausp_lprd_HKTC" is success).
 - Settings use the shared app-group `UserDefaults` suite with the **same keys and defaults as the Android DataStore** (`default_voice`, `speed`, `pitch`, `volume`, `force_speed`/`force_pitch`/`force_volume`, `emoji_enabled`, `inflection_enabled`, `*_pause`, `number_mode`, `user_dictionaries_enabled`). The user pitch slider maps to `laprdus_set_user_pitch`; voice-character pitch comes from the registry via `laprdus_set_voice`.
-- User dictionaries are stored in the app group container (`Dictionaries/user.json`, `spelling.json`, `emoji.json`) in the **same JSON format as Android**, and are applied both in-app and in the extension.
+- User dictionaries are stored in the app group container (`Dictionaries/user.json`, `spelling.json`, `emoji.json`) in the **same JSON format as Android**, and are applied both in-app and in the extension. All three files use `grapheme`/`phoneme` entries (that is what every platform's editor writes); the engine's spelling and emoji parsers accept those keys next to the bundled files' `character`/`pronunciation` and `emoji`/`text`.
+- VoiceOver nests `<prosody>` elements (a neutral outer one, an inner `pitch="+50.0%"` for capital letters); `SSMLParser` treats inner values as relative to the outer ones. The extension logs the markup of each request (never the text): `log show --info --predicate 'subsystem == "com.hrvojekatic.laprdus"'`.
 - Localization: `Localizable.xcstrings` string catalog with en/hr/sr (translations taken from the Android `values-hr`/`values-sr`).
 
 ### Building
@@ -1190,7 +1249,7 @@ xcodebuild -scheme Laprdus -destination 'platform=macOS' build -allowProvisionin
 # iOS Simulator
 xcodebuild -scheme Laprdus -destination 'generic/platform=iOS Simulator' build
 
-# Unit tests (12 tests: engine synthesis, dictionary store, settings)
+# Unit tests (engine synthesis, dictionary store, SSML, settings)
 xcodebuild test -scheme Laprdus -destination 'platform=macOS'
 ```
 

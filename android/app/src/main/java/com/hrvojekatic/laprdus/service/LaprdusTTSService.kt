@@ -458,10 +458,11 @@ class LaprdusTTSService : TextToSpeechService() {
 
     /**
      * Check if a language is supported.
-     * Supports Croatian (hr) and Serbian (sr).
+     * Supports Croatian (hr), Serbian (sr) and Bosnian (bs).
      *
      * The Android framework passes ISO3 codes on this boundary ("hrv"/"HRV",
-     * "srp"/"SRB"), while apps may pass ISO2 ("hr"/"HR"), so both are accepted.
+     * "srp"/"SRB", "bos"/"BIH"), while apps may pass ISO2 ("hr"/"HR"), so both
+     * are accepted.
      *
      * For any other language this deliberately still reports LANG_AVAILABLE
      * instead of LANG_NOT_SUPPORTED: TTS settings and screen readers probe
@@ -489,6 +490,13 @@ class LaprdusTTSService : TextToSpeechService() {
                     TextToSpeech.LANG_AVAILABLE
                 }
             }
+            "bs", "bos" -> {
+                if (normalizedCountry == "ba" || normalizedCountry == "bih") {
+                    TextToSpeech.LANG_COUNTRY_AVAILABLE
+                } else {
+                    TextToSpeech.LANG_AVAILABLE
+                }
+            }
             else -> TextToSpeech.LANG_AVAILABLE
         }
     }
@@ -498,10 +506,33 @@ class LaprdusTTSService : TextToSpeechService() {
      * The framework expects ISO3 language and country codes here.
      */
     override fun onGetLanguage(): Array<String> {
-        return when {
-            currentVoiceId in listOf("vlado", "djed") -> arrayOf("srp", "SRB", "")
+        return when (languageOfVoice(currentVoiceId)) {
+            "sr" -> arrayOf("srp", "SRB", "")
+            "bs" -> arrayOf("bos", "BIH", "")
             else -> arrayOf("hrv", "HRV", "")
         }
+    }
+
+    /** Two-letter language of a voice. */
+    private fun languageOfVoice(voiceId: String): String = when (voiceId) {
+        "vlado", "djed", "stojan" -> "sr"
+        "mirsad" -> "bs"
+        else -> "hr"
+    }
+
+    /** Two-letter code of a language Laprdus speaks, null for any other. */
+    private fun spokenLanguage(lang: String): String? = when (lang.lowercase()) {
+        "hr", "hrv" -> "hr"
+        "sr", "srp" -> "sr"
+        "bs", "bos" -> "bs"
+        else -> null
+    }
+
+    /** Default voice of a language: its formant voice. */
+    private fun defaultVoiceFor(language: String?): String = when (language) {
+        "sr" -> "stojan"
+        "bs" -> "mirsad"
+        else -> "zvonko"
     }
 
     /**
@@ -512,12 +543,13 @@ class LaprdusTTSService : TextToSpeechService() {
     override fun onLoadLanguage(lang: String, country: String?, variant: String?): Int {
         val available = onIsLanguageAvailable(lang, country, variant)
 
-        // Select appropriate default voice
-        val normalizedLang = lang.lowercase()
-        val voiceId = when {
-            normalizedLang == "hr" || normalizedLang == "hrv" -> "josip"
-            normalizedLang == "sr" || normalizedLang == "srp" -> "vlado"
-            else -> currentVoiceId
+        // A voice that already speaks the requested language is kept, so the
+        // voice the user chose is not replaced by the language's default.
+        val language = spokenLanguage(lang)
+        val voiceId = if (language == null || language == languageOfVoice(currentVoiceId)) {
+            currentVoiceId
+        } else {
+            defaultVoiceFor(language)
         }
 
         return try {
@@ -548,6 +580,7 @@ class LaprdusTTSService : TextToSpeechService() {
             val locale = when (info.languageCode) {
                 "hr-HR" -> Locale.forLanguageTag("hr-HR")
                 "sr-RS" -> Locale.forLanguageTag("sr-RS")
+                "bs-BA" -> Locale.forLanguageTag("bs-BA")
                 else -> Locale.forLanguageTag("hr-HR")
             }
 
@@ -622,12 +655,7 @@ class LaprdusTTSService : TextToSpeechService() {
         country: String?,
         variant: String?
     ): String {
-        val normalizedLang = lang.lowercase()
-        return when {
-            normalizedLang == "hr" || normalizedLang == "hrv" -> "josip"
-            normalizedLang == "sr" || normalizedLang == "srp" -> "vlado"
-            else -> "josip"
-        }
+        return defaultVoiceFor(spokenLanguage(lang))
     }
 
     /**

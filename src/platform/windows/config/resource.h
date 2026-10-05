@@ -119,6 +119,9 @@
 #define IDS_VOICE_DETENCE       1132
 #define IDS_VOICE_BABA          1133
 #define IDS_VOICE_DJEDO         1134
+#define IDS_VOICE_ZVONKO        1135
+#define IDS_VOICE_STOJAN        1136
+#define IDS_VOICE_MIRSAD        1137
 
 // Test text
 #define IDS_TEST_TEXT           1140

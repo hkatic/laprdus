@@ -11,6 +11,7 @@
 #include <string>
 #include <memory>
 #include <algorithm>
+#include <cmath>
 
 // Simple span implementation (works in C++17 and C++20)
 // We use our own implementation to avoid MSVC STL warnings about C++20 features
@@ -252,9 +253,11 @@ struct PauseSettings {
 // =============================================================================
 
 struct VoiceParams {
-    float speed = 1.0f;       // Speech rate (0.5 - 4.0) - Sonic time-stretching
-    float pitch = 1.0f;       // Voice character pitch (0.25 - 4.0) - Sonic, shifts formants
-    float user_pitch = 1.0f;  // User pitch preference (0.5 - 2.0) - Formant-preserving
+    // Concatenative voices apply these with Sonic (time-stretching, pitch
+    // shifting); formant voices apply them at the source (durations, F0).
+    float speed = 1.0f;       // Speech rate (0.5 - 4.0)
+    float pitch = 1.0f;       // Voice character pitch (0.25 - 4.0)
+    float user_pitch = 1.0f;  // User pitch preference (0.5 - 2.0)
     float volume = 1.0f;      // Volume (0.0 - 1.0)
     bool inflection_enabled = true;  // Enable punctuation inflection
     bool emoji_enabled = false;      // Enable emoji to text conversion (disabled by default)
@@ -262,6 +265,12 @@ struct VoiceParams {
     PauseSettings pause_settings;    // Pause duration settings
 
     void clamp() {
+        // std::clamp passes NaN through, and a NaN rate or pitch would reach
+        // the durations and filters of the formant voices.
+        if (!std::isfinite(speed)) speed = 1.0f;
+        if (!std::isfinite(pitch)) pitch = 1.0f;
+        if (!std::isfinite(user_pitch)) user_pitch = 1.0f;
+        if (!std::isfinite(volume)) volume = 1.0f;
         speed = std::clamp(speed, 0.5f, 4.0f);  // 4.0x max for NVDA rate boost
         pitch = std::clamp(pitch, 0.25f, 4.0f);       // Voice character - wider range
         user_pitch = std::clamp(user_pitch, 0.5f, 2.0f);  // User preference - moderate range
@@ -365,7 +374,14 @@ constexpr uint16_t PHONEME_FLAG_TRUNCATED = 0x0004;
 // Voice language codes
 enum class VoiceLanguage : uint8_t {
     Croatian = 0,   // hr-HR, LCID 0x041A
-    Serbian = 1     // sr-RS, LCID 0x081A (Latin)
+    Serbian = 1,    // sr-RS, LCID 0x081A (Latin)
+    Bosnian = 2     // bs-BA, LCID 0x141A (Latin)
+};
+
+// How a voice produces sound
+enum class VoiceSynthesis : uint8_t {
+    Concatenative = 0,  // recorded phonemes from a .bin file
+    Formant = 1         // rule-based formant synthesis, no data file
 };
 
 // Voice gender
@@ -390,17 +406,19 @@ struct VoiceDefinition {
     VoiceAge age;
     const char* base_voice_id;   // nullptr if physical voice, else "josip" or "vlado"
     float base_pitch;            // Pitch multiplier: 1.0, 1.5, 1.2, 0.75
-    const char* data_filename;   // "Josip.bin", nullptr for derived voices
+    const char* data_filename;   // "Josip.bin", nullptr for derived and formant voices
+    VoiceSynthesis synthesis = VoiceSynthesis::Concatenative;
 };
 
 // Voice count
-constexpr size_t VOICE_COUNT = 5;
+constexpr size_t VOICE_COUNT = 8;
 
 // Language code helpers
 inline const char* voice_language_code(VoiceLanguage lang) {
     switch (lang) {
         case VoiceLanguage::Croatian: return "hr-HR";
         case VoiceLanguage::Serbian: return "sr-RS";
+        case VoiceLanguage::Bosnian: return "bs-BA";
         default: return "hr-HR";
     }
 }
@@ -409,6 +427,7 @@ inline uint16_t voice_language_lcid(VoiceLanguage lang) {
     switch (lang) {
         case VoiceLanguage::Croatian: return 0x041A;
         case VoiceLanguage::Serbian: return 0x081A;
+        case VoiceLanguage::Bosnian: return 0x141A;
         default: return 0x041A;
     }
 }

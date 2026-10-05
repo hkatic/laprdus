@@ -99,14 +99,20 @@ final class LaprdusEngine: @unchecked Sendable {
         if let path = bundle.path(forResource: "emoji", ofType: "json") {
             _ = laprdus_load_emoji_dictionary(handle, path)
         }
-        if let url = state.userDictionaryURL {
+        if let url = state.urls[.main] {
             _ = laprdus_append_dictionary(handle, url.path)
+        }
+        if let url = state.urls[.spelling] {
+            _ = laprdus_append_spelling_dictionary(handle, url.path)
+        }
+        if let url = state.urls[.emoji] {
+            _ = laprdus_append_emoji_dictionary(handle, url.path)
         }
         appliedDictionaryStamp = state.stamp
     }
 
     /// Applies persisted settings. The user pitch slider maps to
-    /// laprdus_set_user_pitch (formant preserving) — the voice-character pitch
+    /// laprdus_set_user_pitch — the voice-character pitch
     /// channel is managed by laprdus_set_voice via the registry's base_pitch.
     func apply(_ settings: SettingsSnapshot) {
         queue.sync {
@@ -152,8 +158,9 @@ final class LaprdusEngine: @unchecked Sendable {
         }
     }
 
-    /// Deliberately bypasses the serial queue so it can interrupt a synthesis
-    /// that is currently running on it.
+    /// Deliberately bypasses the serial queue, so it never waits for a
+    /// synthesis that is running on it. The engine does not interrupt that
+    /// synthesis yet; callers must discard its result themselves.
     func cancel() {
         laprdus_cancel(handle)
     }

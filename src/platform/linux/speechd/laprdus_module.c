@@ -24,12 +24,14 @@
 /*
  * LaprdusTTS Speech Dispatcher Module
  *
- * This module provides Croatian/Serbian text-to-speech synthesis through
+ * This module provides Croatian/Serbian/Bosnian text-to-speech synthesis through
  * Speech Dispatcher, enabling TTS functionality in applications like Orca,
  * Emacspeak, and other SSIP clients.
  *
  * Features:
- * - 5 Croatian/Serbian voices (Josip, Vlado, Detence, Baba, Djedo)
+ * - 3 formant voices (Zvonko - Croatian, Stojan - Serbian, Mirsad - Bosnian),
+ *   the default for their language
+ * - 5 recorded voices (Josip, Vlado, Detence, Baba, Djedo)
  * - Full SSIP parameter support (rate, pitch, volume)
  * - Spelling mode support
  * - Punctuation mode support (via pauses)
@@ -58,7 +60,7 @@
 
 /* Default paths */
 #define DEFAULT_DATA_DIR "/usr/share/laprdus"
-#define DEFAULT_VOICE "josip"
+#define DEFAULT_VOICE "zvonko"
 
 /* Configuration options */
 static char *laprdus_data_dir = NULL;
@@ -199,6 +201,9 @@ static const char* get_voice_display_name(const char *id)
     if (strcmp(id, "detence") == 0) return "Detence";
     if (strcmp(id, "baba") == 0) return "Baba";
     if (strcmp(id, "djed") == 0) return "\xc4\x90" "edo";  /* Đedo in UTF-8 */
+    if (strcmp(id, "zvonko") == 0) return "Zvonko";
+    if (strcmp(id, "stojan") == 0) return "Stojan";
+    if (strcmp(id, "mirsad") == 0) return "Mirsad";
     return id;
 }
 
@@ -390,6 +395,35 @@ SPDVoice **module_list_voices(void)
 }
 
 /**
+ * Default voice of a language ("hr", "sr-RS", ...), NULL for other languages
+ */
+static const char *default_voice_for_language(const char *lang)
+{
+    if (!lang) return NULL;
+    if (strncasecmp(lang, "hr", 2) == 0) return "zvonko";
+    if (strncasecmp(lang, "sr", 2) == 0) return "stojan";
+    if (strncasecmp(lang, "bs", 2) == 0) return "mirsad";
+    return NULL;
+}
+
+/**
+ * Language code of the voice in use ("hr-HR", ...), NULL if unknown
+ */
+static const char *current_voice_language(void)
+{
+    const char *id = engine ? laprdus_get_current_voice(engine) : NULL;
+    if (!id) return NULL;
+    uint32_t count = laprdus_get_voice_count();
+    for (uint32_t i = 0; i < count; i++) {
+        LaprdusVoiceInfo info;
+        if (laprdus_get_voice_info(i, &info) == LAPRDUS_OK && strcmp(info.id, id) == 0) {
+            return info.language_code;
+        }
+    }
+    return NULL;
+}
+
+/**
  * Set a parameter
  */
 int module_set(const char *var, const char *val)
@@ -399,11 +433,16 @@ int module_set(const char *var, const char *val)
     if (!var || !val) return -1;
 
     if (strcmp(var, "voice") == 0) {
-        /* Voice type (MALE1, FEMALE1, etc.) - map to our voices */
+        /* Voice type (MALE1, FEMALE1, etc.) - map to our voices.
+         * MALE1 is the default voice of the language in use, MALE2 the
+         * recorded voice of that language. */
+        const char *lang = current_voice_language();
+        int serbian = lang && strncasecmp(lang, "sr", 2) == 0;
         if (strcasecmp(val, "male1") == 0) {
-            return set_voice("josip");
+            const char *voice = default_voice_for_language(lang);
+            return set_voice(voice ? voice : DEFAULT_VOICE);
         } else if (strcasecmp(val, "male2") == 0) {
-            return set_voice("vlado");
+            return set_voice(serbian ? "vlado" : "josip");
         } else if (strcasecmp(val, "male3") == 0) {
             return set_voice("djed");
         } else if (strcasecmp(val, "female1") == 0 || strcasecmp(val, "female3") == 0) {
@@ -428,6 +467,9 @@ int module_set(const char *var, const char *val)
         if (strcasecmp(val, "Vlado") == 0) return set_voice("vlado");
         if (strcasecmp(val, "Detence") == 0) return set_voice("detence");
         if (strcasecmp(val, "Baba") == 0) return set_voice("baba");
+        if (strcasecmp(val, "Zvonko") == 0) return set_voice("zvonko");
+        if (strcasecmp(val, "Stojan") == 0) return set_voice("stojan");
+        if (strcasecmp(val, "Mirsad") == 0) return set_voice("mirsad");
         /* Đedo - try both UTF-8 and ASCII forms */
         if (strcasecmp(val, "\xc4\x90" "edo") == 0 ||
             strcasecmp(val, "Djed") == 0 ||
@@ -444,19 +486,15 @@ int module_set(const char *var, const char *val)
         return -1;
     }
     else if (strcmp(var, "language") == 0) {
-        /* Set voice by language code */
-        /* Find first voice matching language */
-        uint32_t count = laprdus_get_voice_count();
-        for (uint32_t i = 0; i < count; i++) {
-            LaprdusVoiceInfo info;
-            if (laprdus_get_voice_info(i, &info) == LAPRDUS_OK) {
-                if (strstr(info.language_code, val)) {
-                    return set_voice(info.id);
-                }
-            }
+        /* Set voice by language code. A voice that already speaks the
+         * language is kept; otherwise the default voice of the language is
+         * used. Other languages continue with the current voice. */
+        const char *voice = default_voice_for_language(val);
+        const char *lang = current_voice_language();
+        if (!voice || (lang && strncasecmp(lang, val, 2) == 0)) {
+            return 0;
         }
-        /* No voice found for language, continue with current */
-        return 0;
+        return set_voice(voice);
     }
     else if (strcmp(var, "rate") == 0) {
         current_rate = atoi(val);

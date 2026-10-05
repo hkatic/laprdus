@@ -1,5 +1,5 @@
 // LaprdusAudioUnit.swift - AVSpeechSynthesisProvider audio unit.
-// Exposes the five Laprdus voices to the system (VoiceOver, Spoken Content,
+// Exposes the Laprdus voices to the system (VoiceOver, Spoken Content,
 // AVSpeechSynthesizer).
 
 import AVFAudio
@@ -23,6 +23,8 @@ public class LaprdusAudioUnit: AVSpeechSynthesisProviderAudioUnit {
     private var engine: LaprdusEngine?
 
     private let renderState = RenderState()
+
+    private static let log = Logger(subsystem: "com.hrvojekatic.laprdus", category: "speech")
 
     public override init(
         componentDescription: AudioComponentDescription,
@@ -55,7 +57,7 @@ public class LaprdusAudioUnit: AVSpeechSynthesisProviderAudioUnit {
                     name: voice.localizedName,
                     identifier: voice.providerIdentifier,
                     primaryLanguages: [voice.languageCode],
-                    supportedLanguages: ["hr-HR", "sr-RS"]
+                    supportedLanguages: ["hr-HR", "sr-RS", "bs-BA"]
                 )
             }
         }
@@ -65,11 +67,20 @@ public class LaprdusAudioUnit: AVSpeechSynthesisProviderAudioUnit {
     // MARK: - Synthesis
 
     public override func synthesizeSpeechRequest(_ speechRequest: AVSpeechSynthesisProviderRequest) {
+        // A request that is cancelled while it is still being synthesized
+        // must not be heard afterwards.
+        let request = renderState.beginRequest()
         let settings = SettingsSnapshot.load()
         let utterance = SSMLParser.parse(speechRequest.ssmlRepresentation)
+        // What the host asked for, without the text itself. Read it with
+        // `log show --info --predicate 'subsystem == "com.hrvojekatic.laprdus"'`.
+        Self.log.info("""
+            request: \(SSMLParser.markup(in: speechRequest.ssmlRepresentation), privacy: .public) \
+            rate \(utterance.rate) pitch \(utterance.pitch) characters \(utterance.text.count)
+            """)
 
         guard !utterance.text.isEmpty else {
-            finishWith(samples: [])
+            finishWith(samples: [], request: request)
             return
         }
 
@@ -100,13 +111,14 @@ public class LaprdusAudioUnit: AVSpeechSynthesisProviderAudioUnit {
                 volume: settings.forceVolume ? settings.volume : 1.0
             )
 
-            // Single grapheme cluster → spelling mode, so character-by-character
-            // screen reader navigation names characters ("Č" → "Če").
-            let spelled = utterance.text.count == 1
+            // Spelling mode when the host asks for it, and for any single
+            // grapheme cluster, so character-by-character screen reader
+            // navigation names characters ("Č" → "Če").
+            let spelled = utterance.spellOut || utterance.text.count == 1
             let chunk = try engine.synthesize(utterance.text, spelled: spelled)
-            finishWith(samples: chunk.samples.map { Float($0) / Float(Int16.max) })
+            finishWith(samples: chunk.samples.map { Float($0) / Float(Int16.max) }, request: request)
         } catch {
-            finishWith(samples: [])
+            finishWith(samples: [], request: request)
         }
     }
 
@@ -115,8 +127,8 @@ public class LaprdusAudioUnit: AVSpeechSynthesisProviderAudioUnit {
         renderState.clear()
     }
 
-    private func finishWith(samples: [Float]) {
-        renderState.publish(samples)
+    private func finishWith(samples: [Float], request: Int) {
+        renderState.publish(samples, request: request)
     }
 
     private func ensureEngine() throws -> LaprdusEngine {
@@ -176,6 +188,7 @@ private final class RenderState {
     private var count = 0
     private var readIndex = 0
     private var pending = false
+    private var request = 0
 
     init() {
         lock = UnsafeMutablePointer<os_unfair_lock>.allocate(capacity: 1)
@@ -188,9 +201,20 @@ private final class RenderState {
         lock.deallocate()
     }
 
+    /// Synthesis thread. Starts a request and returns the number that its
+    /// samples have to be published with.
+    func beginRequest() -> Int {
+        os_unfair_lock_lock(lock)
+        request += 1
+        let current = request
+        os_unfair_lock_unlock(lock)
+        return current
+    }
+
     /// Synthesis thread. Publishing an empty buffer completes the request
     /// immediately, which is how a failed or empty utterance is reported.
-    func publish(_ newSamples: [Float]) {
+    /// Samples of a request that was cancelled in the meantime are dropped.
+    func publish(_ newSamples: [Float], request publishing: Int) {
         var buffer: UnsafeMutablePointer<Float>?
         if !newSamples.isEmpty {
             let allocated = UnsafeMutablePointer<Float>.allocate(capacity: newSamples.count)
@@ -202,6 +226,11 @@ private final class RenderState {
             buffer = allocated
         }
         os_unfair_lock_lock(lock)
+        guard publishing == request else {
+            os_unfair_lock_unlock(lock)
+            buffer?.deallocate()
+            return
+        }
         let previous = samples
         samples = buffer
         count = newSamples.count
@@ -216,6 +245,7 @@ private final class RenderState {
     /// Synthesis thread.
     func clear() {
         os_unfair_lock_lock(lock)
+        request += 1
         let previous = samples
         samples = nil
         count = 0

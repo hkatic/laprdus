@@ -23,7 +23,10 @@ static const char* VOICE_IDS[] = {
     "vlado",
     "detence",
     "baba",
-    "djed"
+    "djed",
+    "zvonko",
+    "stojan",
+    "mirsad"
 };
 static const int NUM_VOICES = sizeof(VOICE_IDS) / sizeof(VOICE_IDS[0]);
 
@@ -195,6 +198,9 @@ void ConfigDialog::InitializeVoiceCombo(HWND hDlg) {
     SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_DETENCE).c_str());
     SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_BABA).c_str());
     SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_DJEDO).c_str());
+    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_ZVONKO).c_str());
+    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_STOJAN).c_str());
+    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_MIRSAD).c_str());
 }
 
 void ConfigDialog::InitializeSliders(HWND hDlg) {
@@ -243,9 +249,11 @@ void ConfigDialog::InitializeSliders(HWND hDlg) {
 
 void ConfigDialog::LoadSettingsToControls(HWND hDlg) {
     // Voice combo box
-    int voiceIndex = 0;  // Default to josip
+    // Without a saved voice the default is Zvonko
+    const std::string selected = m_settings.default_voice.empty() ? "zvonko" : m_settings.default_voice;
+    int voiceIndex = 0;
     for (int i = 0; i < NUM_VOICES; i++) {
-        if (m_settings.default_voice == VOICE_IDS[i]) {
+        if (selected == VOICE_IDS[i]) {
             voiceIndex = i;
             break;
         }

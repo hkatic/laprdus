@@ -29,7 +29,7 @@ data class TTSUiState(
     val isInitialized: Boolean = false,
     val isPlaying: Boolean = false,
     val inputText: String = "Dobar dan. Ja sam Laprdus, rođen sam 2026. godine, i drago mi je da se možemo upoznati! 😁\nKako si ti? ❤\n",
-    val selectedVoiceId: String = "josip",
+    val selectedVoiceId: String = SettingsRepository.DEFAULT_VOICE,
     val availableVoices: List<VoiceInfo> = emptyList(),
     val speed: Float = 1.0f,
     val pitch: Float = 1.0f,
@@ -142,8 +142,8 @@ class TTSViewModel @Inject constructor(
 
             // Validate the saved voice ID
             if (voices.none { it.id == defaultVoiceId }) {
-                Log.w(TAG, "Saved voice '$defaultVoiceId' not found, falling back to josip")
-                defaultVoiceId = "josip"
+                Log.w(TAG, "Saved voice '$defaultVoiceId' not found, falling back to the default")
+                defaultVoiceId = SettingsRepository.DEFAULT_VOICE
             }
 
             // Initialize audio player

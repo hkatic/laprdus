@@ -21,6 +21,7 @@ class GetSampleTextActivity : Activity() {
         val language = intent?.getStringExtra("language")?.lowercase() ?: ""
         val sampleText = when (language) {
             "sr", "srp" -> getString(R.string.tts_sample_text_sr)
+            "bs", "bos" -> getString(R.string.tts_sample_text_bs)
             else -> getString(R.string.tts_sample_text_hr)
         }
 

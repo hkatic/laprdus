@@ -23,6 +23,7 @@ LaprdusTTS/
 ├── src/                    # Core C++ source code
 │   ├── core/               # TTS engine, phoneme mapping, numbers
 │   ├── audio/              # Audio synthesis, Sonic library
+│   ├── formant/            # Formant voices: front end, rules, Klatt synthesizer
 │   ├── c_api/              # Public C API
 │   └── platform/           # Platform-specific code
 │       ├── windows/        # SAPI5, CLI, config GUI
@@ -216,7 +217,7 @@ struct PauseSettings {
 
 ### 2.5 VoiceRegistry (`src/core/voice_registry.cpp`)
 
-Manages voice definitions including physical and derived voices.
+Manages voice definitions including physical, derived and formant voices.
 
 **Voice Types:**
 1. **Physical voices** - Have their own phoneme data files
@@ -228,12 +229,17 @@ Manages voice definitions including physical and derived voices.
    - `baba` - Grandmother voice (base: josip, pitch: 1.2)
    - `djed` - Grandfather voice (base: vlado, pitch: 0.75)
 
+3. **Formant voices** - Synthesized by rule, no data file (see `src/formant/` and `docs/formant.md`)
+   - `zvonko` - Croatian male adult
+   - `stojan` - Serbian male adult
+   - `mirsad` - Bosnian male adult
+
 **Voice Info Structure:**
 ```cpp
 struct VoiceInfo {
     std::string id;           // "josip", "vlado", etc.
     std::string display_name; // "Laprdus Josip (Croatian)"
-    std::string language;     // "hr-HR" or "sr-RS"
+    std::string language;     // "hr-HR", "sr-RS" or "bs-BA"
     uint16_t lcid;            // Windows LCID
     std::string gender;       // "Male" or "Female"
     std::string age;          // "Child", "Adult", "Senior"

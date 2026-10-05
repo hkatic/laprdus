@@ -65,6 +65,42 @@ static constexpr VoiceDefinition VOICES[] = {
         "vlado",                            // base_voice_id
         0.75f,                              // base_pitch (lower for grandpa)
         nullptr                             // data_filename (uses base voice)
+    },
+    // Formant voice: Zvonko (Croatian, male, adult)
+    {
+        "zvonko",                           // id
+        "Laprdus Zvonko (Croatian)",        // display_name
+        VoiceLanguage::Croatian,            // language
+        VoiceGender::Male,                  // gender
+        VoiceAge::Adult,                    // age
+        nullptr,                            // base_voice_id
+        1.0f,                               // base_pitch
+        nullptr,                            // data_filename (none: synthesized by rule)
+        VoiceSynthesis::Formant             // synthesis
+    },
+    // Formant voice: Stojan (Serbian, male, adult)
+    {
+        "stojan",                           // id
+        "Laprdus Stojan (Serbian)",         // display_name
+        VoiceLanguage::Serbian,             // language
+        VoiceGender::Male,                  // gender
+        VoiceAge::Adult,                    // age
+        nullptr,                            // base_voice_id
+        1.0f,                               // base_pitch
+        nullptr,                            // data_filename (none: synthesized by rule)
+        VoiceSynthesis::Formant             // synthesis
+    },
+    // Formant voice: Mirsad (Bosnian, male, adult)
+    {
+        "mirsad",                           // id
+        "Laprdus Mirsad (Bosnian)",         // display_name
+        VoiceLanguage::Bosnian,             // language
+        VoiceGender::Male,                  // gender
+        VoiceAge::Adult,                    // age
+        nullptr,                            // base_voice_id
+        1.0f,                               // base_pitch
+        nullptr,                            // data_filename (none: synthesized by rule)
+        VoiceSynthesis::Formant             // synthesis
     }
 };
 
@@ -104,10 +140,6 @@ const VoiceDefinition* VoiceRegistry::get_by_index(size_t index) {
     return &VOICES[index];
 }
 
-const VoiceDefinition* VoiceRegistry::default_voice() {
-    return &VOICES[0];  // Josip
-}
-
 const VoiceDefinition* VoiceRegistry::get_physical_voice(const VoiceDefinition* voice) {
     if (!voice) {
         return nullptr;
@@ -141,11 +173,8 @@ const char* VoiceRegistry::get_data_filename(const VoiceDefinition* voice) {
     return nullptr;
 }
 
-bool VoiceRegistry::is_physical_voice(const VoiceDefinition* voice) {
-    if (!voice) {
-        return false;
-    }
-    return voice->base_voice_id == nullptr;
+bool VoiceRegistry::is_formant_voice(const VoiceDefinition* voice) {
+    return voice && voice->synthesis == VoiceSynthesis::Formant;
 }
 
 } // namespace laprdus

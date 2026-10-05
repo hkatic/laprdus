@@ -330,6 +330,11 @@ core_sources = [
     'src/audio/sonic_processor.cpp',
     'src/audio/sonic/sonic.c',
     'src/audio/formant_pitch.cpp',
+    'src/formant/klatt_synth.cpp',
+    'src/formant/formant_phonemes.cpp',
+    'src/formant/formant_lexicon.cpp',
+    'src/formant/formant_frontend.cpp',
+    'src/formant/formant_synthesizer.cpp',
     'src/c_api/laprdus_api.cpp',
     'src/laprdus.cpp',
 ]
@@ -497,6 +502,11 @@ if target_platform == 'windows':
         'src/audio/sonic_processor.cpp',
         'src/audio/sonic/sonic.c',
         'src/audio/formant_pitch.cpp',
+        'src/formant/klatt_synth.cpp',
+        'src/formant/formant_phonemes.cpp',
+        'src/formant/formant_lexicon.cpp',
+        'src/formant/formant_frontend.cpp',
+        'src/formant/formant_synthesizer.cpp',
         # C API for NVDA and other consumers
         'src/c_api/laprdus_api.cpp',
         # SAPI5 platform code
@@ -570,6 +580,11 @@ if target_platform == 'windows':
             'src/audio/sonic_processor.cpp',
             'src/audio/sonic/sonic.c',
             'src/audio/formant_pitch.cpp',
+            'src/formant/klatt_synth.cpp',
+            'src/formant/formant_phonemes.cpp',
+            'src/formant/formant_lexicon.cpp',
+            'src/formant/formant_frontend.cpp',
+            'src/formant/formant_synthesizer.cpp',
             # C API
             'src/c_api/laprdus_api.cpp',
             # CLI-specific
@@ -958,6 +973,8 @@ LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"
 LanguageDefaultModule "sr-RS" "laprdus"
+LanguageDefaultModule "bs" "laprdus"
+LanguageDefaultModule "bs-BA" "laprdus"
 # END LAPRDUS TTS
 '''
         else:
@@ -968,6 +985,8 @@ LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"
 LanguageDefaultModule "sr-RS" "laprdus"
+LanguageDefaultModule "bs" "laprdus"
+LanguageDefaultModule "bs-BA" "laprdus"
 # END LAPRDUS TTS
 '''
         try:

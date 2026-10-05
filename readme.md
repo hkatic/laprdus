@@ -1,12 +1,12 @@
 # Laprdus
 
-A Retro-type speech synthesizer for Croatian and Serbian languages using concatenative synthesis.
+A Retro-type speech synthesizer for Croatian, Serbian and Bosnian languages using concatenative and formant synthesis.
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 ## About
 
-Laprdus is a text-to-speech (TTS) synthesizer for Croatian and Serbian languages. It uses concatenative synthesis technology, joining pre-recorded phoneme units to produce speech output. While not matching modern neural TTS quality, Laprdus offers high performance and minimal memory usage.
+Laprdus is a text-to-speech (TTS) synthesizer for Croatian, Serbian and Bosnian languages. Its original voices use concatenative synthesis technology, joining pre-recorded phoneme units to produce speech output. Its formant voices are synthesized entirely by rule, in the tradition of Eloquence and DECtalk, and need no recordings at all. While not matching modern neural TTS quality, Laprdus offers high performance and minimal memory usage.
 
 Laprdus was developed to provide screen reader users with simple and fast access to computers and mobile devices in their native language, for free.
 
@@ -30,7 +30,7 @@ In short: modern synthesizers offer quality at the cost of resources; Laprdus of
 
 ## Features
 
-- Croatian and Serbian speech synthesis (Latin and Cyrillic scripts)
+- Croatian, Serbian and Bosnian speech synthesis (Latin and Cyrillic scripts)
 - Five voices (two physical, three derived)
 - Adjustable speech rate, pitch, and volume
 - Natural inflection based on punctuation
@@ -47,6 +47,21 @@ In short: modern synthesizers offer quality at the cost of resources; Laprdus of
 | **Detence** | Derived | Croatian | Child voice (higher pitch) |
 | **Baba** | Derived | Croatian | Grandmother voice (slightly higher pitch) |
 | **Djedo** | Derived | Serbian | Grandfather voice (lower pitch) |
+| **Zvonko** | Formant | Croatian | Adult male, synthesized by rule |
+| **Stojan** | Formant | Serbian | Adult male, lower and darker, synthesized by rule |
+| **Mirsad** | Formant | Bosnian | Adult male, higher and more melodic, synthesized by rule |
+
+### Formant voices
+
+Zvonko, Stojan and Mirsad do not play back recordings. A text front end turns the text into sounds (letter-to-sound rules, stress placement, clitics, voicing assimilation, the *ije* diphthong, syllabic *r*), a rule system turns the sounds into formant movements, durations and intonation, and a Klatt-style cascade/parallel synthesizer turns those into audio.
+
+- No voice data files: the voices work wherever the library does
+- Rate and pitch are applied at the source, so speech stays clean at any speed
+- Sentence intonation for statements, questions, commas and exclamations
+- Number words follow the language of the voice (*tisuća* / *hiljada*, *milijun* / *milion*)
+- Stress can be written in the text or in a pronunciation dictionary with the usual accent marks (`telèfon`, `gláva`, `kȕća`, `grȃd`)
+
+Tuning notes and the measurements the voices are based on are in [docs/formant.md](docs/formant.md).
 
 ## Installation
 
@@ -130,7 +145,7 @@ laprdus -l
 
 | Option | Description |
 |--------|-------------|
-| `-v, --voice` | Voice (josip, vlado, detence, baba, djed) |
+| `-v, --voice` | Voice (josip, vlado, detence, baba, djed, zvonko, stojan, mirsad) |
 | `-r, --speech-rate` | Speech rate (0.5-2.0, default: 1.0) |
 | `-p, --speech-pitch` | Speech pitch (0.5-2.0, default: 1.0) |
 | `-V, --speech-volume` | Volume (0.0-1.0, default: 1.0) |

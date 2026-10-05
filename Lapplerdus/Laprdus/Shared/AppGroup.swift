@@ -2,12 +2,35 @@
 
 import Foundation
 import os
+#if os(macOS)
+import Security
+#endif
 
 enum AppGroup {
     /// App group shared by the app and the speech synthesis extension so that
     /// settings and user dictionaries written by the app are visible to the
     /// extension process.
-    static let identifier = "group.com.hrvojekatic.laprdus"
+    ///
+    /// iOS:   `group.com.hrvojekatic.laprdus`
+    /// macOS: `<team id>.com.hrvojekatic.laprdus` - the form macOS grants
+    ///        without listing the group in a provisioning profile. A
+    ///        `group.` identifier that the profile does not authorize is
+    ///        refused by the system there. The value is read back from the
+    ///        entitlements (build setting `LAPRDUS_APP_GROUP`), because the
+    ///        team id is only known once the app is signed.
+    static let identifier: String = {
+        let iOSIdentifier = "group.com.hrvojekatic.laprdus"
+        #if os(macOS)
+        guard let task = SecTaskCreateFromSelf(nil),
+              let value = SecTaskCopyValueForEntitlement(
+                task, "com.apple.security.application-groups" as CFString, nil),
+              let groups = value as? [String]
+        else { return iOSIdentifier }
+        return groups.first { $0.hasSuffix("com.hrvojekatic.laprdus") } ?? groups.first ?? iOSIdentifier
+        #else
+        return iOSIdentifier
+        #endif
+    }()
 
     private static let log = Logger(subsystem: "com.hrvojekatic.laprdus", category: "AppGroup")
 

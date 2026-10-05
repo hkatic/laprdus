@@ -94,6 +94,12 @@ MARKER_START="# BEGIN LAPRDUS TTS"
 MARKER_END="# END LAPRDUS TTS"
 
 if [ -f "$SPEECHD_CONF" ]; then
+    # A block written by a version that did not know Bosnian yet is removed
+    # here and written again below.
+    if grep -q "$MARKER_START" "$SPEECHD_CONF" 2>/dev/null && \
+       ! grep -q 'LanguageDefaultModule "bs" "laprdus"' "$SPEECHD_CONF" 2>/dev/null; then
+        sed -i "/$MARKER_START/,/$MARKER_END/d" "$SPEECHD_CONF"
+    fi
     # Check if already configured
     if ! grep -q "$MARKER_START" "$SPEECHD_CONF" 2>/dev/null; then
         # Check for existing manual configuration
@@ -112,6 +118,8 @@ LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"
 LanguageDefaultModule "sr-RS" "laprdus"
+LanguageDefaultModule "bs" "laprdus"
+LanguageDefaultModule "bs-BA" "laprdus"
 # END LAPRDUS TTS
 EOF
             else
@@ -124,6 +132,8 @@ LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"
 LanguageDefaultModule "sr-RS" "laprdus"
+LanguageDefaultModule "bs" "laprdus"
+LanguageDefaultModule "bs-BA" "laprdus"
 # END LAPRDUS TTS
 EOF
             fi

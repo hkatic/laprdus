@@ -269,8 +269,13 @@ bool SpellingDictionary::parse_entries(const char* json_content, size_t length) 
     auto entry_jsons = extract_entries(json);
 
     for (const auto& entry_json : entry_jsons) {
+        // The bundled dictionary uses "character"/"pronunciation"; the
+        // dictionary editors of the apps save every dictionary type as
+        // "grapheme"/"phoneme".
         std::string character = extract_string_value(entry_json, "character");
+        if (character.empty()) character = extract_string_value(entry_json, "grapheme");
         std::string pronunciation = extract_string_value(entry_json, "pronunciation");
+        if (pronunciation.empty()) pronunciation = extract_string_value(entry_json, "phoneme");
 
         if (character.empty() || pronunciation.empty()) {
             continue;

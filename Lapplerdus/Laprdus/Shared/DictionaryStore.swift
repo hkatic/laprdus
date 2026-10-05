@@ -86,36 +86,37 @@ final class DictionaryStore: @unchecked Sendable {
         }
     }
 
-    /// URL of the user pronunciation dictionary if it exists on disk.
-    var userDictionaryURLIfPresent: URL? {
-        let url = fileURL(for: .main)
-        return FileManager.default.fileExists(atPath: url.path) ? url : nil
-    }
-
-    /// Current state of the user dictionary, used to detect edits made in the
-    /// app while the engine (in particular the long-lived speech extension)
-    /// already has an older copy loaded.
+    /// Current state of the user dictionaries, used to detect edits made in
+    /// the app while the engine (in particular the long-lived speech
+    /// extension) already has an older copy loaded.
     func dictionaryState(userDictionariesEnabled: Bool) -> DictionaryState {
-        guard userDictionariesEnabled else {
-            return DictionaryState(userDictionaryURL: nil, stamp: "disabled")
+        guard userDictionariesEnabled else { return .bundledOnly }
+        var urls: [DictionaryType: URL] = [:]
+        var stamps: [String] = []
+        for type in DictionaryType.allCases {
+            let url = fileURL(for: type)
+            guard let attributes = try? FileManager.default.attributesOfItem(atPath: url.path) else {
+                continue
+            }
+            let modified = (attributes[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
+            let size = (attributes[.size] as? Int) ?? 0
+            urls[type] = url
+            stamps.append("\(type.rawValue)-\(modified)-\(size)")
         }
-        guard let url = userDictionaryURLIfPresent else {
-            return DictionaryState(userDictionaryURL: nil, stamp: "absent")
-        }
-        let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
-        let modified = (attributes?[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
-        let size = (attributes?[.size] as? Int) ?? 0
-        return DictionaryState(userDictionaryURL: url, stamp: "\(modified)-\(size)")
+        return DictionaryState(urls: urls, stamp: urls.isEmpty ? "absent" : stamps.joined(separator: ","))
     }
 }
 
-/// The user dictionary as the engine should see it, plus a stamp that changes
-/// whenever the file does. Comparing stamps is what lets the engine reload
-/// dictionaries only when they actually changed.
+/// The user dictionaries as the engine should see them, plus a stamp that
+/// changes whenever one of the files does. Comparing stamps is what lets the
+/// engine reload dictionaries only when they actually changed.
 struct DictionaryState: Equatable, Sendable {
-    let userDictionaryURL: URL?
+    /// The user dictionary files that exist on disk.
+    let urls: [DictionaryType: URL]
     let stamp: String
 
+    var userDictionaryURL: URL? { urls[.main] }
+
     /// Bundled dictionaries only, with no user dictionary layered on top.
-    static let bundledOnly = DictionaryState(userDictionaryURL: nil, stamp: "disabled")
+    static let bundledOnly = DictionaryState(urls: [:], stamp: "disabled")
 }

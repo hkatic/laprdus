@@ -17,6 +17,7 @@
     <!-- Language names -->
     <string name="language_croatian">Hrvatski</string>
     <string name="language_serbian">Srpski</string>
+    <string name="language_bosnian">Bosanski</string>
 
     <!-- Voice attributes -->
     <string name="gender_male">Muški</string>

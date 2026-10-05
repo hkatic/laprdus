@@ -154,6 +154,9 @@ BEGIN
     IDS_VOICE_DETENCE       "Detenče (Hrvatski, dijete)"
     IDS_VOICE_BABA          "Baba (Hrvatski, baka)"
     IDS_VOICE_DJEDO         "Đedo (Srpski, djed)"
+    IDS_VOICE_ZVONKO        "Zvonko (Hrvatski, formantni)"
+    IDS_VOICE_STOJAN        "Stojan (Srpski, formantni)"
+    IDS_VOICE_MIRSAD        "Mirsad (Bosanski, formantni)"
     IDS_TEST_TEXT           "Dobar dan! Ovo je test Laprdus govorne sinteze."
     // Dictionary dialog strings
     IDS_USER_DICT_CHECK         "Primjena korisničkih rječnika"
@@ -226,6 +229,9 @@ BEGIN
     IDS_VOICE_DETENCE       "Detenče (Hrvatski, dijete)"
     IDS_VOICE_BABA          "Baba (Hrvatski, baka)"
     IDS_VOICE_DJEDO         "Đedo (Srpski, djed)"
+    IDS_VOICE_ZVONKO        "Zvonko (Hrvatski, formantni)"
+    IDS_VOICE_STOJAN        "Stojan (Srpski, formantni)"
+    IDS_VOICE_MIRSAD        "Mirsad (Bosanski, formantni)"
     IDS_TEST_TEXT           "Dobar dan! Ovo je test Laprdus govorne sinteze."
     // Dictionary dialog strings
     IDS_USER_DICT_CHECK         "Primjena korisničkih rječnika"
@@ -298,6 +304,9 @@ BEGIN
     IDS_VOICE_DETENCE       "Detenče (Hrvatski, dete)"
     IDS_VOICE_BABA          "Baba (Hrvatski, baka)"
     IDS_VOICE_DJEDO         "Đedo (Srpski, deda)"
+    IDS_VOICE_ZVONKO        "Zvonko (Hrvatski, formantni)"
+    IDS_VOICE_STOJAN        "Stojan (Srpski, formantni)"
+    IDS_VOICE_MIRSAD        "Mirsad (Bosanski, formantni)"
     IDS_TEST_TEXT           "Dobar dan! Ovo je test Laprdus govorne sinteze."
     // Dictionary dialog strings
     IDS_USER_DICT_CHECK         "Primena korisničkih rečnika"
@@ -370,6 +379,9 @@ BEGIN
     IDS_VOICE_DETENCE       "Detence (Croatian, child)"
     IDS_VOICE_BABA          "Baba (Croatian, grandma)"
     IDS_VOICE_DJEDO         "Djedo (Serbian, grandpa)"
+    IDS_VOICE_ZVONKO        "Zvonko (Croatian, formant)"
+    IDS_VOICE_STOJAN        "Stojan (Serbian, formant)"
+    IDS_VOICE_MIRSAD        "Mirsad (Bosnian, formant)"
     IDS_TEST_TEXT           "Hello! This is a test of Laprdus speech synthesis."
     // Dictionary dialog strings
     IDS_USER_DICT_CHECK         "Apply user dictionaries"

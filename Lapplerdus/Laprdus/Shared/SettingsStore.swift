@@ -24,7 +24,7 @@ enum SettingsKey {
 /// Immutable snapshot of all settings, safe to pass across threads and used
 /// by the speech extension (which has no UI and no observation needs).
 struct SettingsSnapshot: Sendable {
-    var defaultVoice = "josip"
+    var defaultVoice = VoiceCatalog.defaultVoiceID
     var speed: Float = 1.0
     var pitch: Float = 1.0
     var volume: Float = 1.0
@@ -75,7 +75,7 @@ struct SettingsSnapshot: Sendable {
         newlinePause = min(max(newlinePause, 0), 2000)
         numberMode = numberMode == 1 ? 1 : 0
         if VoiceCatalog.voice(withID: defaultVoice) == nil {
-            defaultVoice = "josip"
+            defaultVoice = VoiceCatalog.defaultVoiceID
         }
     }
 }

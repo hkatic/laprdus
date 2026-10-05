@@ -325,8 +325,13 @@ configure_speechd() {
 
     # Check if already configured
     if grep -q "$MARKER_START" "$SPEECHD_CONF" 2>/dev/null; then
-        echo "LaprdusTTS already configured in Speech Dispatcher."
-        return 0
+        # A block written by a version that did not know Bosnian yet is
+        # removed here and written again below.
+        if grep -q 'LanguageDefaultModule "bs" "laprdus"' "$SPEECHD_CONF" 2>/dev/null; then
+            echo "LaprdusTTS already configured in Speech Dispatcher."
+            return 0
+        fi
+        sed -i "/$MARKER_START/,/$MARKER_END/d" "$SPEECHD_CONF"
     fi
 
     # Check for existing manual configuration
@@ -354,6 +359,8 @@ LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"
 LanguageDefaultModule "sr-RS" "laprdus"
+LanguageDefaultModule "bs" "laprdus"
+LanguageDefaultModule "bs-BA" "laprdus"
 # END LAPRDUS TTS
 SPEECHD_EOF
     else
@@ -369,6 +376,8 @@ LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"
 LanguageDefaultModule "sr-RS" "laprdus"
+LanguageDefaultModule "bs" "laprdus"
+LanguageDefaultModule "bs-BA" "laprdus"
 # END LAPRDUS TTS
 SPEECHD_EOF
     fi
@@ -540,7 +549,10 @@ Speech Dispatcher (for Orca):
 Voices
 ------
 
-  josip   - Croatian male adult (default)
+  zvonko  - Croatian male adult (formant synthesis, default)
+  stojan  - Serbian male adult (formant synthesis)
+  mirsad  - Bosnian male adult (formant synthesis)
+  josip   - Croatian male adult
   vlado   - Serbian male adult
   detence - Croatian child
   baba    - Croatian female senior

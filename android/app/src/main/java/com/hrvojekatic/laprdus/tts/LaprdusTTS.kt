@@ -59,8 +59,6 @@ class LaprdusTTS private constructor() {
     // Native method declarations
     // ==========================================================================
 
-    private external fun nativeInit(phonemeDataPath: String): Boolean
-    private external fun nativeInitFromAssets(assetManager: AssetManager, assetPath: String): Boolean
     private external fun nativeShutdown()
     private external fun nativeIsInitialized(): Boolean
     private external fun nativeSynthesize(text: String): ShortArray?
@@ -101,27 +99,6 @@ class LaprdusTTS private constructor() {
     // ==========================================================================
     // Public Kotlin API
     // ==========================================================================
-
-    /**
-     * Initialize the TTS engine from a file path
-     * @param phonemeDataPath Path to the .bin voice data file
-     * @return true if initialization succeeded
-     */
-    fun initFromFile(phonemeDataPath: String): Boolean {
-        Log.d(TAG, "Initializing from file: $phonemeDataPath")
-        return nativeInit(phonemeDataPath)
-    }
-
-    /**
-     * Initialize the TTS engine from APK assets
-     * @param assetManager Asset manager from context
-     * @param voiceAssetPath Path to voice .bin file within assets (e.g., "Josip.bin")
-     * @return true if initialization succeeded
-     */
-    fun initFromAssets(assetManager: AssetManager, voiceAssetPath: String): Boolean {
-        Log.d(TAG, "Initializing from assets: $voiceAssetPath")
-        return nativeInitFromAssets(assetManager, voiceAssetPath)
-    }
 
     /**
      * Shutdown the TTS engine and release resources
@@ -223,7 +200,7 @@ class LaprdusTTS private constructor() {
      * Set the active voice for synthesis
      * For derived voices (child, grandma, grandpa), this also applies the appropriate pitch
      *
-     * @param voiceId Voice ID: "josip", "vlado", "detence", "baba", or "djed"
+     * @param voiceId Voice ID: "zvonko", "stojan", "mirsad", "josip", "vlado", "detence", "baba" or "djed"
      * @param assetManager Asset manager to load voice data
      * @return true if voice was set successfully
      */

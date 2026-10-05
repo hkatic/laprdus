@@ -143,6 +143,9 @@ Da biste instalirali Laprdus na Windows sustavu, slijedite ove korake:
    - Laprdus Detence
    - Laprdus Baba
    - Laprdus Djedo
+   - Laprdus Zvonko
+   - Laprdus Stojan
+   - Laprdus Mirsad
 
 ### 2.2 NVDA dodatak
 
@@ -352,7 +355,7 @@ echo "Tekst" | laprdus
 
 | Opcija | Opis |
 |--------|------|
-| `-v, --voice` | Odabir glasa (josip, vlado, detence, baba, djed) |
+| `-v, --voice` | Odabir glasa (josip, vlado, detence, baba, djed, zvonko, stojan, mirsad) |
 | `-r, --speech-rate` | Brzina govora (0.5-2.0, zadano: 1.0) |
 | `-p, --speech-pitch` | Visina glasa (0.5-2.0, zadano: 1.0) |
 | `-V, --speech-volume` | Glasnoća (0.0-1.0, zadano: 1.0) |
@@ -1189,15 +1192,18 @@ Primjer problema: Unos za "TV" zamjenjuje i "aktivator" jer sadrži "TV".
 
 ### 6.1 Dostupni glasovi
 
-Laprdus uključuje pet glasova - dva osnovna i tri izvedena:
+Laprdus uključuje osam glasova - dva osnovna, tri izvedena i tri formantna:
 
 | Glas | Vrsta | Jezik | Opis |
 |------|-------|-------|------|
-| **Josip** | Osnovni | Hrvatski | Muški glas normalne visine. Zadani glas za hrvatski jezik. |
-| **Vlado** | Osnovni | Srpski | Muški glas normalne visine. Zadani glas za srpski jezik. |
+| **Josip** | Osnovni | Hrvatski | Muški glas normalne visine. |
+| **Vlado** | Osnovni | Srpski | Muški glas normalne visine. |
 | **Detence** | Izvedeni | Hrvatski | Dječji glas. Izveden iz glasa Josip s povišenom visinom. |
 | **Baba** | Izvedeni | Hrvatski | Ženski glas. Izveden iz glasa Josip s blago povišenom visinom. |
 | **Djedo** | Izvedeni | Srpski | Stariji muški glas. Izveden iz glasa Vlado sa sniženom visinom. |
+| **Zvonko** | Formantni | Hrvatski | Muški glas. Govor nastaje pravilima, bez snimaka. Zadani glas za hrvatski jezik. |
+| **Stojan** | Formantni | Srpski | Muški glas, dublji i tamniji. Govor nastaje pravilima, bez snimaka. Zadani glas za srpski jezik. |
+| **Mirsad** | Formantni | Bosanski | Muški glas, viši i melodičniji. Govor nastaje pravilima, bez snimaka. Zadani glas za bosanski jezik. |
 
 ### 6.2 Osnovni i izvedeni glasovi
 
@@ -1208,6 +1214,15 @@ Laprdus uključuje pet glasova - dva osnovna i tri izvedena:
 - **Detence** koristi Josipove foneme s visinom 1.5x (viši glas)
 - **Baba** koristi Josipove foneme s visinom 1.2x (blago viši glas)
 - **Djedo** koristi Vladove foneme s visinom 0.75x (niži glas)
+
+**Formantni glasovi** (Zvonko, Stojan, Mirsad) ne koriste snimke. Govor se u cijelosti računa pravilima, kao kod sintetizatora Eloquence i DECtalk: iz teksta se određuju glasovi, naglasak i rečenična intonacija, a zatim se zvuk stvara formantnim sintetizatorom. Zato ovi glasovi:
+
+- ne trebaju datoteke s glasovnim podacima
+- ostaju čisti i razumljivi pri vrlo velikim brzinama, jer se brzina i visina ne dobivaju naknadnom obradom zvuka
+- imaju rečeničnu intonaciju (izjava, pitanje, zarez, usklik)
+- brojeve izgovaraju prema jeziku glasa (Zvonko: *tisuća*, *milijun*; Stojan i Mirsad: *hiljada*, *milion*)
+
+Ako formantni glas neku riječ naglasi na pogrešnom slogu, naglasak možete zadati u rječniku izgovora uobičajenim naglasnim znakovima, na primjer `telèfon`, `gláva`, `kȕća` ili `grȃd`.
 
 ### 6.3 Odabir glasa
 

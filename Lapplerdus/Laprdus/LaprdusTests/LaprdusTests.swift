@@ -12,9 +12,37 @@ import Testing
 @Suite(.serialized)
 struct EngineTests {
 
-    @Test func voiceRegistryExposesAllFiveVoices() throws {
+    @Test func voiceRegistryExposesAllVoices() throws {
         let ids = VoiceCatalog.all.map(\.id)
-        #expect(ids == ["josip", "vlado", "detence", "baba", "djed"])
+        #expect(ids == ["josip", "vlado", "detence", "baba", "djed",
+                        "zvonko", "stojan", "mirsad"])
+    }
+
+    @Test func formantVoicesHaveTheirOwnLanguages() throws {
+        #expect(VoiceCatalog.voice(withID: "zvonko")?.languageCode == "hr-HR")
+        #expect(VoiceCatalog.voice(withID: "stojan")?.languageCode == "sr-RS")
+        #expect(VoiceCatalog.voice(withID: "mirsad")?.languageCode == "bs-BA")
+        #expect(VoiceCatalog.defaultVoiceID(forLanguage: "bs-BA") == "mirsad")
+        // Each language defaults to its formant voice.
+        #expect(VoiceCatalog.defaultVoiceID(forLanguage: "hr-HR") == "zvonko")
+        #expect(VoiceCatalog.defaultVoiceID(forLanguage: "sr-RS") == "stojan")
+    }
+
+    @Test func formantVoicesSynthesizeAndSwitchBack() throws {
+        let engine = try LaprdusEngine()
+        for id in ["zvonko", "stojan", "mirsad"] {
+            try engine.loadVoice(id, dictionaries: .bundledOnly)
+            #expect(engine.currentVoice == id)
+            let chunk = try engine.synthesize("Dobar dan, kako ste?")
+            #expect(chunk.samples.count > 22050 / 2)
+            #expect(chunk.sampleRate == 22050)
+            let spelled = try engine.synthesize("Č", spelled: true)
+            #expect(spelled.samples.count > 0)
+        }
+        // Back to a recorded voice: its data has to be loaded again.
+        try engine.loadVoice("josip", dictionaries: .bundledOnly)
+        let chunk = try engine.synthesize("Dobar dan!")
+        #expect(chunk.samples.count > 0)
     }
 
     @Test func derivedVoicesReferenceBasePitch() throws {
@@ -183,6 +211,25 @@ struct DictionaryStoreTests {
         #expect(engine.isInitialized)
         #expect(try engine.synthesize("ZG").samples.count > 0)
     }
+
+    /// Entries added in the spelling dictionary editor have to reach the
+    /// engine; they are saved in the same format as pronunciation entries.
+    @Test func userSpellingDictionaryIsApplied() throws {
+        let (store, dir) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let engine = try LaprdusEngine()
+        try engine.loadVoice("zvonko", dictionaries: store.dictionaryState(userDictionariesEnabled: true))
+        let bundled = try engine.synthesize("Q", spelled: true).samples.count
+
+        try store.save(
+            [DictionaryEntry(grapheme: "Q", phoneme: "ovo je vrlo dugacak naziv jednog slova")],
+            type: .spelling
+        )
+        engine.syncDictionaries(store.dictionaryState(userDictionariesEnabled: true))
+        let custom = try engine.synthesize("Q", spelled: true).samples.count
+        #expect(custom > bundled * 2)
+    }
 }
 
 // MARK: - SSML
@@ -227,6 +274,33 @@ struct SSMLParserTests {
         #expect(SSMLParser.parse("<speak><prosody pitch=\"-25%\">Test</prosody></speak>").pitch == 0.75)
     }
 
+    /// VoiceOver wraps every request in a neutral <prosody> and marks a
+    /// capital letter with a second one inside it.
+    @Test func innerProsodyIsRelativeToTheOuterOne() {
+        let capital = SSMLParser.parse(
+            "<speak><prosody pitch=\"+0.0%\" rate=\"100.0%\" volume=\"+0.0dB\"><lang xml:lang=\"hr\">"
+            + "<voice name=\"\"><prosody pitch=\"+50.0%\"><say-as interpret-as=\"characters\">A</say-as>"
+            + "</prosody></voice></lang></prosody></speak>"
+        )
+        #expect(capital.pitch == 1.5)
+        #expect(capital.rate == 1.0)
+        #expect(capital.text == "A")
+
+        let nested = SSMLParser.parse(
+            "<speak><prosody pitch=\"+20%\" rate=\"150%\"><prosody pitch=\"-50%\">Test</prosody></prosody></speak>"
+        )
+        #expect(abs(nested.pitch - 0.6) < 0.001)
+        #expect(nested.rate == 1.5)
+    }
+
+    /// One request has one pitch: the one that covers most of the text.
+    @Test func pitchOfMostOfTheTextWins() {
+        let utterance = SSMLParser.parse(
+            "<speak><prosody pitch=\"+0%\">Dugacka recenica <prosody pitch=\"+50%\">A</prosody></prosody></speak>"
+        )
+        #expect(utterance.pitch == 1.0)
+    }
+
     @Test func clampsOutOfRangeValues() {
         #expect(SSMLParser.parse("<speak><prosody rate=\"9.0\">Test</prosody></speak>").rate == 2.0)
         #expect(SSMLParser.parse("<speak><prosody rate=\"0.01\">Test</prosody></speak>").rate == 0.5)
@@ -262,7 +336,7 @@ struct SettingsTests {
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
         let snapshot = SettingsSnapshot.load(from: defaults)
-        #expect(snapshot.defaultVoice == "josip")
+        #expect(snapshot.defaultVoice == VoiceCatalog.defaultVoiceID)
         #expect(snapshot.speed == 1.0)
         #expect(snapshot.pitch == 1.0)
         #expect(snapshot.volume == 1.0)

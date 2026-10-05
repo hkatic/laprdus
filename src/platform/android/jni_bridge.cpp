@@ -96,110 +96,6 @@ extern "C" {
 // Native Methods - Package: com.hrvojekatic.laprdus.tts
 // =============================================================================
 
-JNIEXPORT jboolean JNICALL
-Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeInit(
-    JNIEnv* env,
-    jobject thiz,
-    jstring phonemeDataPath) {
-
-    (void)thiz;
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    LOGI("Initializing LaprdusTTS native engine");
-
-    try {
-        std::string path = jstringToString(env, phonemeDataPath);
-        if (path.empty()) {
-            LOGE("Invalid phoneme data path");
-            return JNI_FALSE;
-        }
-
-        g_engine = std::make_unique<laprdus::TTSEngine>();
-
-        if (!g_engine->initialize(path)) {
-            LOGE("Failed to initialize engine from path: %s", path.c_str());
-            g_engine.reset();
-            return JNI_FALSE;
-        }
-
-        // Store data directory
-        size_t lastSlash = path.find_last_of("/\\");
-        if (lastSlash != std::string::npos) {
-            g_data_directory = path.substr(0, lastSlash);
-        }
-
-        LOGI("Engine initialized successfully");
-        return JNI_TRUE;
-
-    } catch (const std::exception& e) {
-        LOGE("Exception during init: %s", e.what());
-        return JNI_FALSE;
-    }
-}
-
-JNIEXPORT jboolean JNICALL
-Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeInitFromAssets(
-    JNIEnv* env,
-    jobject thiz,
-    jobject assetManager,
-    jstring assetPath) {
-
-    (void)thiz;
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    LOGI("Initializing LaprdusTTS from assets");
-
-    try {
-        // Get asset manager
-        AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
-        if (!mgr) {
-            LOGE("Failed to get asset manager");
-            return JNI_FALSE;
-        }
-
-        std::string path = jstringToString(env, assetPath);
-        if (path.empty()) {
-            LOGE("Invalid asset path");
-            return JNI_FALSE;
-        }
-
-        // Open asset
-        AAsset* asset = AAssetManager_open(mgr, path.c_str(), AASSET_MODE_BUFFER);
-        if (!asset) {
-            LOGE("Failed to open asset: %s", path.c_str());
-            return JNI_FALSE;
-        }
-
-        // Get data
-        size_t size = AAsset_getLength(asset);
-        const uint8_t* data = static_cast<const uint8_t*>(AAsset_getBuffer(asset));
-
-        if (!data || size == 0) {
-            AAsset_close(asset);
-            LOGE("Asset is empty");
-            return JNI_FALSE;
-        }
-
-        // Initialize engine
-        g_engine = std::make_unique<laprdus::TTSEngine>();
-
-        bool success = g_engine->initialize_from_memory(data, size, {});
-
-        AAsset_close(asset);
-
-        if (!success) {
-            LOGE("Failed to initialize engine from asset");
-            g_engine.reset();
-            return JNI_FALSE;
-        }
-
-        LOGI("Engine initialized from assets successfully");
-        return JNI_TRUE;
-
-    } catch (const std::exception& e) {
-        LOGE("Exception during asset init: %s", e.what());
-        return JNI_FALSE;
-    }
-}
-
 JNIEXPORT void JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeShutdown(
     JNIEnv* env,
@@ -438,6 +334,25 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetVoice(
     if (!voice) {
         LOGE("Voice not found: %s", id.c_str());
         return JNI_FALSE;
+    }
+
+    // Formant voices are synthesized by rule: there is no asset to load
+    if (laprdus::VoiceRegistry::is_formant_voice(voice)) {
+        if (!g_engine) {
+            g_engine = std::make_unique<laprdus::TTSEngine>();
+        }
+        if (!g_engine->initialize_formant(voice->id)) {
+            LOGE("Failed to initialize formant voice: %s", id.c_str());
+            return JNI_FALSE;
+        }
+
+        g_voice_base_pitch = voice->base_pitch;
+        laprdus::VoiceParams params = g_engine->voice_params();
+        params.pitch = g_voice_base_pitch;
+        g_engine->set_voice_params(params);
+
+        LOGI("Formant voice set successfully: %s", id.c_str());
+        return JNI_TRUE;
     }
 
     // Get the physical voice (for derived voices)

@@ -23,6 +23,23 @@ string_types = (str,)
 _DEBUG_ENABLED = _os.path.exists(_os.path.join(_tempfile.gettempdir(), "laprdus_debug"))
 _DEBUG_LOG_PATH = _os.path.join(_tempfile.gettempdir(), "laprdus_debug.log") if _DEBUG_ENABLED else None
 
+def _default_voice():
+    """Voice of a new installation: the formant voice of NVDA's language.
+
+    NVDA saves the voice the user picks, so this only applies until then.
+    """
+    try:
+        import languageHandler
+        lang = (languageHandler.getLanguage() or "").lower()
+    except Exception:
+        lang = ""
+    if lang.startswith("sr"):
+        return "stojan"
+    if lang.startswith("bs"):
+        return "mirsad"
+    return "zvonko"
+
+
 def _debug_log(msg):
     """Log debug message to file if debug mode is enabled."""
     if not _DEBUG_ENABLED or _DEBUG_LOG_PATH is None:
@@ -206,7 +223,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         self._userEmojiMtime = 0
 
         # Voice selection
-        self._voice = "josip"  # Default voice
+        self._voice = _default_voice()
         self._availableVoices = None  # Cached voice dict
 
         # Current playback sample rate (for rate changes)
@@ -925,9 +942,9 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         except Exception as e:
             log.error("LaprdusTTS: Error building voice dict: %s" % str(e))
             # Fallback to single default voice
-            voices["josip"] = VoiceInfo(
-                "josip",
-                "Laprdus Josip (Croatian)",
+            voices["zvonko"] = VoiceInfo(
+                "zvonko",
+                "Laprdus Zvonko (Croatian)",
                 "hr-HR"
             )
         return voices

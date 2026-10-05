@@ -110,8 +110,8 @@ std::string CroatianNumbers::two_digit_to_words(std::string_view two_digits) {
 std::string CroatianNumbers::hundreds_word(char digit) {
     switch (digit) {
         case '1': return "sto";
-        case '2': return "dvjesto";
-        case '3': return "tristo";
+        case '2': return m_dialect == Dialect::Serbian ? "dvesta" : "dvjesto";
+        case '3': return m_dialect == Dialect::Serbian ? "trista" : "tristo";
         case '4': return u8"četiristo";
         case '5': return "petsto";
         case '6': return u8"šesto";
@@ -175,6 +175,19 @@ std::string CroatianNumbers::group_to_words(std::string_view group) {
 // =============================================================================
 
 std::string_view CroatianNumbers::get_thousand_variant(char last_digit) {
+    if (m_dialect != Dialect::Croatian) {
+        switch (last_digit) {
+            case '1':
+                return "hiljadu";
+            case '2':
+            case '3':
+            case '4':
+                return "hiljade";
+            default:
+                return "hiljada";
+        }
+    }
+
     switch (last_digit) {
         case '1':
             return u8"tisuću";      // Nominative singular
@@ -193,12 +206,13 @@ std::string_view CroatianNumbers::get_thousand_variant(char last_digit) {
 
 std::string CroatianNumbers::get_million_variant(std::string_view prefix, char last_digit) {
     std::string result(prefix);
+    const bool eastern = m_dialect != Dialect::Croatian;
     switch (last_digit) {
         case '1':
-            result += "lijun";
+            result += eastern ? "lion" : "lijun";
             break;
         default:
-            result += "lijuna";
+            result += eastern ? "liona" : "lijuna";
             break;
     }
     return result;

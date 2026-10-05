@@ -30,6 +30,9 @@ namespace laprdus {
  * 4. Audio synthesis (phoneme concatenation)
  * 5. Inflection application (pitch contours)
  *
+ * With a formant voice, steps 3-5 are replaced by rule-based formant
+ * synthesis (text front end + Klatt synthesizer); steps 1-2 are shared.
+ *
  * Thread safety: Create one engine per thread,
  * or use external synchronization.
  */
@@ -66,6 +69,20 @@ public:
      */
     bool initialize_from_memory(const uint8_t* data, size_t size,
                                span<const uint8_t> key = {});
+
+    /**
+     * Initialize engine with a formant voice. No phoneme data is needed:
+     * speech is produced by rule (see src/formant/).
+     * @param voice_id Formant voice ID ("zvonko", "stojan", "mirsad").
+     * @return true on success, false if the ID is not a formant voice.
+     */
+    bool initialize_formant(const char* voice_id);
+
+    /**
+     * Check if the engine currently speaks with a formant voice.
+     * @return true for formant synthesis, false for concatenative.
+     */
+    bool is_formant() const;
 
     /**
      * Check if engine is initialized and ready.

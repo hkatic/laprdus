@@ -111,7 +111,6 @@ private:
 
     // Streaming support
     void emit_chunk(const AudioBuffer& chunk);
-    void flush_stream();
 };
 
 } // namespace laprdus

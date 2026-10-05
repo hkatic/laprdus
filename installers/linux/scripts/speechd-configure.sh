@@ -34,6 +34,8 @@ LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"
 LanguageDefaultModule "sr-RS" "laprdus"
+LanguageDefaultModule "bs" "laprdus"
+LanguageDefaultModule "bs-BA" "laprdus"
 # END LAPRDUS TTS
 EOF
 
@@ -45,6 +47,8 @@ LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"
 LanguageDefaultModule "sr-RS" "laprdus"
+LanguageDefaultModule "bs" "laprdus"
+LanguageDefaultModule "bs-BA" "laprdus"
 # END LAPRDUS TTS
 EOF
 
@@ -113,6 +117,8 @@ LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"
 LanguageDefaultModule "sr-RS" "laprdus"
+LanguageDefaultModule "bs" "laprdus"
+LanguageDefaultModule "bs-BA" "laprdus"
 # END LAPRDUS TTS LANGUAGES
 EOF
         fi

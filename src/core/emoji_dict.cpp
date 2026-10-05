@@ -107,37 +107,30 @@ bool EmojiDictionary::Impl::parse_json(const std::string& json, bool clear) {
 
         std::string obj = json.substr(pos, obj_end - pos + 1);
 
-        // Extract emoji field
-        std::string emoji;
-        size_t emoji_key = obj.find("\"emoji\"");
-        if (emoji_key != std::string::npos) {
-            size_t colon = obj.find(':', emoji_key);
-            if (colon != std::string::npos) {
-                size_t quote1 = obj.find('"', colon + 1);
-                if (quote1 != std::string::npos) {
-                    size_t quote2 = obj.find('"', quote1 + 1);
-                    if (quote2 != std::string::npos) {
-                        emoji = obj.substr(quote1 + 1, quote2 - quote1 - 1);
+        auto field = [&obj](const char* key) {
+            std::string value;
+            size_t key_pos = obj.find(std::string("\"") + key + "\"");
+            if (key_pos != std::string::npos) {
+                size_t colon = obj.find(':', key_pos);
+                if (colon != std::string::npos) {
+                    size_t quote1 = obj.find('"', colon + 1);
+                    if (quote1 != std::string::npos) {
+                        size_t quote2 = obj.find('"', quote1 + 1);
+                        if (quote2 != std::string::npos) {
+                            value = obj.substr(quote1 + 1, quote2 - quote1 - 1);
+                        }
                     }
                 }
             }
-        }
+            return value;
+        };
 
-        // Extract text field
-        std::string text;
-        size_t text_key = obj.find("\"text\"");
-        if (text_key != std::string::npos) {
-            size_t colon = obj.find(':', text_key);
-            if (colon != std::string::npos) {
-                size_t quote1 = obj.find('"', colon + 1);
-                if (quote1 != std::string::npos) {
-                    size_t quote2 = obj.find('"', quote1 + 1);
-                    if (quote2 != std::string::npos) {
-                        text = obj.substr(quote1 + 1, quote2 - quote1 - 1);
-                    }
-                }
-            }
-        }
+        // The bundled dictionary uses "emoji"/"text"; the dictionary editors
+        // of the apps save every dictionary type as "grapheme"/"phoneme".
+        std::string emoji = field("emoji");
+        if (emoji.empty()) emoji = field("grapheme");
+        std::string text = field("text");
+        if (text.empty()) text = field("phoneme");
 
         // Add entry if both fields found
         if (!emoji.empty() && !text.empty()) {

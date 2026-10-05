@@ -16,6 +16,7 @@ namespace laprdus {
  * Provides access to voice definitions including:
  * - Physical voices (Josip, Vlado) with their own phoneme data
  * - Derived voices (Detence, Baba, Djedo) that use physical voice data with pitch modification
+ * - Formant voices (Zvonko, Stojan, Mirsad) synthesized by rule, with no data file
  */
 class VoiceRegistry {
 public:
@@ -46,12 +47,6 @@ public:
     static const VoiceDefinition* get_by_index(size_t index);
 
     /**
-     * Get the default voice.
-     * @return Pointer to default voice definition (Josip).
-     */
-    static const VoiceDefinition* default_voice();
-
-    /**
      * Get the physical voice for a voice definition.
      * For physical voices, returns the same voice.
      * For derived voices, returns the base physical voice.
@@ -69,11 +64,11 @@ public:
     static const char* get_data_filename(const VoiceDefinition* voice);
 
     /**
-     * Check if a voice is physical (has its own phoneme data).
+     * Check if a voice is a formant voice (synthesized by rule, no data file).
      * @param voice Voice definition.
-     * @return true if physical, false if derived.
+     * @return true if the voice uses formant synthesis.
      */
-    static bool is_physical_voice(const VoiceDefinition* voice);
+    static bool is_formant_voice(const VoiceDefinition* voice);
 };
 
 } // namespace laprdus
