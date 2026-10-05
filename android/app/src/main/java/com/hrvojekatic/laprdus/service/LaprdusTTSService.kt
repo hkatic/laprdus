@@ -371,9 +371,11 @@ class LaprdusTTSService : TextToSpeechService() {
     }
 
     /**
-     * Load user dictionary entries from the device-protected user.json into the
-     * native engine. Entries are appended to the already-loaded bundled
-     * dictionary using addPronunciation(), which does NOT clear existing entries.
+     * Load the user's dictionary entries from the device-protected user.json,
+     * spelling.json and emoji.json into the native engine. Entries are added
+     * to the already-loaded bundled dictionaries one by one, which does NOT
+     * clear existing entries; a spelling or emoji entry replaces the bundled
+     * one for the same character or emoji.
      * Respects the userDictionariesEnabled setting; fails closed (defers the
      * load) while the settings are not known yet.
      */
@@ -391,24 +393,32 @@ class LaprdusTTSService : TextToSpeechService() {
 
         val engine = tts ?: return
 
-        val userDictFile = File(dictionaryDir, DictionaryType.MAIN.fileName)
-        if (!userDictFile.isFile) {
-            logDebug { "No user dictionary file found" }
-            return
-        }
+        // Every dictionary type is saved in the same entry format.
+        for (type in DictionaryType.entries) {
+            val file = File(dictionaryDir, type.fileName)
+            if (!file.isFile) {
+                logDebug { "No user ${type.fileName} found" }
+                continue
+            }
 
-        try {
-            val entries = DictionaryJson.parse(userDictFile.readText(Charsets.UTF_8))
-            var count = 0
-            for (entry in entries) {
-                if (entry.phoneme.isNotEmpty()) {
-                    engine.addPronunciation(entry.grapheme, entry.phoneme, entry.caseSensitive, entry.wholeWord)
+            try {
+                val entries = DictionaryJson.parse(file.readText(Charsets.UTF_8))
+                var count = 0
+                for (entry in entries) {
+                    if (entry.grapheme.isEmpty() || entry.phoneme.isEmpty()) continue
+                    when (type) {
+                        DictionaryType.MAIN -> engine.addPronunciation(
+                            entry.grapheme, entry.phoneme, entry.caseSensitive, entry.wholeWord
+                        )
+                        DictionaryType.SPELLING -> engine.addSpellingEntry(entry.grapheme, entry.phoneme)
+                        DictionaryType.EMOJI -> engine.addEmojiEntry(entry.grapheme, entry.phoneme)
+                    }
                     count++
                 }
+                Log.i(TAG, "Loaded $count user entries from ${type.fileName}")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to load user ${type.fileName}: ${e.message}")
             }
-            Log.i(TAG, "Loaded $count user dictionary entries")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to load user dictionary: ${e.message}")
         }
     }
 

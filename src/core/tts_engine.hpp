@@ -172,6 +172,20 @@ public:
                            bool case_sensitive = false, bool whole_word = true);
 
     /**
+     * Add a single spelling entry (replaces an existing one for the character).
+     * @param character Character to match.
+     * @param pronunciation How the character is named when spelling.
+     */
+    void add_spelling_entry(const std::string& character, const std::string& pronunciation);
+
+    /**
+     * Add a single emoji entry (replaces an existing one for the emoji).
+     * @param emoji UTF-8 emoji.
+     * @param text Spoken text.
+     */
+    void add_emoji_entry(const std::string& emoji, const std::string& text);
+
+    /**
      * Clear the pronunciation dictionary.
      */
     void clear_dictionary();

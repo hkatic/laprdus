@@ -515,6 +515,56 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeAddPronunciation(
     g_engine->add_pronunciation(g, p, caseSensitive, wholeWord);
 }
 
+JNIEXPORT void JNICALL
+Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeAddSpellingEntry(
+    JNIEnv* env,
+    jobject thiz,
+    jstring character,
+    jstring pronunciation) {
+
+    (void)thiz;
+    std::lock_guard<std::mutex> lock(g_engine_mutex);
+
+    if (!g_engine || !g_engine->is_initialized()) {
+        LOGE("Cannot add spelling entry - engine not initialized");
+        return;
+    }
+
+    std::string c = jstringToString(env, character);
+    std::string p = jstringToString(env, pronunciation);
+
+    if (c.empty() || p.empty()) {
+        return;
+    }
+
+    g_engine->add_spelling_entry(c, p);
+}
+
+JNIEXPORT void JNICALL
+Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeAddEmojiEntry(
+    JNIEnv* env,
+    jobject thiz,
+    jstring emoji,
+    jstring text) {
+
+    (void)thiz;
+    std::lock_guard<std::mutex> lock(g_engine_mutex);
+
+    if (!g_engine || !g_engine->is_initialized()) {
+        LOGE("Cannot add emoji entry - engine not initialized");
+        return;
+    }
+
+    std::string e = jstringToString(env, emoji);
+    std::string t = jstringToString(env, text);
+
+    if (e.empty() || t.empty()) {
+        return;
+    }
+
+    g_engine->add_emoji_entry(e, t);
+}
+
 // =============================================================================
 // Spelling Dictionary Methods
 // =============================================================================

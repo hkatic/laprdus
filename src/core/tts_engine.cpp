@@ -487,6 +487,18 @@ void TTSEngine::add_pronunciation(const std::string& grapheme, const std::string
     }
 }
 
+void TTSEngine::add_spelling_entry(const std::string& character, const std::string& pronunciation) {
+    if (m_impl) {
+        m_impl->spelling_dictionary.add_entry(character, pronunciation);
+    }
+}
+
+void TTSEngine::add_emoji_entry(const std::string& emoji, const std::string& text) {
+    if (m_impl) {
+        m_impl->emoji_dictionary.add_entry(emoji, text);
+    }
+}
+
 void TTSEngine::clear_dictionary() {
     if (m_impl) {
         m_impl->dictionary.clear();

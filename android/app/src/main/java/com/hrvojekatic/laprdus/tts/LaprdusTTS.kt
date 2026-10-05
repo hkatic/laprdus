@@ -74,6 +74,8 @@ class LaprdusTTS private constructor() {
     private external fun nativeSetVoice(voiceId: String, assetManager: AssetManager): Boolean
     private external fun nativeLoadDictionaryFromAssets(assetManager: AssetManager, assetPath: String): Boolean
     private external fun nativeAddPronunciation(grapheme: String, phoneme: String, caseSensitive: Boolean, wholeWord: Boolean)
+    private external fun nativeAddSpellingEntry(character: String, pronunciation: String)
+    private external fun nativeAddEmojiEntry(emoji: String, text: String)
     private external fun nativeLoadSpellingDictionaryFromAssets(assetManager: AssetManager, assetPath: String): Boolean
     private external fun nativeSynthesizeSpelled(text: String): ShortArray?
 
@@ -249,6 +251,28 @@ class LaprdusTTS private constructor() {
      */
     fun addPronunciation(grapheme: String, phoneme: String, caseSensitive: Boolean = false, wholeWord: Boolean = true) {
         nativeAddPronunciation(grapheme, phoneme, caseSensitive, wholeWord)
+    }
+
+    /**
+     * Add a single entry to the spelling dictionary, replacing the bundled
+     * name of that character if there is one.
+     *
+     * @param character The character to match
+     * @param pronunciation How the character is named when spelling
+     */
+    fun addSpellingEntry(character: String, pronunciation: String) {
+        nativeAddSpellingEntry(character, pronunciation)
+    }
+
+    /**
+     * Add a single entry to the emoji dictionary, replacing the bundled
+     * description of that emoji if there is one.
+     *
+     * @param emoji The emoji to match
+     * @param text The text spoken for it
+     */
+    fun addEmojiEntry(emoji: String, text: String) {
+        nativeAddEmojiEntry(emoji, text)
     }
 
     /**

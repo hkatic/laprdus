@@ -335,6 +335,12 @@ std::string EmojiDictionary::replace_emojis(const std::string& text) const {
 void EmojiDictionary::add_entry(const std::string& emoji, const std::string& text) {
     if (!emoji.empty() && !text.empty()) {
         m_impl->entries[emoji] = text;
+        // Match the emoji with or without variation selectors, as the
+        // entries of a loaded dictionary do.
+        std::string normalized = Impl::remove_variation_selectors(emoji);
+        if (normalized != emoji && !normalized.empty()) {
+            m_impl->entries[normalized] = text;
+        }
     }
 }
 
