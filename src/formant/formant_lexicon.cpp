@@ -201,6 +201,8 @@ const char* const COMMON[] = {
     u8"s/ignal", u8"sign'a:l|a|u|om|e|i|ima",
     // telèfon, telefóna (the nominative comes from the rule for -fon)
     u8"telef'o:n|a|u|om|e|i|ima", u8"gramof'o:n|a|u|om|e|i|ima", u8"tel'efonsk*",
+    // pȍruka, prȅporuka, ȉsporuka: falling tone on the first syllable
+    u8"p^oruk*", u8"p^oruci", u8"pr^eporuk*", u8"pr^eporuci", u8"^isporuk*", u8"^isporuci",
     // mȉkrofon, sȁksofon, mȅgafon keep the first syllable in every case
     u8"m^ikrofon*", u8"s^aksofon*", u8"m^egafon*",
     u8"novč'ani:k", u8"novčan'i:|ka|ku|kom|ke|ci|cima", u8"n^ovčani:če",

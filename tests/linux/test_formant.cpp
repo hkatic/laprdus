@@ -493,6 +493,12 @@ TEST_CASE("Lexicon accents cover the whole paradigm", "[formant][text]") {
         {"mikrofona", "m\xC8\x89krofona"},   // mȉkrofona
         {"mikrofonom", "m\xC8\x89krofonom"},   // mȉkrofonom
         {"mikrofonima", "m\xC8\x89krofonima"},   // mȉkrofonima
+        {"poruka", "p\xC8\x8Druka"},   // pȍruka
+        {"poruke", "p\xC8\x8Druke"},   // pȍruke
+        {"poruci", "p\xC8\x8Druci"},   // pȍruci
+        {"porukom", "p\xC8\x8Drukom"},   // pȍrukom
+        {"porukama", "p\xC8\x8Drukama"},   // pȍrukama
+        {"preporuka", "pr\xC8\x85poruka"},   // prȅporuka
     };
     Engine engine;
     REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
