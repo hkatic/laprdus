@@ -305,12 +305,14 @@ what it showed (levels relative to the loudest part of the item):
   and the tilt switches at the release; the bar itself weakens over the
   second half of the closure, as it does in the recordings, so the release
   stands out against it.
-- **The burst of p and b.** It was 6 dB weaker than now, peaked at 0.7-1.3 kHz
+- **The burst of p and b.** (Revised once more later, see "l, m, n and p
+  after the classic synthesizers".) It was 6 dB weaker than now, peaked at 0.7-1.3 kHz
   (a fixed peak plus a large F2 share) and had a second peak at F3: a
   compact mid-frequency burst is what a velar has. It is now strongest below
   500 Hz and falls from there, with a flat floor (the click).
-- **p, t, k before r.** A stop was aspirated only before vowels, glides and
-  l. An r opens with a vocalic stretch, so the stop is released into it in
+- **p, t, k before r.** (For p this was replaced later, see "l, m, n and p
+  after the classic synthesizers".) A stop was aspirated only before vowels,
+  glides and l. An r opens with a vocalic stretch, so the stop is released into it in
   the same way; without the aspiration the p of *pra* was a bare 8 ms burst.
 - **Which sound colours a stop.** A stop took its formants from the next
   full vowel, however far away. In *pri* that put the F2 share of the p
@@ -366,7 +368,9 @@ one. Its own F2 is now 1100 Hz and the vowels move it half as much. The
 recordings also show F2 falling into an l within 25 ms and leaving it over
 60-80 ms; the transition into l is now twice as fast as the one out of it.
 
-**n.** A recognizer heard n as m in 4 of 76 words at the normal rate and in 7
+**n.** (The values chosen here were replaced in the next round, see below;
+the finding that a bright murmur is heard as l stands.) A recognizer heard n
+as m in 4 of 76 words at the normal rate and in 7
 at 1.5 times the rate (*stan* as *stam*, *vani* as *vami*, *nije* as *mije*).
 The two murmurs were the same dull hum, 12 dB below the vowels (recorded: 8
 to 10, Eloquence 6 to 7), with their upper resonances 23-38 dB down, so only
@@ -407,6 +411,80 @@ to 8.7% (the recorded speaker: 10.4%), at 1.5 times the rate from 21.2% to
 The earlier sets held (words with b, d, p 78 before and 80 after; with t, k
 43 and 43; clause-final 21 and 21), and on the 20 general sentences of
 section 7 Zvonko, Stojan and Mirsad moved by -0.9, 0.0 and -0.6 points.
+
+### l, m, n and p after the classic synthesizers
+
+After the three rounds above l, m, n and p were still judged soft, and hard
+to make out at high rates; the request was to follow Eloquence, DECtalk,
+Orpheus and eSpeak. Eloquence and eSpeak are installed on macOS (`say -v
+"Reed (Italian (Italy))"`, `say -v "(null) - ESpeak (Croatian (Croatia))"`,
+with `-r 300` or `-r 450` for high rates); for DECtalk there are Klatt's
+published tables. Segment durations at high rates turned out to be the same
+as Eloquence's. What differs is the manner: the classic synthesizers switch
+these sounds on and off within a few milliseconds and make them very unlike
+the vowels around them, where the recorded speaker, and Zvonko after him,
+glide.
+
+| | Eloquence | eSpeak (Croatian) | DECtalk (Klatt 1980) | Zvonko before | Zvonko now |
+|---|---|---|---|---|---|
+| F1 of l in *ala* | 310-330 Hz | 390-430 Hz | 310 Hz | 490 Hz | 370 Hz |
+| Energy above 1 kHz in that l | -24 to -40 dB | - | - | -12 to -24 dB | -20 to -32 dB |
+| Second resonance of the n murmur | 1700 Hz | 1620 Hz | 1340 Hz | 1450 Hz | 1650 Hz |
+| Second resonance of the m murmur | 1000 Hz | 1080 Hz | 1270 Hz | 1150 Hz | 1050 Hz |
+| F1 from vowel to murmur in *ana* | within 10-20 ms | within 10 ms | - | over 30-40 ms | within 10 ms |
+| Murmur level | -6 to -7 dB | -15 to -17 dB | - | -10 to -11 dB | -8 to -9 dB |
+| p burst in *pa* | 10-16 ms at -30 dB, flat up to 5 kHz | 18 ms at -17 to -26 dB, falling from 500 Hz | flat (bypass path) | 4 ms at -12 dB, then aspiration into the vowel | 8 ms at -17 to -24 dB |
+| The same burst before every vowel | yes | yes | yes | no (followed F2-F4) | yes |
+| Between burst and voice | 6 ms of silence | 10 ms of silence | - | aspiration | about 6 ms near silence |
+
+- **l.** F1 is now 330 Hz (the recorded speaker has 450 Hz, and that value
+  stays in the table of recorded values above). The deep and quick dip of F1
+  is what sets an l off from the vowels; with the shallow one a recognizer
+  heard *mali Luka voli* as *valio uka volio*, the l as part of the vowels.
+  The lower F1 also takes 8 dB off the upper formants, as in Eloquence. F2
+  stays where the previous round put it (a dark l), which is also where
+  eSpeak's Croatian l is (1360-1410 Hz in *ili*; Eloquence's Italian l is a
+  clear one, 1750 Hz).
+- **m and n.** The two murmurs differ by their second resonance, and the
+  classic synthesizers put those further apart than a speaker does; so do
+  the tables now. F1 of the vowel no longer slides down towards the nasal
+  (its boundary value follows the vowel by 70% instead of 35%), nasality is
+  smoothed over 6 ms each way instead of 16, and bandwidths over 6 ms instead
+  of 10, so the murmur starts and stops at its edge. The murmur of n went
+  back to wide bandwidths with 3 dB more tilt: with the edges sharp, the
+  duller murmur was the better one (n found in 64 of 76 words against 61, and
+  heard as l in none instead of 3). All murmurs are 1.5 dB louder.
+- **p.** Three versions were compared at 1.7 times the rate, where the
+  complaint was: the previous burst (strongest below 500 Hz, following the
+  formants, with aspiration), a flat one as in Eloquence, and one that is
+  strongest below 500 Hz with a flat floor 10 dB under it, the same before
+  every vowel, followed by silence instead of aspiration. A flat burst of 8
+  ms is a different sample of noise each time and now and then peaked at 3-4
+  kHz, where a t burst is (*prema* heard as *trema*). The third version was
+  the best (words with p found: 25 of 58 against 22 and 21; with pr, br, dr
+  13 of 41 against 10 and 6) and is the one kept. /b/ shares the burst.
+
+The recognizer check, Zvonko, on the 40 sentences full of n, m and l and the
+40 full of b, d and p, at the normal rate and at 1.7 times the rate (words
+found, before and after):
+
+| | normal rate | 1.7 times |
+|---|---|---|
+| words with n (76) | 59 → 63 | 33 → 43 |
+| n heard as m / as l | 0 / 3 → 0 / 0 | 4 / 1 → 0 / 2 |
+| words with m (35) | 27 → 29 | 16 → 20 |
+| words with l (51) | 35 → 43 | 27 → 29 |
+| words with b, d, p (120) | 78 → 84 | 43 → 48 |
+| characters wrong, n/m/l sentences | 9.0% → 8.0% | 25.4% → 23.3% |
+| characters wrong, b/d/p sentences | 10.5% → 9.9% | 25.7% → 23.2% |
+
+The recorded speaker finds 68 words with n and 41 with l at the normal rate,
+so l is now level with him. For Stojan at 1.7 times the rate: words with n 25
+→ 36, with m 15 → 19, with l 25 → 20 (the one count that fell), characters
+wrong 29.8% → 27.6%. The earlier sets held (words with t, k 43 → 46;
+clause-final 21 → 22), and on the 20 general sentences of section 7 Zvonko,
+Stojan and Mirsad moved by -1.4, -0.9 and +2.0 points (Mirsad's losses are
+word boundaries, *padala kiša* as *pada lakiša*, and one lost p in *ptice*).
 
 ### Voice colour
 

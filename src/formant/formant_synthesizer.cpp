@@ -350,7 +350,7 @@ private:
                     seg.abrupt = true;
                     seg.av = def.av;
                     seg.nasal = 1.0f;
-                    seg.tilt = m_voice.tilt + 4.0f;
+                    seg.tilt = m_voice.tilt + 4.0f + def.tilt;
                     break;
                 }
 
@@ -426,7 +426,7 @@ private:
                     // times, longest for the velar.
                     float release = voiced
                         ? (p.ph == Ph::G ? 14.0f : 8.0f)
-                        : (p.ph == Ph::K ? 34.0f : (p.ph == Ph::T ? 16.0f : 8.0f));
+                        : (p.ph == Ph::K ? 34.0f : (p.ph == Ph::T ? 16.0f : 14.0f));
                     // Before another stop the release is short but audible
                     // (the recorded speaker's "atka", "akta": 24-40 ms of
                     // noise 16-28 dB below the vowels).
@@ -491,9 +491,12 @@ private:
                         rel.av = 0.70f;
                         rel.tilt = m_voice.tilt + 3.0f;
                         rel.f0_shift = -0.8f;
-                    } else if (next_vocalic || next_cls == PhClass::Tap) {
+                    } else if ((next_vocalic || next_cls == PhClass::Tap) && p.ph != Ph::P) {
                         // /r/ after a stop opens with a vocalic stretch, so
                         // the stop is released into it as into a vowel.
+                        // /p/ has no aspiration: its click is followed by a
+                        // few milliseconds of silence and then the voice
+                        // sets in at once, as in Eloquence and eSpeak.
                         rel.ah = p.ph == Ph::K ? 0.45f : 0.20f;
                     }
                     break;
@@ -897,7 +900,7 @@ private:
 
         for (int k = 0; k < 3; ++k) {
             smooth(f[k], 2);
-            smooth(bw[k], 5);
+            smooth(bw[k], 3);
         }
         smooth(f4, 6);
         smooth(av, 2);
@@ -939,7 +942,10 @@ private:
                 tilt[static_cast<size_t>(j)] = open_tilt[static_cast<size_t>(j)];
             }
         }
-        smooth(nasal, 8);       // nasality spreads into neighbouring vowels
+        // Nasality reaches a little into the neighbouring vowels, and no
+        // further: spread over 16 ms each way it blurred the edges of m and
+        // n, which Eloquence and eSpeak switch within a few milliseconds.
+        smooth(nasal, 3);
         smooth(level, 4);
 
         // Frication spectrum: silent frames take the spectrum of the next

@@ -92,8 +92,10 @@ void nasal(PhDef& d, float m2, float m3, float l2, float c2, float l3, float c3,
     set3(d.bw, 50.0f, 280.0f, 300.0f);
     // Oral place of articulation as seen by neighbouring vowels.
     set3(d.loc, 280.0f, l2, l3);
-    set3(d.coart, 0.35f, c2, c3);
-    d.av = 0.75f;
+    // F1 of a neighbouring vowel hardly gives way before the closure: it
+    // jumps to the murmur's (in Eloquence and eSpeak within 10 ms).
+    set3(d.coart, 0.70f, c2, c3);
+    d.av = 1.0f;
     d.dur = dur;
     d.min_dur = 28.0f;
     d.tr_out = tr_out;
@@ -157,13 +159,16 @@ Table::Table() {
     sonorant(t[Ph::V], PhClass::Glide, 300.0f, 1130.0f, 2400.0f,
              70.0f, 110.0f, 170.0f, 0.50f, 52.0f, 0.30f, 40.0f, 3, 0.20f);
     t[Ph::V].tilt = 10.0f;
-    // /l/: clearly louder than /v/, higher F1, visible F2 and F3. It is a
-    // dark l: F2 stays low whatever the vowels around it (recorded 1150-1300
-    // Hz next to e and i, 1000-1100 Hz next to o and u) and glides slowly
-    // into the next one. With more colour from the vowels it reached 1460 Hz
-    // next to i, on the way to the clear l of Slovenian (1650-1800 Hz).
-    sonorant(t[Ph::L], PhClass::Liquid, 450.0f, 1100.0f, 2470.0f,
-             60.0f, 100.0f, 90.0f, 0.85f, 62.0f, 0.25f, 50.0f, 4, 0.15f);
+    // /l/: clearly louder than /v/, visible F2 and F3. It is a dark l: F2
+    // stays low whatever the vowels around it (recorded 1150-1300 Hz next to
+    // e and i, 1000-1100 Hz next to o and u). With more colour from the
+    // vowels it reached 1460 Hz next to i, on the way to the clear l of
+    // Slovenian (1650-1800 Hz). F1 is the low one of the classic
+    // synthesizers (Eloquence 310, DECtalk 310, eSpeak 390-430 Hz), not the
+    // recorded speaker's 450 Hz: the deep, quick dip of F1 is what makes an
+    // l stand out between vowels, most of all at high rates.
+    sonorant(t[Ph::L], PhClass::Liquid, 330.0f, 1100.0f, 2470.0f,
+             60.0f, 100.0f, 90.0f, 0.85f, 62.0f, 0.25f, 40.0f, 4, 0.15f);
     // F3 and F4 lie close together in laterals and reinforce each other.
     t[Ph::L].f4 = 2880.0f;
     sonorant(t[Ph::LJ], PhClass::Liquid, 335.0f, 1800.0f, 2820.0f,
@@ -171,12 +176,14 @@ Table::Table() {
     t[Ph::LJ].tilt = 6.0f;
 
     // ---- Nasals: murmur F2 F3, oral locus F2 (coart), F3 (coart) ----
-    nasal(t[Ph::M], 1150.0f, 2330.0f, 900.0f, 0.70f, 2150.0f, 0.65f, 60.0f, 36.0f);
-    nasal(t[Ph::N], 1450.0f, 2550.0f, 1750.0f, 0.40f, 2750.0f, 0.40f, 54.0f, 45.0f);
-    // The murmur of n has its upper resonances a little higher and clearer
-    // than that of m, or the two are the same hum and n is taken for m.
-    // Much clearer than this and it is taken for l instead.
-    set3(t[Ph::N].bw, 50.0f, 220.0f, 250.0f);
+    // The murmurs of m and n are told apart by their second resonance: near
+    // 1050 Hz for m and 1650 Hz for n, as in Eloquence (1000 / 1700) and
+    // eSpeak (1080 / 1620). The recorded speaker's are closer (1150 / 1400),
+    // and with those n was taken for m. The murmur of n is also the duller
+    // of the two: a clear one is taken for l.
+    nasal(t[Ph::M], 1050.0f, 2250.0f, 900.0f, 0.70f, 2150.0f, 0.65f, 60.0f, 36.0f);
+    nasal(t[Ph::N], 1650.0f, 2600.0f, 1750.0f, 0.40f, 2750.0f, 0.40f, 54.0f, 45.0f);
+    t[Ph::N].tilt = 3.0f;
     nasal(t[Ph::NJ], 1500.0f, 2450.0f, 2250.0f, 0.20f, 2850.0f, 0.30f, 68.0f, 55.0f);
     nasal(t[Ph::NG], 1150.0f, 2300.0f, 1700.0f, 0.45f, 2100.0f, 0.45f, 52.0f, 55.0f);
 
@@ -205,15 +212,15 @@ Table::Table() {
               0.25f, 0.70f, 0.65f, 85.0f, 36.0f, 8);
     obstruent(t[Ph::B], PhClass::Stop, true, 200.0f, 850.0f, 2100.0f,
               0.25f, 0.70f, 0.65f, 65.0f, 36.0f, 8);
-    // The labial burst is strongest below 500 Hz and falls from there, with
-    // a flat floor up to 5 kHz (the click): so it measures in the recordings
-    // and in Eloquence. It used to be 6 dB weaker, peaked at 0.7-1.3 kHz
-    // with a second peak at F3, and p and b sounded soft.
+    // The labial burst is a click with a spectrum of its own, the same
+    // before every vowel (so it is in Eloquence and eSpeak): strongest below
+    // 500 Hz, with a flat floor up to 5 kHz about 10 dB under it. Following
+    // the formants it could peak where a /t/ or /k/ burst does.
     for (Ph ph : {Ph::P, Ph::B}) {
-        t[ph].af = 0.60f;
-        set_formant_noise(t[ph], 0.35f, 0.15f, 0.10f);
-        set_noise(t[ph], 350.0f, 500.0f, 1.0f, 4000.0f, 3000.0f, 0.0f,
-                  6000.0f, 3000.0f, 0.0f, 0.10f);
+        t[ph].af = 0.50f;
+        set_formant_noise(t[ph], 0.0f, 0.0f, 0.0f);
+        set_noise(t[ph], 350.0f, 500.0f, 0.8f, 4000.0f, 3000.0f, 0.0f,
+                  6000.0f, 3000.0f, 0.0f, 0.20f);
     }
 
     obstruent(t[Ph::T], PhClass::Stop, false, 220.0f, 1750.0f, 2800.0f,
