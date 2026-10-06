@@ -1,44 +1,169 @@
 // SSMLParser.swift - Minimal SSML handling for AVSpeechSynthesisProviderRequest.
 // The system hands the utterance to the provider as SSML; Laprdus synthesizes
-// plain text, so the prosody attributes are extracted and the tags stripped.
+// plain text, so the request is cut into the parts that are spoken separately,
+// each with its own prosody.
 //
 // Used only by the LaprdusVoices extension, but it lives in Shared so the
 // app-hosted test bundle can reach it.
 
 import Foundation
 
-struct SSMLUtterance {
+/// A stretch of text that is spoken in one go, with one rate and one pitch.
+struct SSMLSpeech: Equatable {
     var text = ""
-    /// Rate multiplier (1.0 = normal) parsed from <prosody rate="...">.
+    /// Rate multiplier (1.0 = normal) from the <prosody rate="..."> around it.
     var rate: Float = 1.0
-    /// Pitch multiplier (1.0 = normal) parsed from <prosody pitch="...">.
+    /// Pitch multiplier (1.0 = normal) from the <prosody pitch="..."> around it.
     var pitch: Float = 1.0
-    /// The host asked for the text to be spelled out
+    /// The host asked for this text to be spelled out
     /// (<say-as interpret-as="characters">).
     var spellOut = false
 }
 
+enum SSMLPart: Equatable {
+    case speech(SSMLSpeech)
+    /// <break>: silence of the given length.
+    case pause(seconds: Double)
+    /// Two elements that are separate phrases (<voice>, <p>, <s>) follow each
+    /// other with no <break> between them.
+    case phraseBoundary
+}
+
+/// A request in the order it has to be heard.
+///
+/// One request is not one phrase with one set of attributes. VoiceOver
+/// describes an item as a row of <voice> elements (name, value, type), puts
+/// <break> between some of them, and marks only a part of it as characters to
+/// spell: a badge count next to a button name is such a part. Each part
+/// therefore carries its own attributes.
+struct SSMLUtterance {
+    var parts: [SSMLPart] = []
+
+    var speech: [SSMLSpeech] {
+        parts.compactMap { part in
+            if case .speech(let speech) = part { return speech }
+            return nil
+        }
+    }
+
+    /// The parts with the spoken text left out, for logging.
+    var summary: String {
+        parts.map { part in
+            switch part {
+            case .speech(let speech):
+                return "\(speech.spellOut ? "spell" : "text") \(speech.text.count)"
+                    + " rate \(speech.rate) pitch \(speech.pitch)"
+            case .pause(let seconds):
+                return "pause \(Int((seconds * 1000).rounded())) ms"
+            case .phraseBoundary:
+                return "boundary"
+            }
+        }.joined(separator: " | ")
+    }
+}
+
 enum SSMLParser {
+
+    /// Elements whose content is a phrase of its own.
+    private static let phraseElements: Set<String> = ["speak", "voice", "p", "s"]
+
+    /// Longest silence a single <break> may ask for.
+    private static let longestBreak = 10.0
 
     static func parse(_ ssml: String) -> SSMLUtterance {
         var utterance = SSMLUtterance()
+        guard let regex = try? NSRegularExpression(pattern: "<[^>]+>") else { return utterance }
 
-        (utterance.rate, utterance.pitch) = prosody(in: ssml)
-        utterance.spellOut = ssml.range(
-            of: "<say-as\\b[^>]*interpret-as\\s*=\\s*[\"']characters[\"']",
-            options: [.regularExpression, .caseInsensitive]
-        ) != nil
+        // <prosody> elements nest, and each one is relative to the one around
+        // it: VoiceOver wraps everything in a neutral `pitch="+0.0%"` and marks
+        // a capital letter with an inner `pitch="+50.0%"`. Attributes are only
+        // ever read from tags, never from the spoken text itself — reading
+        // markup or source code aloud otherwise let a literal rate="..." in
+        // the content change the speech rate.
+        var prosody = [SSMLSpeech()]
+        var sayAs: [Bool] = []
+        var run = ""
+        var runStyle = SSMLSpeech()
+        var phraseEnded = false
 
-        // <break> would be swallowed by tag stripping; approximate it with a
-        // newline so the engine inserts its newline pause.
-        var text = ssml.replacingOccurrences(
-            of: "<break[^>]*/?>",
-            with: "\n",
-            options: [.regularExpression, .caseInsensitive]
-        )
-        text = text.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
-        text = decodeEntities(text)
-        utterance.text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        func style() -> SSMLSpeech {
+            var style = prosody.last ?? SSMLSpeech()
+            style.spellOut = sayAs.contains(true)
+            return style
+        }
+
+        func flush() {
+            var speech = runStyle
+            speech.text = decodeEntities(run).trimmingCharacters(in: .whitespacesAndNewlines)
+            run = ""
+            guard !speech.text.isEmpty else { return }
+            if phraseEnded, case .speech = utterance.parts.last {
+                utterance.parts.append(.phraseBoundary)
+            }
+            phraseEnded = false
+            utterance.parts.append(.speech(speech))
+        }
+
+        func add(text: Substring) {
+            guard !text.isEmpty else { return }
+            // Text under other attributes than the text before it is a part
+            // of its own. Inline elements that change nothing (<mark>,
+            // <emphasis>, <lang>) leave the sentence in one piece.
+            let current = style()
+            if current != runStyle {
+                flush()
+                runStyle = current
+            }
+            run += text
+        }
+
+        var position = ssml.startIndex
+        for match in regex.matches(in: ssml, range: NSRange(ssml.startIndex..., in: ssml)) {
+            guard let tagRange = Range(match.range, in: ssml) else { continue }
+            add(text: ssml[position..<tagRange.lowerBound])
+            position = tagRange.upperBound
+
+            let tag = String(ssml[tagRange])
+            let closing = tag.hasPrefix("</")
+            let selfClosing = tag.hasSuffix("/>")
+            let name = tag.dropFirst(closing ? 2 : 1)
+                .prefix { $0.isLetter || $0.isNumber || $0 == "-" || $0 == ":" || $0 == "_" }
+                .lowercased()
+
+            switch name {
+            case "prosody":
+                if closing {
+                    if prosody.count > 1 { prosody.removeLast() }
+                } else if !selfClosing {
+                    var level = prosody.last ?? SSMLSpeech()
+                    if let rate = firstAttribute("rate", inTags: [tag]) {
+                        level.rate = clamp(level.rate * rateMultiplier(from: rate))
+                    }
+                    if let pitch = firstAttribute("pitch", inTags: [tag]) {
+                        level.pitch = clamp(level.pitch * pitchMultiplier(from: pitch))
+                    }
+                    prosody.append(level)
+                }
+            case "say-as":
+                if closing {
+                    if !sayAs.isEmpty { sayAs.removeLast() }
+                } else if !selfClosing {
+                    sayAs.append(firstAttribute("interpret-as", inTags: [tag])?.lowercased() == "characters")
+                }
+            case "break":
+                if !closing {
+                    flush()
+                    utterance.parts.append(.pause(seconds: breakLength(of: tag)))
+                }
+            case _ where phraseElements.contains(name):
+                flush()
+                phraseEnded = true
+            default:
+                break
+            }
+        }
+        add(text: ssml[position...])
+        flush()
         return utterance
     }
 
@@ -51,67 +176,28 @@ enum SSMLParser {
             .joined()
     }
 
-    /// Rate and pitch of the spoken text.
-    ///
-    /// <prosody> elements nest, and each one is relative to the one around
-    /// it: VoiceOver wraps everything in a neutral `pitch="+0.0%"` and marks a
-    /// capital letter with an inner `pitch="+50.0%"`. The engine speaks a
-    /// request with one rate and one pitch, so the values in force over the
-    /// largest share of the text win. Attributes are only ever read from
-    /// <prosody> tags, never from the spoken text itself — reading markup or
-    /// source code aloud otherwise let a literal rate="..." in the content
-    /// change the speech rate.
-    private static func prosody(in ssml: String) -> (rate: Float, pitch: Float) {
-        guard let regex = try? NSRegularExpression(pattern: "<(/?)([A-Za-z][\\w:-]*)[^>]*>") else {
-            return (1.0, 1.0)
-        }
-        struct Level: Hashable {
-            var rate: Float = 1.0
-            var pitch: Float = 1.0
-        }
-        var stack = [Level()]
-        var weights: [Level: Int] = [:]
-        var order: [Level] = []
-        var position = ssml.startIndex
-
-        func count(textUpTo end: String.Index) {
-            let spoken = ssml[position..<end].filter { !$0.isWhitespace }.count
-            guard spoken > 0, let level = stack.last else { return }
-            if weights[level] == nil { order.append(level) }
-            weights[level, default: 0] += spoken
-        }
-
-        for match in regex.matches(in: ssml, range: NSRange(ssml.startIndex..., in: ssml)) {
-            guard let tagRange = Range(match.range, in: ssml),
-                  let nameRange = Range(match.range(at: 2), in: ssml) else { continue }
-            count(textUpTo: tagRange.lowerBound)
-            position = tagRange.upperBound
-
-            guard ssml[nameRange].lowercased() == "prosody" else { continue }
-            let tag = String(ssml[tagRange])
-            if match.range(at: 1).length > 0 {
-                if stack.count > 1 { stack.removeLast() }
-            } else if !tag.hasSuffix("/>") {
-                var level = stack.last ?? Level()
-                if let rate = firstAttribute("rate", inTags: [tag]) {
-                    level.rate = clamp(level.rate * rateMultiplier(from: rate))
-                }
-                if let pitch = firstAttribute("pitch", inTags: [tag]) {
-                    level.pitch = clamp(level.pitch * pitchMultiplier(from: pitch))
-                }
-                stack.append(level)
+    /// Length of a <break>: `time="500ms"` / `time="1.5s"`, or the SSML
+    /// `strength` scale. A bare <break/> is a medium one.
+    private static func breakLength(of tag: String) -> Double {
+        if let time = firstAttribute("time", inTags: [tag])?.lowercased().trimmingCharacters(in: .whitespaces) {
+            var seconds: Double?
+            if time.hasSuffix("ms") {
+                seconds = Double(time.dropLast(2)).map { $0 / 1000 }
+            } else if time.hasSuffix("s") {
+                seconds = Double(time.dropLast())
+            }
+            if let seconds, seconds.isFinite {
+                return min(max(seconds, 0), longestBreak)
             }
         }
-        count(textUpTo: ssml.endIndex)
-
-        // The first level wins a tie.
-        var best = Level()
-        var bestWeight = 0
-        for level in order where weights[level, default: 0] > bestWeight {
-            best = level
-            bestWeight = weights[level, default: 0]
+        switch firstAttribute("strength", inTags: [tag])?.lowercased() {
+        case "none": return 0
+        case "x-weak": return 0.05
+        case "weak": return 0.1
+        case "strong": return 0.5
+        case "x-strong": return 1.0
+        default: return 0.25
         }
-        return (best.rate, best.pitch)
     }
 
     /// First value of `name` across the given tags. Both quote styles are

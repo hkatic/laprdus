@@ -238,13 +238,15 @@ struct DictionaryStoreTests {
 /// Content and VoiceOver actually send, plus the prosody-scoping rules.
 struct SSMLParserTests {
 
+    private func text(_ text: String, rate: Float = 1.0, pitch: Float = 1.0, spellOut: Bool = false) -> SSMLPart {
+        .speech(SSMLSpeech(text: text, rate: rate, pitch: pitch, spellOut: spellOut))
+    }
+
     @Test func readsProsodyRateAndPitch() {
         let utterance = SSMLParser.parse(
             "<speak><prosody rate=\"1.5\" pitch=\"0.75\">Dobar dan</prosody></speak>"
         )
-        #expect(utterance.rate == 1.5)
-        #expect(utterance.pitch == 0.75)
-        #expect(utterance.text == "Dobar dan")
+        #expect(utterance.parts == [text("Dobar dan", rate: 1.5, pitch: 0.75)])
     }
 
     /// Reading markup or source code aloud must not let a literal rate="..."
@@ -253,25 +255,20 @@ struct SSMLParserTests {
         let escaped = SSMLParser.parse(
             "<speak><prosody rate=\"1.5\">Atribut rate=&quot;2.0&quot; u tekstu</prosody></speak>"
         )
-        #expect(escaped.rate == 1.5)
-        #expect(escaped.pitch == 1.0)
-        #expect(escaped.text == "Atribut rate=\"2.0\" u tekstu")
+        #expect(escaped.parts == [text("Atribut rate=\"2.0\" u tekstu", rate: 1.5)])
 
         let unescaped = SSMLParser.parse("<speak>citam rate=\"2.0\" i pitch=\"2.0\" naglas</speak>")
-        #expect(unescaped.rate == 1.0)
-        #expect(unescaped.pitch == 1.0)
-        #expect(unescaped.text == "citam rate=\"2.0\" i pitch=\"2.0\" naglas")
+        #expect(unescaped.parts == [text("citam rate=\"2.0\" i pitch=\"2.0\" naglas")])
     }
 
     @Test func acceptsSingleQuotedAttributes() {
         let utterance = SSMLParser.parse("<speak><prosody rate='fast' pitch='low'>Test</prosody></speak>")
-        #expect(utterance.rate == 1.5)
-        #expect(utterance.pitch == 0.75)
+        #expect(utterance.parts == [text("Test", rate: 1.5, pitch: 0.75)])
     }
 
     @Test func readsRelativePitch() {
-        #expect(SSMLParser.parse("<speak><prosody pitch=\"+50%\">Test</prosody></speak>").pitch == 1.5)
-        #expect(SSMLParser.parse("<speak><prosody pitch=\"-25%\">Test</prosody></speak>").pitch == 0.75)
+        #expect(SSMLParser.parse("<speak><prosody pitch=\"+50%\">Test</prosody></speak>").speech.first?.pitch == 1.5)
+        #expect(SSMLParser.parse("<speak><prosody pitch=\"-25%\">Test</prosody></speak>").speech.first?.pitch == 0.75)
     }
 
     /// VoiceOver wraps every request in a neutral <prosody> and marks a
@@ -282,47 +279,111 @@ struct SSMLParserTests {
             + "<voice name=\"\"><prosody pitch=\"+50.0%\"><say-as interpret-as=\"characters\">A</say-as>"
             + "</prosody></voice></lang></prosody></speak>"
         )
-        #expect(capital.pitch == 1.5)
-        #expect(capital.rate == 1.0)
-        #expect(capital.text == "A")
+        #expect(capital.parts == [text("A", pitch: 1.5, spellOut: true)])
 
         let nested = SSMLParser.parse(
             "<speak><prosody pitch=\"+20%\" rate=\"150%\"><prosody pitch=\"-50%\">Test</prosody></prosody></speak>"
         )
-        #expect(abs(nested.pitch - 0.6) < 0.001)
-        #expect(nested.rate == 1.5)
+        #expect(abs((nested.speech.first?.pitch ?? 0) - 0.6) < 0.001)
+        #expect(nested.speech.first?.rate == 1.5)
     }
 
-    /// One request has one pitch: the one that covers most of the text.
-    @Test func pitchOfMostOfTheTextWins() {
+    /// Text under another pitch is a part of its own and keeps that pitch.
+    @Test func eachPartKeepsItsOwnPitch() {
         let utterance = SSMLParser.parse(
             "<speak><prosody pitch=\"+0%\">Dugacka recenica <prosody pitch=\"+50%\">A</prosody></prosody></speak>"
         )
-        #expect(utterance.pitch == 1.0)
+        #expect(utterance.parts == [text("Dugacka recenica"), text("A", pitch: 1.5)])
+    }
+
+    /// VoiceOver sends the name, the badge count and the type of a button as
+    /// one request and marks only the count as characters. Spelling the whole
+    /// request read "Ažuriraj sve 5 Button" letter by letter.
+    @Test func onlyTheMarkedPartIsSpelled() {
+        let utterance = SSMLParser.parse(
+            "<speak><prosody pitch=\"+0.0%\" rate=\"100.0%\" volume=\"+0.0dB\"><lang xml:lang=\"hr\">"
+            + "<voice name=\"\">Ažuriraj sve</voice>"
+            + "<voice name=\"\"><say-as interpret-as=\"characters\">5</say-as></voice>"
+            + "<voice name=\"\">Button</voice></lang></prosody></speak>"
+        )
+        #expect(utterance.parts == [
+            text("Ažuriraj sve"),
+            .phraseBoundary,
+            text("5", spellOut: true),
+            .phraseBoundary,
+            text("Button"),
+        ])
+    }
+
+    @Test func otherSayAsKindsAreNotSpelled() {
+        let utterance = SSMLParser.parse(
+            "<speak>Imam <say-as interpret-as=\"cardinal\">12</say-as> jabuka</speak>"
+        )
+        #expect(utterance.parts == [text("Imam 12 jabuka")])
+    }
+
+    /// The name and the type of a control are separate <voice> elements and
+    /// must not run together into one phrase.
+    @Test func voiceElementsAreSeparatePhrases() {
+        let utterance = SSMLParser.parse(
+            "<speak><voice name=\"\">Zrakoplovni mod</voice><voice name=\"\">Tipka za izmjenu</voice>"
+            + "<voice name=\"\"><break time=\"500.0ms\"/>isključeno</voice></speak>"
+        )
+        #expect(utterance.parts == [
+            text("Zrakoplovni mod"),
+            .phraseBoundary,
+            text("Tipka za izmjenu"),
+            .pause(seconds: 0.5),
+            text("isključeno"),
+        ])
+    }
+
+    /// Inline elements that change nothing leave a sentence in one piece.
+    @Test func inlineElementsDoNotSplitASentence() {
+        let utterance = SSMLParser.parse(
+            "<speak>Prvi <mark name=\"a\"/>drugi <emphasis>treći</emphasis> četvrti</speak>"
+        )
+        #expect(utterance.parts == [text("Prvi drugi treći četvrti")])
     }
 
     @Test func clampsOutOfRangeValues() {
-        #expect(SSMLParser.parse("<speak><prosody rate=\"9.0\">Test</prosody></speak>").rate == 2.0)
-        #expect(SSMLParser.parse("<speak><prosody rate=\"0.01\">Test</prosody></speak>").rate == 0.5)
+        #expect(SSMLParser.parse("<speak><prosody rate=\"9.0\">Test</prosody></speak>").speech.first?.rate == 2.0)
+        #expect(SSMLParser.parse("<speak><prosody rate=\"0.01\">Test</prosody></speak>").speech.first?.rate == 0.5)
     }
 
-    @Test func breakBecomesNewlineSoTheEnginePauses() {
-        let utterance = SSMLParser.parse(
-            "<speak><prosody rate=\"1.0\">Prvi<break time=\"300ms\"/>drugi</prosody></speak>"
+    @Test func breakIsAPauseOfItsLength() {
+        let timed = SSMLParser.parse(
+            "<speak><prosody rate=\"1.0\">Prvi<break time=\"300ms\"/>drugi<break time=\"1.5s\"/></prosody></speak>"
         )
-        #expect(utterance.text == "Prvi\ndrugi")
+        #expect(timed.parts == [text("Prvi"), .pause(seconds: 0.3), text("drugi"), .pause(seconds: 1.5)])
+
+        let strength = SSMLParser.parse("<speak>Prvi<break strength=\"strong\"/>drugi<break/>treći</speak>")
+        #expect(strength.parts == [
+            text("Prvi"), .pause(seconds: 0.5), text("drugi"), .pause(seconds: 0.25), text("treći"),
+        ])
+
+        let endless = SSMLParser.parse("<speak>Prvi<break time=\"3600s\"/></speak>")
+        #expect(endless.parts == [text("Prvi"), .pause(seconds: 10)])
     }
 
     @Test func plainTextKeepsDefaults() {
         let utterance = SSMLParser.parse("<speak>Samo tekst</speak>")
-        #expect(utterance.rate == 1.0)
-        #expect(utterance.pitch == 1.0)
-        #expect(utterance.text == "Samo tekst")
+        #expect(utterance.parts == [text("Samo tekst")])
     }
 
     @Test func decodesEntitiesWithoutDoubleDecoding() {
         let utterance = SSMLParser.parse("<speak>Ivan &amp;lt; Marko &amp; Ana</speak>")
-        #expect(utterance.text == "Ivan &lt; Marko & Ana")
+        #expect(utterance.parts == [text("Ivan &lt; Marko & Ana")])
+    }
+
+    /// The log line names what a request was made of, never what it said.
+    @Test func summaryLeavesTheTextOut() {
+        let utterance = SSMLParser.parse(
+            "<speak><voice name=\"\">Tajna</voice><voice name=\"\"><say-as interpret-as=\"characters\">5</say-as>"
+            + "<break time=\"60ms\"/></voice></speak>"
+        )
+        #expect(utterance.summary
+            == "text 5 rate 1.0 pitch 1.0 | boundary | spell 1 rate 1.0 pitch 1.0 | pause 60 ms")
     }
 }
 

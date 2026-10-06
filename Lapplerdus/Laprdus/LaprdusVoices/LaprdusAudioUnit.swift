@@ -76,10 +76,11 @@ public class LaprdusAudioUnit: AVSpeechSynthesisProviderAudioUnit {
         // `log show --info --predicate 'subsystem == "com.hrvojekatic.laprdus"'`.
         Self.log.info("""
             request: \(SSMLParser.markup(in: speechRequest.ssmlRepresentation), privacy: .public) \
-            rate \(utterance.rate) pitch \(utterance.pitch) characters \(utterance.text.count)
+            parts: \(utterance.summary, privacy: .public)
             """)
 
-        guard !utterance.text.isEmpty else {
+        let speech = utterance.speech
+        guard !speech.isEmpty else {
             finishWith(samples: [], request: request)
             return
         }
@@ -102,21 +103,41 @@ public class LaprdusAudioUnit: AVSpeechSynthesisProviderAudioUnit {
             }
 
             engine.apply(settings)
-            // Rate/pitch/volume: honor the host request unless forced.
-            // Without force, volume is pinned to 1.0 and the system output
-            // volume governs.
-            engine.setTransientParameters(
-                speed: settings.forceSpeed ? settings.speed : utterance.rate,
-                userPitch: settings.forcePitch ? settings.pitch : utterance.pitch,
-                volume: settings.forceVolume ? settings.volume : 1.0
-            )
 
-            // Spelling mode when the host asks for it, and for any single
-            // grapheme cluster, so character-by-character screen reader
-            // navigation names characters ("Č" → "Če").
-            let spelled = utterance.spellOut || utterance.text.count == 1
-            let chunk = try engine.synthesize(utterance.text, spelled: spelled)
-            finishWith(samples: chunk.samples.map { Float($0) / Float(Int16.max) }, request: request)
+            // Spelling mode where the host asks for it, and for a request
+            // that is a single grapheme cluster, so character-by-character
+            // screen reader navigation names characters ("Č" → "Če").
+            let singleCharacter = speech.count == 1 && speech[0].text.count == 1
+            var samples: [Float] = []
+            for part in utterance.parts {
+                guard renderState.isCurrent(request) else { return }
+                switch part {
+                case .speech(let speech):
+                    // Rate/pitch/volume: honor the host request unless forced.
+                    // Without force, volume is pinned to 1.0 and the system
+                    // output volume governs.
+                    engine.setTransientParameters(
+                        speed: settings.forceSpeed ? settings.speed : speech.rate,
+                        userPitch: settings.forcePitch ? settings.pitch : speech.pitch,
+                        volume: settings.forceVolume ? settings.volume : 1.0
+                    )
+                    // A part the engine has nothing to say for (a lone
+                    // symbol) must not silence the parts around it.
+                    guard let chunk = try? engine.synthesize(
+                        speech.text,
+                        spelled: speech.spellOut || singleCharacter
+                    ) else { continue }
+                    samples.append(contentsOf: chunk.samples.lazy.map { Float($0) / Float(Int16.max) })
+                case .pause(let seconds):
+                    samples.append(contentsOf: silence(seconds: seconds))
+                case .phraseBoundary:
+                    // The engine ends an unpunctuated phrase without a pause,
+                    // so phrases the host keeps apart get the one the user
+                    // chose for commas.
+                    samples.append(contentsOf: silence(seconds: Double(max(0, min(settings.commaPause, 2000))) / 1000))
+                }
+            }
+            finishWith(samples: samples, request: request)
         } catch {
             finishWith(samples: [], request: request)
         }
@@ -129,6 +150,10 @@ public class LaprdusAudioUnit: AVSpeechSynthesisProviderAudioUnit {
 
     private func finishWith(samples: [Float], request: Int) {
         renderState.publish(samples, request: request)
+    }
+
+    private func silence(seconds: Double) -> Repeated<Float> {
+        repeatElement(0, count: Int(seconds * audioFormat.sampleRate))
     }
 
     private func ensureEngine() throws -> LaprdusEngine {
@@ -209,6 +234,14 @@ private final class RenderState {
         let current = request
         os_unfair_lock_unlock(lock)
         return current
+    }
+
+    /// Synthesis thread. False once the request was cancelled or followed by
+    /// another one, so the rest of it need not be synthesized.
+    func isCurrent(_ asking: Int) -> Bool {
+        os_unfair_lock_lock(lock)
+        defer { os_unfair_lock_unlock(lock) }
+        return asking == request
     }
 
     /// Synthesis thread. Publishing an empty buffer completes the request
