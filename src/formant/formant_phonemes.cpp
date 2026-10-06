@@ -124,23 +124,31 @@ Table::Table() {
     t[Ph::SIL].min_dur = 0.0f;
 
     // ---- Vowels: F1 F2 F3 F4, B1 B2 B3, level, inherent duration ----
-    vowel(t[Ph::A], 710.0f, 1230.0f, 2500.0f, 3600.0f, 85.0f, 90.0f, 110.0f, 1.00f, 80.0f);
-    vowel(t[Ph::E], 460.0f, 1820.0f, 2480.0f, 3550.0f, 65.0f, 90.0f, 120.0f, 0.92f, 74.0f);
-    vowel(t[Ph::I], 290.0f, 2150.0f, 2700.0f, 3300.0f, 50.0f, 95.0f, 150.0f, 0.80f, 66.0f);
-    vowel(t[Ph::O], 480.0f, 900.0f, 2550.0f, 3500.0f, 70.0f, 85.0f, 120.0f, 0.92f, 74.0f);
-    vowel(t[Ph::U], 320.0f, 760.0f, 2450.0f, 3200.0f, 55.0f, 80.0f, 120.0f, 0.80f, 66.0f);
+    // Bandwidths are wider than Klatt's defaults: measured on Eloquence's
+    // vowels they are 100-140 Hz, and the narrow ones rang (see "Voice
+    // colour" in docs/formant.md).
+    vowel(t[Ph::A], 710.0f, 1230.0f, 2500.0f, 3600.0f, 105.0f, 110.0f, 140.0f, 1.00f, 80.0f);
+    vowel(t[Ph::E], 460.0f, 1820.0f, 2480.0f, 3550.0f, 90.0f, 110.0f, 150.0f, 0.92f, 74.0f);
+    vowel(t[Ph::I], 290.0f, 2150.0f, 2700.0f, 3300.0f, 75.0f, 115.0f, 180.0f, 0.80f, 66.0f);
+    vowel(t[Ph::O], 480.0f, 900.0f, 2550.0f, 3500.0f, 95.0f, 105.0f, 150.0f, 0.92f, 74.0f);
+    vowel(t[Ph::U], 320.0f, 760.0f, 2450.0f, 3200.0f, 80.0f, 100.0f, 150.0f, 0.80f, 66.0f);
     // Schwa: the vocalic part of syllabic r (measured as a full, rather
     // open vowel in "prst") and of spelled-out consonant clusters.
-    vowel(t[Ph::SCHWA], 500.0f, 1380.0f, 2600.0f, 3600.0f, 75.0f, 100.0f, 130.0f, 0.80f, 40.0f);
+    vowel(t[Ph::SCHWA], 500.0f, 1380.0f, 2600.0f, 3600.0f, 95.0f, 115.0f, 150.0f, 0.80f, 40.0f);
     t[Ph::SCHWA].tgt_coart = 0.35f;
     t[Ph::SCHWA].min_dur = 12.0f;
 
     // ---- Glides and liquids ----
-    // /j/ is as loud as a vowel and strongly coloured by it (F2 about
-    // 1850 Hz between two a's, above 2100 Hz next to i).
-    sonorant(t[Ph::J], PhClass::Glide, 340.0f, 2120.0f, 2720.0f,
-             55.0f, 100.0f, 160.0f, 0.90f, 58.0f, 0.20f, 55.0f, 3, 0.30f);
-    t[Ph::J].f4 = 3450.0f;
+    // /j/ is a true constriction, not a weak /i/: F1 low (250-300 Hz in
+    // Eloquence and in the recordings at a word start), F2 about 2000 Hz
+    // between two a's, and above all F3 well above the vowels' (2900-3400 Hz
+    // in the recorded "ja", "ji", "moj"; 3000 Hz in Eloquence's "ieri"). The
+    // high F3 and the low F1 are what tell /j/ from /i/ in "ji", "ija",
+    // "moj"; with F3 at 2750 the two were the same sound. Transitions are
+    // quicker than a diphthong's.
+    sonorant(t[Ph::J], PhClass::Glide, 270.0f, 2150.0f, 3050.0f,
+             60.0f, 110.0f, 180.0f, 0.88f, 58.0f, 0.20f, 48.0f, 3, 0.18f);
+    t[Ph::J].f4 = 3600.0f;
     // /v/ is an approximant in BCS: no friction, a weak low murmur about
     // 16-20 dB below the vowels with hardly any energy above 500 Hz.
     sonorant(t[Ph::V], PhClass::Glide, 300.0f, 1130.0f, 2400.0f,
@@ -163,14 +171,20 @@ Table::Table() {
     nasal(t[Ph::NG], 1150.0f, 2300.0f, 1700.0f, 0.45f, 2100.0f, 0.45f, 52.0f, 55.0f);
 
     // ---- Tap /r/ ----
-    // The values are those of the weak vocalic stretch around the contacts
-    // (F1 about 400, F2 about 1400, F3 about 2550 Hz); av is the level left
-    // during a contact.
-    obstruent(t[Ph::R], PhClass::Tap, true, 400.0f, 1400.0f, 2550.0f,
-              0.45f, 0.20f, 0.30f, 50.0f, 40.0f, 5);
+    // The values are those of the vocalic stretch around the contacts (F1
+    // about 430, F2 about 1350 Hz; F3 drops some 300 Hz below the vowel's,
+    // to 2250 Hz, in the recordings and in Eloquence alike). av is the level
+    // left during a contact; the noise spectrum is that of the brief
+    // transient when the tongue tip leaves the ridge.
+    obstruent(t[Ph::R], PhClass::Tap, true, 430.0f, 1350.0f, 2250.0f,
+              0.45f, 0.25f, 0.30f, 50.0f, 45.0f, 5);
     t[Ph::R].av = 0.10f;
+    t[Ph::R].af = 0.20f;
     t[Ph::R].min_dur = 16.0f;
     set3(t[Ph::R].bw, 90.0f, 120.0f, 170.0f);
+    set_formant_noise(t[Ph::R], 0.5f, 1.0f, 0.6f);
+    set_noise(t[Ph::R], 3400.0f, 1200.0f, 0.3f, 5000.0f, 2000.0f, 0.0f,
+              7000.0f, 2000.0f, 0.0f, 0.02f);
 
     // ---- Stops: loci F1 F2 F3, coarticulation, duration, transition ----
     // Bursts excite the formants of the moment, so they move with the
@@ -274,18 +288,25 @@ Table::Table() {
               0.30f, 0.45f, 0.50f, 110.0f, 44.0f, 8);
     obstruent(t[Ph::DZ], PhClass::Affricate, true, 230.0f, 1650.0f, 2650.0f,
               0.30f, 0.45f, 0.50f, 80.0f, 44.0f, 8);
+    // c is a little lower and softer than s (Eloquence's [ts] sits at
+    // 4.4 kHz, 16 dB down; a listening test found ours too sharp).
     for (Ph ph : {Ph::C, Ph::DZ}) {
-        t[ph].af = 0.70f;
-        t[ph].noise = t[Ph::S].noise;
+        t[ph].af = 0.60f;
+        set_noise(t[ph], 4500.0f, 750.0f, 1.0f, 5400.0f, 1000.0f, 0.50f,
+                  6500.0f, 1500.0f, 0.10f, 0.0f);
     }
 
     obstruent(t[Ph::CH], PhClass::Affricate, false, 250.0f, 1800.0f, 2400.0f,
               0.30f, 0.35f, 0.40f, 108.0f, 50.0f, 8);
     obstruent(t[Ph::DZH], PhClass::Affricate, true, 230.0f, 1800.0f, 2400.0f,
               0.30f, 0.35f, 0.40f, 84.0f, 50.0f, 8);
+    // The friction of č/dž and ć/đ sits about 200 Hz below that of š and
+    // [ɕ]: measured on recordings the affricates' centroids are lower than
+    // the fricatives', and the listening test asked for it.
     for (Ph ph : {Ph::CH, Ph::DZH}) {
         t[ph].af = 0.70f;
-        t[ph].noise = t[Ph::SH].noise;
+        set_noise(t[ph], 2550.0f, 450.0f, 0.75f, 3450.0f, 750.0f, 1.0f,
+                  4550.0f, 1000.0f, 0.35f, 0.0f);
     }
 
     obstruent(t[Ph::TJ], PhClass::Affricate, false, 240.0f, 2150.0f, 2850.0f,
@@ -294,7 +315,8 @@ Table::Table() {
               0.30f, 0.25f, 0.30f, 88.0f, 55.0f, 8);
     for (Ph ph : {Ph::TJ, Ph::DJ}) {
         t[ph].af = 0.70f;
-        t[ph].noise = t[Ph::SJ].noise;
+        set_noise(t[ph], 3000.0f, 450.0f, 0.50f, 3850.0f, 750.0f, 1.0f,
+                  5050.0f, 1200.0f, 0.40f, 0.0f);
     }
 }
 

@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <functional>
 #include <utility>
 
 namespace laprdus {
@@ -37,8 +38,8 @@ constexpr float SCHWA_F[3] = {500.0f, 1380.0f, 2600.0f};
 // Output level, set so the formant voices are about as loud as the recorded
 // ones. Samples below LIMIT_KNEE pass unchanged; the few peaks above it are
 // rounded off instead of clipped.
-constexpr float OUTPUT_GAIN = 0.39f;
-constexpr float LIMIT_KNEE = 0.6f;
+constexpr float OUTPUT_GAIN = 0.28f;
+constexpr float LIMIT_KNEE = 0.8f;
 
 // Longest stretch synthesized in one go (see synthesize_clause).
 constexpr size_t MAX_GROUP_WORDS = 48;
@@ -349,49 +350,64 @@ private:
                 }
 
                 case PhClass::Tap: {
-                    // /r/ is a short, weak vocalic stretch (about 15 dB
-                    // below the vowels) interrupted by one or two very
-                    // brief tongue-tip contacts - not a silent gap, which
-                    // would be heard as /d/.
+                    // /r/ is a vocalic stretch only a few dB below the
+                    // vowels, interrupted by brief tongue-tip contacts of
+                    // about 15 ms, each followed by a faint release
+                    // transient. Between vowels there is a single contact
+                    // (a tap); next to a consonant or a pause two (a short
+                    // trill, period about 35 ms). A long weak stretch is
+                    // heard as /l/ or /d/, a silent gap as /d/.
                     const bool prev_vowel = prev && is_vowel(prev->ph);
                     const bool next_vowel = next && is_vowel(next->ph);
-                    auto weak = [&](float ms, float level) {
+                    auto vocoid = [&](float ms, float level) {
                         Seg& seg = add_seg(Ph::R, SegKind::Plain, i, rate(ms, ms * 0.5f));
                         seg.av = level;
                         seg.tilt = m_voice.tilt + 2.0f;
                         seg.f0_shift = -0.3f;
+                        return std::ref(seg);
                     };
                     auto contact = [&]() {
-                        Seg& seg = add_seg(Ph::R, SegKind::Plain, i, rate(12.0f, 9.0f));
+                        Seg& seg = add_seg(Ph::R, SegKind::Plain, i, rate(18.0f, 10.0f));
                         seg.av = def.av;
                         seg.tilt = m_voice.tilt + 6.0f;
                         seg.f0_shift = -0.3f;
+                    };
+                    auto release = [&](float ms, float level) {
+                        Seg& seg = vocoid(ms, level);
+                        seg.burst = def.af;
+                        seg.burst_decay = 3.0f;
+                        seg.noise = noise_for(Ph::R);
+                        seg.has_noise = true;
                     };
 
                     if (p.nucleus_tail) {
                         // syllabic r: one contact between its two vocoids
                         contact();
-                    } else if (prev_vowel && next_vowel) {
-                        weak(8.0f, 0.32f);
+                    } else if (prev_vowel && next_vowel && !p.word_start) {
+                        vocoid(8.0f, 0.72f);
                         contact();
-                        if (m_speed <= 1.6f) {
-                            weak(16.0f, 0.32f);
-                            contact();
-                        }
-                        weak(8.0f, 0.32f);
+                        release(12.0f, 0.72f);
+                    } else if (next_vowel && prev && !p.word_start) {
+                        // after a consonant: a full vocalic onset
+                        // (the svarabhakti vowel of "kra"), one contact
+                        vocoid(20.0f, 0.74f);
+                        contact();
+                        release(10.0f, 0.72f);
                     } else if (next_vowel) {
-                        // after a consonant or a pause: vocalic onset, one contact
-                        weak(30.0f, 0.34f);
+                        // at the start of a word: two contacts, or the
+                        // lone vocalic onset is heard as /v/ ("rastu")
+                        vocoid(prev_vowel ? 6.0f : 8.0f, 0.70f);
                         contact();
-                        weak(6.0f, 0.34f);
+                        release(16.0f, 0.70f);
+                        contact();
+                        release(10.0f, 0.72f);
                     } else {
                         // before a consonant or a pause: short trill
-                        if (!prev_vowel) weak(20.0f, 0.34f);
-                        weak(6.0f, 0.32f);
+                        vocoid(prev_vowel ? 10.0f : 18.0f, 0.68f);
                         contact();
-                        weak(14.0f, 0.32f);
+                        release(18.0f, 0.66f);
                         contact();
-                        weak(next ? 20.0f : 28.0f, next ? 0.32f : 0.22f);
+                        release(next ? 16.0f : 26.0f, next ? 0.62f : 0.45f);
                     }
                     break;
                 }
@@ -453,7 +469,7 @@ private:
                     cl.has_noise = true;
 
                     Seg& rel = add_seg(p.ph, SegKind::Release, i, friction);
-                    rel.burst = def.af * (voiced ? 0.42f : 1.0f);
+                    rel.burst = def.af * (voiced ? 0.50f : 1.0f);
                     rel.noise = noise_for(p.ph);
                     rel.has_noise = true;
                     if (voiced) {
@@ -739,7 +755,7 @@ private:
                         // with the transient of the stop release in front
                         float fall = std::min(12.0f, seg.dur * 0.3f);
                         float remain = seg.dur - t;
-                        float attack = t < 6.0f ? 1.5f : 1.0f;
+                        float attack = t < 6.0f ? (seg.ph == Ph::C ? 1.25f : 1.5f) : 1.0f;
                         burst[idx] = seg.burst * attack * (remain < fall ? remain / fall : 1.0f);
                     }
                 }

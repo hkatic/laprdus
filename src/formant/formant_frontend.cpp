@@ -4,6 +4,7 @@
 #include "formant_frontend.hpp"
 #include "../core/phoneme_mapper.hpp"
 #include <algorithm>
+#include <initializer_list>
 #include <unordered_set>
 
 namespace laprdus {
@@ -146,6 +147,13 @@ using WordSet = std::unordered_set<std::u32string>;
 bool ends_with(const std::u32string& s, const std::u32string& suffix) {
     return s.size() >= suffix.size() &&
            s.compare(s.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
+bool ends_with_any(const std::u32string& s, std::initializer_list<const char32_t*> suffixes) {
+    for (const char32_t* suffix : suffixes) {
+        if (ends_with(s, suffix)) return true;
+    }
+    return false;
 }
 
 bool starts_with(const std::u32string& s, const std::u32string& prefix) {
@@ -741,6 +749,46 @@ public:
     StressResult strong() const {
         StressResult r;
         int n = count();
+
+        // Surnames in -ović/-ević of four or more syllables carry a long
+        // rising accent on the syllable before the suffix (Jovánović,
+        // Kováčević, Stefánović, Milénković, Halílović); the three-syllable
+        // ones keep the first (Pètrović, Màrković, Jánković), which is the
+        // default. Exceptions (Ìvanović, Jòsipović) are in the lexicon.
+        static const char32_t* const IC_CASES[] = {
+            U"ić", U"ića", U"iću", U"ićem", U"ići", U"ićima", U"ićev", U"ićeva",
+            U"ićevu", U"ićevo", U"ićevi", U"ićeve", U"ićevim", U"ićevih",
+        };
+        if (n >= 4 && (before_suffix(U"ov", IC_CASES, r) ||
+                       before_suffix(U"ev", IC_CASES, r))) {
+            r.is_long = true;
+            return r;
+        }
+
+        // Agent nouns in -ač and their feminines in -ačica are stressed on
+        // the syllable before the suffix (prodàvāč, pretražìvāč, navìjāč,
+        // pjevàčica); two-syllable ones (kòvāč) are the default anyway.
+        static const char32_t* const AC_CASES[] = {
+            U"", U"a", U"u", U"em", U"e", U"i", U"ima", U"ica", U"ice", U"ici",
+            U"icu", U"icom", U"ico", U"icama",
+        };
+        if (n >= 3 && before_suffix(U"ač", AC_CASES, r)) return r;
+
+        // Nouns in -ina: abstract nouns, loans and female names are stressed
+        // on the i (brzìna, planìna, veličìna, mašína, Katarína); the
+        // possessive -ovina/-evina on the syllable before it (dòmovina,
+        // králjevina, polòvina). Nouns in -bina go both ways (sudbìna,
+        // rȍdbina) and are left to the lexicon, as are the exceptions
+        // (gȍdina, ȉstina, cȁrina, svȉnjetina, Vȍjvodina).
+        static const char32_t* const A_CASES[] = {
+            U"a", U"e", U"i", U"u", U"om", U"ama",
+        };
+        if (n >= 3 && !ends_with_any(m_w, {U"bina", U"bine", U"bini", U"binu", U"binom", U"binama"})) {
+            if (before_suffix(U"ovin", A_CASES, r) || before_suffix(U"evin", A_CASES, r)) {
+                return r;
+            }
+            if (at_suffix(U"in", A_CASES, 0, r)) return r;
+        }
 
         // -irati verbs: telefonírati, kombinírām, kopíran
         static const char32_t* const IR_ENDINGS[] = {

@@ -47,8 +47,10 @@ struct Frame {
  * Per-voice constants of the vocal tract and voice source.
  */
 struct VoiceQuality {
-    float upper_f[CASCADE_FIXED] = {4400.0f, 5300.0f, 6400.0f, 7500.0f};
-    float upper_b[CASCADE_FIXED] = {320.0f, 480.0f, 700.0f, 900.0f};
+    // F5 sits where Eloquence's does (a fixed resonance near 3.9 kHz in
+    // every vowel), the rest are spread up to the voiced-path cut-off.
+    float upper_f[CASCADE_FIXED] = {3950.0f, 4900.0f, 6000.0f, 7200.0f};
+    float upper_b[CASCADE_FIXED] = {260.0f, 420.0f, 700.0f, 900.0f};
     float nasal_pole = 270.0f;          // Hz
     float nasal_zero = 450.0f;          // Hz, zero position at full coupling
     float brightness = 0.72f;           // Source high-frequency emphasis (0..0.9)
@@ -138,6 +140,7 @@ private:
     Resonator m_noise_bank[NOISE_PEAKS];
     Resonator m_parallel[PARALLEL_FORMANTS];
     LowPass m_fric_lp[2];
+    LowPass m_voice_lp;
 
     // Voice source state
     double m_phase = 0.0;

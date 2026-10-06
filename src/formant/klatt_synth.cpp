@@ -33,6 +33,13 @@ constexpr uint32_t RNG_SEED = 0x2545F491u;
 constexpr double FRICATION_CUTOFF = 6600.0;
 constexpr double FRICATION_LP_Q[2] = {0.54119610, 1.30656296};
 
+// The voiced path (cascade output: voicing, breath, aspiration) gets a gentler
+// second-order roll-off. Eloquence's vowels have nothing above 5.5 kHz; ours
+// carried source brightness and breath noise up to 11 kHz, a hiss the classic
+// voices never had.
+constexpr double VOICE_CUTOFF = 6000.0;
+constexpr double VOICE_LP_Q = 0.65;
+
 // Bandwidths of the parallel formants F2-F4 (wider than in the cascade).
 constexpr double PARALLEL_BW[PARALLEL_FORMANTS] = {190.0, 260.0, 360.0};
 
@@ -105,6 +112,7 @@ void KlattSynth::set_quality(const VoiceQuality& quality) {
     for (int i = 0; i < 2; ++i) {
         m_fric_lp[i].set(FRICATION_CUTOFF, FRICATION_LP_Q[i]);
     }
+    m_voice_lp.set(VOICE_CUTOFF, VOICE_LP_Q);
 }
 
 void KlattSynth::reset() {
@@ -113,6 +121,7 @@ void KlattSynth::reset() {
     for (auto& r : m_noise_bank) r.clear();
     for (auto& r : m_parallel) r.clear();
     for (auto& r : m_fric_lp) r.clear();
+    m_voice_lp.clear();
     m_nasal_pole.clear();
     m_nasal_zero.clear();
     m_phase = 0.0;
@@ -271,6 +280,7 @@ void KlattSynth::render(const Frame* frames, size_t count, std::vector<float>& o
                 for (int i = CASCADE_VARIABLE - 1; i >= 0; --i) {
                     y = m_cascade[i].tick(y);
                 }
+                y = m_voice_lp.tick(y);
 
                 // ---- Parallel frication branch ----
                 double fric = 0.0;

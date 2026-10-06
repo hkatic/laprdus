@@ -66,13 +66,37 @@ Points specific to Croatian/Serbian/Bosnian:
 - Voiceless stops are **unaspirated** (short voice onset time, longest for
   /k/); voiced stops have a voice bar through the closure.
 - /t d/ are **dental**: the burst is diffuse, not concentrated high up.
-- **/r/** is a short, weak vocalic stretch (about 15 dB below the vowels) with
-  one or two very brief tongue-tip contacts. A silent gap instead is heard as
-  /d/. Syllabic r is vocoid + contact + weaker vocoid.
+- **/r/** is a vocalic stretch only 4-8 dB below the vowels with brief
+  (about 15 ms, 20 dB deep) tongue-tip contacts, each followed by a faint
+  release transient; F3 drops about 300 Hz below the vowel's around it. Between
+  vowels and after a consonant there is one contact (a tap), at the start of
+  an utterance and before a consonant or a pause two (a short trill with a
+  period of about 35 ms); with a single contact the lone vocalic onset of an
+  initial /r/ was heard as /v/. This was measured on the
+  recorded speaker and on Eloquence (Italian and Spanish *ara*, *arra*,
+  *cara*): both keep the vowel nearly full between contacts. The earlier
+  version, a 60 ms stretch 20 dB down with two contacts and no F3 movement,
+  was heard as a muffled /l/ or /d/. Syllabic r is vocoid + contact + weaker
+  vocoid.
+- **/j/** is a real constriction, not a weak /i/: F1 about 270 Hz (Eloquence
+  250-300, the recorded speaker 250-400), F2 near 2000 Hz between two a's,
+  and F3 at 3050 Hz, well above the vowels' 2500-2700. The high F3 is what
+  the recordings show in *ja*, *ji*, *moj* (2900-3400 Hz) and Eloquence in
+  *ieri* (3000 Hz), and it is the only thing that separates /j/ from /i/ in
+  *ji*, *ija*, *moj*: with F3 at 2750 the two were the same sound and *ji*
+  was a long *i*. Transitions take about 50 ms. The earlier version had F1
+  near 400 Hz and was 6-11 dB down, closer to a diphthong.
 - **/v/** is an approximant: a weak low murmur with no friction.
 - **č/ć and dž/đ** differ in noise spectrum and in formant loci (ć and đ have
   palatal transitions). How far apart they are is a property of the speaker
-  (`hard_palatal_shift`, `soft_palatal_shift`).
+  (`hard_palatal_shift`, `soft_palatal_shift`). The affricates' friction sits
+  about 200 Hz below that of š and [ɕ] (centroids for Zvonko: č 3.55 kHz,
+  ć 3.95 kHz; before 3.75 and 4.15 kHz), after a listening test asked for
+  lower č, ć and đ. The voiced affricates' friction was also raised a little
+  (đ was 17 dB down, the recorded speaker's is 8 dB down). **c** no longer
+  shares the /s/ spectrum: its friction is centred at 4.5 kHz and 12 dB
+  below the vowels (before 5.0 kHz and 9 dB; Eloquence's [ts] 4.4 kHz and
+  17 dB), after a listening test found it too sharp.
 - **/h/** is aspiration shaped by the neighbouring vowel.
 - Unstressed vowels are only slightly centralized; there is no vowel
   reduction to speak of in these languages.
@@ -168,6 +192,40 @@ descriptions of Eloquence and of Klatt's synthesizers:
   left alone. Klatt's own advice applies: exaggerated cues ("super speech")
   have always tested worse than a closer match to natural data.
 
+### Voice colour
+
+Vowels of the same sentence (*papa*, *pipi*, *pupu*... in Italian for Reed,
+in Croatian for Zvonko) were compared with `tools/formant/analyze.py` and a
+long-term spectrum. Three differences were systematic and were taken over:
+
+- **Formant bandwidths.** Eloquence's F1-F3 bandwidths measure 100-140 Hz;
+  Zvonko's measured 20-100 Hz, and the narrow ones rang (the harmonic at F1
+  of *i* stood 13 dB above its neighbours, in Reed 3 dB). The vowel
+  bandwidths in `formant_phonemes.cpp` were widened by 20-30 Hz.
+- **A fixed resonance near 3.9 kHz.** In every Eloquence vowel there is a
+  peak at 3.8-3.9 kHz, the first of its fixed upper formants (the synthesizer
+  runs at 11025 Hz). Ours sat at 4.4 kHz; F5 is now 3950 Hz and the others
+  were moved down with it (`VoiceQuality::upper_f`). This also moved energy
+  from 4-5 kHz, where Zvonko had 4-8 dB more than Reed, to 3-4 kHz, where it
+  had less.
+- **Nothing above 6 kHz.** Eloquence's vowels have no energy above 5.5 kHz;
+  ours carried source brightness and breath noise up to 11 kHz, about 40 dB
+  below the vowel peak, a hiss the classic voices never had. The voiced path
+  now has a second-order low-pass at 6 kHz (`VOICE_CUTOFF`); the frication
+  path keeps its own 6.6 kHz filter.
+
+The same comparison showed the output limiter at work on plain vowels: the
+formant voices were 11 dB louder than Reed and the loudest /a/ frames hit the
+soft limiter, which put distortion products at 6-11 kHz. The output gain was
+lowered from 0.39 to 0.28 and the limiter knee raised to 0.8, so limiting now
+touches about 0.02% of the samples of a sentence (Zvonko is still a little
+louder than Reed and about 7 dB quieter than the recorded Josip, whose
+recordings clip).
+
+Not taken over: Eloquence's default male pitch (90 Hz in the Italian Reed;
+the user can set it), its complete lack of breathiness, and its sibilants
+(see above).
+
 The reference voices are part of macOS:
 
 ```bash
@@ -203,7 +261,25 @@ The front end tries, in this order:
 2. the built-in lexicon (exact form, then stems),
 3. suffix rules for loans and derived words (*-irati*, *-acija*, *-izam*,
    *-ura*, *-tika*, *-ator*, penultimate stress for *-ent*, *-ist*, *-fon* ...),
+   for surnames in *-ović/-ević* of four or more syllables (stress on the
+   syllable before the suffix: *Jovánović*, *Kováčević*, *Milénković*; the
+   three-syllable *Pètrović*, *Màrković* keep the first), for agent nouns in
+   *-ač* and *-ačica* (*prodàvāč*, *pjevàčica*) and for nouns in *-ina*
+   (*brzìna*, *planìna*, *veličìna*, *Katarína*; *-ovina/-evina* on the
+   syllable before: *dòmovina*, *králjevina*),
 4. the first syllable, the most common position in Neo-Štokavian.
+
+The name and *-ina* rules and the lexicon entries for names, surnames and
+towns were checked against the accented headwords of the Serbo-Croatian
+entries of Wiktionary (which follow the standard dictionaries) for some 500
+words in October 2026; the exceptions found there (*Ìvanović*, *Jòsipović*,
+*gȍdina*, *ȉstina*, *svȉnjetina*, *Vȍjvodina*, *Kràgujevac*, *Varàždīn*...)
+went into the lexicon. Croatian and Serbian differ for a few of them
+(*dìrektor* / *dirèktor*, *Vȍjvodina* / *Vojvòdina*, *Ùkrajina* /
+*Ukrajína*), which the language tables handle. Personal names are the least
+predictable part: the Croatian name dictionary gives *Ìvana* and *Ivȁna*,
+*Màrija* and *Marȉja* side by side, so a name outside the lexicon gets the
+first syllable.
 
 The standard's restrictions are applied afterwards: monosyllables are
 falling, non-initial stress is rising.
@@ -350,3 +426,7 @@ Croatian speaker 11.1%; eSpeak NG Croatian 23.2%; Josip 33.1%.
   (1984-1989), as cited in later work of the Zagreb Department of Phonetics.
 - Descriptions of Serbo-Croatian phonology and accentuation (assimilation,
   allophones, clitics, distribution of the four accents).
+- Wiktionary, Serbo-Croatian entries (accented headwords of names, surnames,
+  towns and nouns in -ina), consulted October 2026; N. Anđić, *Naglasne
+  osobitosti imena i prezimena*, Osijek 2021 (on the variation in personal
+  names).

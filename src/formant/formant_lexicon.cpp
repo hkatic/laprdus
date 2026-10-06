@@ -87,6 +87,54 @@ const char* const COMMON[] = {
     u8"pon'edjelj*", u8"pon'edelj*", u8"^utor*", u8"sr/ije:d*", u8"sr/e:d*",
     u8"četv'rtak", u8"četv'rtk*", u8"p/e:tak", u8"p/e:tk*", u8"s^ubot*", u8"n^edjelj*", u8"n^edelj*",
 
+    // ---- Exceptions to the -ina rule (see StressRules::strong) ----
+    u8"g^odin*", u8"^istin*", u8"c^arin*", u8"l/avin*", u8"st^otin*", u8"lj^etin*",
+    u8"p/okrajin*", u8"/otadžbin*", u8"p/ostojbin*", u8"sudb'in*", u8"deset'in*",
+    u8"sv^injetin*", u8"g/ovedin*", u8"p/iletin*", u8"j/anjetin*", u8"j/agnjetin*",
+    u8"t/eletin*", u8"j/unetin*", u8"p^aučin*", u8"K^utin*", u8"Kr^apin*",
+    u8"j/edina", u8"j/edine", u8"j/edini", u8"j/edinu", u8"j/edino", u8"j/edinom",
+    u8"j/edinog", u8"j/edinoj", u8"j/edinih", u8"j/edinim", u8"j/edinoga",
+    // loans with a long i
+    u8"maš'i:n*", u8"kab'i:n*", u8"vitr'i:n*", u8"medic'i:n*", u8"vakc'i:n*",
+    u8"benz'i:n*", u8"discipl'i:n*", u8"rut'i:n*", u8"kuž'i:n*", u8"terr'i:n*",
+
+    // ---- Nouns in -ica with non-initial stress ----
+    u8"učit'eljic*", u8"jed'inic*", u8"tipk'o:vnic*", u8"uči'onic*", u8"rad'ionic*",
+    u8"lub'enic*", u8"gol'ubic*", u8"kob'asic*", u8"prodav'aonic*", u8"spav'aonic*",
+    u8"čit'aonic*", u8"bolnič'a:rk*",
+
+    // ---- Frequent words the rules get wrong ----
+    u8"ob'i:telj*", u8"kal'enda:r*", u8"svej'edno", u8"bic'ikl*", u8"gosp'ođic*",
+    u8"tak'o:đer", u8"stan'o:vni*", u8"stan'o:vnik*", u8"sveuč'ilišn*",
+    u8"iz'u:zetn*", u8"pojed'in*", u8"pojed'inac", u8"pojed'inc*", u8"ist'ovremen*",
+    u8"vjer'ojatn*", u8"ver'ovatn*", u8"nar'avn*", u8"obav'ijest*", u8"obav'eštenj*",
+    u8"objašnj'e:nj*", u8"obr'a:zovanj*", u8"obr'a:zovn*", u8"infor'ma:cij*",
+
+    // ---- First names with non-initial stress ----
+    u8"Aleks'a:ndar", u8"Aleks'a:ndr*", u8"Katar'i:n*", u8"Krist'i:n*", u8"Valent'i:n*",
+    u8"Nikol'i:n*", u8"Karol'i:n*", u8"Paul'i:n*", u8"Jasm'i:n*", u8"Em'i:n*", u8"Am'i:n*",
+    u8"Sab'i:n*", u8"Alb'i:n*", u8"Reg'i:n*", u8"Georg'i:n*", u8"Ir'e:n*", u8"Hel'e:n*",
+    u8"mart'i:na", u8"mart'i:ne", u8"mart'i:ni", u8"mart'i:nu", u8"mart'i:nom",
+    u8"mar'i:na", u8"mar'i:ne", u8"mar'i:ni", u8"mar'i:nu", u8"mar'i:nom",
+    u8"marij'a:na", u8"marij'a:ne", u8"marij'a:ni", u8"marij'a:nu", u8"marij'a:nom",
+    u8"kristij'a:na", u8"kristij'a:ne", u8"kristij'a:ni", u8"kristij'a:nu", u8"kristij'a:nom",
+    u8"Daj'a:n*", u8"Tij'a:n*", u8"Dij'an*", u8"Mih'ovil*", u8"Muh'amed*", u8"Hus'ein*",
+    u8"Ibr'a:him*", u8"Sul'ejman*", u8"Slob'odan*", u8"Sin'iš*", u8"Mih'ael*",
+    u8"elv'i:ra", u8"elv'i:re", u8"elv'i:ri", u8"elv'i:ru", u8"elv'i:rom",
+    u8"Ant'o:nio", u8"Ant'o:nij*", u8"Ant'o:nia", u8"Ant'o:nie", u8"Ant'o:niu",
+    u8"Ren'a:t*", u8"Sand'r*", u8"Natal'ij*", u8"Vikt'o:rij*", u8"Dan'ijel*",
+
+    // ---- Surnames: exceptions to the -ović/-ević rule ----
+    u8"'ivanović*", u8"j'osipović*", u8"m'aksimović*", u8"dr'agović*", u8"v'idović*",
+
+    // ---- More places ----
+    u8"Var'aždin*", u8"Kr'agujevac", u8"Kr'agujevc*", u8"Mak'edo:nij*", u8"At'e:n*",
+    u8"Kopenh'a:gen*", u8"Vuk'ova:r*", u8"Bjel'ova:r*", u8"Vir'ovitic*", u8"Crikv'enic*",
+    u8"Og'uli:n*", u8"Iv'anec", u8"Iv'anc*", u8"S'ubotic*", u8"P'odgoric*", u8"K'oprivnic*",
+    u8"Prij'e:dor*", u8"Vis'ok*", u8"Slav'o:nij*", u8"Dalm'a:cij*", u8"Mad'ri:d*",
+    u8"Berl'i:n*", u8"Par'i:z*", u8"Lond'o:n*", u8"Ljublj'an*", u8"Beogr'a:đan*",
+    u8"Zagrepč'an*", u8"Spl'ićan*", u8"Riječ'an*", u8"Sarajl'ij*",
+
     // ---- Food, places in town, everyday loans ----
     u8"rest'ora:n*", u8"aer'odrom*", u8"apot'e:k*", u8"ljek'a:rn*", u8"trg'ovin*",
     u8"kupa'onic*", u8"bibliot'e:k*", u8"ban'a:n*", u8"čokol'a:d*", u8"sal'a:t*",
@@ -94,14 +142,14 @@ const char* const COMMON[] = {
 };
 
 const char* const CROATIAN[] = {
-    u8"pr/ofesor*", u8"pr/ocent*",
+    u8"pr/ofesor*", u8"pr/ocent*", u8"d'irektor*", u8"V^ojvodin*", u8"'ukrajin*",
     u8"s^iječ*", u8"v/eljač*", u8"/ožuj*", u8"tr/a:v*", u8"sv/i:b*", u8"l/i:p*",
     u8"s'rp*", u8"k^olovoz*", u8"r/u:j*", u8"l^istopad*", u8"st^uden*",
     u8"pr^osin*",
 };
 
 const char* const SERBIAN[] = {
-    u8"prof'esor*", u8"proc'enat", u8"proc'ent*",
+    u8"prof'esor*", u8"proc'enat", u8"proc'ent*", u8"Vojv'odin*", u8"Ukraj'i:n*",
     u8"j^anua:r*", u8"f^ebrua:r*", u8"m^art*", u8"/apri:l*", u8"m^a:j", u8"j^u:n",
     u8"j^u:l", u8"^avgust*", u8"sept'embar", u8"sept'embr*", u8"okt'o:bar",
     u8"okt'o:br*", u8"nov'embar", u8"nov'embr*", u8"dec'embar", u8"dec'embr*",
@@ -110,7 +158,7 @@ const char* const SERBIAN[] = {
 };
 
 const char* const BOSNIAN[] = {
-    u8"prof'esor*", u8"proc'enat", u8"proc'ent*",
+    u8"prof'esor*", u8"proc'enat", u8"proc'ent*", u8"Vojv'odin*", u8"Ukraj'i:n*",
     u8"j^anua:r*", u8"f^ebrua:r*", u8"m^art*", u8"/apri:l*", u8"m^a:j", u8"j^u:n",
     u8"j^u:l", u8"^august*", u8"sept'embar", u8"sept'embr*", u8"okt'o:bar",
     u8"okt'o:br*", u8"nov'embar", u8"nov'embr*", u8"dec'embar", u8"dec'embr*",
