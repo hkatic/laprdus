@@ -32,6 +32,7 @@ struct FormantVoice {
     float h_strength;           // Friction of /h/
     float hard_palatal_shift;   // Noise frequency factor of č, dž, š, ž
     float soft_palatal_shift;   // Noise frequency factor of ć, đ
+    float hard_affricate_shift; // Further factor of č, dž alone: how hard they are
 };
 
 /** Find a formant voice by voice ID ("zvonko", "stojan", "mirsad"). */

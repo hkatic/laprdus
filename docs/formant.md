@@ -43,7 +43,7 @@ A cascade/parallel formant synthesizer after Klatt (1980).
   formants. F1-F4 move, F5-F8 are fixed per speaker.
 - **Parallel branch** (frication, bursts): three band-pass resonators that
   follow F2-F4 and three at fixed frequencies, plus a flat share. The moving
-  ones make a /k/ burst sit on F2 and a /t/ burst on F3-F5 *of that moment*, so
+  ones make a /k/ burst sit on F2 and a /t/ burst on F4 *of that moment*, so
   the burst and the following vowel transition tell the ear the same thing.
   The fixed ones shape sibilants. All frication noise first passes a
   fourth-order low-pass at 6.6 kHz (see "Sibilants" below).
@@ -65,7 +65,9 @@ Points specific to Croatian/Serbian/Bosnian:
 
 - Voiceless stops are **unaspirated** (short voice onset time, longest for
   /k/); voiced stops have a voice bar through the closure.
-- /t d/ are **dental**: the burst is diffuse, not concentrated high up.
+- /t d/ are **dental**; their burst is strongest at 3.5-4.5 kHz. After a
+  fricative a stop keeps a silent gap of its own, and before a pause it is
+  released audibly (see "Stops" below).
 - **/r/** is a vocalic stretch only 4-8 dB below the vowels with brief
   (about 15 ms, 20 dB deep) tongue-tip contacts, each followed by a faint
   release transient; F3 drops about 300 Hz below the vowel's around it. Between
@@ -91,7 +93,8 @@ Points specific to Croatian/Serbian/Bosnian:
   palatal transitions). How far apart they are is a property of the speaker
   (`hard_palatal_shift`, `soft_palatal_shift`). The affricates' friction sits
   about 200 Hz below that of š and [ɕ] (centroids for Zvonko: č 3.55 kHz,
-  ć 3.95 kHz; before 3.75 and 4.15 kHz), after a listening test asked for
+  ć 3.95 kHz; before 3.75 and 4.15 kHz; č was later lowered to 3.3 kHz, see
+  "l, n and č"), after a listening test asked for
   lower č, ć and đ. The voiced affricates' friction was also raised a little
   (đ was 17 dB down, the recorded speaker's is 8 dB down). **c** no longer
   shares the /s/ spectrum: its friction is centred at 4.5 kHz and 12 dB
@@ -129,15 +132,15 @@ Points specific to Croatian/Serbian/Bosnian:
   | f | -21 to -28 dB | flat, 2-6.5 kHz |
   | h | -14 to -21 dB | peaks at the vowel's formants |
   | v | -16 to -21 dB | F1 300, F2 1130, F3 2400; almost nothing above 500 Hz |
-  | l | -5 to -8 dB | F1 455, F2 1150 (follows the vowel before it), F3 2500, F4 2900 |
+  | l | -5 to -8 dB | F1 455, F2 1150 next to a (1150-1300 next to e, i; 1000-1100 next to o, u), F3 2500, F4 2900 |
   | lj | -4 to -10 dB | F1 335, F2 1800, F3 2820 |
   | j | -1 to -5 dB | F2 1850 between a's (strongly coarticulated) |
   | m, n, nj (murmur) | -4 to -13 dB | F1 300; F2 1150 / 1350 / 1350-1500 |
   | r (between vowels) | -15 dB, dips to -24 dB | F1 400, F2 1400, F3 2550; 50 ms |
   | k burst | -20 dB | on F2 (and 3.5 kHz); voice onset 40 ms |
-  | t burst | -20 dB | F2, F3, F4 all excited; voice onset 15 ms |
-  | p burst | very weak | voice onset under 10 ms |
-  | voice bar (b, d, g) | -13 to -25 dB | below 500 Hz |
+  | t burst | -20 dB | strongest at 3.5-4 kHz; voice onset 15 ms |
+  | p burst | -2 to -20 dB | strongest below 500 Hz, flat floor up to 5 kHz; voice onset under 10 ms |
+  | voice bar (b, d, g) | -13 to -25 dB | below 500 Hz; 10-15 dB weaker by the release |
   | vowel /a/ | 0 dB | 2.5-4 kHz about 15-25 dB below the total |
 
   To repeat a measurement:
@@ -186,11 +189,224 @@ descriptions of Eloquence and of Klatt's synthesizers:
   at 3 kHz (and the output gain lowered to keep the same peak level).
 - **Stronger voice bar.** The murmur during b, d, g was 24-26 dB below the
   vowels, at the weak end of the recorded range (-13 to -25 dB) and far below
-  Eloquence (-6 to -10 dB). It is now about -20 dB, so voiced and voiceless
-  stops are further apart.
-- Bursts of p, t, k already matched Eloquence in level and length and were
-  left alone. Klatt's own advice applies: exaggerated cues ("super speech")
+  Eloquence (-6 to -10 dB). It is now about -20 dB (falling to -28 dB before
+  the release, see "Sharp releases"), so voiced and voiceless stops are
+  further apart.
+- Bursts of p, t, k before a vowel already matched Eloquence in level and
+  length and were left alone (what surrounds them was not right yet, see
+  "Stops", and the p burst was later raised towards the recorded one, see
+  "Sharp releases"). Klatt's own advice applies: exaggerated cues ("super speech")
   have always tested worse than a closer match to natural data.
+
+### Stops
+
+A listening test found t and k hard to make out at the end of a word and
+after s and š (*st*, *sk*, *št*, *šk*). Measured with `tools/formant/stops.py`
+on the same items, the bursts before a vowel were fine, but what surrounds
+them was not:
+
+| | Recorded Croatian (MBROLA cr1) | ETI Eloquence (Reed) | Zvonko before | Zvonko now |
+|---|---|---|---|---|
+| Silent gap in *asta*, *aska* | 65-90 ms (timing is eSpeak's) | 40 ms | 20-32 ms | 36-40 ms |
+| The same, 1.5 times faster | - | 28 ms (1.6 times) | 12 ms | 24-28 ms |
+| The same, twice as fast | - | 12-16 ms (2.9 times) | under 5 ms | 20-22 ms |
+| Release of final t (*pat*, *most*) | 40-45 ms, falling from -12/-22 to -36 dB | 90 ms at -22 to -29 dB | 16 ms | 56 ms, falling from -16/-20 to -36 dB |
+| Release of final k (*pak*) | 55 ms at -27 to -39 dB | 90 ms at -26 to -30 dB | 30 ms | 64 ms, falling from -16 to -36 dB |
+| Strongest part of the t burst | 3.5-4 kHz | 4-5 kHz | 2.5-3 kHz | 3.5-4.5 kHz |
+| Burst of final k after s (*disk*) | - | 1-2 kHz (*risk*, *desk*) | 2.5-3 kHz | 1.5-2 kHz |
+| First stop of *atka*, *akta* | 24-40 ms at -16 to -28 dB | hardly released | 8-12 ms at -28 to -32 dB | 16-20 ms at -20 to -32 dB |
+
+- **The gap after friction.** A stop that follows s, š, f, h or an affricate
+  (*mačka*) is separated from that noise only by its closure. The cluster
+  rule shortened it like any other consonant, the smoothing of the friction
+  amplitude took another 6 ms off it, and at the rates screen reader users
+  work at nothing was left: *st* became *s*. The closure now has a floor of
+  its own (44 ms, which gives way to speed only slowly), and neither
+  friction nor aspiration reaches into the closure of a voiceless stop.
+- **The release before a pause.** With no vowel after it, the release is all
+  that is heard of a final stop. It was the 16 ms burst of a stop before a
+  vowel; in the recordings the friction at the place of articulation dies
+  away over 40-55 ms. It now does the same (a second, slower decay under the
+  burst; weaker and flatter for k), together with a little breath through
+  the open glottis. The breath is what a released stop has and an affricate
+  has not: in both references the release carries energy below 500 Hz only
+  5-7 dB under its total, here there was none, and a recognizer heard final
+  t as ć (*pet* as *peć*, *brat* as *brać*). It is kept well below the
+  references' level (15 dB under the total). The final t and p of *pat*,
+  *most*, *plašt*, *top* now measure like the recorded ones in level and
+  decay; the final k is still some 8 dB above the recording, as it was
+  before. A first version held the friction level and then cut it off; that
+  was heard as an affricate too (*Split* as *Splić*).
+- **The t burst.** Its strongest component was F3, which put its peak at
+  2.7 kHz, exactly where the k burst sits next to e and i (*tek*, *lik*:
+  2.5-2.7 kHz). It is now carried by F4 and a fixed peak at 4.3 kHz, as in
+  the recordings and in Eloquence. /d/ shares the spectrum; its burst is now
+  24-30 dB below the vowels in 3-6 kHz (recorded 26-30, before 27-34).
+- **The place of a final k.** A velar takes its place from the vowel after
+  it, or, at the end of a clause, from the vowel before it. That vowel was
+  used even when another consonant stood in between, so the k of *disk* was
+  the fronted one of *ki*, with a burst at 2.7 kHz. Now only a neighbouring
+  vowel counts; otherwise the velar is neutral (burst at 1.5-2 kHz).
+- **Stop before stop.** The first stop of *tk*, *kt*, *pt* is released
+  audibly in the recordings; here it was 8 ms long and 8 dB weaker.
+  Eloquence hardly releases it (Finnish *matka*, Spanish *acto*), but the
+  recorded speaker is the reference for the language.
+
+Tried and dropped, all three on the k burst before a vowel: lowering it
+before e and i to the recorded level (it is 5-10 dB above), damping F1 during
+its aspiration, and reducing its F3 share. Each changed the spectrum by a few
+dB at most, and a recognizer's errors on k went both ways (*kino* found,
+*sok i* lost), so the burst itself stayed as it was.
+
+A speech recognizer (see section 7) served as a check. Whole-sentence error
+rates do not show a change to one class of sounds (40 sentences full of them:
+15.0% of the characters wrong before, 14.8% after; at 1.5 times the rate
+20.2% and 19.9%), so only the words concerned were counted. Of 40 words
+ending in t or k at the end of a clause it found 17 before and 24 after, at
+1.5 times the rate 11 and 17 (the recorded speaker: 31). Of 68 words with
+these sounds anywhere in a sentence it found 37 before and 39 after, at 1.5
+times the rate 34 and 36 (the recorded speaker: 46). On the 20 general
+sentences of section 7 the three voices stayed within 0.6 points of their
+earlier scores, with words flipping both ways.
+
+```bash
+B=build/macos-arm64-release
+for w in asta aska pat pak; do $B/laprdus -D $B -v zvonko -o $w.wav $w; done
+python3 tools/formant/stops.py asta.wav aska.wav pat.wav pak.wav
+```
+
+### Sharp releases: p, b, d
+
+A second listening test found p, b and d a little soft, p most of all before
+r. `tools/formant/onsets.py` prints the level every 2 ms around a release;
+what it showed (levels relative to the loudest part of the item):
+
+| | Recorded Croatian (MBROLA cr1) | ETI Eloquence (Reed) | Zvonko before | Zvonko now |
+|---|---|---|---|---|
+| p burst in *pa*, first 6 ms | -2 to -5 dB | -32 dB | -21 to -26 dB | -16 dB |
+| p burst in *pra* | -8 to -13 dB | -14 to -18 dB | -23 to -28 dB | -14 to -19 dB |
+| Its spectrum in *pri*: 0-0.5 / 0.5-1 / 1-1.5 / 1.5-2 kHz | -3 / -6 / -17 / -13 dB | 0 / -17 / -13 / -33 dB | -9 / -4 / -5 / -15 dB | -2 / -8 / -7 / -30 dB |
+| After the p of *pra* | noise at -14 to -20 dB until the r | - | nothing | aspiration at -19 to -24 dB |
+| *ibi*, *obo*: release to full vowel level | 8-12 ms | - | 40 / 24 ms | 12 ms |
+| F1 8 ms after the release of *aba* (vowel: 700 Hz) | at the vowel's value | 485 of 600 Hz (*apa*) | 345 Hz | 470 Hz, 635 Hz 8 ms later |
+| Voice bar of *ada* before the release | falls from -22 to -35 dB | -7 to -15 dB, dips to -20 | -20 dB, level | falls from -22 to -28 dB |
+| F2 of the vowel of syllabic r in *prvi* | 1330-1380 Hz | - | 1470-1610 Hz | 1310-1450 Hz |
+
+- **The opening.** After a release F1 was held at its low locus through the
+  burst and then took another 20-30 ms to reach the vowel, so the vowel
+  swelled instead of setting in. In the recordings F1 is more than half way
+  there at the voice onset and the level is up within about 10 ms. The
+  boundary between a stop's release and the next sound now lies 55% of the
+  way to that sound's F1 (25% before), and the rest takes 12 ms. This holds
+  for all six stops.
+- **The release of b, d, g.** Voicing ran through the 8 ms of the release at
+  a third of its strength and as muffled as the voice bar, because the bar's
+  spectral tilt was smoothed 8 ms past the release. Now voicing is at 70%
+  and the tilt switches at the release; the bar itself weakens over the
+  second half of the closure, as it does in the recordings, so the release
+  stands out against it.
+- **The burst of p and b.** It was 6 dB weaker than now, peaked at 0.7-1.3 kHz
+  (a fixed peak plus a large F2 share) and had a second peak at F3: a
+  compact mid-frequency burst is what a velar has. It is now strongest below
+  500 Hz and falls from there, with a flat floor (the click).
+- **p, t, k before r.** A stop was aspirated only before vowels, glides and
+  l. An r opens with a vocalic stretch, so the stop is released into it in
+  the same way; without the aspiration the p of *pra* was a bare 8 ms burst.
+- **Which sound colours a stop.** A stop took its formants from the next
+  full vowel, however far away. In *pri* that put the F2 share of the p
+  burst at 1.7 kHz, where t and k have theirs. A stop is now coloured by the
+  sound it is released into: the r, l, j, v or nasal that follows, or the
+  vowel of a syllabic r.
+- **Syllabic r.** Its vowel was pulled a third of the way towards the
+  neighbouring full vowels; before an i that gave F2 1600 Hz, an e-like
+  vowel, and with the rising F2 the p of *prvi* was heard as t (*tervi*).
+  The pull is now a tenth.
+
+The same recognizer check as above, on 40 sentences full of b, d and p (120
+words containing them, 41 with pr, br or dr): it found 65 of the 120
+words before and 78 after, at 1.5 times the rate 45 and 56 (the recorded
+speaker: 90), and of the 41 words 20 and 25, at 1.5 times the rate 12 and 17
+(the recorded speaker: 29). The character error rate of these sentences went
+from 13.9% to 10.8% (the recorded speaker: 11.2%), at 1.5 times the rate from
+22.1% to 18.4%. The sets of the t and k round held: words with those sounds
+inside a sentence 39 before and 43 after, clause-final words 24 and 21 (17
+and 17 at 1.5 times the rate), which is inside the noise of that count. Words
+with g, which shares the changes to the release, went from 25 to 32 of 53
+(*Zagreb* is now found in all three voices). On the 20 general sentences of
+section 7 Zvonko, Stojan and Mirsad moved by +0.8, +0.1 and -1.4 points.
+
+```bash
+B=build/macos-arm64-release
+for w in pa pra aba ada; do $B/laprdus -D $B -v zvonko -o $w.wav $w; done
+python3 tools/formant/onsets.py pa.wav pra.wav aba.wav ada.wav
+```
+
+### l, n and č
+
+A third listening test asked for three things: an l that sounds Croatian and
+Serbian rather than Slovenian, an n that is less like m, and a č that is
+further from ć.
+
+**l.** macOS has a Croatian, a Serbian and a Slovenian voice of the same kind
+(Lana, Dragana, Tina), which shows what the difference is: in *ala* the
+Slovenian l keeps F2 at 1650-1790 Hz, as high as the vowel's, while the
+Croatian and the Serbian one drop it by 250-450 Hz (to 1040-1070 and
+1170-1200 Hz). The recorded male speaker has a dark l in every context. F2 of
+the l:
+
+| | *ala* | *ili* | *ele* | *li* | *il* |
+|---|---|---|---|---|---|
+| Recorded Croatian (MBROLA cr1) | 1140 | 1280 | 1220 | 1170 | 1200 |
+| Zvonko before | 1180 | 1460 | 1400 | 1460 | 1460 |
+| Zvonko now | 1130 | 1270 | 1240 | 1270 | 1260 |
+
+Next to a the old l was right; next to e and i it took a third of its colour
+from the vowel and came out 200-300 Hz too bright, half way to the Slovenian
+one. Its own F2 is now 1100 Hz and the vowels move it half as much. The
+recordings also show F2 falling into an l within 25 ms and leaving it over
+60-80 ms; the transition into l is now twice as fast as the one out of it.
+
+**n.** A recognizer heard n as m in 4 of 76 words at the normal rate and in 7
+at 1.5 times the rate (*stan* as *stam*, *vani* as *vami*, *nije* as *mije*).
+The two murmurs were the same dull hum, 12 dB below the vowels (recorded: 8
+to 10, Eloquence 6 to 7), with their upper resonances 23-38 dB down, so only
+the short transitions told them apart. What was tried, with the number of
+n-words found and how the others were heard:
+
+| n murmur | found (of 76) | as m | as l |
+|---|---|---|---|
+| before: F2 1350, F3 2400 Hz, bandwidths 280/300 Hz, level 0.62 | 55 | 4 | 1 |
+| F2 1450, F3 2550, bandwidths 150/180, 4 dB less tilt, level 0.85 | 52 | 0 | 10 |
+| F2 1600, F3 2600, bandwidths 220/250, 2 dB less tilt, level 0.75 | 54 | 0 | 7 |
+| old murmur, level 0.80, stiffer F2 locus | 59 | 4 | 1 |
+| **F2 1450, F3 2550, bandwidths 220/250, level 0.75** | **60** | **0** | **3** |
+
+A murmur as bright as the recorded one (its 1-1.5 and 2-3 kHz bands are only
+13-16 dB down) is no longer taken for m but for l: in a formant synthesizer a
+sonorant with clear upper formants *is* an l. The setting kept raises the
+resonances of n a little, narrows them a little and makes all nasal murmurs
+2 dB louder; m keeps its dull spectrum, as in Eloquence, where the murmur of
+n has 15 dB more energy at 1.5-3 kHz than that of m. At 1.5 times the rate it
+finds 46 words instead of 36 (as m: 4 instead of 7). The recorded speaker: 68.
+
+**č.** For Zvonko the friction of č and ć had the same peak and centroids 400
+Hz apart (3.55 and 3.95 kHz); Stojan's are 920 Hz apart, Mirsad's 810 Hz, the
+Croatian voice Lana's 550 Hz (the recorded male speaker merges them, as many
+Croatian speakers do). `hard_palatal_shift` could not be used, because it
+moves š and ž as well. A new speaker property, `hard_affricate_shift`, lowers
+the friction of č and dž alone: 0.93 for Zvonko, which puts č at 3.3 kHz, 670
+Hz below ć, with its strongest band now 2-3 kHz instead of 3-4 kHz. ć, š and
+the other two speakers are unchanged.
+
+The recognizer check on 40 sentences full of n, m and l: for Zvonko it found
+60 of the 76 words with n instead of 55 (46 instead of 36 at 1.5 times the
+rate), 35 of the 51 words with l instead of 30 (28 instead of 25) and 27 of
+the 35 words with m instead of 24; the character error rate went from 12.2%
+to 8.7% (the recorded speaker: 10.4%), at 1.5 times the rate from 21.2% to
+19.8%. For Stojan: 52 words with n instead of 45, heard as m 2 instead of 8.
+The earlier sets held (words with b, d, p 78 before and 80 after; with t, k
+43 and 43; clause-final 21 and 21), and on the 20 general sentences of
+section 7 Zvonko, Stojan and Mirsad moved by -0.9, 0.0 and -0.6 points.
 
 ### Voice colour
 
@@ -354,7 +570,7 @@ followed directly.
 | Pitch movements | reference | slightly flatter | wider |
 | Tempo | reference | a little faster | a little slower |
 | Post-accentual length | mostly neutralized | kept | kept most clearly |
-| č / ć | closer together | clearly apart | clearly apart |
+| č / ć (friction centroids apart) | 670 Hz | 920 Hz | 810 Hz |
 | /h/ | weak | weak | strong |
 | Numbers | tisuća, milijun | hiljada, milion, dvesta | hiljada, milion |
 | *ne* + verb | *nè znām* only | also *nè mogu* | also *nè mogu* |

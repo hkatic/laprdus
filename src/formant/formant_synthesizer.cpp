@@ -24,13 +24,13 @@ namespace {
 const FormantVoice VOICES[] = {
     // Zvonko: Croatian, mid-pitched, clear
     {"zvonko", VoiceLanguage::Croatian, 112.0f, 1.00f, 0.60f, 0.0f, 0.020f,
-     1.00f, 1.00f, 1.10f, 0.90f, 1.03f, 0.97f},
+     1.00f, 1.00f, 1.10f, 0.90f, 1.03f, 0.97f, 0.93f},
     // Stojan: Serbian, lower and darker, slightly brisker
     {"stojan", VoiceLanguage::Serbian, 98.0f, 0.965f, 0.56f, 1.5f, 0.015f,
-     0.95f, 1.04f, 1.20f, 0.90f, 0.94f, 1.00f},
+     0.95f, 1.04f, 1.20f, 0.90f, 0.94f, 1.00f, 1.00f},
     // Mirsad: Bosnian, higher and softer, more melodic, slower
     {"mirsad", VoiceLanguage::Bosnian, 124.0f, 1.02f, 0.64f, 0.5f, 0.030f,
-     1.15f, 0.96f, 1.30f, 1.20f, 0.96f, 1.00f},
+     1.15f, 0.96f, 1.30f, 1.20f, 0.96f, 1.00f, 1.00f},
 };
 
 constexpr float SCHWA_F[3] = {500.0f, 1380.0f, 2600.0f};
@@ -84,6 +84,8 @@ struct Seg {
     float af = 0.0f;            // smoothed friction
     float burst = 0.0f;         // unsmoothed friction (sharp onset)
     float burst_decay = 0.0f;   // ms; 0 = sustained
+    float burst_tail = 0.0f;    // slower second decay of a release into a pause:
+    float tail_decay = 0.0f;    // its share of the burst and its time constant (ms)
     float tilt = 0.0f;
     float nasal = 0.0f;
     float f0_shift = 0.0f;      // semitones (intrinsic pitch, obstruent dip)
@@ -289,7 +291,10 @@ private:
         NoiseSpec spec = ph_def(ph).noise;
         float shift = 1.0f;
         switch (ph) {
-            case Ph::CH: case Ph::DZH: case Ph::SH: case Ph::ZH:
+            case Ph::CH: case Ph::DZH:
+                shift = m_voice.hard_palatal_shift * m_voice.hard_affricate_shift;
+                break;
+            case Ph::SH: case Ph::ZH:
                 shift = m_voice.hard_palatal_shift;
                 break;
             case Ph::TJ: case Ph::DJ: case Ph::SJ: case Ph::ZJ:
@@ -422,9 +427,36 @@ private:
                     float release = voiced
                         ? (p.ph == Ph::G ? 14.0f : 8.0f)
                         : (p.ph == Ph::K ? 34.0f : (p.ph == Ph::T ? 16.0f : 8.0f));
-                    if (weak_release) release = 7.0f;
+                    // Before another stop the release is short but audible
+                    // (the recorded speaker's "atka", "akta": 24-40 ms of
+                    // noise 16-28 dB below the vowels).
+                    if (weak_release) release = voiced ? 7.0f : 14.0f;
                     release = std::min(release, d * 0.45f);
                     float closure = std::max(d - release, 12.0f);
+
+                    // After friction the silent gap is the only thing that
+                    // separates the stop from the noise before it: when it
+                    // shrinks to 10-20 ms, "st", "sk", "št", "šk", "čk" are
+                    // heard as the bare fricative. Eloquence keeps 40 ms
+                    // there (28 ms at a 60% faster rate, 12-16 ms at three
+                    // times the rate), so the gap has a floor of its own
+                    // that gives way to speed only slowly.
+                    PhClass prev_cls = prev ? ph_def(prev->ph).cls : PhClass::Silence;
+                    if (!voiced && (prev_cls == PhClass::Fricative ||
+                                    prev_cls == PhClass::Affricate)) {
+                        closure = std::max(closure, rate(44.0f, 40.0f));
+                    }
+
+                    // Before a pause there is no vowel to carry the stop, so
+                    // the release has to: after the burst the friction at
+                    // the place of articulation dies away slowly (over 40-55
+                    // ms in the recordings, falling about 15 dB; 90 ms in
+                    // Eloquence). With only the 16 ms burst, final t and k
+                    // were easy to miss. The velar's is weaker and flatter.
+                    const bool prepausal = !voiced && !next;
+                    if (prepausal) {
+                        release = rate(p.ph == Ph::K ? 64.0f : 56.0f, 36.0f);
+                    }
 
                     Seg& cl = add_seg(p.ph, SegKind::Closure, i, closure);
                     if (voiced) {
@@ -437,16 +469,31 @@ private:
                     cl.has_noise = true;
 
                     Seg& rel = add_seg(p.ph, SegKind::Release, i, release);
-                    rel.burst = def.af * (voiced ? 0.90f : 1.0f) * (weak_release ? 0.4f : 1.0f);
+                    rel.burst = def.af * (voiced ? 0.90f : 1.0f) *
+                                (weak_release ? (voiced ? 0.4f : 0.7f) : 1.0f);
+                    if (prepausal) {
+                        rel.burst_tail = p.ph == Ph::K ? 0.20f : 0.50f;
+                        rel.tail_decay = p.ph == Ph::K ? 40.0f : 25.0f;
+                        // Breath through the open glottis goes with it. It
+                        // is what a released stop has and an affricate has
+                        // not: without it "pet", "brat" leaned towards
+                        // "peć", "brać".
+                        rel.ah = 0.30f;
+                    }
                     rel.burst_decay = p.ph == Ph::K || p.ph == Ph::G ? 8.0f
                                     : (p.ph == Ph::T || p.ph == Ph::D ? 5.0f : 4.0f);
                     rel.noise = noise_for(p.ph);
                     rel.has_noise = true;
                     if (voiced) {
-                        rel.av = 0.32f;
-                        rel.tilt = m_voice.tilt + 8.0f;
+                        // Voicing runs through the release at nearly the
+                        // vowel's strength and brightness, so burst and
+                        // vowel onset are one event, as in the recordings.
+                        rel.av = 0.70f;
+                        rel.tilt = m_voice.tilt + 3.0f;
                         rel.f0_shift = -0.8f;
-                    } else if (next_vocalic) {
+                    } else if (next_vocalic || next_cls == PhClass::Tap) {
+                        // /r/ after a stop opens with a vocalic stretch, so
+                        // the stop is released into it as into a vowel.
                         rel.ah = p.ph == Ph::K ? 0.45f : 0.20f;
                     }
                     break;
@@ -552,7 +599,9 @@ private:
             if (ctx[static_cast<size_t>(i)] < 0) ctx[static_cast<size_t>(i)] = found;
         }
 
-        for (int i = 0; i < n; ++i) {
+        // From the last segment to the first: a stop looks at what the
+        // sound after it has already been given.
+        for (int i = n - 1; i >= 0; --i) {
             Seg& seg = m_segs[static_cast<size_t>(i)];
             const PhDef& def = ph_def(seg.ph);
 
@@ -560,6 +609,23 @@ private:
             int ci = ctx[static_cast<size_t>(i)];
             if (ci >= 0 && ci != i) {
                 vowel_target(m_segs[static_cast<size_t>(ci)], cv);
+            }
+
+            // A stop is coloured by the sound it is released into. Before
+            // r, l, j, v, a nasal or the vowel of syllabic r that is this
+            // sound, not the vowel beyond it: coloured by the i of "pri",
+            // "prvi", the burst of p sat at 1.7 kHz, where those of t and k
+            // are, and was taken for them.
+            if (def.cls == PhClass::Stop) {
+                int ni = i + 1;
+                while (ni < n && m_segs[static_cast<size_t>(ni)].phone == seg.phone) ++ni;
+                if (ni < n) {
+                    const Seg& into = m_segs[static_cast<size_t>(ni)];
+                    if (!is_full_vowel(into) &&
+                        (into.has_target || ph_def(into.ph).cls == PhClass::Tap)) {
+                        for (int k = 0; k < 3; ++k) cv[k] = into.self[k];
+                    }
+                }
             }
 
             if (is_full_vowel(seg)) {
@@ -573,8 +639,16 @@ private:
 
             // Loci; the velar place follows the vowel (front before front
             // vowels, back before back vowels), with F2 and F3 close together.
+            // A vowel that lies behind another consonant has no hold on it:
+            // the k of "disk" is neutral (as Eloquence's in "risk", "desk"),
+            // not the fronted one of "ki", whose burst is close to a /t/'s.
             float loc[3] = {def.loc[0] * scale, def.loc[1] * scale, def.loc[2] * scale};
-            if (seg.ph == Ph::K || seg.ph == Ph::G || seg.ph == Ph::NG) {
+            const bool velar = seg.ph == Ph::K || seg.ph == Ph::G || seg.ph == Ph::NG;
+            if (velar && ci >= 0 && ci < i &&
+                m_segs[static_cast<size_t>(ci)].phone < seg.phone - 1) {
+                for (int k = 0; k < 3; ++k) cv[k] = SCHWA_F[k] * scale;
+            }
+            if (velar) {
                 loc[1] = std::clamp(1500.0f * scale + (cv[1] - 700.0f * scale) * 0.55f,
                                     1450.0f * scale, 2350.0f * scale);
                 loc[2] = cv[1] > 1500.0f * scale ? loc[1] + 450.0f * scale : 2050.0f * scale;
@@ -645,6 +719,21 @@ private:
                     float v = dom.anchor[k] + dom.coart[k] * (other.self[k] - dom.anchor[k]);
                     float t_other = dom.tr_out * speedup;
                     float t_dom = std::min(0.45f * dom.dur, 35.0f);
+                    // The tongue tip makes its contact for /l/ quickly and
+                    // lets go slowly: in the recordings F2 drops into an l
+                    // within 25 ms and takes 60-80 ms to leave it.
+                    if (&dom == &y && y.ph == Ph::L) t_other *= 0.5f;
+                    // The mouth opens fast when a stop is released: by the
+                    // end of the burst F1 is more than half way to the next
+                    // sound (490 Hz at the voice onset of the recorded "pa",
+                    // "apa" against 330 Hz here), and the rest follows
+                    // within a few milliseconds. With F1 held low the vowel
+                    // swelled over 20-30 ms and p, b, d sounded soft.
+                    if (k == 0 && &dom == &x && x.kind == SegKind::Release &&
+                        ph_def(x.ph).cls == PhClass::Stop) {
+                        v = x.anchor[0] + 0.55f * (y.self[0] - x.anchor[0]);
+                        t_other = std::min(t_other, transition_rate(12.0f));
+                    }
                     if (&dom == &x) {
                         x.rb[k] = v;
                         y.lb[k] = v;
@@ -742,14 +831,30 @@ private:
                 }
                 f4[idx] = seg.f4;
                 av[idx] = seg.av;
+                // The voice bar of b, d, g weakens over the second half of
+                // the closure (by 10-15 dB in the recordings, 7 dB here), so
+                // the release stands out against it.
+                if (seg.kind == SegKind::Closure && seg.av > 0.0f &&
+                    ph_def(seg.ph).cls == PhClass::Stop && seg.dur > 0.0f) {
+                    av[idx] *= 1.0f - 0.55f * std::clamp(2.0f * t / seg.dur - 1.0f, 0.0f, 1.0f);
+                }
                 ah[idx] = seg.ah;
+                // A release into a pause dies away; its last few
+                // milliseconds close it off.
+                float tail = 0.0f;
+                if (seg.burst_tail > 0.0f) {
+                    tail = std::exp(-t / seg.tail_decay) *
+                           std::min(1.0f, (seg.dur - t) / 8.0f);
+                    ah[idx] *= tail;
+                }
                 af[idx] = seg.af;
                 tilt[idx] = seg.tilt;
                 nasal[idx] = seg.nasal;
 
                 if (seg.burst > 0.0f) {
                     if (seg.burst_decay > 0.0f) {
-                        burst[idx] = seg.burst * std::exp(-t / seg.burst_decay);
+                        burst[idx] = seg.burst * std::max(std::exp(-t / seg.burst_decay),
+                                                          seg.burst_tail * tail);
                     } else {
                         // affricate friction: abrupt start, short fall
                         // with the transient of the stop release in front
@@ -801,7 +906,39 @@ private:
         // milliseconds), not gradually across it: sharp edges are a large
         // part of what makes consonants easy to tell apart.
         smooth(af, 3);
+        // No noise may spill into the closure of a voiceless stop: the
+        // smoothing would take 6 ms off each end of a silent gap that is
+        // short already.
+        for (size_t j = 0; j < count; ++j) {
+            int si = m_seg_of_frame[j];
+            if (si >= 0 && m_segs[static_cast<size_t>(si)].kind == SegKind::Closure &&
+                !m_segs[static_cast<size_t>(si)].voiced) {
+                af[j] = 0.0f;
+                ah[j] = 0.0f;
+            }
+        }
+        // The voice bar of b, d, g is heavily muffled. Smoothed like the
+        // rest, that muffling reached 8 ms past the release and dulled the
+        // very start of the next sound; from the release on, the tilt is
+        // smoothed as if the closure had the release's own.
+        std::vector<float> open_tilt = tilt;
+        std::vector<std::pair<int, int>> releases;
+        for (int si = 0; si + 1 < nsegs; ++si) {
+            const Seg& seg = m_segs[static_cast<size_t>(si)];
+            if (seg.kind != SegKind::Closure || seg.av <= 0.0f) continue;
+            const Seg& rel = m_segs[static_cast<size_t>(si) + 1];
+            int j0 = lead + static_cast<int>(std::lround(seg.start / FRAME_MS));
+            int j1 = std::min(lead + static_cast<int>(std::lround(rel.start / FRAME_MS)), total);
+            for (int j = j0; j < j1; ++j) open_tilt[static_cast<size_t>(j)] = rel.tilt;
+            releases.emplace_back(j1, std::min(j1 + 4, total));
+        }
         smooth(tilt, 4);
+        smooth(open_tilt, 4);
+        for (const auto& range : releases) {
+            for (int j = range.first; j < range.second; ++j) {
+                tilt[static_cast<size_t>(j)] = open_tilt[static_cast<size_t>(j)];
+            }
+        }
         smooth(nasal, 8);       // nasality spreads into neighbouring vowels
         smooth(level, 4);
 

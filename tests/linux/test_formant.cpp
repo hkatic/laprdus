@@ -69,6 +69,46 @@ int peak(const std::vector<int16_t>& audio) {
     return max;
 }
 
+// Silence inside the audio, between its first and last audible sample, in
+// steps of 2 ms. Audible means above 0.5% of the peak.
+struct Gaps {
+    double longest_ms = 0.0;        // longest silent stretch
+    double after_last_ms = 0.0;     // audible time after the last one of 20 ms or more
+};
+
+Gaps gaps(const std::vector<int16_t>& audio) {
+    const size_t step = 44;
+    const int floor = std::max(1, peak(audio) / 200);
+    std::vector<bool> audible;
+    for (size_t start = 0; start + step <= audio.size(); start += step) {
+        int max = 0;
+        for (size_t i = 0; i < step; ++i) {
+            max = std::max(max, std::abs(static_cast<int>(audio[start + i])));
+        }
+        audible.push_back(max > floor);
+    }
+    size_t first = 0;
+    size_t last = audible.size();
+    while (first < last && !audible[first]) ++first;
+    while (last > first && !audible[last - 1]) --last;
+
+    Gaps result;
+    size_t silent = 0;
+    size_t after = 0;
+    for (size_t i = first; i < last; ++i) {
+        if (!audible[i]) {
+            ++silent;
+            continue;
+        }
+        if (silent >= 10) after = 0;
+        result.longest_ms = std::max(result.longest_ms, static_cast<double>(silent) * 2.0);
+        silent = 0;
+        ++after;
+    }
+    result.after_last_ms = static_cast<double>(after) * 2.0;
+    return result;
+}
+
 // Fundamental frequency of the loudest ~93 ms within [from, to) (fractions
 // of the audio), by autocorrelation.
 double pitch_hz(const std::vector<int16_t>& audio, double from = 0.0, double to = 1.0) {
@@ -328,6 +368,38 @@ TEST_CASE("Punctuation selects intonation", "[formant][prosody]") {
     statement_end = pitch_hz(speak(engine.handle, statement), 0.82, 1.0);
     question_end = pitch_hz(speak(engine.handle, question), 0.82, 1.0);
     REQUIRE(close_to(question_end, statement_end, 0.05));
+}
+
+// =============================================================================
+// Stops
+// =============================================================================
+
+TEST_CASE("A stop after a fricative keeps its silent gap at high rates", "[formant][stops]") {
+    // Without the gap "st", "sk", "št", "šk" are heard as the bare fricative.
+    for (const char* voice : FORMANT_VOICES) {
+        Engine engine;
+        REQUIRE(laprdus_set_voice(engine.handle, voice, NO_DATA) == LAPRDUS_OK);
+        REQUIRE(laprdus_set_speed(engine.handle, 2.0f) == LAPRDUS_OK);
+
+        REQUIRE(gaps(speak(engine.handle, "asta")).longest_ms >= 14.0);
+        REQUIRE(gaps(speak(engine.handle, "aska")).longest_ms >= 14.0);
+        REQUIRE(gaps(speak(engine.handle, "a\xC5\xA1ta")).longest_ms >= 14.0);
+        REQUIRE(gaps(speak(engine.handle, "a\xC5\xA1ka")).longest_ms >= 14.0);
+        REQUIRE(gaps(speak(engine.handle, "asa")).longest_ms < 6.0);
+    }
+}
+
+TEST_CASE("A voiceless stop before a pause is released audibly", "[formant][stops]") {
+    // The release is all that is heard of a final stop: it has to outlast
+    // the bare burst (about 16 ms).
+    for (const char* voice : FORMANT_VOICES) {
+        Engine engine;
+        REQUIRE(laprdus_set_voice(engine.handle, voice, NO_DATA) == LAPRDUS_OK);
+
+        REQUIRE(gaps(speak(engine.handle, "pat")).after_last_ms >= 30.0);
+        REQUIRE(gaps(speak(engine.handle, "pak")).after_last_ms >= 30.0);
+        REQUIRE(gaps(speak(engine.handle, "most")).after_last_ms >= 30.0);
+    }
 }
 
 TEST_CASE("Spelling mode works with formant voices", "[formant][spelling]") {

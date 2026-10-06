@@ -93,7 +93,7 @@ void nasal(PhDef& d, float m2, float m3, float l2, float c2, float l3, float c3,
     // Oral place of articulation as seen by neighbouring vowels.
     set3(d.loc, 280.0f, l2, l3);
     set3(d.coart, 0.35f, c2, c3);
-    d.av = 0.62f;
+    d.av = 0.75f;
     d.dur = dur;
     d.min_dur = 28.0f;
     d.tr_out = tr_out;
@@ -133,9 +133,12 @@ Table::Table() {
     vowel(t[Ph::O], 480.0f, 900.0f, 2550.0f, 3500.0f, 95.0f, 105.0f, 150.0f, 0.92f, 74.0f);
     vowel(t[Ph::U], 320.0f, 760.0f, 2450.0f, 3200.0f, 80.0f, 100.0f, 150.0f, 0.80f, 66.0f);
     // Schwa: the vocalic part of syllabic r (measured as a full, rather
-    // open vowel in "prst") and of spelled-out consonant clusters.
+    // open vowel in "prst") and of spelled-out consonant clusters. It takes
+    // little colour from the vowels around it: F2 is 1300-1400 Hz in the
+    // recorded "prvi", "brzina", not the 1600 Hz a stronger pull towards
+    // the i gave (which made the word sound like "pervi", "tervi").
     vowel(t[Ph::SCHWA], 500.0f, 1380.0f, 2600.0f, 3600.0f, 95.0f, 115.0f, 150.0f, 0.80f, 40.0f);
-    t[Ph::SCHWA].tgt_coart = 0.35f;
+    t[Ph::SCHWA].tgt_coart = 0.10f;
     t[Ph::SCHWA].min_dur = 12.0f;
 
     // ---- Glides and liquids ----
@@ -154,10 +157,13 @@ Table::Table() {
     sonorant(t[Ph::V], PhClass::Glide, 300.0f, 1130.0f, 2400.0f,
              70.0f, 110.0f, 170.0f, 0.50f, 52.0f, 0.30f, 40.0f, 3, 0.20f);
     t[Ph::V].tilt = 10.0f;
-    // /l/: clearly louder than /v/, higher F1, visible F2 and F3. Its F2
-    // leans on the neighbouring vowels and glides slowly into the next one.
-    sonorant(t[Ph::L], PhClass::Liquid, 450.0f, 1160.0f, 2470.0f,
-             60.0f, 100.0f, 90.0f, 0.85f, 62.0f, 0.25f, 50.0f, 4, 0.30f);
+    // /l/: clearly louder than /v/, higher F1, visible F2 and F3. It is a
+    // dark l: F2 stays low whatever the vowels around it (recorded 1150-1300
+    // Hz next to e and i, 1000-1100 Hz next to o and u) and glides slowly
+    // into the next one. With more colour from the vowels it reached 1460 Hz
+    // next to i, on the way to the clear l of Slovenian (1650-1800 Hz).
+    sonorant(t[Ph::L], PhClass::Liquid, 450.0f, 1100.0f, 2470.0f,
+             60.0f, 100.0f, 90.0f, 0.85f, 62.0f, 0.25f, 50.0f, 4, 0.15f);
     // F3 and F4 lie close together in laterals and reinforce each other.
     t[Ph::L].f4 = 2880.0f;
     sonorant(t[Ph::LJ], PhClass::Liquid, 335.0f, 1800.0f, 2820.0f,
@@ -166,7 +172,11 @@ Table::Table() {
 
     // ---- Nasals: murmur F2 F3, oral locus F2 (coart), F3 (coart) ----
     nasal(t[Ph::M], 1150.0f, 2330.0f, 900.0f, 0.70f, 2150.0f, 0.65f, 60.0f, 36.0f);
-    nasal(t[Ph::N], 1350.0f, 2400.0f, 1750.0f, 0.40f, 2750.0f, 0.40f, 54.0f, 45.0f);
+    nasal(t[Ph::N], 1450.0f, 2550.0f, 1750.0f, 0.40f, 2750.0f, 0.40f, 54.0f, 45.0f);
+    // The murmur of n has its upper resonances a little higher and clearer
+    // than that of m, or the two are the same hum and n is taken for m.
+    // Much clearer than this and it is taken for l instead.
+    set3(t[Ph::N].bw, 50.0f, 220.0f, 250.0f);
     nasal(t[Ph::NJ], 1500.0f, 2450.0f, 2250.0f, 0.20f, 2850.0f, 0.30f, 68.0f, 55.0f);
     nasal(t[Ph::NG], 1150.0f, 2300.0f, 1700.0f, 0.45f, 2100.0f, 0.45f, 52.0f, 55.0f);
 
@@ -188,28 +198,36 @@ Table::Table() {
 
     // ---- Stops: loci F1 F2 F3, coarticulation, duration, transition ----
     // Bursts excite the formants of the moment, so they move with the
-    // transition into the vowel: /p/ weak and falling, dental /t/ diffuse
-    // with F3-F5 strongest, /k/ compact with a dominant F2 (plus F3 when the
-    // two are pinched together before front vowels).
+    // transition into the vowel: /p/ weak and falling, /t/ high, /k/ compact
+    // with a dominant F2 (plus F3 when the two are pinched together before
+    // front vowels).
     obstruent(t[Ph::P], PhClass::Stop, false, 220.0f, 850.0f, 2100.0f,
               0.25f, 0.70f, 0.65f, 85.0f, 36.0f, 8);
     obstruent(t[Ph::B], PhClass::Stop, true, 200.0f, 850.0f, 2100.0f,
               0.25f, 0.70f, 0.65f, 65.0f, 36.0f, 8);
+    // The labial burst is strongest below 500 Hz and falls from there, with
+    // a flat floor up to 5 kHz (the click): so it measures in the recordings
+    // and in Eloquence. It used to be 6 dB weaker, peaked at 0.7-1.3 kHz
+    // with a second peak at F3, and p and b sounded soft.
     for (Ph ph : {Ph::P, Ph::B}) {
-        t[ph].af = 0.30f;
-        set_formant_noise(t[ph], 0.7f, 0.4f, 0.25f);
-        set_noise(t[ph], 700.0f, 700.0f, 0.6f, 4000.0f, 3000.0f, 0.0f,
-                  6000.0f, 3000.0f, 0.0f, 0.03f);
+        t[ph].af = 0.60f;
+        set_formant_noise(t[ph], 0.35f, 0.15f, 0.10f);
+        set_noise(t[ph], 350.0f, 500.0f, 1.0f, 4000.0f, 3000.0f, 0.0f,
+                  6000.0f, 3000.0f, 0.0f, 0.10f);
     }
 
     obstruent(t[Ph::T], PhClass::Stop, false, 220.0f, 1750.0f, 2800.0f,
               0.25f, 0.40f, 0.40f, 76.0f, 45.0f, 8);
     obstruent(t[Ph::D], PhClass::Stop, true, 200.0f, 1750.0f, 2800.0f,
               0.25f, 0.40f, 0.40f, 56.0f, 45.0f, 8);
+    // The /t/ burst is strongest at 3.5-4.5 kHz (the recorded speaker's
+    // final /t/ 3.5-4 kHz, Eloquence's 4-5 kHz). With F3 as its strongest
+    // part it peaked at 2.7 kHz, where the /k/ burst sits next to e and i,
+    // and the two were hard to tell apart there.
     for (Ph ph : {Ph::T, Ph::D}) {
         t[ph].af = 0.50f;
-        set_formant_noise(t[ph], 0.6f, 1.0f, 0.9f);
-        set_noise(t[ph], 4600.0f, 1300.0f, 0.5f, 6200.0f, 2000.0f, 0.15f,
+        set_formant_noise(t[ph], 0.2f, 0.3f, 1.0f);
+        set_noise(t[ph], 4300.0f, 900.0f, 1.0f, 6200.0f, 2000.0f, 0.15f,
                   8000.0f, 2500.0f, 0.0f, 0.02f);
     }
 
