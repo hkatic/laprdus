@@ -606,7 +606,8 @@ every form the same accent. Before adding a word, look at its whole paradigm:
   rješénje, kršténje, pošténje, snižénje* are lexicon entries, *ùčenje,
   mìšljenje, vȉđenje* are right by default. (*Rȍđendan* is not *rođénje*.)
 - *Moving accent*: *sìgnal* but *signála, signálu, signáli*; *telèfon* but
-  *telefóna, telefónom*; *novčànīk* but
+  *telefóna, telefónom* (while *mȉkrofon, sȁksofon, mȅgafon* stay on the
+  first syllable in every case); *novčànīk* but
   *novčaníka, novčaníci*; *podátak, podáci* but genitive plural *pòdātākā*;
   *obavijéstiti, obavijéstio* but present *obàvijēstīm*. Such words are
   written as a list of forms, `sign'a:l|a|u|om|e|i|ima`, which makes one exact

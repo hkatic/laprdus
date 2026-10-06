@@ -489,6 +489,10 @@ TEST_CASE("Lexicon accents cover the whole paradigm", "[formant][text]") {
         {"ro\xC4\x91" "enjima", "ro\xC4\x91\xC3\xA9njima"},   // rođénjima
         {"rje\xC5\xA1" "enje", "rje\xC5\xA1\xC3\xA9nje"},   // rješénje
         {"sni\xC5\xBE" "enje", "sni\xC5\xBE\xC3\xA9nje"},   // snižénje
+        {"mikrofon", "m\xC8\x89krofon"},   // mȉkrofon
+        {"mikrofona", "m\xC8\x89krofona"},   // mȉkrofona
+        {"mikrofonom", "m\xC8\x89krofonom"},   // mȉkrofonom
+        {"mikrofonima", "m\xC8\x89krofonima"},   // mȉkrofonima
     };
     Engine engine;
     REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
