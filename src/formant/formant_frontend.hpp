@@ -54,6 +54,7 @@ public:
 
 private:
     void add_entries(const char* const* entries, size_t count);
+    void add_entry(const std::u32string& marked);
 
     VoiceLanguage m_language;
     std::unordered_map<std::u32string, LexEntry> m_exact;
@@ -62,11 +63,18 @@ private:
 
 // Built-in accent lexicon (formant_lexicon.cpp). Entries are UTF-8 words with
 // marks: ' before the stressed vowel (^ = falling, / = rising), : after a long
-// vowel, * at the end for a stem that also matches inflected forms.
+// vowel, * at the end for a stem that also matches inflected forms,
+// stem|ending|ending for a list of exact forms.
 const char* const* lexicon_common(size_t& count);
 const char* const* lexicon_croatian(size_t& count);
 const char* const* lexicon_serbian(size_t& count);
 const char* const* lexicon_bosnian(size_t& count);
+
+// Roots of verbs with the long "ije", as "root:classes[:prefixes]" (see the
+// table in formant_lexicon.cpp).
+const char* const* lexicon_ije_verbs(size_t& count);
+// Whole stems of other verbs, as "st'e:m=classes" (same file).
+const char* const* lexicon_verbs(size_t& count);
 
 } // namespace formant
 } // namespace laprdus

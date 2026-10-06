@@ -537,7 +537,10 @@ python3 tools/formant/sibilants.py assa.wav asha.wav
   *mlijeko*). It stays two syllables at the end of a word (*nije*, *prije*),
   in verb and comparative endings (*pijem*, *starijeg*) and in loans
   (*klijent*).
-- **Syllabic r**: r with no vowel next to it (*prst*, *Hrvatska*, *žanr*).
+- **Syllabic r**: r with no vowel next to it (*prst*, *Hrvatska*, *žanr*),
+  but never before j: *rj* is the short jat after r (*rječnik*, *rješenje*,
+  *pogrješka*). Until October 2026 these words got a syllable on the r,
+  which then also took the accent.
 - **Assimilation** inside words and clitic groups: voicing between obstruents
   (*predsjednik* → [pretsjednik], *s bratom* → [zbratom]), s/z before
   postalveolars (*s čim* → [ščim]), n before k/g, merging of identical
@@ -554,7 +557,8 @@ The front end tries, in this order:
 1. accent marks in the text itself (`telèfon`, `gláva`, `kȕća`, `grȃd`, `ā`),
 2. the built-in lexicon (exact form, then stems),
 3. suffix rules for loans and derived words (*-irati*, *-acija*, *-izam*,
-   *-ura*, *-tika*, *-ator*, penultimate stress for *-ent*, *-ist*, *-fon* ...),
+   *-ura*, *-tika*, *-ator*, *-itet*, penultimate stress for *-ent*, *-ist*,
+   *-fon* ...),
    for surnames in *-ović/-ević* of four or more syllables (stress on the
    syllable before the suffix: *Jovánović*, *Kováčević*, *Milénković*; the
    three-syllable *Pètrović*, *Màrković* keep the first), for agent nouns in
@@ -581,13 +585,136 @@ falling, non-initial stress is rising.
 **Clitics** (prepositions, conjunctions, short pronoun and verb forms) are
 unstressed and lean on a neighbour. An enclitic cannot open a clause, so
 *ti*, *je*, *mi* are full words there. *Ne* takes over the accent of a
-following monosyllable (*nè znām*), in Serbian and Bosnian also of common
-two-syllable verb forms (*nè mogu*). Bosnian additionally moves the accent
+following monosyllable (*nè znam, nè dam*) and of every present form of
+*znati* (*nè znamo, nè znate, nè znaju*), in Serbian and Bosnian also of
+common two-syllable verb forms (*nè mogu*). The two words are then one word
+in timing as well: *ne znamo* is synthesized exactly like *nèznamo*. Zvonko
+drops the length the dictionaries keep after the accent (*nè znām*), which is
+not heard in Croatian as commonly spoken; Stojan and Mirsad keep it. Bosnian additionally moves the accent
 onto prepositions before a fixed list of words (*ù grād*, *nà more*).
 
 To correct a word, add an entry to `formant_lexicon.cpp` (notation at the top
 of the file). Language-specific tables override the common one (*pròfesor* in
 Croatian, *profèsor* in Serbian and Bosnian).
+
+**A word is more than its dictionary form.** The accent often sits somewhere
+else in the other cases and persons, and a stem entry (`kontr'o:l*`) gives
+every form the same accent. Before adding a word, look at its whole paradigm:
+
+- *Rules have a lower limit.* The rule for verbal nouns in *-enje* starts at
+  four syllables, because the three-syllable ones go both ways: *rođénje,
+  rješénje, kršténje, pošténje, snižénje* are lexicon entries, *ùčenje,
+  mìšljenje, vȉđenje* are right by default. (*Rȍđendan* is not *rođénje*.)
+- *Moving accent*: *sìgnal* but *signála, signálu, signáli*; *telèfon* but
+  *telefóna, telefónom*; *novčànīk* but
+  *novčaníka, novčaníci*; *podátak, podáci* but genitive plural *pòdātākā*;
+  *obavijéstiti, obavijéstio* but present *obàvijēstīm*. Such words are
+  written as a list of forms, `sign'a:l|a|u|om|e|i|ima`, which makes one exact
+  entry per ending.
+- *Forms a stem does not reach*: *podaci, zadaci, počeci* have lost the *t* of
+  *podatk-*, so the stem `pod'a:tk*` never matched them.
+- *Derived words caught by a stem*: *kòntrolnī* is not *kontróla*, *dȍdatno*
+  is not *dodátak*. An exact form beats a stem and a longer stem beats a
+  shorter one, so the derived word gets its own entry.
+- *One spelling, two words*: *obavijesti* is the noun's genitive, dative and
+  plural (*ȍbavijēsti*) and the verb's imperative (*obavijésti*). The noun
+  gets the spelling; the verb's other forms (*obavijestiti, obavijestio,
+  obavijestite*) have their own entries.
+
+The words handled this way in October 2026 (*obavijest* with *obavijestiti*
+and *obavještavati* and their ekavian forms, *dodatno, mogućnost, sigurnost,
+privatnost, kontrolni, podatak, signal, pozadina, novčanik*, the plurals of
+the nouns in *-tak*, the verbs, the names *Zvónko* and *Vládo*) follow
+Hrvatski jezični portal and the declension and conjugation
+tables of Wiktionary. Three choices go with common Croatian
+speech rather than the dictionary, at the request of a native listener:
+
+- unstressed length is left out where it is not heard (*dȍdatno, kòntrolni,
+  sìgnal* for the dictionaries' *dȍdātno, kòntrōlnī, sìgnāl*);
+- nouns in *-itet* keep the long *e* prominent in the nominative too:
+  Zvonko says *kapacitét, identitét* next to *kapacitéta*, where the
+  dictionaries have *kapacìtēt*. Stojan and Mirsad follow the dictionaries;
+- of *obavijestimo* and *obavijestite*, which are both present and
+  imperative, the first is read as present (*obàvijēstīmo*) and the second
+  as imperative (*obavijéstite*), the more frequent use of each.
+- verbs keep the accent of the infinitive in every form for Zvonko (see
+  below).
+
+**Verbs.** The accent of a verb's infinitive stays on its root in most other
+forms: *uréditi, urédi, urédio; otvòriti, otvòri, otvòrio; pročìtati,
+pročìtaj; pokrénuti, pokréni; podijéliti, podijéli*. The rule for long
+infinitives found the infinitive, but nothing told the front end that
+*uredi, uredio, uredim, uređen* belong to the same verb, so every other form
+got the first syllable: *Ùredi, Òtvori, Ìsključi, Pòdijeli* on every button.
+Two tables in `formant_lexicon.cpp` now name the verbs, and
+`StressRules::verb_form()` recognizes their forms (infinitive, future,
+present, imperative, aorist, both participles, verbal noun; the passive
+participle with its consonant change: *uređen, zamišljen, očišćen,
+podijeljen*):
+
+- `IJE_VERBS`: roots with a long *ije* (*dijel, mijen, lijep, cijen, slijed,
+  miješ, htijev* ...). After a prefix the spelling *ije* marks the verb,
+  because the nouns beside it have the short *je* (*podjela, promjena,
+  zamjena*), so these roots take any verbal prefix: *raspodijeliti,
+  iskorijeniti*. Where a free prefix would match a noun, the root lists its
+  prefixes (*izvijestiti* but not *povijesti*; *zapovijedati* but not
+  *zapovijedi*); *prelijepi, pretijesni* are lexicon entries.
+- `VERBS`: about 360 common verbs as whole stems with the accent of the
+  infinitive and the conjugation class (*ur'e:d=i*, *proč'it=a*, *pokr'e:=u*,
+  *pok'a:z=t* with *pok'a:ž=e*), and the common ekavian counterparts of the
+  *ije* verbs (*podéliti, proméniti*). The stems were generated from the
+  entries of Hrvatski jezični portal; `=` is followed by what the dictionary
+  says about the present and the passive participle.
+
+Three things to know:
+
+- **Dictionary and common speech.** In the present and the passive participle
+  the dictionaries usually move the accent one syllable back (*ùrēdīm,
+  ùrēđen, òtvorīm, pòdijēlīm, pòkrēnēm*). Stojan and Mirsad do that. Zvonko
+  keeps the accent of the infinitive in every form (*urédim, uréđen,
+  otvòrim, podijélim, pokrénem*), as Croatian is commonly spoken and as a
+  native listener asked for the verbs with a long vowel; the verbs with a
+  short one follow for consistency. *Obavijestiti, razumijevati* and the
+  present of *započeti, preuzeti*, which are lexicon entries, do the same.
+- **Noun twins.** The imperative is often spelled like a case of a noun:
+  *potvrdi* (*potvrda*), *uredi* (*ured*), *otvori* (*otvor*), *objavi,
+  prijavi, načini*. Such a form is read as the command only at the head of
+  its clause, alone or after a word like *ne, i, molim* (*Potvrdi. Ne
+  zaboravi lozinku.*); anywhere else the noun has priority (*u potvrdi, svi
+  uredi*). The twins were found by asking the dictionary for the imperative
+  form; they carry an `n`.
+- **Imperfectives in *-ivati*, *-ovati* and *-avati*** are too many to list
+  and regular enough for rules (`StressRules::strong()`):
+  - the present, imperative and present participle in *-ujem* have the accent
+    on the syllable before *-uj* in all three voices: *ukljùčujem, prikàzuje,
+    urèđuju, kùpujem, pùtujući*. The few verbs in *-ovati* that keep the
+    first syllable are lexicon entries (*nàpredujem, sùdjelujem, sávjetujem,
+    pósjedujem*), as are *olúja* and *kravàta*, which look like such forms;
+  - the same forms of the verbs that keep the suffix (*označavam,
+    obavještavaju, uživaš, pokrivaj*): the dictionaries have the accent one
+    syllable before it (*oznàčāvām, ùžīvām*), which Stojan and Mirsad say;
+    Zvonko keeps the infinitive's (*označávam, užívam*), as with the other
+    verbs. The third person is spelled like many nouns and adjectives
+    (*država, zabava, krvava; osjetljiva, perspektiva*), so *-ava* counts
+    only from four syllables on (*označava, održava, podržava*) and *-iva*
+    not at all; the short verbs are in `VERBS` (*rješava, uživa, pokriva,
+    dobiva*). *Poziva, naziva* stay with the nouns (*poziv, naziv*);
+  - the infinitive, the future, the participle and the verbal noun were
+    covered by the rule for *-ivati/-avati* before (*uključívati,
+    uključívao, uključívanje*).
+- **What is not covered.** A verb in neither table and outside these rules is
+  right in the infinitive, or if its accent is on the first syllable anyway
+  (*prìhvati, prèmjesti, pòdesi, òčisti, pròvjeri* are, by the dictionary).
+  Irregular verbs have lexicon entries for the forms a screen shows most
+  (*započni, preuzmi, pronađi, prevela*). The participle of verbs in
+  *-ovati* (*putovao*) and the passive participles in *-ivan, -avan* are not
+  covered: adjectives like *pozitivan* have the same ending.
+
+To add a verb, run `tools/formant/verb_accents.py urediti otvoriti ...`: it
+looks each infinitive up and prints the table entry, the dictionary's forms
+and any noun twin (or says that the verb needs no entry, or that it is
+irregular and belongs in the lexicon). Then check the forms at the head of a
+clause and inside one.
 
 ## 5. Timing and melody (`formant_synthesizer.cpp`)
 
@@ -606,9 +733,8 @@ transitions shrink less than steady states.
   vowel, rising accents peak in the following syllable. The first is the
   largest (4.5 semitones), later ones shrink gradually,
 - a boundary movement chosen by the punctuation that ended the clause:
-  - statement and wh-question: a drop of 4 (3.5) semitones completed within
-    180 ms of the last accent, after which the voice stays low; a wh-question
-    also has its highest peak on the question word,
+  - statement: a drop of 4 semitones completed within 180 ms of the last
+    accent, after which the voice stays low,
   - exclamation: wider movements throughout, a raised first and last accent
     and a drop of 5.5 semitones,
   - comma, semicolon, colon: a rise of 4 semitones over the last syllable,
@@ -616,6 +742,9 @@ transitions shrink less than steady states.
     semitones up right after it (the "inverse" pattern of Croatian and
     Serbian questions); the focused word is the one before *li* if there is
     one, otherwise the last one,
+  - wh-question: the highest peak on the question word, the statement's drop
+    after the last accent, and then a rise on the last syllable,
+  - every question ends going up (see below),
 - small segmental effects (high vowels slightly higher, a dip in voiced
   obstruents, a raised onset after voiceless ones).
 
@@ -625,7 +754,38 @@ the segmental effects remain.
 A clause of a single syllable (a letter name while spelling, *da*, *ne*) gets
 less than half of these movements. A full sentence melody squeezed into one
 syllable was a 6-semitone glide, steep enough to hide the pitch step a screen
-reader uses to mark a capital letter.
+reader uses to mark a capital letter. That holds for statements only: a
+one-syllable question keeps its whole rise and a one-syllable exclamation
+(*Ne!*, *Stoj!*) 70% of its movements, or it could not be told from *Ne.*
+
+**Short questions.** In a clause of a few words the end is all there is to
+hear the question mark by, and three things used to hide it:
+
+- A wh-question fell like a statement. *Kako si ti?* and *Kako si ti.* had
+  the same contour to within a semitone, as had *Zašto?* and *Zašto.*
+  Natural Croatian often does fall there, but Eloquence ends every question
+  with a rise, question word or not (*Come stai tu?* goes from 3 semitones
+  below the median to 3 above on the last syllable, *Perché?* rises 7), and
+  a listener who cannot see the punctuation needs it.
+- A rise that had to fit into the last vowel (*Ti?*, *A ti?*) stayed flat
+  for half of the vowel and reached its top in the final 20 ms, where the
+  voice has already faded: 3 to 4 audible semitones out of 7. It now starts
+  2 semitones low at the beginning of the vowel, is at the top after three
+  quarters of it and stays there. Eloquence's *Tu?*, in steps of 30 ms:
+  -3 -3 -1 +1 +3 +3. Zvonko's *Ti?*, in steps of 20 ms: 0 0 0 0 +1 +3 +4 +5
+  before, -1 -1 0 +1 +3 +5 +5 +5 now.
+- A yes/no question with its peak early (*Jesi li dobro?*) drifted down to 2
+  semitones below the median by the end. Its last syllable now rises too.
+
+So the last syllable of every question goes up: by the question's own rise
+when the last accent is at the end (*Ti?*, *Dobro?*, *Što?*, *Tko je to?*),
+otherwise by a separate rise of 3 semitones (6.5 in a wh-question, which
+comes up from its low). Clauses of up to five words get all of it; from six
+words on it shrinks, to 40% at nine or more, where the question word and the
+sentence itself carry more of the load and a strong final rise would sound
+unnatural. *Kako si ti?* now ends 6 semitones above *Kako si ti.* (5 at 2x
+speed). The last syllable of a wh-question is no longer made quieter
+the way a statement's is.
 
 The sizes were set against contours of Eloquence measured with
 `tools/formant/pitch.py` (same sentence as statement, question and
@@ -650,7 +810,7 @@ followed directly.
 | Post-accentual length | mostly neutralized | kept | kept most clearly |
 | č / ć (friction centroids apart) | 670 Hz | 920 Hz | 810 Hz |
 | /h/ | weak | weak | strong |
-| Numbers | tisuća, milijun | hiljada, milion, dvesta | hiljada, milion |
+| Numbers | tisuća, milijun, dvije tisuće | hiljada, milion, dvesta, dve hiljade | hiljada, milion, dvije hiljade |
 | *ne* + verb | *nè znām* only | also *nè mogu* | also *nè mogu* |
 | Accent on prepositions | no | no | yes (*ù grād*) |
 

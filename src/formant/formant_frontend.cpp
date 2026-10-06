@@ -137,6 +137,7 @@ struct Word {
     bool clitic = false;
     bool explicit_stress = false;
     bool letter_name = false;       // part of a spelled-out abbreviation
+    bool joined = false;            // one word with the previous ("ne znam")
 
     Word() = default;
     explicit Word(const std::u32string& text) : w(text), marks(text.size(), 0) {}
@@ -167,12 +168,13 @@ bool has_vowel(const std::u32string& s) {
 }
 
 // r carries the syllable when it has no vowel on either side
-// (prst, vrt, krv, rt, žanr), and in vowel + rđ (zarđati).
+// (prst, vrt, krv, rt, žanr), and in vowel + rđ (zarđati). Before j it never
+// does: rj is the short jat after r (rječnik, rješenje, pogrješka).
 bool is_syllabic_r(const std::u32string& w, size_t i) {
     if (w.size() < 2) return false;
     char32_t prev = i > 0 ? w[i - 1] : 0;
     char32_t next = i + 1 < w.size() ? w[i + 1] : 0;
-    if (is_vowel_letter(next) || next == U'r' || prev == U'r') return false;
+    if (is_vowel_letter(next) || next == U'r' || next == U'j' || prev == U'r') return false;
     if (is_vowel_letter(prev)) return next == D_STROKE;
     return true;
 }
@@ -735,20 +737,238 @@ void phonemize(Word& word) {
 struct StressResult {
     int nucleus = -1;
     bool is_long = false;
+    int long_after = -1;    // an unstressed long syllable (kapacìtēt)
+    Accent accent = Accent::None;
 };
+
+// =============================================================================
+// Verbs with a long root vowel
+// =============================================================================
+
+// A verb root from lexicon_ije_verbs() or a whole stem from lexicon_verbs().
+struct VerbRoot {
+    std::u32string root;
+    std::vector<std::u32string> soft;   // before the participle's -en: dijel -> dijelj
+    size_t vowel = 0;               // letter of the accented vowel within the root
+    bool is_long = false;
+    bool whole_stem = false;        // starts the word, takes no further prefix
+    bool iti = false;               // urediti, uredim, uredi, uredio, uređen
+    bool ati = false;               // pročitati, pročitao, pročitan
+    bool ati_present = false;       // ... and pročitam, pročitaj
+    bool nuti = false;              // pokrenuti, pokrenem, pokreni, pokrenuo
+    bool e_present = false;         // pokažem, pokaži
+    bool noun_twin = false;         // "potvrdi", "uredi" are also forms of a noun
+    bool present_shifts = false;    // dictionaries: ùrēdīm for uréditi
+    uint8_t passive = 0;            // dictionaries: 1 = one syllable back, 2 = first
+    std::vector<std::u32string> prefixes;   // empty: any verbal prefixes
+};
+
+// The consonant changes before -en: podijeljen, zamijenjen, zalijepljen,
+// proslijeđen, primijećen, obaviješten, očišćen, zamišljen, odbačen.
+std::vector<std::u32string> soft_roots(const std::u32string& root) {
+    struct Change { const char32_t* from; const char32_t* to; const char32_t* also; };
+    static const Change CHANGES[] = {
+        {U"st", U"št", U"šć"}, {U"sn", U"šnj", nullptr}, {U"zn", U"žnj", nullptr},
+        {U"sl", U"šlj", nullptr}, {U"tl", U"tlj", nullptr}, {U"d", U"đ", nullptr},
+        {U"t", U"ć", nullptr}, {U"n", U"nj", nullptr}, {U"l", U"lj", nullptr},
+        {U"p", U"plj", nullptr}, {U"b", U"blj", nullptr}, {U"v", U"vlj", nullptr},
+        {U"m", U"mlj", nullptr}, {U"s", U"š", nullptr}, {U"z", U"ž", nullptr},
+        {U"c", U"č", nullptr},
+    };
+    for (const Change& change : CHANGES) {
+        std::u32string from(change.from);
+        if (!ends_with(root, from)) continue;
+        std::u32string base = root.substr(0, root.size() - from.size());
+        std::vector<std::u32string> result = {base + change.to};
+        if (change.also) result.push_back(base + change.also);
+        return result;
+    }
+    return {root};
+}
+
+// "root:classes[:prefixes]" (roots with a long ije) or "st'e:m=classes"
+// (whole stems, accent marked as in the lexicon); see formant_lexicon.cpp.
+std::vector<VerbRoot> load_verb_roots() {
+    std::vector<VerbRoot> roots;
+    for (bool whole : {false, true}) {
+        size_t count = 0;
+        const char* const* entries = whole ? lexicon_verbs(count) : lexicon_ije_verbs(count);
+        for (size_t e = 0; e < count; ++e) {
+            std::u32string text = PhonemeMapper::utf8_to_utf32(entries[e]);
+            size_t split = text.find(whole ? U'=' : U':');
+            if (split == std::u32string::npos) continue;
+            std::u32string classes = text.substr(split + 1);
+
+            VerbRoot root;
+            root.whole_stem = whole;
+            if (whole) {
+                bool marked = false;
+                for (char32_t c : text.substr(0, split)) {
+                    if (c == U'\'') {
+                        root.vowel = root.root.size();
+                        marked = true;
+                    } else if (c == U':') {
+                        root.is_long = true;
+                    } else {
+                        root.root.push_back(c);
+                    }
+                }
+                if (!marked) continue;
+            } else {
+                root.root = text.substr(0, split);
+                size_t ije = root.root.find(U"ije");
+                if (ije == std::u32string::npos) continue;
+                root.vowel = ije + 2;
+                root.is_long = true;
+                // These all shift in the dictionaries: pòdijēlīm, pòdijēljen.
+                root.present_shifts = true;
+                root.passive = 1;
+                size_t second = classes.find(U':');
+                if (second != std::u32string::npos) {
+                    std::vector<Word> prefixes;
+                    split_words(classes.substr(second + 1), prefixes);
+                    for (const Word& prefix : prefixes) root.prefixes.push_back(prefix.w);
+                    classes.resize(second);
+                }
+            }
+            root.soft = soft_roots(root.root);
+            for (char32_t c : classes) {
+                switch (c) {
+                    case U'i': root.iti = true; break;
+                    case U'a': root.ati = root.ati_present = true; break;
+                    case U't': root.ati = true; break;
+                    case U'u': root.nuti = true; break;
+                    case U'e': root.e_present = true; break;
+                    case U'n': root.noun_twin = true; break;
+                    case U'<': root.present_shifts = true; break;
+                    case U'p': root.passive = 1; break;
+                    case U'P': root.passive = 2; break;
+                    default: break;
+                }
+            }
+            roots.push_back(std::move(root));
+        }
+    }
+    return roots;
+}
+
+const std::vector<VerbRoot>& verb_roots() {
+    static const std::vector<VerbRoot> roots = load_verb_roots();
+    return roots;
+}
+
+// One or more verbal prefixes: po, ras-po, u-na, is.
+bool is_verbal_prefix(const std::u32string& s) {
+    static const char32_t* const PREFIXES[] = {
+        U"do", U"iz", U"is", U"na", U"nad", U"o", U"ob", U"od", U"po", U"pod", U"pot",
+        U"pre", U"pred", U"pri", U"pro", U"raz", U"ras", U"s", U"sa", U"su", U"u",
+        U"uz", U"us", U"za", U"obez",
+    };
+    if (s.empty()) return true;
+    for (const char32_t* prefix : PREFIXES) {
+        std::u32string p(prefix);
+        if (starts_with(s, p) && is_verbal_prefix(s.substr(p.size()))) return true;
+    }
+    return false;
+}
+
+bool is_one_of(const std::u32string& s, std::initializer_list<const char32_t*> list) {
+    for (const char32_t* item : list) {
+        if (s == item) return true;
+    }
+    return false;
+}
 
 class StressRules {
 public:
-    explicit StressRules(const Word& word) : m_w(word.w) {
+    StressRules(const Word& word, VoiceLanguage language, bool opens_clause)
+        : m_w(word.w), m_language(language), m_opens_clause(opens_clause) {
         for (int index : word.nuclei) {
             m_letters.push_back(word.letter[static_cast<size_t>(index)]);
         }
     }
 
+    // Verbs keep the accent of the infinitive on their root in the other
+    // forms too: uréditi, urédi, urédio; otvòriti, otvòri; podijéliti,
+    // podijéli; pročìtati, pročìtaj; pokrénuti, pokréni. The verbs come from
+    // two tables in formant_lexicon.cpp: roots with a long "ije", which take
+    // any prefix, and whole stems.
+    //
+    // In the present and the passive participle the dictionaries often move
+    // the accent back (ùrēdīm, ùrēđen, òtvorīm, pòdijēlīm). Croatian is
+    // commonly spoken without that shift, and the Croatian voice keeps the
+    // accent on the root in every form; the other two follow the dictionaries.
+    StressResult verb_form() const {
+        StressResult r;
+        for (const VerbRoot& root : verb_roots()) {
+            if (root.whole_stem) {
+                if (form_of(root, 0, r)) return r;
+                continue;
+            }
+            // The root's "ije" has to be one syllable, and not the first.
+            for (int k = 1; k < count(); ++k) {
+                size_t e = static_cast<size_t>(m_letters[static_cast<size_t>(k)]);
+                if (e <= root.vowel) continue;
+                if (m_w.compare(e - 2, 3, U"ije") != 0 || nucleus_at(e - 2) >= 0) continue;
+                size_t start = e - root.vowel;
+                std::u32string prefix = m_w.substr(0, start);
+                bool allowed = root.prefixes.empty()
+                    ? is_verbal_prefix(prefix)
+                    : std::find(root.prefixes.begin(), root.prefixes.end(), prefix) !=
+                          root.prefixes.end();
+                if (allowed && form_of(root, start, r)) return r;
+            }
+        }
+        return StressResult{};
+    }
+
     // Suffixes whose accent position is fixed.
     StressResult strong() const {
-        StressResult r;
+        StressResult r = verb_form();
+        if (r.nucleus >= 0) return r;
         int n = count();
+
+        // Present, imperative and present participle of the verbs in -ivati
+        // and -ovati: the accent is on the syllable before -uj (ukljùčujem,
+        // prikàzuje, urèđuju, kùpujem, pùtujući). The few verbs in -ovati
+        // that keep it on the first syllable (nàpredujem, sùdjelujem) are
+        // in the lexicon.
+        static const char32_t* const UJ_ENDINGS[] = {
+            U"em", U"eš", U"e", U"emo", U"ete", U"u", U"ući", U"", U"mo", U"te",
+        };
+        if (n >= 3 && before_suffix(U"uj", UJ_ENDINGS, r)) {
+            r.accent = Accent::Rising;
+            return r;
+        }
+
+        // The same forms of the verbs that keep -av- or -iv- (označavam,
+        // obavještavaju, uživaš, pokrivaj). The dictionaries have the accent
+        // one syllable before the suffix (oznàčāvām, ùžīvām); the Croatian
+        // voice keeps it where the infinitive has it (označávam, užívam),
+        // like the other verbs (see verb_form). The third person in -ava is
+        // spelled like many nouns and adjectives (država, zabava, krvava),
+        // so it counts only from four syllables on (označava, održava), and
+        // the one in -iva not at all (osjetljiva, perspektiva); short verbs
+        // are in the VERBS table (rješava, uživa).
+        static const char32_t* const AM_ENDINGS[] = {
+            U"am", U"aš", U"amo", U"ate", U"aju", U"aj", U"ajmo", U"ajte",
+        };
+        static const char32_t* const A_ENDING[] = {U"a"};
+        StressResult suffix;
+        if ((n >= 3 && (at_suffix(U"av", AM_ENDINGS, 0, suffix) ||
+                        at_suffix(U"iv", AM_ENDINGS, 0, suffix))) ||
+            (n >= 4 && !ends_with(m_w, U"slava") && at_suffix(U"av", A_ENDING, 0, suffix))) {
+            if (m_language == VoiceLanguage::Croatian) {
+                r.nucleus = suffix.nucleus;
+                r.is_long = true;
+            } else {
+                r.nucleus = suffix.nucleus - 1;
+                r.long_after = suffix.nucleus;
+                r.accent = Accent::Rising;
+            }
+            return r;
+        }
+        r = StressResult{};
 
         // Surnames in -ović/-ević of four or more syllables carry a long
         // rising accent on the syllable before the suffix (Jovánović,
@@ -803,8 +1023,8 @@ public:
 
         // -ivati / -avati verbs: pokazívati, održávanje
         static const char32_t* const VA_ENDINGS[] = {
-            U"ati", U"ao", U"ala", U"alo", U"ali", U"ale", U"anje", U"anja",
-            U"anju", U"anjem", U"ajući",
+            U"ati", U"at", U"ao", U"ala", U"alo", U"ali", U"ale", U"ah", U"aše",
+            U"asmo", U"aste", U"ahu", U"anje", U"anja", U"anju", U"anjem", U"ajući",
         };
         if (n >= 4 && (at_suffix(U"iv", VA_ENDINGS, 0, r) ||
                        at_suffix(U"av", VA_ENDINGS, 0, r))) {
@@ -833,8 +1053,21 @@ public:
         };
         if (n >= 3 && at_suffix(U"iz", IZAM, 0, r)) return r;
 
-        // -itet, -ator: univerzìtet, organizátor
-        if (n >= 3 && at_suffix(U"itet", NOUN_ENDINGS, 0, r)) return r;
+        // -itet: the case forms have a long rising e (kapacitéta,
+        // identitétu, kvalitéta). In the nominative the dictionaries move
+        // the accent one syllable back (kapacìtēt); Croatian is commonly
+        // spoken with the e still long and prominent there (kapacitét), and
+        // that is what the Croatian voice does.
+        if (n >= 3 && at_suffix(U"itet", NOUN_ENDINGS, 2, r)) {
+            r.is_long = true;
+            if (m_language != VoiceLanguage::Croatian && ends_with(m_w, U"itet")) {
+                r.long_after = r.nucleus;
+                r.nucleus -= 1;
+                r.is_long = false;
+            }
+            return r;
+        }
+        // -ator: organizátor
         if (n >= 3 && at_suffix(U"ator", NOUN_ENDINGS, 0, r)) {
             r.is_long = true;
             return r;
@@ -903,6 +1136,107 @@ public:
 private:
     int count() const { return static_cast<int>(m_letters.size()); }
 
+    // Is the word, from `start` on, a form of the verb with this root?
+    bool form_of(const VerbRoot& root, size_t start, StressResult& r) const {
+        enum class Form { None, Plain, Present, Passive };
+        Form form = Form::None;
+
+        if (m_w.compare(start, root.root.size(), root.root) == 0) {
+            std::u32string ending = m_w.substr(start + root.root.size());
+            if (root.iti) {
+                if (is_one_of(ending, {U"iti", U"it", U"imo", U"ite", U"io", U"ila", U"ilo",
+                                       U"ili", U"ile", U"ih", U"ismo", U"iste", U"iše",
+                                       U"ivši", U"iću", U"ićeš", U"iće", U"ićemo",
+                                       U"ićete"})) {
+                    // "uredimo" is both; the imperative keeps the accent in
+                    // every voice, the present is the commoner reading.
+                    form = ending == U"imo" ? Form::Present : Form::Plain;
+                } else if (ending == U"i") {
+                    // "Potvrdi", "Uredi", "Otvori" at the head of a clause
+                    // are commands; elsewhere (u potvrdi, uredi su...) the
+                    // noun has priority.
+                    if (!root.noun_twin || m_opens_clause) form = Form::Plain;
+                } else if (is_one_of(ending, {U"im", U"iš"}) ||
+                           (ending == U"e" && !root.noun_twin)) {
+                    form = Form::Present;
+                }
+            }
+            if (form == Form::None && root.ati) {
+                if (is_one_of(ending, {U"ati", U"at", U"ao", U"ala", U"alo", U"ali", U"ale",
+                                       U"ah", U"asmo", U"aste", U"aše", U"avši", U"ajući",
+                                       U"anje", U"anja", U"anju", U"anjem", U"anjima",
+                                       U"aću", U"aćeš", U"aće", U"aćemo", U"aćete"})) {
+                    form = Form::Plain;
+                } else if (root.ati_present &&
+                           (is_one_of(ending, {U"am", U"aš", U"amo", U"ate", U"aju", U"aj",
+                                               U"ajmo", U"ajte"}) ||
+                            (ending == U"a" && !root.noun_twin))) {
+                    form = Form::Present;
+                } else if (is_one_of(ending, {U"an", U"ana", U"ano", U"ani", U"ane", U"anu",
+                                              U"anog", U"anoga", U"anom", U"anome",
+                                              U"anoj", U"anih", U"anim", U"anima"})) {
+                    form = Form::Passive;
+                }
+            }
+            if (form == Form::None && root.nuti) {
+                if (is_one_of(ending, {U"nuti", U"nuo", U"nula", U"nulo", U"nuli", U"nule",
+                                       U"nuh", U"nusmo", U"nuste", U"nuše", U"nuvši", U"ni",
+                                       U"nimo", U"nite", U"nuću", U"nućeš", U"nuće",
+                                       U"nućemo", U"nućete"})) {
+                    form = Form::Plain;
+                } else if (is_one_of(ending, {U"nem", U"neš", U"ne", U"nemo", U"nete",
+                                              U"nu"})) {
+                    form = Form::Present;
+                } else if (is_one_of(ending, {U"nut", U"nuta", U"nuto", U"nute", U"nutu",
+                                              U"nutog", U"nutoga", U"nutom", U"nutoj",
+                                              U"nutih", U"nutim", U"nutima"})) {
+                    form = Form::Passive;
+                }
+            }
+            if (form == Form::None && root.e_present) {
+                if (is_one_of(ending, {U"i", U"imo", U"ite", U"en", U"ena", U"eno", U"eni",
+                                       U"ene", U"enu", U"enog", U"enoga", U"enom",
+                                       U"enoj", U"enih", U"enim", U"enima"})) {
+                    form = Form::Plain;
+                } else if (is_one_of(ending, {U"em", U"eš", U"e", U"emo", U"ete", U"u",
+                                              U"ući"})) {
+                    form = Form::Present;
+                }
+            }
+        }
+        if (form == Form::None && root.iti) {
+            for (const std::u32string& soft : root.soft) {
+                if (m_w.compare(start, soft.size(), soft) == 0 &&
+                    is_one_of(m_w.substr(start + soft.size()),
+                              {U"en", U"ena", U"eno", U"eni", U"ene", U"enu", U"enog",
+                               U"enoga", U"enom", U"enome", U"enomu", U"enoj", U"enih",
+                               U"enim", U"enima"})) {
+                    form = Form::Passive;
+                    break;
+                }
+            }
+        }
+        if (form == Form::None) return false;
+
+        int k = nucleus_at(start + root.vowel);
+        if (k < 0) return false;
+        int shifted = k;
+        if (m_language != VoiceLanguage::Croatian) {
+            if (form == Form::Present && root.present_shifts) shifted = k - 1;
+            if (form == Form::Passive && root.passive == 1) shifted = k - 1;
+            if (form == Form::Passive && root.passive == 2) shifted = 0;
+        }
+        if (shifted >= 0 && shifted < k) {
+            r.nucleus = shifted;
+            if (root.is_long) r.long_after = k;
+            r.accent = Accent::Rising;
+        } else {
+            r.nucleus = k;
+            r.is_long = root.is_long;
+        }
+        return true;
+    }
+
     int nucleus_at(size_t letter) const {
         for (size_t k = 0; k < m_letters.size(); ++k) {
             if (m_letters[k] == static_cast<int>(letter)) return static_cast<int>(k);
@@ -957,6 +1291,8 @@ private:
     }
 
     const std::u32string& m_w;
+    VoiceLanguage m_language;
+    bool m_opens_clause;
     std::vector<int> m_letters;
 };
 
@@ -1030,30 +1366,46 @@ Frontend::Frontend(VoiceLanguage language) : m_language(language) {
 void Frontend::add_entries(const char* const* entries, size_t count) {
     for (size_t e = 0; e < count; ++e) {
         std::u32string marked = PhonemeMapper::utf8_to_utf32(entries[e]);
-        std::u32string plain;
-        LexEntry entry;
-        bool stem = false;
-
-        for (char32_t raw : marked) {
-            char32_t c = to_lower(raw);
-            if (c == U'\'' || c == U'^' || c == U'/') {
-                entry.stress_letter = static_cast<int8_t>(plain.size());
-                entry.accent = c == U'^' ? Accent::Falling
-                             : c == U'/' ? Accent::Rising : Accent::None;
-            } else if (c == U':') {
-                if (!plain.empty() && plain.size() <= 32) {
-                    entry.long_letters |= 1u << (plain.size() - 1);
-                }
-            } else if (c == U'*') {
-                stem = true;
-            } else {
-                plain.push_back(c);
-            }
+        size_t bar = marked.find(U'|');
+        if (bar == std::u32string::npos) {
+            add_entry(marked);
+            continue;
         }
-
-        // Later (language-specific) tables override the common one.
-        (stem ? m_stems : m_exact)[plain] = entry;
+        // "stem|ending|ending": one entry per ending.
+        const std::u32string stem = marked.substr(0, bar);
+        while (bar != std::u32string::npos) {
+            size_t next = marked.find(U'|', bar + 1);
+            size_t length = next == std::u32string::npos ? next : next - bar - 1;
+            add_entry(stem + marked.substr(bar + 1, length));
+            bar = next;
+        }
     }
+}
+
+void Frontend::add_entry(const std::u32string& marked) {
+    std::u32string plain;
+    LexEntry entry;
+    bool stem = false;
+
+    for (char32_t raw : marked) {
+        char32_t c = to_lower(raw);
+        if (c == U'\'' || c == U'^' || c == U'/') {
+            entry.stress_letter = static_cast<int8_t>(plain.size());
+            entry.accent = c == U'^' ? Accent::Falling
+                         : c == U'/' ? Accent::Rising : Accent::None;
+        } else if (c == U':') {
+            if (!plain.empty() && plain.size() <= 32) {
+                entry.long_letters |= 1u << (plain.size() - 1);
+            }
+        } else if (c == U'*') {
+            stem = true;
+        } else {
+            plain.push_back(c);
+        }
+    }
+
+    // Later (language-specific) tables override the common one.
+    (stem ? m_stems : m_exact)[plain] = entry;
 }
 
 Utterance Frontend::process(const std::u32string& text, Punctuation punct) const {
@@ -1067,7 +1419,16 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
     }
 
     // ---- Per-word analysis: phones and lexical stress ----
+    // A command opens its clause, alone or after a word like these ("Ne
+    // zaboravi", "I potvrdi", "Molim potvrdi"); see StressRules::form_of.
+    static const WordSet openers = {
+        U"ne", U"i", U"a", U"pa", U"te", U"ili", U"ali", U"da", U"zatim", U"onda",
+        U"sada", U"sad", U"molim", U"molimo", U"odmah", U"prvo", U"nemoj",
+    };
+    bool opens_clause = true;
     for (Word& word : words) {
+        const bool at_head = opens_clause;
+        if (openers.count(word.w) == 0) opens_clause = false;
         phonemize(word);
         const int n = static_cast<int>(word.nuclei.size());
         if (n == 0) {
@@ -1132,12 +1493,14 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
 
         // 3. Suffix rules, 4. default: first syllable
         if (word.stress < 0) {
-            StressRules rules(word);
+            StressRules rules(word, m_language, at_head);
             StressResult r = rules.strong();
             if (r.nucleus < 0) r = rules.weak();
             if (r.nucleus >= 0) {
                 word.stress = r.nucleus;
+                word.accent = r.accent;
                 if (r.is_long) set_long(r.nucleus);
+                if (r.long_after >= 0) set_long(r.long_after);
             } else {
                 word.stress = 0;
             }
@@ -1196,11 +1559,27 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
             continue;
         }
         if (word.w == U"ne") {
+            // "znati" hands its accent over in every person and in all three
+            // languages: nè znam, nè znamo, nè znaju.
+            static const WordSet znati = {U"znamo", U"znate", U"znaju", U"znajući"};
             bool shift = next.nuclei.size() == 1 && next.prominence > 0;
-            if (m_language != VoiceLanguage::Croatian && ne_shift_verbs().count(next.w)) {
+            if (znati.count(next.w) ||
+                (m_language != VoiceLanguage::Croatian && ne_shift_verbs().count(next.w))) {
                 shift = true;
             }
-            if (shift) take_accent(word, next);
+            if (shift) {
+                // The two are then one word, "neznam", in timing as well.
+                take_accent(word, next);
+                next.joined = true;
+                next.prominence = word.prominence;
+                if (m_language == VoiceLanguage::Croatian) {
+                    // The length the dictionaries keep after the accent
+                    // (nè znām) is not heard in Croatian as commonly spoken.
+                    for (int nucleus : next.nuclei) {
+                        next.phones[static_cast<size_t>(nucleus)].is_long = false;
+                    }
+                }
+            }
         } else if (m_language == VoiceLanguage::Bosnian && word.nuclei.size() == 1 &&
                    shifting_prepositions().count(word.w) &&
                    proclitic_shift_hosts().count(next.w)) {
@@ -1276,20 +1655,29 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
     }
 
     // ---- Flatten into one phone string ----
+    // A joined word counts as part of the one before it.
+    std::vector<size_t> group(count);
+    std::vector<int> group_syllables(count, 0);
+    for (size_t wi = 0; wi < count; ++wi) {
+        group[wi] = (wi > 0 && words[wi].joined) ? group[wi - 1] : wi;
+        group_syllables[group[wi]] += static_cast<int>(words[wi].nuclei.size());
+    }
+
     std::vector<bool> word_is_clitic;
     int syllable = 0;
     for (size_t wi = 0; wi < count; ++wi) {
         Word& word = words[wi];
-        word_is_clitic.push_back(word.clitic);
+        word_is_clitic.push_back(word.clitic && !word.joined);
         const int n = static_cast<int>(word.nuclei.size());
 
         int current = syllable;     // consonants before the first vowel
         for (size_t pi = 0; pi < word.phones.size(); ++pi) {
             Phone phone = word.phones[pi];
-            phone.word = static_cast<uint16_t>(wi);
-            phone.word_start = pi == 0;
+            phone.word = static_cast<uint16_t>(group[wi]);
+            phone.word_start = pi == 0 && !word.joined;
             phone.prominence = word.prominence;
-            phone.word_syllables = static_cast<uint8_t>(std::min(n, 255));
+            phone.word_syllables =
+                static_cast<uint8_t>(std::min(group_syllables[group[wi]], 255));
 
             if (phone.nucleus) {
                 int k = static_cast<int>(

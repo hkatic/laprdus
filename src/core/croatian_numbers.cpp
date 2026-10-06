@@ -291,6 +291,17 @@ std::string CroatianNumbers::get_large_number_suffix(int group_index, char last_
 }
 
 // =============================================================================
+// Gender of the Scale Words
+// =============================================================================
+
+bool CroatianNumbers::is_feminine_scale(int group_index) {
+    // tisuća/hiljada and the words in -ilijarda are feminine, the words in
+    // -ilijun/-ilion masculine (see get_large_number_suffix)
+    return group_index == 0 ||
+           (group_index >= 2 && group_index <= 10 && group_index % 2 == 0);
+}
+
+// =============================================================================
 // Remove Leading Zeros
 // =============================================================================
 
@@ -359,6 +370,8 @@ std::string CroatianNumbers::process_number_groups(std::string_view number) {
 
         int groups_from_end = num_groups - 1 - group_num;
         char last_digit = group_clean.back();
+        // 11-19 have no "one" or "two" of their own: jedanaest tisuća
+        bool is_teen = group_clean.size() >= 2 && group_clean[group_clean.size() - 2] == '1';
 
         // Special case: group is exactly "1" for thousands and higher
         // In Croatian, you say "tisuću" not "jedan tisuću" for 1000
@@ -369,16 +382,29 @@ std::string CroatianNumbers::process_number_groups(std::string_view number) {
             if (!result.empty()) {
                 result += " ";
             }
-            result += group_to_words(group_clean);
+            std::string words = group_to_words(group_clean);
+            // The numbers one and two agree with a feminine scale word:
+            // dvije tisuće, dve hiljade, dvadeset jedna tisuća, dvije milijarde
+            if (groups_from_end > 0 && is_feminine_scale(groups_from_end - 1) && !is_teen &&
+                (last_digit == '1' || last_digit == '2')) {
+                std::string_view masculine = digit_to_word(last_digit);
+                words.resize(words.size() - masculine.size());
+                words += last_digit == '1' ? "jedna"
+                       : (m_dialect == Dialect::Serbian ? "dve" : "dvije");
+            }
+            result += words;
         }
 
         // Add scale word (thousand, million, etc.)
         if (groups_from_end > 0) {
             // Determine which digit to use for plural form
-            // Special case: if group ends in 1 but isn't exactly "1",
-            // use '0' to get plural form (e.g., "21 tisuća" not "21 tisuću")
+            // 11-19 take the genitive plural like 5-9 (dvanaest tisuća).
+            // A group ending in 1 takes the singular: "dvadeset jedan
+            // milijun", "dvadeset jedna milijarda". For thousands that is
+            // the nominative "tisuća", spelled like the genitive plural
+            // ('1' gives the accusative "tisuću" used for 1000 itself).
             char plural_digit = last_digit;
-            if (!is_one && last_digit == '1') {
+            if (is_teen || (!is_one && last_digit == '1' && groups_from_end == 1)) {
                 plural_digit = '0';
             }
 

@@ -109,31 +109,22 @@ Gaps gaps(const std::vector<int16_t>& audio) {
     return result;
 }
 
-// Fundamental frequency of the loudest ~93 ms within [from, to) (fractions
-// of the audio), by autocorrelation.
-double pitch_hz(const std::vector<int16_t>& audio, double from = 0.0, double to = 1.0) {
-    const size_t window = 2048;
-    const size_t begin = static_cast<size_t>(static_cast<double>(audio.size()) * from);
-    const size_t end = static_cast<size_t>(static_cast<double>(audio.size()) * to);
-    if (end < begin + window) return 0.0;
-    size_t best_start = begin;
-    double best_energy = 0.0;
-    for (size_t start = begin; start + window <= end; start += 256) {
-        double energy = 0.0;
-        for (size_t i = 0; i < window; ++i) {
-            energy += static_cast<double>(audio[start + i]) * audio[start + i];
-        }
-        if (energy > best_energy) {
-            best_energy = energy;
-            best_start = start;
-        }
+double energy_at(const std::vector<int16_t>& audio, size_t start, size_t window) {
+    double energy = 0.0;
+    for (size_t i = 0; i < window; ++i) {
+        energy += static_cast<double>(audio[start + i]) * audio[start + i];
     }
+    return energy;
+}
+
+// Fundamental frequency of one window, by autocorrelation.
+double pitch_at(const std::vector<int16_t>& audio, size_t start, size_t window) {
     double best_corr = 0.0;
     size_t best_lag = 0;
-    for (size_t lag = 22050 / 400; lag <= 22050 / 50; ++lag) {
+    for (size_t lag = 22050 / 400; lag <= 22050 / 50 && lag < window; ++lag) {
         double corr = 0.0;
         for (size_t i = 0; i + lag < window; ++i) {
-            corr += static_cast<double>(audio[best_start + i]) * audio[best_start + i + lag];
+            corr += static_cast<double>(audio[start + i]) * audio[start + i + lag];
         }
         corr /= static_cast<double>(window - lag);
         if (corr > best_corr) {
@@ -142,6 +133,68 @@ double pitch_hz(const std::vector<int16_t>& audio, double from = 0.0, double to 
         }
     }
     return best_lag ? 22050.0 / static_cast<double>(best_lag) : 0.0;
+}
+
+// Fundamental frequency of the loudest ~93 ms within [from, to) (fractions
+// of the audio).
+double pitch_hz(const std::vector<int16_t>& audio, double from = 0.0, double to = 1.0) {
+    const size_t window = 2048;
+    const size_t begin = static_cast<size_t>(static_cast<double>(audio.size()) * from);
+    const size_t end = static_cast<size_t>(static_cast<double>(audio.size()) * to);
+    if (end < begin + window) return 0.0;
+    size_t best_start = begin;
+    double best_energy = 0.0;
+    for (size_t start = begin; start + window <= end; start += 256) {
+        double energy = energy_at(audio, start, window);
+        if (energy > best_energy) {
+            best_energy = energy;
+            best_start = start;
+        }
+    }
+    return pitch_at(audio, best_start, window);
+}
+
+// Fundamental frequency where the voice ends: the last ~46 ms that are
+// clearly periodic and not yet faded out. Takes the shortest period that
+// correlates nearly as well as the best one, so a moving pitch is not
+// mistaken for its octave below.
+double final_pitch_hz(const std::vector<int16_t>& audio) {
+    const size_t window = 1024;
+    const size_t min_lag = 22050 / 300;
+    const size_t max_lag = 22050 / 60;
+    if (audio.size() < window) return 0.0;
+    double loudest = 0.0;
+    for (size_t start = 0; start + window <= audio.size(); start += 128) {
+        loudest = std::max(loudest, energy_at(audio, start, window));
+    }
+
+    std::vector<double> corr(max_lag + 2, 0.0);
+    for (size_t start = audio.size() - window; start >= 128; start -= 128) {
+        if (energy_at(audio, start, window) < 0.03 * loudest) continue;
+        double best = 0.0;
+        for (size_t lag = min_lag - 1; lag <= max_lag + 1; ++lag) {
+            double sum = 0.0;
+            double left = 0.0;
+            double right = 0.0;
+            for (size_t i = 0; i + lag < window; ++i) {
+                double a = audio[start + i];
+                double b = audio[start + i + lag];
+                sum += a * b;
+                left += a * a;
+                right += b * b;
+            }
+            corr[lag] = left > 0.0 && right > 0.0 ? sum / std::sqrt(left * right) : 0.0;
+            if (lag >= min_lag && lag <= max_lag) best = std::max(best, corr[lag]);
+        }
+        if (best < 0.7) continue;
+        for (size_t lag = min_lag; lag <= max_lag; ++lag) {
+            if (corr[lag] >= 0.9 * best && corr[lag] >= corr[lag - 1] &&
+                corr[lag] >= corr[lag + 1]) {
+                return 22050.0 / static_cast<double>(lag);
+            }
+        }
+    }
+    return 0.0;
 }
 
 } // namespace
@@ -274,19 +327,259 @@ TEST_CASE("Cyrillic and Latin text sound the same", "[formant][text]") {
 TEST_CASE("Number words follow the voice language", "[formant][text]") {
     // Croatian "tisuću" and Serbian/Bosnian "hiljadu" are different words,
     // so the audio for "1000" must equal the audio for the spelled-out word.
-    struct Case { const char* voice; const char* words; };
+    // One and two agree with the feminine "tisuća"/"hiljada" (dvije tisuće,
+    // dve hiljade, dvadeset jedna tisuća), 11-19 take the genitive plural.
+    struct Case { const char* voice; const char* digits; const char* words; };
     const Case cases[] = {
-        {"zvonko", "tisu\xC4\x87u"},
-        {"stojan", "hiljadu"},
-        {"mirsad", "hiljadu"},
+        {"zvonko", "1000", "tisu\xC4\x87u"},
+        {"stojan", "1000", "hiljadu"},
+        {"mirsad", "1000", "hiljadu"},
+        {"zvonko", "2000", "dvije tisu\xC4\x87" "e"},
+        {"stojan", "2000", "dve hiljade"},
+        {"mirsad", "2000", "dvije hiljade"},
+        {"zvonko", "22000", "dvadeset dvije tisu\xC4\x87" "e"},
+        {"stojan", "22000", "dvadeset dve hiljade"},
+        {"mirsad", "22000", "dvadeset dvije hiljade"},
+        {"zvonko", "220000", "dvjesto dvadeset tisu\xC4\x87" "a"},
+        {"zvonko", "21000", "dvadeset jedna tisu\xC4\x87" "a"},
+        {"zvonko", "12000", "dvanaest tisu\xC4\x87" "a"},
+        {"zvonko", "2000000", "dva milijuna"},
+        {"zvonko", "2000000000", "dvije milijarde"},
     };
     for (const auto& c : cases) {
         Engine engine;
         REQUIRE(laprdus_set_voice(engine.handle, c.voice, NO_DATA) == LAPRDUS_OK);
-        std::vector<int16_t> digits = speak(engine.handle, "1000");
+        std::vector<int16_t> digits = speak(engine.handle, c.digits);
         std::vector<int16_t> words = speak(engine.handle, c.words);
         REQUIRE(!digits.empty());
         REQUIRE(digits == words);
+    }
+}
+
+TEST_CASE("Lexicon accents cover the whole paradigm", "[formant][text]") {
+    // A word from the lexicon must sound like the same word with its accent
+    // written out, in the oblique cases as well as in the dictionary form.
+    struct Case { const char* plain; const char* accented; };
+    const Case cases[] = {
+        {"obavijest", "\xC8\x8D" "bavijest"},   // ȍbavijest
+        {"obavijesti", "\xC8\x8D" "bavijesti"},   // ȍbavijesti
+        {"obavijestima", "\xC8\x8D" "bavijestima"},   // ȍbavijestima
+        {"obavijestiti", "obavij\xC3\xA9stiti"},   // obavijéstiti
+        {"obavijestio", "obavij\xC3\xA9stio"},   // obavijéstio
+        {"obavijestim", "obavij\xC3\xA9st\xC4\xABm"},   // obavijéstīm
+        {"dodatno", "d\xC8\x8D" "datno"},   // dȍdatno
+        {"dodatnih", "d\xC8\x8D" "datnih"},   // dȍdatnih
+        {"mogu\xC4\x87nost", "mog\xC3\xBA\xC4\x87n\xC5\x8Dst"},   // mogúćnōst
+        {"mogu\xC4\x87nosti", "mog\xC3\xBA\xC4\x87nosti"},   // mogúćnosti
+        {"mogu\xC4\x87nostima", "mog\xC3\xBA\xC4\x87nostima"},   // mogúćnostima
+        {"kapacitet", "kapacit\xC3\xA9t"},   // kapacitét
+        {"kapaciteta", "kapacit\xC3\xA9ta"},   // kapacitéta
+        {"kapacitetima", "kapacit\xC3\xA9tima"},   // kapacitétima
+        {"kontrolni", "k\xC3\xB2ntrolni"},   // kòntrolni
+        {"kontrolnog", "k\xC3\xB2ntrolnog"},   // kòntrolnog
+        {"podatak", "pod\xC3\xA1tak"},   // podátak
+        {"podaci", "pod\xC3\xA1" "ci"},   // podáci
+        {"podacima", "pod\xC3\xA1" "cima"},   // podácima
+        {"podatke", "pod\xC3\xA1tke"},   // podátke
+        {"signal", "s\xC3\xACgnal"},   // sìgnal
+        {"signala", "sign\xC3\xA1la"},   // signála
+        {"signalu", "sign\xC3\xA1lu"},   // signálu
+        {"signalom", "sign\xC3\xA1lom"},   // signálom
+        {"signale", "sign\xC3\xA1le"},   // signále
+        {"pozadina", "p\xC3\xB2zadina"},   // pòzadina
+        {"pozadinu", "p\xC3\xB2zadinu"},   // pòzadinu
+        {"privatnost", "priv\xC3\xA1tn\xC5\x8Dst"},   // privátnōst
+        {"privatnosti", "priv\xC3\xA1tnosti"},   // privátnosti
+        {"sigurnost", "sig\xC3\xBArn\xC5\x8Dst"},   // sigúrnōst
+        {"sigurno\xC5\xA1\xC4\x87u", "sig\xC3\xBArno\xC5\xA1\xC4\x87u"},   // sigúrnošću
+        {"nov\xC4\x8D" "anik", "nov\xC4\x8D\xC3\xA0n\xC4\xABk"},   // novčànīk
+        {"nov\xC4\x8D" "anici", "nov\xC4\x8D" "an\xC3\xAD" "ci"},   // novčaníci
+        {"nov\xC4\x8D" "anika", "nov\xC4\x8D" "an\xC3\xADka"},   // novčaníka
+        {"proslijediti", "proslij\xC3\xA9" "diti"},   // proslijéditi
+        {"proslijedi", "proslij\xC3\xA9" "di"},   // proslijédi
+        {"proslijedio", "proslij\xC3\xA9" "dio"},   // proslijédio
+        {"proslijedim", "proslij\xC3\xA9" "dim"},   // proslijédim
+        {"proslijedite", "proslij\xC3\xA9" "dite"},   // proslijédite
+        {"proslije\xC4\x91" "eno", "proslij\xC3\xA9\xC4\x91" "eno"},   // proslijéđeno
+        {"proslje\xC4\x91ujem", "proslj\xC3\xA8\xC4\x91ujem"},   // prosljèđujem
+        {"proslje\xC4\x91ivati", "proslje\xC4\x91\xC3\xADvati"},   // prosljeđívati
+        {"podijeli", "podij\xC3\xA9li"},   // podijéli
+        {"podijelio", "podij\xC3\xA9lio"},   // podijélio
+        {"podijelim", "podij\xC3\xA9lim"},   // podijélim
+        {"podijeljeno", "podij\xC3\xA9ljeno"},   // podijéljeno
+        {"raspodijeli", "raspodij\xC3\xA9li"},   // raspodijéli
+        {"promijeni", "promij\xC3\xA9ni"},   // promijéni
+        {"zalijepi", "zalij\xC3\xA9pi"},   // zalijépi
+        {"primijeni", "primij\xC3\xA9ni"},   // primijéni
+        {"zamijenjen", "zamij\xC3\xA9njen"},   // zamijénjen
+        {"upotrijebi", "upotrij\xC3\xA9" "bi"},   // upotrijébi
+        {"primijetio", "primij\xC3\xA9tio"},   // primijétio
+        {"pomije\xC5\xA1" "aj", "pomij\xC3\xA9\xC5\xA1" "aj"},   // pomijéšaj
+        {"zahtijeva", "zahtij\xC3\xA9va"},   // zahtijéva
+        {"razumijevanje", "razumij\xC3\xA9vanje"},   // razumijévanje
+        {"polije\xC4\x87" "e", "polij\xC3\xA9\xC4\x87" "e"},   // polijéće
+        {"Zvonko", "Zv\xC3\xB3nko"},   // Zvónko
+        {"Zvonka", "Zv\xC3\xB3nka"},   // Zvónka
+        {"Zvonkov", "Zv\xC3\xB3nkov"},   // Zvónkov
+        {"Vlado", "Vl\xC3\xA1" "do"},   // Vládo
+        {"uredi", "ur\xC3\xA9" "di"},   // urédi
+        {"uredio", "ur\xC3\xA9" "dio"},   // urédio
+        {"uredim", "ur\xC3\xA9" "dim"},   // urédim
+        {"ure\xC4\x91" "eno", "ur\xC3\xA9\xC4\x91" "eno"},   // uréđeno
+        {"otvori", "otv\xC3\xB2ri"},   // otvòri
+        {"otvorim", "otv\xC3\xB2rim"},   // otvòrim
+        {"otvoren", "otv\xC3\xB2ren"},   // otvòren
+        {"zatvori", "zatv\xC3\xB2ri"},   // zatvòri
+        {"isklju\xC4\x8Di", "isklj\xC3\xBA\xC4\x8Di"},   // iskljúči
+        {"isklju\xC4\x8D" "eno", "isklj\xC3\xBA\xC4\x8D" "eno"},   // iskljúčeno
+        {"potvrdi", "potv\xC5\x95" "di"},   // potvŕdi
+        {"potvr\xC4\x91" "eno", "potv\xC5\x95\xC4\x91" "eno"},   // potvŕđeno
+        {"objavi", "obj\xC3\xA1vi"},   // objávi
+        {"prijavi", "prij\xC3\xA1vi"},   // prijávi
+        {"pro\xC4\x8Ditaj", "pro\xC4\x8D\xC3\xACtaj"},   // pročìtaj
+        {"pro\xC4\x8Ditao", "pro\xC4\x8D\xC3\xACtao"},   // pročìtao
+        {"pokreni", "pokr\xC3\xA9ni"},   // pokréni
+        {"pokrenuo", "pokr\xC3\xA9nuo"},   // pokrénuo
+        {"prika\xC5\xBEi", "prik\xC3\xA1\xC5\xBEi"},   // prikáži
+        {"prikazan", "prik\xC3\xA1zan"},   // prikázan
+        {"napi\xC5\xA1i", "nap\xC3\xAD\xC5\xA1i"},   // napíši
+        {"odaberi", "odab\xC3\xA8ri"},   // odabèri
+        {"po\xC5\xA1" "alji", "po\xC5\xA1\xC3\xA0lji"},   // pošàlji
+        {"preuzmi", "pre\xC3\xB9zmi"},   // preùzmi
+        {"unesi", "un\xC3\xA8si"},   // unèsi
+        {"prevedi", "prev\xC3\xA8" "di"},   // prevèdi
+        {"zadr\xC5\xBEi", "zadr\xCC\x80\xC5\xBEi"},   // zadr̀ži
+        {"omogu\xC4\x87i", "omog\xC3\xBA\xC4\x87i"},   // omogúći
+        {"zavr\xC5\xA1i", "zav\xC5\x95\xC5\xA1i"},   // zavŕši
+        {"ne zaboravi", "ne zab\xC3\xB2ravi"},   // ne zabòravi
+        {"potvrdi lozinku", "potv\xC5\x95" "di lozinku"},   // potvŕdi lozinku
+        {"molim potvrdi", "molim potv\xC5\x95" "di"},   // molim potvŕdi
+        {"uklju\xC4\x8Duje", "uklj\xC3\xB9\xC4\x8Duje"},   // ukljùčuje
+        {"uklju\xC4\x8Dujem", "uklj\xC3\xB9\xC4\x8Dujem"},   // ukljùčujem
+        {"uklju\xC4\x8Duju\xC4\x87i", "uklj\xC3\xB9\xC4\x8Duju\xC4\x87i"},   // ukljùčujući
+        {"prikazuje", "prik\xC3\xA0zuje"},   // prikàzuje
+        {"potvr\xC4\x91uje", "potvr\xCC\x80\xC4\x91uje"},   // potvr̀đuje
+        {"ure\xC4\x91uju", "ur\xC3\xA8\xC4\x91uju"},   // urèđuju
+        {"omogu\xC4\x87uje", "omog\xC3\xB9\xC4\x87uje"},   // omogùćuje
+        {"kupujem", "k\xC3\xB9pujem"},   // kùpujem
+        {"napreduje", "n\xC3\xA0preduje"},   // nàpreduje
+        {"sudjeluju", "s\xC3\xB9" "djeluju"},   // sùdjeluju
+        {"ozna\xC4\x8D" "ava", "ozna\xC4\x8D\xC3\xA1va"},   // označáva
+        {"ozna\xC4\x8D" "avam", "ozna\xC4\x8D\xC3\xA1vam"},   // označávam
+        {"ozna\xC4\x8D" "avaju", "ozna\xC4\x8D\xC3\xA1vaju"},   // označávaju
+        {"rje\xC5\xA1" "ava", "rje\xC5\xA1\xC3\xA1va"},   // rješáva
+        {"obavje\xC5\xA1tavam", "obavje\xC5\xA1t\xC3\xA1vam"},   // obavještávam
+        {"u\xC5\xBEiva", "u\xC5\xBE\xC3\xADva"},   // užíva
+        {"pokrivaju", "pokr\xC3\xADvaju"},   // pokrívaju
+        {"oluje", "ol\xC3\xBAje"},   // olúje
+        {"telefon", "tel\xC3\xA8" "fon"},   // telèfon
+        {"telefona", "telef\xC3\xB3na"},   // telefóna
+        {"telefonom", "telef\xC3\xB3nom"},   // telefónom
+        {"telefonima", "telef\xC3\xB3nima"},   // telefónima
+        {"telefonski", "tel\xC3\xA8" "fonski"},   // telèfonski
+        {"ne znam", "n\xC3\xA8znam"},   // nèznam
+        {"ne znamo", "n\xC3\xA8znamo"},   // nèznamo
+        {"ne znate", "n\xC3\xA8znate"},   // nèznate
+        {"ne znaju", "n\xC3\xA8znaju"},   // nèznaju
+        {"ja ne znam", "ja n\xC3\xA8znam"},   // ja nèznam
+        {"ro\xC4\x91" "enje", "ro\xC4\x91\xC3\xA9nje"},   // rođénje
+        {"ro\xC4\x91" "enja", "ro\xC4\x91\xC3\xA9nja"},   // rođénja
+        {"ro\xC4\x91" "enju", "ro\xC4\x91\xC3\xA9nju"},   // rođénju
+        {"ro\xC4\x91" "enjem", "ro\xC4\x91\xC3\xA9njem"},   // rođénjem
+        {"ro\xC4\x91" "enjima", "ro\xC4\x91\xC3\xA9njima"},   // rođénjima
+        {"rje\xC5\xA1" "enje", "rje\xC5\xA1\xC3\xA9nje"},   // rješénje
+        {"sni\xC5\xBE" "enje", "sni\xC5\xBE\xC3\xA9nje"},   // snižénje
+    };
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    for (const auto& c : cases) {
+        std::vector<int16_t> plain = speak(engine.handle, c.plain);
+        std::vector<int16_t> accented = speak(engine.handle, c.accented);
+        INFO(c.plain);
+        REQUIRE(!plain.empty());
+        REQUIRE(plain == accented);
+    }
+
+    // The noun "obavijesti" and the verb's infinitive differ in stress.
+    REQUIRE(speak(engine.handle, "obavijesti") != speak(engine.handle, "obavijestiti"));
+
+    // Verbs with a long "ije" after a prefix are found by their root. Nouns,
+    // adjectives and other verbs that only look like them keep their accent.
+    const Case not_these[] = {
+        {"ro\xC4\x91" "endan", "ro\xC4\x91\xC3\xA9ndan"},   // rođéndan
+        {"u\xC4\x8D" "enje", "u\xC4\x8D\xC3\xA9nje"},   // učénje
+        {"dr\xC5\xBE" "ava", "dr\xC5\xBE\xC3\xA1va"},   // držáva
+        {"zabava", "zab\xC3\xA1va"},   // zabáva
+        {"predstava", "predst\xC3\xA1va"},   // predstáva
+        {"osjetljiva", "osjetlj\xC3\xADva"},   // osjetljíva
+        {"dodaje", "dod\xC3\xA1je"},   // dodáje
+        {"povijesti", "povij\xC3\xA9sti"},   // povijésti
+        {"prelijepi", "prelij\xC3\xA9pi"},   // prelijépi
+        {"donijeli", "donij\xC3\xA9li"},   // donijéli
+        {"odijela", "odij\xC3\xA9la"},   // odijéla
+        {"zapovijedi", "zapovij\xC3\xA9" "di"},   // zapovijédi
+    };
+    for (const auto& c : not_these) {
+        INFO(c.plain);
+        REQUIRE(speak(engine.handle, c.plain) != speak(engine.handle, c.accented));
+    }
+
+    // "Potvrdi" opens a clause as a command; after a preposition or another
+    // word it is the noun, which has priority ("u potvrdi", "svi uredi").
+    const Case nouns[] = {
+        {"u potvrdi", "u potv\xC5\x95" "di"},   // u potvŕdi
+        {"hvala na objavi", "hvala na obj\xC3\xA1vi"},   // hvala na objávi
+        {"svi uredi", "svi ur\xC3\xA9" "di"},   // svi urédi
+        {"nova oprema", "nova opr\xC3\xA9ma"},   // nova opréma
+    };
+    for (const auto& c : nouns) {
+        INFO(c.plain);
+        REQUIRE(speak(engine.handle, c.plain) != speak(engine.handle, c.accented));
+    }
+
+    // Mirsad follows the dictionaries: the present and the passive participle
+    // have the accent one syllable earlier.
+    const Case bosnian[] = {
+        {"podijelim", "p\xC3\xB2" "dijelim"},   // pòdijelim
+        {"podijeljen", "p\xC3\xB2" "dijeljen"},   // pòdijeljen
+        {"podijeli", "podij\xC3\xA9li"},   // podijéli
+        {"podijelio", "podij\xC3\xA9lio"},   // podijélio
+        {"pomije\xC5\xA1" "am", "p\xC3\xB2mije\xC5\xA1" "am"},   // pòmiješam
+        {"upotrijebim", "up\xC3\xB2trijebim"},   // upòtrijebim
+        {"uredi", "ur\xC3\xA9" "di"},   // urédi
+        {"uredim", "\xC3\xB9r\xC4\x93" "dim"},   // ùrēdim
+        {"ure\xC4\x91" "en", "\xC3\xB9r\xC4\x93\xC4\x91" "en"},   // ùrēđen
+        {"otvorim", "\xC3\xB2tvorim"},   // òtvorim
+        {"otvorio", "otv\xC3\xB2rio"},   // otvòrio
+        {"pro\xC4\x8Ditan", "pr\xC3\xB2\xC4\x8Ditan"},   // pròčitan
+        {"pokrenut", "p\xC3\xB2kr\xC4\x93nut"},   // pòkrēnut
+        {"prika\xC5\xBE" "em", "pr\xC3\xACk\xC4\x81\xC5\xBE" "em"},   // prìkāžem
+        {"prika\xC5\xBEi", "prik\xC3\xA1\xC5\xBEi"},   // prikáži
+        {"uklju\xC4\x8Duje", "uklj\xC3\xB9\xC4\x8Duje"},   // ukljùčuje
+        {"ozna\xC4\x8D" "ava", "ozn\xC3\xA0\xC4\x8D\xC4\x81va"},   // oznàčāva
+        {"u\xC5\xBEivam", "\xC3\xB9\xC5\xBE\xC4\xABvam"},   // ùžīvam
+        {"rje\xC5\xA1" "ava", "rj\xC3\xA8\xC5\xA1\xC4\x81va"},   // rjèšāva
+        {"ne znam", "n\xC3\xA8zn\xC4\x81m"},   // nèznām
+        {"ne znamo", "n\xC3\xA8zn\xC4\x81mo"},   // nèznāmo
+    };
+    REQUIRE(laprdus_set_voice(engine.handle, "mirsad", NO_DATA) == LAPRDUS_OK);
+    for (const auto& c : bosnian) {
+        INFO(c.plain);
+        REQUIRE(speak(engine.handle, c.plain) == speak(engine.handle, c.accented));
+    }
+
+    // The common ekavian verbs are listed stem by stem.
+    const Case ekavian[] = {
+        {"podelio", "pod\xC3\xA9lio"},   // podélio
+        {"podelim", "p\xC3\xB2" "d\xC4\x93lim"},   // pòdēlim
+        {"zalepi", "zal\xC3\xA9pi"},   // zalépi
+        {"pome\xC5\xA1" "ao", "pom\xC3\xA9\xC5\xA1" "ao"},   // poméšao
+        {"prosledi", "prosl\xC3\xA9" "di"},   // proslédi
+    };
+    REQUIRE(laprdus_set_voice(engine.handle, "stojan", NO_DATA) == LAPRDUS_OK);
+    for (const auto& c : ekavian) {
+        INFO(c.plain);
+        REQUIRE(speak(engine.handle, c.plain) == speak(engine.handle, c.accented));
     }
 }
 
@@ -368,6 +661,42 @@ TEST_CASE("Punctuation selects intonation", "[formant][prosody]") {
     statement_end = pitch_hz(speak(engine.handle, statement), 0.82, 1.0);
     question_end = pitch_hz(speak(engine.handle, question), 0.82, 1.0);
     REQUIRE(close_to(question_end, statement_end, 0.05));
+}
+
+TEST_CASE("Short questions and exclamations are audible", "[formant][prosody]") {
+    // In a clause of a few words the end is all there is to hear the
+    // punctuation by. Every question ends with a rise, also after a question
+    // word ("Kako si ti?") and inside a single syllable ("Ti?").
+    struct Case { const char* statement; const char* question; };
+    const Case cases[] = {
+        {"Kako si ti.", "Kako si ti?"},
+        {"A ti.", "A ti?"},
+        {"Ti.", "Ti?"},
+        {"Za\xC5\xA1to.", "Za\xC5\xA1to?"},                       // Zašto
+        {"Tko je to.", "Tko je to?"},
+        {"Jesi li dobro.", "Jesi li dobro?"},
+    };
+    for (const char* voice : FORMANT_VOICES) {
+        Engine engine;
+        REQUIRE(laprdus_set_voice(engine.handle, voice, NO_DATA) == LAPRDUS_OK);
+        REQUIRE(laprdus_set_sentence_pause(engine.handle, 0) == LAPRDUS_OK);
+        for (float speed : {1.0f, 2.0f}) {
+            REQUIRE(laprdus_set_speed(engine.handle, speed) == LAPRDUS_OK);
+            for (const auto& c : cases) {
+                double statement_end = final_pitch_hz(speak(engine.handle, c.statement));
+                double question_end = final_pitch_hz(speak(engine.handle, c.question));
+                INFO(voice << " " << speed << " " << c.question);
+                REQUIRE(statement_end > 50.0);
+                REQUIRE(question_end > statement_end * 1.19);   // three semitones
+            }
+        }
+
+        // A one-syllable exclamation starts higher than the statement.
+        REQUIRE(laprdus_set_speed(engine.handle, 1.0f) == LAPRDUS_OK);
+        double statement_peak = pitch_hz(speak(engine.handle, "Ne."), 0.0, 0.7);
+        double exclamation_peak = pitch_hz(speak(engine.handle, "Ne!"), 0.0, 0.7);
+        REQUIRE(exclamation_peak > statement_peak * 1.09);
+    }
 }
 
 // =============================================================================

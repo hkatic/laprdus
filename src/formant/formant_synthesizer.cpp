@@ -810,8 +810,7 @@ private:
         // Loudness: stressed syllables stand out a little, the level drifts
         // down along the clause and drops on the last syllable of a statement.
         const int last_syl = m_utt.syllable_count - 1;
-        const bool falling_end = m_utt.kind == ClauseKind::Statement ||
-                                 m_utt.kind == ClauseKind::WhQuestion;
+        const bool falling_end = m_utt.kind == ClauseKind::Statement;
 
         const int nsegs = static_cast<int>(m_segs.size());
         for (int si = 0; si < nsegs; ++si) {
@@ -1039,15 +1038,29 @@ private:
             }
 
             const ClauseKind kind = m_utt.kind;
+            const bool question = kind == ClauseKind::YesNoQuestion ||
+                                  kind == ClauseKind::WhQuestion;
             float range = m_voice.pitch_range * (kind == ClauseKind::Exclamation ? 1.35f : 1.0f);
             // A lone syllable (a letter name while spelling, "da", "ne") has
             // no room for a full sentence melody: squeezed into it, the
             // movement is a steep glide that also hides the pitch steps
-            // screen readers use to mark capital letters.
-            if (syls.size() == 1 && kind != ClauseKind::YesNoQuestion) range *= 0.45f;
+            // screen readers use to mark capital letters. A question keeps
+            // its rise and an exclamation ("Ne!", "Stoj!") most of its fall,
+            // or the punctuation could not be heard at all.
+            if (syls.size() == 1 && !question) {
+                range *= kind == ClauseKind::Exclamation ? 0.70f : 0.45f;
+            }
             std::vector<Bump> bumps;
 
-            // The syllable that carries a yes/no question's rise.
+            // In a short clause the end is all there is to tell a question
+            // from a statement; up to five words get the full final rise,
+            // longer clauses gradually less.
+            const int words = m_ph.empty() ? 0 : static_cast<int>(m_ph.back().word) + 1;
+            const float brevity =
+                std::clamp((9.0f - static_cast<float>(words)) / 4.0f, 0.4f, 1.0f);
+            const int final_index = static_cast<int>(syls.size()) - 1;
+
+            // The syllable that carries a question's rise.
             int question_syl = -1;
             if (kind == ClauseKind::YesNoQuestion && !accents.empty()) {
                 question_syl = accents.back();
@@ -1056,6 +1069,11 @@ private:
                         if (syls[static_cast<size_t>(a)].word == m_utt.focus_word) question_syl = a;
                     }
                 }
+            } else if (kind == ClauseKind::WhQuestion && !accents.empty() &&
+                       accents.back() == final_index) {
+                // "Što?", "A gdje?", "Tko je to?": the last accent is the
+                // last syllable, so the final rise is that accent's own.
+                question_syl = accents.back();
             }
 
             for (size_t ai = 0; ai < accents.size(); ++ai) {
@@ -1078,15 +1096,27 @@ private:
                 if (s == question_syl) {
                     // Low on the stressed syllable, high right after it.
                     float q = 7.0f * std::min(range, 1.2f);
-                    b.add(t0 - 30.0f, 0.0f);
-                    b.add(t0 + 0.4f * d, -1.5f);
+                    if (kind == ClauseKind::WhQuestion) {
+                        // After the peak on the question word the rise is
+                        // the smaller of the two movements.
+                        q *= brevity * (ai > 0 ? 0.8f : 1.0f);
+                    }
+                    const float low = 0.3f * q;
                     if (post) {
+                        b.add(t0 - 30.0f, 0.0f);
+                        b.add(t0 + 0.4f * d, -low);
                         b.add(t1, 0.45f * q);
                         b.add(post->t0 + 0.5f * (post->t1 - post->t0), q);
-                        b.add(total, more_after ? 0.30f * q : 0.80f * q);
+                        b.add(total, more_after ? 0.30f * q : 0.85f * q);
                     } else {
-                        b.add(t1, q);
-                        b.add(total, q);
+                        // The whole movement has to fit into one vowel, and
+                        // its end fades: low from the start of the vowel, at
+                        // the top by three quarters of it and held there.
+                        b.add(t0 - 60.0f, 0.0f);
+                        b.add(t0 - 10.0f, -low);
+                        b.add(t0 + 0.15f * d, -low);
+                        b.add(t0 + 0.75f * d, 0.85f * q);
+                        b.add(total, 0.85f * q);
                     }
                     bumps.push_back(std::move(b));
                     continue;
@@ -1146,38 +1176,51 @@ private:
                 const Syllable& nuclear = syls[static_cast<size_t>(accents.back())];
                 const bool nuclear_is_last = accents.back() == static_cast<int>(syls.size()) - 1;
                 const Syllable& final_syl = syls.back();
+                // A fall to the bottom of the range right after the last
+                // accent, where the voice then stays instead of sliding down
+                // all the way to the end.
+                auto fall_after_nucleus = [&](float depth) {
+                    Bump fall;
+                    float start = nuclear_is_last
+                        ? nuclear.t0 + 0.35f * (nuclear.t1 - nuclear.t0)
+                        : nuclear.t1;
+                    float length = std::clamp(total - start, 60.0f, 180.0f);
+                    fall.add(start, 0.0f);
+                    fall.add(start + length, -depth * range);
+                    bumps.push_back(std::move(fall));
+                };
+
                 Bump b;
-                switch (kind) {
-                    case ClauseKind::Continuation: {
-                        // The rise has to win against declination and the
-                        // tail of the last accent to be heard as "more
-                        // follows".
-                        float start = nuclear_is_last
-                            ? nuclear.t0 + 0.5f * (nuclear.t1 - nuclear.t0)
-                            : (final_syl.t0 >= 0.0f ? final_syl.t0 - 40.0f : total - 160.0f);
-                        b.add(start, 0.0f);
-                        b.add(total, 4.0f * range);
-                        break;
+                if (kind == ClauseKind::Continuation) {
+                    // The rise has to win against declination and the tail
+                    // of the last accent to be heard as "more follows".
+                    float start = nuclear_is_last
+                        ? nuclear.t0 + 0.5f * (nuclear.t1 - nuclear.t0)
+                        : (final_syl.t0 >= 0.0f ? final_syl.t0 - 40.0f : total - 160.0f);
+                    b.add(start, 0.0f);
+                    b.add(total, 4.0f * range);
+                } else if (question) {
+                    // Every question ends going up. Where the main movement
+                    // lies earlier (on the word before "li", on a question
+                    // word), the last syllable rises on its own; in a
+                    // wh-question it comes back up from the fall that
+                    // follows the last accent.
+                    const bool rise_at_end = question_syl >= final_index - 1;
+                    if (question_syl < 0 || !rise_at_end) {
+                        float lift = 3.0f;
+                        if (kind == ClauseKind::WhQuestion) {
+                            fall_after_nucleus(3.5f);
+                            lift += 3.5f;
+                        }
+                        lift *= range * brevity;
+                        const bool timed = final_syl.t0 >= 0.0f;
+                        b.add(timed ? final_syl.t0 - 30.0f : total - 150.0f, 0.0f);
+                        b.add(timed ? final_syl.t0 + 0.75f * (final_syl.t1 - final_syl.t0)
+                                    : total, lift);
+                        b.add(total, lift);
                     }
-                    case ClauseKind::YesNoQuestion:
-                        break;
-                    case ClauseKind::Statement:
-                    case ClauseKind::WhQuestion:
-                    case ClauseKind::Exclamation:
-                    default: {
-                        // The voice drops to the bottom of its range right
-                        // after the last accent and stays there, instead of
-                        // sliding down all the way to the end.
-                        float depth = kind == ClauseKind::Exclamation ? 5.5f
-                                    : (kind == ClauseKind::WhQuestion ? 3.5f : 4.0f);
-                        float start = nuclear_is_last
-                            ? nuclear.t0 + 0.35f * (nuclear.t1 - nuclear.t0)
-                            : nuclear.t1;
-                        float fall = std::clamp(total - start, 60.0f, 180.0f);
-                        b.add(start, 0.0f);
-                        b.add(start + fall, -depth * range);
-                        break;
-                    }
+                } else {
+                    fall_after_nucleus(kind == ClauseKind::Exclamation ? 5.5f : 4.0f);
                 }
                 if (!b.points.empty()) bumps.push_back(std::move(b));
             }
