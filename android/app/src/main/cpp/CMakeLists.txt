@@ -19,7 +19,6 @@ message(STATUS "LaprdusTTS root: ${LAPRDUS_ROOT}")
 include_directories(
     ${LAPRDUS_ROOT}/include
     ${LAPRDUS_ROOT}/src
-    ${LAPRDUS_ROOT}/src/audio/sonic
 )
 
 # Core library sources
@@ -35,13 +34,14 @@ set(CORE_SOURCES
     ${LAPRDUS_ROOT}/src/core/user_config.cpp
     ${LAPRDUS_ROOT}/src/audio/phoneme_data.cpp
     ${LAPRDUS_ROOT}/src/audio/audio_synthesizer.cpp
-    ${LAPRDUS_ROOT}/src/audio/sonic_processor.cpp
-    ${LAPRDUS_ROOT}/src/audio/sonic/sonic.c
-    ${LAPRDUS_ROOT}/src/audio/formant_pitch.cpp
+    ${LAPRDUS_ROOT}/src/audio/unit_bank.cpp
+    ${LAPRDUS_ROOT}/src/audio/psola.cpp
+    ${LAPRDUS_ROOT}/src/audio/concat_prosody.cpp
     ${LAPRDUS_ROOT}/src/formant/klatt_synth.cpp
     ${LAPRDUS_ROOT}/src/formant/formant_phonemes.cpp
     ${LAPRDUS_ROOT}/src/formant/formant_lexicon.cpp
     ${LAPRDUS_ROOT}/src/formant/formant_frontend.cpp
+    ${LAPRDUS_ROOT}/src/formant/formant_intonation.cpp
     ${LAPRDUS_ROOT}/src/formant/formant_synthesizer.cpp
     ${LAPRDUS_ROOT}/src/c_api/laprdus_api.cpp
     ${LAPRDUS_ROOT}/src/platform/android/jni_bridge.cpp
@@ -49,13 +49,6 @@ set(CORE_SOURCES
 
 # Build shared library
 add_library(laprdus SHARED ${CORE_SOURCES})
-
-# Suppress warnings for third-party sonic library (external code)
-# The unused parameter warnings are from deprecated/stub functions in the upstream library
-set_source_files_properties(
-    ${LAPRDUS_ROOT}/src/audio/sonic/sonic.c
-    PROPERTIES COMPILE_FLAGS "-Wno-unused-parameter"
-)
 
 # Compiler definitions
 target_compile_definitions(laprdus PRIVATE

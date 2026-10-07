@@ -18,14 +18,15 @@
 		FA0000000000000000000009 /* user_config.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000009 /* user_config.cpp */; };
 		FA000000000000000000000A /* phoneme_data.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000A /* phoneme_data.cpp */; };
 		FA000000000000000000000B /* audio_synthesizer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000B /* audio_synthesizer.cpp */; };
-		FA000000000000000000000C /* sonic_processor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000C /* sonic_processor.cpp */; };
-		FA000000000000000000000D /* formant_pitch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000D /* formant_pitch.cpp */; };
+		FA000000000000000000000C /* unit_bank.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000C /* unit_bank.cpp */; };
+		FA000000000000000000000D /* psola.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000D /* psola.cpp */; };
 		FA0000000000000000000020 /* klatt_synth.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000020 /* klatt_synth.cpp */; };
 		FA0000000000000000000026 /* formant_phonemes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000026 /* formant_phonemes.cpp */; };
 		FA0000000000000000000027 /* formant_lexicon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000027 /* formant_lexicon.cpp */; };
 		FA0000000000000000000028 /* formant_frontend.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000028 /* formant_frontend.cpp */; };
 		FA0000000000000000000029 /* formant_synthesizer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000029 /* formant_synthesizer.cpp */; };
-		FA000000000000000000000E /* sonic.c in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000E /* sonic.c */; };
+		FA000000000000000000000E /* concat_prosody.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000E /* concat_prosody.cpp */; };
+		FA000000000000000000002A /* formant_intonation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000002A /* formant_intonation.cpp */; };
 		FA000000000000000000000F /* laprdus_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000F /* laprdus_api.cpp */; };
 		FA0000000000000000000021 /* Josip.bin in Resources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000021 /* Josip.bin */; };
 		FA0000000000000000000022 /* Vlado.bin in Resources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000022 /* Vlado.bin */; };
@@ -44,14 +45,15 @@
 		FB0000000000000000000009 /* user_config.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000009 /* user_config.cpp */; };
 		FB000000000000000000000A /* phoneme_data.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000A /* phoneme_data.cpp */; };
 		FB000000000000000000000B /* audio_synthesizer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000B /* audio_synthesizer.cpp */; };
-		FB000000000000000000000C /* sonic_processor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000C /* sonic_processor.cpp */; };
-		FB000000000000000000000D /* formant_pitch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000D /* formant_pitch.cpp */; };
+		FB000000000000000000000C /* unit_bank.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000C /* unit_bank.cpp */; };
+		FB000000000000000000000D /* psola.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000D /* psola.cpp */; };
 		FB0000000000000000000020 /* klatt_synth.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000020 /* klatt_synth.cpp */; };
 		FB0000000000000000000026 /* formant_phonemes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000026 /* formant_phonemes.cpp */; };
 		FB0000000000000000000027 /* formant_lexicon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000027 /* formant_lexicon.cpp */; };
 		FB0000000000000000000028 /* formant_frontend.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000028 /* formant_frontend.cpp */; };
 		FB0000000000000000000029 /* formant_synthesizer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000029 /* formant_synthesizer.cpp */; };
-		FB000000000000000000000E /* sonic.c in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000E /* sonic.c */; };
+		FB000000000000000000000E /* concat_prosody.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000E /* concat_prosody.cpp */; };
+		FB000000000000000000002A /* formant_intonation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000002A /* formant_intonation.cpp */; };
 		FB000000000000000000000F /* laprdus_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000F /* laprdus_api.cpp */; };
 		FB0000000000000000000021 /* Josip.bin in Resources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000021 /* Josip.bin */; };
 		FB0000000000000000000022 /* Vlado.bin in Resources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000022 /* Vlado.bin */; };
@@ -105,14 +107,15 @@
 		FC0000000000000000000009 /* user_config.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = user_config.cpp; path = ../../src/core/user_config.cpp; sourceTree = "<group>"; };
 		FC000000000000000000000A /* phoneme_data.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = phoneme_data.cpp; path = ../../src/audio/phoneme_data.cpp; sourceTree = "<group>"; };
 		FC000000000000000000000B /* audio_synthesizer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = audio_synthesizer.cpp; path = ../../src/audio/audio_synthesizer.cpp; sourceTree = "<group>"; };
-		FC000000000000000000000C /* sonic_processor.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = sonic_processor.cpp; path = ../../src/audio/sonic_processor.cpp; sourceTree = "<group>"; };
-		FC000000000000000000000D /* formant_pitch.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = formant_pitch.cpp; path = ../../src/audio/formant_pitch.cpp; sourceTree = "<group>"; };
+		FC000000000000000000000C /* unit_bank.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = unit_bank.cpp; path = ../../src/audio/unit_bank.cpp; sourceTree = "<group>"; };
+		FC000000000000000000000D /* psola.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = psola.cpp; path = ../../src/audio/psola.cpp; sourceTree = "<group>"; };
 		FC0000000000000000000020 /* klatt_synth.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = klatt_synth.cpp; path = ../../src/formant/klatt_synth.cpp; sourceTree = "<group>"; };
 		FC0000000000000000000026 /* formant_phonemes.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = formant_phonemes.cpp; path = ../../src/formant/formant_phonemes.cpp; sourceTree = "<group>"; };
 		FC0000000000000000000027 /* formant_lexicon.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = formant_lexicon.cpp; path = ../../src/formant/formant_lexicon.cpp; sourceTree = "<group>"; };
 		FC0000000000000000000028 /* formant_frontend.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = formant_frontend.cpp; path = ../../src/formant/formant_frontend.cpp; sourceTree = "<group>"; };
 		FC0000000000000000000029 /* formant_synthesizer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = formant_synthesizer.cpp; path = ../../src/formant/formant_synthesizer.cpp; sourceTree = "<group>"; };
-		FC000000000000000000000E /* sonic.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = sonic.c; path = ../../src/audio/sonic/sonic.c; sourceTree = "<group>"; };
+		FC000000000000000000000E /* concat_prosody.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = concat_prosody.cpp; path = ../../src/audio/concat_prosody.cpp; sourceTree = "<group>"; };
+		FC000000000000000000002A /* formant_intonation.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = formant_intonation.cpp; path = ../../src/formant/formant_intonation.cpp; sourceTree = "<group>"; };
 		FC000000000000000000000F /* laprdus_api.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = laprdus_api.cpp; path = ../../src/c_api/laprdus_api.cpp; sourceTree = "<group>"; };
 		FC0000000000000000000021 /* Josip.bin */ = {isa = PBXFileReference; lastKnownFileType = file; name = Josip.bin; path = ../../data/voices/Josip.bin; sourceTree = "<group>"; };
 		FC0000000000000000000022 /* Vlado.bin */ = {isa = PBXFileReference; lastKnownFileType = file; name = Vlado.bin; path = ../../data/voices/Vlado.bin; sourceTree = "<group>"; };
@@ -207,14 +210,15 @@
 				FC0000000000000000000009 /* user_config.cpp */,
 				FC000000000000000000000A /* phoneme_data.cpp */,
 				FC000000000000000000000B /* audio_synthesizer.cpp */,
-				FC000000000000000000000C /* sonic_processor.cpp */,
-				FC000000000000000000000D /* formant_pitch.cpp */,
+				FC000000000000000000000C /* unit_bank.cpp */,
+				FC000000000000000000000D /* psola.cpp */,
 				FC0000000000000000000020 /* klatt_synth.cpp */,
 				FC0000000000000000000026 /* formant_phonemes.cpp */,
 				FC0000000000000000000027 /* formant_lexicon.cpp */,
 				FC0000000000000000000028 /* formant_frontend.cpp */,
 				FC0000000000000000000029 /* formant_synthesizer.cpp */,
-				FC000000000000000000000E /* sonic.c */,
+				FC000000000000000000000E /* concat_prosody.cpp */,
+				FC000000000000000000002A /* formant_intonation.cpp */,
 				FC000000000000000000000F /* laprdus_api.cpp */,
 			);
 			name = Engine;
@@ -401,14 +405,15 @@
 				FA0000000000000000000009 /* user_config.cpp in Sources */,
 				FA000000000000000000000A /* phoneme_data.cpp in Sources */,
 				FA000000000000000000000B /* audio_synthesizer.cpp in Sources */,
-				FA000000000000000000000C /* sonic_processor.cpp in Sources */,
-				FA000000000000000000000D /* formant_pitch.cpp in Sources */,
+				FA000000000000000000000C /* unit_bank.cpp in Sources */,
+				FA000000000000000000000D /* psola.cpp in Sources */,
 				FA0000000000000000000020 /* klatt_synth.cpp in Sources */,
 				FA0000000000000000000026 /* formant_phonemes.cpp in Sources */,
 				FA0000000000000000000027 /* formant_lexicon.cpp in Sources */,
 				FA0000000000000000000028 /* formant_frontend.cpp in Sources */,
 				FA0000000000000000000029 /* formant_synthesizer.cpp in Sources */,
-				FA000000000000000000000E /* sonic.c in Sources */,
+				FA000000000000000000000E /* concat_prosody.cpp in Sources */,
+				FA000000000000000000002A /* formant_intonation.cpp in Sources */,
 				FA000000000000000000000F /* laprdus_api.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -435,14 +440,15 @@
 				FB0000000000000000000009 /* user_config.cpp in Sources */,
 				FB000000000000000000000A /* phoneme_data.cpp in Sources */,
 				FB000000000000000000000B /* audio_synthesizer.cpp in Sources */,
-				FB000000000000000000000C /* sonic_processor.cpp in Sources */,
-				FB000000000000000000000D /* formant_pitch.cpp in Sources */,
+				FB000000000000000000000C /* unit_bank.cpp in Sources */,
+				FB000000000000000000000D /* psola.cpp in Sources */,
 				FB0000000000000000000020 /* klatt_synth.cpp in Sources */,
 				FB0000000000000000000026 /* formant_phonemes.cpp in Sources */,
 				FB0000000000000000000027 /* formant_lexicon.cpp in Sources */,
 				FB0000000000000000000028 /* formant_frontend.cpp in Sources */,
 				FB0000000000000000000029 /* formant_synthesizer.cpp in Sources */,
-				FB000000000000000000000E /* sonic.c in Sources */,
+				FB000000000000000000000E /* concat_prosody.cpp in Sources */,
+				FB000000000000000000002A /* formant_intonation.cpp in Sources */,
 				FB000000000000000000000F /* laprdus_api.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -613,7 +619,6 @@
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/../../include",
 					"$(SRCROOT)/../../src",
-					"$(SRCROOT)/../../src/audio/sonic",
 				);
 				INFOPLIST_KEY_CFBundleDisplayName = "Laprdus TTS";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
@@ -666,7 +671,6 @@
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/../../include",
 					"$(SRCROOT)/../../src",
-					"$(SRCROOT)/../../src/audio/sonic",
 				);
 				INFOPLIST_KEY_CFBundleDisplayName = "Laprdus TTS";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
@@ -708,7 +712,6 @@
 								HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/../../include",
 					"$(SRCROOT)/../../src",
-					"$(SRCROOT)/../../src/audio/sonic",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -741,7 +744,6 @@
 								HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/../../include",
 					"$(SRCROOT)/../../src",
-					"$(SRCROOT)/../../src/audio/sonic",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -782,7 +784,6 @@
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/../../include",
 					"$(SRCROOT)/../../src",
-					"$(SRCROOT)/../../src/audio/sonic",
 				);
 				INFOPLIST_FILE = "Config/LaprdusVoices-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Laprdus Voices";
@@ -829,7 +830,6 @@
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/../../include",
 					"$(SRCROOT)/../../src",
-					"$(SRCROOT)/../../src/audio/sonic",
 				);
 				INFOPLIST_FILE = "Config/LaprdusVoices-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Laprdus Voices";

@@ -253,10 +253,11 @@ struct PauseSettings {
 // =============================================================================
 
 // Limits of the user-controlled speech rate and pitch. The recorded
-// (concatenative) voices go through Sonic and keep the narrower ranges; the
-// formant voices apply rate and pitch at the source and accept the wider
+// (concatenative) voices are rendered by PSOLA from their pitch marks and
+// keep the narrower ranges (beyond them the periods thin out or pile up);
+// the formant voices apply rate and pitch at the source and accept the wider
 // ones. VoiceParams::clamp() enforces the wide limits; the concatenative
-// synthesizer narrows them again for itself.
+// planner narrows them again for itself.
 constexpr float CONCAT_SPEED_MIN = 0.5f;
 constexpr float CONCAT_SPEED_MAX = 4.0f;     // 4.0x for NVDA rate boost
 constexpr float CONCAT_USER_PITCH_MIN = 0.5f;
@@ -285,8 +286,9 @@ constexpr float FORMANT_NOMINAL_WPM = 175.0f;
 constexpr float INFLECTION_LEVEL_DEFAULT = 0.5f;
 
 struct VoiceParams {
-    // Concatenative voices apply these with Sonic (time-stretching, pitch
-    // shifting); formant voices apply them at the source (durations, F0).
+    // Both kinds of voices apply these at the source: durations and the
+    // pitch contour (PSOLA for the recorded voices, the Klatt source for the
+    // formant voices).
     float speed = 1.0f;       // Speech rate (0.5 - 4.0; formant voices 0.25 - 4.0)
     float pitch = 1.0f;       // Voice character pitch (0.25 - 4.0)
     float user_pitch = 1.0f;  // User pitch preference (0.5 - 2.0; formant voices 0.25 - 4.0)

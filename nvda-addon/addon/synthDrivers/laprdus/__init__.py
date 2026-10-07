@@ -369,7 +369,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                 return
 
             # Use actual sample rate from synthesis - rate control is handled by
-            # Sonic library in the engine via set_speed(), not by playback sample rate
+            # the engine via set_speed() (durations), not by playback sample rate
             # Only hold lock during player creation, not during playback (which blocks)
             with self._playerLock:
                 if self._player is None or self._currentSampleRate != sample_rate:
@@ -621,7 +621,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             # This is the NVDA pitch slider, separate from voice character pitch
             if not self._forcePitch:
                 self._engine.set_user_pitch(_nvda_to_laprdus_pitch(self._pitch))
-            # Apply speed/rate to engine (Sonic time-stretching)
+            # Apply speed/rate to engine (segment durations)
             # This changes speed WITHOUT affecting pitch
             # Rate boost expands max rate from 2.0x to 4.0x
             if not self._forceSpeed:
@@ -865,7 +865,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         # If force speed is enabled, ignore NVDA slider - keep Laprdus config value
         if self._forceSpeed:
             return
-        # Apply rate to engine using Sonic-based time-stretching
+        # Apply rate to engine (segment durations)
         # This changes speed WITHOUT affecting pitch
         # Rate boost expands max rate from 2.0x to 4.0x
         if self._engine:

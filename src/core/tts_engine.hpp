@@ -6,7 +6,6 @@
 #define LAPRDUS_TTS_ENGINE_HPP
 
 #include "laprdus/types.hpp"
-#include "phoneme_mapper.hpp"
 #include "croatian_numbers.hpp"
 #include "inflection.hpp"
 #include "pronunciation_dict.hpp"
@@ -26,12 +25,10 @@ namespace laprdus {
  * Orchestrates the complete TTS pipeline:
  * 1. Text preprocessing (number expansion)
  * 2. Text segmentation (by punctuation)
- * 3. Phoneme mapping (character to phoneme)
- * 4. Audio synthesis (phoneme concatenation)
- * 5. Inflection application (pitch contours)
- *
- * With a formant voice, steps 3-5 are replaced by rule-based formant
- * synthesis (text front end + Klatt synthesizer); steps 1-2 are shared.
+ * 3. Text front end (letter-to-sound, stress, clitics; src/formant/)
+ * 4. Prosody (durations, pitch contour)
+ * 5. Waveform: TD-PSOLA over the recordings (recorded voices) or the
+ *    Klatt synthesizer (formant voices)
  *
  * Thread safety: Create one engine per thread,
  * or use external synchronization.
@@ -79,6 +76,14 @@ public:
      * @return true on success, false if the ID is not a formant voice.
      */
     bool initialize_formant(const char* voice_id);
+
+    /**
+     * Set the language of a recorded voice (Josip: Croatian, Vlado:
+     * Serbian): chooses the text front end's rules and lexicon. Formant
+     * voices carry their own language and ignore this.
+     * @param language Voice language.
+     */
+    void set_language(VoiceLanguage language);
 
     /**
      * Check if the engine currently speaks with a formant voice.

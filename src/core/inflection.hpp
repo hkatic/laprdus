@@ -1,6 +1,5 @@
 // -*- coding: utf-8 -*-
-// inflection.hpp - Voice inflection for punctuation
-// Applies pitch contours based on sentence punctuation
+// inflection.hpp - Clause segmentation at punctuation and pause settings
 
 #ifndef LAPRDUS_INFLECTION_HPP
 #define LAPRDUS_INFLECTION_HPP
@@ -13,15 +12,11 @@
 namespace laprdus {
 
 /**
- * InflectionProcessor - Applies pitch contours to audio.
+ * InflectionProcessor - Splits text into clauses at punctuation and keeps
+ * the pause settings.
  *
- * Croatian intonation patterns:
- * - Period (.): Falling intonation (-25% over last 4 phonemes)
- * - Question (?): Rising intonation (+35% over last 5 phonemes)
- * - Comma (,): Slight rise (+12% over last 2 phonemes)
- * - Exclamation (!): Emphatic (+15-25% overall)
- *
- * Uses simple pitch shifting via sample resampling.
+ * The pitch contour itself is drawn per clause by the intonation model in
+ * src/formant/formant_intonation.* for both kinds of voices.
  */
 class InflectionProcessor {
 public:
@@ -48,46 +43,6 @@ public:
     std::vector<TextSegment> analyze_text(const std::string& text);
 
     /**
-     * Apply inflection to audio samples.
-     * @param samples Input audio samples.
-     * @param inflection Type of inflection to apply.
-     * @param phoneme_count Number of phonemes in this segment.
-     * @return Processed audio with pitch contour applied.
-     */
-    AudioBuffer apply_inflection(const AudioBuffer& samples,
-                                 InflectionType inflection,
-                                 size_t phoneme_count);
-
-    /**
-     * Apply pitch shift to audio samples.
-     * Simple resampling-based pitch shift.
-     * @param samples Input samples.
-     * @param pitch_factor Pitch multiplier (1.0 = unchanged).
-     * @return Pitch-shifted samples.
-     */
-    static AudioBuffer pitch_shift(const AudioBuffer& samples, float pitch_factor);
-
-    /**
-     * Generate a smooth pitch envelope.
-     * @param num_samples Number of samples.
-     * @param params Inflection parameters.
-     * @return Vector of pitch factors for each sample.
-     */
-    static std::vector<float> generate_pitch_envelope(
-        size_t num_samples,
-        const InflectionParams& params);
-
-    /**
-     * Apply pitch envelope to audio.
-     * @param samples Input samples.
-     * @param envelope Pitch factor for each sample.
-     * @return Processed audio.
-     */
-    static AudioBuffer apply_pitch_envelope(
-        const AudioBuffer& samples,
-        const std::vector<float>& envelope);
-
-    /**
      * Get pause duration for punctuation type.
      * Uses custom pause settings if set.
      * @param punct Punctuation type.
@@ -111,16 +66,6 @@ public:
 
 private:
     PauseSettings m_pause_settings;
-
-    // Linear interpolation between pitch values
-    static float lerp(float a, float b, float t) {
-        return a + (b - a) * t;
-    }
-
-    // Smooth step for gradual transitions
-    static float smoothstep(float t) {
-        return t * t * (3.0f - 2.0f * t);
-    }
 };
 
 } // namespace laprdus

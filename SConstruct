@@ -210,7 +210,7 @@ elif target_platform == 'macos':
     min_version = '13.0'
 
     # -std=c++17 must not land in CCFLAGS: clang treats it as an error when
-    # compiling C (src/audio/sonic/sonic.c), unlike gcc which only warns.
+    # compiling C, unlike gcc which only warns.
     common_flags = [
         '-Wall',
         '-Wextra',
@@ -297,7 +297,6 @@ elif target_platform == 'android':
 env.Append(CPPPATH=[
     '#include',
     '#src',
-    '#src/audio/sonic',
 ])
 
 # =============================================================================
@@ -327,13 +326,14 @@ core_sources = [
     'src/core/user_config.cpp',
     'src/audio/phoneme_data.cpp',
     'src/audio/audio_synthesizer.cpp',
-    'src/audio/sonic_processor.cpp',
-    'src/audio/sonic/sonic.c',
-    'src/audio/formant_pitch.cpp',
+    'src/audio/unit_bank.cpp',
+    'src/audio/psola.cpp',
+    'src/audio/concat_prosody.cpp',
     'src/formant/klatt_synth.cpp',
     'src/formant/formant_phonemes.cpp',
     'src/formant/formant_lexicon.cpp',
     'src/formant/formant_frontend.cpp',
+    'src/formant/formant_intonation.cpp',
     'src/formant/formant_synthesizer.cpp',
     'src/c_api/laprdus_api.cpp',
     'src/laprdus.cpp',
@@ -499,13 +499,14 @@ if target_platform == 'windows':
         'src/core/user_config.cpp',
         'src/audio/phoneme_data.cpp',
         'src/audio/audio_synthesizer.cpp',
-        'src/audio/sonic_processor.cpp',
-        'src/audio/sonic/sonic.c',
-        'src/audio/formant_pitch.cpp',
+        'src/audio/unit_bank.cpp',
+        'src/audio/psola.cpp',
+        'src/audio/concat_prosody.cpp',
         'src/formant/klatt_synth.cpp',
         'src/formant/formant_phonemes.cpp',
         'src/formant/formant_lexicon.cpp',
         'src/formant/formant_frontend.cpp',
+        'src/formant/formant_intonation.cpp',
         'src/formant/formant_synthesizer.cpp',
         # C API for NVDA and other consumers
         'src/c_api/laprdus_api.cpp',
@@ -577,13 +578,14 @@ if target_platform == 'windows':
             'src/core/user_config.cpp',
             'src/audio/phoneme_data.cpp',
             'src/audio/audio_synthesizer.cpp',
-            'src/audio/sonic_processor.cpp',
-            'src/audio/sonic/sonic.c',
-            'src/audio/formant_pitch.cpp',
+            'src/audio/unit_bank.cpp',
+            'src/audio/psola.cpp',
+            'src/audio/concat_prosody.cpp',
             'src/formant/klatt_synth.cpp',
             'src/formant/formant_phonemes.cpp',
             'src/formant/formant_lexicon.cpp',
             'src/formant/formant_frontend.cpp',
+            'src/formant/formant_intonation.cpp',
             'src/formant/formant_synthesizer.cpp',
             # C API
             'src/c_api/laprdus_api.cpp',

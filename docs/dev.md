@@ -22,7 +22,7 @@ This document provides comprehensive technical documentation for developers work
 LaprdusTTS/
 ├── src/                    # Core C++ source code
 │   ├── core/               # TTS engine, phoneme mapping, numbers
-│   ├── audio/              # Audio synthesis, Sonic library
+│   ├── audio/              # Recorded voices: analysis, prosody, PSOLA
 │   ├── formant/            # Formant voices: front end, rules, Klatt synthesizer
 │   ├── c_api/              # Public C API
 │   └── platform/           # Platform-specific code
@@ -83,8 +83,8 @@ LaprdusTTS/
             ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                    AudioSynthesizer                             │
-│  - synthesize() → concatenate phonemes with crossfade           │
-│  - apply_params() → volume, rate (Sonic), pitch (Sonic/formant) │
+│  - synthesize_clause() → front end, plan_clause(), render()     │
+│    (durations, pitch contour, TD-PSOLA over the pitch marks)    │
 └─────────────┬───────────────────────────────────────────────────┘
               │
               ▼
@@ -99,10 +99,10 @@ LaprdusTTS/
 
 1. **Input**: UTF-8 text string
 2. **Preprocessing**: Number expansion, dictionary lookup, emoji replacement
-3. **Inflection Analysis**: Segment text by punctuation, assign pitch modulation
-4. **Phoneme Mapping**: Convert text to phoneme tokens (A-Z + Croatian special chars)
-5. **Audio Synthesis**: Concatenate phoneme WAV samples with 64-sample crossfade
-6. **Audio Processing**: Apply volume, rate (Sonic time-stretching), pitch (Sonic/formant)
+3. **Clause segmentation**: Split text at punctuation (chooses the melody and the pause)
+4. **Front end**: `formant::Frontend` → phones with stress, word and syllable indices
+5. **Prosody**: durations, closures, word gaps, pitch contour (`concat_prosody.cpp`, `formant_intonation.cpp`)
+6. **Rendering**: TD-PSOLA from the pitch marks of the recordings (`psola.cpp`), volume, soft limit
 7. **Output**: 16-bit PCM audio @ 22050 Hz mono
 
 ---
@@ -332,50 +332,35 @@ struct PhonemeEntry {
 - Channels: 1 (mono)
 - Phoneme truncation: L, M, N, S, SH, V, Z, ZH capped at 2000 bytes
 
-### 3.2 AudioSynthesizer (`src/audio/audio_synthesizer.cpp`)
+### 3.2 UnitBank (`src/audio/unit_bank.cpp`)
 
-Concatenates phoneme samples and applies audio processing.
+Analysis of every recording when a voice is loaded: DC removal and 2 ms edge
+fades, a pitch track (normalised autocorrelation with the voice's median
+pitch as prior), one pitch mark per period at the peaks of the low-passed
+waveform, marks every 5 ms in unvoiced sound, the sounding part and the
+burst onset of a stop. A voice character pitch other than 1.0 resamples the
+recordings by `sqrt(pitch)` first (spectrum warp of the derived voices).
 
-**Crossfade Algorithm:**
-- 64 samples overlap (~3ms at 22050 Hz)
-- Linear crossfade between adjacent phonemes
-- Prevents clicks/pops at phoneme boundaries
+### 3.3 Prosody (`src/audio/concat_prosody.cpp`)
 
-```cpp
-// Crossfade calculation
-for (size_t i = 0; i < overlap_samples; i++) {
-    float t = (float)i / overlap_samples;
-    float blended = prev_sample * (1.0f - t) + curr_sample * t;
-    // Clamp to 16-bit range
-    blended = std::clamp(blended, -32768.0f, 32767.0f);
-}
-```
+Durations by the rules of the formant voices (stress, length, final
+lengthening, rate floors), stops never stretched (burst kept, closure takes
+or gives the time), 22 ms gaps between words, and the pitch contour from the
+shared `formant::Intonation` model: accents on stressed syllables, question
+rises, final falls, declination; inflection level and enable, voice character
+pitch and user pitch all multiply onto the voice's natural pitch.
 
-### 3.3 SonicProcessor (`src/audio/sonic_processor.cpp`)
+### 3.4 PSOLA renderer (`src/audio/psola.cpp`)
 
-Wrapper around the Sonic library for rate and pitch control.
+Time-domain pitch-synchronous overlap-add: one Hann-windowed period of a
+recording per output period, placed at output marks spaced by the target
+pitch; periods repeated or skipped for duration; repeated unvoiced frames
+played backwards; joins between voiced recordings crossfaded period by period
+at the same phase. Rate 0.5x to 4.0x, user pitch 0.5x to 2.0x (the formant
+voices take 0.25x to 4.0x for both, times their acceleration setting
+(0.5-3.0) for the rate, capped at 8.0x).
 
-**Rate Control (Time-Stretching):**
-- Uses PICOLA algorithm
-- Changes speed WITHOUT changing pitch
-- Range: 0.5x to 4.0x (with rate boost); the formant voices do not use Sonic and take 0.25x to 4.0x, times their acceleration setting (0.5-3.0), capped at 8.0x
-
-**Pitch Control (Pitch-Shifting with Formant Shift):**
-- Changes pitch AND formants (chipmunk effect)
-- Used for derived voices (child, grandma, grandpa)
-- Range: 0.25x to 4.0x
-
-### 3.4 FormantPitch (`src/audio/formant_pitch.cpp`)
-
-User pitch preference with formant preservation.
-
-**Purpose:**
-- Adjust pitch WITHOUT changing voice character
-- For user-controlled pitch slider in SAPI5/NVDA
-- Range: 0.5x to 2.0x (the formant voices scale F0 directly and take 0.25x to 4.0x)
-
-**Current Implementation:**
-Uses Sonic as placeholder. Architecture supports future STFT-based formant preservation when C++20 compatibility allows (stftPitchShift with cepstral analysis).
+See `docs/concatenative.md` for the full description and measurements.
 
 ---
 

@@ -1,59 +1,65 @@
 // -*- coding: utf-8 -*-
-// audio_synthesizer.hpp - Phoneme concatenation and audio synthesis
-// Combines phoneme samples into continuous speech audio
+// audio_synthesizer.hpp - Synthesis with the recorded voices
+//
+// Speaks a clause with a recorded (concatenative) voice: the text goes
+// through the formant voices' front end (letter-to-sound, stress, clitics),
+// the planner lays the recordings out in time and draws the pitch contour
+// (concat_prosody.*), and the TD-PSOLA renderer (psola.*) produces the
+// waveform from the analysed recordings (unit_bank.*). Rate, pitch and
+// intonation are all applied by the renderer from the pitch marks of the
+// recordings; no time-stretching or pitch-shifting library is involved.
 
 #ifndef LAPRDUS_AUDIO_SYNTHESIZER_HPP
 #define LAPRDUS_AUDIO_SYNTHESIZER_HPP
 
 #include "laprdus/types.hpp"
 #include "phoneme_data.hpp"
-#include "../core/inflection.hpp"
-#include <vector>
+#include "unit_bank.hpp"
+#include "../formant/formant_frontend.hpp"
+#include <memory>
 #include <string>
-#include <functional>
 
 namespace laprdus {
 
 /**
- * AudioSynthesizer - Concatenates phoneme audio samples.
+ * AudioSynthesizer - clause synthesis with a recorded voice.
  *
- * Takes a sequence of phoneme tokens and produces continuous
- * audio output with appropriate smoothing between phonemes.
- *
- * Features:
- * - Phoneme truncation for long consonants
- * - Crossfade blending between phonemes
- * - Silence insertion for pauses
- * - Inflection application per segment
+ * The recordings are analysed when the synthesizer is created (pitch marks,
+ * voicing, sounding part) and again whenever the voice character pitch
+ * changes, because that pitch warps the spectrum of the recordings.
  */
 class AudioSynthesizer {
 public:
     /**
-     * Create synthesizer with phoneme data.
-     * @param phoneme_data Reference to loaded phoneme audio data.
+     * Create the synthesizer and analyse the recordings.
+     * @param phoneme_data Loaded recordings (must outlive the synthesizer).
+     * @param language Language of the voice, for the text front end.
      */
-    explicit AudioSynthesizer(const PhonemeData& phoneme_data);
-    ~AudioSynthesizer() = default;
+    explicit AudioSynthesizer(const PhonemeData& phoneme_data,
+                              VoiceLanguage language = VoiceLanguage::Croatian);
+    ~AudioSynthesizer();
 
     // Non-copyable
     AudioSynthesizer(const AudioSynthesizer&) = delete;
     AudioSynthesizer& operator=(const AudioSynthesizer&) = delete;
 
     /**
-     * Synthesize audio from phoneme tokens.
-     * @param tokens Sequence of phoneme tokens with timing info.
-     * @return Combined audio buffer.
+     * Change the language of the text front end (ije, lexicon).
      */
-    AudioBuffer synthesize(const std::vector<PhonemeToken>& tokens);
+    void set_language(VoiceLanguage language);
 
     /**
-     * Synthesize a single text segment with inflection.
-     * @param segment Text segment with inflection markers.
-     * @param tokens Phonemes for this segment.
-     * @return Processed audio with inflection applied.
+     * Use the user's accent entries (nullptr removes them).
      */
-    AudioBuffer synthesize_segment(const TextSegment& segment,
-                                   const std::vector<PhonemeToken>& tokens);
+    void set_user_lexicon(const std::shared_ptr<const formant::UserLexicon>& lexicon);
+
+    /**
+     * Synthesize one clause.
+     * @param text The clause (UTF-32), without its punctuation.
+     * @param punct The punctuation that ended it (chooses the melody).
+     * @return The clause's sound; no pause is appended.
+     */
+    AudioBuffer synthesize_clause(const std::u32string& text, Punctuation punct);
 
     /**
      * Generate silence of specified duration.
@@ -70,47 +76,31 @@ public:
 
     /**
      * Get current voice parameters.
-     * @return Current voice parameters.
      */
     const VoiceParams& voice_params() const { return m_voice_params; }
 
     /**
-     * Set streaming callback for real-time output.
-     * @param callback Function to receive audio chunks.
-     * @param chunk_size_ms Approximate chunk duration.
+     * Pitch of the voice as recorded (Hz), 0 if no recordings are loaded.
      */
-    void set_stream_callback(std::function<void(const AudioBuffer&)> callback,
-                            uint32_t chunk_size_ms = 100);
+    float natural_f0() const { return m_natural_f0; }
 
     /**
-     * Clear streaming callback.
+     * Spectrum warp applied to the recordings for a voice character pitch.
      */
-    void clear_stream_callback();
+    static float formant_warp_for_pitch(float pitch);
 
 private:
+    void ensure_bank();
+
     const PhonemeData& m_phoneme_data;
     VoiceParams m_voice_params{};
-    InflectionProcessor m_inflection;
+    VoiceLanguage m_language;
+    std::unique_ptr<formant::Frontend> m_frontend;
+    std::shared_ptr<const formant::UserLexicon> m_user_lexicon;
 
-    std::function<void(const AudioBuffer&)> m_stream_callback;
-    uint32_t m_stream_chunk_samples = 0;
-
-    // Phonemes that should be truncated (long consonants)
-    static constexpr uint32_t TRUNCATION_BYTES = 2000;
-    static bool should_truncate(Phoneme phoneme);
-    static uint32_t get_truncation_limit(Phoneme phoneme);
-
-    // Audio processing helpers
-    AudioBuffer get_phoneme_audio(Phoneme phoneme) const;
-    void apply_crossfade(AudioBuffer& dest, const AudioBuffer& src,
-                        size_t overlap_samples) const;
-    AudioBuffer apply_volume(const AudioBuffer& samples, float volume) const;
-    AudioBuffer apply_rate(const AudioBuffer& samples, float rate) const;
-    AudioBuffer apply_pitch(const AudioBuffer& samples, float pitch) const;
-    AudioBuffer apply_user_pitch(const AudioBuffer& samples, float pitch) const;
-
-    // Streaming support
-    void emit_chunk(const AudioBuffer& chunk);
+    concat::UnitBank m_bank;
+    float m_bank_warp = 0.0f;       // warp the bank was built with (0: not built)
+    float m_natural_f0 = 0.0f;
 };
 
 } // namespace laprdus

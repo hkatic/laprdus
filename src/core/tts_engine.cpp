@@ -18,7 +18,7 @@ namespace laprdus {
 struct TTSEngine::Impl {
     PhonemeData phoneme_data;
     std::unique_ptr<AudioSynthesizer> synthesizer;
-    PhonemeMapper phoneme_mapper;
+    VoiceLanguage concat_language = VoiceLanguage::Croatian;
     CroatianNumbers number_converter;
     InflectionProcessor inflection;
     PronunciationDictionary dictionary;
@@ -29,8 +29,10 @@ struct TTSEngine::Impl {
 
     // Formant voice (replaces phoneme_data/synthesizer when set)
     std::unique_ptr<formant::FormantSynthesizer> formant;
-    std::function<void(const AudioBuffer&)> formant_stream_callback;
-    uint32_t formant_stream_chunk_samples = 0;
+
+    // Streaming: the clauses are handed over in chunks of this size
+    std::function<void(const AudioBuffer&)> stream_callback;
+    uint32_t stream_chunk_samples = 0;
 
     // The user's accent entries, kept across voice changes and handed to
     // every new formant synthesizer
@@ -94,8 +96,10 @@ bool TTSEngine::initialize(const std::string& phoneme_path,
     m_impl->formant.reset();
     m_impl->number_converter.set_dialect(CroatianNumbers::Dialect::Croatian);
 
-    // Create synthesizer
-    m_impl->synthesizer = std::make_unique<AudioSynthesizer>(m_impl->phoneme_data);
+    // Create synthesizer (analyses the recordings)
+    m_impl->synthesizer = std::make_unique<AudioSynthesizer>(m_impl->phoneme_data,
+                                                             m_impl->concat_language);
+    m_impl->synthesizer->set_user_lexicon(m_impl->user_lexicon);
     m_impl->synthesizer->set_voice_params(m_impl->voice_params);
 
     m_impl->initialized = true;
@@ -127,8 +131,10 @@ bool TTSEngine::initialize_from_memory(const uint8_t* data, size_t size,
     m_impl->formant.reset();
     m_impl->number_converter.set_dialect(CroatianNumbers::Dialect::Croatian);
 
-    // Create synthesizer
-    m_impl->synthesizer = std::make_unique<AudioSynthesizer>(m_impl->phoneme_data);
+    // Create synthesizer (analyses the recordings)
+    m_impl->synthesizer = std::make_unique<AudioSynthesizer>(m_impl->phoneme_data,
+                                                             m_impl->concat_language);
+    m_impl->synthesizer->set_user_lexicon(m_impl->user_lexicon);
     m_impl->synthesizer->set_voice_params(m_impl->voice_params);
 
     m_impl->initialized = true;
@@ -170,6 +176,14 @@ bool TTSEngine::initialize_formant(const char* voice_id) {
 
     m_impl->initialized = true;
     return true;
+}
+
+void TTSEngine::set_language(VoiceLanguage language) {
+    if (!m_impl) return;
+    m_impl->concat_language = language;
+    if (m_impl->synthesizer) {
+        m_impl->synthesizer->set_language(language);
+    }
 }
 
 bool TTSEngine::is_formant() const {
@@ -259,14 +273,8 @@ SynthesisResult TTSEngine::synthesize_streaming(
     }
 
     auto set_callback = [&](std::function<void(const AudioBuffer&)> cb) {
-        if (m_impl->formant) {
-            m_impl->formant_stream_chunk_samples = cb ? (SAMPLE_RATE * chunk_ms) / 1000 : 0;
-            m_impl->formant_stream_callback = std::move(cb);
-        } else if (cb) {
-            m_impl->synthesizer->set_stream_callback(std::move(cb), chunk_ms);
-        } else {
-            m_impl->synthesizer->clear_stream_callback();
-        }
+        m_impl->stream_chunk_samples = cb ? (SAMPLE_RATE * chunk_ms) / 1000 : 0;
+        m_impl->stream_callback = std::move(cb);
     };
 
     try {
@@ -401,72 +409,43 @@ AudioBuffer TTSEngine::synthesize_segments(const std::vector<TextSegment>& segme
             continue;
         }
 
+        // The clause is synthesized by rule (formant voice) or from the
+        // recordings (PSOLA); rate, pitch, volume and intonation are all
+        // applied at the source by either.
+        AudioBuffer clause;
         if (m_impl->formant) {
-            // Formant voice: the clause is synthesized by rule. Rate, pitch,
-            // volume and intonation are all handled at the source.
-            AudioBuffer clause = m_impl->formant->synthesize_clause(
+            clause = m_impl->formant->synthesize_clause(
                 segment.text, segment.trailing_punct, m_impl->voice_params);
-            if (clause.empty()) {
-                continue;
-            }
-            if (segment.trailing_punct != Punctuation::NONE) {
-                clause.append_silence(
-                    m_impl->inflection.get_pause_duration(segment.trailing_punct));
-            }
-
-            if (m_impl->formant_stream_callback) {
-                // Streaming: hand the clause over in chunks, keep nothing.
-                // A chunk size of 0 means "do not split".
-                const size_t chunk_size = m_impl->formant_stream_chunk_samples > 0
-                    ? m_impl->formant_stream_chunk_samples
-                    : clause.samples.size();
-                for (size_t pos = 0; pos < clause.samples.size(); pos += chunk_size) {
-                    AudioBuffer chunk;
-                    chunk.sample_rate = clause.sample_rate;
-                    chunk.bits_per_sample = clause.bits_per_sample;
-                    chunk.channels = clause.channels;
-                    size_t end = std::min(pos + chunk_size, clause.samples.size());
-                    chunk.samples.assign(clause.samples.begin() + static_cast<std::ptrdiff_t>(pos),
-                                         clause.samples.begin() + static_cast<std::ptrdiff_t>(end));
-                    m_impl->formant_stream_callback(chunk);
-                }
-            } else {
-                result.append(clause);
-            }
+        } else if (m_impl->synthesizer) {
+            clause = m_impl->synthesizer->synthesize_clause(segment.text, segment.trailing_punct);
+        }
+        if (clause.empty()) {
             continue;
         }
-
-        // Convert UTF-32 segment text back to UTF-8 for phoneme mapping
-        std::string utf8_text = PhonemeMapper::utf32_to_utf8(segment.text);
-
-        // Map text to phonemes
-        std::vector<PhonemeToken> tokens = m_impl->phoneme_mapper.map_text(utf8_text);
-
-        if (tokens.empty()) {
-            continue;
+        if (segment.trailing_punct != Punctuation::NONE) {
+            clause.append_silence(
+                m_impl->inflection.get_pause_duration(segment.trailing_punct));
         }
 
-        // Synthesize this segment with inflection
-        AudioBuffer segment_audio;
-
-        if (m_impl->voice_params.inflection_enabled) {
-            segment_audio = m_impl->synthesizer->synthesize_segment(segment, tokens);
+        if (m_impl->stream_callback) {
+            // Streaming: hand the clause over in chunks, keep nothing.
+            // A chunk size of 0 means "do not split".
+            const size_t chunk_size = m_impl->stream_chunk_samples > 0
+                ? m_impl->stream_chunk_samples
+                : clause.samples.size();
+            for (size_t pos = 0; pos < clause.samples.size(); pos += chunk_size) {
+                AudioBuffer chunk;
+                chunk.sample_rate = clause.sample_rate;
+                chunk.bits_per_sample = clause.bits_per_sample;
+                chunk.channels = clause.channels;
+                size_t end = std::min(pos + chunk_size, clause.samples.size());
+                chunk.samples.assign(clause.samples.begin() + static_cast<std::ptrdiff_t>(pos),
+                                     clause.samples.begin() + static_cast<std::ptrdiff_t>(end));
+                m_impl->stream_callback(chunk);
+            }
         } else {
-            // No inflection, just synthesize raw
-            segment_audio = m_impl->synthesizer->synthesize(tokens);
-
-            // Still add pause for punctuation
-            if (segment.trailing_punct != Punctuation::NONE) {
-                uint32_t pause_ms = m_impl->inflection.get_pause_duration(
-                    segment.trailing_punct);
-                if (pause_ms > 0) {
-                    segment_audio.append_silence(pause_ms);
-                }
-            }
+            result.append(clause);
         }
-
-        // Append to result
-        result.append(segment_audio);
     }
 
     return result;
@@ -729,6 +708,9 @@ bool TTSEngine::load_accent_lexicon_from_memory(const char* json_content, size_t
     }
 
     m_impl->user_lexicon = lexicon->empty() ? nullptr : lexicon;
+    if (m_impl->synthesizer) {
+        m_impl->synthesizer->set_user_lexicon(m_impl->user_lexicon);
+    }
     if (m_impl->formant) {
         m_impl->formant->set_user_lexicon(m_impl->user_lexicon);
     }
@@ -743,6 +725,9 @@ void TTSEngine::clear_accent_lexicon() {
     m_impl->user_lexicon_report.clear();
     if (m_impl->formant) {
         m_impl->formant->set_user_lexicon(nullptr);
+    }
+    if (m_impl->synthesizer) {
+        m_impl->synthesizer->set_user_lexicon(nullptr);
     }
 }
 

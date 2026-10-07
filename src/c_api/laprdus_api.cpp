@@ -790,6 +790,7 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_voice(
 
         handle->data_directory = data_directory;
     }
+    handle->engine.set_language(voice->language);
 
     // Store current voice and apply its base pitch, so that a derived voice
     // sounds like itself (and its base voice like itself again) without the

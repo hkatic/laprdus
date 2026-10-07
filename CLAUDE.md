@@ -9,7 +9,7 @@ LaprdusTTS is a Croatian/Serbian/Bosnian text-to-speech (TTS) engine supporting:
 - **NVDA** screen reader synthesizer driver
 
 It has two kinds of voices:
-- **Concatenative** voices (Josip, Vlado and the voices derived from them) join pre-recorded phoneme WAV files.
+- **Concatenative** voices (Josip, Vlado and the voices derived from them) are rendered from pre-recorded phoneme WAV files by TD-PSOLA. See "Recorded Voices" below and `docs/concatenative.md`.
 - **Formant** voices (Zvonko, Stojan, Mirsad) are synthesized entirely by rule and need no data files. See "Formant Voices" below.
 
 ## Architecture
@@ -27,13 +27,17 @@ It has two kinds of voices:
 | `src/core/tts_engine.cpp` | Main engine orchestrating synthesis pipeline |
 | `src/core/phoneme_mapper.cpp` | UTF-8 text → phoneme token conversion |
 | `src/core/croatian_numbers.cpp` | Number-to-words (supports up to centillions) |
-| `src/core/inflection.cpp` | Punctuation-based pitch/emphasis modulation |
+| `src/core/inflection.cpp` | Clause segmentation at punctuation, pause settings |
 | `src/core/voice_registry.cpp` | Voice definitions (Josip, Vlado, derived voices) |
-| `src/audio/audio_synthesizer.cpp` | Phoneme concatenation with crossfade |
+| `src/audio/audio_synthesizer.cpp` | Recorded voices: clause synthesis (front end → planner → renderer) |
+| `src/audio/unit_bank.cpp` | Recorded voices: analysis of the recordings (pitch marks, voicing, bursts) |
+| `src/audio/concat_prosody.cpp` | Recorded voices: durations, closures, word gaps, pitch contour |
+| `src/audio/psola.cpp` | Recorded voices: TD-PSOLA renderer |
 | `src/audio/phoneme_data.cpp` | WAV file loading from .bin or directory |
 | `src/c_api/laprdus_api.cpp` | C API for external consumers |
 | `src/formant/formant_frontend.cpp` | Formant voices: text → phones (letter-to-sound, stress, clitics, assimilation) |
 | `src/formant/formant_lexicon.cpp` | Formant voices: built-in accent lexicon |
+| `src/formant/formant_intonation.cpp` | Intonation model (accents, boundary movements, declination) shared by both kinds of voices |
 | `src/formant/formant_phonemes.cpp` | Formant voices: acoustic targets of every phone |
 | `src/formant/formant_synthesizer.cpp` | Formant voices: durations, formant tracks, intonation |
 | `src/formant/klatt_synth.cpp` | Formant voices: cascade/parallel (Klatt) synthesizer |
@@ -49,21 +53,20 @@ It has two kinds of voices:
 
 ### Processing Pipeline
 
-1. Text → `TTSEngine::preprocess_text()` → Number expansion
-2. → `InflectionProcessor::analyze_text()` → Segment by punctuation
-3. → `PhonemeMapper::map_text()` → UTF-8 to phoneme tokens
-4. → `AudioSynthesizer::synthesize()` → Concatenate WAV samples with crossfade
-5. → Apply volume, rate, pitch transformations
-6. → `InflectionProcessor::apply_inflection()` → Pitch contours
-7. → Output 16-bit PCM @ 22050Hz mono
+1. Text → `TTSEngine::preprocess_text()` → Number expansion, dictionaries
+2. → `InflectionProcessor::analyze_text()` → Segment into clauses by punctuation
+3. → `formant::Frontend::process()` → phones with stress, words, clause kind (both kinds of voices)
+4. → Recorded voices: `concat::plan_clause()` (durations, pitch contour) → `concat::render()` (TD-PSOLA)
+   Formant voices: `ClauseBuilder` → `KlattSynth`
+5. → Output 16-bit PCM @ 22050Hz mono; rate, pitch, volume and intonation are applied at the source by both
 
 ### Phoneme System
 
 - **Format**: 16-bit PCM WAV, 22050 Hz, mono
 - **Storage**: Packed `.bin` files (Josip.bin, Vlado.bin) or raw WAV directory
 - **Croatian phonemes**: A-Z + č, ć, đ, š, ž, lj, nj, dž
-- **Truncation**: L, M, N, S, SH, V, Z, ZH capped at 2000 bytes
-- **Crossfade**: 64 samples (~3ms) between phonemes
+- **Analysis at load**: DC removal, pitch marks, voicing, burst onset per recording (`unit_bank.cpp`)
+- **Joins**: pitch-synchronous crossfade of whole periods (no fixed crossfade, no truncation)
 
 ### Voice System
 
@@ -118,7 +121,7 @@ Zvonko (hr), Stojan (sr) and Mirsad (bs) live in `src/formant/` and share the te
 
 Things to know before changing them:
 
-- **Speed, pitch and volume are applied at the source** (durations, F0, gain). Sonic is not involved, so `VoiceParams::pitch` and `user_pitch` both simply scale F0.
+- **Speed, pitch and volume are applied at the source** (durations, F0, gain), so `VoiceParams::pitch` and `user_pitch` both simply scale F0.
 - **Wider ranges and two settings of their own.** `VoiceParams::clamp()` allows speed and `user_pitch` from 0.25 to 4.0; the concatenative `AudioSynthesizer` narrows them to its 0.5-4.0 / 0.5-2.0 itself, so every platform may pass the wide range and let the engine sort it out. `inflection_level` (0-1, default 0.5) scales the whole F0 contour in semitones (0 is a monotone, 1 doubles every movement) and `acceleration` (0.5-3.0, default 1.0) multiplies the speed (`VoiceParams::formant_speed()`, capped at 8.0), so a host's rate slider reaches a higher or lower top rate. Both are `laprdus_set_inflection_level()` / `laprdus_set_acceleration()` in the C API, `speech.inflection_level` / `speech.acceleration` in `settings.json`, keys `inflection_level` / `acceleration` on Android and Apple, and are shown only for formant voices. `laprdus_get_nominal_wpm(voice)` (175 words/min for Zvonko at speed 1.0, times the voice's tempo) lets a UI print the top rate in words per minute: nominal × 2.0 (the slider's top) × acceleration. The Speech Dispatcher module maps SSIP `pitch_range` onto the inflection level.
 - **Number words follow the voice language**: `CroatianNumbers::set_dialect()` is set by `TTSEngine::initialize_formant()` (tisuća/milijun/dvjesto, hiljada/milion/dvesta, hiljada/milion/dvjesto) and reset to Croatian when a concatenative voice is loaded, so Josip and Vlado are unchanged. One and two agree with the feminine scale words in every dialect (dvije tisuće, dve hiljade, dvadeset jedna tisuća, dvije milijarde).
 - **Synthesis is deterministic**: the same text and settings give the same samples (`tests/linux/test_formant.cpp` relies on it).
@@ -158,29 +161,24 @@ laprdus_destroy(handle);
 
 ## Audio Processing
 
-### Sonic Library Integration
-Rate and pitch are controlled independently using the Sonic library (`src/audio/sonic/`):
-- **Speed** (rate): Time-stretching via PICOLA algorithm - changes tempo WITHOUT changing pitch
-- **Pitch** (voice character): Pitch-shifting with formant shift - intentionally changes voice character (used for derived voices like child, grandma, grandpa)
-- **User Pitch**: Pitch-shifting for user preference - intended to preserve voice character
+### Recorded Voices (TD-PSOLA)
 
-The wrapper is in `src/audio/sonic_processor.cpp`.
+Rate, pitch and intonation of Josip and Vlado are produced by time-domain pitch-synchronous overlap-add over the pitch marks of the recordings (`src/audio/psola.cpp`), with no third-party library. `docs/concatenative.md` has the full description.
+
+- **Speed** (rate): the planner shortens or lengthens every segment's duration (same rules as the formant voices, rate floors for consonants); the renderer repeats or skips periods. Bursts are never stretched; closures take the time at slow rates and lose it first at fast ones.
+- **Pitch** (voice character, derived voices): the spectrum of the recordings is warped by `sqrt(pitch)` at analysis time (a child's vocal tract), and the pitch itself by `pitch` at rendering.
+- **User Pitch**: the output period spacing alone; formants stay where they are.
+- **Intonation**: the shared `formant::Intonation` model draws the contour from the front end's stress and clause kind.
 
 ### Dual Pitch System
 Two separate pitch parameters serve different purposes:
 
 | Parameter | Range | Purpose | Effect |
 |-----------|-------|---------|--------|
-| `pitch` | 0.25 - 4.0 | Voice character (derived voices) | Shifts formants - changes voice identity |
-| `user_pitch` | 0.5 - 2.0 (formant 0.25 - 4.0) | User preference (SAPI5/NVDA slider) | Adjusts F0 - keeps voice identity |
+| `pitch` | 0.25 - 4.0 | Voice character (derived voices) | Recorded: formants × sqrt(pitch), F0 × pitch. Formant voices: F0 × pitch |
+| `user_pitch` | 0.5 - 2.0 (formant 0.25 - 4.0) | User preference (SAPI5/NVDA slider) | F0 only - keeps voice identity |
 
-**Processing order in AudioSynthesizer::synthesize():**
-1. Volume adjustment
-2. Speed/rate (Sonic time-stretching)
-3. Voice character pitch (`pitch`) - Sonic pitch shift
-4. User pitch preference (`user_pitch`) - formant_pitch.cpp
-
-**Note:** The formant-preserving algorithm in `src/audio/formant_pitch.cpp` currently uses Sonic as a placeholder. The architecture is in place for a true formant-preserving implementation (e.g., stftPitchShift with cepstral analysis) when C++20 compatibility allows it.
+`TTSEngine::set_language()` tells the recorded voices' front end which language's rules and lexicon to use (`laprdus_set_voice()`, the SAPI5 driver and the Android bridge call it); number words stay Croatian for Josip and Vlado.
 
 ## Dependencies
 
@@ -786,7 +784,7 @@ No manual copying is required - the build systems handle this automatically.
 ### When to Trigger Full Rebuild
 
 Rebuild all platforms after changes to:
-- **C++ core engine** (`src/core/`, `src/audio/`, `src/c_api/`)
+- **C++ core engine** (`src/core/`, `src/audio/`, `src/formant/`, `src/c_api/`)
 - **SAPI5 driver** (`src/platform/windows/sapi5/`)
 - **NVDA addon** (`nvda-addon/addon/synthDrivers/laprdus/`)
 - **Dictionaries** (`data/dictionary/*.json`)
@@ -989,6 +987,12 @@ g++ -std=c++17 -I include -I tests/linux tests/linux/test_formant.cpp \
 LD_LIBRARY_PATH=build/linux-x64-release LAPRDUS_DATA=./build/linux-x64-release \
     ./build/linux-x64-release/test_formant
 
+# Recorded voice tests (rate, pitch, derived voices, melody, streaming)
+g++ -std=c++17 -I include -I tests/linux tests/linux/test_concat.cpp \
+    -o build/linux-x64-release/test_concat -L build/linux-x64-release -llaprdus -lpthread
+LD_LIBRARY_PATH=build/linux-x64-release LAPRDUS_DATA=./build/linux-x64-release \
+    ./build/linux-x64-release/test_concat
+
 # The same tests on macOS (the dylib is found through @rpath next to the binary)
 B=build/macos-arm64-release
 clang++ -std=c++17 -I include -I tests/linux tests/linux/test_formant.cpp \
@@ -1015,6 +1019,7 @@ LD_LIBRARY_PATH=build/linux-x64-release \
 - [ ] CLI synthesizes audio to WAV file correctly
 - [ ] All voices synthesize correctly (josip, vlado, detence, baba, djed, zvonko, stojan, mirsad)
 - [ ] Formant voice tests pass (`test_formant`)
+- [ ] Recorded voice tests pass (`test_concat`, needs `LAPRDUS_DATA`)
 
 #### Linux Package Testing (if building packages)
 

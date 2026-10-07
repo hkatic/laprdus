@@ -328,6 +328,9 @@ HRESULT LaprdusSAPIDriver::InitializeEngine() {
             m_engine.reset();
             return E_FAIL;
         }
+        if (voiceDef) {
+            m_engine->set_language(voiceDef->language);
+        }
     }
 
     // Apply base pitch for derived voices

@@ -455,6 +455,7 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetVoice(
         LOGE("Failed to load voice data: %s", dataFilename);
         return JNI_FALSE;
     }
+    g_engine->set_language(voice->language);
 
     // Store and apply voice's base pitch for derived voices
     // This base_pitch defines the voice character (e.g., detence=1.5 for child voice)
