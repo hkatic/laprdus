@@ -168,6 +168,13 @@ bool TTSEngine::is_formant() const {
     return m_impl && m_impl->formant != nullptr;
 }
 
+void TTSEngine::begin_utterance() {
+    // A singing preset starts its song over with every utterance.
+    if (m_impl && m_impl->formant) {
+        m_impl->formant->rewind_song();
+    }
+}
+
 // =============================================================================
 // Is Initialized
 // =============================================================================
@@ -182,6 +189,7 @@ bool TTSEngine::is_initialized() const {
 
 SynthesisResult TTSEngine::synthesize(const std::string& text) {
     SynthesisResult result;
+    begin_utterance();
 
     if (!is_initialized()) {
         result.success = false;
@@ -223,6 +231,7 @@ SynthesisResult TTSEngine::synthesize_streaming(
     uint32_t chunk_ms) {
 
     SynthesisResult result;
+    begin_utterance();
 
     if (!is_initialized()) {
         result.success = false;
@@ -539,6 +548,7 @@ void TTSEngine::clear_spelling_dictionary() {
 SynthesisResult TTSEngine::synthesize_spelled(const std::string& text) {
     SynthesisResult result;
     result.success = false;
+    begin_utterance();
 
     if (!m_impl || !m_impl->initialized) {
         result.error_message = "Engine not initialized";

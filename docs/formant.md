@@ -726,6 +726,18 @@ syllable of a clause longer. The rate setting scales durations directly, with
 a floor per sound so that consonant cues survive at very high rates;
 transitions shrink less than steady states.
 
+The rate the builder uses is `VoiceParams::formant_speed()`: the speed (0.25
+to 4.0, wider than the 0.5 to 2.0 of the recorded voices) times the
+**acceleration** setting (0.5 to 3.0), capped at 8.0. Acceleration is a plain
+multiplier, as eSpeak's rate boost is, so the centre of a host's rate slider
+moves with its top; it exists so that a screen reader's slider, which stops
+at 2.0, can reach the rates the formant voices are still intelligible at.
+User interfaces print the rate the top of the slider reaches in words per
+minute: Zvonko speaks 175 words per minute at speed 1.0 on running text
+(measured on a 79-word paragraph: 27.1 s), Stojan and Mirsad that times
+their tempo (`VoiceRegistry::nominal_wpm()`), so the top of a 2.0 slider is
+350 words per minute at acceleration 1.0 and 700 at 2.0.
+
 **Pitch** is the sum of:
 
 - a baseline that drifts down along the clause (declination), about two
@@ -751,6 +763,14 @@ transitions shrink less than steady states.
 
 The contour is smoothed in both directions. With inflection switched off only
 the segmental effects remain.
+
+The **inflection level** setting (0 to 1, default 0.5) scales the finished
+contour, in semitones, by `level / 0.5` just before it is turned into hertz:
+0 is a monotone at the voice's mid pitch (the segmental effects go too), 0.5
+the movements described above, 1 twice every movement (a first accent of 9
+semitones, a question rise of 14). The user pitch setting multiplies the mid
+pitch and takes 0.25 to 4.0 for these voices, with the result held between 45
+and 480 Hz, so Zvonko bottoms out at about 0.4.
 
 A clause of a single syllable (a letter name while spelling, *da*, *ne*) gets
 less than half of these movements. A full sentence melody squeezed into one
@@ -814,6 +834,100 @@ followed directly.
 | Numbers | tisuća, milijun, dvije tisuće | hiljada, milion, dvesta, dve hiljade | hiljada, milion, dvije hiljade |
 | *ne* + verb | *nè znām* only | also *nè mogu* | also *nè mogu* |
 | Accent on prepositions | no | no | yes (*ù grād*) |
+
+## 6a. Singing presets
+
+Each speaking voice has two singing presets, after the singing voices of
+DECtalk (`[dey<400,22>]`: a phoneme, a duration and a note code) and of
+the Macintosh (Pipe Organ, Cellos, Bad News, Good News), which sing any
+text to a fixed tune, one syllable per note, and start the tune over with
+every utterance. Ours do the same with a public-domain folk song of the
+voice's country:
+
+| Preset | ID | Base | Source | Song |
+|---|---|---|---|---|
+| Zvonko Orguljaš | `orguljas` | Zvonko | pipe organ (stack of partials over a 16' sub-octave, church reverb, no vibrato) | *Vila Velebita* (anonymous, 1882; from a public-domain MIDI transcription) |
+| Klapa Zvonko | `klapa` | Zvonko | three glottal voices ±10 cents and a bass an octave down, light reverb, vibrato 5.5 Hz ±30 cents | the same |
+| Stojan Trubač | `trubac` | Stojan | sawtooth through a tanh that saturates with level (the lips), slow attack, vibrato 6 Hz ±25 cents setting in late | *Kreće se lađa francuska* (Milosavljević d. 1944) |
+| Stojan Harmonikaš | `harmonikas` | Stojan | two sawtooth reeds, the second 14 cents sharp (musette beating), no vibrato | the same |
+| Mirsad Sevdalija | `sevdalija` | Mirsad | the glottal voice, breathier, F5 pulled down to 3.1 kHz and narrowed (singer's formant, DECtalk's f5/b5 trick), vibrato 5.5 Hz ±60 cents, 90 ms portamento | *Kad ja pođoh na Bembašu* (traditional, printed 1906) |
+| Mirsad Sazlija | `sazlija` | Mirsad | sawtooth with a chorus and a sub-octave, plucked: 350 ms decay, re-picked every eighth note (tremolo), brightness falling as it decays | the same |
+| Zvonko Bećarac | `becarac` | Zvonko | dry voice, vibrato 6 Hz ±20 cents, 30 ms portamento | the bećarac tune of Slavonia (traditional; 2/4, quarter = 75), as transcribed for "U mog strica osam kobasica, sedam prži, osmu strina drži": two ten-syllable lines, so any bećarac couplet fits |
+| Zvonko Pjevač, Stojan Pevač, Mirsad Solist | `pjevac`, `pevac`, `solist` | each voice | the voice itself ("dry": its own source and phonation, no chorus or hall), vibrato 5.5 Hz ±40 cents, 60 ms portamento; the song transposed in whole semitones so the middle of its range lies five semitones above the voice's speaking pitch (Zvonko then sings *Vila Velebita* between G2 and G3, 98-196 Hz) | the song of the language |
+
+The songs were chosen as the best-known songs of each country whose words
+and tune are both out of copyright (an agent checked the authors' dates
+and the statutes on 2026-10-07; *Tamo daleko* was rejected because its
+recognised author, Đorđe Marinković, died in 1977). The first Croatian
+choice was the anthem *Lijepa naša domovino* (Mihanović d. 1861, Runjanin
+d. 1878; the anthem law permits musical and educational use when it is
+sung as written). The user found it full of pauses: at 80 bpm its half
+notes and the rests I had written at the line ends, together with a
+per-syllable attack envelope that dipped the voice to nothing between
+every two notes (fixed: the attack now applies only after a rest), made it
+crawl. *Vila Velebita* (2/4, 113 bpm, no rests) replaced it; the anthem's
+notation, should it be wanted again, is `D5/4 D5/4 D5/4. C5/8 C5/8 Bb4/8
+Bb4/4 F4/2 | Eb4/8 D4/8 Eb4/8 ~F4/8 G4/2 | F4/8 Eb4/8 D4/8 ~Eb4/8 F4/2 |
+(bars 1-2) | Eb4/8 D4/8 Eb4/8 ~F4/8 G4/2 | A4/8 A4/8 C5/4 Bb4/2 | A4/4
+A4/4 A4/4. G4/8 | A4/4 A4/8 ~Bb4/8 C5/4. A4/8 | C5/8 C5/8 C5/8 C5/8 C5/4
+Bb4/4 | A4/4 G4/4 ~F4/2 | (bars 5-8)`, one note per syllable of the first
+two stanzas. The rests between the lines of the other two songs were
+dropped for the same reason; the punctuation supplies the breaths. The
+first line of *Kreće se lađa* comes from a printed score, the other three
+follow the harmony and still want checking against a recording; the
+rhythm of *Bembaša* is that of a performance, the song is sung rubato.
+
+How it works (`ClauseBuilder` with `m_singing`):
+
+- **Notes.** `plan_notes()` takes the next notes of the song for every
+  syllable of the clause: one note, any notes tied to it (`~`, a melisma)
+  and the rests after it. The cursor lives in `FormantSynthesizer` so the
+  clauses of one utterance continue the song; `TTSEngine::begin_utterance()`
+  rewinds it, so every synthesis call (every line a screen reader sends)
+  starts the song from its first note, as the Macintosh voices do at a
+  period. The notation is `pitch/value` (`G4/4`, `Bb3/8.`, `R/2`), parsed
+  once by `parse_song()`.
+- **Durations.** The consonants keep their spoken durations (at the tempo
+  clamped to 0.6-2.0x: they are spoken, not sung). The syllable's vowel
+  starts on the beat: the consonants that open the next syllable are taken
+  off the end of this vowel, or off the rest after it, as singers do
+  (Sundberg's rule). The vowel gets what is left, never less than a third
+  of the note. Unstressed vowels are sung in full (no centralization, no
+  level drop), and the speech loudness contour (declination, final drop,
+  prepausal fade) is replaced by a note envelope: an attack on the first
+  note after a rest or pause (notes that follow each other are legato),
+  a release into a rest and a short one at the end of the clause, and for
+  the saz an exponential decay re-triggered every eighth.
+- **Pitch.** The note frequency is `440 * 2^((midi + transpose - 69)/12)`
+  times the pitch and user pitch settings (so the pitch slider transposes),
+  held through the note. A consonant takes the note of the vowel after it
+  (KTH), the step between notes is smoothed with the style's portamento
+  time constant (8 ms for the organ and accordion, 25-40 ms for trumpet and
+  klapa, 90 ms for the sevdah voice: Sundberg measured 70-100 ms for the
+  central three quarters of a sung pitch change). Vibrato is a sinusoid
+  in cents whose depth is the style's value at inflection level 0.5, grows
+  over `vibrato_delay_ms` after each syllable start, and whose rate wanders
+  by 3% (a perfectly even vibrato sounds mechanical). Inflection 0 switches
+  it off. Rate sets the tempo; the voice's own `tempo` is ignored.
+- **Sources** (`KlattSynth::source_sample()`): the glottal pulse, a
+  PolyBLEP sawtooth (strings, reed, brass with a drive of 1 + 4·AV into
+  tanh) and an additive organ (partials 1, 2, 4, 6, 8, 10, 12, 16 of the
+  16' pitch; the fundamental weak and the energy on the 4th-8th harmonics,
+  which is what MacinTalk's organ measures as). `chorus` adds two copies
+  ±`chorus_cents` (the accordion only the sharp one), `sub_octave` one an
+  octave down, `reverb` a Schroeder reverberator (four combs, two
+  allpasses, Freeverb's lengths halved for 22 kHz). All of it goes through
+  the cascade vocal tract, so the vowels and consonants are those of the
+  voice: a talking organ, not an organ.
+- **Levels.** `gain` per style brings the presets to about -14 dBFS RMS
+  on running text (the speaking voices are at -18; sung vowels dominate).
+
+Checking: `scratchpad/sing_check.py` of the 2026-10-07 session printed
+the pitch track in 100 ms blocks; for each preset the blocks fall on the
+written notes (C4+06, D4+02, E4-03 ... with the tracker's quantization),
+the klapa and organ show the octave below as well, and the sevdah voice
+±30-45 cents of vibrato. The speaking voices' output is byte-identical
+before and after the change (A/B against a worktree build of HEAD).
 
 ## 7. Checking a change
 

@@ -61,6 +61,8 @@ struct Options {
     float speech_rate = 1.0f;
     float speech_pitch = 1.0f;
     float speech_volume = 1.0f;
+    float inflection_level = 0.5f;   /* formant voices: 0.0 monotone .. 1.0 maximum */
+    float acceleration = 1.0f;       /* formant voices: rate multiplier 0.5 .. 3.0 */
     bool numbers_as_digits = false;
     uint32_t comma_pause = 40;
     uint32_t period_pause = 80;
@@ -77,7 +79,7 @@ struct Options {
 };
 
 /* Short options */
-static const char *short_options = "v:r:p:V:dc:e:x:q:n:o:i:D:hlLw";
+static const char *short_options = "v:r:p:V:I:a:dc:e:x:q:n:o:i:D:hlLw";
 
 /* Long options */
 static struct option long_options[] = {
@@ -85,6 +87,8 @@ static struct option long_options[] = {
     {"speech-rate",         required_argument, nullptr, 'r'},
     {"speech-pitch",        required_argument, nullptr, 'p'},
     {"speech-volume",       required_argument, nullptr, 'V'},
+    {"inflection",          required_argument, nullptr, 'I'},
+    {"acceleration",        required_argument, nullptr, 'a'},
     {"numbers-digits",      no_argument,       nullptr, 'd'},
     {"comma-pauses",        required_argument, nullptr, 'c'},
     {"period-pauses",       required_argument, nullptr, 'e'},
@@ -115,10 +119,17 @@ void print_help(const char *program_name)
               << "Options:\n"
               << "  -v, --voice NAME           Select voice (default: zvonko)\n"
               << "                             Available: zvonko, stojan, mirsad, josip,\n"
-              << "                             vlado, detence, baba, djed\n"
-              << "  -r, --speech-rate RATE     Speech rate 0.5-2.0 (default: 1.0)\n"
-              << "  -p, --speech-pitch PITCH   Speech pitch 0.5-2.0 (default: 1.0)\n"
+              << "                             vlado, detence, baba, djed, and the singing\n"
+              << "                             presets listed below\n"
+              << "  -r, --speech-rate RATE     Speech rate 0.5-2.0 (default: 1.0);\n"
+              << "                             formant voices accept 0.25-4.0\n"
+              << "  -p, --speech-pitch PITCH   Speech pitch 0.5-2.0 (default: 1.0);\n"
+              << "                             formant voices accept 0.25-4.0\n"
               << "  -V, --speech-volume VOL    Volume 0.0-1.0 (default: 1.0)\n"
+              << "  -I, --inflection PERCENT   Inflection of the formant voices 0-100\n"
+              << "                             (default: 50; 0 is a monotone)\n"
+              << "  -a, --acceleration FACTOR  Rate multiplier of the formant voices\n"
+              << "                             0.5-3.0 (default: 1.0)\n"
               << "  -d, --numbers-digits       Speak numbers as digits (jedan-dva-tri)\n"
               << "  -c, --comma-pauses MS      Pause duration for commas (default: 40)\n"
               << "  -e, --period-pauses MS     Pause duration for periods (default: 80)\n"
@@ -146,7 +157,18 @@ void print_help(const char *program_name)
               << "  vlado   - Serbian male adult\n"
               << "  detence - Croatian child\n"
               << "  baba    - Croatian female senior\n"
-              << "  djed    - Serbian male senior\n";
+              << "  djed    - Serbian male senior\n\n"
+              << "Singing presets (formant voices that sing the text to a folk song;\n"
+              << "-r sets the tempo, -p transposes, -I sets the vibrato):\n"
+              << "  orguljas   - Zvonko at the pipe organ (Croatian)\n"
+              << "  klapa      - Zvonko as a whole klapa (Croatian)\n"
+              << "  trubac     - Stojan on the trumpet (Serbian)\n"
+              << "  harmonikas - Stojan on the accordion (Serbian)\n"
+              << "  sevdalija  - Mirsad singing sevdah (Bosnian)\n"
+              << "  sazlija    - Mirsad on the saz (Bosnian)\n"
+              << "  pjevac, pevac, solist\n"
+              << "             - Zvonko, Stojan and Mirsad singing as themselves\n"
+              << "  becarac    - Zvonko singing a be\xc4\x87" "arac (Croatian)\n";
 }
 
 /**
@@ -189,14 +211,25 @@ bool parse_args(int argc, char *argv[], Options &opts)
                 opts.voice = optarg;
                 break;
             case 'r':
+                /* The engine narrows these to 0.5-2.0 for the recorded voices. */
                 opts.speech_rate = std::stof(optarg);
-                if (opts.speech_rate < 0.5f) opts.speech_rate = 0.5f;
-                if (opts.speech_rate > 2.0f) opts.speech_rate = 2.0f;
+                if (opts.speech_rate < 0.25f) opts.speech_rate = 0.25f;
+                if (opts.speech_rate > 4.0f) opts.speech_rate = 4.0f;
                 break;
             case 'p':
                 opts.speech_pitch = std::stof(optarg);
-                if (opts.speech_pitch < 0.5f) opts.speech_pitch = 0.5f;
-                if (opts.speech_pitch > 2.0f) opts.speech_pitch = 2.0f;
+                if (opts.speech_pitch < 0.25f) opts.speech_pitch = 0.25f;
+                if (opts.speech_pitch > 4.0f) opts.speech_pitch = 4.0f;
+                break;
+            case 'I':
+                opts.inflection_level = std::stof(optarg) / 100.0f;
+                if (opts.inflection_level < 0.0f) opts.inflection_level = 0.0f;
+                if (opts.inflection_level > 1.0f) opts.inflection_level = 1.0f;
+                break;
+            case 'a':
+                opts.acceleration = std::stof(optarg);
+                if (opts.acceleration < 0.5f) opts.acceleration = 0.5f;
+                if (opts.acceleration > 3.0f) opts.acceleration = 3.0f;
                 break;
             case 'V':
                 opts.speech_volume = std::stof(optarg);
@@ -533,6 +566,8 @@ int main(int argc, char *argv[])
         opts.speech_rate = settings.speed;
         opts.speech_pitch = settings.user_pitch;
         opts.speech_volume = settings.volume;
+        opts.inflection_level = settings.inflection_level;
+        opts.acceleration = settings.acceleration;
         opts.numbers_as_digits = (settings.number_mode == laprdus::NumberMode::DigitByDigit);
         opts.comma_pause = settings.comma_pause_ms;
         opts.period_pause = settings.sentence_pause_ms;
@@ -583,6 +618,8 @@ int main(int argc, char *argv[])
         std::cout << "Rate: " << opts.speech_rate << "\n";
         std::cout << "Pitch: " << opts.speech_pitch << "\n";
         std::cout << "Volume: " << opts.speech_volume << "\n";
+        std::cout << "Inflection: " << static_cast<int>(opts.inflection_level * 100.0f + 0.5f) << "%\n";
+        std::cout << "Acceleration: " << opts.acceleration << "\n";
         std::cout << "Text length: " << opts.text.length() << " characters\n";
     }
 
@@ -660,6 +697,8 @@ int main(int argc, char *argv[])
     laprdus_set_speed(engine, opts.speech_rate);
     laprdus_set_user_pitch(engine, opts.speech_pitch);
     laprdus_set_volume(engine, opts.speech_volume);
+    laprdus_set_inflection_level(engine, opts.inflection_level);
+    laprdus_set_acceleration(engine, opts.acceleration);
 
     /* Configure pause settings */
     laprdus_set_comma_pause(engine, opts.comma_pause);

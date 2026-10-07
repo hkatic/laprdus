@@ -44,6 +44,19 @@ struct Frame {
 };
 
 /**
+ * What the voiced sound source is. The speaking voices use the glottal
+ * pulse; the singing presets replace it with an instrument. Every source
+ * goes through the same cascade vocal tract, so the words stay audible.
+ */
+enum class SourceKind : uint8_t {
+    Glottal,    // KLGLOTT88 pulse: the speaking voice
+    Organ,      // pipe organ: a steady stack of partials over a 16' sub-octave
+    Strings,    // bowed strings: sawtooth
+    Brass,      // sawtooth that saturates as it gets louder (lip buzz)
+    Reed        // accordion: sawtooth plus a second reed a few cents sharp
+};
+
+/**
  * Per-voice constants of the vocal tract and voice source.
  */
 struct VoiceQuality {
@@ -58,6 +71,16 @@ struct VoiceQuality {
     float flutter = 0.2f;               // Slow quasi-random F0 drift (0..1)
     float jitter = 0.004f;              // Period-to-period F0 perturbation
     float shimmer = 0.03f;              // Period-to-period amplitude perturbation
+
+    // Singing presets. chorus adds two copies of the source detuned by
+    // chorus_cents up and down (a section of players, a klapa); sub_octave
+    // adds one an octave down (the bass singer, the 16' organ stop); reverb
+    // is the wet level of a small hall.
+    SourceKind source = SourceKind::Glottal;
+    float chorus = 0.0f;
+    float chorus_cents = 8.0f;
+    float sub_octave = 0.0f;
+    float reverb = 0.0f;
 };
 
 /**
@@ -126,8 +149,23 @@ private:
         void clear() { x1 = x2 = y1 = y2 = 0.0; }
     };
 
+    // Schroeder reverberator: four parallel combs into two allpasses.
+    struct Reverb {
+        static constexpr int COMBS = 4;
+        static constexpr int ALLPASSES = 2;
+        std::vector<float> comb[COMBS];
+        std::vector<float> allpass[ALLPASSES];
+        size_t comb_pos[COMBS] = {0, 0, 0, 0};
+        size_t allpass_pos[ALLPASSES] = {0, 0};
+        double comb_state[COMBS] = {0, 0, 0, 0};
+        Reverb();
+        void clear();
+        double tick(double x);
+    };
+
     void update_coefficients(const Frame& fr);
     double noise();
+    double source_sample(double f0_hz, double oq_now, double av, bool& open_phase);
 
     VoiceQuality m_quality;
     Frame m_prev;
@@ -142,8 +180,13 @@ private:
     LowPass m_fric_lp[2];
     LowPass m_voice_lp;
 
-    // Voice source state
+    // Voice source state. The extra oscillators carry the chorus copies
+    // (up, down) and the sub-octave.
     double m_phase = 0.0;
+    double m_phase_up = 0.0;
+    double m_phase_down = 0.0;
+    double m_phase_sub = 0.0;
+    Reverb m_reverb;
     double m_period_jitter = 1.0;
     double m_period_shimmer = 1.0;
     double m_period_oq = 0.6;

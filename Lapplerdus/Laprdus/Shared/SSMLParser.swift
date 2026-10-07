@@ -272,8 +272,10 @@ enum SSMLParser {
         return 1.0
     }
 
+    /// The widest range any voice takes (the formant voices'); the engine
+    /// narrows it to 0.5...2.0 for the recorded voices itself.
     private static func clamp(_ value: Float) -> Float {
-        min(max(value, 0.5), 2.0)
+        min(max(value, 0.25), 4.0)
     }
 
     private static func decodeEntities(_ text: String) -> String {

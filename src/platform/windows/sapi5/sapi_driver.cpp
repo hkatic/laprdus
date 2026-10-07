@@ -105,6 +105,8 @@ STDMETHODIMP LaprdusSAPIDriver::Speak(
         if (SUCCEEDED(pOutputSite->GetRate(&sapiRate)) && sapiRate != 0) {
             // Map -10..+10 to 0.5..2.0 exponentially
             // Only apply if rate is not default (0)
+            // The formant voices multiply this by the acceleration setting,
+            // so +10 reaches 2.0 times the acceleration.
             float rateMultiplier = std::pow(2.0f, sapiRate / 10.0f);
             params.speed = std::clamp(rateMultiplier, 0.5f, 2.0f);
         } else {
@@ -383,6 +385,8 @@ HRESULT LaprdusSAPIDriver::InitializeEngine() {
         params.user_pitch = settings.user_pitch;
         params.volume = settings.volume;
         params.inflection_enabled = settings.inflection_enabled;
+        params.inflection_level = settings.inflection_level;
+        params.acceleration = settings.acceleration;
         params.emoji_enabled = settings.emoji_enabled;
         params.number_mode = settings.number_mode;
         params.pause_settings = settings.get_pause_settings();

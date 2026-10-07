@@ -77,6 +77,16 @@ It has two kinds of voices:
 | zvonko | Formant | Croatian | 1.0 |
 | stojan | Formant | Serbian | 1.0 |
 | mirsad | Formant | Bosnian | 1.0 |
+| orguljas | Singing preset (zvonko) | Croatian | 1.0 (pipe organ) |
+| klapa | Singing preset (zvonko) | Croatian | 1.0 (klapa choir) |
+| trubac | Singing preset (stojan) | Serbian | 1.0 (trumpet) |
+| harmonikas | Singing preset (stojan) | Serbian | 1.0 (accordion) |
+| sevdalija | Singing preset (mirsad) | Bosnian | 1.0 (sevdah singer) |
+| sazlija | Singing preset (mirsad) | Bosnian | 1.0 (saz) |
+| pjevac | Singing preset (zvonko) | Croatian | 1.0 (own voice, own pitch) |
+| pevac | Singing preset (stojan) | Serbian | 1.0 (own voice, own pitch) |
+| solist | Singing preset (mirsad) | Bosnian | 1.0 (own voice, own pitch) |
+| becarac | Singing preset (zvonko) | Croatian | 1.0 (own voice, bećarac tune) |
 
 **Default voices.** The formant voice of a language is its default on every platform: Zvonko for Croatian, Stojan for Serbian, Mirsad for Bosnian (CLI `-v` default, Speech Dispatcher `MALE1` and language requests, Android `DEFAULT_VOICE` / `onLoadLanguage` / fallback voice, NVDA by NVDA's language, Apple by the device's preferred language, Windows config GUI). A voice the user has chosen is never replaced when it already speaks the requested language. The recorded voices stay available. SAPI5 has no Laprdus-side default: Windows picks among the registered tokens.
 
@@ -88,11 +98,13 @@ It has two kinds of voices:
 
 ```cpp
 struct VoiceParams {
-    float speed = 1.0f;       // 0.5 - 2.0 (tempo, time-stretching)
+    float speed = 1.0f;       // 0.5 - 2.0 (tempo, time-stretching); formant voices 0.25 - 4.0
     float pitch = 1.0f;       // 0.25 - 4.0 (voice character pitch)
-    float user_pitch = 1.0f;  // 0.5 - 2.0 (user pitch preference)
+    float user_pitch = 1.0f;  // 0.5 - 2.0 (user pitch preference); formant voices 0.25 - 4.0
     float volume = 1.0f;      // 0.0 - 1.0
     bool inflection_enabled = true;
+    float inflection_level = 0.5f;  // formant voices: 0 monotone, 0.5 as measured, 1 twice the movements
+    float acceleration = 1.0f;      // formant voices: rate multiplier 0.5 - 3.0
 };
 ```
 
@@ -107,11 +119,14 @@ Zvonko (hr), Stojan (sr) and Mirsad (bs) live in `src/formant/` and share the te
 Things to know before changing them:
 
 - **Speed, pitch and volume are applied at the source** (durations, F0, gain). Sonic is not involved, so `VoiceParams::pitch` and `user_pitch` both simply scale F0.
+- **Wider ranges and two settings of their own.** `VoiceParams::clamp()` allows speed and `user_pitch` from 0.25 to 4.0; the concatenative `AudioSynthesizer` narrows them to its 0.5-4.0 / 0.5-2.0 itself, so every platform may pass the wide range and let the engine sort it out. `inflection_level` (0-1, default 0.5) scales the whole F0 contour in semitones (0 is a monotone, 1 doubles every movement) and `acceleration` (0.5-3.0, default 1.0) multiplies the speed (`VoiceParams::formant_speed()`, capped at 8.0), so a host's rate slider reaches a higher or lower top rate. Both are `laprdus_set_inflection_level()` / `laprdus_set_acceleration()` in the C API, `speech.inflection_level` / `speech.acceleration` in `settings.json`, keys `inflection_level` / `acceleration` on Android and Apple, and are shown only for formant voices. `laprdus_get_nominal_wpm(voice)` (175 words/min for Zvonko at speed 1.0, times the voice's tempo) lets a UI print the top rate in words per minute: nominal × 2.0 (the slider's top) × acceleration. The Speech Dispatcher module maps SSIP `pitch_range` onto the inflection level.
 - **Number words follow the voice language**: `CroatianNumbers::set_dialect()` is set by `TTSEngine::initialize_formant()` (tisuća/milijun/dvjesto, hiljada/milion/dvesta, hiljada/milion/dvjesto) and reset to Croatian when a concatenative voice is loaded, so Josip and Vlado are unchanged. One and two agree with the feminine scale words in every dialect (dvije tisuće, dve hiljade, dvadeset jedna tisuća, dvije milijarde).
 - **Synthesis is deterministic**: the same text and settings give the same samples (`tests/linux/test_formant.cpp` relies on it).
 - **Acoustic values come from measurements**, not from taste: vowel formants and durations from Bakran's work on standard Croatian, consonant spectra, levels and transitions from analysis of recorded Croatian speech. `docs/formant.md` records the sources, the measured values and how to repeat the measurements. Change numbers in `formant_phonemes.cpp` only with a measurement or a listening test behind them.
 - **Stress** is lexical and cannot be fully predicted. To fix a word, add it to `formant_lexicon.cpp` (notation at the top of the file) and check its whole paradigm, not just the dictionary form: the accent often moves in the other cases and persons (sìgnal/signála, podátak/pòdātākā, obavijéstiti/obàvijēstīm), and a stem entry also catches derived words with a different accent (see "Stress" in `docs/formant.md`). Verbs are not listed form by form: `IJE_VERBS` has the roots with a long *ije* (podijeliti, promijeniti), `VERBS` whole stems with accent and conjugation class (`ur'e:d=i`), and `StressRules::verb_form()` builds the forms; an imperative that is also a noun's case (potvrdi, uredi) is the verb only at the head of a clause; users can do the same from a pronunciation dictionary by writing accent marks in the replacement (`telèfon`).
 - Platform code that bypasses `laprdus_set_voice()` must check `VoiceRegistry::is_formant_voice()` and call `TTSEngine::initialize_formant()` (see the Android JNI bridge and the SAPI5 driver).
+
+**Singing presets.** `orguljas`, `klapa`, `pjevac` (Zvonko), `trubac`, `harmonikas`, `pevac` (Stojan), `sevdalija`, `sazlija`, `solist` (Mirsad), `becarac` (Zvonko, the bećarac tune) are formant voices whose `FormantVoice::singing` points at a `SingingStyle` (song, sound source, chorus, sub-octave, reverb, vibrato, note envelope, transpose; all in `formant_synthesizer.cpp`). They sing the text to a public-domain folk song, one syllable per note (a `~` note in the song notation is a melisma, `R` a rest), the vowel on the beat with the consonants before it; the song restarts with every synthesis call (`TTSEngine::begin_utterance()`), and clauses of one call continue it. Rate = tempo, pitch = transposition, inflection level = vibrato depth. `SingingStyle::dry` (pjevac, pevac, solist) keeps the voice's own source and phonation and transposes the song so the middle of its range sits five semitones above the voice's `base_f0`. Notes without a rest between them are legato: the attack envelope is applied only after a rest or at the start of a clause. Base voice is in `base_voice_id` (platform code uses it only as metadata; `data_filename` stays null). The instrument sources (`SourceKind`), chorus, sub-octave and reverb live in `klatt_synth.cpp`; the speaking voices do not use them and their output is unchanged. See "Singing presets" in `docs/formant.md`.
 
 ```bash
 B=build/macos-arm64-release
@@ -156,7 +171,7 @@ Two separate pitch parameters serve different purposes:
 | Parameter | Range | Purpose | Effect |
 |-----------|-------|---------|--------|
 | `pitch` | 0.25 - 4.0 | Voice character (derived voices) | Shifts formants - changes voice identity |
-| `user_pitch` | 0.5 - 2.0 | User preference (SAPI5/NVDA slider) | Adjusts F0 - keeps voice identity |
+| `user_pitch` | 0.5 - 2.0 (formant 0.25 - 4.0) | User preference (SAPI5/NVDA slider) | Adjusts F0 - keeps voice identity |
 
 **Processing order in AudioSynthesizer::synthesize():**
 1. Volume adjustment
@@ -347,8 +362,10 @@ echo "Text" | laprdus.exe -o output.wav
 | Option | Description |
 |--------|-------------|
 | `-v, --voice` | Select voice (zvonko (default), stojan, mirsad, josip, vlado, detence, baba, djed) |
-| `-r, --speech-rate` | Speech rate 0.5-2.0 (default: 1.0) |
-| `-p, --speech-pitch` | Speech pitch 0.5-2.0 (default: 1.0) |
+| `-r, --speech-rate` | Speech rate 0.5-2.0 (default: 1.0); formant voices 0.25-4.0 |
+| `-p, --speech-pitch` | Speech pitch 0.5-2.0 (default: 1.0); formant voices 0.25-4.0 |
+| `-I, --inflection` | Inflection of the formant voices 0-100 (default: 50; 0 is a monotone) |
+| `-a, --acceleration` | Rate multiplier of the formant voices 0.5-3.0 (default: 1.0) |
 | `-V, --speech-volume` | Volume 0.0-1.0 (default: 1.0) |
 | `-d, --numbers-digits` | Speak numbers as digits |
 | `-c, --comma-pauses` | Comma pause duration in ms |
@@ -615,8 +632,10 @@ laprdus -l
 | Option | Long Form | Description |
 |--------|-----------|-------------|
 | `-v` | `--voice` | Select voice (zvonko (default), stojan, mirsad, josip, vlado, detence, baba, djed) |
-| `-r` | `--speech-rate` | Speech rate (0.5-2.0, default 1.0) |
-| `-p` | `--speech-pitch` | Speech pitch (0.5-2.0, default 1.0) |
+| `-r` | `--speech-rate` | Speech rate (0.5-2.0, default 1.0; formant voices 0.25-4.0) |
+| `-p` | `--speech-pitch` | Speech pitch (0.5-2.0, default 1.0; formant voices 0.25-4.0) |
+| `-I` | `--inflection` | Inflection of the formant voices (0-100, default 50) |
+| `-a` | `--acceleration` | Rate multiplier of the formant voices (0.5-3.0, default 1.0) |
 | `-V` | `--speech-volume` | Volume (0.0-1.0, default 1.0) |
 | `-d` | `--numbers-digits` | Speak numbers as digits |
 | `-c` | `--comma-pauses` | Comma pause duration in ms |

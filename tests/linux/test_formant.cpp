@@ -228,9 +228,12 @@ TEST_CASE("Formant voices are registered", "[formant][registry]") {
 TEST_CASE("Existing voices keep their place in the registry", "[formant][registry]") {
     // Platform code and saved settings rely on the first five entries.
     const char* const order[] = {"josip", "vlado", "detence", "baba", "djed",
-                                 "zvonko", "stojan", "mirsad"};
-    REQUIRE(laprdus_get_voice_count() == 8);
-    for (uint32_t i = 0; i < 8; ++i) {
+                                 "zvonko", "stojan", "mirsad",
+                                 "orguljas", "klapa", "trubac", "harmonikas",
+                                 "sevdalija", "sazlija", "pjevac", "pevac", "solist",
+                                 "becarac"};
+    REQUIRE(laprdus_get_voice_count() == 18);
+    for (uint32_t i = 0; i < 18; ++i) {
         LaprdusVoiceInfo info;
         REQUIRE(laprdus_get_voice_info(i, &info) == LAPRDUS_OK);
         REQUIRE(std::string(info.id) == order[i]);
@@ -637,6 +640,115 @@ TEST_CASE("Pitch settings change pitch, not duration", "[formant][params]") {
     REQUIRE(low.size() == normal.size());
 }
 
+// Pitch of the loudest window in each quarter of the audio, to see how much
+// the voice moves along a clause.
+double pitch_spread_hz(const std::vector<int16_t>& audio) {
+    double lo = 1e9, hi = 0.0;
+    for (int q = 0; q < 4; ++q) {
+        double hz = pitch_hz(audio, q * 0.25, (q + 1) * 0.25);
+        if (hz <= 0.0) continue;
+        lo = std::min(lo, hz);
+        hi = std::max(hi, hz);
+    }
+    return hi > lo ? hi - lo : 0.0;
+}
+
+TEST_CASE("Inflection level scales the pitch movements", "[formant][params]") {
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(laprdus_get_inflection_level(engine.handle) == Catch::Approx(0.5f));
+
+    const char* text = "Marija danas putuje u Zagreb?";
+    std::vector<int16_t> normal = speak(engine.handle, text);
+
+    // The default level is the measured contour: setting it explicitly
+    // changes nothing.
+    REQUIRE(laprdus_set_inflection_level(engine.handle, 0.5f) == LAPRDUS_OK);
+    REQUIRE(speak(engine.handle, text) == normal);
+
+    REQUIRE(laprdus_set_inflection_level(engine.handle, 0.0f) == LAPRDUS_OK);
+    std::vector<int16_t> flat = speak(engine.handle, text);
+    REQUIRE(flat.size() == normal.size());
+    REQUIRE(pitch_spread_hz(flat) < 4.0);
+
+    REQUIRE(laprdus_set_inflection_level(engine.handle, 1.0f) == LAPRDUS_OK);
+    std::vector<int16_t> wide = speak(engine.handle, text);
+    REQUIRE(wide.size() == normal.size());
+    REQUIRE(pitch_spread_hz(wide) > pitch_spread_hz(normal) * 1.3);
+    REQUIRE(pitch_spread_hz(normal) > pitch_spread_hz(flat) + 10.0);
+
+    // Out-of-range values are clamped, not rejected.
+    REQUIRE(laprdus_set_inflection_level(engine.handle, 7.0f) == LAPRDUS_OK);
+    REQUIRE(laprdus_get_inflection_level(engine.handle) == Catch::Approx(1.0f));
+}
+
+TEST_CASE("Acceleration multiplies the speech rate", "[formant][params]") {
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "stojan", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(laprdus_get_acceleration(engine.handle) == Catch::Approx(1.0f));
+
+    const char* text = "Mama ima malu nanu.";
+    std::vector<int16_t> normal = speak(engine.handle, text);
+
+    REQUIRE(laprdus_set_speed(engine.handle, 2.0f) == LAPRDUS_OK);
+    std::vector<int16_t> fast = speak(engine.handle, text);
+
+    // Speed 1.0 at acceleration 2.0 is speed 2.0: the same samples.
+    REQUIRE(laprdus_set_speed(engine.handle, 1.0f) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_acceleration(engine.handle, 2.0f) == LAPRDUS_OK);
+    REQUIRE(speak(engine.handle, text) == fast);
+
+    // The host's top rate goes past the plain 4.0x with acceleration.
+    REQUIRE(laprdus_set_speed(engine.handle, 4.0f) == LAPRDUS_OK);
+    std::vector<int16_t> fastest = speak(engine.handle, text);
+    REQUIRE(laprdus_set_acceleration(engine.handle, 1.0f) == LAPRDUS_OK);
+    std::vector<int16_t> plain = speak(engine.handle, text);
+    REQUIRE(fastest.size() < plain.size() * 0.8);
+
+    // And below the normal rate with a low acceleration.
+    REQUIRE(laprdus_set_speed(engine.handle, 1.0f) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_acceleration(engine.handle, 0.5f) == LAPRDUS_OK);
+    std::vector<int16_t> slow = speak(engine.handle, text);
+    REQUIRE(slow.size() > normal.size() * 1.6);
+
+    REQUIRE(laprdus_set_acceleration(engine.handle, 100.0f) == LAPRDUS_OK);
+    REQUIRE(laprdus_get_acceleration(engine.handle) == Catch::Approx(3.0f));
+}
+
+TEST_CASE("Formant voices accept the wider rate and pitch ranges", "[formant][params]") {
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_inflection_enabled(engine.handle, 0) == LAPRDUS_OK);
+
+    const char* text = "mama ima malu nanu";
+    REQUIRE(laprdus_set_speed(engine.handle, 0.5f) == LAPRDUS_OK);
+    std::vector<int16_t> slow = speak(engine.handle, text);
+    REQUIRE(laprdus_set_speed(engine.handle, 0.25f) == LAPRDUS_OK);
+    std::vector<int16_t> slower = speak(engine.handle, text);
+    REQUIRE(slower.size() > slow.size() * 1.7);
+
+    REQUIRE(laprdus_set_speed(engine.handle, 1.0f) == LAPRDUS_OK);
+    std::vector<int16_t> normal = speak(engine.handle, "aaa");
+    double base = pitch_hz(normal);
+    REQUIRE(laprdus_set_user_pitch(engine.handle, 3.0f) == LAPRDUS_OK);
+    REQUIRE(close_to(pitch_hz(speak(engine.handle, "aaa")), base * 3.0, 0.06));
+    // Below 0.5 the voice reaches its 45 Hz floor, which the pitch detector
+    // of these tests cannot follow; the audio must still come out whole.
+    REQUIRE(laprdus_set_user_pitch(engine.handle, 0.25f) == LAPRDUS_OK);
+    std::vector<int16_t> lowest = speak(engine.handle, "aaa");
+    REQUIRE(lowest.size() == normal.size());
+    REQUIRE(rms(lowest) > rms(normal) * 0.3);
+}
+
+TEST_CASE("Nominal words per minute are known for every voice", "[formant][params]") {
+    REQUIRE(laprdus_get_nominal_wpm("zvonko") == Catch::Approx(175.0f));
+    REQUIRE(laprdus_get_nominal_wpm(nullptr) == Catch::Approx(175.0f));
+    REQUIRE(laprdus_get_nominal_wpm("stojan") > laprdus_get_nominal_wpm("mirsad"));
+    REQUIRE(laprdus_get_nominal_wpm("josip") > 0.0f);
+    REQUIRE(laprdus_get_nominal_wpm("djed") > 0.0f);
+    REQUIRE(laprdus_get_nominal_wpm("nobody") == 0.0f);
+}
+
 TEST_CASE("Volume scales the output level", "[formant][params]") {
     Engine engine;
     REQUIRE(laprdus_set_voice(engine.handle, "mirsad", NO_DATA) == LAPRDUS_OK);
@@ -819,4 +931,133 @@ TEST_CASE("Unknown voice is rejected", "[formant][voices]") {
     Engine engine;
     REQUIRE(laprdus_set_voice(engine.handle, "zvonimir", NO_DATA) != LAPRDUS_OK);
     REQUIRE(laprdus_is_initialized(engine.handle) == 0);
+}
+
+// =============================================================================
+// Singing presets
+// =============================================================================
+
+namespace {
+
+struct SingingPreset { const char* id; const char* base; const char* language; };
+const SingingPreset SINGING_PRESETS[] = {
+    {"orguljas", "zvonko", "hr-HR"},
+    {"klapa", "zvonko", "hr-HR"},
+    {"trubac", "stojan", "sr-RS"},
+    {"harmonikas", "stojan", "sr-RS"},
+    {"sevdalija", "mirsad", "bs-BA"},
+    {"sazlija", "mirsad", "bs-BA"},
+    {"pjevac", "zvonko", "hr-HR"},
+    {"pevac", "stojan", "sr-RS"},
+    {"solist", "mirsad", "bs-BA"},
+    {"becarac", "zvonko", "hr-HR"},
+};
+
+} // namespace
+
+TEST_CASE("Singing presets are formant voices of their base voice's language", "[formant][singing]") {
+    for (const auto& preset : SINGING_PRESETS) {
+        INFO(preset.id);
+        LaprdusVoiceInfo info;
+        REQUIRE(laprdus_get_voice_info_by_id(preset.id, &info) == LAPRDUS_OK);
+        REQUIRE(std::string(info.language_code) == preset.language);
+        REQUIRE(std::string(info.base_voice_id) == preset.base);
+        REQUIRE(info.data_filename == nullptr);
+        REQUIRE(info.base_pitch == 1.0f);
+        REQUIRE(laprdus_get_nominal_wpm(preset.id) == laprdus_get_nominal_wpm(preset.base));
+
+        // No data directory needed, and the text is rendered.
+        Engine engine;
+        REQUIRE(laprdus_set_voice(engine.handle, preset.id, NO_DATA) == LAPRDUS_OK);
+        std::vector<int16_t> sung = speak(engine.handle, "Dobar dan, kako ste?");
+        REQUIRE(sung.size() > 22050);
+        REQUIRE(peak(sung) > 3000);
+    }
+}
+
+TEST_CASE("Singing is deterministic and starts the song over with every utterance", "[formant][singing]") {
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "klapa", NO_DATA) == LAPRDUS_OK);
+    std::vector<int16_t> first = speak(engine.handle, "La la la la la la");
+    std::vector<int16_t> again = speak(engine.handle, "La la la la la la");
+    REQUIRE(first == again);
+
+    // The clauses of one utterance continue the song: sung as two clauses
+    // the second "la la la" sits on later notes than the first.
+    std::vector<int16_t> two_clauses = speak(engine.handle, "La la la, la la la");
+    std::vector<int16_t> one_clause = speak(engine.handle, "La la la");
+    REQUIRE(two_clauses.size() > one_clause.size());
+}
+
+TEST_CASE("Singing presets differ from each other and from the speaking voice", "[formant][singing]") {
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    std::vector<int16_t> spoken = speak(engine.handle, "Dobar dan");
+    REQUIRE(laprdus_set_voice(engine.handle, "orguljas", NO_DATA) == LAPRDUS_OK);
+    std::vector<int16_t> organ = speak(engine.handle, "Dobar dan");
+    REQUIRE(laprdus_set_voice(engine.handle, "klapa", NO_DATA) == LAPRDUS_OK);
+    std::vector<int16_t> klapa = speak(engine.handle, "Dobar dan");
+
+    // Notes last longer than spoken syllables.
+    REQUIRE(organ.size() > spoken.size());
+    REQUIRE(organ != klapa);
+
+    // And back to speech.
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(speak(engine.handle, "Dobar dan") == spoken);
+}
+
+TEST_CASE("Rate sets the tempo and pitch transposes the song", "[formant][singing]") {
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "harmonikas", NO_DATA) == LAPRDUS_OK);
+    std::vector<int16_t> normal = speak(engine.handle, "Ma ma ma ma");
+    REQUIRE(laprdus_set_speed(engine.handle, 2.0f) == LAPRDUS_OK);
+    std::vector<int16_t> fast = speak(engine.handle, "Ma ma ma ma");
+    REQUIRE(fast.size() < normal.size() * 0.65);
+    REQUIRE(fast.size() > normal.size() * 0.4);
+    REQUIRE(laprdus_set_speed(engine.handle, 1.0f) == LAPRDUS_OK);
+
+    // The accordion has no vibrato, so a held note's pitch is steady and
+    // the user pitch moves it by an octave exactly.
+    std::vector<int16_t> high = speak(engine.handle, "Ma");
+    REQUIRE(laprdus_set_user_pitch(engine.handle, 0.5f) == LAPRDUS_OK);
+    std::vector<int16_t> low = speak(engine.handle, "Ma");
+    // (The autocorrelation helper is confused by the two beating reeds, so
+    // the octave itself is checked with tools/formant/pitch.py, not here.)
+    REQUIRE(low.size() == high.size());
+    REQUIRE(low != high);
+}
+
+TEST_CASE("Inflection level sets the vibrato of a sung voice", "[formant][singing]") {
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "sevdalija", NO_DATA) == LAPRDUS_OK);
+    std::vector<int16_t> with = speak(engine.handle, "Aaa");
+    REQUIRE(laprdus_set_inflection_level(engine.handle, 0.0f) == LAPRDUS_OK);
+    std::vector<int16_t> without = speak(engine.handle, "Aaa");
+    REQUIRE(with.size() == without.size());
+    REQUIRE(with != without);
+}
+
+TEST_CASE("Dry presets sing at the voice's own pitch, legato", "[formant][singing]") {
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "pjevac", NO_DATA) == LAPRDUS_OK);
+    // Zvonko speaks around 112 Hz; his song must stay within an octave of it.
+    std::vector<int16_t> sung = speak(engine.handle, "Oj ti vilo, vilo Velebita");
+    double f = pitch_hz(sung, 0.2, 0.8);
+    REQUIRE(f > 70.0);
+    REQUIRE(f < 230.0);
+    // Syllables that follow each other are joined: no silent gap between
+    // the vowels of "vi-lo vi-lo".
+    std::vector<int16_t> legato = speak(engine.handle, "Ma ma ma ma");
+    REQUIRE(gaps(legato).longest_ms < 30.0);
+}
+
+TEST_CASE("Singing presets spell as well", "[formant][singing]") {
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "trubac", NO_DATA) == LAPRDUS_OK);
+    int16_t* samples = nullptr;
+    LaprdusAudioFormat format;
+    int32_t count = laprdus_synthesize_spelled(engine.handle, "abc", &samples, &format);
+    REQUIRE(count > 0);
+    laprdus_free_buffer(samples);
 }

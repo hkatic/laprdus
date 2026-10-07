@@ -54,6 +54,18 @@
     <string name="setting_inflection_enabled_title">Intonacija glasa</string>
     <string name="setting_inflection_enabled_subtitle">Menja visinu glasa za pitanja, uzvike i pauze</string>
 
+    <!-- Formantni glasovi (Zvonko, Stojan, Mirsad) -->
+    <string name="category_formant_voices">Formantni glas</string>
+    <string name="setting_inflection_level">Intonacija</string>
+    <string name="setting_inflection_level_desc">Veličina pokreta visine glasa: 0% je monotono, 50% prirodni pokreti, 100% najveći</string>
+    <string name="setting_acceleration">Ubrzanje</string>
+    <string name="setting_acceleration_desc">Množi brzinu govora, pa vrh opsega brzine dostiže veću ili manju brzinu</string>
+    <string name="acceleration_value">%1$.1fx (do %2$d reči/min)</string>
+    <string name="restore_default_inflection_level">Vrati podrazumevanu intonaciju</string>
+    <string name="restore_default_acceleration">Vrati podrazumevano ubrzanje</string>
+    <string name="cd_restore_inflection_level_desc">Postavlja intonaciju na 50%</string>
+    <string name="cd_restore_acceleration_desc">Postavlja ubrzanje na 1.0x</string>
+
     <!-- Number mode settings -->
     <string name="setting_number_mode_title">Čitaj brojeve cifru po cifru</string>
     <string name="setting_number_mode_subtitle">Čitaj brojeve kao pojedinačne cifre (123 → jedan dva tri)</string>

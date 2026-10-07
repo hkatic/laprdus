@@ -257,8 +257,8 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_user_pitch(
     // User pitch preference - formant-preserving pitch shift
     // This does NOT shift formants - voice character stays the same
     // Use this for user-controlled pitch adjustment (NVDA/SAPI5 slider)
-    pitch = std::clamp(pitch, 0.5f, 2.0f);
-
+    // VoiceParams::clamp() limits it to 0.25 - 4.0; the recorded voices
+    // narrow that to 0.5 - 2.0 themselves.
     laprdus::VoiceParams vp = handle->engine.voice_params();
     vp.user_pitch = pitch;
     handle->engine.set_voice_params(vp);
@@ -291,6 +291,52 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_inflection_enabled(
     vp.inflection_enabled = (enabled != 0);
     handle->engine.set_voice_params(vp);
     return LAPRDUS_OK;
+}
+
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_inflection_level(
+    LaprdusHandle handle,
+    float level) {
+
+    if (!handle) {
+        return LAPRDUS_ERROR_INVALID_HANDLE;
+    }
+
+    laprdus::VoiceParams vp = handle->engine.voice_params();
+    vp.inflection_level = level;
+    handle->engine.set_voice_params(vp);
+    return LAPRDUS_OK;
+}
+
+LAPRDUS_API float LAPRDUS_CALL laprdus_get_inflection_level(LaprdusHandle handle) {
+    if (!handle) {
+        return laprdus::INFLECTION_LEVEL_DEFAULT;
+    }
+    return handle->engine.voice_params().inflection_level;
+}
+
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_acceleration(
+    LaprdusHandle handle,
+    float acceleration) {
+
+    if (!handle) {
+        return LAPRDUS_ERROR_INVALID_HANDLE;
+    }
+
+    laprdus::VoiceParams vp = handle->engine.voice_params();
+    vp.acceleration = acceleration;
+    handle->engine.set_voice_params(vp);
+    return LAPRDUS_OK;
+}
+
+LAPRDUS_API float LAPRDUS_CALL laprdus_get_acceleration(LaprdusHandle handle) {
+    if (!handle) {
+        return laprdus::ACCELERATION_DEFAULT;
+    }
+    return handle->engine.voice_params().acceleration;
+}
+
+LAPRDUS_API float LAPRDUS_CALL laprdus_get_nominal_wpm(const char* voice_id) {
+    return laprdus::VoiceRegistry::nominal_wpm(voice_id ? voice_id : "zvonko");
 }
 
 // =============================================================================
@@ -1238,6 +1284,8 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_load_user_config(LaprdusHandle han
     params.user_pitch = settings.user_pitch;
     params.volume = settings.volume;
     params.inflection_enabled = settings.inflection_enabled;
+    params.inflection_level = settings.inflection_level;
+    params.acceleration = settings.acceleration;
     params.emoji_enabled = settings.emoji_enabled;
     params.number_mode = settings.number_mode;
     params.pause_settings = settings.get_pause_settings();

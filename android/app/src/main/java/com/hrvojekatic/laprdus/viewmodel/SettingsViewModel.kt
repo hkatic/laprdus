@@ -34,6 +34,11 @@ data class SettingsUiState(
     // Advanced settings
     val emojiEnabled: Boolean = SettingsRepository.DEFAULT_EMOJI_ENABLED,
     val inflectionEnabled: Boolean = SettingsRepository.DEFAULT_INFLECTION_ENABLED,
+    // Formant voices only
+    val inflectionLevel: Float = SettingsRepository.DEFAULT_INFLECTION_LEVEL,
+    val acceleration: Float = SettingsRepository.DEFAULT_ACCELERATION,
+    /** Words per minute of the selected voice at speed 1.0 and acceleration 1.0. */
+    val nominalWpm: Float = 0f,
     val sentencePause: Int = SettingsRepository.DEFAULT_SENTENCE_PAUSE,
     val commaPause: Int = SettingsRepository.DEFAULT_COMMA_PAUSE,
     val newlinePause: Int = SettingsRepository.DEFAULT_NEWLINE_PAUSE,
@@ -43,7 +48,15 @@ data class SettingsUiState(
     val error: String? = null,
     /** Persistent notice that saved settings could not be migrated (null when fine). */
     val storageError: String? = null
-)
+) {
+    /** Whether the selected voice is a formant voice (Zvonko, Stojan, Mirsad). */
+    val isFormantVoice: Boolean
+        get() = VoiceInfo.isFormantVoice(selectedVoiceId)
+
+    /** Speed and pitch range of the selected voice. */
+    val speedPitchRange: ClosedFloatingPointRange<Float>
+        get() = VoiceInfo.rangeFor(selectedVoiceId)
+}
 
 /**
  * ViewModel for the Settings screen.
@@ -106,6 +119,9 @@ class SettingsViewModel @Inject constructor(
                             forceLanguage = allSettings.forceLanguage,
                             emojiEnabled = allSettings.emojiEnabled,
                             inflectionEnabled = allSettings.inflectionEnabled,
+                            inflectionLevel = allSettings.inflectionLevel,
+                            acceleration = allSettings.acceleration,
+                            nominalWpm = tts.getNominalWpm(allSettings.defaultVoice),
                             sentencePause = allSettings.sentencePause,
                             commaPause = allSettings.commaPause,
                             newlinePause = allSettings.newlinePause,
@@ -142,7 +158,29 @@ class SettingsViewModel @Inject constructor(
                 if (success) {
                     // Persist the selection
                     settings.setDefaultVoice(voiceId)
-                    _uiState.update { it.copy(selectedVoiceId = voiceId, error = null) }
+                    // A recorded voice cannot use the wider rate and pitch
+                    // of the formant voices: pull the values back into its range.
+                    val range = VoiceInfo.rangeFor(voiceId)
+                    val state = _uiState.value
+                    val speed = state.speed.coerceIn(range)
+                    val pitch = state.pitch.coerceIn(range)
+                    if (speed != state.speed) {
+                        tts.speed = speed
+                        settings.setSpeed(speed)
+                    }
+                    if (pitch != state.pitch) {
+                        tts.pitch = pitch
+                        settings.setPitch(pitch)
+                    }
+                    _uiState.update {
+                        it.copy(
+                            selectedVoiceId = voiceId,
+                            speed = speed,
+                            pitch = pitch,
+                            nominalWpm = tts.getNominalWpm(voiceId),
+                            error = null
+                        )
+                    }
                 } else {
                     _uiState.update { it.copy(error = context.getString(R.string.error_voice_failed)) }
                 }
@@ -158,10 +196,10 @@ class SettingsViewModel @Inject constructor(
 
     /**
      * Set the speech speed and persist it.
-     * @param speed Speed factor (0.5 - 2.0)
+     * @param speed Speed factor (0.5 - 2.0; formant voices 0.25 - 4.0)
      */
     fun setSpeed(speed: Float) {
-        val clampedSpeed = speed.coerceIn(0.5f, 2.0f)
+        val clampedSpeed = speed.coerceIn(_uiState.value.speedPitchRange)
         viewModelScope.launch {
             tts.speed = clampedSpeed
             settings.setSpeed(clampedSpeed)
@@ -197,10 +235,10 @@ class SettingsViewModel @Inject constructor(
 
     /**
      * Set the pitch and persist it.
-     * @param pitch Pitch factor (0.5 - 2.0)
+     * @param pitch Pitch factor (0.5 - 2.0; formant voices 0.25 - 4.0)
      */
     fun setPitch(pitch: Float) {
-        val clampedPitch = pitch.coerceIn(0.5f, 2.0f)
+        val clampedPitch = pitch.coerceIn(_uiState.value.speedPitchRange)
         viewModelScope.launch {
             tts.pitch = clampedPitch
             settings.setPitch(clampedPitch)
@@ -313,6 +351,32 @@ class SettingsViewModel @Inject constructor(
             tts.inflectionEnabled = enabled
             settings.setInflectionEnabled(enabled)
             _uiState.update { it.copy(inflectionEnabled = enabled) }
+        }
+    }
+
+    /**
+     * Set the inflection level of the formant voices and persist it.
+     * @param level 0.0 (monotone) to 1.0 (maximum), 0.5 as measured
+     */
+    fun setInflectionLevel(level: Float) {
+        val clamped = level.coerceIn(0.0f, 1.0f)
+        viewModelScope.launch {
+            tts.inflectionLevel = clamped
+            settings.setInflectionLevel(clamped)
+            _uiState.update { it.copy(inflectionLevel = clamped) }
+        }
+    }
+
+    /**
+     * Set the acceleration of the formant voices and persist it.
+     * @param acceleration Rate multiplier (0.5 - 3.0)
+     */
+    fun setAcceleration(acceleration: Float) {
+        val clamped = acceleration.coerceIn(SettingsRepository.ACCELERATION_RANGE)
+        viewModelScope.launch {
+            tts.acceleration = clamped
+            settings.setAcceleration(clamped)
+            _uiState.update { it.copy(acceleration = clamped) }
         }
     }
 

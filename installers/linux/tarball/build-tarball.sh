@@ -552,6 +552,8 @@ Voices
   zvonko  - Croatian male adult (formant synthesis, default)
   stojan  - Serbian male adult (formant synthesis)
   mirsad  - Bosnian male adult (formant synthesis)
+  orguljas, klapa, trubac, harmonikas, sevdalija, sazlija, pjevac, pevac, solist, becarac
+          - singing presets of the formant voices
   josip   - Croatian male adult
   vlado   - Serbian male adult
   detence - Croatian child

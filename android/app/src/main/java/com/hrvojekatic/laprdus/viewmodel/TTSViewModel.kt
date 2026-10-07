@@ -98,6 +98,8 @@ class TTSViewModel @Inject constructor(
             // Apply advanced settings
             tts.emojiEnabled = savedSettings.emojiEnabled
             tts.inflectionEnabled = savedSettings.inflectionEnabled
+            tts.inflectionLevel = savedSettings.inflectionLevel
+            tts.acceleration = savedSettings.acceleration
             tts.sentencePause = savedSettings.sentencePause
             tts.commaPause = savedSettings.commaPause
             tts.newlinePause = savedSettings.newlinePause
@@ -163,6 +165,8 @@ class TTSViewModel @Inject constructor(
                 // Apply advanced settings
                 tts.emojiEnabled = savedSettings.emojiEnabled
                 tts.inflectionEnabled = savedSettings.inflectionEnabled
+                tts.inflectionLevel = savedSettings.inflectionLevel
+                tts.acceleration = savedSettings.acceleration
                 tts.sentencePause = savedSettings.sentencePause
                 tts.commaPause = savedSettings.commaPause
                 tts.newlinePause = savedSettings.newlinePause

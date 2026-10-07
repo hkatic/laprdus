@@ -22,6 +22,7 @@ import com.hrvojekatic.laprdus.data.migration.MigrationResult
 import com.hrvojekatic.laprdus.data.migration.SimulatedMigrationCrashException
 import com.hrvojekatic.laprdus.data.storage.LaprdusStorage
 import com.hrvojekatic.laprdus.tts.LaprdusTTS
+import com.hrvojekatic.laprdus.tts.VoiceInfo
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -230,6 +231,8 @@ class LaprdusTTSService : TextToSpeechService() {
         try {
             engine.emojiEnabled = settings.emojiEnabled
             engine.inflectionEnabled = settings.inflectionEnabled
+            engine.inflectionLevel = settings.inflectionLevel
+            engine.acceleration = settings.acceleration
             engine.sentencePause = settings.sentencePause
             engine.commaPause = settings.commaPause
             engine.newlinePause = settings.newlinePause
@@ -525,8 +528,8 @@ class LaprdusTTSService : TextToSpeechService() {
 
     /** Two-letter language of a voice. */
     private fun languageOfVoice(voiceId: String): String = when (voiceId) {
-        "vlado", "djed", "stojan" -> "sr"
-        "mirsad" -> "bs"
+        "vlado", "djed", "stojan", "trubac", "harmonikas", "pevac" -> "sr"
+        "mirsad", "sevdalija", "sazlija", "solist" -> "bs"
         else -> "hr"
     }
 
@@ -746,13 +749,17 @@ class LaprdusTTSService : TextToSpeechService() {
             // Use cached settings (non-blocking) - falls back to defaults if not yet loaded
             val settings = cachedSettings
 
+            // The recorded voices take 0.5 - 2.0, the formant voices 0.25 - 4.0
+            // (and multiply the rate by the acceleration setting).
+            val range = VoiceInfo.rangeFor(currentVoiceId)
+
             // Apply speech rate - use Laprdus settings if force is enabled
             val speechRate = if (settings?.forceSpeed == true) {
                 logDebug { "Using forced Laprdus speed: ${settings.speed}" }
                 settings.speed
             } else {
                 // Android uses 100 as normal = 1.0
-                (request.speechRate / 100f).coerceIn(0.5f, 2.0f)
+                (request.speechRate / 100f).coerceIn(range)
             }
             engine.speed = speechRate
 
@@ -762,7 +769,7 @@ class LaprdusTTSService : TextToSpeechService() {
                 settings.pitch
             } else {
                 // Android uses 100 as normal = 1.0
-                (request.pitch / 100f).coerceIn(0.5f, 2.0f)
+                (request.pitch / 100f).coerceIn(range)
             }
             engine.pitch = pitch
 

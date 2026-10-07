@@ -85,6 +85,9 @@ CHANNELS = 1
 RATE_MIN = 0.5          # Minimum rate (same for both modes)
 RATE_NORMAL_MAX = 2.0   # Maximum rate without boost
 RATE_BOOST_MAX = 4.0    # Maximum rate with boost enabled
+# The formant voices (Zvonko, Stojan, Mirsad) multiply the rate by the
+# "acceleration" from settings.json on top of this, so their top rate is
+# RATE_NORMAL_MAX (or RATE_BOOST_MAX) times the acceleration.
 
 
 def _nvda_to_rate_factor(nvda_rate, rate_boost=False):
@@ -632,6 +635,8 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         Settings loaded from settings.json structure:
         - speech.speed, speech.pitch, speech.volume (with force flags)
         - speech.inflection: whether to use pitch variation
+        - speech.inflection_level: size of the formant voices' pitch movements (0.0-1.0)
+        - speech.acceleration: rate multiplier of the formant voices (0.5-3.0)
         - speech.emoji: whether to convert emoji to text
         - numbers.mode: 'words' or 'digits'
         - pauses.sentence, pauses.comma, pauses.newline, pauses.spelling
@@ -693,6 +698,16 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             inflection = speech.get('inflection', True)
             self._engine.set_inflection(inflection)
             _debug_log("_loadSharedSettings: inflection=%s" % inflection)
+
+            # Formant voices: inflection level and acceleration. The
+            # acceleration multiplies the speed set from the rate slider,
+            # so the slider's top reaches 2.0 (4.0 with rate boost) times it.
+            inflection_level = float(speech.get('inflection_level', 0.5))
+            self._engine.set_inflection_level(inflection_level)
+            acceleration = float(speech.get('acceleration', 1.0))
+            self._engine.set_acceleration(acceleration)
+            _debug_log("_loadSharedSettings: inflection_level=%.2f acceleration=%.2f" % (
+                inflection_level, acceleration))
 
             # Apply emoji setting
             emoji_enabled = speech.get('emoji', False)

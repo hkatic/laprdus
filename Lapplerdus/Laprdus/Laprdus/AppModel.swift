@@ -88,6 +88,11 @@ final class AppModel: ObservableObject {
             let state = dictionaryState
             try await runOnEngineQueue { try engine.loadVoice(voiceID, dictionaries: state) }
             settings.defaultVoice = voiceID
+            // A recorded voice cannot use the wider rate and pitch of the
+            // formant voices: pull the values back into its range.
+            let range = VoiceCatalog.speedPitchRange(forVoice: voiceID)
+            settings.speed = min(max(settings.speed, range.lowerBound), range.upperBound)
+            settings.pitch = min(max(settings.pitch, range.lowerBound), range.upperBound)
         } catch {
             errorMessage = String(localized: "Error selecting voice")
         }

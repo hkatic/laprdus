@@ -140,6 +140,7 @@ Da biste instalirali Laprdus na Windows sustavu, slijedite ove korake:
    - Laprdus Zvonko
    - Laprdus Stojan
    - Laprdus Mirsad
+   - Laprdus Zvonko Orguljaš, Klapa Zvonko, Zvonko Pjevač, Stojan Trubač, Stojan Harmonikaš, Stojan Pevač, Mirsad Sevdalija, Mirsad Sazlija, Mirsad Solist i Zvonko Bećarac (glasovi koji pjevaju)
 
 ### 2.2 NVDA dodatak
 
@@ -345,9 +346,11 @@ echo "Tekst" | laprdus
 
 | Opcija | Opis |
 |--------|------|
-| `-v, --voice` | Odabir glasa (josip, vlado, detence, baba, djed, zvonko, stojan, mirsad) |
-| `-r, --speech-rate` | Brzina govora (0.5-2.0, zadano: 1.0) |
-| `-p, --speech-pitch` | Visina glasa (0.5-2.0, zadano: 1.0) |
+| `-v, --voice` | Odabir glasa (josip, vlado, detence, baba, djed, zvonko, stojan, mirsad ili pjevajući glas: orguljas, klapa, trubac, harmonikas, sevdalija, sazlija, pjevac, pevac, solist, becarac) |
+| `-r, --speech-rate` | Brzina govora (0.5-2.0, zadano: 1.0; formantni glasovi 0.25-4.0) |
+| `-p, --speech-pitch` | Visina glasa (0.5-2.0, zadano: 1.0; formantni glasovi 0.25-4.0) |
+| `-I, --inflection` | Intonacija formantnih glasova, 0-100 (zadano: 50; 0 je monotono) |
+| `-a, --acceleration` | Ubrzanje formantnih glasova, množitelj brzine 0.5-3.0 (zadano: 1.0) |
 | `-V, --speech-volume` | Glasnoća (0.0-1.0, zadano: 1.0) |
 | `-d, --numbers-digits` | Čitaj brojeve znamenka po znamenka |
 | `-c, --comma-pauses` | Trajanje pauze za zarez u ms (zadano: 100) |
@@ -475,6 +478,7 @@ Konfigurator omogućuje podešavanje:
 - Načina čitanja brojeva
 - Trajanja pauza
 - Infleksije
+- Intonacije i ubrzanja formantnih glasova (Zvonko, Stojan, Mirsad): intonacija od 0% (monotono) preko 50% (zadano, prirodni pokreti) do 100% (dvostruko veći pokreti); ubrzanje množi brzinu govora (0.5x-3.0x, zadano 1.0x), pa vrh NVDA klizača brzine doseže veću ili manju brzinu, a uz klizač je ispisano koliko riječi u minuti tada doseže. Klizači brzine i visine za formantne glasove idu od 0.25x do 4.0x.
 - Prilagodbu korisničkih rječnika
 
 Postavke se spremaju u korisničkoj mapi `%APPDATA%\Laprdus` i dijele se između SAPI5 i NVDA dodatka.
@@ -1194,6 +1198,16 @@ Laprdus uključuje osam glasova - dva osnovna, tri izvedena i tri formantna:
 | **Zvonko** | Formantni | Hrvatski | Muški glas. Govor nastaje pravilima, bez snimaka. Zadani glas za hrvatski jezik. |
 | **Stojan** | Formantni | Srpski | Muški glas, dublji i tamniji. Govor nastaje pravilima, bez snimaka. Zadani glas za srpski jezik. |
 | **Mirsad** | Formantni | Bosanski | Muški glas, viši i melodičniji. Govor nastaje pravilima, bez snimaka. Zadani glas za bosanski jezik. |
+| **Zvonko Orguljaš** | Pjevajući | Hrvatski | Zvonko za orguljama: pjeva *Vilu Velebita*. |
+| **Klapa Zvonko** | Pjevajući | Hrvatski | Zvonko kao cijela klapa: pjeva *Vilu Velebita*. |
+| **Zvonko Pjevač** | Pjevajući | Hrvatski | Zvonko pjeva svojim glasom, u svojoj visini: *Vila Velebita*. |
+| **Stojan Trubač** | Pjevajući | Srpski | Stojan kao truba: pjeva *Kreće se lađa francuska*. |
+| **Stojan Harmonikaš** | Pjevajući | Srpski | Stojan kao harmonika: pjeva *Kreće se lađa francuska*. |
+| **Stojan Pevač** | Pjevajući | Srpski | Stojan pjeva svojim glasom: *Kreće se lađa francuska*. |
+| **Mirsad Sevdalija** | Pjevajući | Bosanski | Mirsad pjeva sevdah: *Kad ja pođoh na Bembašu*. |
+| **Mirsad Sazlija** | Pjevajući | Bosanski | Mirsad kao saz: pjeva *Kad ja pođoh na Bembašu*. |
+| **Mirsad Solist** | Pjevajući | Bosanski | Mirsad pjeva svojim glasom: *Kad ja pođoh na Bembašu*. |
+| **Zvonko Bećarac** | Pjevajući | Hrvatski | Zvonko svojim glasom pjeva bećarac: svaki deseterački dvostih sjeda na napjev. |
 
 ### 6.2 Osnovni i izvedeni glasovi
 
@@ -1213,6 +1227,8 @@ Laprdus uključuje osam glasova - dva osnovna, tri izvedena i tri formantna:
 - brojeve izgovaraju prema jeziku glasa (Zvonko: *tisuća*, *milijun*; Stojan i Mirsad: *hiljada*, *milion*)
 
 Ako formantni glas neku riječ naglasi na pogrešnom slogu, naglasak možete zadati u rječniku izgovora uobičajenim naglasnim znakovima, na primjer `telèfon`, `gláva`, `kȕća` ili `grȃd`.
+
+**Pjevajući glasovi** (Zvonko Orguljaš, Klapa Zvonko, Zvonko Pjevač, Stojan Trubač, Stojan Harmonikaš, Stojan Pevač, Mirsad Sevdalija, Mirsad Sazlija, Mirsad Solist, Zvonko Bećarac) su formantni glasovi koji tekst ne govore nego pjevaju, kao što su to činili DECtalk i glasovi Pipe Organ i Cellos na Macintoshu. Svaki slog dobiva jednu notu narodne pjesme svoje zemlje (hrvatski glasovi pjevaju *Vilu Velebita*, srpski *Kreće se lađa francuska*, bosanski *Kad ja pođoh na Bembašu*); prva kitica pjesme točno sjeda na melodiju, a svaki drugi tekst pjeva se na istu melodiju, slog po slog, iz početka sa svakom novom rečenicom koju program pošalje. Brzina govora određuje tempo, visina transponira pjesmu, a intonacija određuje dubinu vibrata (0% ga isključuje). Umjesto grkljana svaki glas ima svoj "instrument": orgulje s odjekom crkve, klapu od nekoliko glasova s basom oktavu niže, trubu, dvije harmonikaške piskove ugođene za nekoliko centa različito, sevdalijski glas sa širokim vibratom i saz s tremolom. Pjevač, Pevač i Solist pjevaju običnim glasom Zvonka, Stojana i Mirsada, bez instrumenta i odjeka, a pjesma im je prenesena u visinu u kojoj inače govore.
 
 ### 6.3 Odabir glasa
 

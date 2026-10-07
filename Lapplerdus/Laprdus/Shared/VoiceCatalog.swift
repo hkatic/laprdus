@@ -14,6 +14,17 @@ struct Voice: Identifiable, Hashable {
     /// Stable identifier used for AVSpeechSynthesisProviderVoice.
     var providerIdentifier: String { "com.hrvojekatic.laprdus.\(id)" }
 
+    /// Synthesized by rule (Zvonko, Stojan, Mirsad and the singing presets):
+    /// accepts the wider rate and pitch ranges and has the inflection level
+    /// and acceleration settings.
+    var isFormant: Bool { VoiceCatalog.isFormantVoice(id) }
+
+    /// Sings the text to a folk song instead of speaking it.
+    var isSinging: Bool { VoiceCatalog.isSingingVoice(id) }
+
+    /// Words per minute at speed 1.0 and acceleration 1.0.
+    var nominalWordsPerMinute: Float { laprdus_get_nominal_wpm(id) }
+
     /// Short localized name shown in pickers.
     var localizedName: String {
         switch id {
@@ -25,6 +36,16 @@ struct Voice: Identifiable, Hashable {
         case "zvonko": return "Zvonko"
         case "stojan": return "Stojan"
         case "mirsad": return "Mirsad"
+        case "orguljas": return "Zvonko Orguljaš"
+        case "klapa": return "Klapa Zvonko"
+        case "trubac": return "Stojan Trubač"
+        case "harmonikas": return "Stojan Harmonikaš"
+        case "sevdalija": return "Mirsad Sevdalija"
+        case "sazlija": return "Mirsad Sazlija"
+        case "pjevac": return "Zvonko Pjevač"
+        case "pevac": return "Stojan Pevač"
+        case "solist": return "Mirsad Solist"
+        case "becarac": return "Zvonko Bećarac"
         default: return displayName
         }
     }
@@ -74,6 +95,26 @@ enum VoiceCatalog {
 
     static func voice(withID id: String) -> Voice? {
         all.first { $0.id == id }
+    }
+
+    static let singingVoiceIDs: Set<String> = [
+        "orguljas", "klapa", "trubac", "harmonikas", "sevdalija", "sazlija",
+        "pjevac", "pevac", "solist", "becarac"
+    ]
+    static let formantVoiceIDs: Set<String> =
+        Set(["zvonko", "stojan", "mirsad"]).union(singingVoiceIDs)
+
+    static func isFormantVoice(_ id: String) -> Bool { formantVoiceIDs.contains(id) }
+    static func isSingingVoice(_ id: String) -> Bool { singingVoiceIDs.contains(id) }
+
+    /// Speed and pitch range of the recorded voices.
+    static let recordedSpeedPitchRange: ClosedRange<Float> = 0.5...2.0
+    /// Speed and pitch range of the formant voices.
+    static let formantSpeedPitchRange: ClosedRange<Float> = 0.25...4.0
+
+    /// Speed and pitch range of a voice.
+    static func speedPitchRange(forVoice id: String) -> ClosedRange<Float> {
+        isFormantVoice(id) ? formantSpeedPitchRange : recordedSpeedPitchRange
     }
 
     /// Default voice for a BCP-47 language tag: the formant voice of that

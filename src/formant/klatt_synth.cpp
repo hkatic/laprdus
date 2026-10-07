@@ -125,6 +125,8 @@ void KlattSynth::reset() {
     m_nasal_pole.clear();
     m_nasal_zero.clear();
     m_phase = 0.0;
+    m_phase_up = m_phase_down = m_phase_sub = 0.0;
+    m_reverb.clear();
     m_period_jitter = 1.0;
     m_period_shimmer = 1.0;
     m_tilt_state = 0.0;
@@ -174,6 +176,174 @@ void KlattSynth::update_coefficients(const Frame& fr) {
         double q = 1.0 - g2;
         m_tilt_coef = (p - std::sqrt(std::max(p * p - q * q, 0.0))) / q;
     }
+}
+
+// =============================================================================
+// Voice source
+// =============================================================================
+
+namespace {
+
+// KLGLOTT88 glottal flow derivative over one period (phase 0..1) with the
+// closing edge (a step of +1 at ph == oq) band-limited over one sample.
+inline double glottal_pulse(double ph, double oq, double dt) {
+    double g = 0.0;
+    if (ph < oq) {
+        double x = ph / oq;
+        g = 2.0 * x - 3.0 * x * x;
+    }
+    double d = ph - oq;
+    if (d >= 0.0 && d < dt) {
+        double u = 1.0 - d / dt;
+        g -= 0.5 * u * u;
+    } else if (d < 0.0 && d > -dt) {
+        double u = 1.0 + d / dt;
+        g += 0.5 * u * u;
+    }
+    return g;
+}
+
+// Sawtooth with the discontinuity smoothed by a polynomial (PolyBLEP), so
+// it does not alias at the high notes.
+inline double sawtooth(double ph, double dt) {
+    double y = 2.0 * ph - 1.0;
+    if (ph < dt) {
+        double x = ph / dt;
+        y -= x + x - x * x - 1.0;
+    } else if (ph > 1.0 - dt) {
+        double x = (ph - 1.0) / dt;
+        y -= x * x + x + x + 1.0;
+    }
+    return y;
+}
+
+inline void advance(double& phase, double dt) {
+    phase += dt;
+    if (phase >= 1.0) phase -= 1.0;
+}
+
+} // namespace
+
+double KlattSynth::source_sample(double f0, double oq_now, double av, bool& open_phase) {
+    const VoiceQuality& q = m_quality;
+    const double dt = f0 * T;
+    const double oq = m_period_oq;
+    const double up = std::pow(2.0, q.chorus_cents / 1200.0);
+    const double down = 1.0 / up;
+    double g = 0.0;
+
+    switch (q.source) {
+        case SourceKind::Glottal:
+            g = glottal_pulse(m_phase, oq, dt);
+            if (q.chorus > 0.0f) {
+                g += q.chorus * (glottal_pulse(m_phase_up, oq, dt * up) +
+                                 glottal_pulse(m_phase_down, oq, dt * down));
+            }
+            if (q.sub_octave > 0.0f) {
+                g += q.sub_octave * glottal_pulse(m_phase_sub, oq, dt * 0.5);
+            }
+            break;
+
+        case SourceKind::Organ: {
+            // Stops over the 16' phase: 16', 8', 4', 2 2/3', 2', 1 3/5',
+            // 1 1/3', 1'. As in MacinTalk's organ the fundamental is weak
+            // and the energy sits on the fourth to eighth harmonics, where
+            // the upper stops of a principal chorus put it.
+            static const double HARMONIC[] = {1, 2, 4, 6, 8, 10, 12, 16};
+            static const double LEVEL[] = {0.0, 0.45, 0.90, 0.70, 0.80, 0.40, 0.35, 0.22};
+            for (int k = 0; k < 8; ++k) {
+                double level = k == 0 ? q.sub_octave : LEVEL[k];
+                if (level <= 0.0) continue;
+                g += level * std::sin(2.0 * PI * HARMONIC[k] * m_phase_sub);
+            }
+            g *= 0.30;
+            break;
+        }
+
+        case SourceKind::Strings:
+        case SourceKind::Brass:
+        case SourceKind::Reed:
+            g = sawtooth(m_phase, dt);
+            if (q.chorus > 0.0f) {
+                g += q.chorus * sawtooth(m_phase_up, dt * up);
+                // An accordion's second reed is only tuned sharp.
+                if (q.source != SourceKind::Reed) {
+                    g += q.chorus * sawtooth(m_phase_down, dt * down);
+                }
+            }
+            if (q.sub_octave > 0.0f) {
+                g += q.sub_octave * sawtooth(m_phase_sub, dt * 0.5);
+            }
+            if (q.source == SourceKind::Brass) {
+                // The lips saturate: the louder the note, the brighter.
+                double drive = 1.0 + 4.0 * std::clamp(av, 0.0, 1.0);
+                g = std::tanh(drive * g) / std::tanh(drive);
+            }
+            g *= 0.45;
+            break;
+    }
+
+    open_phase = m_phase < oq;
+
+    advance(m_phase_up, dt * up);
+    advance(m_phase_down, dt * down);
+    advance(m_phase_sub, dt * 0.5);
+    m_phase += dt;
+    if (m_phase >= 1.0) {
+        m_phase -= 1.0;
+        m_period_jitter = 1.0 + q.jitter * noise() * 2.0;
+        m_period_shimmer = 1.0 + q.shimmer * noise() * 2.0;
+        m_period_oq = std::clamp(oq_now, 0.3, 0.9);
+    }
+    return g;
+}
+
+// =============================================================================
+// Reverb
+// =============================================================================
+
+KlattSynth::Reverb::Reverb() {
+    // Freeverb's tuning, halved for 22050 Hz.
+    static const size_t COMB_LEN[COMBS] = {558, 594, 639, 678};
+    static const size_t ALLPASS_LEN[ALLPASSES] = {113, 278};
+    for (int i = 0; i < COMBS; ++i) comb[i].assign(COMB_LEN[i], 0.0f);
+    for (int i = 0; i < ALLPASSES; ++i) allpass[i].assign(ALLPASS_LEN[i], 0.0f);
+}
+
+void KlattSynth::Reverb::clear() {
+    for (int i = 0; i < COMBS; ++i) {
+        std::fill(comb[i].begin(), comb[i].end(), 0.0f);
+        comb_pos[i] = 0;
+        comb_state[i] = 0.0;
+    }
+    for (int i = 0; i < ALLPASSES; ++i) {
+        std::fill(allpass[i].begin(), allpass[i].end(), 0.0f);
+        allpass_pos[i] = 0;
+    }
+}
+
+double KlattSynth::Reverb::tick(double x) {
+    constexpr double FEEDBACK = 0.82;
+    constexpr double DAMP = 0.3;
+    constexpr double ALLPASS_G = 0.5;
+    double out = 0.0;
+    for (int i = 0; i < COMBS; ++i) {
+        float& cell = comb[i][comb_pos[i]];
+        double y = cell;
+        comb_state[i] = y * (1.0 - DAMP) + comb_state[i] * DAMP;
+        cell = static_cast<float>(x + comb_state[i] * FEEDBACK);
+        if (++comb_pos[i] >= comb[i].size()) comb_pos[i] = 0;
+        out += y;
+    }
+    out *= 0.25;
+    for (int i = 0; i < ALLPASSES; ++i) {
+        float& cell = allpass[i][allpass_pos[i]];
+        double y = cell;
+        cell = static_cast<float>(out + y * ALLPASS_G);
+        out = y - out;
+        if (++allpass_pos[i] >= allpass[i].size()) allpass_pos[i] = 0;
+    }
+    return out;
 }
 
 // =============================================================================
@@ -228,33 +398,10 @@ void KlattSynth::render(const Frame* frames, size_t count, std::vector<float>& o
                      std::sin(2.0 * PI * 4.7 * tt));
                 m_time += 1.0;
 
-                // ---- Glottal source (flow derivative) ----
-                double dt = std::clamp(f0, 40.0, 500.0) * flutter * m_period_jitter * T;
-                double oq = m_period_oq;
-                double ph = m_phase;
-                double g = 0.0;
-                if (ph < oq) {
-                    double x = ph / oq;
-                    g = 2.0 * x - 3.0 * x * x;
-                }
-                // Band-limit the closing edge (step of +1 at ph == oq).
-                double d = ph - oq;
-                if (d >= 0.0 && d < dt) {
-                    double u = 1.0 - d / dt;
-                    g -= 0.5 * u * u;
-                } else if (d < 0.0 && d > -dt) {
-                    double u = 1.0 + d / dt;
-                    g += 0.5 * u * u;
-                }
-                bool open_phase = ph < oq;
-
-                m_phase += dt;
-                if (m_phase >= 1.0) {
-                    m_phase -= 1.0;
-                    m_period_jitter = 1.0 + m_quality.jitter * noise() * 2.0;
-                    m_period_shimmer = 1.0 + m_quality.shimmer * noise() * 2.0;
-                    m_period_oq = std::clamp(lerp(prev.oq, next.oq, t), 0.3, 0.9);
-                }
+                // ---- Voice source ----
+                double f0_eff = std::clamp(f0, 40.0, 1000.0) * flutter * m_period_jitter;
+                bool open_phase = false;
+                double g = source_sample(f0_eff, lerp(prev.oq, next.oq, t), av, open_phase);
 
                 m_tilt_state = (1.0 - m_tilt_coef) * g + m_tilt_coef * m_tilt_state;
                 // The bare pulse falls 6 dB/octave, duller than a real modal
@@ -313,6 +460,9 @@ void KlattSynth::render(const Frame* frames, size_t count, std::vector<float>& o
                 }
 
                 double sample = y + fric;
+                if (m_quality.reverb > 0.0f) {
+                    sample += m_quality.reverb * m_reverb.tick(sample);
+                }
 
                 // DC blocker (~35 Hz)
                 double hp = sample - m_dc_x1 + 0.99 * m_dc_y1;

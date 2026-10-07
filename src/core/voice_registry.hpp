@@ -69,6 +69,15 @@ public:
      * @return true if the voice uses formant synthesis.
      */
     static bool is_formant_voice(const VoiceDefinition* voice);
+
+    /**
+     * Words per minute a voice speaks at speed 1.0 and acceleration 1.0,
+     * measured on running Croatian text (formant voices:
+     * FORMANT_NOMINAL_WPM times the voice's own tempo).
+     * @param id Voice ID.
+     * @return Words per minute, or 0.0f for an unknown voice.
+     */
+    static float nominal_wpm(const char* id);
 };
 
 } // namespace laprdus

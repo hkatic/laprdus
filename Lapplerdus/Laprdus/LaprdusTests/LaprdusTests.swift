@@ -15,7 +15,10 @@ struct EngineTests {
     @Test func voiceRegistryExposesAllVoices() throws {
         let ids = VoiceCatalog.all.map(\.id)
         #expect(ids == ["josip", "vlado", "detence", "baba", "djed",
-                        "zvonko", "stojan", "mirsad"])
+                        "zvonko", "stojan", "mirsad",
+                        "orguljas", "klapa", "trubac", "harmonikas",
+                        "sevdalija", "sazlija", "pjevac", "pevac", "solist",
+                        "becarac"])
     }
 
     @Test func formantVoicesHaveTheirOwnLanguages() throws {
@@ -90,6 +93,42 @@ struct EngineTests {
         engine.apply(snapshot)
         let chunk = try engine.synthesize("Broj 123.")
         #expect(chunk.samples.count > 0)
+    }
+
+    @Test func formantSettingsChangeTheFormantVoices() throws {
+        let engine = try LaprdusEngine()
+        try engine.loadVoice("zvonko", dictionaries: .bundledOnly)
+        var snapshot = SettingsSnapshot()
+        engine.apply(snapshot)
+        let normal = try engine.synthesize("Dobar dan, kako ste?")
+
+        // Acceleration 2.0 at speed 1.0 is speed 2.0: about half as long.
+        snapshot.acceleration = 2.0
+        engine.apply(snapshot)
+        let fast = try engine.synthesize("Dobar dan, kako ste?")
+        #expect(fast.samples.count < normal.samples.count * 7 / 10)
+
+        // A monotone has the same length and different samples.
+        snapshot.acceleration = 1.0
+        snapshot.inflectionLevel = 0.0
+        engine.apply(snapshot)
+        let flat = try engine.synthesize("Dobar dan, kako ste?")
+        #expect(flat.samples.count == normal.samples.count)
+        #expect(flat.samples != normal.samples)
+
+        // The formant voices take the wider rate range.
+        snapshot.inflectionLevel = 0.5
+        snapshot.speed = 0.25
+        engine.apply(snapshot)
+        let slowest = try engine.synthesize("Dobar dan, kako ste?")
+        #expect(slowest.samples.count > normal.samples.count * 3)
+
+        #expect(VoiceCatalog.voice(withID: "zvonko")?.isFormant == true)
+        #expect(VoiceCatalog.voice(withID: "josip")?.isFormant == false)
+        #expect(VoiceCatalog.voice(withID: "klapa")?.isFormant == true)
+        #expect(VoiceCatalog.voice(withID: "klapa")?.isSinging == true)
+        #expect(VoiceCatalog.voice(withID: "zvonko")?.isSinging == false)
+        #expect((VoiceCatalog.voice(withID: "zvonko")?.nominalWordsPerMinute ?? 0) > 100)
     }
 }
 
@@ -347,8 +386,10 @@ struct SSMLParserTests {
     }
 
     @Test func clampsOutOfRangeValues() {
-        #expect(SSMLParser.parse("<speak><prosody rate=\"9.0\">Test</prosody></speak>").speech.first?.rate == 2.0)
-        #expect(SSMLParser.parse("<speak><prosody rate=\"0.01\">Test</prosody></speak>").speech.first?.rate == 0.5)
+        // The formant voices' range; the engine narrows it for the recorded voices.
+        #expect(SSMLParser.parse("<speak><prosody rate=\"9.0\">Test</prosody></speak>").speech.first?.rate == 4.0)
+        #expect(SSMLParser.parse("<speak><prosody rate=\"0.01\">Test</prosody></speak>").speech.first?.rate == 0.25)
+        #expect(SSMLParser.parse("<speak><prosody pitch=\"+900%\">Test</prosody></speak>").speech.first?.pitch == 4.0)
     }
 
     @Test func breakIsAPauseOfItsLength() {
@@ -404,6 +445,8 @@ struct SettingsTests {
         #expect(snapshot.forceSpeed == false)
         #expect(snapshot.emojiEnabled == false)
         #expect(snapshot.inflectionEnabled == true)
+        #expect(snapshot.inflectionLevel == 0.5)
+        #expect(snapshot.acceleration == 1.0)
         #expect(snapshot.sentencePause == 100)
         #expect(snapshot.commaPause == 100)
         #expect(snapshot.newlinePause == 100)

@@ -1492,6 +1492,134 @@
         }
       }
     },
+    "Formant Voice" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Formantni glas"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Formantni glas"
+          }
+        }
+      }
+    },
+    "Inflection" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intonacija"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intonacija"
+          }
+        }
+      }
+    },
+    "Size of the pitch movements: 0% is a monotone, 50% the natural movements, 100% the maximum" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Veličina pokreta visine glasa: 0% je monotono, 50% prirodni pokreti, 100% najveći"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Veličina pokreta visine glasa: 0% je monotono, 50% prirodni pokreti, 100% najveći"
+          }
+        }
+      }
+    },
+    "Acceleration" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ubrzanje"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ubrzanje"
+          }
+        }
+      }
+    },
+    "Multiplies the speech rate, so the top of the rate range reaches a higher or lower rate" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Množi brzinu govora, pa vrh raspona brzine doseže veću ili manju brzinu"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Množi brzinu govora, pa vrh opsega brzine dostiže veću ili manju brzinu"
+          }
+        }
+      }
+    },
+    "%@ (up to %lld WPM)" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ (do %lld riječi/min)"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ (do %lld reči/min)"
+          }
+        }
+      }
+    },
+    "Restore default inflection" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrati zadanu intonaciju"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrati podrazumevanu intonaciju"
+          }
+        }
+      }
+    },
+    "Restore default acceleration" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrati zadano ubrzanje"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrati podrazumevano ubrzanje"
+          }
+        }
+      }
+    },
     "Voice inflection" : {
       "localizations" : {
         "hr" : {

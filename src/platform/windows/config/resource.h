@@ -51,6 +51,15 @@
 #define IDC_NEWLINE_SLIDER      1071
 #define IDC_NEWLINE_VALUE       1072
 
+// Formant voice controls (Zvonko, Stojan, Mirsad)
+#define IDC_GROUP_FORMANT       1005
+#define IDC_INFLECTION_LABEL    1075
+#define IDC_INFLECTION_SLIDER   1076
+#define IDC_INFLECTION_VALUE    1077
+#define IDC_ACCELERATION_LABEL  1078
+#define IDC_ACCELERATION_SLIDER 1079
+#define IDC_ACCELERATION_VALUE  1084
+
 // Options checkboxes
 #define IDC_INFLECTION_CHECK    1080
 #define IDC_EMOJI_CHECK         1081
@@ -112,6 +121,10 @@
 #define IDS_VALUE_SPEED         1121  // "%.1fx"
 #define IDS_VALUE_PERCENT       1122  // "%d%%"
 #define IDS_VALUE_MS            1123  // "%d ms"
+#define IDS_GROUP_FORMANT       1124
+#define IDS_INFLECTION_LABEL    1125
+#define IDS_ACCELERATION_LABEL  1126
+#define IDS_VALUE_WPM           1127  // "%.1fx (%d WPM)"
 
 // Voice names for combo box
 #define IDS_VOICE_JOSIP         1130
@@ -122,6 +135,16 @@
 #define IDS_VOICE_ZVONKO        1135
 #define IDS_VOICE_STOJAN        1136
 #define IDS_VOICE_MIRSAD        1137
+#define IDS_VOICE_ORGULJAS      1150
+#define IDS_VOICE_KLAPA         1151
+#define IDS_VOICE_TRUBAC        1152
+#define IDS_VOICE_HARMONIKAS    1153
+#define IDS_VOICE_SEVDALIJA     1154
+#define IDS_VOICE_SAZLIJA       1155
+#define IDS_VOICE_PJEVAC        1156
+#define IDS_VOICE_PEVAC         1157
+#define IDS_VOICE_SOLIST        1158
+#define IDS_VOICE_BECARAC       1159
 
 // Test text
 #define IDS_TEST_TEXT           1140

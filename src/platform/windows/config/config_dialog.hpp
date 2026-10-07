@@ -19,6 +19,7 @@ namespace laprdus {
  * - Voice selection dropdown
  * - Speed, pitch, volume sliders with force checkboxes
  * - Pause settings sliders (comma, sentence, newline)
+ * - Formant voice sliders (inflection level, acceleration)
  * - Options checkboxes (inflection, emoji, digits)
  * - Test button to speak sample text
  * - OK, Cancel, Apply buttons
@@ -55,9 +56,12 @@ private:
     void InitializeVoiceCombo(HWND hDlg);
     void InitializeSliders(HWND hDlg);
     void LoadSettingsToControls(HWND hDlg);
+    void UpdateVoiceRanges(HWND hDlg);
+    bool IsFormantVoiceSelected(HWND hDlg) const;
 
     // Control value handling
     void UpdateSliderValue(HWND hDlg, int sliderId, int valueId, bool isSpeed = false, bool isMs = false);
+    void UpdateAccelerationValue(HWND hDlg);
     void CollectSettingsFromControls(HWND hDlg);
 
     // Button handlers

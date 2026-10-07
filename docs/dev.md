@@ -234,6 +234,12 @@ Manages voice definitions including physical, derived and formant voices.
    - `stojan` - Serbian male adult
    - `mirsad` - Bosnian male adult
 
+4. **Singing presets** - Formant voices that sing the text to a folk song (see "Singing presets" in `docs/formant.md`)
+   - `orguljas`, `klapa`, `pjevac` - Zvonko as a pipe organ / a klapa / himself (Croatian, *Vila Velebita*)
+   - `trubac`, `harmonikas`, `pevac` - Stojan as a trumpet / an accordion / himself (Serbian, *Kreće se lađa francuska*)
+   - `sevdalija`, `sazlija`, `solist` - Mirsad as a sevdah singer / a saz / himself (Bosnian, *Kad ja pođoh na Bembašu*)
+   - `becarac` - Zvonko singing the bećarac tune (Croatian, Slavonia)
+
 **Voice Info Structure:**
 ```cpp
 struct VoiceInfo {
@@ -352,7 +358,7 @@ Wrapper around the Sonic library for rate and pitch control.
 **Rate Control (Time-Stretching):**
 - Uses PICOLA algorithm
 - Changes speed WITHOUT changing pitch
-- Range: 0.5x to 4.0x (with rate boost)
+- Range: 0.5x to 4.0x (with rate boost); the formant voices do not use Sonic and take 0.25x to 4.0x, times their acceleration setting (0.5-3.0), capped at 8.0x
 
 **Pitch Control (Pitch-Shifting with Formant Shift):**
 - Changes pitch AND formants (chipmunk effect)
@@ -366,7 +372,7 @@ User pitch preference with formant preservation.
 **Purpose:**
 - Adjust pitch WITHOUT changing voice character
 - For user-controlled pitch slider in SAPI5/NVDA
-- Range: 0.5x to 2.0x
+- Range: 0.5x to 2.0x (the formant voices scale F0 directly and take 0.25x to 4.0x)
 
 **Current Implementation:**
 Uses Sonic as placeholder. Architecture supports future STFT-based formant preservation when C++20 compatibility allows (stftPitchShift with cepstral analysis).
@@ -399,6 +405,10 @@ LaprdusError laprdus_set_speed(handle, speed);
 LaprdusError laprdus_set_pitch(handle, pitch);
 LaprdusError laprdus_set_user_pitch(handle, pitch);
 LaprdusError laprdus_set_volume(handle, volume);
+// Formant voices only (recorded voices ignore them)
+LaprdusError laprdus_set_inflection_level(handle, level);   // 0.0 monotone .. 1.0, default 0.5
+LaprdusError laprdus_set_acceleration(handle, factor);      // 0.5 .. 3.0, multiplies the speed
+float laprdus_get_nominal_wpm(voice_id);                    // words/min at speed 1.0 (Zvonko: 175)
 ```
 
 **Thread Safety:**
@@ -434,7 +444,8 @@ Python-based synthesizer driver for NVDA screen reader.
 - `addon/globalPlugins/laprdus/__init__.py` - NVDA menu integration
 
 **Features:**
-- Rate boost (extends max rate from 2x to 4x)
+- Rate boost (extends max rate from 2x to 4x); the formant voices also multiply the rate by the acceleration from settings.json
+- Inflection level and acceleration of the formant voices read from settings.json (speech.inflection_level, speech.acceleration), set in the Laprdus Configurator
 - Character mode for spelling
 - Shared settings with SAPI5 via settings.json
 - Croatian/Serbian translations

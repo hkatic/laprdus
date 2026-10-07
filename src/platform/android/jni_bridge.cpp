@@ -252,6 +252,53 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetInflectionEnabled(
     g_engine->set_voice_params(params);
 }
 
+JNIEXPORT void JNICALL
+Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetInflectionLevel(
+    JNIEnv* env,
+    jobject thiz,
+    jfloat level) {
+
+    (void)env;
+    (void)thiz;
+    std::lock_guard<std::mutex> lock(g_engine_mutex);
+    if (!g_engine) return;
+
+    laprdus::VoiceParams params = g_engine->voice_params();
+    params.inflection_level = level;
+    g_engine->set_voice_params(params);
+}
+
+JNIEXPORT void JNICALL
+Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetAcceleration(
+    JNIEnv* env,
+    jobject thiz,
+    jfloat acceleration) {
+
+    (void)env;
+    (void)thiz;
+    std::lock_guard<std::mutex> lock(g_engine_mutex);
+    if (!g_engine) return;
+
+    laprdus::VoiceParams params = g_engine->voice_params();
+    params.acceleration = acceleration;
+    g_engine->set_voice_params(params);
+}
+
+JNIEXPORT jfloat JNICALL
+Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeGetNominalWpm(
+    JNIEnv* env,
+    jobject thiz,
+    jstring voice_id) {
+
+    (void)thiz;
+    if (!voice_id) return 0.0f;
+    const char* id = env->GetStringUTFChars(voice_id, nullptr);
+    if (!id) return 0.0f;
+    float wpm = laprdus::VoiceRegistry::nominal_wpm(id);
+    env->ReleaseStringUTFChars(voice_id, id);
+    return wpm;
+}
+
 JNIEXPORT jint JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeGetSampleRate(
     JNIEnv* env,

@@ -252,14 +252,48 @@ struct PauseSettings {
 // Voice Parameters
 // =============================================================================
 
+// Limits of the user-controlled speech rate and pitch. The recorded
+// (concatenative) voices go through Sonic and keep the narrower ranges; the
+// formant voices apply rate and pitch at the source and accept the wider
+// ones. VoiceParams::clamp() enforces the wide limits; the concatenative
+// synthesizer narrows them again for itself.
+constexpr float CONCAT_SPEED_MIN = 0.5f;
+constexpr float CONCAT_SPEED_MAX = 4.0f;     // 4.0x for NVDA rate boost
+constexpr float CONCAT_USER_PITCH_MIN = 0.5f;
+constexpr float CONCAT_USER_PITCH_MAX = 2.0f;
+constexpr float FORMANT_SPEED_MIN = 0.25f;
+constexpr float FORMANT_SPEED_MAX = 4.0f;    // before acceleration
+constexpr float FORMANT_USER_PITCH_MIN = 0.25f;
+constexpr float FORMANT_USER_PITCH_MAX = 4.0f;
+
+// Acceleration multiplies the speech rate of the formant voices, so the
+// same rate slider reaches a higher (or lower) top speed. 1.0 leaves the
+// rate alone.
+constexpr float ACCELERATION_MIN = 0.5f;
+constexpr float ACCELERATION_MAX = 3.0f;
+constexpr float ACCELERATION_DEFAULT = 1.0f;
+// Fastest rate the formant synthesizer renders (speed * acceleration).
+constexpr float FORMANT_EFFECTIVE_SPEED_MAX = 8.0f;
+
+// Words per minute of the formant voices at speed 1.0 and acceleration 1.0,
+// measured on running Croatian text with Zvonko (the other two voices differ
+// by their FormantVoice::tempo). Used to show rate limits in words per minute.
+constexpr float FORMANT_NOMINAL_WPM = 175.0f;
+
+// Inflection level of the formant voices: 0.0 is a monotone, 0.5 the
+// measured pitch movements, 1.0 twice those movements.
+constexpr float INFLECTION_LEVEL_DEFAULT = 0.5f;
+
 struct VoiceParams {
     // Concatenative voices apply these with Sonic (time-stretching, pitch
     // shifting); formant voices apply them at the source (durations, F0).
-    float speed = 1.0f;       // Speech rate (0.5 - 4.0)
+    float speed = 1.0f;       // Speech rate (0.5 - 4.0; formant voices 0.25 - 4.0)
     float pitch = 1.0f;       // Voice character pitch (0.25 - 4.0)
-    float user_pitch = 1.0f;  // User pitch preference (0.5 - 2.0)
+    float user_pitch = 1.0f;  // User pitch preference (0.5 - 2.0; formant voices 0.25 - 4.0)
     float volume = 1.0f;      // Volume (0.0 - 1.0)
     bool inflection_enabled = true;  // Enable punctuation inflection
+    float inflection_level = INFLECTION_LEVEL_DEFAULT;  // Size of the pitch movements (0.0 - 1.0), formant voices only
+    float acceleration = ACCELERATION_DEFAULT;          // Rate multiplier (0.5 - 3.0), formant voices only
     bool emoji_enabled = false;      // Enable emoji to text conversion (disabled by default)
     NumberMode number_mode = NumberMode::WholeNumbers;  // Number processing mode
     PauseSettings pause_settings;    // Pause duration settings
@@ -271,11 +305,22 @@ struct VoiceParams {
         if (!std::isfinite(pitch)) pitch = 1.0f;
         if (!std::isfinite(user_pitch)) user_pitch = 1.0f;
         if (!std::isfinite(volume)) volume = 1.0f;
-        speed = std::clamp(speed, 0.5f, 4.0f);  // 4.0x max for NVDA rate boost
+        if (!std::isfinite(inflection_level)) inflection_level = INFLECTION_LEVEL_DEFAULT;
+        if (!std::isfinite(acceleration)) acceleration = ACCELERATION_DEFAULT;
+        speed = std::clamp(speed, FORMANT_SPEED_MIN, FORMANT_SPEED_MAX);
         pitch = std::clamp(pitch, 0.25f, 4.0f);       // Voice character - wider range
-        user_pitch = std::clamp(user_pitch, 0.5f, 2.0f);  // User preference - moderate range
+        user_pitch = std::clamp(user_pitch, FORMANT_USER_PITCH_MIN, FORMANT_USER_PITCH_MAX);
         volume = std::clamp(volume, 0.0f, 1.0f);
+        inflection_level = std::clamp(inflection_level, 0.0f, 1.0f);
+        acceleration = std::clamp(acceleration, ACCELERATION_MIN, ACCELERATION_MAX);
         pause_settings.clamp();
+    }
+
+    /** Speech rate the formant voices actually render: speed times acceleration. */
+    [[nodiscard]] float formant_speed() const {
+        float s = speed * acceleration;
+        if (!std::isfinite(s)) return 1.0f;
+        return std::clamp(s, FORMANT_SPEED_MIN, FORMANT_EFFECTIVE_SPEED_MAX);
     }
 };
 
@@ -411,7 +456,7 @@ struct VoiceDefinition {
 };
 
 // Voice count
-constexpr size_t VOICE_COUNT = 8;
+constexpr size_t VOICE_COUNT = 18;
 
 // Language code helpers
 inline const char* voice_language_code(VoiceLanguage lang) {

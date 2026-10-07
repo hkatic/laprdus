@@ -89,8 +89,13 @@ AudioBuffer AudioSynthesizer::synthesize(const std::vector<PhonemeToken>& tokens
         result = apply_volume(result, m_voice_params.volume);
     }
 
-    if (std::abs(m_voice_params.speed - 1.0f) > 0.01f) {
-        result = apply_rate(result, m_voice_params.speed);
+    // The shared limits in VoiceParams are those of the formant voices; Sonic
+    // and the pitch shifter work within the narrower recorded-voice ranges.
+    const float speed = std::clamp(m_voice_params.speed, CONCAT_SPEED_MIN, CONCAT_SPEED_MAX);
+    const float user_pitch = std::clamp(m_voice_params.user_pitch,
+                                        CONCAT_USER_PITCH_MIN, CONCAT_USER_PITCH_MAX);
+    if (std::abs(speed - 1.0f) > 0.01f) {
+        result = apply_rate(result, speed);
     }
 
     if (std::abs(m_voice_params.pitch - 1.0f) > 0.01f) {
@@ -99,8 +104,8 @@ AudioBuffer AudioSynthesizer::synthesize(const std::vector<PhonemeToken>& tokens
 
     // Apply user pitch preference (formant-preserving)
     // This is separate from voice character pitch (above) which shifts formants
-    if (std::abs(m_voice_params.user_pitch - 1.0f) > 0.01f) {
-        result = apply_user_pitch(result, m_voice_params.user_pitch);
+    if (std::abs(user_pitch - 1.0f) > 0.01f) {
+        result = apply_user_pitch(result, user_pitch);
     }
 
     // Flush remaining samples if streaming

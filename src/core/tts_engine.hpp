@@ -73,7 +73,9 @@ public:
     /**
      * Initialize engine with a formant voice. No phoneme data is needed:
      * speech is produced by rule (see src/formant/).
-     * @param voice_id Formant voice ID ("zvonko", "stojan", "mirsad").
+     * @param voice_id Formant voice ID ("zvonko", "stojan", "mirsad") or a
+     *        singing preset ("orguljas", "klapa", "trubac", "harmonikas",
+     *        "sevdalija", "sazlija", "pjevac", "pevac", "solist", "becarac").
      * @return true on success, false if the ID is not a formant voice.
      */
     bool initialize_formant(const char* voice_id);
@@ -338,6 +340,8 @@ public:
     NumberMode number_mode() const;
 
 private:
+    // Start of a synthesis call: a singing preset begins its song again.
+    void begin_utterance();
     struct Impl;
     std::unique_ptr<Impl> m_impl;
 

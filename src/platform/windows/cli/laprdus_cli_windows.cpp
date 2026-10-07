@@ -130,7 +130,8 @@ void print_help(const char *program_name)
               << "Options:\n"
               << "  -v, --voice NAME           Select voice (default: zvonko)\n"
               << "                             Available: zvonko, stojan, mirsad, josip,\n"
-              << "                             vlado, detence, baba, djed\n"
+              << "                             vlado, detence, baba, djed, and the singing\n"
+              << "                             presets listed below\n"
               << "  -r, --speech-rate RATE     Speech rate 0.5-2.0 (default: 1.0)\n"
               << "  -p, --speech-pitch PITCH   Speech pitch 0.5-2.0 (default: 1.0)\n"
               << "  -V, --speech-volume VOL    Volume 0.0-1.0 (default: 1.0)\n"
@@ -161,7 +162,18 @@ void print_help(const char *program_name)
               << "  vlado   - Serbian male adult\n"
               << "  detence - Croatian child\n"
               << "  baba    - Croatian female senior\n"
-              << "  djed    - Serbian male senior\n";
+              << "  djed    - Serbian male senior\n\n"
+              << "Singing presets (formant voices that sing the text to a folk song;\n"
+              << "-r sets the tempo, -p transposes, -I sets the vibrato):\n"
+              << "  orguljas   - Zvonko at the pipe organ (Croatian)\n"
+              << "  klapa      - Zvonko as a whole klapa (Croatian)\n"
+              << "  trubac     - Stojan on the trumpet (Serbian)\n"
+              << "  harmonikas - Stojan on the accordion (Serbian)\n"
+              << "  sevdalija  - Mirsad singing sevdah (Bosnian)\n"
+              << "  sazlija    - Mirsad on the saz (Bosnian)\n"
+              << "  pjevac, pevac, solist\n"
+              << "             - Zvonko, Stojan and Mirsad singing as themselves\n"
+              << "  becarac    - Zvonko singing a be\xc4\x87" "arac (Croatian)\n";
 }
 
 /**

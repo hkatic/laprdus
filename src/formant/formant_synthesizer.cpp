@@ -33,6 +33,176 @@ const FormantVoice VOICES[] = {
      1.15f, 0.96f, 1.30f, 1.20f, 0.96f, 1.00f, 1.00f},
 };
 
+// =============================================================================
+// Songs and singing presets
+// =============================================================================
+
+// Traditional songs whose words and tunes are in the public domain. Every
+// note carries one syllable (a tilde marks a melisma), so the first stanza
+// of each song fits its tune syllable for syllable; any other text is sung
+// to the same tune, one syllable per note, round and round.
+//
+// Croatia: "Vila Velebita" ("Oj ti vilo, vilo Velebita"; words and tune
+// anonymous, first sung 1882, printed 1893). D major, 2/4, brisk, and
+// without a rest from the first note to the last: one verse and the
+// refrain, lines of 10, 7, 10, 6 (+ a melisma), 7, 7, 12, 7 and 7
+// syllables. Taken from a public-domain two-voice MIDI transcription.
+const Song SONG_VILA = {
+    "Vila Velebita",
+    "D4/8. E4/16 F#4/4 F#4/4 F#4/8 F#4/8 E4/8 F#4/8 A4/4 G4/4 "
+    "G4/8 G4/8. F#4/16 E4/4 A4/4 A4/4 F#4/4. "
+    "D4/8. E4/16 F#4/4 F#4/4 F#4/8 F#4/8 E4/8 F#4/8 A4/4 G4/4. "
+    "G4/8. F#4/16 E4/4 A4/4 A4/8 ~G4/8 F#4/4 "
+    "F#4/8 G4/8 A4/8 B4/4. B4/8 B4/4 A4/4 "
+    "F#4/8 G4/8 A4/8 B4/4. B4/8 B4/4 A4/8. "
+    "F#4/8. G4/16 A4/4 F#4/8. G4/16 A4/4 F#4/8. G4/16 A4/4 F#4/8. G4/16 A4/4 "
+    "B4/8. B4/16 B4/4 D5/4 C#5/8. B4/16 A4/4 "
+    "A4/8 B4/8 A4/8 G4/4 E4/4 A4/4 F#4/4.",
+    113.0f};
+
+// Slavonia: the bećarac, the traditional two-line (ten syllables a line)
+// humorous song of Slavonia, Baranja and Srijem, on UNESCO's list since
+// 2011. The tune is the traditional one as transcribed for the couplet
+// "U mog strica osam kobasica, sedam prži, osmu strina drži" (2/4,
+// quarter = 75, D minor with its raised seventh): the first line to bars
+// 1-3, the second to bars 4-6, with the melismas on "mog", "sam", "ba",
+// "ca", "dam", "smu", "stri", "dr" as sung. Any other couplet typed in
+// lands on the same two lines.
+const Song SONG_BECARAC = {
+    "Be\xc4\x87" "arac",
+    "F4/8 F4/16 ~E4/16 F4/8 C#4/8 "
+    "F4/8 F4/16 ~G4/16 F4/16 E4/16 ~C#4/16 B3/16 "
+    "C#4/8. ~B3/16 ~G3/8 "
+    "D4/8 D4/16 ~B3/16 C#4/8 C#4/8 "
+    "B3/8 B3/16 ~C#4/16 E4/16 ~C#4/16 B3/8 "
+    "D4/8. ~C#4/16 B3/8",
+    75.0f};
+
+// Serbia: "Kreće se lađa francuska" (Branislav Milosavljević, d. 1944; the
+// song of the Salonika front). A minor, 3/4, eight syllables a line, every
+// line in the same rhythm. The first line is taken from a printed score;
+// the other three follow the song's harmony (F-C-G7-C, C-G7-C-Dm,
+// Am-E7-Am) and want checking against a recording.
+const Song SONG_LADJA = {
+    "Kre\xc4\x87" "e se la\xc4\x91" "a francuska",
+    "E4/4 E4/4 E4/4 C5/2 C5/4 B4/2 B4/4 A4/2. "
+    "A4/4 A4/4 A4/4 E5/2 E5/4 D5/2 D5/4 C5/2. "
+    "C5/4 C5/4 C5/4 D5/2 D5/4 E5/2 E5/4 D5/2. "
+    "C5/4 C5/4 C5/4 B4/2 B4/4 G#4/2 G#4/4 A4/2.",
+    100.0f};
+
+// Bosnia: "Kad ja pođoh na Bembašu" (traditional sevdalinka, tune printed
+// by Ludvík Kuba in 1906; Sarajevo's unofficial anthem). D minor, slow;
+// lines of 8, 7, 8 and 7 syllables ("bijelo" has two), the tune of the
+// first line repeated for the third. Durations are those of a measured
+// performance and are only approximate: the song is sung rubato. The
+// breaths between the lines are left to the punctuation.
+const Song SONG_BEMBASA = {
+    "Kad ja po\xc4\x91" "oh na Bemba\xc5\xa1" "u",
+    "A4/4 A4/4 Bb4/8 A4/8 G4/4 F4/8 E4/8 D4/2 "
+    "G4/4 F4/8 F4/8 E4/4 E4/8 D4/8 D4/2 "
+    "A4/4 A4/4 Bb4/8 A4/8 G4/4 F4/8 E4/8 D4/2 "
+    "F4/4 E4/8 E4/8 D4/4 C#4/8 D4/8 D4/2",
+    66.0f};
+
+// Singing presets: the speaking voice of the language with an instrument
+// in place of the larynx. Vibrato depth is the value at inflection level
+// 0.5; the inflection slider scales it and 0 switches it off.
+// song, source, chorus, cents, sub, reverb, bright, breath, flutter,
+// jitter, shimmer, oq, tilt, vib Hz, vib cents, vib delay, attack, release,
+// decay, retrigger, portamento, transpose, gain, f5, b5, dry
+const SingingStyle STYLE_ORGULJE = {
+    &SONG_VILA, SourceKind::Organ, 0.0f, 8.0f, 0.5f, 0.35f, 0.15f, 0.0f, 0.0f,
+    0.0f, 0.0f, 0.60f, 0.0f, 0.0f, 0.0f, 0.0f, 25.0f, 30.0f,
+    0.0f, 0.0f, 8.0f, -12.0f, 0.55f, 0.0f, 0.0f, false};
+const SingingStyle STYLE_KLAPA = {
+    &SONG_VILA, SourceKind::Glottal, 0.7f, 10.0f, 0.6f, 0.20f, 0.60f, 0.03f, 0.3f,
+    0.004f, 0.03f, 0.62f, 1.0f, 5.5f, 30.0f, 350.0f, 60.0f, 80.0f,
+    0.0f, 0.0f, 40.0f, -12.0f, 0.55f, 0.0f, 0.0f, false};
+const SingingStyle STYLE_TRUBA = {
+    &SONG_LADJA, SourceKind::Brass, 0.3f, 6.0f, 0.0f, 0.10f, 0.50f, 0.0f, 0.1f,
+    0.001f, 0.01f, 0.60f, 0.0f, 6.0f, 25.0f, 400.0f, 45.0f, 40.0f,
+    0.0f, 0.0f, 25.0f, -5.0f, 0.60f, 0.0f, 0.0f, false};
+const SingingStyle STYLE_HARMONIKA = {
+    &SONG_LADJA, SourceKind::Reed, 0.9f, 14.0f, 0.0f, 0.05f, 0.30f, 0.0f, 0.0f,
+    0.0f, 0.0f, 0.60f, 0.0f, 0.0f, 0.0f, 0.0f, 15.0f, 25.0f,
+    0.0f, 0.0f, 6.0f, -7.0f, 0.70f, 0.0f, 0.0f, false};
+const SingingStyle STYLE_SEVDAH = {
+    &SONG_BEMBASA, SourceKind::Glottal, 0.0f, 8.0f, 0.0f, 0.15f, 0.72f, 0.04f, 0.2f,
+    0.004f, 0.03f, 0.66f, 1.5f, 5.5f, 60.0f, 350.0f, 50.0f, 90.0f,
+    0.0f, 0.0f, 90.0f, -12.0f, 0.80f, 3100.0f, 160.0f, false};
+const SingingStyle STYLE_SAZ = {
+    &SONG_BEMBASA, SourceKind::Strings, 0.5f, 5.0f, 0.3f, 0.10f, 0.40f, 0.0f, 0.0f,
+    0.0f, 0.0f, 0.60f, 0.0f, 0.0f, 0.0f, 0.0f, 3.0f, 20.0f,
+    350.0f, 0.5f, 5.0f, -5.0f, 1.10f, 0.0f, 0.0f, false};
+
+// The speaking voice singing as itself: nothing in place of the larynx,
+// no hall, a moderate vibrato, the song brought to the voice's own pitch.
+// Phonation (open quotient, tilt, breathiness) stays the voice's; see
+// make_preset().
+constexpr SingingStyle dry_style(const Song* song) {
+    return {song, SourceKind::Glottal, 0.0f, 8.0f, 0.0f, 0.0f, 0.72f, 0.0f, 0.2f,
+            0.004f, 0.03f, 0.0f, 0.0f, 5.5f, 40.0f, 300.0f, 40.0f, 60.0f,
+            0.0f, 0.0f, 60.0f, 0.0f, 0.90f, 0.0f, 0.0f, true};
+}
+const SingingStyle STYLE_PJEVAC = dry_style(&SONG_VILA);
+// The bećarac is belted out straight, with hardly any vibrato and crisp
+// steps between the notes.
+const SingingStyle STYLE_BECARAC = {
+    &SONG_BECARAC, SourceKind::Glottal, 0.0f, 8.0f, 0.0f, 0.0f, 0.72f, 0.0f, 0.2f,
+    0.004f, 0.03f, 0.0f, 0.0f, 6.0f, 20.0f, 250.0f, 30.0f, 40.0f,
+    0.0f, 0.0f, 30.0f, 0.0f, 0.95f, 0.0f, 0.0f, true};
+const SingingStyle STYLE_PEVAC = dry_style(&SONG_LADJA);
+const SingingStyle STYLE_SOLIST = dry_style(&SONG_BEMBASA);
+
+
+struct Preset {
+    const char* id;
+    const char* base;
+    const SingingStyle* style;
+};
+
+const Preset PRESETS[] = {
+    {"orguljas", "zvonko", &STYLE_ORGULJE},
+    {"klapa", "zvonko", &STYLE_KLAPA},
+    {"trubac", "stojan", &STYLE_TRUBA},
+    {"harmonikas", "stojan", &STYLE_HARMONIKA},
+    {"sevdalija", "mirsad", &STYLE_SEVDAH},
+    {"sazlija", "mirsad", &STYLE_SAZ},
+    {"pjevac", "zvonko", &STYLE_PJEVAC},
+    {"pevac", "stojan", &STYLE_PEVAC},
+    {"solist", "mirsad", &STYLE_SOLIST},
+    {"becarac", "zvonko", &STYLE_BECARAC},
+};
+
+
+FormantVoice make_preset(const Preset& preset) {
+    const FormantVoice* base = nullptr;
+    for (const auto& voice : VOICES) {
+        if (std::strcmp(voice.id, preset.base) == 0) base = &voice;
+    }
+    FormantVoice voice = base ? *base : VOICES[0];
+    voice.id = preset.id;
+    voice.singing = preset.style;
+    if (!preset.style->dry) {
+        voice.open_quotient = preset.style->open_quotient;
+        voice.tilt = preset.style->tilt;
+        voice.breathiness = preset.style->breathiness;
+    }
+    return voice;
+}
+
+std::vector<FormantVoice> make_presets() {
+    std::vector<FormantVoice> voices;
+    for (const auto& preset : PRESETS) voices.push_back(make_preset(preset));
+    return voices;
+}
+
+const std::vector<FormantVoice>& preset_voices() {
+    static const std::vector<FormantVoice> voices = make_presets();
+    return voices;
+}
+
 constexpr float SCHWA_F[3] = {500.0f, 1380.0f, 2600.0f};
 
 // Output level, set so the formant voices are about as loud as the recorded
@@ -93,6 +263,16 @@ struct Seg {
     bool has_noise = false;
 };
 
+// The notes one syllable is sung on, and the rest after them.
+struct SungSyllable {
+    std::vector<Note> notes;    // first note and the tied ones after it
+    float note_ms = 0.0f;       // total of the notes
+    float rest_ms = 0.0f;
+    float t0 = 0.0f;            // start of the syllable in the clause (ms)
+    float sound_end = 0.0f;     // end of its last sound (its rest begins here)
+    bool after_rest = true;     // first of the clause or after a rest: a fresh attack
+};
+
 struct Syllable {
     float t0 = -1.0f;           // nucleus start (ms)
     float t1 = -1.0f;           // nucleus end (ms)
@@ -146,12 +326,23 @@ void smooth(std::vector<float>& track, int radius) {
 
 class ClauseBuilder {
 public:
-    ClauseBuilder(const FormantVoice& voice, const VoiceParams& params, const Utterance& utt)
-        : m_voice(voice), m_params(params), m_utt(utt), m_ph(utt.phones) {
-        m_speed = std::clamp(params.speed, 0.5f, 4.0f) * voice.tempo;
+    ClauseBuilder(const FormantVoice& voice, const VoiceParams& params, const Utterance& utt,
+                  const std::vector<Note>* melody, size_t* cursor)
+        : m_voice(voice), m_params(params), m_utt(utt), m_ph(utt.phones),
+          m_style(voice.singing), m_melody(melody), m_cursor(cursor) {
+        m_singing = m_style != nullptr && melody != nullptr && !melody->empty() && cursor != nullptr;
+        if (m_singing) {
+            // The rate sets the tempo. Consonants follow it only part of
+            // the way: they are spoken, not sung.
+            m_tempo = params.formant_speed();
+            m_speed = std::clamp(m_tempo, 0.6f, 2.0f);
+        } else {
+            m_speed = params.formant_speed() * voice.tempo;
+        }
     }
 
     std::vector<Frame> build() {
+        if (m_singing) plan_notes();
         assign_durations();
         expand_segments();
         compute_formants();
@@ -264,6 +455,107 @@ private:
 
             m_dur[static_cast<size_t>(i)] = rate(d, def.min_dur);
         }
+
+        if (m_singing) fit_durations_to_notes();
+    }
+
+    // -------------------------------------------------------------------------
+    // Singing: notes
+    // -------------------------------------------------------------------------
+
+    // Take the next notes of the song for every syllable of the clause: a
+    // note, the notes tied to it, and the rests that follow.
+    void plan_notes() {
+        const std::vector<Note>& melody = *m_melody;
+        const float beat_ms = 60000.0f / (m_style->song->bpm * m_tempo);
+        bool has_note = false;
+        for (const Note& n : melody) has_note = has_note || n.midi > 0;
+        if (!has_note) {
+            m_singing = false;
+            return;
+        }
+        auto next = [&]() -> const Note& {
+            const Note& n = melody[*m_cursor % melody.size()];
+            *m_cursor = (*m_cursor + 1) % melody.size();
+            return n;
+        };
+        auto peek = [&]() -> const Note& { return melody[*m_cursor % melody.size()]; };
+
+        m_sung.assign(static_cast<size_t>(std::max(m_utt.syllable_count, 0)), SungSyllable{});
+        for (SungSyllable& syl : m_sung) {
+            // Rests before a syllable's note are dropped (the clause pause
+            // stands in for them); rests after it are kept.
+            while (peek().midi <= 0) next();
+            Note first = next();
+            first.tie = false;
+            syl.notes.push_back(first);
+            while (peek().tie && peek().midi > 0) syl.notes.push_back(next());
+            while (peek().midi <= 0 && !peek().tie) {
+                syl.rest_ms += next().beats * beat_ms;
+                // A rest at the very end of the song must not swallow the
+                // one at its start as well.
+                if (*m_cursor == 0) break;
+            }
+            for (const Note& n : syl.notes) syl.note_ms += n.beats * beat_ms;
+        }
+    }
+
+    // Every syllable lasts as long as its notes, and its vowel starts on
+    // the beat: the consonants keep their spoken durations, those that open
+    // the next syllable are taken off the end of this one's vowel (or its
+    // rest), as singers do (Sundberg), and the vowel takes what is left, at
+    // least a third of the note.
+    void fit_durations_to_notes() {
+        const int n = static_cast<int>(m_ph.size());
+        const size_t count = m_sung.size();
+        std::vector<int> nucleus(count, -1);
+        std::vector<float> onset(count, 0.0f), coda(count, 0.0f);
+        for (int i = 0; i < n; ++i) {
+            const Phone& p = m_ph[static_cast<size_t>(i)];
+            if (p.syllable < 0 || static_cast<size_t>(p.syllable) >= count) continue;
+            size_t s = static_cast<size_t>(p.syllable);
+            if (p.nucleus && nucleus[s] < 0) {
+                nucleus[s] = i;
+            } else if (nucleus[s] < 0) {
+                onset[s] += m_dur[static_cast<size_t>(i)];
+            } else {
+                coda[s] += m_dur[static_cast<size_t>(i)];
+            }
+        }
+        auto scale_consonants = [&](size_t s, bool onset_part, float factor) {
+            for (int i = 0; i < n; ++i) {
+                const Phone& p = m_ph[static_cast<size_t>(i)];
+                if (p.syllable != static_cast<int>(s) || i == nucleus[s]) continue;
+                bool before = i < nucleus[s];
+                if (before == onset_part) m_dur[static_cast<size_t>(i)] *= factor;
+            }
+            (onset_part ? onset[s] : coda[s]) *= factor;
+        };
+
+        for (size_t s = 0; s < count; ++s) {
+            if (nucleus[s] < 0) continue;
+            SungSyllable& syl = m_sung[s];
+            const float note = syl.note_ms;
+            const float next_onset = s + 1 < count ? onset[s + 1] : 0.0f;
+            const float vowel_min = std::max(40.0f, 0.35f * note);
+            float taken = coda[s];
+            if (syl.rest_ms > 0.0f) {
+                // The next syllable's consonants eat into the rest first.
+                float from_rest = std::min(next_onset, syl.rest_ms);
+                syl.rest_ms -= from_rest;
+                taken += next_onset - from_rest;
+            } else {
+                taken += next_onset;
+            }
+            float vowel = note - taken;
+            if (vowel < vowel_min && taken > 0.0f) {
+                float factor = std::max(note - vowel_min, 0.0f) / taken;
+                scale_consonants(s, false, factor);
+                if (s + 1 < count) scale_consonants(s + 1, true, factor);
+                vowel = vowel_min;
+            }
+            m_dur[static_cast<size_t>(nucleus[s])] = vowel;
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -327,8 +619,9 @@ private:
                     seg.has_target = true;
                     float level = p.stressed ? 1.0f : (p.prominence == 0 ? 0.80f : 0.86f);
                     if (p.nucleus_tail) level *= 0.45f;     // second half of syllabic r
+                    if (m_singing && !p.nucleus_tail) level = 1.0f;   // every vowel is sung in full
                     seg.av = def.av * level;
-                    seg.tilt = m_voice.tilt + (p.stressed ? 0.0f : 1.5f);
+                    seg.tilt = m_voice.tilt + (p.stressed || m_singing ? 0.0f : 1.5f);
                     // Intrinsic pitch: high vowels are slightly higher.
                     seg.f0_shift = (p.ph == Ph::I || p.ph == Ph::U) ? 0.5f
                                  : (p.ph == Ph::A ? -0.4f : 0.0f);
@@ -552,6 +845,17 @@ private:
                 default:
                     break;
             }
+
+            // Singing: the rest written after this syllable's notes.
+            if (m_singing && p.syllable >= 0 &&
+                static_cast<size_t>(p.syllable) < m_sung.size() &&
+                (!next || next->syllable != p.syllable)) {
+                float rest = m_sung[static_cast<size_t>(p.syllable)].rest_ms;
+                if (rest >= FRAME_MS) {
+                    Seg& seg = add_seg(Ph::SIL, SegKind::Plain, i, rest);
+                    seg.av = 0.0f;
+                }
+            }
         }
 
         float t = 0.0f;
@@ -560,6 +864,25 @@ private:
             t += seg.dur;
         }
         m_total_ms = t;
+
+        if (m_singing) {
+            // Where each syllable starts and where its sound ends, for the
+            // notes and their envelopes.
+            std::vector<bool> seen(m_sung.size(), false);
+            for (const Seg& seg : m_segs) {
+                const Phone* p = phone_at(seg.phone);
+                if (!p || p->syllable < 0 || static_cast<size_t>(p->syllable) >= m_sung.size()) continue;
+                SungSyllable& syl = m_sung[static_cast<size_t>(p->syllable)];
+                if (!seen[static_cast<size_t>(p->syllable)]) {
+                    seen[static_cast<size_t>(p->syllable)] = true;
+                    syl.t0 = seg.start;
+                }
+                if (seg.ph != Ph::SIL) syl.sound_end = std::max(syl.sound_end, seg.start + seg.dur);
+            }
+            for (size_t i = 1; i < m_sung.size(); ++i) {
+                m_sung[i].after_rest = m_sung[i - 1].rest_ms > 0.0f;
+            }
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -575,7 +898,7 @@ private:
         const Phone* p = phone_at(seg.phone);
         // Unstressed vowels are slightly centralized; BCS has no real vowel
         // reduction, so the effect is kept small.
-        float central = (p && p->stressed) ? 0.0f : ((p && p->prominence == 0) ? 0.15f : 0.11f);
+        float central = (p && p->stressed) || m_singing ? 0.0f : ((p && p->prominence == 0) ? 0.15f : 0.11f);
         for (int k = 0; k < 3; ++k) {
             float f = def.f[k] + central * (SCHWA_F[k] - def.f[k]);
             out[k] = f * m_voice.formant_scale;
@@ -764,6 +1087,29 @@ private:
                 }
             }
         }
+
+        // A rest between notes is silence, not a sound to glide towards:
+        // the vowel before it holds its colour to the end.
+        for (int i = 0; i < n; ++i) {
+            Seg& seg = m_segs[static_cast<size_t>(i)];
+            if (seg.ph != Ph::SIL) continue;
+            if (i > 0) {
+                Seg& x = m_segs[static_cast<size_t>(i) - 1];
+                for (int k = 0; k < 3; ++k) {
+                    x.rb[k] = x.has_target ? x.tgt[k] : x.self[k];
+                    x.tr[k] = 0.0f;
+                    seg.lb[k] = x.rb[k];
+                }
+            }
+            if (i + 1 < n) {
+                Seg& y = m_segs[static_cast<size_t>(i) + 1];
+                for (int k = 0; k < 3; ++k) {
+                    y.lb[k] = y.has_target ? y.tgt[k] : y.self[k];
+                    y.tl[k] = 0.0f;
+                    seg.rb[k] = y.lb[k];
+                }
+            }
+        }
     }
 
     float formant_at(const Seg& seg, int k, float t) const {
@@ -791,7 +1137,10 @@ private:
 
     void build_tracks() {
         const int lead = 3;                 // frames of silence before speech
-        const int trail = 14;               // let the resonators ring out
+        // Let the resonators ring out; a hall needs longer to fall silent,
+        // but not so long that the next clause comes in late.
+        const int trail = m_singing && m_style->reverb > 0.0f
+            ? static_cast<int>(std::lround(250.0f / FRAME_MS)) : 14;
         const int body = std::max(1, static_cast<int>(std::lround(m_total_ms / FRAME_MS)));
         const int total = lead + body + trail;
         const size_t count = static_cast<size_t>(total);
@@ -868,15 +1217,18 @@ private:
                 }
                 if (seg.has_noise) noise_seg[idx] = si;
 
-                float gain = 1.0f - 0.12f * (seg.start + t) / std::max(m_total_ms, 1.0f);
-                if (p && falling_end && p->syllable == last_syl && m_utt.syllable_count > 1) {
-                    gain *= 0.84f;
-                    tilt[idx] += 3.0f;
-                }
-                // A vowel before a pause fades instead of stopping dead.
-                if (last_seg && seg.av > 0.0f && seg.dur > 0.0f) {
-                    float x = t / seg.dur;
-                    if (x > 0.5f) gain *= 1.0f - 0.75f * (x - 0.5f) / 0.5f;
+                float gain = 1.0f;
+                if (!m_singing) {
+                    gain = 1.0f - 0.12f * (seg.start + t) / std::max(m_total_ms, 1.0f);
+                    if (p && falling_end && p->syllable == last_syl && m_utt.syllable_count > 1) {
+                        gain *= 0.84f;
+                        tilt[idx] += 3.0f;
+                    }
+                    // A vowel before a pause fades instead of stopping dead.
+                    if (last_seg && seg.av > 0.0f && seg.dur > 0.0f) {
+                        float x = t / seg.dur;
+                        if (x > 0.5f) gain *= 1.0f - 0.75f * (x - 0.5f) / 0.5f;
+                    }
                 }
                 level[idx] = gain;
             }
@@ -982,6 +1334,13 @@ private:
             fr.ah = ah[idx] * level[idx];
             fr.af = (af[idx] + burst[idx]) * level[idx];
             fr.tilt = tilt[idx];
+            if (m_singing) {
+                float extra_tilt = 0.0f;
+                float env = note_envelope(j, extra_tilt);
+                fr.av *= env;
+                fr.ah *= env;
+                fr.tilt += extra_tilt;
+            }
             fr.nasal = nasal[idx];
             fr.oq = m_voice.open_quotient;
 
@@ -1001,6 +1360,148 @@ private:
         }
 
         m_lead = lead;
+    }
+
+    // -------------------------------------------------------------------------
+    // Singing: envelope and pitch of the notes
+    // -------------------------------------------------------------------------
+
+    // Time of a frame from the start of the clause (ms).
+    float frame_time(int j) const {
+        return (static_cast<float>(j - m_lead) + 0.5f) * FRAME_MS;
+    }
+
+    // The syllable a frame belongs to, -1 outside speech.
+    int syllable_of_frame(int j) const {
+        int si = m_seg_of_frame[static_cast<size_t>(j)];
+        if (si < 0) return -1;
+        const Phone* p = phone_at(m_segs[static_cast<size_t>(si)].phone);
+        if (!p || p->syllable < 0 || static_cast<size_t>(p->syllable) >= m_sung.size()) return -1;
+        return p->syllable;
+    }
+
+    // Where in its notes a frame of a syllable is.
+    struct NotePos {
+        int midi = 0;
+        float t_note = 0.0f;        // ms since the note (or its tied group) started
+        float t_syl = 0.0f;         // ms since the syllable started
+        float remaining = 0.0f;     // ms until the syllable's sound ends
+        bool in_rest = false;
+    };
+
+    NotePos note_at(int s, float t) const {
+        const SungSyllable& syl = m_sung[static_cast<size_t>(s)];
+        NotePos pos;
+        pos.t_syl = t - syl.t0;
+        pos.remaining = syl.sound_end - t;
+        float beat_ms = 60000.0f / (m_style->song->bpm * m_tempo);
+        float at = 0.0f;
+        pos.midi = syl.notes.empty() ? 60 : syl.notes.front().midi;
+        for (const Note& n : syl.notes) {
+            float len = n.beats * beat_ms;
+            if (pos.t_syl < at + len || &n == &syl.notes.back()) {
+                pos.midi = n.midi;
+                break;
+            }
+            at += len;
+        }
+        pos.t_note = pos.t_syl;     // vibrato and attack run through a melisma
+        pos.in_rest = t >= syl.sound_end;
+        return pos;
+    }
+
+    // Attack, release and (for a plucked string) decay of a note. Notes
+    // that follow each other without a rest are joined (legato): the
+    // attack is only for the first note after a rest or a pause, or the
+    // voice would dip to nothing between every two syllables.
+    float note_envelope(int j, float& extra_tilt) const {
+        int s = syllable_of_frame(j);
+        if (s < 0) return 1.0f;
+        NotePos pos = note_at(s, frame_time(j));
+        const SungSyllable& syl = m_sung[static_cast<size_t>(s)];
+        float env = m_style->gain;
+        if (m_style->attack_ms > 0.0f && syl.after_rest) {
+            env *= std::clamp(pos.t_syl / m_style->attack_ms, 0.0f, 1.0f);
+        }
+        const bool last = static_cast<size_t>(s) + 1 == m_sung.size();
+        if (syl.rest_ms > 0.0f || last) {
+            // Into a rest with the style's release; at the end of the
+            // clause a short one, so the last vowel does not stop dead.
+            float release = syl.rest_ms > 0.0f ? m_style->release_ms : std::min(m_style->release_ms, 40.0f);
+            if (release > 0.0f) env *= std::clamp(pos.remaining / release, 0.0f, 1.0f);
+        }
+        if (m_style->decay_ms > 0.0f) {
+            float since_pluck = pos.t_syl;
+            if (m_style->retrigger_beats > 0.0f) {
+                float period = m_style->retrigger_beats * 60000.0f / (m_style->song->bpm * m_tempo);
+                since_pluck = std::fmod(pos.t_syl, period);
+            }
+            float decay = std::exp(-since_pluck / m_style->decay_ms);
+            env *= std::max(decay, 0.02f);
+            extra_tilt = 9.0f * (1.0f - decay);
+        }
+        return env;
+    }
+
+    // Transposition of a dry preset: the middle of the song's range five
+    // semitones above the voice's speaking pitch (a voice sings a little
+    // higher than it speaks; a song an octave wide then runs from about a
+    // semitone below the speaking pitch to an octave above it), in whole
+    // semitones so the key stays in tune with itself.
+    float natural_transpose() const {
+        int low = 127, high = 0;
+        for (const Note& n : *m_melody) {
+            if (n.midi <= 0) continue;
+            low = std::min(low, static_cast<int>(n.midi));
+            high = std::max(high, static_cast<int>(n.midi));
+        }
+        if (high == 0) return 0.0f;
+        float centre = 0.5f * static_cast<float>(low + high);
+        float target = 69.0f + 12.0f * std::log2(m_voice.base_f0 / 440.0f) + 5.0f;
+        return std::round(target - centre);
+    }
+
+    void build_sung_pitch() {
+        const size_t count = m_frames.size();
+        std::vector<float> st(count, 0.0f);   // semitones above A4
+        const float transpose = m_style->transpose + (m_style->dry ? natural_transpose() : 0.0f);
+        float last = 60.0f + transpose - 69.0f;
+        std::vector<float> note_t(count, 0.0f);
+        std::vector<bool> voiced(count, false);
+        for (size_t j = 0; j < count; ++j) {
+            int s = syllable_of_frame(static_cast<int>(j));
+            if (s >= 0) {
+                NotePos pos = note_at(s, frame_time(static_cast<int>(j)));
+                if (!pos.in_rest) last = static_cast<float>(pos.midi) + transpose - 69.0f;
+                note_t[j] = pos.t_note;
+            }
+            st[j] = last;
+            voiced[j] = m_frames[j].av > 0.0f;
+        }
+
+        // Portamento: the glide between notes, zero-lag.
+        const float a = std::exp(-FRAME_MS / std::max(m_style->portamento_ms, 1.0f));
+        for (size_t j = 1; j < count; ++j) st[j] = a * st[j - 1] + (1.0f - a) * st[j];
+        for (size_t j = count - 1; j-- > 0;) st[j] = a * st[j + 1] + (1.0f - a) * st[j];
+
+        // Vibrato: the inflection slider sets its depth, 0 switches it off.
+        const float depth = m_params.inflection_enabled
+            ? m_style->vibrato_cents * (std::clamp(m_params.inflection_level, 0.0f, 1.0f) / INFLECTION_LEVEL_DEFAULT)
+            : 0.0f;
+        const float base = m_params.pitch * m_params.user_pitch;
+        float phase = 0.0f;
+        for (size_t j = 0; j < count; ++j) {
+            float t = frame_time(static_cast<int>(j));
+            float onset = m_style->vibrato_delay_ms > 0.0f
+                ? std::clamp(note_t[j] / m_style->vibrato_delay_ms, 0.0f, 1.0f) : 1.0f;
+            // A singer's vibrato rate wanders by a few percent; a perfectly
+            // even one sounds mechanical (Sundberg).
+            float rate = m_style->vibrato_hz * (1.0f + 0.03f * std::sin(2.0f * 3.14159265f * 0.41f * t / 1000.0f));
+            phase += 2.0f * 3.14159265f * rate * FRAME_MS / 1000.0f;
+            float vib = depth * onset * onset * std::sin(phase);
+            float hz = 440.0f * base * std::pow(2.0f, (st[j] + vib / 100.0f) / 12.0f);
+            m_frames[j].f0 = std::clamp(hz, 45.0f, 1000.0f);
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -1026,6 +1527,10 @@ private:
     }
 
     void build_pitch() {
+        if (m_singing) {
+            build_sung_pitch();
+            return;
+        }
         const size_t count = m_frames.size();
         const float total = std::max(m_total_ms, 1.0f);
         std::vector<float> st(count, 0.0f);
@@ -1265,9 +1770,13 @@ private:
             }
         }
 
+        // Inflection level: 0.5 keeps the movements as measured, 0 flattens
+        // the contour to a monotone (segmental effects included), 1 doubles
+        // every movement.
+        const float level = std::clamp(m_params.inflection_level, 0.0f, 1.0f) / INFLECTION_LEVEL_DEFAULT;
         const float base = m_voice.base_f0 * m_params.pitch * m_params.user_pitch;
         for (size_t j = 0; j < count; ++j) {
-            float hz = base * std::pow(2.0f, st[j] / 12.0f);
+            float hz = base * std::pow(2.0f, level * st[j] / 12.0f);
             m_frames[j].f0 = std::clamp(hz, 45.0f, 480.0f);
         }
     }
@@ -1276,9 +1785,15 @@ private:
     const VoiceParams& m_params;
     const Utterance& m_utt;
     const std::vector<Phone>& m_ph;
+    const SingingStyle* m_style = nullptr;
+    const std::vector<Note>* m_melody = nullptr;
+    size_t* m_cursor = nullptr;
+    bool m_singing = false;
+    float m_tempo = 1.0f;
     float m_speed = 1.0f;
     float m_total_ms = 0.0f;
     int m_lead = 0;
+    std::vector<SungSyllable> m_sung;
 
     std::vector<float> m_dur;
     std::vector<Seg> m_segs;
@@ -1292,11 +1807,83 @@ private:
 // Public API
 // =============================================================================
 
+float midi_hz(float midi) {
+    return 440.0f * std::pow(2.0f, (midi - 69.0f) / 12.0f);
+}
+
+std::vector<Note> parse_song(const Song& song) {
+    std::vector<Note> notes;
+    const char* p = song.notation ? song.notation : "";
+    while (*p) {
+        while (*p == ' ' || *p == '\n' || *p == '\t') ++p;
+        if (!*p) break;
+        const char* start = p;
+        while (*p && *p != ' ' && *p != '\n' && *p != '\t') ++p;
+        std::string tok(start, p);
+        if (tok == "|") continue;
+
+        Note note;
+        size_t i = 0;
+        if (tok[i] == '~') {
+            note.tie = true;
+            ++i;
+        }
+        if (i >= tok.size()) continue;
+        char letter = tok[i++];
+        int semis = -1;
+        switch (letter) {
+            case 'C': semis = 0; break;
+            case 'D': semis = 2; break;
+            case 'E': semis = 4; break;
+            case 'F': semis = 5; break;
+            case 'G': semis = 7; break;
+            case 'A': semis = 9; break;
+            case 'B': semis = 11; break;
+            case 'R': case 'r': semis = -2; break;
+            default: break;
+        }
+        if (semis == -1) continue;
+        if (semis >= 0) {
+            if (i < tok.size() && tok[i] == '#') { ++semis; ++i; }
+            else if (i < tok.size() && tok[i] == 'b') { --semis; ++i; }
+            if (i >= tok.size() || tok[i] < '0' || tok[i] > '9') continue;
+            int octave = tok[i++] - '0';
+            note.midi = static_cast<int8_t>(12 * (octave + 1) + semis);
+        }
+        if (i >= tok.size() || tok[i] != '/') continue;
+        ++i;
+        int value = 0;
+        while (i < tok.size() && tok[i] >= '0' && tok[i] <= '9') {
+            value = value * 10 + (tok[i++] - '0');
+        }
+        if (value <= 0) continue;
+        note.beats = 4.0f / static_cast<float>(value);
+        float dot = note.beats * 0.5f;
+        while (i < tok.size() && tok[i] == '.') {
+            note.beats += dot;
+            dot *= 0.5f;
+            ++i;
+        }
+        if (i < tok.size() && tok[i] == 't') {
+            note.beats *= 2.0f / 3.0f;
+            ++i;
+        }
+        if (i != tok.size()) continue;
+        notes.push_back(note);
+    }
+    return notes;
+}
+
 const FormantVoice* find_formant_voice(const char* voice_id) {
     if (!voice_id) {
         return nullptr;
     }
     for (const auto& voice : VOICES) {
+        if (std::strcmp(voice.id, voice_id) == 0) {
+            return &voice;
+        }
+    }
+    for (const auto& voice : preset_voices()) {
         if (std::strcmp(voice.id, voice_id) == 0) {
             return &voice;
         }
@@ -1311,7 +1898,30 @@ FormantSynthesizer::FormantSynthesizer(const FormantVoice& voice)
         quality.upper_f[i] *= voice.formant_scale;
     }
     quality.breathiness = voice.breathiness;
+    if (voice.singing) {
+        const SingingStyle& style = *voice.singing;
+        quality.source = style.source;
+        quality.chorus = style.chorus;
+        quality.chorus_cents = style.chorus_cents;
+        quality.sub_octave = style.sub_octave;
+        quality.reverb = style.reverb;
+        quality.brightness = style.brightness;
+        quality.flutter = style.flutter;
+        quality.jitter = style.jitter;
+        quality.shimmer = style.shimmer;
+        if (style.f5 > 0.0f) {
+            // The singer's formant: F5 pulled down towards F4 and narrowed
+            // (DECtalk's f5/b5 trick), a ring the speaking voice has not.
+            quality.upper_f[0] = style.f5 * voice.formant_scale;
+            quality.upper_b[0] = style.b5;
+        }
+        m_melody = parse_song(*style.song);
+    }
     m_synth.set_quality(quality);
+}
+
+void FormantSynthesizer::rewind_song() {
+    m_cursor = 0;
 }
 
 AudioBuffer FormantSynthesizer::synthesize_clause(const std::u32string& text,
@@ -1360,7 +1970,8 @@ void FormantSynthesizer::append_group(const std::u32string& text, Punctuation pu
         return;
     }
 
-    ClauseBuilder builder(m_voice, params, utt);
+    ClauseBuilder builder(m_voice, params, utt, m_voice.singing ? &m_melody : nullptr,
+                          m_voice.singing ? &m_cursor : nullptr);
     std::vector<Frame> frames = builder.build();
     if (frames.empty()) {
         return;

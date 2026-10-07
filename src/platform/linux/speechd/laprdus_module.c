@@ -76,6 +76,8 @@ static volatile int speaking = 0;
 static char *current_voice_name = NULL;
 static int current_rate = 0;      /* -100 to +100, default 0 */
 static int current_pitch = 0;     /* -100 to +100, default 0 */
+static int current_pitch_range = 0; /* -100 to +100, default 0 (SSIP PITCH_RANGE) */
+static float configured_inflection = 0.5f; /* inflection level from settings.json */
 static int current_volume = 0;    /* -100 to +100, default 0 */
 static int spelling_mode = 0;
 static int punctuation_mode = 0;  /* 0=none, 1=some, 2=most, 3=all */
@@ -186,8 +188,18 @@ static void apply_parameters(void)
     laprdus_set_user_pitch(engine, user_pitch);
     laprdus_set_volume(engine, vol);
 
-    DBG("Applied params: rate=%d->speed=%.2f, pitch=%d->user_pitch=%.2f, volume=%d->vol=%.2f",
-        current_rate, speed, current_pitch, user_pitch, current_volume, vol);
+    /* Pitch range scales the configured inflection level: 0 keeps it,
+     * -100 flattens the voice, +100 doubles the configured level (capped at
+     * the maximum). Recorded voices ignore the level. */
+    float inflection = configured_inflection * (1.0f + current_pitch_range / 100.0f);
+    if (inflection > 1.0f) inflection = 1.0f;
+    if (inflection < 0.0f) inflection = 0.0f;
+    laprdus_set_inflection_level(engine, inflection);
+
+    DBG("Applied params: rate=%d->speed=%.2f, pitch=%d->user_pitch=%.2f, volume=%d->vol=%.2f, "
+        "pitch_range=%d->inflection=%.2f",
+        current_rate, speed, current_pitch, user_pitch, current_volume, vol,
+        current_pitch_range, inflection);
 }
 
 /**
@@ -204,6 +216,16 @@ static const char* get_voice_display_name(const char *id)
     if (strcmp(id, "zvonko") == 0) return "Zvonko";
     if (strcmp(id, "stojan") == 0) return "Stojan";
     if (strcmp(id, "mirsad") == 0) return "Mirsad";
+    if (strcmp(id, "orguljas") == 0) return "Orgulja\xc5\xa1";       /* Orguljaš */
+    if (strcmp(id, "klapa") == 0) return "Klapa";
+    if (strcmp(id, "trubac") == 0) return "Truba\xc4\x8d";           /* Trubač */
+    if (strcmp(id, "harmonikas") == 0) return "Harmonika\xc5\xa1";   /* Harmonikaš */
+    if (strcmp(id, "sevdalija") == 0) return "Sevdalija";
+    if (strcmp(id, "sazlija") == 0) return "Sazlija";
+    if (strcmp(id, "pjevac") == 0) return "Pjeva\xc4\x8d";           /* Pjevač */
+    if (strcmp(id, "pevac") == 0) return "Peva\xc4\x8d";             /* Pevač */
+    if (strcmp(id, "solist") == 0) return "Solist";
+    if (strcmp(id, "becarac") == 0) return "Be\xc4\x87" "arac";         /* Bećarac */
     return id;
 }
 
@@ -375,8 +397,10 @@ int module_init(char **msg)
     snprintf(dict_path, sizeof(dict_path), "%s/spelling.json", data_dir);
     laprdus_load_spelling_dictionary(engine, dict_path);
 
-    /* Load user configuration from ~/.config/Laprdus */
+    /* Load user configuration from ~/.config/Laprdus (speed, pitch, pauses,
+     * the inflection level and acceleration of the formant voices, ...) */
     laprdus_load_user_config(engine);
+    configured_inflection = laprdus_get_inflection_level(engine);
 
     /* Build voice list for module_list_voices */
     build_voice_list();
@@ -470,6 +494,23 @@ int module_set(const char *var, const char *val)
         if (strcasecmp(val, "Zvonko") == 0) return set_voice("zvonko");
         if (strcasecmp(val, "Stojan") == 0) return set_voice("stojan");
         if (strcasecmp(val, "Mirsad") == 0) return set_voice("mirsad");
+        /* Singing presets */
+        if (strcasecmp(val, "Orgulja\xc5\xa1") == 0 ||
+            strcasecmp(val, "Orguljas") == 0) return set_voice("orguljas");
+        if (strcasecmp(val, "Klapa") == 0) return set_voice("klapa");
+        if (strcasecmp(val, "Truba\xc4\x8d") == 0 ||
+            strcasecmp(val, "Trubac") == 0) return set_voice("trubac");
+        if (strcasecmp(val, "Harmonika\xc5\xa1") == 0 ||
+            strcasecmp(val, "Harmonikas") == 0) return set_voice("harmonikas");
+        if (strcasecmp(val, "Sevdalija") == 0) return set_voice("sevdalija");
+        if (strcasecmp(val, "Sazlija") == 0) return set_voice("sazlija");
+        if (strcasecmp(val, "Pjeva\xc4\x8d") == 0 ||
+            strcasecmp(val, "Pjevac") == 0) return set_voice("pjevac");
+        if (strcasecmp(val, "Peva\xc4\x8d") == 0 ||
+            strcasecmp(val, "Pevac") == 0) return set_voice("pevac");
+        if (strcasecmp(val, "Solist") == 0) return set_voice("solist");
+        if (strcasecmp(val, "Be\xc4\x87" "arac") == 0 ||
+            strcasecmp(val, "Becarac") == 0) return set_voice("becarac");
         /* Đedo - try both UTF-8 and ASCII forms */
         if (strcasecmp(val, "\xc4\x90" "edo") == 0 ||
             strcasecmp(val, "Djed") == 0 ||
@@ -511,8 +552,13 @@ int module_set(const char *var, const char *val)
         return 0;
     }
     else if (strcmp(var, "pitch_range") == 0) {
-        /* Pitch range affects inflection intensity */
-        /* For now we don't have a direct mapping */
+        /* SSIP pitch range (-100..100) is the inflection level of the
+         * formant voices: -100 a monotone, 0 the measured movements (the
+         * user's configured level), +100 twice those movements. */
+        current_pitch_range = atoi(val);
+        if (current_pitch_range < -100) current_pitch_range = -100;
+        if (current_pitch_range > 100) current_pitch_range = 100;
+        apply_parameters();
         return 0;
     }
     else if (strcmp(var, "volume") == 0) {

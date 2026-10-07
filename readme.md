@@ -50,6 +50,16 @@ In short: modern synthesizers offer quality at the cost of resources; Laprdus of
 | **Zvonko** | Formant | Croatian | Adult male, synthesized by rule |
 | **Stojan** | Formant | Serbian | Adult male, lower and darker, synthesized by rule |
 | **Mirsad** | Formant | Bosnian | Adult male, higher and more melodic, synthesized by rule |
+| **Zvonko Orguljaš** | Singing | Croatian | Zvonko at the pipe organ, sings *Vila Velebita* |
+| **Klapa Zvonko** | Singing | Croatian | Zvonko as a whole klapa (a Dalmatian a cappella group), sings *Vila Velebita* |
+| **Stojan Trubač** | Singing | Serbian | Stojan as a trumpet, sings *Kreće se lađa francuska* |
+| **Stojan Harmonikaš** | Singing | Serbian | Stojan as an accordion, sings *Kreće se lađa francuska* |
+| **Mirsad Sevdalija** | Singing | Bosnian | Mirsad singing sevdah, sings *Kad ja pođoh na Bembašu* |
+| **Mirsad Sazlija** | Singing | Bosnian | Mirsad as a saz, sings *Kad ja pođoh na Bembašu* |
+| **Zvonko Pjevač** | Singing | Croatian | Zvonko singing with his own voice, at his own pitch, *Vila Velebita* |
+| **Stojan Pevač** | Singing | Serbian | Stojan singing with his own voice, *Kreće se lađa francuska* |
+| **Mirsad Solist** | Singing | Bosnian | Mirsad singing with his own voice, *Kad ja pođoh na Bembašu* |
+| **Zvonko Bećarac** | Singing | Croatian | Zvonko singing a bećarac, the two-line song of Slavonia, with his own voice |
 
 ### Formant voices
 
@@ -58,6 +68,32 @@ Zvonko, Stojan and Mirsad do not play back recordings. A text front end turns th
 - No voice data files: the voices work wherever the library does
 - Rate and pitch are applied at the source, so speech stays clean at any speed
 - Sentence intonation for statements, questions, commas and exclamations
+
+### Singing presets
+
+In the tradition of the singing voices of DECtalk and of the Macintosh (Pipe Organ, Cellos, Bad News), each formant voice also comes as two singing presets. A preset sings whatever text it is given, one syllable per note, to a folk song of its country that is in the public domain, and starts the song over with every utterance; the first stanza of the song fits its tune syllable for syllable. The voice's vocal tract is kept, so the words stay understandable, and only the "larynx" is replaced: a pipe organ with a sub-octave stop and a church reverb, a small choir of detuned voices with a bass an octave down, a trumpet that gets brighter the louder it plays, two accordion reeds tuned a few cents apart, a sung voice with a wide slow vibrato and a singer's formant, and a plucked saz with tremolo picking.
+
+| Preset | ID | Sings | Song |
+|--------|----|-------|------|
+| Zvonko Orguljaš | `orguljas` | pipe organ | Vila Velebita (anonymous, 1882) |
+| Klapa Zvonko | `klapa` | one-man klapa | Vila Velebita |
+| Stojan Trubač | `trubac` | trumpet | Kreće se lađa francuska (Milosavljević) |
+| Stojan Harmonikaš | `harmonikas` | accordion | Kreće se lađa francuska |
+| Mirsad Sevdalija | `sevdalija` | sevdah singer | Kad ja pođoh na Bembašu (traditional) |
+| Mirsad Sazlija | `sazlija` | saz | Kad ja pođoh na Bembašu |
+| Zvonko Pjevač | `pjevac` | Zvonko's own voice, at his own pitch | Vila Velebita |
+| Stojan Pevač | `pevac` | Stojan's own voice | Kreće se lađa francuska |
+| Mirsad Solist | `solist` | Mirsad's own voice | Kad ja pođoh na Bembašu |
+| Zvonko Bećarac | `becarac` | Zvonko's own voice | the bećarac tune (traditional, Slavonia); any ten-syllable couplet fits |
+
+The rate slider sets the tempo, the pitch slider transposes the song, and the inflection setting sets the depth of the vibrato (0% switches it off).
+
+```bash
+laprdus -v klapa "Oj ti vilo, vilo Velebita, ti našeg roda diko, tvoja slava jeste nama sveta, tebi Hrvat kliko."
+laprdus -v harmonikas -r 1.2 "Kreće se lađa francuska sa pristaništa solunska."
+laprdus -v sevdalija "Kad ja pođoh na Bembašu, na Bembašu, na vodu."
+laprdus -v becarac "U mog strica osam kobasica, sedam prži, osmu strina drži."
+```
 - Number words follow the language of the voice (*tisuća* / *hiljada*, *milijun* / *milion*)
 - Stress can be written in the text or in a pronunciation dictionary with the usual accent marks (`telèfon`, `gláva`, `kȕća`, `grȃd`)
 
@@ -145,9 +181,11 @@ laprdus -l
 
 | Option | Description |
 |--------|-------------|
-| `-v, --voice` | Voice (josip, vlado, detence, baba, djed, zvonko, stojan, mirsad) |
-| `-r, --speech-rate` | Speech rate (0.5-2.0, default: 1.0) |
-| `-p, --speech-pitch` | Speech pitch (0.5-2.0, default: 1.0) |
+| `-v, --voice` | Voice (josip, vlado, detence, baba, djed, zvonko, stojan, mirsad, or a singing preset: orguljas, klapa, trubac, harmonikas, sevdalija, sazlija, pjevac, pevac, solist, becarac) |
+| `-r, --speech-rate` | Speech rate (0.5-2.0, default: 1.0; the formant voices accept 0.25-4.0) |
+| `-p, --speech-pitch` | Speech pitch (0.5-2.0, default: 1.0; the formant voices accept 0.25-4.0) |
+| `-I, --inflection` | Inflection of the formant voices, 0-100% (default: 50; 0 is a monotone, 100 the widest melody) |
+| `-a, --acceleration` | Rate multiplier of the formant voices, 0.5-3.0 (default: 1.0) |
 | `-V, --speech-volume` | Volume (0.0-1.0, default: 1.0) |
 | `-d, --numbers-digits` | Read numbers digit-by-digit |
 | `-c, --comma-pauses` | Comma pause duration in ms |
@@ -156,6 +194,15 @@ laprdus -l
 | `-i, --input-file` | Read text from file |
 | `-l, --list-voices` | List available voices |
 | `-h, --help` | Show help |
+
+### Formant voice settings
+
+Zvonko, Stojan and Mirsad (and their singing presets) have two settings of their own, shown on every platform only while one of them is selected:
+
+- **Inflection** (0-100%, default 50%): how much the pitch moves. 0% is a monotone, 50% the melody measured on real speech, 100% twice that.
+- **Acceleration** (0.5x-3.0x, default 1.0x): multiplies the speech rate, so the top of the rate slider of your screen reader or app reaches a higher (or lower) rate. The setting shows the rate the top of the slider then reaches in words per minute (Zvonko speaks about 175 words per minute at the normal rate, so 2.0x acceleration takes the slider's top from 350 to 700 words per minute).
+
+The rate and pitch sliders of the formant voices also go further than those of the recorded voices: 0.25x to 4.0x instead of 0.5x to 2.0x.
 
 ## Configuration and Dictionaries
 
@@ -172,7 +219,7 @@ Laprdus stores user settings and custom dictionaries in platform-specific locati
 
 | File | Purpose |
 |------|---------|
-| `settings.json` | User preferences (voice, rate, pitch, volume, pauses, etc.) |
+| `settings.json` | User preferences (voice, rate, pitch, volume, pauses, inflection level and acceleration of the formant voices, etc.) |
 | `user.json` | Custom pronunciation dictionary for words and phrases |
 | `spelling.json` | Character pronunciations for spelling mode |
 | `emoji.json` | Emoji-to-text mappings for emoji reading |

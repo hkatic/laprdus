@@ -5,7 +5,9 @@ package com.hrvojekatic.laprdus.tts
  * Matches LaprdusVoiceInfo structure in C++.
  *
  * @property id Internal voice ID: "josip", "vlado", "detence", "baba", "djed",
- *   or a formant voice: "zvonko", "stojan", "mirsad"
+ *   a formant voice: "zvonko", "stojan", "mirsad", or a singing preset:
+ *   "orguljas", "klapa", "trubac", "harmonikas", "sevdalija", "sazlija",
+ *   "pjevac", "pevac", "solist", "becarac"
  * @property displayName User-visible name: "Laprdus Josip (Croatian)"
  * @property languageCode BCP-47 language tag: "hr-HR", "sr-RS" or "bs-BA"
  * @property gender Voice gender: "Male" or "Female"
@@ -27,6 +29,38 @@ data class VoiceInfo(
      */
     val isPhysicalVoice: Boolean
         get() = basePitch == 1.0f
+
+    /**
+     * Whether this voice is synthesized by rule (Zvonko, Stojan, Mirsad and
+     * the singing presets). Formant voices accept the wider rate and pitch
+     * ranges and have the inflection level and acceleration settings.
+     */
+    val isFormantVoice: Boolean
+        get() = id in FORMANT_VOICE_IDS
+
+    /** Whether this voice sings the text to a folk song instead of speaking it. */
+    val isSingingVoice: Boolean
+        get() = id in SINGING_VOICE_IDS
+
+    companion object {
+        val SINGING_VOICE_IDS = setOf(
+            "orguljas", "klapa", "trubac", "harmonikas", "sevdalija", "sazlija",
+            "pjevac", "pevac", "solist", "becarac"
+        )
+        val FORMANT_VOICE_IDS = setOf("zvonko", "stojan", "mirsad") + SINGING_VOICE_IDS
+
+        /** Speed and pitch range of the recorded voices. */
+        val RECORDED_RANGE = 0.5f..2.0f
+
+        /** Speed and pitch range of the formant voices. */
+        val FORMANT_RANGE = 0.25f..4.0f
+
+        fun isFormantVoice(id: String?): Boolean = id in FORMANT_VOICE_IDS
+
+        /** Speed and pitch range of a voice. */
+        fun rangeFor(id: String?): ClosedFloatingPointRange<Float> =
+            if (isFormantVoice(id)) FORMANT_RANGE else RECORDED_RANGE
+    }
 
     /**
      * Whether this voice speaks Croatian
@@ -53,6 +87,16 @@ data class VoiceInfo(
             "zvonko" -> "Zvonko"
             "stojan" -> "Stojan"
             "mirsad" -> "Mirsad"
+            "orguljas" -> "Zvonko Orguljaš"
+            "klapa" -> "Klapa Zvonko"
+            "trubac" -> "Stojan Trubač"
+            "harmonikas" -> "Stojan Harmonikaš"
+            "sevdalija" -> "Mirsad Sevdalija"
+            "sazlija" -> "Mirsad Sazlija"
+            "pjevac" -> "Zvonko Pjevač"
+            "pevac" -> "Stojan Pevač"
+            "solist" -> "Mirsad Solist"
+            "becarac" -> "Zvonko Bećarac"
             else -> displayName
         }
 }

@@ -60,6 +60,7 @@ import com.hrvojekatic.laprdus.R
 import com.hrvojekatic.laprdus.tts.VoiceInfo
 import com.hrvojekatic.laprdus.viewmodel.SettingsUiState
 import androidx.compose.ui.platform.LocalContext
+import kotlin.math.roundToInt
 
 /**
  * Settings screen for the Laprdus TTS application.
@@ -87,6 +88,9 @@ fun SettingsScreen(
     // Advanced settings
     onEmojiEnabledChange: (Boolean) -> Unit,
     onInflectionEnabledChange: (Boolean) -> Unit,
+    // Formant voices only
+    onInflectionLevelChange: (Float) -> Unit,
+    onAccelerationChange: (Float) -> Unit,
     onSentencePauseChange: (Int) -> Unit,
     onCommaPauseChange: (Int) -> Unit,
     onNewlinePauseChange: (Int) -> Unit,
@@ -183,14 +187,14 @@ fun SettingsScreen(
                     )
                 }
 
-                // Speech Rate Slider
+                // Speech Rate Slider (0.5x-2.0x; the formant voices reach 0.25x-4.0x)
                 item {
                     SliderSettingItem(
                         title = stringResource(R.string.setting_speech_rate),
                         value = uiState.speed,
-                        valueRange = 0.5f..2.0f,
+                        valueRange = uiState.speedPitchRange,
                         onValueChange = onSpeedChange,
-                        valueLabel = "%.1fx".format(uiState.speed),
+                        valueLabel = formatMultiplier(uiState.speed),
                         description = stringResource(R.string.cd_slider_adjust)
                     )
                 }
@@ -200,9 +204,9 @@ fun SettingsScreen(
                     SliderSettingItem(
                         title = stringResource(R.string.setting_speech_pitch),
                         value = uiState.pitch,
-                        valueRange = 0.5f..2.0f,
+                        valueRange = uiState.speedPitchRange,
                         onValueChange = onPitchChange,
-                        valueLabel = "%.1fx".format(uiState.pitch),
+                        valueLabel = formatMultiplier(uiState.pitch),
                         description = stringResource(R.string.cd_slider_adjust)
                     )
                 }
@@ -272,6 +276,57 @@ fun SettingsScreen(
                         description = stringResource(R.string.cd_restore_volume_desc),
                         onClick = onRestoreDefaultVolume
                     )
+                }
+
+                // Formant voice settings (Zvonko, Stojan, Mirsad): the
+                // inflection level and the acceleration mean nothing to the
+                // recorded voices, so they are shown only for a formant voice.
+                if (uiState.isFormantVoice) {
+                    item {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        SettingsCategoryHeader(title = stringResource(R.string.category_formant_voices))
+                    }
+
+                    item {
+                        SliderSettingItem(
+                            title = stringResource(R.string.setting_inflection_level),
+                            value = uiState.inflectionLevel,
+                            valueRange = 0.0f..1.0f,
+                            onValueChange = onInflectionLevelChange,
+                            valueLabel = "${(uiState.inflectionLevel * 100).roundToInt()}%",
+                            description = stringResource(R.string.setting_inflection_level_desc)
+                        )
+                    }
+
+                    item {
+                        // The rate the top of the rate range (2.0x) reaches
+                        // with this acceleration, in words per minute.
+                        val topWpm = (uiState.nominalWpm * 2.0f * uiState.acceleration).roundToInt()
+                        SliderSettingItem(
+                            title = stringResource(R.string.setting_acceleration),
+                            value = uiState.acceleration,
+                            valueRange = 0.5f..3.0f,
+                            onValueChange = onAccelerationChange,
+                            valueLabel = stringResource(R.string.acceleration_value, uiState.acceleration, topWpm),
+                            description = stringResource(R.string.setting_acceleration_desc)
+                        )
+                    }
+
+                    item {
+                        RestoreDefaultButton(
+                            text = stringResource(R.string.restore_default_inflection_level),
+                            description = stringResource(R.string.cd_restore_inflection_level_desc),
+                            onClick = { onInflectionLevelChange(0.5f) }
+                        )
+                    }
+
+                    item {
+                        RestoreDefaultButton(
+                            text = stringResource(R.string.restore_default_acceleration),
+                            description = stringResource(R.string.cd_restore_acceleration_desc),
+                            onClick = { onAccelerationChange(1.0f) }
+                        )
+                    }
                 }
 
                 // Advanced Category
@@ -421,6 +476,12 @@ fun SettingsScreen(
  * Category header for settings sections.
  * Marked as heading for TalkBack navigation with swipe up/down to headings.
  */
+/** "1.5x", or "0.25x" where one decimal would round the value away. */
+private fun formatMultiplier(value: Float): String {
+    val hundredths = (value * 100).roundToInt()
+    return if (hundredths % 10 == 0) "%.1fx".format(value) else "%.2fx".format(value)
+}
+
 @Composable
 fun SettingsCategoryHeader(title: String) {
     Text(

@@ -29,10 +29,24 @@ struct SettingsView: View {
         )
     }
 
+    /// Whether the selected voice is a formant voice (Zvonko, Stojan, Mirsad).
+    private var isFormantVoice: Bool {
+        VoiceCatalog.isFormantVoice(settings.defaultVoice)
+    }
+
+    /// The recorded voices stop at 0.5x and 2.0x, the formant voices go
+    /// from 0.25x to 4.0x.
+    private var speedPitchRange: ClosedRange<Float> {
+        VoiceCatalog.speedPitchRange(forVoice: settings.defaultVoice)
+    }
+
     var body: some View {
         Form {
             voiceSection
             speechSection
+            if isFormantVoice {
+                formantSection
+            }
             overridesSection
             advancedSection
             pausesSection
@@ -82,18 +96,18 @@ struct SettingsView: View {
             SliderRow(
                 title: String(localized: "Speech rate"),
                 value: $settings.speed,
-                range: 0.5...2.0,
-                step: 0.1,
-                format: { String(format: "%.1fx", $0) },
+                range: speedPitchRange,
+                step: isFormantVoice ? 0.05 : 0.1,
+                format: formatMultiplier,
                 restoreLabel: String(localized: "Restore default speech rate"),
                 restore: { settings.speed = 1.0 }
             )
             SliderRow(
                 title: String(localized: "Speech pitch"),
                 value: $settings.pitch,
-                range: 0.5...2.0,
-                step: 0.1,
-                format: { String(format: "%.1fx", $0) },
+                range: speedPitchRange,
+                step: isFormantVoice ? 0.05 : 0.1,
+                format: formatMultiplier,
                 restoreLabel: String(localized: "Restore default speech pitch"),
                 restore: { settings.pitch = 1.0 }
             )
@@ -111,6 +125,52 @@ struct SettingsView: View {
             Button("Restore default speech pitch") { settings.pitch = 1.0 }
             Button("Restore default speech volume") { settings.volume = 1.0 }
         }
+    }
+
+    // MARK: Formant voice (Zvonko, Stojan, Mirsad)
+
+    /// The inflection level and the acceleration mean nothing to the
+    /// recorded voices, so the section is shown only for a formant voice.
+    private var formantSection: some View {
+        Section("Formant Voice") {
+            SliderRow(
+                title: String(localized: "Inflection"),
+                value: $settings.inflectionLevel,
+                range: 0.0...1.0,
+                step: 0.05,
+                format: { "\(Int(($0 * 100).rounded()))%" },
+                subtitle: String(localized: "Size of the pitch movements: 0% is a monotone, 50% the natural movements, 100% the maximum"),
+                restoreLabel: String(localized: "Restore default inflection"),
+                restore: { settings.inflectionLevel = SettingsSnapshot.defaultInflectionLevel }
+            )
+            SliderRow(
+                title: String(localized: "Acceleration"),
+                value: $settings.acceleration,
+                range: SettingsSnapshot.accelerationRange,
+                step: 0.1,
+                format: formatAcceleration,
+                subtitle: String(localized: "Multiplies the speech rate, so the top of the rate range reaches a higher or lower rate"),
+                restoreLabel: String(localized: "Restore default acceleration"),
+                restore: { settings.acceleration = SettingsSnapshot.defaultAcceleration }
+            )
+
+            Button("Restore default inflection") { settings.inflectionLevel = SettingsSnapshot.defaultInflectionLevel }
+            Button("Restore default acceleration") { settings.acceleration = SettingsSnapshot.defaultAcceleration }
+        }
+    }
+
+    /// "1.5x", or "0.25x" where one decimal would round the value away.
+    private func formatMultiplier(_ value: Float) -> String {
+        let hundredths = Int((value * 100).rounded())
+        return String(format: hundredths % 10 == 0 ? "%.1fx" : "%.2fx", value)
+    }
+
+    /// "1.5x (up to 525 WPM)": the multiplier and the rate the top of the
+    /// rate range (2.0x) then reaches with the selected voice.
+    private func formatAcceleration(_ value: Float) -> String {
+        let nominal = VoiceCatalog.voice(withID: settings.defaultVoice)?.nominalWordsPerMinute ?? 0
+        let top = Int((nominal * 2.0 * value).rounded())
+        return String(localized: "\(String(format: "%.1fx", value)) (up to \(top) WPM)")
     }
 
     // MARK: Application overrides
@@ -285,14 +345,16 @@ private struct SliderRow: View {
     let range: ClosedRange<Float>
     let step: Float
     let format: (Float) -> String
+    var subtitle: String? = nil
     let restoreLabel: String
     let restore: () -> Void
 
     var body: some View {
-        SliderRowLayout(title: title, value: format(value)) {
+        SliderRowLayout(title: title, value: format(value), subtitle: subtitle) {
             Slider(value: $value, in: range, step: step)
                 .accessibilityLabel(title)
                 .accessibilityValue(format(value))
+                .accessibilityHint(subtitle ?? "")
                 // Reaching the per-setting reset without leaving the slider
                 // saves a trip to the button at the end of the section.
                 .accessibilityAction(named: Text(restoreLabel), restore)

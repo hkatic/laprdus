@@ -62,6 +62,8 @@ class SettingsRepository internal constructor(
         // Advanced settings keys
         private val KEY_EMOJI_ENABLED = booleanPreferencesKey("emoji_enabled")
         private val KEY_INFLECTION_ENABLED = booleanPreferencesKey("inflection_enabled")
+        private val KEY_INFLECTION_LEVEL = floatPreferencesKey("inflection_level")
+        private val KEY_ACCELERATION = floatPreferencesKey("acceleration")
         private val KEY_SENTENCE_PAUSE = intPreferencesKey("sentence_pause")
         private val KEY_COMMA_PAUSE = intPreferencesKey("comma_pause")
         private val KEY_NEWLINE_PAUSE = intPreferencesKey("newline_pause")
@@ -86,6 +88,11 @@ class SettingsRepository internal constructor(
         // Advanced settings defaults
         const val DEFAULT_EMOJI_ENABLED = false
         const val DEFAULT_INFLECTION_ENABLED = true
+        const val DEFAULT_INFLECTION_LEVEL = 0.5f
+        const val DEFAULT_ACCELERATION = 1.0f
+        val ACCELERATION_RANGE = 0.5f..3.0f
+        /** Speed and pitch the repository accepts; the engine narrows it for the recorded voices. */
+        val SPEED_PITCH_RANGE = 0.25f..4.0f
         const val DEFAULT_SENTENCE_PAUSE = 100
         const val DEFAULT_COMMA_PAUSE = 100
         const val DEFAULT_NEWLINE_PAUSE = 100
@@ -224,7 +231,7 @@ class SettingsRepository internal constructor(
     // ==========================================================================
 
     /**
-     * Flow of the speech speed setting (0.5 - 2.0)
+     * Flow of the speech speed setting (0.5 - 2.0; formant voices 0.25 - 4.0)
      */
     val speed: Flow<Float> = prefs
         .map { preferences ->
@@ -233,12 +240,12 @@ class SettingsRepository internal constructor(
 
     /**
      * Set the speech speed
-     * @param speed Speed factor (0.5 - 2.0)
+     * @param speed Speed factor (0.5 - 2.0; formant voices 0.25 - 4.0)
      */
     suspend fun setSpeed(speed: Float) {
         ensureMigrated()
         dataStore.edit { preferences ->
-            preferences[KEY_SPEED] = speed.coerceIn(0.5f, 2.0f)
+            preferences[KEY_SPEED] = speed.coerceIn(SPEED_PITCH_RANGE)
         }
     }
 
@@ -247,7 +254,7 @@ class SettingsRepository internal constructor(
     // ==========================================================================
 
     /**
-     * Flow of the pitch setting (0.5 - 2.0)
+     * Flow of the pitch setting (0.5 - 2.0; formant voices 0.25 - 4.0)
      */
     val pitch: Flow<Float> = prefs
         .map { preferences ->
@@ -256,12 +263,12 @@ class SettingsRepository internal constructor(
 
     /**
      * Set the pitch
-     * @param pitch Pitch factor (0.5 - 2.0)
+     * @param pitch Pitch factor (0.5 - 2.0; formant voices 0.25 - 4.0)
      */
     suspend fun setPitch(pitch: Float) {
         ensureMigrated()
         dataStore.edit { preferences ->
-            preferences[KEY_PITCH] = pitch.coerceIn(0.5f, 2.0f)
+            preferences[KEY_PITCH] = pitch.coerceIn(SPEED_PITCH_RANGE)
         }
     }
 
@@ -431,6 +438,48 @@ class SettingsRepository internal constructor(
         ensureMigrated()
         dataStore.edit { preferences ->
             preferences[KEY_INFLECTION_ENABLED] = enabled
+        }
+    }
+
+    /**
+     * Flow of the inflection level of the formant voices (0.0 - 1.0).
+     * 0.0 is a monotone, 0.5 (default) the measured pitch movements, 1.0
+     * twice those movements. The recorded voices ignore it.
+     */
+    val inflectionLevel: Flow<Float> = prefs
+        .map { preferences ->
+            preferences[KEY_INFLECTION_LEVEL] ?: DEFAULT_INFLECTION_LEVEL
+        }
+
+    /**
+     * Set the inflection level of the formant voices.
+     * @param level 0.0 (monotone) to 1.0 (maximum), 0.5 as measured
+     */
+    suspend fun setInflectionLevel(level: Float) {
+        ensureMigrated()
+        dataStore.edit { preferences ->
+            preferences[KEY_INFLECTION_LEVEL] = level.coerceIn(0.0f, 1.0f)
+        }
+    }
+
+    /**
+     * Flow of the acceleration of the formant voices (0.5 - 3.0).
+     * A multiplier on the speech rate, so the top of the rate slider reaches
+     * a higher (or lower) rate. 1.0 (default) leaves the rate alone.
+     */
+    val acceleration: Flow<Float> = prefs
+        .map { preferences ->
+            preferences[KEY_ACCELERATION] ?: DEFAULT_ACCELERATION
+        }
+
+    /**
+     * Set the acceleration of the formant voices.
+     * @param acceleration Rate multiplier (0.5 - 3.0)
+     */
+    suspend fun setAcceleration(acceleration: Float) {
+        ensureMigrated()
+        dataStore.edit { preferences ->
+            preferences[KEY_ACCELERATION] = acceleration.coerceIn(ACCELERATION_RANGE)
         }
     }
 
@@ -623,6 +672,8 @@ class SettingsRepository internal constructor(
         // Advanced settings
         val emojiEnabled: Boolean = DEFAULT_EMOJI_ENABLED,
         val inflectionEnabled: Boolean = DEFAULT_INFLECTION_ENABLED,
+        val inflectionLevel: Float = DEFAULT_INFLECTION_LEVEL,
+        val acceleration: Float = DEFAULT_ACCELERATION,
         val sentencePause: Int = DEFAULT_SENTENCE_PAUSE,
         val commaPause: Int = DEFAULT_COMMA_PAUSE,
         val newlinePause: Int = DEFAULT_NEWLINE_PAUSE,
@@ -647,6 +698,8 @@ class SettingsRepository internal constructor(
         forceLanguage = this[KEY_FORCE_LANGUAGE] ?: DEFAULT_FORCE_LANGUAGE,
         emojiEnabled = this[KEY_EMOJI_ENABLED] ?: DEFAULT_EMOJI_ENABLED,
         inflectionEnabled = this[KEY_INFLECTION_ENABLED] ?: DEFAULT_INFLECTION_ENABLED,
+        inflectionLevel = this[KEY_INFLECTION_LEVEL] ?: DEFAULT_INFLECTION_LEVEL,
+        acceleration = this[KEY_ACCELERATION] ?: DEFAULT_ACCELERATION,
         sentencePause = this[KEY_SENTENCE_PAUSE] ?: DEFAULT_SENTENCE_PAUSE,
         commaPause = this[KEY_COMMA_PAUSE] ?: DEFAULT_COMMA_PAUSE,
         newlinePause = this[KEY_NEWLINE_PAUSE] ?: DEFAULT_NEWLINE_PAUSE,
