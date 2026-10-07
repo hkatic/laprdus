@@ -167,6 +167,26 @@ float Laprdus::acceleration() const {
     return ACCELERATION_DEFAULT;
 }
 
+void Laprdus::setSpellingMode(SpellingMode mode) {
+    if (m_engine) {
+        m_engine->set_spelling_mode(mode);
+    }
+}
+
+SpellingMode Laprdus::spellingMode() const {
+    return m_engine ? m_engine->spelling_mode() : SpellingMode::LetterNames;
+}
+
+void Laprdus::setSpellingSpeed(int percent) {
+    if (m_engine) {
+        m_engine->set_spelling_speed(percent);
+    }
+}
+
+int Laprdus::spellingSpeed() const {
+    return m_engine ? m_engine->spelling_speed() : SPELLING_SPEED_DEFAULT;
+}
+
 // =============================================================================
 // Utility
 // =============================================================================

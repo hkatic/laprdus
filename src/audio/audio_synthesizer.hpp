@@ -62,6 +62,14 @@ public:
     AudioBuffer synthesize_clause(const std::u32string& text, Punctuation punct);
 
     /**
+     * The sound of one letter alone, for spelling by sounds (see
+     * formant::Frontend::letter_sound).
+     * @param letter The letter as formant::spelling_letter() gives it.
+     * @return The sound; empty for an unknown letter.
+     */
+    AudioBuffer synthesize_letter_sound(const std::u32string& letter);
+
+    /**
      * Generate silence of specified duration.
      * @param duration_ms Duration in milliseconds.
      * @return Audio buffer containing silence.
@@ -91,6 +99,7 @@ public:
 
 private:
     void ensure_bank();
+    AudioBuffer render_utterance(const formant::Utterance& utt);
 
     const PhonemeData& m_phoneme_data;
     VoiceParams m_voice_params{};

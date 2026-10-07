@@ -316,6 +316,19 @@ def _configure_functions(lib):
     lib.laprdus_get_spelling_pause.argtypes = [LaprdusHandle]
     lib.laprdus_get_spelling_pause.restype = ctypes.c_uint32
 
+    # Spelling mode and speed
+    lib.laprdus_set_spelling_mode.argtypes = [LaprdusHandle, ctypes.c_int]
+    lib.laprdus_set_spelling_mode.restype = LaprdusError
+
+    lib.laprdus_get_spelling_mode.argtypes = [LaprdusHandle]
+    lib.laprdus_get_spelling_mode.restype = ctypes.c_int
+
+    lib.laprdus_set_spelling_speed.argtypes = [LaprdusHandle, ctypes.c_int]
+    lib.laprdus_set_spelling_speed.restype = LaprdusError
+
+    lib.laprdus_get_spelling_speed.argtypes = [LaprdusHandle]
+    lib.laprdus_get_spelling_speed.restype = ctypes.c_int
+
     # Number mode functions
     lib.laprdus_set_number_mode.argtypes = [LaprdusHandle, ctypes.c_int]
     lib.laprdus_set_number_mode.restype = LaprdusError
@@ -562,10 +575,10 @@ class LaprdusEngine(object):
         return result == LAPRDUS_OK
 
     def set_inflection_level(self, level):
-        """Set the inflection level of the formant voices (0.0 to 1.0).
+        """Set the inflection level (0.0 to 1.0) of every voice.
 
         0.0 is a monotone, 0.5 (default) the measured pitch movements,
-        1.0 twice those movements. The recorded voices ignore it.
+        1.0 twice those movements.
         """
         result = self._lib.laprdus_set_inflection_level(self._handle, ctypes.c_float(level))
         return result == LAPRDUS_OK
@@ -575,10 +588,10 @@ class LaprdusEngine(object):
         return float(self._lib.laprdus_get_inflection_level(self._handle))
 
     def set_acceleration(self, acceleration):
-        """Set the acceleration of the formant voices (0.5 to 3.0, default 1.0).
+        """Set the acceleration (0.5 to 3.0, default 1.0) of every voice.
 
         Multiplies the speech speed, so the top of NVDA's rate slider
-        reaches a higher (or lower) rate. The recorded voices ignore it.
+        reaches a higher (or lower) rate.
         """
         result = self._lib.laprdus_set_acceleration(self._handle, ctypes.c_float(acceleration))
         return result == LAPRDUS_OK
@@ -1048,6 +1061,32 @@ class LaprdusEngine(object):
     # =========================================================================
     # Number Mode Methods
     # =========================================================================
+
+    def set_spelling_mode(self, letter_sounds):
+        """Choose how spelled letters are read.
+
+        Args:
+            letter_sounds: False for letter names (be, ce, de), True for the
+                letters' sounds (b, c, d)
+
+        Returns:
+            True on success, False on failure
+        """
+        result = self._lib.laprdus_set_spelling_mode(self._handle, 1 if letter_sounds else 0)
+        return result == LAPRDUS_OK
+
+    def set_spelling_speed(self, percent):
+        """Set the speed of spelled characters.
+
+        Args:
+            percent: 0-100; 100 is the speech rate itself, 50 (default) a
+                little over half of it, 0 a third
+
+        Returns:
+            True on success, False on failure
+        """
+        result = self._lib.laprdus_set_spelling_speed(self._handle, int(percent))
+        return result == LAPRDUS_OK
 
     def set_number_mode(self, mode):
         """Set number processing mode.

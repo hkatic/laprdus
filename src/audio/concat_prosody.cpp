@@ -105,7 +105,7 @@ ClausePlan plan_clause(const formant::Utterance& utt, const UnitBank& bank,
     const float fs = static_cast<float>(sample_rate);
     const float samples_per_ms = fs / 1000.0f;
 
-    const float speed = std::clamp(params.speed, CONCAT_SPEED_MIN, CONCAT_SPEED_MAX);
+    const float speed = std::clamp(params.effective_speed(), CONCAT_SPEED_MIN, CONCAT_SPEED_MAX);
     auto rate = [&](float d, float min_d) {
         float floor_d = speed > 1.0f ? min_d / std::sqrt(speed) : min_d;
         return std::max(d / speed, floor_d);
@@ -137,8 +137,11 @@ ClausePlan plan_clause(const formant::Utterance& utt, const UnitBank& bank,
         float min_d = def.min_dur;
 
         if (p.ph == Ph::SCHWA) {
-            // No recording: the syllabic consonant carries the syllable
-            dur[static_cast<size_t>(i)] = 0.0f;
+            // No recording: the syllabic consonant carries the syllable. A
+            // consonant letter's sound alone ends in one, the vowel the
+            // consonant is released into ("bə", "sə"; see below).
+            const bool release = utt.isolated_sound && p.nucleus;
+            dur[static_cast<size_t>(i)] = release ? rate(120.0f, 40.0f) : 0.0f;
             continue;
         }
         if (p.ph == Ph::R) {
@@ -201,6 +204,24 @@ ClausePlan plan_clause(const formant::Utterance& utt, const UnitBank& bank,
             d = def.dur * factor;
             if (p.short_glide) d = 34.0f;
         }
+        if (utt.isolated_sound) {
+            // A letter's sound alone (spelling by sounds): a vowel letter as
+            // a stressed syllable; a consonant letter as the consonant
+            // (fricatives held a little, stops and affricates with their
+            // whole recording) and the release vowel after it, as eSpeak
+            // sounds the letters out.
+            switch (def.cls) {
+                case formant::PhClass::Vowel: d = 190.0f; break;
+                case formant::PhClass::Fricative: d = 100.0f; break;
+                case formant::PhClass::Nasal:
+                case formant::PhClass::Liquid:
+                case formant::PhClass::Glide: d = 85.0f; break;
+                case formant::PhClass::Tap: d = TRILL_MS * 1.2f; break;
+                case formant::PhClass::Stop:
+                case formant::PhClass::Affricate: d = def.dur * 1.3f; break;
+                default: break;
+            }
+        }
         dur[static_cast<size_t>(i)] = rate(d, min_d);
     }
 
@@ -243,7 +264,10 @@ ClausePlan plan_clause(const formant::Utterance& utt, const UnitBank& bank,
             prev_is_unit = false;
         }
 
-        const Phoneme phoneme = unit_for(p.ph);
+        // The release vowel of a letter's sound: the "e" recording, a little
+        // softer than a full vowel
+        const bool release_vowel = p.ph == Ph::SCHWA && d_ms > 0.0f;
+        const Phoneme phoneme = release_vowel ? Phoneme::E : unit_for(p.ph);
         const Unit* unit = phoneme == Phoneme::COUNT ? nullptr : &bank.unit(phoneme);
         const bool playable = unit && unit->loaded && unit->sounding_length() > 0 &&
                               phoneme != Phoneme::SILENCE;
@@ -286,6 +310,7 @@ ClausePlan plan_clause(const formant::Utterance& utt, const UnitBank& bank,
         } else {
             s.stretch = true;
             s.length = slot;
+            if (release_vowel) s.gain = 0.8f;
         }
         s.start = cursor;
         if (prev_is_unit && !plan.segments.empty()) {

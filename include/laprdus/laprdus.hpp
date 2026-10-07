@@ -146,7 +146,7 @@ public:
     bool inflectionEnabled() const;
 
     /**
-     * Set the inflection level of the formant voices.
+     * Set the inflection level (every voice).
      * @param level 0.0 (monotone) to 1.0 (maximum), 0.5 as measured.
      */
     void setInflectionLevel(float level);
@@ -158,7 +158,7 @@ public:
     float inflectionLevel() const;
 
     /**
-     * Set the acceleration of the formant voices (rate multiplier).
+     * Set the acceleration (rate multiplier, every voice).
      * @param acceleration 0.5 - 3.0, 1.0 leaves the rate alone.
      */
     void setAcceleration(float acceleration);
@@ -168,6 +168,20 @@ public:
      * @return Acceleration (0.5 - 3.0).
      */
     float acceleration() const;
+
+    /**
+     * Choose whether spelled letters are read by their names ("be", "ce")
+     * or by their sounds.
+     */
+    void setSpellingMode(SpellingMode mode);
+    SpellingMode spellingMode() const;
+
+    /**
+     * Set the speed of spelled characters, percent of the speech rate
+     * (0-100, default 50; 100 is the speech rate itself).
+     */
+    void setSpellingSpeed(int percent);
+    int spellingSpeed() const;
 
     /**
      * Get sample rate of output audio.

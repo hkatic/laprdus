@@ -237,6 +237,8 @@ class LaprdusTTSService : TextToSpeechService() {
             engine.commaPause = settings.commaPause
             engine.newlinePause = settings.newlinePause
             engine.numberMode = settings.numberMode
+            engine.spellingSpeed = settings.spellingSpeed
+            engine.letterSounds = settings.spellingMode == SettingsRepository.SPELLING_MODE_SOUNDS
         } catch (e: Exception) {
             Log.e(TAG, "Failed to apply engine settings", e)
         }

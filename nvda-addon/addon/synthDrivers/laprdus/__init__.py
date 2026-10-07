@@ -636,11 +636,13 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         Settings loaded from settings.json structure:
         - speech.speed, speech.pitch, speech.volume (with force flags)
         - speech.inflection: whether to use pitch variation
-        - speech.inflection_level: size of the formant voices' pitch movements (0.0-1.0)
-        - speech.acceleration: rate multiplier of the formant voices (0.5-3.0)
+        - speech.inflection_level: size of the pitch movements (0.0-1.0)
+        - speech.acceleration: rate multiplier (0.5-3.0)
         - speech.emoji: whether to convert emoji to text
         - numbers.mode: 'words' or 'digits'
         - pauses.sentence, pauses.comma, pauses.newline, pauses.spelling
+        - spelling.speed: speed of spelled characters, percent of the speech rate
+        - spelling.mode: 'names' (be, ce, de) or 'sounds' (b, c, d)
         - force.speed, force.pitch, force.volume: override NVDA slider values
         - dictionaries.user_enabled: whether to load user dictionaries
         """
@@ -670,6 +672,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             speech = settings.get('speech', {})
             numbers = settings.get('numbers', {})
             pauses = settings.get('pauses', {})
+            spelling = settings.get('spelling', {})
             force = settings.get('force', {})
             dictionaries = settings.get('dictionaries', {})
 
@@ -700,7 +703,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             self._engine.set_inflection(inflection)
             _debug_log("_loadSharedSettings: inflection=%s" % inflection)
 
-            # Formant voices: inflection level and acceleration. The
+            # Inflection level and acceleration of every voice. The
             # acceleration multiplies the speed set from the rate slider,
             # so the slider's top reaches 2.0 (4.0 with rate boost) times it.
             inflection_level = float(speech.get('inflection_level', 0.5))
@@ -732,6 +735,15 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             self._engine.set_spelling_pause(spelling_pause)
             _debug_log("_loadSharedSettings: pauses sentence=%d comma=%d newline=%d spelling=%d" % (
                 sentence_pause, comma_pause, newline_pause, spelling_pause))
+
+            # Spelling: the speed of spelled characters and whether letters
+            # are read by their names or by their sounds
+            spelling_speed = int(spelling.get('speed', 50))
+            spelling_mode = spelling.get('mode', 'names')
+            self._engine.set_spelling_speed(spelling_speed)
+            self._engine.set_spelling_mode(spelling_mode == 'sounds')
+            _debug_log("_loadSharedSettings: spelling speed=%d mode=%s" % (
+                spelling_speed, spelling_mode))
 
             # Load user dictionaries if enabled
             user_dicts_enabled = dictionaries.get('user_enabled', True)

@@ -4,6 +4,7 @@
 #include "tts_engine.hpp"
 #include "spelling_dict.hpp"
 #include "emoji_dict.hpp"
+#include "phoneme_mapper.hpp"
 #include "../formant/formant_synthesizer.hpp"
 #include <filesystem>
 #include <fstream>
@@ -22,7 +23,8 @@ struct TTSEngine::Impl {
     CroatianNumbers number_converter;
     InflectionProcessor inflection;
     PronunciationDictionary dictionary;
-    SpellingDictionary spelling_dictionary;
+    SpellingDictionary spelling_dictionary;         // bundled: digits, punctuation, symbols
+    SpellingDictionary user_spelling_dictionary;    // the user's: wins over everything
     EmojiDictionary emoji_dictionary;
     VoiceParams voice_params;
     bool initialized = false;
@@ -485,7 +487,7 @@ void TTSEngine::add_pronunciation(const std::string& grapheme, const std::string
 
 void TTSEngine::add_spelling_entry(const std::string& character, const std::string& pronunciation) {
     if (m_impl) {
-        m_impl->spelling_dictionary.add_entry(character, pronunciation);
+        m_impl->user_spelling_dictionary.add_entry(character, pronunciation);
     }
 }
 
@@ -509,6 +511,7 @@ bool TTSEngine::load_spelling_dictionary(const std::string& path) {
     if (!m_impl) {
         return false;
     }
+    m_impl->user_spelling_dictionary.clear();
     return m_impl->spelling_dictionary.load_from_file(path);
 }
 
@@ -516,6 +519,7 @@ bool TTSEngine::load_spelling_dictionary_from_memory(const char* json_content, s
     if (!m_impl) {
         return false;
     }
+    m_impl->user_spelling_dictionary.clear();
     return m_impl->spelling_dictionary.load_from_memory(json_content, length);
 }
 
@@ -523,13 +527,114 @@ bool TTSEngine::append_spelling_dictionary(const std::string& path) {
     if (!m_impl) {
         return false;
     }
-    return m_impl->spelling_dictionary.append_from_file(path);
+    return m_impl->user_spelling_dictionary.append_from_file(path);
 }
 
 void TTSEngine::clear_spelling_dictionary() {
     if (m_impl) {
         m_impl->spelling_dictionary.clear();
+        m_impl->user_spelling_dictionary.clear();
     }
+}
+
+void TTSEngine::set_spelling_mode(SpellingMode mode) {
+    if (m_impl) {
+        m_impl->voice_params.spelling_mode =
+            mode == SpellingMode::LetterSounds ? SpellingMode::LetterSounds : SpellingMode::LetterNames;
+    }
+}
+
+SpellingMode TTSEngine::spelling_mode() const {
+    return m_impl ? m_impl->voice_params.spelling_mode : SpellingMode::LetterNames;
+}
+
+void TTSEngine::set_spelling_speed(int percent) {
+    if (m_impl) {
+        m_impl->voice_params.spelling_speed =
+            std::clamp(percent, SPELLING_SPEED_MIN, SPELLING_SPEED_MAX);
+    }
+}
+
+int TTSEngine::spelling_speed() const {
+    return m_impl ? m_impl->voice_params.spelling_speed : SPELLING_SPEED_DEFAULT;
+}
+
+namespace {
+
+// Spelled characters are rendered at a fraction of the speech rate: the
+// speed is scaled for the duration of one character and put back after.
+class SpellingRate {
+public:
+    SpellingRate(VoiceParams& params, AudioSynthesizer* synthesizer)
+        : m_params(params), m_synthesizer(synthesizer), m_speed(params.speed) {
+        m_params.speed = std::max(m_speed * spelling_rate_factor(m_params.spelling_speed),
+                                  FORMANT_SPEED_MIN);
+        if (m_synthesizer) m_synthesizer->set_voice_params(m_params);
+    }
+    ~SpellingRate() {
+        m_params.speed = m_speed;
+        if (m_synthesizer) m_synthesizer->set_voice_params(m_params);
+    }
+    SpellingRate(const SpellingRate&) = delete;
+    SpellingRate& operator=(const SpellingRate&) = delete;
+
+private:
+    VoiceParams& m_params;
+    AudioSynthesizer* m_synthesizer;
+    float m_speed;
+};
+
+} // namespace
+
+VoiceLanguage TTSEngine::current_language() const {
+    if (m_impl && m_impl->formant) return m_impl->formant->language();
+    return m_impl ? m_impl->concat_language : VoiceLanguage::Croatian;
+}
+
+SynthesisResult TTSEngine::spell_character(const std::string& character) {
+    const std::u32string cps = PhonemeMapper::utf8_to_utf32(character);
+    const std::u32string letter = cps.size() == 1 ? formant::spelling_letter(cps[0])
+                                                   : std::u32string();
+    const std::string* user = m_impl->user_spelling_dictionary.find(character);
+    const bool sounds = m_impl->voice_params.spelling_mode == SpellingMode::LetterSounds;
+
+    std::string text;
+    bool sound = false;
+    if (!letter.empty()) {
+        if (sounds) {
+            // The user's entry wins unless it is just a letter's name
+            if (user && !formant::is_letter_name(letter, PhonemeMapper::utf8_to_utf32(*user))) {
+                text = *user;
+            } else {
+                sound = true;
+            }
+        } else if (user) {
+            text = *user;
+        } else {
+            text = PhonemeMapper::utf32_to_utf8(formant::letter_name(letter, current_language()));
+        }
+    } else if (user) {
+        text = *user;
+    } else if (const std::string* bundled = m_impl->spelling_dictionary.find(character)) {
+        text = *bundled;
+    } else {
+        text = character;
+    }
+
+    SpellingRate rate(m_impl->voice_params, m_impl->synthesizer.get());
+    if (!sound) {
+        return synthesize(text);
+    }
+
+    SynthesisResult result;
+    begin_utterance();
+    if (m_impl->formant) {
+        result.audio = m_impl->formant->synthesize_letter_sound(letter, m_impl->voice_params);
+    } else if (m_impl->synthesizer) {
+        result.audio = m_impl->synthesizer->synthesize_letter_sound(letter);
+    }
+    result.success = true;
+    return result;
 }
 
 SynthesisResult TTSEngine::synthesize_spelled(const std::string& text) {
@@ -542,102 +647,45 @@ SynthesisResult TTSEngine::synthesize_spelled(const std::string& text) {
         return result;
     }
 
-    if (text.empty()) {
-        result.success = true;
-        result.audio.sample_rate = SAMPLE_RATE;
-        result.audio.bits_per_sample = BITS_PER_SAMPLE;
-        result.audio.channels = NUM_CHANNELS;
-        return result;
-    }
-
-    // For single characters, just get pronunciation and synthesize
-    // No pause needed for single char
-    size_t char_count = 0;
-    size_t pos = 0;
-    while (pos < text.size()) {
-        unsigned char c = text[pos];
-        size_t char_len = 1;
-        if ((c & 0x80) == 0) char_len = 1;
-        else if ((c & 0xE0) == 0xC0) char_len = 2;
-        else if ((c & 0xF0) == 0xE0) char_len = 3;
-        else if ((c & 0xF8) == 0xF0) char_len = 4;
-        pos += char_len;
-        char_count++;
-    }
-
-    // Get configurable spelling pause duration
-    const uint32_t spelling_pause_ms = m_impl->voice_params.pause_settings.spelling_pause_ms;
-
-    if (char_count == 1) {
-        // Single character - add trailing pause for spacing between sequential spell calls
-        std::string pronunciation;
-        if (!m_impl->spelling_dictionary.empty()) {
-            pronunciation = m_impl->spelling_dictionary.get_pronunciation(text);
-        } else {
-            pronunciation = text;
-        }
-        SynthesisResult char_result = synthesize(pronunciation);
-        if (char_result.success && spelling_pause_ms > 0) {
-            // Add configurable trailing silence for pause between spelled characters
-            const size_t pause_samples = static_cast<size_t>(SAMPLE_RATE * spelling_pause_ms / 1000);
-            char_result.audio.samples.resize(char_result.audio.samples.size() + pause_samples, 0);
-        }
-        return char_result;
-    }
-
-    // Multiple characters - synthesize each with pause between
     result.audio.sample_rate = SAMPLE_RATE;
     result.audio.bits_per_sample = BITS_PER_SAMPLE;
     result.audio.channels = NUM_CHANNELS;
+    if (text.empty()) {
+        result.success = true;
+        return result;
+    }
 
-    // Pause duration: configurable spelling pause
+    // The pause between the characters; a lone character gets it after
+    // itself, for the spacing between one spell call and the next.
+    const uint32_t spelling_pause_ms = m_impl->voice_params.pause_settings.spelling_pause_ms;
     const size_t pause_samples = static_cast<size_t>(SAMPLE_RATE * spelling_pause_ms / 1000);
-    std::vector<AudioSample> silence(pause_samples, 0);
 
-    pos = 0;
-    bool first = true;
+    size_t pos = 0;
+    size_t count = 0;
     while (pos < text.size()) {
-        // Extract UTF-8 character
-        unsigned char c = text[pos];
+        unsigned char c = static_cast<unsigned char>(text[pos]);
         size_t char_len = 1;
-        if ((c & 0x80) == 0) char_len = 1;
-        else if ((c & 0xE0) == 0xC0) char_len = 2;
+        if ((c & 0xE0) == 0xC0) char_len = 2;
         else if ((c & 0xF0) == 0xE0) char_len = 3;
         else if ((c & 0xF8) == 0xF0) char_len = 4;
-
+        if (pos + char_len > text.size()) break;
         std::string character = text.substr(pos, char_len);
         pos += char_len;
 
-        // Get pronunciation
-        std::string pronunciation;
-        if (!m_impl->spelling_dictionary.empty()) {
-            pronunciation = m_impl->spelling_dictionary.get_pronunciation(character);
-        } else {
-            pronunciation = character;
-        }
-
-        // Synthesize this character's pronunciation
-        SynthesisResult char_result = synthesize(pronunciation);
+        SynthesisResult char_result = spell_character(character);
         if (!char_result.success) {
-            continue;  // Skip failed characters
+            continue;   // skip a character that could not be synthesized
         }
-
-        // Add pause before (except for first character)
-        if (!first) {
-            result.audio.samples.insert(
-                result.audio.samples.end(),
-                silence.begin(),
-                silence.end()
-            );
+        if (count > 0) {
+            result.audio.samples.insert(result.audio.samples.end(), pause_samples, 0);
         }
-        first = false;
-
-        // Add character audio
-        result.audio.samples.insert(
-            result.audio.samples.end(),
-            char_result.audio.samples.begin(),
-            char_result.audio.samples.end()
-        );
+        result.audio.samples.insert(result.audio.samples.end(),
+                                    char_result.audio.samples.begin(),
+                                    char_result.audio.samples.end());
+        ++count;
+    }
+    if (count == 1) {
+        result.audio.samples.insert(result.audio.samples.end(), pause_samples, 0);
     }
 
     result.success = !result.audio.samples.empty();

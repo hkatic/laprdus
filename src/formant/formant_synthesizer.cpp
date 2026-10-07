@@ -304,10 +304,10 @@ public:
         if (m_singing) {
             // The rate sets the tempo. Consonants follow it only part of
             // the way: they are spoken, not sung.
-            m_tempo = params.formant_speed();
+            m_tempo = params.effective_speed();
             m_speed = std::clamp(m_tempo, 0.6f, 2.0f);
         } else {
-            m_speed = params.formant_speed() * voice.tempo;
+            m_speed = params.effective_speed() * voice.tempo;
         }
     }
 
@@ -435,11 +435,38 @@ private:
                 if (p.ph == Ph::R) d = def.dur;
             }
 
+            if (m_utt.isolated_sound) d = isolated_duration(p, def, next);
             m_dur[static_cast<size_t>(i)] = rate(d, def.min_dur);
         }
 
         if (m_singing) fit_durations_to_notes();
     }
+
+    // A letter's sound alone (spelling by sounds): a vowel letter as a
+    // stressed syllable; a consonant letter as the consonant and a neutral
+    // vowel after it, as eSpeak's Croatian voice sounds the letters out
+    // (measured at its default rate: 70-90 ms of consonant, 110-130 ms of
+    // vowel at the level of a full vowel).
+    static float isolated_duration(const Phone& p, const PhDef& def, const Phone* next) {
+        (void)next;
+        if (p.ph == Ph::SCHWA) return 120.0f;       // the release vowel
+        switch (def.cls) {
+            case PhClass::Vowel: return 190.0f;
+            case PhClass::Fricative: return 90.0f;
+            case PhClass::Nasal:
+            case PhClass::Liquid:
+            case PhClass::Glide: return 80.0f;
+            case PhClass::Tap: return def.dur;
+            case PhClass::Stop: return def.dur * 1.2f;
+            case PhClass::Affricate: return ISOLATED_AFFRICATE_MS;
+            default: return def.dur;
+        }
+    }
+
+    // An affricate alone holds its friction for long enough to be told
+    // from a stop. The consonant keeps its own level: eSpeak's sit at
+    // 20-45% of the vowel that follows, and so do these.
+    static constexpr float ISOLATED_AFFRICATE_MS = 110.0f;
 
     // -------------------------------------------------------------------------
     // Singing: notes
@@ -783,6 +810,10 @@ private:
                     // Voiced: a short closure, then mostly friction.
                     float closure = std::max(d * (voiced ? 0.30f : 0.54f), 12.0f);
                     float friction = std::max(d - closure, 15.0f);
+                    if (m_utt.isolated_sound) {
+                        closure = rate(40.0f, 20.0f);
+                        friction = std::max(d - closure, 15.0f);
+                    }
 
                     Seg& cl = add_seg(p.ph, SegKind::Closure, i, closure);
                     if (voiced) {
@@ -890,6 +921,7 @@ private:
     void compute_formants() {
         const int n = static_cast<int>(m_segs.size());
         const float scale = m_voice.formant_scale;
+
 
         // Nearest full vowel for each segment: the following one if there is
         // any, because consonants anticipate the vowel they release into.
@@ -1741,15 +1773,30 @@ AudioBuffer FormantSynthesizer::synthesize_clause(const std::u32string& text,
     return audio;
 }
 
+AudioBuffer FormantSynthesizer::synthesize_letter_sound(const std::u32string& letter,
+                                                        const VoiceParams& params) {
+    AudioBuffer audio;
+    audio.sample_rate = SAMPLE_RATE;
+    audio.bits_per_sample = BITS_PER_SAMPLE;
+    audio.channels = NUM_CHANNELS;
+    // A sound is spoken, never sung: the singing presets leave their song alone.
+    render_utterance(m_frontend.letter_sound(letter), params, audio, false);
+    return audio;
+}
+
 void FormantSynthesizer::append_group(const std::u32string& text, Punctuation punct,
                                       const VoiceParams& params, AudioBuffer& audio) {
-    Utterance utt = m_frontend.process(text, punct);
+    render_utterance(m_frontend.process(text, punct), params, audio, m_voice.singing != nullptr);
+}
+
+void FormantSynthesizer::render_utterance(const Utterance& utt, const VoiceParams& params,
+                                          AudioBuffer& audio, bool sing) {
     if (utt.phones.empty()) {
         return;
     }
 
-    ClauseBuilder builder(m_voice, params, utt, m_voice.singing ? &m_melody : nullptr,
-                          m_voice.singing ? &m_cursor : nullptr);
+    ClauseBuilder builder(m_voice, params, utt, sing ? &m_melody : nullptr,
+                          sing ? &m_cursor : nullptr);
     std::vector<Frame> frames = builder.build();
     if (frames.empty()) {
         return;

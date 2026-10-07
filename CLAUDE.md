@@ -106,8 +106,10 @@ struct VoiceParams {
     float user_pitch = 1.0f;  // 0.5 - 2.0 (user pitch preference); formant voices 0.25 - 4.0
     float volume = 1.0f;      // 0.0 - 1.0
     bool inflection_enabled = true;
-    float inflection_level = 0.5f;  // formant voices: 0 monotone, 0.5 as measured, 1 twice the movements
-    float acceleration = 1.0f;      // formant voices: rate multiplier 0.5 - 3.0
+    float inflection_level = 0.5f;  // 0 monotone, 0.5 as measured, 1 twice the movements (every voice)
+    float acceleration = 1.0f;      // rate multiplier 0.5 - 3.0 (every voice; VoiceParams::effective_speed())
+    SpellingMode spelling_mode = SpellingMode::LetterNames;  // spelled letters: names (be, ce) or sounds ([b], [ts])
+    int spelling_speed = 50;        // rate of spelled characters, percent of the speech rate (100 = the rate itself)
 };
 ```
 
@@ -122,7 +124,7 @@ Zvonko (hr), Stojan (sr) and Mirsad (bs) live in `src/formant/` and share the te
 Things to know before changing them:
 
 - **Speed, pitch and volume are applied at the source** (durations, F0, gain), so `VoiceParams::pitch` and `user_pitch` both simply scale F0.
-- **Wider ranges and two settings of their own.** `VoiceParams::clamp()` allows speed and `user_pitch` from 0.25 to 4.0; the concatenative `AudioSynthesizer` narrows them to its 0.5-4.0 / 0.5-2.0 itself, so every platform may pass the wide range and let the engine sort it out. `inflection_level` (0-1, default 0.5) scales the whole F0 contour in semitones (0 is a monotone, 1 doubles every movement) and `acceleration` (0.5-3.0, default 1.0) multiplies the speed (`VoiceParams::formant_speed()`, capped at 8.0), so a host's rate slider reaches a higher or lower top rate. Both are `laprdus_set_inflection_level()` / `laprdus_set_acceleration()` in the C API, `speech.inflection_level` / `speech.acceleration` in `settings.json`, keys `inflection_level` / `acceleration` on Android and Apple, and are shown only for formant voices. `laprdus_get_nominal_wpm(voice)` (175 words/min for Zvonko at speed 1.0, times the voice's tempo) lets a UI print the top rate in words per minute: nominal × 2.0 (the slider's top) × acceleration. The Speech Dispatcher module maps SSIP `pitch_range` onto the inflection level.
+- **Wider ranges; inflection level and acceleration are for every voice.** `VoiceParams::clamp()` allows speed and `user_pitch` from 0.25 to 4.0; the concatenative `AudioSynthesizer` narrows them to its 0.5-4.0 / 0.5-2.0 itself, so every platform may pass the wide range and let the engine sort it out. `inflection_level` (0-1, default 0.5) scales the whole F0 contour in semitones (0 is a monotone, 1 doubles every movement) and `acceleration` (0.5-3.0, default 1.0) multiplies the speed (`VoiceParams::effective_speed()`, capped at 8.0; the concat planner narrows the product to 0.5-4.0), so a host's rate slider reaches a higher or lower top rate. Both apply to the recorded voices too (`concat_prosody.cpp`), are `laprdus_set_inflection_level()` / `laprdus_set_acceleration()` in the C API, `speech.inflection_level` / `speech.acceleration` in `settings.json`, keys `inflection_level` / `acceleration` on Android and Apple, and every settings screen shows them with the voice settings, for every voice. `laprdus_get_nominal_wpm(voice)` (175 words/min for Zvonko at speed 1.0, times the voice's tempo) lets a UI print the top rate in words per minute: nominal × 2.0 (the slider's top) × acceleration. The Speech Dispatcher module maps SSIP `pitch_range` onto the inflection level.
 - **Number words follow the voice language**: `CroatianNumbers::set_dialect()` is set by `TTSEngine::initialize_formant()` (tisuća/milijun/dvjesto, hiljada/milion/dvesta, hiljada/milion/dvjesto) and reset to Croatian when a concatenative voice is loaded, so Josip and Vlado are unchanged. One and two agree with the feminine scale words in every dialect (dvije tisuće, dve hiljade, dvadeset jedna tisuća, dvije milijarde).
 - **Synthesis is deterministic**: the same text and settings give the same samples (`tests/linux/test_formant.cpp` relies on it).
 - **Acoustic values come from measurements**, not from taste: vowel formants and durations from Bakran's work on standard Croatian, consonant spectra, levels and transitions from analysis of recorded Croatian speech. `docs/formant.md` records the sources, the measured values and how to repeat the measurements. Change numbers in `formant_phonemes.cpp` only with a measurement or a listening test behind them.
@@ -363,10 +365,13 @@ echo "Text" | laprdus.exe -o output.wav
 | `-v, --voice` | Select voice (zvonko (default), stojan, mirsad, josip, vlado, detence, baba, djed) |
 | `-r, --speech-rate` | Speech rate 0.5-2.0 (default: 1.0); formant voices 0.25-4.0 |
 | `-p, --speech-pitch` | Speech pitch 0.5-2.0 (default: 1.0); formant voices 0.25-4.0 |
-| `-I, --inflection` | Inflection of the formant voices 0-100 (default: 50; 0 is a monotone) |
-| `-a, --acceleration` | Rate multiplier of the formant voices 0.5-3.0 (default: 1.0) |
+| `-I, --inflection` | Inflection level 0-100 (default: 50; 0 is a monotone) |
+| `-a, --acceleration` | Rate multiplier 0.5-3.0 (default: 1.0) |
 | `-V, --speech-volume` | Volume 0.0-1.0 (default: 1.0) |
 | `-d, --numbers-digits` | Speak numbers as digits |
+| `-s, --spell` | Spell the text character by character |
+| `-S, --spelling-speed` | Speed of spelled characters, percent of the speech rate 0-100 (default: 50) |
+| `-m, --spelling-mode` | `names` (be, ce, de; default) or `sounds` (b, c, d) |
 | `-c, --comma-pauses` | Comma pause duration in ms |
 | `-e, --period-pauses` | Period pause duration in ms |
 | `-o, --output-file` | Output to WAV file |
@@ -633,10 +638,13 @@ laprdus -l
 | `-v` | `--voice` | Select voice (zvonko (default), stojan, mirsad, josip, vlado, detence, baba, djed) |
 | `-r` | `--speech-rate` | Speech rate (0.5-2.0, default 1.0; formant voices 0.25-4.0) |
 | `-p` | `--speech-pitch` | Speech pitch (0.5-2.0, default 1.0; formant voices 0.25-4.0) |
-| `-I` | `--inflection` | Inflection of the formant voices (0-100, default 50) |
-| `-a` | `--acceleration` | Rate multiplier of the formant voices (0.5-3.0, default 1.0) |
+| `-I` | `--inflection` | Inflection level (0-100, default 50) |
+| `-a` | `--acceleration` | Rate multiplier (0.5-3.0, default 1.0) |
 | `-V` | `--speech-volume` | Volume (0.0-1.0, default 1.0) |
 | `-d` | `--numbers-digits` | Speak numbers as digits |
+| `-s` | `--spell` | Spell the text character by character |
+| `-S` | `--spelling-speed` | Speed of spelled characters, percent of the speech rate (0-100, default 50) |
+| `-m` | `--spelling-mode` | `names` (default) or `sounds` |
 | `-c` | `--comma-pauses` | Comma pause duration in ms |
 | `-e` | `--period-pauses` | Period pause duration in ms |
 | `-x` | `--exclamationmark-pauses` | Exclamation pause duration in ms |
@@ -1134,9 +1142,19 @@ The dictionary uses JSON format at `data/dictionary/internal.json`:
 | `wholeWord` | bool | Whether to match whole words only (default: true) |
 | `comment` | string | Optional description (ignored by engine) |
 
+## Spelling
+
+`TTSEngine::synthesize_spelled()` (C API `laprdus_synthesize_spelled()`) reads text character by character, with `pause_settings.spelling_pause_ms` between the characters (a lone character gets it after itself). It is what every platform calls for screen reader spelling, typed-character echo, SAPI5 `SPVA_SpellOut` and single-character requests. Per character (`spell_character()`):
+
+- **A letter of the alphabet** (`formant::spelling_letter()`: Latin or Cyrillic, any case, the ligatures and љ/њ/џ as digraphs, ä-type letters folded) is read by its **name** in the language of the voice (`formant::letter_name()`: Croatian and Bosnian *a, be, ce, če, će, de, dže, đe, e, ef, ge, ha, i, je, ka, el, elj, em, en, enj, o, pe, er, es, eš, te, u, ve, ze, že*, foreign *ku, duplo ve, iks, ipsilon*; Serbian per decision 41 of the Odbor za standardizaciju srpskog jezika: *lje, nje, ša*, the same for Cyrillic and Latin) or, when `VoiceParams::spelling_mode` is `SpellingMode::LetterSounds`, by its **sound**: `Frontend::letter_sound()` builds an `Utterance` with `isolated_sound = true` (a vowel letter as a stressed syllable; a consonant letter as the consonant plus a stressed SCHWA release vowel, "bə", "sə", "mə", as eSpeak's Croatian voice sounds letters out: measured 70-90 ms of consonant and 110-130 ms of vowel at full level; *x* as [ksə]), and `FormantSynthesizer::synthesize_letter_sound()` / `AudioSynthesizer::synthesize_letter_sound()` render it with fixed durations. The same letter names are used for spelled-out abbreviations in running text ("USB", "HR").
+- **Everything else** (digits, punctuation, symbols) is read by its entry in the bundled spelling dictionary, or spoken as text when it has none.
+- **The user's spelling entries** (`add_spelling_entry()`, `append_spelling_dictionary()`, a second `SpellingDictionary` layer) win over all of that, with one exception: in sound mode a user entry that is merely a letter's name (`formant::is_letter_name()`: the built-in names of any language, plus the old *jot*) gives way to the sound; any other entry is spoken as written. `load_spelling_dictionary*()` replaces the bundled layer and clears the user layer, so every platform's "load bundled, then add the user's" sequence keeps working.
+- **Spelling speed** (`VoiceParams::spelling_speed`, 0-100, default 50): the character is rendered at `speed × spelling_rate_factor()` (3^((s-100)/100): 1.0 at 100, 0.58 at 50, 0.33 at 0), the speed put back afterwards. C API `laprdus_set_spelling_mode()` / `laprdus_set_spelling_speed()`; `settings.json` section `"spelling": { "speed": 50, "mode": "names" | "sounds" }` (parsed within the section, so its `speed` is not confused with `speech.speed`); keys `spelling_speed` / `spelling_mode` on Android and Apple; CLI `-s` (spell the text), `-S`, `-m`. Every settings screen has the spelling speed in its pauses section and a "spell letters by their sounds" switch in its advanced/options section; NVDA takes both from `settings.json`. The voice settings are ordered speed, acceleration, pitch, inflection level, volume everywhere. `VoiceParams::inflection_enabled` and `speech.inflection` still exist for the API and `settings.json`, but no settings screen shows the on/off switch any more (the inflection level at 0 is the monotone).
+- Tests: `tests/linux/test_formant.cpp` and `test_concat.cpp` (`[spelling]`).
+
 ## Spelling Dictionary
 
-The spelling dictionary at `data/dictionary/spelling.json` maps individual characters to their pronunciations for screen reader spelling mode (character-by-character reading).
+The spelling dictionary at `data/dictionary/spelling.json` maps individual characters to their pronunciations for screen reader spelling mode (character-by-character reading). It holds digits, punctuation and symbols only; letters are named by the engine (see "Spelling" above).
 
 ### Format
 
@@ -1155,8 +1173,6 @@ The spelling dictionary at `data/dictionary/spelling.json` maps individual chara
 ### Character Categories
 
 The spelling dictionary includes:
-- **Croatian alphabet**: A-Z plus Č, Ć, Đ, Š, Ž (case-insensitive)
-- **Digraphs**: LJ, NJ, DŽ
 - **Numbers**: 0-9 (spoken as Croatian words)
 - **Punctuation**: Common symbols with Croatian names
 - **Special characters**: @, #, $, etc.

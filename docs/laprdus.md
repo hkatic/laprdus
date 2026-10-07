@@ -28,7 +28,8 @@ Inačica 1.0
    - [4.4 Pauze](#44-pauze)
    - [4.5 Način čitanja brojeva](#45-način-čitanja-brojeva)
    - [4.6 Infleksija](#46-infleksija)
-   - [4.7 Laprdus Konfigurator (Windows)](#47-laprdus-konfigurator-windows)
+   - [4.7 Slovkanje](#47-slovkanje)
+   - [4.8 Laprdus Konfigurator (Windows)](#48-laprdus-konfigurator-windows)
 5. [Rječnici](#5-rječnici)
    - [5.1 Vrste rječnika](#51-vrste-rječnika)
    - [5.2 Lokacije datoteka rječnika](#52-lokacije-datoteka-rječnika)
@@ -362,6 +363,9 @@ echo "Tekst" | laprdus
 | `-p, --speech-pitch` | Visina glasa (0.5-2.0, zadano: 1.0) |
 | `-V, --speech-volume` | Glasnoća (0.0-1.0, zadano: 1.0) |
 | `-d, --numbers-digits` | Čitaj brojeve znamenka po znamenka |
+| `-s, --spell` | Slovkaj tekst znak po znak |
+| `-S, --spelling-speed` | Brzina slovkanja u postocima brzine govora, 0-100 (zadano: 50) |
+| `-m, --spelling-mode` | Slovkanje: `names` (nazivi slova: be, ce, de; zadano) ili `sounds` (glasovi slova: b, c, d) |
 | `-c, --comma-pauses` | Trajanje pauze za zarez u ms (zadano: 100) |
 | `-e, --period-pauses` | Trajanje pauze za točku u ms (zadano: 80) |
 | `-x, --exclamationmark-pauses` | Trajanje pauze za uskličnik u ms (zadano: 70) |
@@ -397,7 +401,8 @@ Laprdus Android aplikacija uključuje zaslon s postavkama gdje možete:
 4. Podesiti glasnoću
 5. Podesiti mogućnost čitanja emodžija
 6. Podesiti način čitanja brojeva
-7. Podesiti trajanje pauza
+7. Podesiti trajanje pauza i brzinu slovkanja
+8. Odabrati slovkanje nazivima slova ili glasovima
 
 Za pristup postavkama:
 
@@ -452,6 +457,8 @@ Vrijednosti se izražavaju u milisekundama (ms). Raspon je od 0 do 2000 ms.
 
 **Napomena:** Korisnički konfigurator (Windows/Android) koristi jedinstveno podešavanje od 100 ms za sve znakove kraja rečenice (točka, uskličnik, upitnik), dok naredbeni program omogućuje zasebno podešavanje svakog znaka.
 
+U istom odjeljku postavki nalazi se i **brzina slovkanja**: brzina kojom se izgovaraju znakovi pri slovkanju i pri tipkanju, u postocima brzine govora. 100% je brzina govora, 50% (zadano) nešto više od polovice, a 0% trećina. Nazivi i glasovi slova kratki su, pa se pri brzini tekućeg govora stapaju; polovica brzine zlatna je sredina. Pauza između slovkanih znakova (zadano 200 ms, `pauses.spelling` u `settings.json`) ne ovisi o toj brzini.
+
 #### Interpunkcija unutar riječi
 
 Čitanje interpunkcije inače određuje čitač ekrana: on zamjenjuje znakove njihovim imenima prema odabranoj razini interpunkcije, a Laprdus dobiva već pripremljen tekst. Iznimka su znakovi koji nisu kraj rečenice nego dio riječi ili broja, jer bi bez njih tekst izgubio smisao. Kao i eSpeak, Laprdus ih čita uvijek, bez obzira na razinu interpunkcije:
@@ -484,9 +491,23 @@ Infleksija je prirodna promjena visine glasa koja prati interpunkciju:
 - Uskličnik daje naglasak
 - Zarez uzrokuje blagi porast visine glasa
 
-Infleksiju je moguće uključiti ili isključiti. Kada je uključena, govor zvuči prirodnije.
+Veličinu infleksije određuje klizač, a prekidača za uključivanje i isključivanje iz inačice 1.0 više nema: monoton govor dobiva se klizačem na 0%. Za sve glasove vrijede dvije postavke:
 
-### 4.7 Laprdus Konfigurator (Windows)
+- **Razina infleksije** (0-100%) određuje veličinu svih pomaka visine: 0% je monoton govor, 50% prirodna melodija, 100% udvostručuje svaki pomak.
+- **Ubrzanje** (0,5-3) množi brzinu govora, pa klizač brzine u čitaču ekrana ili sustavu dosegne veću (ili manju) najveću brzinu. Josip, Vlado i glasovi izvedeni iz njih zaustavljaju se na četverostrukoj brzini; Zvonko, Stojan i Mirsad idu do osmerostruke.
+
+### 4.7 Slovkanje
+
+Kad čitač ekrana slovka tekst ili izgovara znakove dok tipkate, Laprdus svako slovo čita na jedan od dva načina:
+
+- **Nazivima slova** (zadano): *a, be, ce, če, će, de, dže, đe, e, ef, ge, ha, i, je, ka, el, elj, em, en, enj, o, pe, er, es, eš, te, u, ve, ze, že*; strana slova *ku, duplo ve, iks, ipsilon*. To su nazivi iz hrvatskog pravopisa, a vrijede i za bosanski glas. Srpski glasovi (Stojan, Vlado, Đedo) slijede odluku Odbora za standardizaciju srpskog jezika: *lje, nje* i *ša* umjesto *elj, enj* i *eš*, ostala slova jednako, ćirilična kao i latinična (*Љ* je *lje*, *Ш* je *ša*).
+- **Glasovima slova**: umjesto naziva izgovara se glas koji slovo označava, kao kad dijete uči čitati i kao što slova slovka hrvatski eSpeak: suglasnik i za njim kratak neutralni samoglasnik (*bə, cə, čə, fə, sə, mə*), samoglasnici kao samoglasnici; *x* kao [ksə], *q* kao [kə], *w* kao [və], *y* kao [i]. Engleski nazivi i engleski izgovor ne koriste se.
+
+Način slovkanja prekidač je „Slovkaj slova glasovima” u naprednim postavkama (Windows: skupina Opcije u Konfiguratoru; Android i Apple: odjeljak Napredno; NVDA: Konfigurator; naredbeni program: `-m`). Odnosi se samo na slovkanje i tipkanje; riječi se i dalje izgovaraju normalno. Brojevi, interpunkcija i simboli u oba se načina čitaju imenom iz rječnika slovkanja. Brzina slovkanja opisana je u [4.4](#44-pauze).
+
+**Rječnik slovkanja i glasovi slova.** Vaši unosi u rječniku slovkanja (odjeljak [5.4](#54-rječnik-slovkanja-spellingjson)) vrijede u oba načina, s jednom iznimkom: kad se slova slovkaju glasovima, unos koji je samo naziv slova (*be*, *jot*, *lje*) također je naziv i ustupa mjesto glasu, dok se unos koji kaže nešto drugo (na primjer *B* → *bum*) izgovara kako ste ga napisali. Tako stari unosi kojima ste ispravljali nazive ne isključuju glasove.
+
+### 4.8 Laprdus Konfigurator (Windows)
 
 Na Windows sustavu, dodatne postavke možete podesiti putem Laprdus Konfiguratora:
 
@@ -495,9 +516,10 @@ Na Windows sustavu, dodatne postavke možete podesiti putem Laprdus Konfigurator
 
 Konfigurator omogućuje podešavanje:
 - Brzine, visine i glasnoće govora
+- Razine infleksije i ubrzanja (za sve glasove)
 - Načina čitanja brojeva
-- Trajanja pauza
-- Infleksije
+- Trajanja pauza i brzine slovkanja
+- Slovkanja slova glasovima umjesto nazivima
 - Prilagodbu korisničkih rječnika
 
 Postavke se spremaju u korisničkoj mapi `%APPDATA%\Laprdus` i dijele se između SAPI5 i NVDA dodatka.
@@ -636,10 +658,12 @@ Datoteka `user.json` koristi JSON format. Evo primjera:
 
 Rječnik slovkanja definira kako se izgovaraju pojedinačni znakovi kada čitač ekrana slovka tekst (čitanje znak po znak). Koristan je za:
 
-- **Slova abecede** - npr. "B" izgovarati kao "Be"
 - **Brojeve** - npr. "5" izgovarati kao "pet"
 - **Interpunkciju** - npr. "." izgovarati kao "točka"
 - **Posebne znakove** - npr. "@" izgovarati kao "at"
+- **Slova abecede** - ako želite da se neko slovo zove drukčije nego što ga Laprdus zove sam, npr. "W" kao "dvostruko ve"
+
+Slova abecede Laprdus imenuje sam, na jeziku glasa (vidi [4.7](#47-slovkanje)), pa ih ugrađeni rječnik ne sadrži; vaš unos za slovo ima prednost pred ugrađenim nazivom. Kad je uključeno slovkanje glasovima, unos koji je samo naziv slova zanemaruje se, a svaki drugi unos vrijedi.
 
 #### Format datoteke
 
@@ -659,30 +683,31 @@ Rječnik slovkanja definira kako se izgovaraju pojedinačni znakovi kada čitač
 
 #### Ugrađeni izgovori znakova
 
-Laprdus dolazi s ugrađenim rječnikom slovkanja za hrvatski jezik. Evo pregleda:
+Laprdus dolazi s ugrađenim rječnikom slovkanja brojeva, interpunkcije i simbola (nazivi su hrvatski). Slova se imenuju ovako:
 
-**Slova hrvatske abecede:**
+**Slova abecede** (ugrađeno u Laprdus, ne u rječnik):
 
-| Znak | Izgovor | Znak | Izgovor |
-|------|---------|------|---------|
-| A | A | N | En |
-| B | Be | NJ | En Je |
-| C | Ce | O | O |
-| Č | Če | P | Pe |
-| Ć | Će | R | Er |
-| D | De | S | Es |
-| Đ | Đe | Š | Eš |
-| DŽ | De Že | T | Te |
-| E | E | U | U |
-| F | Ef | V | Ve |
-| G | Ge | Z | Ze |
-| H | Ha | Ž | Že |
-| I | I | | |
-| J | Jot | | |
-| K | Ka | | |
-| L | El | | |
-| LJ | El Je | | |
-| M | Em | | |
+| Slovo | Hrvatski i bosanski | Srpski | Slovo | Hrvatski i bosanski | Srpski |
+|-------|---------------------|--------|-------|---------------------|--------|
+| A | a | a | N | en | en |
+| B | be | be | NJ, Њ | enj | nje |
+| C | ce | ce | O | o | o |
+| Č | če | če | P | pe | pe |
+| Ć | će | će | R | er | er |
+| D | de | de | S | es | es |
+| DŽ, Џ | dže | dže | Š | eš | ša |
+| Đ | đe | đe | T | te | te |
+| E | e | e | U | u | u |
+| F | ef | ef | V | ve | ve |
+| G | ge | ge | Z | ze | ze |
+| H | ha | ha | Ž | že | že |
+| I | i | i | Q | ku | ku |
+| J | je | je | W | duplo ve | duplo ve |
+| K | ka | ka | X | iks | iks |
+| L | el | el | Y | ipsilon | ipsilon |
+| LJ, Љ | elj | lje | | | |
+
+Ćirilična slova imenuju se kao njihovi latinični parnjaci, a velika i mala slova jednako.
 
 **Brojevi:**
 

@@ -179,7 +179,10 @@ public:
                            bool case_sensitive = false, bool whole_word = true);
 
     /**
-     * Add a single spelling entry (replaces an existing one for the character).
+     * Add a single spelling entry of the user's (replaces an existing one for
+     * the character). The user's entries win over the bundled dictionary and
+     * over the built-in letter names; see synthesize_spelled() for what they
+     * do when letters are spelled by their sounds.
      * @param character Character to match.
      * @param pronunciation How the character is named when spelling.
      */
@@ -202,14 +205,18 @@ public:
     // =========================================================================
 
     /**
-     * Load spelling dictionary from file (replaces existing entries).
+     * Load the bundled spelling dictionary from file (replaces all existing
+     * entries, the user's too). It names digits, punctuation and symbols;
+     * the letters of the alphabet are named by the engine itself in the
+     * language of the voice (formant::letter_name).
      * @param path Path to spelling dictionary JSON file.
      * @return true on success.
      */
     bool load_spelling_dictionary(const std::string& path);
 
     /**
-     * Load spelling dictionary from memory (replaces existing entries).
+     * Load the bundled spelling dictionary from memory (replaces all existing
+     * entries, the user's too).
      * @param json_content JSON content.
      * @param length Length of content (0 for null-terminated).
      * @return true on success.
@@ -217,21 +224,47 @@ public:
     bool load_spelling_dictionary_from_memory(const char* json_content, size_t length = 0);
 
     /**
-     * Append spelling dictionary entries from file (keeps existing entries).
+     * Append the user's spelling dictionary from file (keeps existing
+     * entries). The user's entries win over the bundled ones.
      * @param path Path to spelling dictionary JSON file.
      * @return true on success.
      */
     bool append_spelling_dictionary(const std::string& path);
 
     /**
-     * Clear the spelling dictionary.
+     * Clear the spelling dictionary (bundled and user entries).
      */
     void clear_spelling_dictionary();
 
     /**
-     * Synthesize text in spelling mode (character by character).
-     * Each character is converted to its pronunciation using the spelling
-     * dictionary, then synthesized with a small pause between characters.
+     * How letters are spelled: by their names ("be", "ce") or by their
+     * sounds ([b], [ts]). Also VoiceParams::spelling_mode.
+     */
+    void set_spelling_mode(SpellingMode mode);
+    SpellingMode spelling_mode() const;
+
+    /**
+     * Rate of spelled characters as a percentage (0-100, default 50): 100 is
+     * the speech rate itself, 50 a little over half of it, 0 a third. Also
+     * VoiceParams::spelling_speed.
+     */
+    void set_spelling_speed(int percent);
+    int spelling_speed() const;
+
+    /**
+     * Synthesize text in spelling mode (character by character), with the
+     * spelling pause between the characters and at the spelling speed.
+     *
+     * A letter of the alphabet (Latin or Cyrillic, any case) is read by its
+     * name in the language of the voice, or by its sound when the spelling
+     * mode is LetterSounds. Every other character is read by its entry in the
+     * spelling dictionary, or spoken as text when it has none.
+     *
+     * The user's spelling entries (add_spelling_entry, append_spelling_dictionary)
+     * win over all of that, with one exception: when letters are spelled by
+     * their sounds, a user entry that is merely a letter's name ("be", "jot",
+     * "lje") is a letter name too and gives way to the sound. An entry that
+     * says anything else is spoken as written in both modes.
      * @param text UTF-8 text to spell.
      * @return Synthesis result with audio buffer.
      */
@@ -379,6 +412,10 @@ public:
 private:
     // Start of a synthesis call: a singing preset begins its song again.
     void begin_utterance();
+    // Language of the current voice (letter names, symbol names).
+    VoiceLanguage current_language() const;
+    // One character of synthesize_spelled(): its name, its sound or its entry.
+    SynthesisResult spell_character(const std::string& character);
     struct Impl;
     std::unique_ptr<Impl> m_impl;
 

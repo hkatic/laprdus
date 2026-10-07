@@ -93,7 +93,25 @@ AudioBuffer AudioSynthesizer::synthesize_clause(const std::u32string& text, Punc
     ensure_bank();
     if (!m_bank.loaded()) return result;
 
-    const formant::Utterance utt = m_frontend->process(text, punct);
+    return render_utterance(m_frontend->process(text, punct));
+}
+
+AudioBuffer AudioSynthesizer::synthesize_letter_sound(const std::u32string& letter) {
+    AudioBuffer result;
+    result.sample_rate = SAMPLE_RATE;
+    result.bits_per_sample = BITS_PER_SAMPLE;
+    result.channels = NUM_CHANNELS;
+    if (letter.empty() || !m_frontend) return result;
+    ensure_bank();
+    if (!m_bank.loaded()) return result;
+    return render_utterance(m_frontend->letter_sound(letter));
+}
+
+AudioBuffer AudioSynthesizer::render_utterance(const formant::Utterance& utt) {
+    AudioBuffer result;
+    result.sample_rate = SAMPLE_RATE;
+    result.bits_per_sample = BITS_PER_SAMPLE;
+    result.channels = NUM_CHANNELS;
     if (utt.phones.empty()) return result;
 
     const uint32_t fs = m_phoneme_data.sample_rate() > 0 ? m_phoneme_data.sample_rate() : SAMPLE_RATE;

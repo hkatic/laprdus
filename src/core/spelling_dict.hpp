@@ -78,6 +78,13 @@ public:
     std::string get_pronunciation(const std::string& character) const;
 
     /**
+     * @brief Look a character up
+     * @param character UTF-8 encoded character (may be multi-byte)
+     * @return Pointer to the pronunciation, or nullptr when there is no entry
+     */
+    const std::string* find(const std::string& character) const;
+
+    /**
      * @brief Spell out entire text character by character
      * @param text The input text to spell
      * @return Text with each character converted to its pronunciation,

@@ -1136,6 +1136,20 @@ TEST_CASE("A voiceless stop before a pause is released audibly", "[formant][stop
     }
 }
 
+namespace {
+
+std::vector<int16_t> spell(LaprdusHandle engine, const char* text) {
+    int16_t* samples = nullptr;
+    LaprdusAudioFormat format;
+    int32_t count = laprdus_synthesize_spelled(engine, text, &samples, &format);
+    std::vector<int16_t> audio;
+    if (count > 0 && samples) audio.assign(samples, samples + count);
+    laprdus_free_buffer(samples);
+    return audio;
+}
+
+} // namespace
+
 TEST_CASE("Spelling mode works with formant voices", "[formant][spelling]") {
     Engine engine;
     REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
@@ -1146,6 +1160,137 @@ TEST_CASE("Spelling mode works with formant voices", "[formant][spelling]") {
     REQUIRE(count > 0);
     REQUIRE(samples != nullptr);
     laprdus_free_buffer(samples);
+}
+
+TEST_CASE("Letters are spelled by their names in the language of the voice", "[formant][spelling]") {
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_spelling_speed(engine.handle, 100) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_spelling_pause(engine.handle, 0) == LAPRDUS_OK);
+
+    // A spelled letter is its name spoken: "b" is "be", "j" is "je" (not "jot"),
+    // "h" is "ha", and an uppercase letter the same as a lowercase one
+    REQUIRE(spell(engine.handle, "b") == speak(engine.handle, "be"));
+    REQUIRE(spell(engine.handle, "j") == speak(engine.handle, "je"));
+    REQUIRE(spell(engine.handle, "h") == speak(engine.handle, "ha"));
+    REQUIRE(spell(engine.handle, "B") == spell(engine.handle, "b"));
+    REQUIRE(spell(engine.handle, "\xC5\xA1") == speak(engine.handle, "e\xC5\xA1"));     // š: eš
+
+    // Serbian: lje, nje, ša; Cyrillic letters the same as Latin ones
+    REQUIRE(laprdus_set_voice(engine.handle, "stojan", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(spell(engine.handle, "\xC5\xA1") == speak(engine.handle, "\xC5\xA1" "a"));  // š: ša
+    REQUIRE(spell(engine.handle, "\xD1\x99") == speak(engine.handle, "lje"));          // љ
+    REQUIRE(spell(engine.handle, "\xD0\xB1") == spell(engine.handle, "b"));             // б
+    REQUIRE(spell(engine.handle, "\xD0\x88") == speak(engine.handle, "je"));           // Ј
+
+    // Bosnian follows the Croatian names
+    REQUIRE(laprdus_set_voice(engine.handle, "mirsad", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(spell(engine.handle, "\xC5\xA1") == speak(engine.handle, "e\xC5\xA1"));
+    REQUIRE(spell(engine.handle, "l") == speak(engine.handle, "el"));
+}
+
+TEST_CASE("Letters are spelled by their sounds when asked", "[formant][spelling]") {
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(laprdus_get_spelling_mode(engine.handle) == LAPRDUS_SPELLING_LETTER_NAMES);
+    REQUIRE(laprdus_set_spelling_pause(engine.handle, 0) == LAPRDUS_OK);
+
+    std::vector<int16_t> name = spell(engine.handle, "f");
+    REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_SOUNDS) == LAPRDUS_OK);
+    REQUIRE(laprdus_get_spelling_mode(engine.handle) == LAPRDUS_SPELLING_LETTER_SOUNDS);
+    std::vector<int16_t> sound = spell(engine.handle, "f");
+
+    // The sound is not the name, and it is audible
+    REQUIRE(sound != name);
+    REQUIRE(!sound.empty());
+    REQUIRE(rms(sound) > 300.0);
+
+    // Every letter of the alphabet, the foreign letters, the digraph
+    // ligatures and the Cyrillic letters have a sound
+    const char* letters[] = {
+        "a", "b", "c", "\xC4\x8D", "\xC4\x87", "d", "\xC4\x91", "e", "f", "g", "h", "i",
+        "j", "k", "l", "m", "n", "o", "p", "r", "s", "\xC5\xA1", "t", "u", "v", "z",
+        "\xC5\xBE", "q", "w", "x", "y", "\xC7\x89", "\xC7\x8C", "\xC7\x86",
+        "\xD0\xB1", "\xD1\x99", "\xD1\x9F", "\xD1\x9B", "\xD0\x82", "Z", "\xC5\xA0",
+    };
+    for (const char* letter : letters) {
+        INFO(letter);
+        std::vector<int16_t> audio = spell(engine.handle, letter);
+        REQUIRE(audio.size() > 22050 / 20);     // at least 50 ms
+        REQUIRE(rms(audio) > 150.0);
+    }
+
+    // Digits, punctuation and symbols keep their names
+    REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_NAMES) == LAPRDUS_OK);
+    std::vector<int16_t> digit_name = spell(engine.handle, "7");
+    REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_SOUNDS) == LAPRDUS_OK);
+    REQUIRE(spell(engine.handle, "7") == digit_name);
+
+    // Spelling a word gives the sounds with the spelling pause between them
+    REQUIRE(laprdus_set_spelling_pause(engine.handle, 100) == LAPRDUS_OK);
+    std::vector<int16_t> word = spell(engine.handle, "sat");
+    REQUIRE(word.size() > spell(engine.handle, "s").size() + spell(engine.handle, "a").size());
+}
+
+TEST_CASE("Spelling speed slows the spelled characters", "[formant][spelling]") {
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_spelling_pause(engine.handle, 0) == LAPRDUS_OK);
+    REQUIRE(laprdus_get_spelling_speed(engine.handle) == 50);
+
+    // 100% is the speech rate itself
+    REQUIRE(laprdus_set_spelling_speed(engine.handle, 100) == LAPRDUS_OK);
+    std::vector<int16_t> full = spell(engine.handle, "b");
+    REQUIRE(full == speak(engine.handle, "be"));
+
+    REQUIRE(laprdus_set_spelling_speed(engine.handle, 50) == LAPRDUS_OK);
+    std::vector<int16_t> half = spell(engine.handle, "b");
+    REQUIRE(laprdus_set_spelling_speed(engine.handle, 0) == LAPRDUS_OK);
+    std::vector<int16_t> slow = spell(engine.handle, "b");
+    REQUIRE(half.size() > full.size() * 1.3);
+    REQUIRE(slow.size() > half.size() * 1.3);
+
+    // The speech rate is unchanged afterwards
+    REQUIRE(speak(engine.handle, "be") == full);
+
+    // Out-of-range values are clamped
+    REQUIRE(laprdus_set_spelling_speed(engine.handle, 250) == LAPRDUS_OK);
+    REQUIRE(laprdus_get_spelling_speed(engine.handle) == 100);
+    REQUIRE(laprdus_set_spelling_speed(engine.handle, -5) == LAPRDUS_OK);
+    REQUIRE(laprdus_get_spelling_speed(engine.handle) == 0);
+}
+
+TEST_CASE("The user's spelling entries win, except a letter name in sound mode", "[formant][spelling]") {
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_spelling_speed(engine.handle, 100) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_spelling_pause(engine.handle, 0) == LAPRDUS_OK);
+
+    // The bundled dictionary first, the user's entries on top of it
+    REQUIRE(laprdus_load_spelling_dictionary_from_memory(engine.handle,
+        "{ \"entries\": [ { \"character\": \"*\", \"pronunciation\": \"zvjezdica\" } ] }", 0) == LAPRDUS_OK);
+    REQUIRE(laprdus_add_spelling_entry(engine.handle, "b", "bum") == LAPRDUS_OK);
+    REQUIRE(laprdus_add_spelling_entry(engine.handle, "j", "Jot") == LAPRDUS_OK);
+    REQUIRE(laprdus_add_spelling_entry(engine.handle, "*", "zvijezda") == LAPRDUS_OK);
+
+    // Letter names: the user's entries are spoken as written
+    REQUIRE(spell(engine.handle, "b") == speak(engine.handle, "bum"));
+    REQUIRE(spell(engine.handle, "j") == speak(engine.handle, "Jot"));
+    REQUIRE(spell(engine.handle, "*") == speak(engine.handle, "zvijezda"));
+    REQUIRE(spell(engine.handle, "c") == speak(engine.handle, "ce"));
+
+    // Letter sounds: "bum" is not a letter's name and still wins, "Jot" is
+    // one and gives way to the sound; a symbol keeps the user's entry
+    REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_SOUNDS) == LAPRDUS_OK);
+    REQUIRE(spell(engine.handle, "b") == speak(engine.handle, "bum"));
+    REQUIRE(spell(engine.handle, "j") != speak(engine.handle, "Jot"));
+    REQUIRE(spell(engine.handle, "j") != speak(engine.handle, "je"));
+    REQUIRE(spell(engine.handle, "*") == speak(engine.handle, "zvijezda"));
+
+    // Loading the bundled dictionary again drops the user's entries
+    REQUIRE(laprdus_load_spelling_dictionary_from_memory(engine.handle,
+        "{ \"entries\": [ { \"character\": \"*\", \"pronunciation\": \"zvjezdica\" } ] }", 0) == LAPRDUS_OK);
+    REQUIRE(spell(engine.handle, "*") == speak(engine.handle, "zvjezdica"));
 }
 
 TEST_CASE("Streaming API works with formant voices", "[formant][stream]") {

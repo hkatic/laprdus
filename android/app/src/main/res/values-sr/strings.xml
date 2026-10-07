@@ -51,11 +51,8 @@
     <string name="setting_emoji_enabled_subtitle">Pretvori emodžije u njihove tekstualne opise</string>
 
     <!-- Inflection settings -->
-    <string name="setting_inflection_enabled_title">Intonacija glasa</string>
-    <string name="setting_inflection_enabled_subtitle">Menja visinu glasa za pitanja, uzvike i pauze</string>
 
-    <!-- Formantni glasovi (Zvonko, Stojan, Mirsad) -->
-    <string name="category_formant_voices">Formantni glas</string>
+    <!-- Intonacija i ubrzanje (svi glasovi) -->
     <string name="setting_inflection_level">Intonacija</string>
     <string name="setting_inflection_level_desc">Veličina pokreta visine glasa: 0% je monotono, 50% prirodni pokreti, 100% najveći</string>
     <string name="setting_acceleration">Ubrzanje</string>
@@ -69,6 +66,14 @@
     <!-- Number mode settings -->
     <string name="setting_number_mode_title">Čitaj brojeve cifru po cifru</string>
     <string name="setting_number_mode_subtitle">Čitaj brojeve kao pojedinačne cifre (123 → jedan dva tri)</string>
+
+    <!-- Podešavanja sricanja -->
+    <string name="setting_spelling_mode">Sricanje</string>
+    <string name="setting_spelling_mode_subtitle">Čitaj slova kao glasove (b, c, d) umesto nazivima (be, ce, de) pri sricanju i kucanju</string>
+    <string name="setting_spelling_speed">Brzina sricanja</string>
+    <string name="setting_spelling_speed_desc">Brzina izgovora znakova pri sricanju: 100% je brzina govora, 50% nešto više od polovine, 0% trećina</string>
+    <string name="restore_default_spelling_speed">Vrati podrazumevanu brzinu sricanja</string>
+    <string name="cd_restore_spelling_speed_desc">Postavlja brzinu sricanja na 50%</string>
 
     <!-- Pause settings -->
     <string name="category_pause_settings">Pauze prilikom čitanja</string>

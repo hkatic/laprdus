@@ -51,8 +51,7 @@
 #define IDC_NEWLINE_SLIDER      1071
 #define IDC_NEWLINE_VALUE       1072
 
-// Formant voice controls (Zvonko, Stojan, Mirsad)
-#define IDC_GROUP_FORMANT       1005
+// Inflection level and acceleration (every voice)
 #define IDC_INFLECTION_LABEL    1075
 #define IDC_INFLECTION_SLIDER   1076
 #define IDC_INFLECTION_VALUE    1077
@@ -60,10 +59,15 @@
 #define IDC_ACCELERATION_SLIDER 1079
 #define IDC_ACCELERATION_VALUE  1084
 
+// Spelling speed (in the pauses group)
+#define IDC_SPELLING_SPEED_LABEL  1073
+#define IDC_SPELLING_SPEED_SLIDER 1074
+#define IDC_SPELLING_SPEED_VALUE  1085
+
 // Options checkboxes
-#define IDC_INFLECTION_CHECK    1080
 #define IDC_EMOJI_CHECK         1081
 #define IDC_DIGITS_CHECK        1082
+#define IDC_SPELLING_SOUNDS_CHECK 1086   // spell letters by their sounds, not names
 
 // Buttons
 #define IDC_TEST_BUTTON         1090
@@ -111,7 +115,6 @@
 #define IDS_SENTENCE_LABEL      1111
 #define IDS_NEWLINE_LABEL       1112
 #define IDS_GROUP_OPTIONS       1113
-#define IDS_INFLECTION          1114
 #define IDS_EMOJI               1115
 #define IDS_DIGITS              1116
 #define IDS_TEST                1117
@@ -121,10 +124,11 @@
 #define IDS_VALUE_SPEED         1121  // "%.1fx"
 #define IDS_VALUE_PERCENT       1122  // "%d%%"
 #define IDS_VALUE_MS            1123  // "%d ms"
-#define IDS_GROUP_FORMANT       1124
 #define IDS_INFLECTION_LABEL    1125
 #define IDS_ACCELERATION_LABEL  1126
 #define IDS_VALUE_WPM           1127  // "%.1fx (%d WPM)"
+#define IDS_SPELLING_SPEED_LABEL 1128
+#define IDS_SPELLING_SOUNDS     1129
 
 // Voice names for combo box
 #define IDS_VOICE_JOSIP         1130

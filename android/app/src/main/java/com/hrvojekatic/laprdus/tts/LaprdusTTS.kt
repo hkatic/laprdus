@@ -103,6 +103,12 @@ class LaprdusTTS private constructor() {
     private external fun nativeGetNewlinePause(): Int
     private external fun nativeGetSpellingPause(): Int
 
+    // Spelling speed and mode methods
+    private external fun nativeSetSpellingSpeed(percent: Int)
+    private external fun nativeGetSpellingSpeed(): Int
+    private external fun nativeSetLetterSounds(enabled: Boolean)
+    private external fun nativeGetLetterSounds(): Boolean
+
     // Number mode methods
     private external fun nativeSetNumberMode(mode: Int)
     private external fun nativeGetNumberMode(): Int
@@ -440,6 +446,28 @@ class LaprdusTTS private constructor() {
         get() = nativeGetSpellingPause()
         set(value) {
             nativeSetSpellingPause(value.coerceIn(0, 2000))
+        }
+
+    /**
+     * Speed of spelled characters as a percentage of the speech rate:
+     * 100 is the speech rate itself, 50 (the default) a little over half
+     * of it, 0 a third.
+     * Range: 0-100, default 50
+     */
+    var spellingSpeed: Int
+        get() = nativeGetSpellingSpeed()
+        set(value) {
+            nativeSetSpellingSpeed(value.coerceIn(0, 100))
+        }
+
+    /**
+     * How letters are read when spelling: false reads letter names
+     * ("be", "ce", "de"; the default), true the sound of each letter.
+     */
+    var letterSounds: Boolean
+        get() = nativeGetLetterSounds()
+        set(value) {
+            nativeSetLetterSounds(value)
         }
 
     // ==========================================================================

@@ -247,11 +247,10 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_inflection_enabled(
 );
 
 /**
- * Set the inflection level of the formant voices (Zvonko, Stojan, Mirsad;
- * on the singing presets it sets the depth of the vibrato, 0 switches it off):
- * how large their pitch movements are. 0.0 is a monotone, 0.5 (the default)
- * the movements as measured on real speech, 1.0 twice those movements.
- * Recorded voices ignore it.
+ * Set the inflection level of every voice (on the singing presets it sets
+ * the depth of the vibrato, 0 switches it off): how large the pitch
+ * movements are. 0.0 is a monotone, 0.5 (the default) the movements as
+ * measured on real speech, 1.0 twice those movements.
  * @param handle Engine handle.
  * @param level Inflection level (0.0 - 1.0, default 0.5).
  * @return LAPRDUS_OK on success, error code on failure.
@@ -269,11 +268,11 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_inflection_level(
 LAPRDUS_API float LAPRDUS_CALL laprdus_get_inflection_level(LaprdusHandle handle);
 
 /**
- * Set the acceleration of the formant voices: a multiplier applied to the
- * speech speed, so the top of a host's rate range reaches a higher (or
- * lower) rate. 1.0 (the default) leaves the speed alone; 2.0 doubles it.
- * The product of speed and acceleration is limited to 0.25 - 8.0.
- * Recorded voices ignore it.
+ * Set the acceleration of every voice: a multiplier applied to the speech
+ * speed, so the top of a host's rate range reaches a higher (or lower)
+ * rate. 1.0 (the default) leaves the speed alone; 2.0 doubles it. The
+ * product of speed and acceleration is limited to 0.25 - 8.0 (the recorded
+ * voices stop at 4.0).
  * @param handle Engine handle.
  * @param acceleration Rate multiplier (0.5 - 3.0, default 1.0).
  * @return LAPRDUS_OK on success, error code on failure.
@@ -535,9 +534,11 @@ LAPRDUS_API void LAPRDUS_CALL laprdus_clear_dictionary(LaprdusHandle handle);
 // =============================================================================
 
 /**
- * Load a spelling dictionary from a JSON file.
- * The spelling dictionary maps individual characters to their spoken names.
- * Used for screen reader spelling mode (e.g., "B" -> "Be", "Č" -> "Če").
+ * Load the bundled spelling dictionary from a JSON file (replaces every
+ * entry, the user's too). It names digits, punctuation and symbols for
+ * spelling mode ("." -> "točka"); the letters of the alphabet are named by
+ * the engine itself, in the language of the voice ("b" -> "be", Serbian
+ * "š" -> "ša"), or spelled by their sounds (laprdus_set_spelling_mode).
  * @param handle Engine handle.
  * @param dictionary_path Path to the spelling dictionary JSON file.
  * @return LAPRDUS_OK on success, error code on failure.
@@ -561,7 +562,10 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_load_spelling_dictionary_from_memo
 );
 
 /**
- * Append spelling dictionary entries from a JSON file.
+ * Append the user's spelling dictionary from a JSON file. The user's entries
+ * win over the bundled ones and over the built-in letter names; when letters
+ * are spelled by their sounds, an entry that is merely a letter's name
+ * ("be", "jot") gives way to the sound, any other entry is spoken as written.
  * Keeps existing entries and adds new ones from the file.
  * @param handle Engine handle.
  * @param dictionary_path Path to the spelling dictionary JSON file.
@@ -573,15 +577,31 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_append_spelling_dictionary(
 );
 
 /**
- * Clear all entries from the spelling dictionary.
+ * Add one spelling entry of the user's (replaces the user's existing entry
+ * for the character). Same standing as the entries of
+ * laprdus_append_spelling_dictionary.
+ * @param handle Engine handle.
+ * @param character UTF-8 character.
+ * @param pronunciation UTF-8 text spoken for it when spelling.
+ * @return LAPRDUS_OK on success, error code on failure.
+ */
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_add_spelling_entry(
+    LaprdusHandle handle,
+    const char* character,
+    const char* pronunciation
+);
+
+/**
+ * Clear all entries from the spelling dictionary (bundled and the user's).
  * @param handle Engine handle.
  */
 LAPRDUS_API void LAPRDUS_CALL laprdus_clear_spelling_dictionary(LaprdusHandle handle);
 
 /**
- * Synthesize text in spelling mode (character by character).
- * Each character is converted to its pronunciation using the spelling
- * dictionary, then synthesized with a small pause between characters.
+ * Synthesize text in spelling mode (character by character): letters by
+ * their names or sounds (laprdus_set_spelling_mode), other characters by
+ * the spelling dictionary, at the spelling speed (laprdus_set_spelling_speed)
+ * with the spelling pause between the characters.
  * @param handle Engine handle.
  * @param text UTF-8 encoded text to spell.
  * @param out_samples Pointer to receive allocated audio sample buffer.
@@ -789,6 +809,57 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_spelling_pause(
  * @return Pause duration in milliseconds.
  */
 LAPRDUS_API uint32_t LAPRDUS_CALL laprdus_get_spelling_pause(LaprdusHandle handle);
+
+// =============================================================================
+// Spelling Mode and Speed
+// =============================================================================
+
+/** How letters are read when text is spelled. */
+typedef enum {
+    LAPRDUS_SPELLING_LETTER_NAMES = 0,  /**< "b" -> "be", "h" -> "ha", "j" -> "je" */
+    LAPRDUS_SPELLING_LETTER_SOUNDS = 1  /**< "b" -> [b], "f" -> [f], "h" -> [x] */
+} LaprdusSpellingMode;
+
+/**
+ * Choose whether spelled letters are read by their names (the default) or
+ * by their sounds. Letter names follow the language of the voice. Digits,
+ * punctuation and symbols are read by name in both modes.
+ * @param handle Engine handle.
+ * @param mode Spelling mode.
+ * @return LAPRDUS_OK on success, error code on failure.
+ */
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_spelling_mode(
+    LaprdusHandle handle,
+    LaprdusSpellingMode mode
+);
+
+/**
+ * Get the spelling mode.
+ * @param handle Engine handle.
+ * @return Spelling mode, LAPRDUS_SPELLING_LETTER_NAMES for an invalid handle.
+ */
+LAPRDUS_API LaprdusSpellingMode LAPRDUS_CALL laprdus_get_spelling_mode(LaprdusHandle handle);
+
+/**
+ * Set the spelling speed: the rate of spelled characters as a percentage.
+ * 100 is the speech rate itself, 50 (the default) a little over half of it,
+ * 0 a third of it. The pause between the characters is separate
+ * (laprdus_set_spelling_pause).
+ * @param handle Engine handle.
+ * @param percent Spelling speed (0-100, default 50).
+ * @return LAPRDUS_OK on success, error code on failure.
+ */
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_spelling_speed(
+    LaprdusHandle handle,
+    int percent
+);
+
+/**
+ * Get the spelling speed.
+ * @param handle Engine handle.
+ * @return Spelling speed in percent, 50 for an invalid handle.
+ */
+LAPRDUS_API int LAPRDUS_CALL laprdus_get_spelling_speed(LaprdusHandle handle);
 
 // =============================================================================
 // Number Processing Mode

@@ -133,6 +133,14 @@ public:
                                   const VoiceParams& params);
 
     /**
+     * The sound of one letter alone, for spelling by sounds (see
+     * Frontend::letter_sound). Spoken, not sung, by every preset.
+     * @param letter The letter as formant::spelling_letter() gives it.
+     * @return Audio at SAMPLE_RATE, empty for an unknown letter.
+     */
+    AudioBuffer synthesize_letter_sound(const std::u32string& letter, const VoiceParams& params);
+
+    /**
      * Singing presets: start the song from its first note again. Called at
      * the start of every utterance, so each one begins the song, and the
      * clauses of one utterance continue it.
@@ -142,6 +150,9 @@ public:
     /** True for the singing presets. */
     bool is_singing() const { return m_voice.singing != nullptr; }
 
+    /** Language of the voice. */
+    VoiceLanguage language() const { return m_voice.language; }
+
     /** The user's accent entries (see UserLexicon); nullptr removes them. */
     void set_user_lexicon(const std::shared_ptr<const UserLexicon>& lexicon) {
         m_frontend.set_user_lexicon(lexicon);
@@ -150,6 +161,8 @@ public:
 private:
     void append_group(const std::u32string& text, Punctuation punct,
                       const VoiceParams& params, AudioBuffer& audio);
+    void render_utterance(const Utterance& utt, const VoiceParams& params,
+                          AudioBuffer& audio, bool sing);
 
     FormantVoice m_voice;
     Frontend m_frontend;

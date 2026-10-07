@@ -51,11 +51,8 @@
     <string name="setting_emoji_enabled_subtitle">Convert emojis to their text descriptions</string>
 
     <!-- Inflection settings -->
-    <string name="setting_inflection_enabled_title">Voice inflection</string>
-    <string name="setting_inflection_enabled_subtitle">Vary pitch for questions, exclamations, and pauses</string>
 
-    <!-- Formant voices (Zvonko, Stojan, Mirsad) -->
-    <string name="category_formant_voices">Formant voice</string>
+    <!-- Inflection level and acceleration (every voice) -->
     <string name="setting_inflection_level">Inflection</string>
     <string name="setting_inflection_level_desc">Size of the pitch movements: 0% is a monotone, 50% the natural movements, 100% the maximum</string>
     <string name="setting_acceleration">Acceleration</string>
@@ -69,6 +66,14 @@
     <!-- Number mode settings -->
     <string name="setting_number_mode_title">Digit-by-digit numbers</string>
     <string name="setting_number_mode_subtitle">Read numbers as individual digits (123 → one two three)</string>
+
+    <!-- Spelling settings -->
+    <string name="setting_spelling_mode">Spelling</string>
+    <string name="setting_spelling_mode_subtitle">Read letters by their sounds (b, c, d) instead of their names (be, ce, de) when spelling and when typing</string>
+    <string name="setting_spelling_speed">Spelling speed</string>
+    <string name="setting_spelling_speed_desc">Speed of spelled characters: 100% is the speech rate, 50% a little over half of it, 0% a third</string>
+    <string name="restore_default_spelling_speed">Restore default spelling speed</string>
+    <string name="cd_restore_spelling_speed_desc">Sets spelling speed to 50%</string>
 
     <!-- Pause settings -->
     <string name="category_pause_settings">Reading Pauses</string>

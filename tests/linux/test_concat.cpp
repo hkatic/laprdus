@@ -309,6 +309,56 @@ TEST_CASE("Spelling works with a recorded voice", "[concat][spelling]") {
     REQUIRE(rms(audio) > 300.0);
 }
 
+TEST_CASE("Letter sounds and spelling speed work with a recorded voice", "[concat][spelling]") {
+    const char* dir = data_dir();
+    if (!dir) return;
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "josip", dir) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_spelling_pause(engine.handle, 0) == LAPRDUS_OK);
+
+    auto spell = [&](const char* text) {
+        int16_t* samples = nullptr;
+        LaprdusAudioFormat format;
+        int32_t count = laprdus_synthesize_spelled(engine.handle, text, &samples, &format);
+        std::vector<int16_t> audio;
+        if (count > 0 && samples) audio.assign(samples, samples + count);
+        laprdus_free_buffer(samples);
+        return audio;
+    };
+
+    // Names at the speech rate are the names spoken
+    REQUIRE(laprdus_set_spelling_speed(engine.handle, 100) == LAPRDUS_OK);
+    std::vector<int16_t> name = spell("b");
+    REQUIRE(name == speak(engine.handle, "be"));
+    REQUIRE(spell("j") == speak(engine.handle, "je"));
+
+    // Slower when the spelling speed is lower
+    REQUIRE(laprdus_set_spelling_speed(engine.handle, 30) == LAPRDUS_OK);
+    REQUIRE(spell("b").size() > name.size() * 1.2);
+    REQUIRE(speak(engine.handle, "be") == name);   // the speech rate is untouched
+
+    // Sounds: every letter gives audible sound, different from its name
+    REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_SOUNDS) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_spelling_speed(engine.handle, 100) == LAPRDUS_OK);
+    REQUIRE(spell("b") != name);
+    const char* letters[] = {
+        "a", "b", "c", "\xC4\x8D", "\xC4\x87", "d", "\xC4\x91", "e", "f", "g", "h", "i",
+        "j", "k", "l", "m", "n", "o", "p", "r", "s", "\xC5\xA1", "t", "u", "v", "z",
+        "\xC5\xBE", "x", "\xC7\x89", "\xD1\x9F",
+    };
+    for (const char* letter : letters) {
+        INFO(letter);
+        std::vector<int16_t> audio = spell(letter);
+        REQUIRE(audio.size() > 22050 / 25);
+        REQUIRE(rms(audio) > 150.0);
+    }
+
+    // Vlado spells with Serbian names
+    REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_NAMES) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_voice(engine.handle, "vlado", dir) == LAPRDUS_OK);
+    REQUIRE(spell("\xC5\xA1") == speak(engine.handle, "\xC5\xA1" "a"));
+}
+
 TEST_CASE("Volume scales the output", "[concat][volume]") {
     const char* dir = data_dir();
     if (!dir) return;

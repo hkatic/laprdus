@@ -29,7 +29,30 @@ struct Utterance {
     ClauseKind kind = ClauseKind::Statement;
     int syllable_count = 0;
     int focus_word = -1;        // word carrying the question peak (-1: last accented)
+    bool isolated_sound = false;    // one letter's sound alone (Frontend::letter_sound)
 };
+
+/**
+ * The letter a character stands for when text is spelled: lowercase Latin,
+ * Cyrillic transliterated, a ligature or Cyrillic љ/њ/џ as its digraph
+ * ("B" -> "b", "Љ" -> "lj", "ǆ" -> "dž", "ä" -> "e"). Empty for a character
+ * that is not a letter of the alphabet (digits, punctuation, symbols).
+ */
+std::u32string spelling_letter(char32_t c);
+
+/**
+ * The name of a letter of the alphabet in the language ("b" -> "be",
+ * "lj" -> "elj" or "lje", "x" -> "iks"); empty for anything else. The
+ * Croatian and Bosnian names follow the Croatian orthography (a, be, ce,
+ * če, će, de, dže, đe, e, ef, ge, ha, i, je, ka, el, elj, em, en, enj, o,
+ * pe, er, es, eš, te, u, ve, ze, že), the Serbian ones decision 41 of the
+ * Board for the Standardization of the Serbian Language (lje, nje, ša; the
+ * rest the same for Cyrillic and Latin).
+ */
+std::u32string letter_name(const std::u32string& letter, VoiceLanguage language);
+
+/** True when the text, lowercased, is a letter's name in any of the languages. */
+bool is_letter_name(const std::u32string& letter, const std::u32string& text);
 
 /** One lexicon entry: where the stress is and which vowels are long. */
 struct LexEntry {
@@ -114,6 +137,15 @@ public:
     explicit Frontend(VoiceLanguage language);
 
     Utterance process(const std::u32string& text, Punctuation punct) const;
+
+    /**
+     * The sound of one letter alone, for spelling by sounds: a vowel as a
+     * stressed syllable, a continuant consonant held, a stop or affricate
+     * released into a short neutral vowel when voiced, "r" as syllabic r,
+     * "x" as [ks], "q" as [k], "w" as [v], "y" as [i]. The letter is as
+     * spelling_letter() returns it. An unknown letter gives no phones.
+     */
+    Utterance letter_sound(const std::u32string& letter) const;
 
     /**
      * Use the user's accent entries for this voice's language. The user's

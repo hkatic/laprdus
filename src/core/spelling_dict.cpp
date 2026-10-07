@@ -306,6 +306,14 @@ std::string SpellingDictionary::get_pronunciation(const std::string& character) 
     return character;
 }
 
+const std::string* SpellingDictionary::find(const std::string& character) const {
+    if (character.empty()) {
+        return nullptr;
+    }
+    auto it = m_impl->entries.find(to_upper_utf8(character));
+    return it == m_impl->entries.end() ? nullptr : &it->second;
+}
+
 std::string SpellingDictionary::spell_text(const std::string& text) const {
     if (text.empty() || m_impl->entries.empty()) {
         return text;

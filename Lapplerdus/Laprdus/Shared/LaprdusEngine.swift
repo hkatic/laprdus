@@ -134,6 +134,9 @@ final class LaprdusEngine: @unchecked Sendable {
             _ = laprdus_set_comma_pause(handle, UInt32(max(0, min(settings.commaPause, 2000))))
             _ = laprdus_set_newline_pause(handle, UInt32(max(0, min(settings.newlinePause, 2000))))
             _ = laprdus_set_number_mode(handle, settings.numberMode == 1 ? LAPRDUS_NUMBER_MODE_DIGIT : LAPRDUS_NUMBER_MODE_WHOLE)
+            _ = laprdus_set_spelling_speed(handle, Int32(max(0, min(settings.spellingSpeed, 100))))
+            _ = laprdus_set_spelling_mode(handle, settings.spellingMode == SettingsSnapshot.spellingModeSounds
+                                          ? LAPRDUS_SPELLING_LETTER_SOUNDS : LAPRDUS_SPELLING_LETTER_NAMES)
         }
     }
 

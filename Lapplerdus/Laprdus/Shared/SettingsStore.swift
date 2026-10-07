@@ -20,6 +20,8 @@ enum SettingsKey {
     static let commaPause = "comma_pause"
     static let newlinePause = "newline_pause"
     static let numberMode = "number_mode"
+    static let spellingSpeed = "spelling_speed"
+    static let spellingMode = "spelling_mode"
     static let userDictionariesEnabled = "user_dictionaries_enabled"
 }
 
@@ -35,16 +37,23 @@ struct SettingsSnapshot: Sendable {
     var forceVolume = false
     var emojiEnabled = false
     var inflectionEnabled = true
-    /// Formant voices: size of the pitch movements, 0 (monotone) to 1, 0.5 as measured.
+    /// Size of the pitch movements, 0 (monotone) to 1, 0.5 as measured.
     var inflectionLevel: Float = SettingsSnapshot.defaultInflectionLevel
-    /// Formant voices: multiplier on the speech rate, 0.5 to 3.0.
+    /// Multiplier on the speech rate, 0.5 to 3.0.
     var acceleration: Float = SettingsSnapshot.defaultAcceleration
     var sentencePause = 100
     var commaPause = 100
     var newlinePause = 100
     var numberMode = 0
+    /// Rate of spelled characters as a percentage of the speech rate, 0 to 100.
+    var spellingSpeed = SettingsSnapshot.defaultSpellingSpeed
+    /// How letters are spelled: "names" (be, ce, de) or "sounds" (b, c, d).
+    var spellingMode = SettingsSnapshot.spellingModeNames
     var userDictionariesEnabled = true
 
+    static let defaultSpellingSpeed = 50
+    static let spellingModeNames = "names"
+    static let spellingModeSounds = "sounds"
     static let defaultInflectionLevel: Float = 0.5
     static let defaultAcceleration: Float = 1.0
     static let accelerationRange: ClosedRange<Float> = 0.5...3.0
@@ -72,6 +81,8 @@ struct SettingsSnapshot: Sendable {
         if defaults.object(forKey: SettingsKey.commaPause) != nil { snapshot.commaPause = defaults.integer(forKey: SettingsKey.commaPause) }
         if defaults.object(forKey: SettingsKey.newlinePause) != nil { snapshot.newlinePause = defaults.integer(forKey: SettingsKey.newlinePause) }
         snapshot.numberMode = defaults.integer(forKey: SettingsKey.numberMode)
+        if defaults.object(forKey: SettingsKey.spellingSpeed) != nil { snapshot.spellingSpeed = defaults.integer(forKey: SettingsKey.spellingSpeed) }
+        if let value = defaults.string(forKey: SettingsKey.spellingMode) { snapshot.spellingMode = value }
         if defaults.object(forKey: SettingsKey.userDictionariesEnabled) != nil {
             snapshot.userDictionariesEnabled = defaults.bool(forKey: SettingsKey.userDictionariesEnabled)
         }
@@ -98,6 +109,8 @@ struct SettingsSnapshot: Sendable {
         commaPause = min(max(commaPause, 0), 2000)
         newlinePause = min(max(newlinePause, 0), 2000)
         numberMode = numberMode == 1 ? 1 : 0
+        spellingSpeed = min(max(spellingSpeed, 0), 100)
+        if spellingMode != SettingsSnapshot.spellingModeSounds { spellingMode = SettingsSnapshot.spellingModeNames }
     }
 }
 
@@ -128,6 +141,8 @@ final class SettingsStore: ObservableObject {
     @Published var commaPause: Int { didSet { defaults.set(commaPause, forKey: SettingsKey.commaPause) } }
     @Published var newlinePause: Int { didSet { defaults.set(newlinePause, forKey: SettingsKey.newlinePause) } }
     @Published var numberMode: Int { didSet { defaults.set(numberMode, forKey: SettingsKey.numberMode) } }
+    @Published var spellingSpeed: Int { didSet { defaults.set(spellingSpeed, forKey: SettingsKey.spellingSpeed) } }
+    @Published var spellingMode: String { didSet { defaults.set(spellingMode, forKey: SettingsKey.spellingMode) } }
     @Published var userDictionariesEnabled: Bool { didSet { defaults.set(userDictionariesEnabled, forKey: SettingsKey.userDictionariesEnabled) } }
 
     init(defaults: UserDefaults = AppGroup.defaults) {
@@ -148,6 +163,8 @@ final class SettingsStore: ObservableObject {
         commaPause = snapshot.commaPause
         newlinePause = snapshot.newlinePause
         numberMode = snapshot.numberMode
+        spellingSpeed = snapshot.spellingSpeed
+        spellingMode = snapshot.spellingMode
         userDictionariesEnabled = snapshot.userDictionariesEnabled
     }
 
@@ -168,6 +185,8 @@ final class SettingsStore: ObservableObject {
             commaPause: commaPause,
             newlinePause: newlinePause,
             numberMode: numberMode,
+            spellingSpeed: spellingSpeed,
+            spellingMode: spellingMode,
             userDictionariesEnabled: userDictionariesEnabled
         )
     }

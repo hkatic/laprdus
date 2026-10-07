@@ -912,12 +912,13 @@ same factor is in the recorded voices' planner. The rate setting scales duration
 a floor per sound so that consonant cues survive at very high rates;
 transitions shrink less than steady states.
 
-The rate the builder uses is `VoiceParams::formant_speed()`: the speed (0.25
+The rate the builder uses is `VoiceParams::effective_speed()`: the speed (0.25
 to 4.0, wider than the 0.5 to 2.0 of the recorded voices) times the
 **acceleration** setting (0.5 to 3.0), capped at 8.0. Acceleration is a plain
 multiplier, as eSpeak's rate boost is, so the centre of a host's rate slider
 moves with its top; it exists so that a screen reader's slider, which stops
-at 2.0, can reach the rates the formant voices are still intelligible at.
+at 2.0, can reach the rates the formant voices are still intelligible at. The
+recorded voices use the same product, narrowed to their own 0.5 to 4.0.
 User interfaces print the rate the top of the slider reaches in words per
 minute: Zvonko speaks 175 words per minute at speed 1.0 on running text
 (measured on a 79-word paragraph: 27.1 s), Stojan and Mirsad that times
@@ -1152,8 +1153,13 @@ Croatian speaker 11.1%; eSpeak NG Croatian 23.2%; Josip 33.1%.
   suffix rules. The four-accent system is fully realized only where the
   lexicon or the text marks it.
 - Foreign words are read by Croatian letter-to-sound rules.
-- The spelling dictionary (`data/dictionary/spelling.json`) is Croatian for
-  all voices (*točka*, not *tačka*).
+- The spelling dictionary (`data/dictionary/spelling.json`) names digits,
+  punctuation and symbols in Croatian for all voices (*točka*, not *tačka*).
+  Letters are named by the front end in the language of the voice
+  (`formant::letter_name`), or spelled by their sounds
+  (`Frontend::letter_sound`: an `Utterance` with `isolated_sound` set, whose
+  durations the builder fixes: the consonant and a neutral release vowel
+  after it, "bə", "sə", as eSpeak's Croatian voice sounds letters out).
 
 ## Sources
 

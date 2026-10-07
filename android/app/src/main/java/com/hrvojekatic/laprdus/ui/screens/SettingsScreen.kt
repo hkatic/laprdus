@@ -87,14 +87,14 @@ fun SettingsScreen(
     onRestoreDefaultVolume: () -> Unit,
     // Advanced settings
     onEmojiEnabledChange: (Boolean) -> Unit,
-    onInflectionEnabledChange: (Boolean) -> Unit,
-    // Formant voices only
     onInflectionLevelChange: (Float) -> Unit,
     onAccelerationChange: (Float) -> Unit,
     onSentencePauseChange: (Int) -> Unit,
     onCommaPauseChange: (Int) -> Unit,
     onNewlinePauseChange: (Int) -> Unit,
     onNumberModeChange: (Int) -> Unit,
+    onSpellingSpeedChange: (Int) -> Unit,
+    onLetterSoundsChange: (Boolean) -> Unit,
     // Dictionary settings
     onUserDictionariesEnabledChange: (Boolean) -> Unit
 ) {
@@ -187,6 +187,9 @@ fun SettingsScreen(
                     )
                 }
 
+                // Each slider is followed by its restore button and, where there
+                // is one, the switch that forces the value on every app: speed and
+                // acceleration, then pitch and inflection, then volume.
                 // Speech Rate Slider (0.5x-2.0x; the formant voices reach 0.25x-4.0x)
                 item {
                     SliderSettingItem(
@@ -196,6 +199,46 @@ fun SettingsScreen(
                         onValueChange = onSpeedChange,
                         valueLabel = formatMultiplier(uiState.speed),
                         description = stringResource(R.string.cd_slider_adjust)
+                    )
+                }
+
+                item {
+                    RestoreDefaultButton(
+                        text = stringResource(R.string.restore_default_speed),
+                        description = stringResource(R.string.cd_restore_speed_desc),
+                        onClick = onRestoreDefaultSpeed
+                    )
+                }
+
+                // Force Speed Toggle
+                item {
+                    SwitchSettingItem(
+                        title = stringResource(R.string.setting_force_speed_title),
+                        subtitle = stringResource(R.string.setting_force_speed_subtitle),
+                        checked = uiState.forceSpeed,
+                        onCheckedChange = onForceSpeedChange
+                    )
+                }
+
+                item {
+                    // The rate the top of the rate range (2.0x) reaches
+                    // with this acceleration, in words per minute.
+                    val topWpm = (uiState.nominalWpm * 2.0f * uiState.acceleration).roundToInt()
+                    SliderSettingItem(
+                        title = stringResource(R.string.setting_acceleration),
+                        value = uiState.acceleration,
+                        valueRange = 0.5f..3.0f,
+                        onValueChange = onAccelerationChange,
+                        valueLabel = stringResource(R.string.acceleration_value, uiState.acceleration, topWpm),
+                        description = stringResource(R.string.setting_acceleration_desc)
+                    )
+                }
+
+                item {
+                    RestoreDefaultButton(
+                        text = stringResource(R.string.restore_default_acceleration),
+                        description = stringResource(R.string.cd_restore_acceleration_desc),
+                        onClick = { onAccelerationChange(1.0f) }
                     )
                 }
 
@@ -211,25 +254,11 @@ fun SettingsScreen(
                     )
                 }
 
-                // Speech Volume Slider
                 item {
-                    SliderSettingItem(
-                        title = stringResource(R.string.setting_speech_volume),
-                        value = uiState.volume,
-                        valueRange = 0.0f..1.0f,
-                        onValueChange = onVolumeChange,
-                        valueLabel = "${(uiState.volume * 100).toInt()}%",
-                        description = stringResource(R.string.cd_slider_adjust)
-                    )
-                }
-
-                // Force Speed Toggle
-                item {
-                    SwitchSettingItem(
-                        title = stringResource(R.string.setting_force_speed_title),
-                        subtitle = stringResource(R.string.setting_force_speed_subtitle),
-                        checked = uiState.forceSpeed,
-                        onCheckedChange = onForceSpeedChange
+                    RestoreDefaultButton(
+                        text = stringResource(R.string.restore_default_pitch),
+                        description = stringResource(R.string.cd_restore_pitch_desc),
+                        onClick = onRestoreDefaultPitch
                     )
                 }
 
@@ -243,30 +272,35 @@ fun SettingsScreen(
                     )
                 }
 
-                // Force Volume Toggle
+                // Inflection level (every voice)
                 item {
-                    SwitchSettingItem(
-                        title = stringResource(R.string.setting_force_volume_title),
-                        subtitle = stringResource(R.string.setting_force_volume_subtitle),
-                        checked = uiState.forceVolume,
-                        onCheckedChange = onForceVolumeChange
-                    )
-                }
-
-                // Restore Default Buttons
-                item {
-                    RestoreDefaultButton(
-                        text = stringResource(R.string.restore_default_speed),
-                        description = stringResource(R.string.cd_restore_speed_desc),
-                        onClick = onRestoreDefaultSpeed
+                    SliderSettingItem(
+                        title = stringResource(R.string.setting_inflection_level),
+                        value = uiState.inflectionLevel,
+                        valueRange = 0.0f..1.0f,
+                        onValueChange = onInflectionLevelChange,
+                        valueLabel = "${(uiState.inflectionLevel * 100).roundToInt()}%",
+                        description = stringResource(R.string.setting_inflection_level_desc)
                     )
                 }
 
                 item {
                     RestoreDefaultButton(
-                        text = stringResource(R.string.restore_default_pitch),
-                        description = stringResource(R.string.cd_restore_pitch_desc),
-                        onClick = onRestoreDefaultPitch
+                        text = stringResource(R.string.restore_default_inflection_level),
+                        description = stringResource(R.string.cd_restore_inflection_level_desc),
+                        onClick = { onInflectionLevelChange(0.5f) }
+                    )
+                }
+
+                // Speech Volume Slider
+                item {
+                    SliderSettingItem(
+                        title = stringResource(R.string.setting_speech_volume),
+                        value = uiState.volume,
+                        valueRange = 0.0f..1.0f,
+                        onValueChange = onVolumeChange,
+                        valueLabel = "${(uiState.volume * 100).toInt()}%",
+                        description = stringResource(R.string.cd_slider_adjust)
                     )
                 }
 
@@ -278,55 +312,14 @@ fun SettingsScreen(
                     )
                 }
 
-                // Formant voice settings (Zvonko, Stojan, Mirsad): the
-                // inflection level and the acceleration mean nothing to the
-                // recorded voices, so they are shown only for a formant voice.
-                if (uiState.isFormantVoice) {
-                    item {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        SettingsCategoryHeader(title = stringResource(R.string.category_formant_voices))
-                    }
-
-                    item {
-                        SliderSettingItem(
-                            title = stringResource(R.string.setting_inflection_level),
-                            value = uiState.inflectionLevel,
-                            valueRange = 0.0f..1.0f,
-                            onValueChange = onInflectionLevelChange,
-                            valueLabel = "${(uiState.inflectionLevel * 100).roundToInt()}%",
-                            description = stringResource(R.string.setting_inflection_level_desc)
-                        )
-                    }
-
-                    item {
-                        // The rate the top of the rate range (2.0x) reaches
-                        // with this acceleration, in words per minute.
-                        val topWpm = (uiState.nominalWpm * 2.0f * uiState.acceleration).roundToInt()
-                        SliderSettingItem(
-                            title = stringResource(R.string.setting_acceleration),
-                            value = uiState.acceleration,
-                            valueRange = 0.5f..3.0f,
-                            onValueChange = onAccelerationChange,
-                            valueLabel = stringResource(R.string.acceleration_value, uiState.acceleration, topWpm),
-                            description = stringResource(R.string.setting_acceleration_desc)
-                        )
-                    }
-
-                    item {
-                        RestoreDefaultButton(
-                            text = stringResource(R.string.restore_default_inflection_level),
-                            description = stringResource(R.string.cd_restore_inflection_level_desc),
-                            onClick = { onInflectionLevelChange(0.5f) }
-                        )
-                    }
-
-                    item {
-                        RestoreDefaultButton(
-                            text = stringResource(R.string.restore_default_acceleration),
-                            description = stringResource(R.string.cd_restore_acceleration_desc),
-                            onClick = { onAccelerationChange(1.0f) }
-                        )
-                    }
+                // Force Volume Toggle
+                item {
+                    SwitchSettingItem(
+                        title = stringResource(R.string.setting_force_volume_title),
+                        subtitle = stringResource(R.string.setting_force_volume_subtitle),
+                        checked = uiState.forceVolume,
+                        onCheckedChange = onForceVolumeChange
+                    )
                 }
 
                 // Advanced Category
@@ -355,16 +348,6 @@ fun SettingsScreen(
                     )
                 }
 
-                // Inflection Enable Toggle
-                item {
-                    SwitchSettingItem(
-                        title = stringResource(R.string.setting_inflection_enabled_title),
-                        subtitle = stringResource(R.string.setting_inflection_enabled_subtitle),
-                        checked = uiState.inflectionEnabled,
-                        onCheckedChange = onInflectionEnabledChange
-                    )
-                }
-
                 // Number Mode Toggle
                 item {
                     SwitchSettingItem(
@@ -374,6 +357,16 @@ fun SettingsScreen(
                         onCheckedChange = { checked ->
                             onNumberModeChange(if (checked) 1 else 0)
                         }
+                    )
+                }
+
+                // Spelling: letter names or letter sounds
+                item {
+                    SwitchSettingItem(
+                        title = stringResource(R.string.setting_spelling_mode),
+                        subtitle = stringResource(R.string.setting_spelling_mode_subtitle),
+                        checked = uiState.letterSounds,
+                        onCheckedChange = onLetterSoundsChange
                     )
                 }
 
@@ -416,6 +409,26 @@ fun SettingsScreen(
                         onValueChange = { onNewlinePauseChange(it.toInt()) },
                         valueLabel = "${uiState.newlinePause} ms",
                         description = stringResource(R.string.setting_newline_pause_desc)
+                    )
+                }
+
+                // Spelling Speed Slider (percent of the speech rate)
+                item {
+                    SliderSettingItem(
+                        title = stringResource(R.string.setting_spelling_speed),
+                        value = uiState.spellingSpeed.toFloat(),
+                        valueRange = 0f..100f,
+                        onValueChange = { onSpellingSpeedChange(it.roundToInt()) },
+                        valueLabel = "${uiState.spellingSpeed}%",
+                        description = stringResource(R.string.setting_spelling_speed_desc)
+                    )
+                }
+
+                item {
+                    RestoreDefaultButton(
+                        text = stringResource(R.string.restore_default_spelling_speed),
+                        description = stringResource(R.string.cd_restore_spelling_speed_desc),
+                        onClick = { onSpellingSpeedChange(50) }
                     )
                 }
 

@@ -21,8 +21,8 @@ struct UserSettings {
     float user_pitch = 1.0f;          // User pitch preference (0.5 - 2.0; formant voices 0.25 - 4.0)
     float volume = 1.0f;              // Volume (0.0 - 1.0)
     bool inflection_enabled = true;   // Enable punctuation inflection
-    float inflection_level = INFLECTION_LEVEL_DEFAULT;  // Size of pitch movements (0.0 - 1.0), formant voices
-    float acceleration = ACCELERATION_DEFAULT;          // Rate multiplier (0.5 - 3.0), formant voices
+    float inflection_level = INFLECTION_LEVEL_DEFAULT;  // Size of pitch movements (0.0 - 1.0)
+    float acceleration = ACCELERATION_DEFAULT;          // Rate multiplier (0.5 - 3.0)
     bool emoji_enabled = false;       // Enable emoji to text conversion
 
     // Number processing
@@ -33,6 +33,10 @@ struct UserSettings {
     uint32_t comma_pause_ms = 100;      // Pause after commas
     uint32_t newline_pause_ms = 100;    // Pause for newlines
     uint32_t spelling_pause_ms = 200;   // Pause between spelled characters
+
+    // Spelling
+    SpellingMode spelling_mode = SpellingMode::LetterNames;  // Letter names or sounds
+    int spelling_speed = SPELLING_SPEED_DEFAULT;             // Rate of spelled characters (0-100)
 
     // Default voice (for platforms that can set it)
     std::string default_voice;

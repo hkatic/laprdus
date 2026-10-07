@@ -60,11 +60,15 @@ static const int PITCH_DEFAULT = 100;
 static const int FORMANT_PITCH_MIN_PCT = 25;    // 0.25x
 static const int FORMANT_PITCH_MAX_PCT = 400;   // 4.0x
 
-// Formant voices only
+// Inflection level and acceleration (every voice)
 static const int INFLECTION_MIN = 0;      // monotone
 static const int INFLECTION_MAX = 100;    // twice the measured movements
 static const int ACCELERATION_MIN_PCT = 50;    // 0.5x
 static const int ACCELERATION_MAX_PCT = 300;   // 3.0x
+
+// Spelling speed, percent of the speech rate
+static const int SPELLING_SPEED_MIN_PCT = 0;
+static const int SPELLING_SPEED_MAX_PCT = 100;
 
 static const int VOLUME_MIN = 0;
 static const int VOLUME_MAX = 100;
@@ -159,7 +163,6 @@ INT_PTR ConfigDialog::OnInitDialog(HWND hDlg) {
     SetControlText(hDlg, IDC_GROUP_PAUSES, IDS_GROUP_PAUSES);
     SetControlText(hDlg, IDC_GROUP_OPTIONS, IDS_GROUP_OPTIONS);
     SetControlText(hDlg, IDC_GROUP_DICTIONARIES, IDS_GROUP_DICTIONARIES);
-    SetControlText(hDlg, IDC_GROUP_FORMANT, IDS_GROUP_FORMANT);
 
     // Set label texts
     SetControlText(hDlg, IDC_VOICE_LABEL, IDS_VOICE_LABEL);
@@ -174,11 +177,12 @@ INT_PTR ConfigDialog::OnInitDialog(HWND hDlg) {
     SetControlText(hDlg, IDC_NEWLINE_LABEL, IDS_NEWLINE_LABEL);
     SetControlText(hDlg, IDC_INFLECTION_LABEL, IDS_INFLECTION_LABEL);
     SetControlText(hDlg, IDC_ACCELERATION_LABEL, IDS_ACCELERATION_LABEL);
+    SetControlText(hDlg, IDC_SPELLING_SPEED_LABEL, IDS_SPELLING_SPEED_LABEL);
 
     // Set checkbox texts
-    SetControlText(hDlg, IDC_INFLECTION_CHECK, IDS_INFLECTION);
     SetControlText(hDlg, IDC_EMOJI_CHECK, IDS_EMOJI);
     SetControlText(hDlg, IDC_DIGITS_CHECK, IDS_DIGITS);
+    SetControlText(hDlg, IDC_SPELLING_SOUNDS_CHECK, IDS_SPELLING_SOUNDS);
 
     // Set user dictionary controls
     SetControlText(hDlg, IDC_USER_DICT_CHECK, IDS_USER_DICT_CHECK);
@@ -286,14 +290,21 @@ void ConfigDialog::InitializeSliders(HWND hDlg) {
         SendMessageW(hNewline, TBM_SETTICFREQ, 200, 0);
     }
 
-    // Inflection level slider (formant voices)
+    // Spelling speed slider
+    HWND hSpellingSpeed = GetDlgItem(hDlg, IDC_SPELLING_SPEED_SLIDER);
+    if (hSpellingSpeed) {
+        SendMessageW(hSpellingSpeed, TBM_SETRANGE, TRUE, MAKELPARAM(SPELLING_SPEED_MIN_PCT, SPELLING_SPEED_MAX_PCT));
+        SendMessageW(hSpellingSpeed, TBM_SETTICFREQ, 10, 0);
+    }
+
+    // Inflection level slider
     HWND hInflection = GetDlgItem(hDlg, IDC_INFLECTION_SLIDER);
     if (hInflection) {
         SendMessageW(hInflection, TBM_SETRANGE, TRUE, MAKELPARAM(INFLECTION_MIN, INFLECTION_MAX));
         SendMessageW(hInflection, TBM_SETTICFREQ, 10, 0);
     }
 
-    // Acceleration slider (formant voices)
+    // Acceleration slider
     HWND hAcceleration = GetDlgItem(hDlg, IDC_ACCELERATION_SLIDER);
     if (hAcceleration) {
         SendMessageW(hAcceleration, TBM_SETRANGE, TRUE, MAKELPARAM(ACCELERATION_MIN_PCT, ACCELERATION_MAX_PCT));
@@ -309,9 +320,7 @@ bool ConfigDialog::IsFormantVoiceSelected(HWND hDlg) const {
 // The speed and pitch sliders follow the selected voice: the recorded voices
 // stop at 0.5x and 2.0x, the formant voices reach 0.25x and 4.0x. A value
 // outside the new range is pulled back inside it. The inflection and
-// acceleration sliders stay enabled whatever the combo says: SAPI5
-// applications pick the voice themselves, and the group title names the
-// voices the sliders are for.
+// acceleration sliders apply to every voice.
 void ConfigDialog::UpdateVoiceRanges(HWND hDlg) {
     const bool formant = IsFormantVoiceSelected(hDlg);
     const int speedMin = formant ? FORMANT_SPEED_MIN_PCT : SPEED_MIN;
@@ -360,7 +369,7 @@ void ConfigDialog::LoadSettingsToControls(HWND hDlg) {
     SendDlgItemMessageW(hDlg, IDC_PITCH_SLIDER, TBM_SETPOS, TRUE, pitchValue);
     UpdateSliderValue(hDlg, IDC_PITCH_SLIDER, IDC_PITCH_VALUE, true);
 
-    // Formant voice sliders
+    // Inflection level and acceleration
     int inflectionValue = static_cast<int>(std::lround(m_settings.inflection_level * 100.0f));
     SendDlgItemMessageW(hDlg, IDC_INFLECTION_SLIDER, TBM_SETPOS, TRUE, inflectionValue);
     UpdateSliderValue(hDlg, IDC_INFLECTION_SLIDER, IDC_INFLECTION_VALUE);
@@ -389,8 +398,14 @@ void ConfigDialog::LoadSettingsToControls(HWND hDlg) {
     SendDlgItemMessageW(hDlg, IDC_NEWLINE_SLIDER, TBM_SETPOS, TRUE, m_settings.newline_pause_ms);
     UpdateSliderValue(hDlg, IDC_NEWLINE_SLIDER, IDC_NEWLINE_VALUE, false, true);
 
-    // Option checkboxes
-    CheckDlgButton(hDlg, IDC_INFLECTION_CHECK, m_settings.inflection_enabled ? BST_CHECKED : BST_UNCHECKED);
+    // Spelling speed slider and spelling mode checkbox
+    SendDlgItemMessageW(hDlg, IDC_SPELLING_SPEED_SLIDER, TBM_SETPOS, TRUE, m_settings.spelling_speed);
+    UpdateSliderValue(hDlg, IDC_SPELLING_SPEED_SLIDER, IDC_SPELLING_SPEED_VALUE);
+    CheckDlgButton(hDlg, IDC_SPELLING_SOUNDS_CHECK,
+                   m_settings.spelling_mode == SpellingMode::LetterSounds ? BST_CHECKED : BST_UNCHECKED);
+
+    // Option checkboxes (the intonation on/off switch of version 1.0 is
+    // gone: the inflection slider at 0% is the monotone)
     CheckDlgButton(hDlg, IDC_EMOJI_CHECK, m_settings.emoji_enabled ? BST_CHECKED : BST_UNCHECKED);
     CheckDlgButton(hDlg, IDC_DIGITS_CHECK, m_settings.number_mode == NumberMode::DigitByDigit ? BST_CHECKED : BST_UNCHECKED);
 
@@ -442,7 +457,7 @@ void ConfigDialog::CollectSettingsFromControls(HWND hDlg) {
     int speedValue = static_cast<int>(SendDlgItemMessageW(hDlg, IDC_SPEED_SLIDER, TBM_GETPOS, 0, 0));
     m_settings.speed = speedValue / 100.0f;
 
-    // Formant voice sliders
+    // Inflection level and acceleration
     int inflectionValue = static_cast<int>(SendDlgItemMessageW(hDlg, IDC_INFLECTION_SLIDER, TBM_GETPOS, 0, 0));
     m_settings.inflection_level = inflectionValue / 100.0f;
     int accelerationValue = static_cast<int>(SendDlgItemMessageW(hDlg, IDC_ACCELERATION_SLIDER, TBM_GETPOS, 0, 0));
@@ -466,8 +481,13 @@ void ConfigDialog::CollectSettingsFromControls(HWND hDlg) {
     m_settings.sentence_pause_ms = static_cast<uint32_t>(SendDlgItemMessageW(hDlg, IDC_SENTENCE_SLIDER, TBM_GETPOS, 0, 0));
     m_settings.newline_pause_ms = static_cast<uint32_t>(SendDlgItemMessageW(hDlg, IDC_NEWLINE_SLIDER, TBM_GETPOS, 0, 0));
 
+    // Spelling
+    m_settings.spelling_speed = static_cast<int>(SendDlgItemMessageW(hDlg, IDC_SPELLING_SPEED_SLIDER, TBM_GETPOS, 0, 0));
+    m_settings.spelling_mode = (IsDlgButtonChecked(hDlg, IDC_SPELLING_SOUNDS_CHECK) == BST_CHECKED)
+        ? SpellingMode::LetterSounds
+        : SpellingMode::LetterNames;
+
     // Option checkboxes
-    m_settings.inflection_enabled = (IsDlgButtonChecked(hDlg, IDC_INFLECTION_CHECK) == BST_CHECKED);
     m_settings.emoji_enabled = (IsDlgButtonChecked(hDlg, IDC_EMOJI_CHECK) == BST_CHECKED);
     m_settings.number_mode = (IsDlgButtonChecked(hDlg, IDC_DIGITS_CHECK) == BST_CHECKED)
         ? NumberMode::DigitByDigit
@@ -505,9 +525,9 @@ INT_PTR ConfigDialog::OnCommand(HWND hDlg, WPARAM wParam, LPARAM lParam) {
     case IDC_FORCE_SPEED:
     case IDC_FORCE_PITCH:
     case IDC_FORCE_VOLUME:
-    case IDC_INFLECTION_CHECK:
     case IDC_EMOJI_CHECK:
     case IDC_DIGITS_CHECK:
+    case IDC_SPELLING_SOUNDS_CHECK:
     case IDC_USER_DICT_CHECK:
         if (HIWORD(wParam) == BN_CLICKED) {
             m_settingsChanged = true;
@@ -520,6 +540,7 @@ INT_PTR ConfigDialog::OnCommand(HWND hDlg, WPARAM wParam, LPARAM lParam) {
             m_settingsChanged = true;
         }
         return TRUE;
+
     }
 
     return FALSE;
@@ -559,6 +580,11 @@ INT_PTR ConfigDialog::OnHScroll(HWND hDlg, WPARAM wParam, LPARAM lParam) {
 
     case IDC_NEWLINE_SLIDER:
         UpdateSliderValue(hDlg, IDC_NEWLINE_SLIDER, IDC_NEWLINE_VALUE, false, true);
+        m_settingsChanged = true;
+        break;
+
+    case IDC_SPELLING_SPEED_SLIDER:
+        UpdateSliderValue(hDlg, IDC_SPELLING_SPEED_SLIDER, IDC_SPELLING_SPEED_VALUE);
         m_settingsChanged = true;
         break;
 

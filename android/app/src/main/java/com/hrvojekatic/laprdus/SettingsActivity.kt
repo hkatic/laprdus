@@ -49,13 +49,14 @@ class SettingsActivity : ComponentActivity() {
                     onRestoreDefaultVolume = viewModel::restoreDefaultVolume,
                     // Advanced settings
                     onEmojiEnabledChange = viewModel::setEmojiEnabled,
-                    onInflectionEnabledChange = viewModel::setInflectionEnabled,
                     onInflectionLevelChange = viewModel::setInflectionLevel,
                     onAccelerationChange = viewModel::setAcceleration,
                     onSentencePauseChange = viewModel::setSentencePause,
                     onCommaPauseChange = viewModel::setCommaPause,
                     onNewlinePauseChange = viewModel::setNewlinePause,
                     onNumberModeChange = viewModel::setNumberMode,
+                    onSpellingSpeedChange = viewModel::setSpellingSpeed,
+                    onLetterSoundsChange = viewModel::setLetterSounds,
                     // Dictionary settings
                     onUserDictionariesEnabledChange = viewModel::setUserDictionariesEnabled
                 )

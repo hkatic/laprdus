@@ -44,9 +44,6 @@ struct SettingsView: View {
         Form {
             voiceSection
             speechSection
-            if isFormantVoice {
-                formantSection
-            }
             overridesSection
             advancedSection
             pausesSection
@@ -103,6 +100,16 @@ struct SettingsView: View {
                 restore: { settings.speed = 1.0 }
             )
             SliderRow(
+                title: String(localized: "Acceleration"),
+                value: $settings.acceleration,
+                range: SettingsSnapshot.accelerationRange,
+                step: 0.1,
+                format: formatAcceleration,
+                subtitle: String(localized: "Multiplies the speech rate, so the top of the rate range reaches a higher or lower rate"),
+                restoreLabel: String(localized: "Restore default acceleration"),
+                restore: { settings.acceleration = SettingsSnapshot.defaultAcceleration }
+            )
+            SliderRow(
                 title: String(localized: "Speech pitch"),
                 value: $settings.pitch,
                 range: speedPitchRange,
@@ -110,6 +117,16 @@ struct SettingsView: View {
                 format: formatMultiplier,
                 restoreLabel: String(localized: "Restore default speech pitch"),
                 restore: { settings.pitch = 1.0 }
+            )
+            SliderRow(
+                title: String(localized: "Inflection"),
+                value: $settings.inflectionLevel,
+                range: 0.0...1.0,
+                step: 0.05,
+                format: { "\(Int(($0 * 100).rounded()))%" },
+                subtitle: String(localized: "Size of the pitch movements: 0% is a monotone, 50% the natural movements, 100% the maximum"),
+                restoreLabel: String(localized: "Restore default inflection"),
+                restore: { settings.inflectionLevel = SettingsSnapshot.defaultInflectionLevel }
             )
             SliderRow(
                 title: String(localized: "Speech volume"),
@@ -122,40 +139,10 @@ struct SettingsView: View {
             )
 
             Button("Restore default speech rate") { settings.speed = 1.0 }
-            Button("Restore default speech pitch") { settings.pitch = 1.0 }
-            Button("Restore default speech volume") { settings.volume = 1.0 }
-        }
-    }
-
-    // MARK: Formant voice (Zvonko, Stojan, Mirsad)
-
-    /// The inflection level and the acceleration mean nothing to the
-    /// recorded voices, so the section is shown only for a formant voice.
-    private var formantSection: some View {
-        Section("Formant Voice") {
-            SliderRow(
-                title: String(localized: "Inflection"),
-                value: $settings.inflectionLevel,
-                range: 0.0...1.0,
-                step: 0.05,
-                format: { "\(Int(($0 * 100).rounded()))%" },
-                subtitle: String(localized: "Size of the pitch movements: 0% is a monotone, 50% the natural movements, 100% the maximum"),
-                restoreLabel: String(localized: "Restore default inflection"),
-                restore: { settings.inflectionLevel = SettingsSnapshot.defaultInflectionLevel }
-            )
-            SliderRow(
-                title: String(localized: "Acceleration"),
-                value: $settings.acceleration,
-                range: SettingsSnapshot.accelerationRange,
-                step: 0.1,
-                format: formatAcceleration,
-                subtitle: String(localized: "Multiplies the speech rate, so the top of the rate range reaches a higher or lower rate"),
-                restoreLabel: String(localized: "Restore default acceleration"),
-                restore: { settings.acceleration = SettingsSnapshot.defaultAcceleration }
-            )
-
-            Button("Restore default inflection") { settings.inflectionLevel = SettingsSnapshot.defaultInflectionLevel }
             Button("Restore default acceleration") { settings.acceleration = SettingsSnapshot.defaultAcceleration }
+            Button("Restore default speech pitch") { settings.pitch = 1.0 }
+            Button("Restore default inflection") { settings.inflectionLevel = SettingsSnapshot.defaultInflectionLevel }
+            Button("Restore default speech volume") { settings.volume = 1.0 }
         }
     }
 
@@ -205,16 +192,19 @@ struct SettingsView: View {
                 isOn: $settings.emojiEnabled
             )
             ToggleRow(
-                title: String(localized: "Voice inflection"),
-                subtitle: String(localized: "Vary pitch for questions, exclamations, and pauses"),
-                isOn: $settings.inflectionEnabled
-            )
-            ToggleRow(
                 title: String(localized: "Digit-by-digit numbers"),
                 subtitle: String(localized: "Read numbers as individual digits (123 → one two three)"),
                 isOn: Binding(
                     get: { settings.numberMode == 1 },
                     set: { settings.numberMode = $0 ? 1 : 0 }
+                )
+            )
+            ToggleRow(
+                title: String(localized: "Spell letters by their sounds"),
+                subtitle: String(localized: "Off: letter names (be, ce, de). On: the letters' sounds (b, c, d), when spelling and typing"),
+                isOn: Binding(
+                    get: { settings.spellingMode == SettingsSnapshot.spellingModeSounds },
+                    set: { settings.spellingMode = $0 ? SettingsSnapshot.spellingModeSounds : SettingsSnapshot.spellingModeNames }
                 )
             )
         }
@@ -239,6 +229,21 @@ struct SettingsView: View {
                 subtitle: String(localized: "Duration of silence when moving to a new line or paragraph"),
                 value: $settings.newlinePause
             )
+            SliderRow(
+                title: String(localized: "Spelling speed"),
+                value: Binding(
+                    get: { Float(settings.spellingSpeed) },
+                    set: { settings.spellingSpeed = Int($0.rounded()) }
+                ),
+                range: 0.0...100.0,
+                step: 5,
+                format: { "\(Int($0.rounded()))%" },
+                subtitle: String(localized: "Speed of spelled characters: 100% is the speech rate, 50% a little over half of it, 0% a third"),
+                restoreLabel: String(localized: "Restore default spelling speed"),
+                restore: { settings.spellingSpeed = SettingsSnapshot.defaultSpellingSpeed }
+            )
+
+            Button("Restore default spelling speed") { settings.spellingSpeed = SettingsSnapshot.defaultSpellingSpeed }
         }
     }
 

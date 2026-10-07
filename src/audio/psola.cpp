@@ -175,7 +175,7 @@ std::vector<float> render(const std::vector<Segment>& segments,
                 }
             }
 
-            const float gain = voiced ? weight * std::clamp(ts / ta, 0.5f, 1.6f) : 1.0f;
+            const float gain = seg.gain * (voiced ? weight * std::clamp(ts / ta, 0.5f, 1.6f) : 1.0f);
             const bool reversed = !voiced && k == last_k;
             add_window(out, u, k, centre, gain, reversed);
             last_k = k;

@@ -380,7 +380,8 @@ class SettingsScreenAccessibilityTest {
                 onCommaPauseChange = {},
                 onNewlinePauseChange = {},
                 onNumberModeChange = {},
-                onInflectionEnabledChange = {},
+                onSpellingSpeedChange = {},
+                onLetterSoundsChange = {},
                 onInflectionLevelChange = {},
                 onAccelerationChange = {},
                 onUserDictionariesEnabledChange = {}
@@ -423,7 +424,8 @@ class SettingsScreenAccessibilityTest {
                 onCommaPauseChange = {},
                 onNewlinePauseChange = {},
                 onNumberModeChange = {},
-                onInflectionEnabledChange = {},
+                onSpellingSpeedChange = {},
+                onLetterSoundsChange = {},
                 onInflectionLevelChange = {},
                 onAccelerationChange = {},
                 onUserDictionariesEnabledChange = {}
@@ -465,7 +467,8 @@ class SettingsScreenAccessibilityTest {
                 onCommaPauseChange = {},
                 onNewlinePauseChange = {},
                 onNumberModeChange = {},
-                onInflectionEnabledChange = {},
+                onSpellingSpeedChange = {},
+                onLetterSoundsChange = {},
                 onInflectionLevelChange = {},
                 onAccelerationChange = {},
                 onUserDictionariesEnabledChange = {}
@@ -510,7 +513,8 @@ class SettingsScreenAccessibilityTest {
                 onCommaPauseChange = {},
                 onNewlinePauseChange = {},
                 onNumberModeChange = {},
-                onInflectionEnabledChange = {},
+                onSpellingSpeedChange = {},
+                onLetterSoundsChange = {},
                 onInflectionLevelChange = {},
                 onAccelerationChange = {},
                 onUserDictionariesEnabledChange = {}

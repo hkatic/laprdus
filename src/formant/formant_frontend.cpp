@@ -341,41 +341,44 @@ const SymbolName SYMBOLS[] = {
     {0xB0, U"stupnjeva", U"stepeni"},
 };
 
-const char32_t* letter_name(char32_t c) {
-    switch (c) {
-        case U'a': return U"a";
-        case U'b': return U"be";
-        case U'c': return U"ce";
-        case C_CARON: return U"če";
-        case C_ACUTE: return U"će";
-        case U'd': return U"de";
-        case D_STROKE: return U"đe";
-        case U'e': return U"e";
-        case U'f': return U"ef";
-        case U'g': return U"ge";
-        case U'h': return U"ha";
-        case U'i': return U"i";
-        case U'j': return U"je";
-        case U'k': return U"ka";
-        case U'l': return U"el";
-        case U'm': return U"em";
-        case U'n': return U"en";
-        case U'o': return U"o";
-        case U'p': return U"pe";
-        case U'q': return U"ku";
-        case U'r': return U"er";
-        case U's': return U"es";
-        case S_CARON: return U"eš";
-        case U't': return U"te";
-        case U'u': return U"u";
-        case U'v': return U"ve";
-        case U'w': return U"duplo ve";
-        case U'x': return U"iks";
-        case U'y': return U"ipsilon";
-        case U'z': return U"ze";
-        case Z_CARON: return U"že";
-        default: return U"";
+// Names of the letters. Croatian (and Bosnian, whose orthography lists the
+// same names): a, be, ce, če, će, de, dže, đe, e, ef, ge, ha, i, je, ka, el,
+// elj, em, en, enj, o, pe, er, es, eš, te, u, ve, ze, že. Serbian, by
+// decision 41 of the Board for the Standardization of the Serbian Language
+// (the same names for Cyrillic and Latin): lje, nje and ša instead of elj,
+// enj and eš. The foreign letters: ku, duplo ve, iks, ipsilon.
+struct LetterName {
+    const char32_t* letter;
+    const char32_t* croatian;
+    const char32_t* serbian;    // nullptr: as Croatian
+};
+
+const LetterName LETTER_NAMES[] = {
+    {U"a", U"a", nullptr},        {U"b", U"be", nullptr},       {U"c", U"ce", nullptr},
+    {U"č", U"če", nullptr},       {U"ć", U"će", nullptr},       {U"d", U"de", nullptr},
+    {U"dž", U"dže", nullptr},     {U"đ", U"đe", nullptr},       {U"e", U"e", nullptr},
+    {U"f", U"ef", nullptr},       {U"g", U"ge", nullptr},       {U"h", U"ha", nullptr},
+    {U"i", U"i", nullptr},        {U"j", U"je", nullptr},       {U"k", U"ka", nullptr},
+    {U"l", U"el", nullptr},       {U"lj", U"elj", U"lje"},      {U"m", U"em", nullptr},
+    {U"n", U"en", nullptr},       {U"nj", U"enj", U"nje"},      {U"o", U"o", nullptr},
+    {U"p", U"pe", nullptr},       {U"r", U"er", nullptr},       {U"s", U"es", nullptr},
+    {U"š", U"eš", U"ša"},         {U"t", U"te", nullptr},       {U"u", U"u", nullptr},
+    {U"v", U"ve", nullptr},       {U"z", U"ze", nullptr},       {U"ž", U"že", nullptr},
+    {U"q", U"ku", nullptr},       {U"w", U"duplo ve", nullptr}, {U"x", U"iks", nullptr},
+    {U"y", U"ipsilon", nullptr},
+};
+
+const char32_t* letter_name(const std::u32string& letter, bool eastern) {
+    for (const LetterName& n : LETTER_NAMES) {
+        if (letter == n.letter) {
+            return (eastern && n.serbian) ? n.serbian : n.croatian;
+        }
     }
+    return U"";
+}
+
+const char32_t* letter_name(char32_t c, bool eastern) {
+    return letter_name(std::u32string(1, c), eastern);
 }
 
 // =============================================================================
@@ -499,7 +502,7 @@ bool needs_spelling(const Word& word) {
     return true;                                                // VCC, VVC
 }
 
-std::vector<Word> expand_words(std::vector<Word> tokens, bool eastern) {
+std::vector<Word> expand_words(std::vector<Word> tokens, bool eastern, bool serbian) {
     std::vector<Word> words;
     for (size_t t = 0; t < tokens.size(); ++t) {
         Word& token = tokens[t];
@@ -525,7 +528,7 @@ std::vector<Word> expand_words(std::vector<Word> tokens, bool eastern) {
             if (!leaning && needs_spelling(token)) {
                 for (char32_t c : token.w) {
                     size_t first = words.size();
-                    split_words(letter_name(c), words);
+                    split_words(letter_name(c, serbian), words);
                     for (size_t i = first; i < words.size(); ++i) {
                         words[i].letter_name = true;
                     }
@@ -2079,12 +2082,129 @@ void Frontend::set_user_lexicon(const std::shared_ptr<const UserLexicon>& lexico
     if (!verbs->empty()) m_user_verbs = std::move(verbs);
 }
 
+// =============================================================================
+// Spelling
+// =============================================================================
+
+std::u32string spelling_letter(char32_t raw) {
+    std::u32string letter;
+    if (cyrillic::is_cyrillic(raw)) {
+        letter = cyrillic::to_latin(std::u32string(1, raw));
+    } else {
+        letter.push_back(raw);
+    }
+    std::u32string out;
+    for (char32_t ch : letter) {
+        char32_t c = to_lower(ch);
+        if (is_base_letter(c)) {
+            out.push_back(c);
+            continue;
+        }
+        bool handled = false;
+        for (const auto& acc : ACCENTED) {
+            if (acc.ch == c) {
+                out.push_back(acc.base);
+                handled = true;
+                break;
+            }
+        }
+        if (handled) continue;
+        for (const auto& foreign : FOREIGN) {
+            if (foreign.ch == c) {
+                out += foreign.replacement;
+                handled = true;
+                break;
+            }
+        }
+        if (!handled) return std::u32string();
+    }
+    // Only a letter of the alphabet, alone or as one of the digraphs
+    if (out.size() == 1) return out;
+    if (out == U"lj" || out == U"nj" || out == U"dž") return out;
+    return std::u32string();
+}
+
+std::u32string letter_name(const std::u32string& letter, VoiceLanguage language) {
+    // Bosnian names the letters as Croatian does; only Serbian differs
+    return letter_name(letter, language == VoiceLanguage::Serbian);
+}
+
+bool is_letter_name(const std::u32string& letter, const std::u32string& text) {
+    std::u32string lower;
+    for (char32_t c : text) lower.push_back(to_lower(c));
+    // Trim spaces around it
+    size_t b = lower.find_first_not_of(U" "), e = lower.find_last_not_of(U" ");
+    if (b == std::u32string::npos) return false;
+    lower = lower.substr(b, e - b + 1);
+    if (lower == letter_name(letter, false) || lower == letter_name(letter, true)) return true;
+    // The name the bundled dictionary used to give j
+    return letter == U"j" && lower == U"jot";
+}
+
+// A consonant alone is spoken as the consonant followed by a short neutral
+// vowel ("bə", "sə", "mə"), the way the letters are sounded out when
+// children learn to read and the way eSpeak's Croatian voice spells them: a
+// held fricative or a bare burst with nothing after it is hard to tell from
+// the next letter, and a stop cannot be heard at all without a release.
+Utterance Frontend::letter_sound(const std::u32string& letter) const {
+    Utterance utt;
+    utt.isolated_sound = true;
+    utt.syllable_count = 1;
+
+    std::vector<Ph> phones;
+    bool vowel = false;
+    if (letter == U"lj") {
+        phones.push_back(Ph::LJ);
+    } else if (letter == U"nj") {
+        phones.push_back(Ph::NJ);
+    } else if (letter == U"dž") {
+        phones.push_back(Ph::DZH);
+    } else if (letter.size() == 1) {
+        char32_t c = letter[0];
+        if (c == U'q') c = U'k';
+        if (c == U'w') c = U'v';
+        if (c == U'y') c = U'i';
+        if (c == U'x') {
+            phones.push_back(Ph::K);
+            phones.push_back(Ph::S);
+        } else if (is_vowel_letter(c)) {
+            phones.push_back(vowel_phone(c));
+            vowel = true;
+        } else {
+            Ph ph = consonant_phone(c);
+            if (ph == Ph::SIL) return utt;
+            phones.push_back(ph);
+        }
+    } else {
+        return utt;
+    }
+    if (!vowel) phones.push_back(Ph::SCHWA);
+
+    for (size_t i = 0; i < phones.size(); ++i) {
+        Phone p;
+        p.ph = phones[i];
+        p.word_start = i == 0;
+        p.prominence = 2;
+        p.word = 0;
+        p.syllable = 0;
+        p.word_syllables = 1;
+        if (p.ph == Ph::SCHWA || vowel) {
+            // The syllable: the vowel letter itself, or the release vowel
+            p.nucleus = true;
+            p.stressed = true;
+        }
+        utt.phones.push_back(p);
+    }
+    return utt;
+}
+
 Utterance Frontend::process(const std::u32string& text, Punctuation punct) const {
     Utterance utt;
     const bool eastern = m_language != VoiceLanguage::Croatian;
 
     std::vector<Word> words =
-        expand_words(tokenize(cyrillic::to_latin(text), eastern), eastern);
+        expand_words(tokenize(cyrillic::to_latin(text), eastern), eastern,
+                     m_language == VoiceLanguage::Serbian);
     if (words.empty()) {
         return utt;
     }

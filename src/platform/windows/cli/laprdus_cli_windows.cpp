@@ -59,6 +59,9 @@ struct Options {
     float speech_pitch = 1.0f;
     float speech_volume = 1.0f;
     bool numbers_as_digits = false;
+    bool spell = false;              /* spell the text character by character */
+    int spelling_speed = 50;         /* percent of the speech rate, 0 .. 100 */
+    bool letter_sounds = false;      /* spell letters by their sounds, not names */
     uint32_t comma_pause = 40;
     uint32_t period_pause = 80;
     uint32_t exclamation_pause = 70;
@@ -74,7 +77,7 @@ struct Options {
 };
 
 /* Short options */
-static const char *short_options = "v:r:p:V:dc:e:x:q:n:o:i:D:hlLw";
+static const char *short_options = "v:r:p:V:dsS:m:c:e:x:q:n:o:i:D:hlLw";
 
 /* Long options */
 static struct option long_options[] = {
@@ -83,6 +86,9 @@ static struct option long_options[] = {
     {"speech-pitch",        required_argument, nullptr, 'p'},
     {"speech-volume",       required_argument, nullptr, 'V'},
     {"numbers-digits",      no_argument,       nullptr, 'd'},
+    {"spell",               no_argument,       nullptr, 's'},
+    {"spelling-speed",      required_argument, nullptr, 'S'},
+    {"spelling-mode",       required_argument, nullptr, 'm'},
     {"comma-pauses",        required_argument, nullptr, 'c'},
     {"period-pauses",       required_argument, nullptr, 'e'},
     {"exclamationmark-pauses", required_argument, nullptr, 'x'},
@@ -136,6 +142,12 @@ void print_help(const char *program_name)
               << "  -p, --speech-pitch PITCH   Speech pitch 0.5-2.0 (default: 1.0)\n"
               << "  -V, --speech-volume VOL    Volume 0.0-1.0 (default: 1.0)\n"
               << "  -d, --numbers-digits       Speak numbers as digits (jedan-dva-tri)\n"
+              << "  -s, --spell                Spell the text character by character\n"
+              << "  -S, --spelling-speed PERCENT\n"
+              << "                             Speed of spelled characters, percent of the\n"
+              << "                             speech rate 0-100 (default: 50)\n"
+              << "  -m, --spelling-mode MODE   How letters are spelled: names (be, ce, de;\n"
+              << "                             default) or sounds (b, c, d)\n"
               << "  -c, --comma-pauses MS      Pause duration for commas (default: 40)\n"
               << "  -e, --period-pauses MS     Pause duration for periods (default: 80)\n"
               << "  -x, --exclamationmark-pauses MS\n"
@@ -233,6 +245,24 @@ bool parse_args(int argc, char *argv[], Options &opts)
                 break;
             case 'd':
                 opts.numbers_as_digits = true;
+                break;
+            case 's':
+                opts.spell = true;
+                break;
+            case 'S':
+                opts.spelling_speed = std::stoi(optarg);
+                if (opts.spelling_speed < 0) opts.spelling_speed = 0;
+                if (opts.spelling_speed > 100) opts.spelling_speed = 100;
+                break;
+            case 'm':
+                if (std::string(optarg) == "sounds") {
+                    opts.letter_sounds = true;
+                } else if (std::string(optarg) == "names") {
+                    opts.letter_sounds = false;
+                } else {
+                    std::cerr << "Error: spelling mode must be 'names' or 'sounds'\n";
+                    return false;
+                }
                 break;
             case 'c':
                 opts.comma_pause = static_cast<uint32_t>(std::stoul(optarg));
@@ -444,6 +474,8 @@ int main(int argc, char *argv[])
         opts.speech_pitch = settings.user_pitch;
         opts.speech_volume = settings.volume;
         opts.numbers_as_digits = (settings.number_mode == laprdus::NumberMode::DigitByDigit);
+        opts.spelling_speed = settings.spelling_speed;
+        opts.letter_sounds = settings.spelling_mode == laprdus::SpellingMode::LetterSounds;
         opts.comma_pause = settings.comma_pause_ms;
         opts.period_pause = settings.sentence_pause_ms;
         opts.newline_pause = settings.newline_pause_ms;
@@ -575,10 +607,17 @@ int main(int argc, char *argv[])
         laprdus_set_number_mode(engine, LAPRDUS_NUMBER_MODE_DIGIT);
     }
 
+    /* Spelling */
+    laprdus_set_spelling_speed(engine, opts.spelling_speed);
+    laprdus_set_spelling_mode(engine, opts.letter_sounds ? LAPRDUS_SPELLING_LETTER_SOUNDS
+                                                         : LAPRDUS_SPELLING_LETTER_NAMES);
+
     /* Synthesize text */
     int16_t *samples = nullptr;
     LaprdusAudioFormat format;
-    int32_t num_samples = laprdus_synthesize(engine, opts.text.c_str(), &samples, &format);
+    int32_t num_samples = opts.spell
+        ? laprdus_synthesize_spelled(engine, opts.text.c_str(), &samples, &format)
+        : laprdus_synthesize(engine, opts.text.c_str(), &samples, &format);
 
     if (num_samples <= 0 || !samples) {
         std::cerr << "Error: Synthesis failed: " << laprdus_get_error_message(engine) << "\n";

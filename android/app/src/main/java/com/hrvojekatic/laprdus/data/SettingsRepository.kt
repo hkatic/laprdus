@@ -68,6 +68,8 @@ class SettingsRepository internal constructor(
         private val KEY_COMMA_PAUSE = intPreferencesKey("comma_pause")
         private val KEY_NEWLINE_PAUSE = intPreferencesKey("newline_pause")
         private val KEY_NUMBER_MODE = intPreferencesKey("number_mode")
+        private val KEY_SPELLING_SPEED = intPreferencesKey("spelling_speed")
+        private val KEY_SPELLING_MODE = stringPreferencesKey("spelling_mode")
 
         // Default TTS dialog preference
         private val KEY_DONT_ASK_DEFAULT_TTS = booleanPreferencesKey("dont_ask_default_tts")
@@ -97,6 +99,12 @@ class SettingsRepository internal constructor(
         const val DEFAULT_COMMA_PAUSE = 100
         const val DEFAULT_NEWLINE_PAUSE = 100
         const val DEFAULT_NUMBER_MODE = 0  // Whole numbers
+        const val DEFAULT_SPELLING_SPEED = 50
+        val SPELLING_SPEED_RANGE = 0..100
+        /** Spelling modes: letter names ("be", "ce") or the sound of each letter. */
+        const val SPELLING_MODE_NAMES = "names"
+        const val SPELLING_MODE_SOUNDS = "sounds"
+        const val DEFAULT_SPELLING_MODE = SPELLING_MODE_NAMES
 
         // Default TTS dialog defaults
         const val DEFAULT_DONT_ASK_DEFAULT_TTS = false
@@ -571,6 +579,51 @@ class SettingsRepository internal constructor(
     }
 
     // ==========================================================================
+    // Spelling Settings
+    // ==========================================================================
+
+    /**
+     * Flow of the spelling speed: the rate of spelled characters as a
+     * percentage of the speech rate (0-100, default 50).
+     */
+    val spellingSpeed: Flow<Int> = prefs
+        .map { preferences ->
+            preferences[KEY_SPELLING_SPEED] ?: DEFAULT_SPELLING_SPEED
+        }
+
+    /**
+     * Set the spelling speed.
+     * @param percent Speed of spelled characters in percent (0-100)
+     */
+    suspend fun setSpellingSpeed(percent: Int) {
+        ensureMigrated()
+        dataStore.edit { preferences ->
+            preferences[KEY_SPELLING_SPEED] = percent.coerceIn(SPELLING_SPEED_RANGE)
+        }
+    }
+
+    /**
+     * Flow of the spelling mode: [SPELLING_MODE_NAMES] (default) reads
+     * letters by their names, [SPELLING_MODE_SOUNDS] by their sounds.
+     */
+    val spellingMode: Flow<String> = prefs
+        .map { preferences ->
+            preferences[KEY_SPELLING_MODE] ?: DEFAULT_SPELLING_MODE
+        }
+
+    /**
+     * Set the spelling mode.
+     * @param mode [SPELLING_MODE_NAMES] or [SPELLING_MODE_SOUNDS]; anything else is names
+     */
+    suspend fun setSpellingMode(mode: String) {
+        ensureMigrated()
+        dataStore.edit { preferences ->
+            preferences[KEY_SPELLING_MODE] =
+                if (mode == SPELLING_MODE_SOUNDS) SPELLING_MODE_SOUNDS else SPELLING_MODE_NAMES
+        }
+    }
+
+    // ==========================================================================
     // Don't Ask Default TTS Settings
     // ==========================================================================
 
@@ -678,6 +731,8 @@ class SettingsRepository internal constructor(
         val commaPause: Int = DEFAULT_COMMA_PAUSE,
         val newlinePause: Int = DEFAULT_NEWLINE_PAUSE,
         val numberMode: Int = DEFAULT_NUMBER_MODE,
+        val spellingSpeed: Int = DEFAULT_SPELLING_SPEED,
+        val spellingMode: String = DEFAULT_SPELLING_MODE,
         // Dictionary settings
         val userDictionariesEnabled: Boolean = DEFAULT_USER_DICTIONARIES_ENABLED
     )
@@ -704,6 +759,8 @@ class SettingsRepository internal constructor(
         commaPause = this[KEY_COMMA_PAUSE] ?: DEFAULT_COMMA_PAUSE,
         newlinePause = this[KEY_NEWLINE_PAUSE] ?: DEFAULT_NEWLINE_PAUSE,
         numberMode = this[KEY_NUMBER_MODE] ?: DEFAULT_NUMBER_MODE,
+        spellingSpeed = this[KEY_SPELLING_SPEED] ?: DEFAULT_SPELLING_SPEED,
+        spellingMode = this[KEY_SPELLING_MODE] ?: DEFAULT_SPELLING_MODE,
         userDictionariesEnabled = this[KEY_USER_DICTIONARIES_ENABLED] ?: DEFAULT_USER_DICTIONARIES_ENABLED
     )
 }

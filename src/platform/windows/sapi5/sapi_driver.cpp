@@ -393,6 +393,8 @@ HRESULT LaprdusSAPIDriver::InitializeEngine() {
         params.emoji_enabled = settings.emoji_enabled;
         params.number_mode = settings.number_mode;
         params.pause_settings = settings.get_pause_settings();
+        params.spelling_mode = settings.spelling_mode;
+        params.spelling_speed = settings.spelling_speed;
         params.clamp();
         m_engine->set_voice_params(params);
 

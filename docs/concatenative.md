@@ -163,13 +163,17 @@ samples (`tests/linux/test_concat.cpp`).
 | Setting | Recorded voices | Where applied |
 |---------|-----------------|---------------|
 | speed | 0.5 - 4.0 | durations (planner); bursts and consonant floors keep a fast rate intelligible |
+| acceleration | 0.5 - 3.0 | multiplies the speed (`VoiceParams::effective_speed()`), the product narrowed to 0.5 - 4.0 |
 | pitch (voice character) | 0.25 - 4.0 | spectrum warp `sqrt(pitch)` at analysis, pitch × `pitch` at rendering |
 | user_pitch | 0.5 - 2.0 | pitch × `user_pitch` at rendering, formants unchanged |
 | inflection_enabled | | off: a flat contour at the voice's pitch (durations unchanged) |
 | inflection_level | 0 - 1 | scales the whole contour, as for the formant voices |
 | volume | 0 - 1 | gain before the limiter |
 
-Acceleration is still a setting of the formant voices only.
+Spelling by letter sounds (`AudioSynthesizer::synthesize_letter_sound`) plays
+the consonant's recording with the planner's fixed durations for an isolated
+sound and the "e" recording after it as the release vowel ("bə", "sə", as
+eSpeak sounds letters out); a vowel letter is the vowel alone.
 
 ## Testing and tuning
 

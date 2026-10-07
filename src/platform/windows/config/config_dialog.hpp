@@ -18,9 +18,9 @@ namespace laprdus {
  * Features:
  * - Voice selection dropdown
  * - Speed, pitch, volume sliders with force checkboxes
- * - Pause settings sliders (comma, sentence, newline)
- * - Formant voice sliders (inflection level, acceleration)
- * - Options checkboxes (inflection, emoji, digits)
+ * - Speed and acceleration, pitch and inflection, volume sliders
+ * - Pause settings sliders (comma, sentence, newline) and the spelling speed
+ * - Options checkboxes (emoji, digits, letter sounds when spelling)
  * - Test button to speak sample text
  * - OK, Cancel, Apply buttons
  * - Dark mode support on Windows 10/11

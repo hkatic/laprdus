@@ -950,6 +950,21 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_append_spelling_dictionary(
     return LAPRDUS_OK;
 }
 
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_add_spelling_entry(
+    LaprdusHandle handle,
+    const char* character,
+    const char* pronunciation) {
+
+    if (!handle) {
+        return LAPRDUS_ERROR_INVALID_HANDLE;
+    }
+    if (!character || !*character || !pronunciation || !*pronunciation) {
+        return LAPRDUS_ERROR_INVALID_PARAMETER;
+    }
+    handle->engine.add_spelling_entry(character, pronunciation);
+    return LAPRDUS_OK;
+}
+
 LAPRDUS_API void LAPRDUS_CALL laprdus_clear_spelling_dictionary(LaprdusHandle handle) {
     if (handle) {
         handle->engine.clear_spelling_dictionary();
@@ -1259,6 +1274,50 @@ LAPRDUS_API uint32_t LAPRDUS_CALL laprdus_get_spelling_pause(LaprdusHandle handl
 }
 
 // =============================================================================
+// Spelling Mode and Speed
+// =============================================================================
+
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_spelling_mode(
+    LaprdusHandle handle,
+    LaprdusSpellingMode mode) {
+
+    if (!handle) {
+        return LAPRDUS_ERROR_INVALID_HANDLE;
+    }
+    handle->engine.set_spelling_mode(mode == LAPRDUS_SPELLING_LETTER_SOUNDS
+                                         ? laprdus::SpellingMode::LetterSounds
+                                         : laprdus::SpellingMode::LetterNames);
+    return LAPRDUS_OK;
+}
+
+LAPRDUS_API LaprdusSpellingMode LAPRDUS_CALL laprdus_get_spelling_mode(LaprdusHandle handle) {
+    if (!handle) {
+        return LAPRDUS_SPELLING_LETTER_NAMES;
+    }
+    return handle->engine.spelling_mode() == laprdus::SpellingMode::LetterSounds
+               ? LAPRDUS_SPELLING_LETTER_SOUNDS
+               : LAPRDUS_SPELLING_LETTER_NAMES;
+}
+
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_spelling_speed(
+    LaprdusHandle handle,
+    int percent) {
+
+    if (!handle) {
+        return LAPRDUS_ERROR_INVALID_HANDLE;
+    }
+    handle->engine.set_spelling_speed(percent);
+    return LAPRDUS_OK;
+}
+
+LAPRDUS_API int LAPRDUS_CALL laprdus_get_spelling_speed(LaprdusHandle handle) {
+    if (!handle) {
+        return laprdus::SPELLING_SPEED_DEFAULT;
+    }
+    return handle->engine.spelling_speed();
+}
+
+// =============================================================================
 // Number Mode Functions
 // =============================================================================
 
@@ -1349,6 +1408,8 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_load_user_config(LaprdusHandle han
     params.emoji_enabled = settings.emoji_enabled;
     params.number_mode = settings.number_mode;
     params.pause_settings = settings.get_pause_settings();
+    params.spelling_mode = settings.spelling_mode;
+    params.spelling_speed = settings.spelling_speed;
     params.clamp();
     handle->engine.set_voice_params(params);
 
@@ -1360,8 +1421,9 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_load_user_config(LaprdusHandle han
         }
 
         if (config.user_dictionary_exists("spelling.json")) {
+            // The user's entries, on top of the bundled dictionary
             std::string path = config.get_user_spelling_dictionary_path();
-            handle->engine.load_spelling_dictionary(path);
+            handle->engine.append_spelling_dictionary(path);
         }
 
         if (config.user_dictionary_exists("emoji.json")) {

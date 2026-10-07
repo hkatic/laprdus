@@ -267,13 +267,13 @@ constexpr float FORMANT_SPEED_MAX = 4.0f;    // before acceleration
 constexpr float FORMANT_USER_PITCH_MIN = 0.25f;
 constexpr float FORMANT_USER_PITCH_MAX = 4.0f;
 
-// Acceleration multiplies the speech rate of the formant voices, so the
-// same rate slider reaches a higher (or lower) top speed. 1.0 leaves the
-// rate alone.
+// Acceleration multiplies the speech rate of every voice, so the same rate
+// slider reaches a higher (or lower) top speed. 1.0 leaves the rate alone.
 constexpr float ACCELERATION_MIN = 0.5f;
 constexpr float ACCELERATION_MAX = 3.0f;
 constexpr float ACCELERATION_DEFAULT = 1.0f;
-// Fastest rate the formant synthesizer renders (speed * acceleration).
+// Fastest rate the formant synthesizer renders (speed * acceleration); the
+// recorded voices stop at CONCAT_SPEED_MAX.
 constexpr float FORMANT_EFFECTIVE_SPEED_MAX = 8.0f;
 
 // Words per minute of the formant voices at speed 1.0 and acceleration 1.0,
@@ -281,9 +281,36 @@ constexpr float FORMANT_EFFECTIVE_SPEED_MAX = 8.0f;
 // by their FormantVoice::tempo). Used to show rate limits in words per minute.
 constexpr float FORMANT_NOMINAL_WPM = 175.0f;
 
-// Inflection level of the formant voices: 0.0 is a monotone, 0.5 the
-// measured pitch movements, 1.0 twice those movements.
+// Inflection level of every voice: 0.0 is a monotone, 0.5 the measured
+// pitch movements, 1.0 twice those movements.
 constexpr float INFLECTION_LEVEL_DEFAULT = 0.5f;
+
+// =============================================================================
+// Spelling
+// =============================================================================
+
+/**
+ * How a letter is read when text is spelled (screen reader character
+ * navigation, typing echo, SAPI5 spell-out).
+ */
+enum class SpellingMode : uint8_t {
+    LetterNames = 0,    // "b" -> "be", "h" -> "ha", "j" -> "je"
+    LetterSounds = 1    // "b" -> the sound [b], "f" -> [f], "h" -> [x]
+};
+
+// Spelling speed in percent: 100 is the speech rate itself, 50 (the default)
+// a little over half of it, 0 a third of it. Letter names and sounds are
+// short, and at the rate of running speech they blur together.
+constexpr int SPELLING_SPEED_MIN = 0;
+constexpr int SPELLING_SPEED_MAX = 100;
+constexpr int SPELLING_SPEED_DEFAULT = 50;
+
+/** Rate factor of a spelled character for a spelling speed in percent. */
+inline float spelling_rate_factor(int spelling_speed) {
+    const int s = std::clamp(spelling_speed, SPELLING_SPEED_MIN, SPELLING_SPEED_MAX);
+    // 3^((s - 100) / 100): 1/3 at 0, 0.58 at 50, 1.0 at 100
+    return std::pow(3.0f, (static_cast<float>(s) - 100.0f) / 100.0f);
+}
 
 struct VoiceParams {
     // Both kinds of voices apply these at the source: durations and the
@@ -294,11 +321,13 @@ struct VoiceParams {
     float user_pitch = 1.0f;  // User pitch preference (0.5 - 2.0; formant voices 0.25 - 4.0)
     float volume = 1.0f;      // Volume (0.0 - 1.0)
     bool inflection_enabled = true;  // Enable punctuation inflection
-    float inflection_level = INFLECTION_LEVEL_DEFAULT;  // Size of the pitch movements (0.0 - 1.0), formant voices only
-    float acceleration = ACCELERATION_DEFAULT;          // Rate multiplier (0.5 - 3.0), formant voices only
+    float inflection_level = INFLECTION_LEVEL_DEFAULT;  // Size of the pitch movements (0.0 - 1.0)
+    float acceleration = ACCELERATION_DEFAULT;          // Rate multiplier (0.5 - 3.0)
     bool emoji_enabled = false;      // Enable emoji to text conversion (disabled by default)
     NumberMode number_mode = NumberMode::WholeNumbers;  // Number processing mode
     PauseSettings pause_settings;    // Pause duration settings
+    SpellingMode spelling_mode = SpellingMode::LetterNames;  // Letter names or sounds when spelling
+    int spelling_speed = SPELLING_SPEED_DEFAULT;        // Rate of spelled characters, percent of the speech rate
 
     void clamp() {
         // std::clamp passes NaN through, and a NaN rate or pitch would reach
@@ -315,11 +344,16 @@ struct VoiceParams {
         volume = std::clamp(volume, 0.0f, 1.0f);
         inflection_level = std::clamp(inflection_level, 0.0f, 1.0f);
         acceleration = std::clamp(acceleration, ACCELERATION_MIN, ACCELERATION_MAX);
+        spelling_speed = std::clamp(spelling_speed, SPELLING_SPEED_MIN, SPELLING_SPEED_MAX);
+        if (spelling_mode != SpellingMode::LetterSounds) spelling_mode = SpellingMode::LetterNames;
         pause_settings.clamp();
     }
 
-    /** Speech rate the formant voices actually render: speed times acceleration. */
-    [[nodiscard]] float formant_speed() const {
+    /**
+     * Speech rate the voices actually render: speed times acceleration. The
+     * recorded voices narrow it to their own range (CONCAT_SPEED_MAX).
+     */
+    [[nodiscard]] float effective_speed() const {
         float s = speed * acceleration;
         if (!std::isfinite(s)) return 1.0f;
         return std::clamp(s, FORMANT_SPEED_MIN, FORMANT_EFFECTIVE_SPEED_MAX);

@@ -34,6 +34,7 @@ struct Segment {
     bool stretch = true;            // false: natural rate, cut off at the end of the span
     bool join_prev = false;         // crossfade periods with the previous segment's recording
     bool join_next = false;         // ... and with the next one's
+    float gain = 1.0f;              // level of the segment
 };
 
 /**

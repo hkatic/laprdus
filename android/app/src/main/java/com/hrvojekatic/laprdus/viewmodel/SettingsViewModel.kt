@@ -34,7 +34,6 @@ data class SettingsUiState(
     // Advanced settings
     val emojiEnabled: Boolean = SettingsRepository.DEFAULT_EMOJI_ENABLED,
     val inflectionEnabled: Boolean = SettingsRepository.DEFAULT_INFLECTION_ENABLED,
-    // Formant voices only
     val inflectionLevel: Float = SettingsRepository.DEFAULT_INFLECTION_LEVEL,
     val acceleration: Float = SettingsRepository.DEFAULT_ACCELERATION,
     /** Words per minute of the selected voice at speed 1.0 and acceleration 1.0. */
@@ -43,6 +42,9 @@ data class SettingsUiState(
     val commaPause: Int = SettingsRepository.DEFAULT_COMMA_PAUSE,
     val newlinePause: Int = SettingsRepository.DEFAULT_NEWLINE_PAUSE,
     val numberMode: Int = SettingsRepository.DEFAULT_NUMBER_MODE,
+    val spellingSpeed: Int = SettingsRepository.DEFAULT_SPELLING_SPEED,
+    /** True when letters are spelled by their sounds instead of their names. */
+    val letterSounds: Boolean = false,
     // Dictionary settings
     val userDictionariesEnabled: Boolean = SettingsRepository.DEFAULT_USER_DICTIONARIES_ENABLED,
     val error: String? = null,
@@ -126,6 +128,8 @@ class SettingsViewModel @Inject constructor(
                             commaPause = allSettings.commaPause,
                             newlinePause = allSettings.newlinePause,
                             numberMode = allSettings.numberMode,
+                            spellingSpeed = allSettings.spellingSpeed,
+                            letterSounds = allSettings.spellingMode == SettingsRepository.SPELLING_MODE_SOUNDS,
                             userDictionariesEnabled = allSettings.userDictionariesEnabled,
                             error = null
                         )
@@ -346,14 +350,6 @@ class SettingsViewModel @Inject constructor(
      * Set whether voice inflection is enabled.
      * @param enabled True to enable pitch variation for questions, exclamations, and pauses
      */
-    fun setInflectionEnabled(enabled: Boolean) {
-        viewModelScope.launch {
-            tts.inflectionEnabled = enabled
-            settings.setInflectionEnabled(enabled)
-            _uiState.update { it.copy(inflectionEnabled = enabled) }
-        }
-    }
-
     /**
      * Set the inflection level of the formant voices and persist it.
      * @param level 0.0 (monotone) to 1.0 (maximum), 0.5 as measured
@@ -368,7 +364,7 @@ class SettingsViewModel @Inject constructor(
     }
 
     /**
-     * Set the acceleration of the formant voices and persist it.
+     * Set the acceleration and persist it.
      * @param acceleration Rate multiplier (0.5 - 3.0)
      */
     fun setAcceleration(acceleration: Float) {
@@ -437,6 +433,38 @@ class SettingsViewModel @Inject constructor(
             tts.numberMode = clamped
             settings.setNumberMode(clamped)
             _uiState.update { it.copy(numberMode = clamped) }
+        }
+    }
+
+    // ==========================================================================
+    // Spelling Settings
+    // ==========================================================================
+
+    /**
+     * Set the spelling speed and persist it.
+     * @param percent Speed of spelled characters in percent of the speech rate (0-100)
+     */
+    fun setSpellingSpeed(percent: Int) {
+        val clamped = percent.coerceIn(SettingsRepository.SPELLING_SPEED_RANGE)
+        viewModelScope.launch {
+            tts.spellingSpeed = clamped
+            settings.setSpellingSpeed(clamped)
+            _uiState.update { it.copy(spellingSpeed = clamped) }
+        }
+    }
+
+    /**
+     * Choose whether letters are spelled by their sounds (true) or by their
+     * names (false), and persist it.
+     */
+    fun setLetterSounds(enabled: Boolean) {
+        viewModelScope.launch {
+            tts.letterSounds = enabled
+            settings.setSpellingMode(
+                if (enabled) SettingsRepository.SPELLING_MODE_SOUNDS
+                else SettingsRepository.SPELLING_MODE_NAMES
+            )
+            _uiState.update { it.copy(letterSounds = enabled) }
         }
     }
 

@@ -34,6 +34,8 @@ VoiceParams UserSettings::to_voice_params() const {
     params.emoji_enabled = emoji_enabled;
     params.number_mode = number_mode;
     params.pause_settings = get_pause_settings();
+    params.spelling_mode = spelling_mode;
+    params.spelling_speed = spelling_speed;
     params.clamp();
     return params;
 }
@@ -48,6 +50,8 @@ void UserSettings::from_voice_params(const VoiceParams& params) {
     emoji_enabled = params.emoji_enabled;
     number_mode = params.number_mode;
     apply_pause_settings(params.pause_settings);
+    spelling_mode = params.spelling_mode;
+    spelling_speed = params.spelling_speed;
 }
 
 void UserSettings::apply_pause_settings(const PauseSettings& pause) {
@@ -210,14 +214,16 @@ std::string generate_settings_json(const UserSettings& settings) {
     json << "        \"speech.pitch\": \"Voice pitch from 0.5 (low) to 2.0 (high), default 1.0; formant voices accept 0.25 to 4.0\",\n";
     json << "        \"speech.volume\": \"Volume from 0.0 (silent) to 1.0 (full), default 1.0\",\n";
     json << "        \"speech.inflection\": \"Enable natural pitch variation based on punctuation (true/false)\",\n";
-    json << "        \"speech.inflection_level\": \"Size of the pitch movements of the formant voices: 0.0 (monotone) to 1.0 (maximum), default 0.5\",\n";
-    json << "        \"speech.acceleration\": \"Rate multiplier of the formant voices from 0.5 to 3.0, default 1.0 (2.0 doubles the rate the rate slider reaches)\",\n";
+    json << "        \"speech.inflection_level\": \"Size of the pitch movements: 0.0 (monotone) to 1.0 (maximum), default 0.5\",\n";
+    json << "        \"speech.acceleration\": \"Rate multiplier from 0.5 to 3.0, default 1.0 (2.0 doubles the rate the rate slider reaches)\",\n";
     json << "        \"speech.emoji\": \"Convert emoji to spoken text descriptions (true/false)\",\n";
     json << "        \"numbers.mode\": \"Number reading: 'words' (twenty-three) or 'digits' (two-three)\",\n";
     json << "        \"pauses.sentence\": \"Pause after sentences (. ! ?) in milliseconds, 0-2000\",\n";
     json << "        \"pauses.comma\": \"Pause after commas in milliseconds, 0-2000\",\n";
     json << "        \"pauses.newline\": \"Pause at newlines in milliseconds, 0-2000\",\n";
     json << "        \"pauses.spelling\": \"Pause between spelled characters in milliseconds, 0-2000\",\n";
+    json << "        \"spelling.speed\": \"Speed of spelled characters in percent of the speech rate: 100 is the speech rate, 50 (default) a little over half of it, 0 a third\",\n";
+    json << "        \"spelling.mode\": \"How letters are spelled: 'names' (be, ce, de) or 'sounds' (the sound of each letter)\",\n";
     json << "        \"force.speed\": \"Use Laprdus speed setting instead of system/SAPI5 (true/false)\",\n";
     json << "        \"force.pitch\": \"Use Laprdus pitch setting instead of system/SAPI5 (true/false)\",\n";
     json << "        \"force.volume\": \"Use Laprdus volume setting instead of system/SAPI5 (true/false)\",\n";
@@ -247,6 +253,11 @@ std::string generate_settings_json(const UserSettings& settings) {
     json << "        \"comma\": " << settings.comma_pause_ms << ",\n";
     json << "        \"newline\": " << settings.newline_pause_ms << ",\n";
     json << "        \"spelling\": " << settings.spelling_pause_ms << "\n";
+    json << "    },\n";
+    json << "\n";
+    json << "    \"spelling\": {\n";
+    json << "        \"speed\": " << settings.spelling_speed << ",\n";
+    json << "        \"mode\": \"" << (settings.spelling_mode == SpellingMode::LetterSounds ? "sounds" : "names") << "\"\n";
     json << "    },\n";
     json << "\n";
     json << "    \"force\": {\n";
@@ -298,14 +309,36 @@ bool parse_settings_json(const std::string& json, UserSettings& settings) {
     settings.newline_pause_ms = static_cast<uint32_t>(extract_int_value(json, "newline", 100));
     settings.spelling_pause_ms = static_cast<uint32_t>(extract_int_value(json, "spelling", 200));
 
-    // Clamp values to valid ranges
-    settings.speed = std::clamp(settings.speed, 0.5f, 4.0f);  // 4.0x max for NVDA rate boost
-    settings.user_pitch = std::clamp(settings.user_pitch, 0.5f, 2.0f);
+    // Clamp values to the wide ranges of the formant voices; the recorded
+    // voices narrow them for themselves
+    settings.speed = std::clamp(settings.speed, FORMANT_SPEED_MIN, FORMANT_SPEED_MAX);
+    settings.user_pitch = std::clamp(settings.user_pitch, FORMANT_USER_PITCH_MIN, FORMANT_USER_PITCH_MAX);
     settings.volume = std::clamp(settings.volume, 0.0f, 1.0f);
     settings.sentence_pause_ms = std::clamp(settings.sentence_pause_ms, 0u, 2000u);
     settings.comma_pause_ms = std::clamp(settings.comma_pause_ms, 0u, 2000u);
     settings.newline_pause_ms = std::clamp(settings.newline_pause_ms, 0u, 2000u);
     settings.spelling_pause_ms = std::clamp(settings.spelling_pause_ms, 0u, 2000u);
+
+    // Extract spelling settings from the "spelling" section (its "speed"
+    // must not be confused with the speech speed, so the section is cut out)
+    settings.spelling_speed = SPELLING_SPEED_DEFAULT;
+    settings.spelling_mode = SpellingMode::LetterNames;
+    size_t spelling_pos = json.find("\"spelling\": {");
+    if (spelling_pos == std::string::npos) spelling_pos = json.find("\"spelling\":{");
+    if (spelling_pos != std::string::npos) {
+        size_t spelling_start = json.find('{', spelling_pos);
+        if (spelling_start != std::string::npos) {
+            size_t spelling_end = json.find('}', spelling_start);
+            if (spelling_end != std::string::npos) {
+                std::string section = json.substr(spelling_start, spelling_end - spelling_start + 1);
+                settings.spelling_speed = std::clamp(
+                    extract_int_value(section, "speed", SPELLING_SPEED_DEFAULT),
+                    SPELLING_SPEED_MIN, SPELLING_SPEED_MAX);
+                settings.spelling_mode = extract_string_value(section, "mode") == "sounds"
+                    ? SpellingMode::LetterSounds : SpellingMode::LetterNames;
+            }
+        }
+    }
 
     // Extract force settings
     // Look for the "force" section and parse within it

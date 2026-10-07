@@ -1060,6 +1060,22 @@
         }
       }
     },
+    "Restore default spelling speed" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrati zadanu brzinu slovkanja"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrati podrazumevanu brzinu sricanja"
+          }
+        }
+      }
+    },
     "Save" : {
       "localizations" : {
         "hr" : {
@@ -1268,6 +1284,22 @@
         }
       }
     },
+    "Speed of spelled characters: 100% is the speech rate, 50% a little over half of it, 0% a third" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brzina izgovora slovkanih znakova: 100% je brzina govora, 50% nešto više od polovice, 0% trećina"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brzina izgovora znakova pri sricanju: 100% je brzina govora, 50% nešto više od polovine, 0% trećina"
+          }
+        }
+      }
+    },
     "Spelling Dictionary" : {
       "localizations" : {
         "hr" : {
@@ -1280,6 +1312,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rečnik slovkanja"
+          }
+        }
+      }
+    },
+    "Spell letters by their sounds" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slovkaj slova glasovima"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sriči slova glasovima"
+          }
+        }
+      }
+    },
+    "Off: letter names (be, ce, de). On: the letters' sounds (b, c, d), when spelling and typing" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Isključeno: nazivi slova (be, ce, de). Uključeno: glasovi slova (b, c, d), pri slovkanju i tipkanju"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Isključeno: nazivi slova (be, ce, de). Uključeno: glasovi slova (b, c, d), pri sricanju i kucanju"
+          }
+        }
+      }
+    },
+    "Spelling speed" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brzina slovkanja"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brzina sricanja"
           }
         }
       }
@@ -1444,22 +1524,6 @@
         }
       }
     },
-    "Vary pitch for questions, exclamations, and pauses" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mijenja visinu glasa za pitanja, usklike i stanke"
-          }
-        },
-        "sr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Menja visinu glasa za pitanja, uzvike i pauze"
-          }
-        }
-      }
-    },
     "Version: %@ (Build %@)" : {
       "localizations" : {
         "hr" : {
@@ -1488,22 +1552,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Glas"
-          }
-        }
-      }
-    },
-    "Formant Voice" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Formantni glas"
-          }
-        },
-        "sr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Formantni glas"
           }
         }
       }
@@ -1616,22 +1664,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vrati podrazumevano ubrzanje"
-          }
-        }
-      }
-    },
-    "Voice inflection" : {
-      "localizations" : {
-        "hr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Intonacija glasa"
-          }
-        },
-        "sr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Intonacija glasa"
           }
         }
       }

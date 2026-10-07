@@ -981,6 +981,69 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeGetSpellingPause(
 }
 
 // =============================================================================
+// Spelling Speed and Mode Methods
+// =============================================================================
+
+JNIEXPORT void JNICALL
+Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetSpellingSpeed(
+    JNIEnv* env,
+    jobject thiz,
+    jint percent) {
+
+    (void)env;
+    (void)thiz;
+
+    std::lock_guard<std::mutex> lock(g_engine_mutex);
+    if (!g_engine) return;
+
+    g_engine->set_spelling_speed(static_cast<int>(percent));
+}
+
+JNIEXPORT jint JNICALL
+Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeGetSpellingSpeed(
+    JNIEnv* env,
+    jobject thiz) {
+
+    (void)env;
+    (void)thiz;
+
+    std::lock_guard<std::mutex> lock(g_engine_mutex);
+    if (!g_engine) return laprdus::SPELLING_SPEED_DEFAULT;
+
+    return static_cast<jint>(g_engine->spelling_speed());
+}
+
+JNIEXPORT void JNICALL
+Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetLetterSounds(
+    JNIEnv* env,
+    jobject thiz,
+    jboolean enabled) {
+
+    (void)env;
+    (void)thiz;
+
+    std::lock_guard<std::mutex> lock(g_engine_mutex);
+    if (!g_engine) return;
+
+    g_engine->set_spelling_mode(enabled ? laprdus::SpellingMode::LetterSounds
+                                        : laprdus::SpellingMode::LetterNames);
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeGetLetterSounds(
+    JNIEnv* env,
+    jobject thiz) {
+
+    (void)env;
+    (void)thiz;
+
+    std::lock_guard<std::mutex> lock(g_engine_mutex);
+    if (!g_engine) return JNI_FALSE;
+
+    return g_engine->spelling_mode() == laprdus::SpellingMode::LetterSounds ? JNI_TRUE : JNI_FALSE;
+}
+
+// =============================================================================
 // Number Mode Methods
 // =============================================================================
 
