@@ -400,7 +400,19 @@ private:
                     factor *= 0.93f;    // closed syllable
                 }
                 if (final_syl) {
-                    factor *= final_stretch;
+                    // In a statement a short stressed vowel takes only half
+                    // of the final lengthening, so that a clause-final
+                    // monosyllable keeps the short/long contrast (sȁd : sȃd,
+                    // brȁt : grȃd); with the full stretch the short one was
+                    // 70% of the long one and heard as long. A question
+                    // keeps the full stretch (its rise needs the time), and
+                    // so does a final function word (tȍ, tȉ), whose fall
+                    // would otherwise not reach its target.
+                    const bool statement = m_utt.kind == ClauseKind::Statement ||
+                                           m_utt.kind == ClauseKind::Exclamation;
+                    factor *= p.stressed && !p.is_long && statement && p.prominence == 2
+                                  ? 1.0f + (final_stretch - 1.0f) * 0.5f
+                                  : final_stretch;
                 } else if (p.syllable == last_syl - 1) {
                     factor *= 1.08f;
                 }

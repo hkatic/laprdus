@@ -173,7 +173,14 @@ ClausePlan plan_clause(const formant::Utterance& utt, const UnitBank& bank,
                 factor *= 0.93f;    // closed syllable
             }
             if (final_syl) {
-                factor *= final_stretch;
+                // Half the final lengthening for a short stressed vowel in
+                // a statement, as in the formant voices: sȁd stays short
+                // next to sȃd.
+                const bool statement = utt.kind == ClauseKind::Statement ||
+                                       utt.kind == ClauseKind::Exclamation;
+                factor *= p.stressed && !p.is_long && statement && p.prominence == 2
+                              ? 1.0f + (final_stretch - 1.0f) * 0.5f
+                              : final_stretch;
             } else if (p.syllable == last_syl - 1) {
                 factor *= 1.08f;
             }

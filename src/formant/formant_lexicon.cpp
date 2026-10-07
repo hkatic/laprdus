@@ -34,8 +34,12 @@ const char* const COMMON[] = {
     u8"d^eve:t", u8"d^ese:t",
     u8"jed'anaest", u8"dv'a:naest", u8"tr'i:naest", u8"čet'rnaest", u8"p'etnaest",
     u8"š'esnaest", u8"sed'amnaest", u8"os'amnaest", u8"dev'etnaest",
-    u8"dv'a:deset", u8"tr'i:deset", u8"četrd'ese:t", u8"ped'ese:t", u8"šezd'ese:t",
-    u8"sedamd'ese:t", u8"osamd'ese:t", u8"deved'ese:t",
+    // The tens with their ordinals: dvádeset, dvadèsētī; četrdèsēt,
+    // četrdèsētī (the Croatian voice has its own, see CROATIAN)
+    u8"dv'a:deset", u8"dvad'ese:t|i|a|o|e|u|og|om|oj|ih|im|ima|oga|ome",
+    u8"tr'i:deset", u8"trid'ese:t|i|a|o|e|u|og|om|oj|ih|im|ima|oga|ome",
+    u8"četrd'ese:t*", u8"ped'ese:t*", u8"šezd'ese:t*",
+    u8"sedamd'ese:t*", u8"osamd'ese:t*", u8"deved'ese:t*",
     u8"st^o:", u8"dvj^esto", u8"dvj^esta", u8"dv^esta", u8"tr^isto", u8"tr^ista",
     u8"č/etiristo", u8"p^e:tsto", u8"š^e:ststo", u8"s^edamsto", u8"^osamsto",
     u8"d^evetsto", u8"t^isuć*", u8"h^iljad*",
@@ -62,13 +66,28 @@ const char* const COMMON[] = {
     u8"doviđ'e:nja", u8"dobrod'oš*", u8"izv'ol*", u8"izv'i:ni*", u8"opr'osti*",
     u8"zahv'a:lj*", u8"gosp'odin*", u8"gosp'odo", u8"međ'utim", u8"več'eras",
     u8"ov'ako", u8"on'ako", u8"kol'iko", u8"tol'iko", u8"ukol'iko", u8"odj'ednom",
+    // ȉnāče against the rule for -ač (ináče); uòstālom, ionàkō
+    u8"^inače", u8"u'ostalom", u8"ion'ako",
     u8"otpr'ilike", u8"zan'i:ma*", u8"zan'imljiv*", u8"izgl'e:da*", u8"post'oj*",
     u8"raz'umije*", u8"raz'ume*", u8"raz'umje*", u8"gov'orio", u8"gov'orila",
     u8"gov'orili", u8"gov'oril*", u8"poč'e:tak", u8"poč'e:tk*", u8"završ'e:tak",
     u8"završ'e:tk*", u8"dod'a:tak", u8"dod'a:tk*", u8"pod'a:tak",
     u8"pod'a:tk*", u8"zad'a:tak", u8"zad'a:tk*", u8"ost'a:tak", u8"ost'a:tk*",
     u8"izuz'e:tak", u8"izuz'e:tk*", u8"tren'u:tak", u8"tren'u:tk*",
-    u8"slob'od*", u8"zadov'oljstv*", u8"jedn'ostav*", u8"nem'oguć*",
+    u8"slob'od*", u8"zadov'oljstv*", u8"nem'oguć*",
+    // jȅdnostavan, jȅdnostavno, jednostàvniji, jednostávnōst
+    u8"j^ednostav*", u8"j^ednostavn*", u8"jednost'avnij*",
+    u8"jednost'a:vno:st", u8"jednost'a:vnost*", u8"jednost'a:vnošću",
+    // lègalan, ȉlegalan (the rule for -alan gives the first syllable, these
+    // set the tone) and legálnōst, ilegálnōst
+    u8"l/egal*", u8"l/egaln*", u8"leg'a:lno:st", u8"leg'a:lnost*", u8"leg'a:lnošću",
+    u8"^ilegal*", u8"^ilegaln*", u8"ileg'a:lno:st", u8"ileg'a:lnost*", u8"ileg'a:lnošću",
+    // slobòda, but the adjective and adverb slȍbodan, slȍbodno; the name
+    // Slobòdan keeps its cases (Slobòdana), the nominative goes to the
+    // commoner adjective
+    u8"sl^obodan", u8"sl^obodn*", u8"sl^obodnij*", u8"sl^obodn|oga|ome|ima",
+    // snága, snázi, snážan, snážno
+    u8"sn/a:g*", u8"sn/a:zi", u8"sn/a:žan", u8"sn/a:žn*", u8"sn/a:žnij*",
     u8"prek'i:ni*", u8"prek'i:nu*", u8"intelig'ent*",
 
     // ---- Abstract nouns in -ina ----
@@ -81,9 +100,12 @@ const char* const COMMON[] = {
     // ---- Technology and screen reader vocabulary ----
     u8"sint'e:z*", u8"rač'unal*", u8"rač'una:r*", u8"kompj'u:ter*", u8"mob'itel*",
     u8"datot'e:k*", u8"pretraž'ivač*", u8"kontr'o:l*", u8"adr'es*", u8"tastat'u:r*",
-    u8"'internet*", u8"'auto", u8"'autor*", u8"aut'obus*", u8"autom'obi:l*",
+    u8"'internet*", u8"^instagram*", u8"'auto", u8"'autor*", u8"aut'obus*", u8"autom'obi:l*",
     u8"aut'omat*", u8"telev'i:zor*", u8"kil'omet*", u8"cent'imet*", u8"mil'imet*",
     u8"sek'u:nd*", u8"min'u:t*", u8"r/a:dio", u8"L'aprdus*", u8"l'aprd*",
+    // emòtikon in every case; not in the dictionaries, accented like
+    // emòcija, against the rule for loans in -on (emotikóna)
+    u8"em'otikon*",
 
     // ---- Places ----
     u8"Z'a:greb*", u8"Be'ograd*", u8"S/arajev*", u8"Ljublj'a:n*", u8"Eur'o:p*",
@@ -131,6 +153,13 @@ const char* const COMMON[] = {
     // The adjectives and adverbs keep the first syllable (dȍdatno, trȅnutno).
     u8"d^odatan", u8"d^odatn*", u8"d^odatno*", u8"d^odatni*",
     u8"tr^enutan", u8"tr^enutn*", u8"tr^enutno*", u8"tr^enutni*",
+    // nȅpregledan is an adjective of its own (vast; unreviewed), with the
+    // first syllable in every form, unlike the negated participles
+    // (nepròčitan, neprèslušan, nedòvršen; see StressRules::form_of);
+    // the comparative is nepreglèdniji
+    u8"n^epregledan*", u8"n^epregledn*", u8"nepregl'ednij*",
+    // nȅpoznat the same (pòznat, but the negated adjective moves to ne-)
+    u8"n^epoznat*",
 
     // ---- obavijest / obavest and the verbs beside it ----
     // Noun: ȍbavijēst in every case. "obavijesti" is also the verb's
@@ -183,6 +212,9 @@ const char* const COMMON[] = {
     // Zvónko and Vládo have a long rising accent (Stòjan, Mìrsad and Jòsip
     // are the default). "vlada", "vlade" stay with the noun.
     u8"Zv/o:nk*", u8"Zv/o:nkov*", u8"Vl/a:do", u8"Vl/a:din*",
+    // Zvȍnimīr in every case (the length after the accent is left out, as
+    // in the other entries); the rule for loans in -ir would give Zvonimíra
+    u8"Zv^onimir*",
 
     // ---- Nouns in -enje of three syllables ----
     // The rule for -enje starts at four syllables, because the short ones
@@ -222,7 +254,9 @@ const char* const COMMON[] = {
     u8"mar'i:na", u8"mar'i:ne", u8"mar'i:ni", u8"mar'i:nu", u8"mar'i:nom",
     u8"marij'a:na", u8"marij'a:ne", u8"marij'a:ni", u8"marij'a:nu", u8"marij'a:nom",
     u8"kristij'a:na", u8"kristij'a:ne", u8"kristij'a:ni", u8"kristij'a:nu", u8"kristij'a:nom",
-    u8"Daj'a:n*", u8"Tij'a:n*", u8"Dij'an*", u8"Mih'ovil*", u8"Muh'amed*", u8"Hus'ein*",
+    // Nàtaša like Mìrjana (the rule for -aš would give Natáša)
+    u8"N/ataš*", u8"N/atašin*",
+    u8"Daj'a:n*", u8"T/ijan*", u8"Dij'an*", u8"Mih'ovil*", u8"Muh'amed*", u8"Hus'ein*",
     u8"Ibr'a:him*", u8"Sul'ejman*", u8"Slob'odan*", u8"Sin'iš*", u8"Mih'ael*",
     u8"elv'i:ra", u8"elv'i:re", u8"elv'i:ri", u8"elv'i:ru", u8"elv'i:rom",
     u8"Ant'o:nio", u8"Ant'o:nij*", u8"Ant'o:nia", u8"Ant'o:nie", u8"Ant'o:niu",
@@ -272,6 +306,17 @@ const char* const COMMON[] = {
 };
 
 const char* const CROATIAN[] = {
+    // The tens as commonly spoken: the dictionaries' long rising dvádeset
+    // puts the peak of the accent on "de", and the word is heard as "dva
+    // deset"; the falling accent on a short first syllable (dvȁdeset,
+    // trȉdeset) keeps it one word. The others drop the length of the last
+    // syllable (četrdèset, pedèset for četrdèsēt, pedèsēt), as the other
+    // entries for this voice do. Ordinals and -ak forms follow the stem.
+    u8"dv^adeset", u8"dv^adeset*", u8"dv^adeset|i|a|o|e|u|og|om|oj|ih|im|ima|oga|ome",
+    u8"tr^ideset", u8"tr^ideset*", u8"tr^ideset|i|a|o|e|u|og|om|oj|ih|im|ima|oga|ome",
+    u8"četrd'eset", u8"četrd'eset*", u8"ped'eset", u8"ped'eset*", u8"šezd'eset", u8"šezd'eset*",
+    u8"sedamd'eset", u8"sedamd'eset*", u8"osamd'eset", u8"osamd'eset*",
+    u8"deved'eset", u8"deved'eset*",
     u8"pr/ofesor*", u8"pr/ocent*", u8"d'irektor*", u8"V^ojvodin*", u8"'ukrajin*",
     u8"s^iječ*", u8"v/eljač*", u8"/ožuj*", u8"tr/a:v*", u8"sv/i:b*", u8"l/i:p*",
     u8"s'rp*", u8"k^olovoz*", u8"r/u:j*", u8"l^istopad*", u8"st^uden*",
@@ -369,7 +414,8 @@ const char* const VERBS[] = {
     u8"dozv'ol=i<pn", u8"omog'u:ć=i<p", u8"onemog'u:ć=i<p", u8"za'ustav=in",
     u8"usp'ostav=in", u8"zab'orav=in", u8"obj'a:v=i<pn", u8"prij'a:v=i<pn",
     u8"odj'a:v=i<pn", u8"naj'a:v=i<pn", u8"izj'a:v=i<pn", u8"j'a:v=i", u8"poj'a:v=i<n",
-    u8"ispr'a:zn=i<pn", u8"uč'in=i<p", u8"nač'in=i<pn", u8"vr'a:t=i", u8"povr'a:t=i<p",
+    u8"ispr'a:zn=i<pn", u8"uč'in=i<p", u8"nač'in=i<pn", u8"za'ustavlj=a",
+    u8"pr'esluš=a", u8"pr'egled=a", u8"vr'a:t=i", u8"povr'a:t=i<p",
     u8"svr'a:t=i", u8"navr'a:t=i<n", u8"odvr'a:t=i<p", u8"obr'a:t=i<p", u8"pl'a:t=i",
     u8"upl'a:t=i<pn", u8"ispl'a:t=i<pn", u8"napl'a:t=i<pn", u8"dopl'a:t=i<pn",
     u8"k'u:p=i", u8"otk'u:p=i<pn", u8"proš'i:r=i<p", u8"raš'i:r=i<p",

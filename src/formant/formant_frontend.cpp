@@ -930,9 +930,13 @@ public:
     }
 
     bool verb_form_in(const std::vector<VerbRoot>& roots, StressResult& r) const {
+        // "ne" + passive participle is an adjective (nepročitan, nedovršen,
+        // nepromijenjen); see form_of() for its accent.
+        const bool negated = count() >= 3 && starts_with(m_w, U"ne");
         for (const VerbRoot& root : roots) {
             if (root.whole_stem) {
                 if (form_of(root, 0, r)) return true;
+                if (negated && form_of(root, 2, r, true)) return true;
                 continue;
             }
             // The root's "ije" has to be one syllable, and not the first.
@@ -942,11 +946,16 @@ public:
                 if (m_w.compare(e - 2, 3, U"ije") != 0 || nucleus_at(e - 2) >= 0) continue;
                 size_t start = e - root.vowel;
                 std::u32string prefix = m_w.substr(0, start);
+                bool negated_here = false;
+                if (negated && start > 2 && !is_verbal_prefix(prefix)) {
+                    prefix = prefix.substr(2);
+                    negated_here = true;
+                }
                 bool allowed = root.prefixes.empty()
                     ? is_verbal_prefix(prefix)
                     : std::find(root.prefixes.begin(), root.prefixes.end(), prefix) !=
                           root.prefixes.end();
-                if (allowed && form_of(root, start, r)) return true;
+                if (allowed && form_of(root, start, r, negated_here)) return true;
             }
         }
         return false;
@@ -1313,6 +1322,7 @@ public:
     // (-ala of participles, -ana of passive participles, -ina of
     // possessives) it is left out or limited, see long_rhyme().
     bool long_stem(StressResult& r) const {
+        if (negated_prefixed()) return false;      // nȅpoznata, nȅpotpisana
         static const char32_t* const ENDINGS[] = {
             U"ovom", U"ovog", U"ovoj", U"ovih", U"ovim", U"evom", U"evog", U"evoj",
             U"evih", U"evim", U"ima", U"ama", U"ova", U"ovo", U"ovi", U"ove", U"ovu",
@@ -1394,9 +1404,11 @@ public:
         // -an also needs two syllables before it and no -av-/-iv-/-ir-,
         // because of the passive participles (poslana, prodavana,
         // planirana) and the names (Ìvana, Stjȅpana): kapetan, Talijan,
-        // šarlatan.
+        // šarlatan. Not -alan: the adjectives in -alan keep the first
+        // syllable whatever their length (lègālan, nȍrmālan, ȉlegālan,
+        // ȍriginālan, prȍfesionālan).
         if (rhyme == U"an") {
-            return k >= 2 && !prefixed_word() && !preceded_by({U"av", U"iv", U"ir"});
+            return k >= 2 && !prefixed_word() && !preceded_by({U"av", U"iv", U"ir", U"al"});
         }
         // -er, -et, -id need two syllables before them: programer,
         // inženjer, dizajner, kabinet, piramida, invalid, but jȅzera,
@@ -1466,6 +1478,20 @@ public:
 
     bool prefixed_word() const { return prefixed_before(m_w.size(), true); }
 
+    // "ne" followed by a prefixed word: the negated adjectives (nepoznat,
+    // nepotreban, neutralan, nepotpisan), which keep the accent of the
+    // first syllable or of the participle, never a loan's long syllable.
+    bool negated_prefixed() const {
+        if (m_w.size() < 5 || !starts_with(m_w, U"ne")) return false;
+        for (size_t len = 1; len <= 6 && len + 2 < m_w.size(); ++len) {
+            if (!is_verbal_prefix(m_w.substr(2, len))) continue;
+            for (size_t i = len + 2; i < m_w.size(); ++i) {
+                if (is_vowel_letter(m_w[i])) return true;
+            }
+        }
+        return false;
+    }
+
     // Long infinitives are most often stressed on the antepenult
     // (govòriti, zabòraviti, razùmjeti).
     StressResult weak() const {
@@ -1481,8 +1507,11 @@ public:
 private:
     int count() const { return static_cast<int>(m_letters.size()); }
 
-    // Is the word, from `start` on, a form of the verb with this root?
-    bool form_of(const VerbRoot& root, size_t start, StressResult& r) const {
+    // Is the word, from `start` on, a form of the verb with this root? With
+    // `negated` the word is "ne" + that form, and only the passive
+    // participle counts.
+    bool form_of(const VerbRoot& root, size_t start, StressResult& r,
+                 bool negated = false) const {
         enum class Form { None, Plain, Present, Passive };
         Form form = Form::None;
 
@@ -1562,11 +1591,25 @@ private:
             }
         }
         if (form == Form::None) return false;
+        if (negated && form != Form::Passive) return false;
 
         int k = nucleus_at(start + root.vowel);
         if (k < 0) return false;
         int shifted = k;
-        if (m_language != VoiceLanguage::Croatian) {
+        if (negated) {
+            // The negated participles are adjectives with the accent the
+            // dictionaries give the participle, in every voice: nepròčitan,
+            // nedòvršen, nepòvezan, neìspunjen, nepròmijenjen (one syllable
+            // before the root vowel), neòbračunan for ȍbračunan, and
+            // neprèslušan, nezàustavljen where the verb's own accent is
+            // already on its prefix. An unprefixed verb hands it to "ne"
+            // (nȅplaćen, nȅpisan, nèsrēđen).
+            if (root.passive == 2) {
+                shifted = nucleus_after(start);
+            } else if (root.passive == 1 || !root.whole_stem || !prefixed_root(root, start)) {
+                shifted = std::max(0, k - 1);
+            }
+        } else if (m_language != VoiceLanguage::Croatian) {
             if (form == Form::Present && root.present_shifts) shifted = k - 1;
             if (form == Form::Passive && root.passive == 1) shifted = k - 1;
             if (form == Form::Passive && root.passive == 2) shifted = 0;
@@ -1595,6 +1638,33 @@ private:
             if (m_letters[k] < static_cast<int>(letter)) found = static_cast<int>(k);
         }
         return found;
+    }
+
+    // Does the verb whose root begins at `start` carry its accent in or
+    // after a verbal prefix (prèslušati, zaùstaviti), rather than on an
+    // unprefixed root (sréditi, plátiti)? The lone s- is not a prefix here.
+    bool prefixed_root(const VerbRoot& root, size_t start) const {
+        const std::u32string before = m_w.substr(start, root.vowel);
+        if (!before.empty()) {
+            // spremiti, srediti, snimiti, skratiti: the s is part of the root
+            if (before[0] == U's' && !starts_with(before, U"sa") && !starts_with(before, U"su")) {
+                return false;
+            }
+            if (is_verbal_prefix(before)) return true;
+        }
+        // ìspuniti, ùdarati, prèslušati: the accent is in the prefix itself
+        for (size_t len = root.vowel + 1; len <= 6 && start + len < m_w.size(); ++len) {
+            if (is_verbal_prefix(m_w.substr(start, len))) return true;
+        }
+        return false;
+    }
+
+    // The first nucleus at or after `letter`.
+    int nucleus_after(size_t letter) const {
+        for (size_t k = 0; k < m_letters.size(); ++k) {
+            if (m_letters[k] >= static_cast<int>(letter)) return static_cast<int>(k);
+        }
+        return -1;
     }
 
     template <size_t N>
@@ -2137,6 +2207,23 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
         if (word.clitic) {
             word.prominence = 0;
         }
+    }
+
+    // "Novi Sad": the town has the long falling sȃd (Nȍvī Sȃd, Novog Sáda),
+    // the adverb the short sȁd. The adverb is the far commoner word and
+    // keeps the lexicon's short vowel on its own; only after "novi" is the
+    // town meant.
+    for (size_t i = 0; i + 1 < count; ++i) {
+        static const WordSet novi = {U"novi", U"novog", U"novoga", U"novom", U"novome", U"novim"};
+        static const WordSet sad = {U"sad", U"sada", U"sadu", U"sadom"};
+        Word& next = words[i + 1];
+        if (!novi.count(words[i].w) || !sad.count(next.w) || next.explicit_stress ||
+            next.nuclei.empty()) {
+            continue;
+        }
+        next.phones[static_cast<size_t>(next.nuclei[0])].is_long = true;
+        next.stress = 0;
+        next.accent = next.nuclei.size() == 1 ? Accent::Falling : Accent::Rising;
     }
 
     auto take_accent = [](Word& host, Word& donor) {

@@ -502,6 +502,66 @@ TEST_CASE("Lexicon accents cover the whole paradigm", "[formant][text]") {
         {"porukom", "p\xC8\x8Drukom"},   // pȍrukom
         {"porukama", "p\xC8\x8Drukama"},   // pȍrukama
         {"preporuka", "pr\xC8\x85poruka"},   // prȅporuka
+        {"Tijana", "T\xC3\xACjana"},   // Tìjana
+        {"Tijanom", "T\xC3\xACjanom"},   // Tìjanom
+        {"Tijanama", "T\xC3\xACjanama"},   // Tìjanama
+        {"Zvonimir", "Zv\xC8\x8Dnimir"},   // Zvȍnimir
+        {"Zvonimira", "Zv\xC8\x8Dnimira"},   // Zvȍnimira
+        {"Zvonimirom", "Zv\xC8\x8Dnimirom"},   // Zvȍnimirom
+        {"emotikon", "em\xC3\xB2tikon"},   // emòtikon
+        {"emotikona", "em\xC3\xB2tikona"},   // emòtikona
+        {"emotikonima", "em\xC3\xB2tikonima"},   // emòtikonima
+        {"nepro\xC4\x8Ditan", "nepr\xC3\xB2\xC4\x8Ditan"},   // nepròčitan
+        {"nepro\xC4\x8Ditane", "nepr\xC3\xB2\xC4\x8Ditane"},   // nepròčitane
+        {"nepro\xC4\x8Ditanih", "nepr\xC3\xB2\xC4\x8Ditanih"},   // nepròčitanih
+        {"nepreslu\xC5\xA1" "an", "nepr\xC3\xA8slu\xC5\xA1" "an"},   // neprèslušan
+        {"nepreslu\xC5\xA1" "ane", "nepr\xC3\xA8slu\xC5\xA1" "ane"},   // neprèslušane
+        {"nepregledan", "n\xC8\x85pregledan"},   // nȅpregledan
+        {"nepregledanih", "n\xC8\x85pregledanih"},   // nȅpregledanih
+        {"nepregledno", "n\xC8\x85pregledno"},   // nȅpregledno
+        {"zaustavljanje", "za\xC3\xB9stavljanje"},   // zaùstavljanje
+        {"zaustavljanja", "za\xC3\xB9stavljanja"},   // zaùstavljanja
+        {"zaustavljati", "za\xC3\xB9stavljati"},   // zaùstavljati
+        {"nepoznata", "n\xC8\x85poznata"},   // nȅpoznata
+        {"nepotpisana", "nep\xC3\xB2tp\xC4\xABsana"},   // nepòtpīsana
+        {"neispunjen", "ne\xC3\xACspunjen"},   // neìspunjen
+        {"Nata\xC5\xA1" "a", "N\xC3\xA0ta\xC5\xA1" "a"},   // Nàtaša
+        {"Nata\xC5\xA1" "om", "N\xC3\xA0ta\xC5\xA1" "om"},   // Nàtašom
+        {"sad", "s\xC8\x81" "d"},   // sȁd
+        {"sada", "s\xC8\x81" "da"},   // sȁda
+        {"Novi Sad", "Novi S\xC8\x83" "d"},   // Novi Sȃd
+        {"Novog Sada", "Novog S\xC3\xA1" "da"},   // Novog Sáda
+        {"dvadeset", "dv\xC8\x81" "deset"},   // dvȁdeset
+        {"dvadeseti", "dv\xC8\x81" "deseti"},   // dvȁdeseti
+        {"trideset", "tr\xC8\x89" "deset"},   // trȉdeset
+        {"pedeset", "ped\xC3\xA8set"},   // pedèset
+        {"dvadeset jedan", "dv\xC8\x81" "deset jedan"},   // dvȁdeset jedan
+        {"ina\xC4\x8D" "e", "\xC8\x89na\xC4\x8D" "e"},   // ȉnače
+        {"uostalom", "u\xC3\xB2stalom"},   // uòstalom
+        {"ionako", "ion\xC3\xA0ko"},   // ionàko
+        {"slobodno", "sl\xC8\x8D" "bodno"},   // slȍbodno
+        {"slobodan", "sl\xC8\x8D" "bodan"},   // slȍbodan
+        {"slobodnih", "sl\xC8\x8D" "bodnih"},   // slȍbodnih
+        {"slobodnima", "sl\xC8\x8D" "bodnima"},   // slȍbodnima
+        {"sloboda", "slob\xC3\xB2" "da"},   // slobòda
+        {"Slobodana", "Slob\xC3\xB2" "dana"},   // Slobòdana
+        {"snaga", "sn\xC3\xA1ga"},   // snága
+        {"snazi", "sn\xC3\xA1zi"},   // snázi
+        {"snagama", "sn\xC3\xA1gama"},   // snágama
+        {"sna\xC5\xBE" "an", "sn\xC3\xA1\xC5\xBE" "an"},   // snážan
+        {"sna\xC5\xBE" "no", "sn\xC3\xA1\xC5\xBE" "no"},   // snážno
+        {"legalan", "l\xC3\xA8galan"},   // lègalan
+        {"legalno", "l\xC3\xA8galno"},   // lègalno
+        {"legalnih", "l\xC3\xA8galnih"},   // lègalnih
+        {"legalnost", "leg\xC3\xA1ln\xC5\x8Dst"},   // legálnōst
+        {"ilegalan", "\xC8\x89legalan"},   // ȉlegalan
+        {"ilegalno", "\xC8\x89legalno"},   // ȉlegalno
+        {"jednostavan", "j\xC8\x85" "dnostavan"},   // jȅdnostavan
+        {"jednostavno", "j\xC8\x85" "dnostavno"},   // jȅdnostavno
+        {"jednostavnije", "jednost\xC3\xA0vnije"},   // jednostàvnije
+        {"jednostavnost", "jednost\xC3\xA1vn\xC5\x8Dst"},   // jednostávnōst
+        {"Instagram", "\xC8\x88nstagram"},   // Ȉnstagram
+        {"Instagramu", "\xC8\x88nstagramu"},   // Ȉnstagramu
     };
     Engine engine;
     REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
@@ -515,6 +575,14 @@ TEST_CASE("Lexicon accents cover the whole paradigm", "[formant][text]") {
 
     // The noun "obavijesti" and the verb's infinitive differ in stress.
     REQUIRE(speak(engine.handle, "obavijesti") != speak(engine.handle, "obavijestiti"));
+
+    // The short vowel of sȁd stays clearly shorter than the long one of
+    // sȃd at the end of a clause (the only difference between the two).
+    {
+        const std::vector<int16_t> kratko = speak(engine.handle, "sad");
+        const std::vector<int16_t> dugo = speak(engine.handle, "s\xC8\x83" "d");
+        REQUIRE(dugo.size() > kratko.size() + 22050 * 80 / 1000);
+    }
 
     // Verbs with a long "ije" after a prefix are found by their root. Nouns,
     // adjectives and other verbs that only look like them keep their accent.

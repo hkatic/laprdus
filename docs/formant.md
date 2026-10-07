@@ -684,6 +684,21 @@ are lexicon entries.
   Rìmljanin, kr̀šćanin, držàvljanin, Lìčanin*).
 - **Adjectives in *-izan, -ozan*** (`izan_adjective()`): *precìzan,
   koncìzna, nervózan, religiózni, grandiózno*.
+- **Negated participles** (`form_of()` with `negated`): *ne* + a passive
+  participle of a verb from `VERBS` or `IJE_VERBS` is an adjective with the
+  accent the dictionaries give the participle, in every voice: *nepròčitan,
+  nedòvršen, nepòvezan, nedòkazan, nenàplaćen, neìspunjen, neòtvoren,
+  neùređen, nepròmijenjen* (one syllable before the root vowel, as in
+  *pròčitān, dòvršen, pòvezān*), *neprèslušan, neprègledan, nezàustavljen*
+  where the verb already carries its accent on its prefix, and *nȅplaćen,
+  nȅpisan, nèsrēđen* for an unprefixed verb. Zvonko makes no exception
+  here: the negated forms are adjectives, not verb forms, and Croatian
+  does not say *nepročìtan*. The lexicalized adjectives that put the accent
+  on *ne-* against this pattern (*nȅpregledan, nȅpoznat, nȅpotreban,
+  nȅprekidan*) are lexicon entries or come out of the default. The rule for
+  nouns with a long last stem syllable skips every *ne* + prefixed word
+  (`negated_prefixed()`), so *nepoznata, nepotpisana, nepotrebna,
+  neutralna* no longer get a loan's long syllable (*nepoznáta*).
 - The **-ina** rule now starts at four syllables and skips the possessives
   of nouns in *-ica, -ka, -ja* (*kraljičina, bakina, Majina*), the
   inhabitants (*građanina*) and the augmentatives in *-etina, -urina,
@@ -752,9 +767,39 @@ every form the same accent. Before adding a word, look at its whole paradigm:
 The words handled this way in October 2026 (*obavijest* with *obavijestiti*
 and *obavještavati* and their ekavian forms, *dodatno, mogućnost, sigurnost,
 privatnost, kontrolni, podatak, signal, pozadina, novčanik*, the plurals of
-the nouns in *-tak*, the verbs, the names *Zvónko* and *Vládo*) follow
+the nouns in *-tak*, the verbs, the names *Zvónko* and *Vládo*; later
+*Tìjana, Zvȍnimir, emòtikon, nȅpregledan, zaùstavljanje* with *zaùstavljati,
+prèslušati, prègledati* and the negated participles *nepròčitan,
+neprèslušan*, see "Word classes") follow
 Hrvatski jezični portal and the declension and conjugation
-tables of Wiktionary. Three choices go with common Croatian
+tables of Wiktionary. Two of them are not in any dictionary: *Tìjana* is
+accented like the other female names of that shape (*Mìrjana, Bòjana,
+Zòrana, Gòrdana, Dràgana*; the earlier entry had *Tijána*), *emòtikon* like
+*emòcija*, and both keep that syllable in every case. *Pregledati* is the
+perfective *prègledati* (*prègledaj, prègledao*), which is what a screen
+reader meets; the imperfective *preglédati* is spelled the same. *Nàtaša*
+(Wiktionary) is a lexicon entry, every case and the possessive. *Sad* is the
+adverb *sȁd* everywhere, short; the town *Nȍvī Sȃd* (*Novog Sáda, Novom
+Sádu*) gets its long vowel only from the preceding *novi* (a phrase rule in
+the front end), because the adverb is the far commoner word. The tens are
+*dvȁdeset, trȉdeset, četrdèset, pedèset* ... for Zvonko (short, and the first
+two with a falling accent): the dictionaries' long rising *dvádeset* puts the
+peak of the accent on the following syllable, which made the word sound like
+*dva deset*. Stojan and Mirsad keep *dvádeset, četrdèsēt* and the ordinals
+*dvadèsētī, četrdèsētī*. *Ȉnače* (the rule for *-ač* gave *ináče*),
+*uòstalom* and *ionàko* are lexicon entries (HJP). *Slȍbodan, slȍbodno* are told
+apart from the noun *slobòda*, whose stem had taken them; the name
+*Slobòdan* keeps its oblique cases, and the nominative, spelled like the
+adjective, goes to the adjective. *Snága, snázi, snážan* (the default gave
+*snȁga*). Adjectives in *-alan* keep the first syllable whatever their
+length in HJP (*lègālan, nȍrmālan, lòjālan, ȉlegālan, ȉdeālan, ȍriginālan,
+prȍfesionālan*); the rule for nouns in *-an* no longer takes them
+(*legàlan, normàlan*), and *legalan, ilegalan, jednostavan* have entries
+with their tone, their comparatives (*jednostàvniji*) and their nouns in
+*-nost* (*legálnōst, jednostávnōst*). *Jednostavan* had been *jednòstavan*
+by an earlier entry; HJP has *jȅdnostāvan*. *Ȉnstagram* is not in the
+dictionaries and follows *ȉnternet* rather than the *-gram* rule
+(*instàgram*). Three choices go with common Croatian
 speech rather than the dictionary, at the request of a native listener:
 
 - unstressed length is left out where it is not heard (*dȍdatno, kòntrolni,
@@ -849,7 +894,15 @@ clause and inside one.
 **Durations** start from the inherent value and are scaled by context:
 stressed and long vowels are longer, vowels before voiceless consonants and
 in closed syllables shorter, consonants in clusters shorter, the last
-syllable of a clause longer. The rate setting scales durations directly, with
+syllable of a clause longer. In a statement or exclamation a short stressed
+vowel of a full word takes only half of that final lengthening (since
+October 2026): with
+the full stretch a clause-final *sȁd* came out at 70% of *sȃd* and was heard
+as long; now it is about 60%, the ratio of the measured short and long
+accented vowels. Questions keep the full stretch, because the final rise of a
+short question ("Tko je to?") needs the time, above all at high rates, and
+so do final function words (*tȍ, tȉ*), whose fall needs it in the statement. The
+same factor is in the recorded voices' planner. The rate setting scales durations directly, with
 a floor per sound so that consonant cues survive at very high rates;
 transitions shrink less than steady states.
 
