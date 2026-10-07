@@ -25,7 +25,7 @@ addon_info = AddonInfo(
 Laprdus is a concatenative speech synthesizer using pre-recorded phoneme samples.
 Supports Croatian and Serbian language with natural-sounding prosody and inflection."""),
     # version
-    addon_version="1.0.0",
+    addon_version="2.0.0",
     # Brief changelog for this version
     # Translators: what's new content for the add-on version
     addon_changelog=_("""Initial release of Laprdus TTS for NVDA.

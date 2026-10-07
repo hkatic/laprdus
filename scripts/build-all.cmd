@@ -168,7 +168,7 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-if not exist "%PROJECT_ROOT%\installers\windows\Output\Laprdus_SAPI5_Setup_1.0.0.exe" (
+if not exist "%PROJECT_ROOT%\installers\windows\Output\Laprdus_SAPI5_Setup_2.0.0.exe" (
     echo [ERROR] Installer not found
     exit /b 1
 )

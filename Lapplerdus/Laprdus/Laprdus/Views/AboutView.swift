@@ -4,7 +4,7 @@ import SwiftUI
 
 struct AboutView: View {
     private var versionString: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0.0"
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "2.0.0"
     }
 
     private var buildString: String {

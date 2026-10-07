@@ -49,7 +49,7 @@
 #pragma comment(lib, "winmm.lib")
 
 /* Version information */
-#define CLI_VERSION "1.0.0"
+#define CLI_VERSION "2.0.0"
 
 /* Command-line options */
 struct Options {

@@ -1,7 +1,7 @@
 %global debug_package %{nil}
 
 Name:           laprdus
-Version:        1.0.0
+Version:        2.0.0
 Release:        1%{?dist}
 Summary:        Croatian/Serbian Text-to-Speech Engine
 
@@ -193,6 +193,11 @@ fi
 %{_includedir}/laprdus/
 
 %changelog
+* Wed Oct 07 2026 Hrvoje Katic <hrvoje.katic@gmail.com> - 2.0.0-1
+- Laprdus 2.0
+- New formant voices synthesized by rule: Zvonko (Croatian), Stojan (Serbian) and Mirsad (Bosnian), the default voice of each language
+- Library SONAME bumped to liblaprdus.so.2
+
 * Sun Feb 08 2026 Hrvoje Katic <hrvoje.katic@gmail.com> - 1.0.0-1
 - Merge speechd module into main package for single-package installation
 - Add SONAME to shared library for proper dependency resolution

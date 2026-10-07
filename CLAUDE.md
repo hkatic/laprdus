@@ -302,7 +302,7 @@ scons --platform=windows --arch=x86 --build-config=release sapi5
 iscc installers/windows/laprdus_sapi5.iss
 ```
 
-Output: `installers/windows/Output/Laprdus_SAPI5_Setup_1.0.0.exe`
+Output: `installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe`
 
 #### Windows CLI
 
@@ -673,12 +673,12 @@ DefaultModule laprdus  # Optional: set as default
 
 ```bash
 # Debian/Ubuntu
-sudo dpkg -i laprdus_1.0.0_amd64.deb
-sudo dpkg -i laprdus-speechd_1.0.0_amd64.deb
+sudo dpkg -i laprdus_2.0.0_amd64.deb
+sudo dpkg -i laprdus-speechd_2.0.0_amd64.deb
 
 # Fedora/RHEL
-sudo rpm -i laprdus-1.0.0.x86_64.rpm
-sudo rpm -i laprdus-speechd-1.0.0.x86_64.rpm
+sudo rpm -i laprdus-2.0.0.x86_64.rpm
+sudo rpm -i laprdus-speechd-2.0.0.x86_64.rpm
 
 # Arch Linux
 makepkg -si  # From PKGBUILD directory
@@ -687,8 +687,8 @@ makepkg -si  # From PKGBUILD directory
 #### From tarball
 
 ```bash
-tar xf laprdus-1.0.0-linux-x86_64.tar.xz
-cd laprdus-1.0.0-linux-x86_64
+tar xf laprdus-2.0.0-linux-x86_64.tar.xz
+cd laprdus-2.0.0-linux-x86_64
 sudo ./install.sh
 ```
 
@@ -736,7 +736,7 @@ cd ..
 |----------|-------------|
 | Windows SAPI5 x64 | `build/windows-x64-release/laprd64.dll` |
 | Windows SAPI5 x86 | `build/windows-x86-release/laprd32.dll` |
-| Windows Installer | `installers/windows/Output/Laprdus_SAPI5_Setup_1.0.0.exe` |
+| Windows Installer | `installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe` |
 | Linux Library | `build/linux-x64-release/liblaprdus.so` |
 | Linux CLI | `build/linux-x64-release/laprdus` |
 | Linux Speech Dispatcher | `build/linux-x64-release/sd_laprdus` |
@@ -864,10 +864,10 @@ After rebuilding, launch installers for user testing:
 
 ```bash
 # Launch SAPI5 installer
-start "" "installers/windows/Output/Laprdus_SAPI5_Setup_1.0.0.exe"
+start "" "installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe"
 
 # Launch NVDA addon installer
-start "" "nvda-addon/laprdus-1.0.0.nvda-addon"
+start "" "nvda-addon/laprdus-2.0.0.nvda-addon"
 ```
 
 ### Android Device Testing
@@ -1027,7 +1027,7 @@ rpmdev-setuptree
 **3. Create source tarball and build:**
 ```bash
 # From project root
-tar --transform='s,^\.,laprdus-1.0.0,' -czf ~/rpmbuild/SOURCES/laprdus-1.0.0.tar.gz \
+tar --transform='s,^\.,laprdus-2.0.0,' -czf ~/rpmbuild/SOURCES/laprdus-2.0.0.tar.gz \
     --exclude='.git' --exclude='build' --exclude='*.pyc' --exclude='__pycache__' \
     --exclude='android/.gradle' --exclude='android/app/build' \
     --exclude='nvda-addon/*.nvda-addon' --exclude='.sconsign*' .
@@ -1039,9 +1039,9 @@ rpmbuild -ba ~/rpmbuild/SPECS/laprdus.spec
 
 **4. Output files:**
 ```
-~/rpmbuild/RPMS/x86_64/laprdus-1.0.0-1.fc*.x86_64.rpm      # Main package
-~/rpmbuild/RPMS/x86_64/laprdus-devel-1.0.0-1.fc*.x86_64.rpm # Dev headers
-~/rpmbuild/SRPMS/laprdus-1.0.0-1.fc*.src.rpm               # Source RPM
+~/rpmbuild/RPMS/x86_64/laprdus-2.0.0-1.fc*.x86_64.rpm      # Main package
+~/rpmbuild/RPMS/x86_64/laprdus-devel-2.0.0-1.fc*.x86_64.rpm # Dev headers
+~/rpmbuild/SRPMS/laprdus-2.0.0-1.fc*.src.rpm               # Source RPM
 ```
 
 **5. Copy to project directory:**
@@ -1053,8 +1053,8 @@ cp ~/rpmbuild/RPMS/x86_64/laprdus*.rpm ~/rpmbuild/SRPMS/laprdus*.rpm \
 **6. Install and test:**
 ```bash
 # Install (use rpm directly due to self-dependency on liblaprdus.so)
-sudo rpm -ivh --nodeps ~/rpmbuild/RPMS/x86_64/laprdus-1.0.0-1.fc*.x86_64.rpm \
-    ~/rpmbuild/RPMS/x86_64/laprdus-devel-1.0.0-1.fc*.x86_64.rpm
+sudo rpm -ivh --nodeps ~/rpmbuild/RPMS/x86_64/laprdus-2.0.0-1.fc*.x86_64.rpm \
+    ~/rpmbuild/RPMS/x86_64/laprdus-devel-2.0.0-1.fc*.x86_64.rpm
 
 # Test
 laprdus -l              # List voices

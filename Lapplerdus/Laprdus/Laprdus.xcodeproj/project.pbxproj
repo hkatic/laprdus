@@ -497,7 +497,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 3GAM6Z3A2W;
 				LAPRDUS_APP_GROUP = group.com.hrvojekatic.laprdus;
@@ -564,7 +564,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 3GAM6Z3A2W;
 				LAPRDUS_APP_GROUP = group.com.hrvojekatic.laprdus;
@@ -597,17 +597,17 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "Config/Laprdus.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = 3GAM6Z3A2W;
 				LAPRDUS_APP_GROUP = group.com.hrvojekatic.laprdus;
 				"LAPRDUS_APP_GROUP[sdk=macosx*]" = "$(TeamIdentifierPrefix)com.hrvojekatic.laprdus";
 				ENABLE_PREVIEWS = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
-					"LAPRDUS_VERSION_MAJOR=1",
+					"LAPRDUS_VERSION_MAJOR=2",
 					"LAPRDUS_VERSION_MINOR=0",
 					"LAPRDUS_VERSION_PATCH=0",
-					"LAPRDUS_VERSION_STRING=\\\"1.0.0\\\"",
+					"LAPRDUS_VERSION_STRING=\\\"2.0.0\\\"",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
 				HEADER_SEARCH_PATHS = (
@@ -628,7 +628,7 @@
 					"@executable_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.hrvojekatic.Laprdus;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -650,17 +650,17 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "Config/Laprdus.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = 3GAM6Z3A2W;
 				LAPRDUS_APP_GROUP = group.com.hrvojekatic.laprdus;
 				"LAPRDUS_APP_GROUP[sdk=macosx*]" = "$(TeamIdentifierPrefix)com.hrvojekatic.laprdus";
 				ENABLE_PREVIEWS = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
-					"LAPRDUS_VERSION_MAJOR=1",
+					"LAPRDUS_VERSION_MAJOR=2",
 					"LAPRDUS_VERSION_MINOR=0",
 					"LAPRDUS_VERSION_PATCH=0",
-					"LAPRDUS_VERSION_STRING=\\\"1.0.0\\\"",
+					"LAPRDUS_VERSION_STRING=\\\"2.0.0\\\"",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
 				HEADER_SEARCH_PATHS = (
@@ -681,7 +681,7 @@
 					"@executable_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.hrvojekatic.Laprdus;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -701,7 +701,7 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = 3GAM6Z3A2W;
 				LAPRDUS_APP_GROUP = group.com.hrvojekatic.laprdus;
 				"LAPRDUS_APP_GROUP[sdk=macosx*]" = "$(TeamIdentifierPrefix)com.hrvojekatic.laprdus";
@@ -713,7 +713,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.hrvojekatic.LaprdusTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -734,7 +734,7 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = 3GAM6Z3A2W;
 				LAPRDUS_APP_GROUP = group.com.hrvojekatic.laprdus;
 				"LAPRDUS_APP_GROUP[sdk=macosx*]" = "$(TeamIdentifierPrefix)com.hrvojekatic.laprdus";
@@ -746,7 +746,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.hrvojekatic.LaprdusTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -767,16 +767,16 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				CODE_SIGN_ENTITLEMENTS = "Config/LaprdusVoices.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = 3GAM6Z3A2W;
 				LAPRDUS_APP_GROUP = group.com.hrvojekatic.laprdus;
 				"LAPRDUS_APP_GROUP[sdk=macosx*]" = "$(TeamIdentifierPrefix)com.hrvojekatic.laprdus";
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
-					"LAPRDUS_VERSION_MAJOR=1",
+					"LAPRDUS_VERSION_MAJOR=2",
 					"LAPRDUS_VERSION_MINOR=0",
 					"LAPRDUS_VERSION_PATCH=0",
-					"LAPRDUS_VERSION_STRING=\\\"1.0.0\\\"",
+					"LAPRDUS_VERSION_STRING=\\\"2.0.0\\\"",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
 				HEADER_SEARCH_PATHS = (
@@ -793,7 +793,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.hrvojekatic.Laprdus.voices;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -814,16 +814,16 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				CODE_SIGN_ENTITLEMENTS = "Config/LaprdusVoices.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_TEAM = 3GAM6Z3A2W;
 				LAPRDUS_APP_GROUP = group.com.hrvojekatic.laprdus;
 				"LAPRDUS_APP_GROUP[sdk=macosx*]" = "$(TeamIdentifierPrefix)com.hrvojekatic.laprdus";
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
-					"LAPRDUS_VERSION_MAJOR=1",
+					"LAPRDUS_VERSION_MAJOR=2",
 					"LAPRDUS_VERSION_MINOR=0",
 					"LAPRDUS_VERSION_PATCH=0",
-					"LAPRDUS_VERSION_STRING=\\\"1.0.0\\\"",
+					"LAPRDUS_VERSION_STRING=\\\"2.0.0\\\"",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
 				HEADER_SEARCH_PATHS = (
@@ -840,7 +840,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 1.0.0;
+				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.hrvojekatic.Laprdus.voices;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;

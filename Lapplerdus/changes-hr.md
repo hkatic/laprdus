@@ -1,5 +1,9 @@
 # Laprdus za iPhone, iPad i Mac — Što je novo
 
+## Verzija 2.0.0 (build 10) — u razvoju
+
+- Tri nova glasa koji se u cijelosti sintetiziraju po pravilima, bez snimaka: Zvonko (hrvatski), Stojan (srpski) i Mirsad (bosanski). Sada su zadani glas svakog jezika; Josip, Vlado i glasovi izvedeni iz njih i dalje su dostupni.
+
 ## Verzija 1.0.0 (build 9) — 28. kolovoza 2026.
 
 - Aplikacija sada ima standardni raspored s karticama: Glavno, Postavke, Rječnici i O aplikaciji, pa je sve lakše dostupno.

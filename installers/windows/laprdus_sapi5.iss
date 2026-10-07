@@ -6,7 +6,7 @@
 ; Works with NVDA, Balabolka, and all SAPI5-compatible applications
 
 #define AppName "Laprdus"
-#define AppVersion "1.0.0"
+#define AppVersion "2.0.0"
 #define AppPublisher "Hrvoje Katić"
 #define AppURL "https://hrvojekatic.com/laprdus"
 

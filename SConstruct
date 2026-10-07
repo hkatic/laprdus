@@ -11,7 +11,7 @@ from SCons.Script import *
 # Version Information
 # =============================================================================
 
-VERSION_MAJOR = 1
+VERSION_MAJOR = 2
 VERSION_MINOR = 0
 VERSION_PATCH = 0
 VERSION_STRING = f"{VERSION_MAJOR}.{VERSION_MINOR}.{VERSION_PATCH}"
@@ -743,8 +743,8 @@ elif target_platform == 'linux':
 
     # Set SONAME for proper shared library versioning
     # This ensures binaries record 'liblaprdus.so.1' as their NEEDED library,
-    # allowing versioned symlinks (liblaprdus.so.1 -> liblaprdus.so.1.0.0) to work
-    env.Append(SHLINKFLAGS=['-Wl,-soname,liblaprdus.so.1'])
+    # allowing versioned symlinks (liblaprdus.so.2 -> liblaprdus.so.2.0.0) to work
+    env.Append(SHLINKFLAGS=['-Wl,-soname,liblaprdus.so.2'])
 
     lib = env.SharedLibrary(
         target=f'{build_dir}/liblaprdus',
@@ -1165,7 +1165,7 @@ if target_platform == 'windows':
         return result.returncode
 
     nvda_addon_package = env.Command(
-        target='nvda-addon/laprdus-1.0.0.nvda-addon',
+        target='nvda-addon/laprdus-2.0.0.nvda-addon',
         source=[nvda_addon_files],
         action=build_nvda_addon
     )

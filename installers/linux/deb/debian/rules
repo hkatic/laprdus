@@ -11,10 +11,10 @@ override_dh_auto_build:
 override_dh_auto_install:
 	# Install library
 	install -D -m 755 build/linux-x64-release/liblaprdus.so \
-		debian/laprdus/usr/lib/$(DEB_HOST_MULTIARCH)/liblaprdus.so.1.0.0
-	ln -s liblaprdus.so.1.0.0 \
-		debian/laprdus/usr/lib/$(DEB_HOST_MULTIARCH)/liblaprdus.so.1
-	ln -s liblaprdus.so.1 \
+		debian/laprdus/usr/lib/$(DEB_HOST_MULTIARCH)/liblaprdus.so.2.0.0
+	ln -s liblaprdus.so.2.0.0 \
+		debian/laprdus/usr/lib/$(DEB_HOST_MULTIARCH)/liblaprdus.so.2
+	ln -s liblaprdus.so.2 \
 		debian/laprdus/usr/lib/$(DEB_HOST_MULTIARCH)/liblaprdus.so
 
 	# Install CLI

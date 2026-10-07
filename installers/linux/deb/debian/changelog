@@ -1,3 +1,12 @@
+laprdus (2.0.0-1) unstable; urgency=medium
+
+  * Laprdus 2.0.
+  * New formant voices synthesized by rule: Zvonko (Croatian), Stojan (Serbian)
+    and Mirsad (Bosnian), the default voice of each language.
+  * Library SONAME bumped to liblaprdus.so.2.
+
+ -- Hrvoje Katic <hrvoje.katic@gmail.com>  Wed, 07 Oct 2026 12:00:00 +0200
+
 laprdus (1.0.0-1) unstable; urgency=medium
 
   * Initial release.

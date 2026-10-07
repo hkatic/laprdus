@@ -9,7 +9,7 @@
 
 set -e
 
-VERSION="${1:-1.0.0}"
+VERSION="${1:-2.0.0}"
 PACKAGE_NAME="laprdus-${VERSION}-linux-x86_64"
 BUILD_DIR="$(pwd)/build-tarball"
 OUTPUT_DIR="$(pwd)"
@@ -44,8 +44,8 @@ echo "Copying files..."
 # Library (versioned with symlinks)
 cp build/linux-x64-release/liblaprdus.so "${PKG}/lib/liblaprdus.so.${VERSION}"
 cd "${PKG}/lib"
-ln -sf "liblaprdus.so.${VERSION}" "liblaprdus.so.1"
-ln -sf "liblaprdus.so.1" "liblaprdus.so"
+ln -sf "liblaprdus.so.${VERSION}" "liblaprdus.so.2"
+ln -sf "liblaprdus.so.2" "liblaprdus.so"
 cd "${PROJECT_ROOT}"
 
 # CLI

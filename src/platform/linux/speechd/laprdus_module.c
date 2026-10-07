@@ -56,7 +56,7 @@
 
 /* Module identification */
 #define MODULE_NAME "laprdus"
-#define MODULE_VERSION "1.0.0"
+#define MODULE_VERSION "2.0.0"
 
 /* Default paths */
 #define DEFAULT_DATA_DIR "/usr/share/laprdus"

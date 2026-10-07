@@ -280,7 +280,7 @@ scons --platform=windows --arch=x86 --build-config=release sapi5
 iscc installers/windows/laprdus_sapi5.iss
 ```
 
-Output: `installers/windows/Output/Laprdus_SAPI5_Setup_1.0.0.exe`
+Output: `installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe`
 
 #### Windows CLI
 
@@ -442,7 +442,7 @@ xcodebuild -scheme Laprdus -destination 'generic/platform=iOS' build -allowProvi
 |----------|--------|
 | Windows SAPI5 x64 | `build/windows-x64-release/laprd64.dll` |
 | Windows SAPI5 x86 | `build/windows-x86-release/laprd32.dll` |
-| Windows Installer | `installers/windows/Output/Laprdus_SAPI5_Setup_1.0.0.exe` |
+| Windows Installer | `installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe` |
 | Windows CLI | `build/windows-x64-release/laprdus.exe` |
 | NVDA Addon | `nvda-addon/laprdus-*.nvda-addon` |
 | Linux Library | `build/linux-x64-release/liblaprdus.so` |

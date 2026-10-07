@@ -47,7 +47,7 @@ cd nvda-addon && scons && cd ..
 
 ## Expected Output
 
-- Addon package: `nvda-addon/laprdus-1.0.0.nvda-addon`
+- Addon package: `nvda-addon/laprdus-2.0.0.nvda-addon`
 
 ## Automatic Resource Copying
 
@@ -73,7 +73,7 @@ ls -la nvda-addon/laprdus-*.nvda-addon
 ## Launch Addon Installer for Testing
 
 ```bash
-start "" "nvda-addon/laprdus-1.0.0.nvda-addon"
+start "" "nvda-addon/laprdus-2.0.0.nvda-addon"
 ```
 
 ## CRITICAL Build Rules

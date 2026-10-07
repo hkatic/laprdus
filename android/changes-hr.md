@@ -1,5 +1,9 @@
 # Laprdus za Android — Što je novo
 
+## Verzija 2.0.0 (build 12) — u razvoju
+
+- Tri nova glasa koji se u cijelosti sintetiziraju po pravilima, bez snimaka: Zvonko (hrvatski), Stojan (srpski) i Mirsad (bosanski). Sada su zadani glas svakog jezika; Josip, Vlado i glasovi izvedeni iz njih i dalje su dostupni.
+
 ## Verzija 1.0.0 (build 11) — 2. rujna 2026.
 
 - Laprdus sada radi na zaključanom zaslonu odmah nakon ponovnog pokretanja telefona, prije unosa PIN-a, uzorka ili lozinke. Korisnici TalkBacka mogu otključati svoj uređaj uz Laprdusov govor, koristeći odabrani glas, brzinu, visinu, stanke, čitanje brojeva i rječnike.

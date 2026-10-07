@@ -31,7 +31,7 @@ cd installers/linux/arch && makepkg -sf && cd ../../..
 ## Expected Output (single package)
 
 One package is created in `installers/linux/arch/`:
-- `laprdus-1.0.0-1-x86_64.pkg.tar.zst` - Complete package
+- `laprdus-2.0.0-1-x86_64.pkg.tar.zst` - Complete package
 
 ## Key Design Decisions
 
@@ -55,13 +55,13 @@ One package is created in `installers/linux/arch/`:
 ## Copy to ~/Downloads
 
 ```bash
-cp installers/linux/arch/laprdus-1.0.0-1-x86_64.pkg.tar.zst ~/Downloads/
+cp installers/linux/arch/laprdus-2.0.0-1-x86_64.pkg.tar.zst ~/Downloads/
 ```
 
 ## Test
 
 ```bash
-sudo pacman -U installers/linux/arch/laprdus-1.0.0-1-x86_64.pkg.tar.zst
+sudo pacman -U installers/linux/arch/laprdus-2.0.0-1-x86_64.pkg.tar.zst
 laprdus -l  # List voices
 laprdus "Dobar dan"  # Speak text
 spd-say -o laprdus "Zdravo"  # Via Speech Dispatcher

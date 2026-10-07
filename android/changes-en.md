@@ -1,5 +1,9 @@
 # Laprdus for Android — What's New
 
+## Version 2.0.0 (build 12) — in development
+
+- Three new voices synthesized entirely by rule, with no recordings: Zvonko (Croatian), Stojan (Serbian) and Mirsad (Bosnian). They are now the default voice of each language; Josip, Vlado and the voices derived from them remain available.
+
 ## Version 1.0.0 (build 11) — 2 September 2026
 
 - Laprdus now works on the lock screen right after the phone restarts, before the PIN, pattern or password is entered. TalkBack users can unlock their device with Laprdus speech, using their chosen voice, speed, pitch, pauses, number reading and dictionaries.

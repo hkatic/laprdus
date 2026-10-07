@@ -1,5 +1,9 @@
 # Laprdus for iPhone, iPad and Mac — What's New
 
+## Version 2.0.0 (build 10) — in development
+
+- Three new voices synthesized entirely by rule, with no recordings: Zvonko (Croatian), Stojan (Serbian) and Mirsad (Bosnian). They are now the default voice of each language; Josip, Vlado and the voices derived from them remain available.
+
 ## Version 1.0.0 (build 9) — 28 August 2026
 
 - The app now has a standard tab layout: Main, Settings, Dictionaries, and About, making everything easier to reach.

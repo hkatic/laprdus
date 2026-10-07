@@ -123,7 +123,7 @@ public:
 
     /**
      * Get engine version string.
-     * @return Version string (e.g., "1.0.0").
+     * @return Version string (e.g., "2.0.0").
      */
     static const char* version();
 

@@ -2,7 +2,7 @@
 # Builds the native TTS engine for Android NDK
 
 cmake_minimum_required(VERSION 3.22.1)
-project(laprdus VERSION 1.0.0 LANGUAGES CXX C)
+project(laprdus VERSION 2.0.0 LANGUAGES CXX C)
 
 # Set C++17 standard
 set(CMAKE_CXX_STANDARD 17)
@@ -61,10 +61,10 @@ set_source_files_properties(
 target_compile_definitions(laprdus PRIVATE
     ANDROID
     LAPRDUS_EXPORTS
-    LAPRDUS_VERSION_MAJOR=1
+    LAPRDUS_VERSION_MAJOR=2
     LAPRDUS_VERSION_MINOR=0
     LAPRDUS_VERSION_PATCH=0
-    LAPRDUS_VERSION_STRING="1.0.0"
+    LAPRDUS_VERSION_STRING="2.0.0"
 )
 
 # Compiler flags

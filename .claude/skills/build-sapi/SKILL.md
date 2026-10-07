@@ -32,7 +32,7 @@ scons --platform=windows --arch=x86 --build-config=release sapi5
 - DLLs:
   - `build/windows-x64-release/laprd64.dll`
   - `build/windows-x86-release/laprd32.dll`
-- Installer: `installers/windows/Output/Laprdus_SAPI5_Setup_1.0.0.exe`
+- Installer: `installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe`
 
 ## Voice Data
 
@@ -42,11 +42,11 @@ The build automatically generates voice data (`data/voices/Josip.bin`, `data/voi
 
 After building, verify the installer exists:
 ```bash
-ls -la installers/windows/Output/Laprdus_SAPI5_Setup_1.0.0.exe
+ls -la installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe
 ```
 
 ## Launch Installer for Testing
 
 ```bash
-start "" "installers/windows/Output/Laprdus_SAPI5_Setup_1.0.0.exe"
+start "" "installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe"
 ```

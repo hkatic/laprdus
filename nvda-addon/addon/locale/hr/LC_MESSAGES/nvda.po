@@ -5,7 +5,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Laprdus TTS 1.0.0\n"
+"Project-Id-Version: Laprdus TTS 2.0.0\n"
 "Report-Msgid-Bugs-To: hrvojekatic@gmail.com\n"
 "POT-Creation-Date: 2024-01-01 12:00+0000\n"
 "PO-Revision-Date: 2024-01-01 12:00+0000\n"

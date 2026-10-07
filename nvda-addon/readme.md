@@ -1,6 +1,6 @@
 # Laprdus - Korisnički priručnik
 
-Inačica 1.0
+Inačica 2.0
 
 ---
 

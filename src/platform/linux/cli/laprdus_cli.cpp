@@ -47,7 +47,7 @@
 #include "core/user_config.hpp"
 
 /* Version information */
-#define CLI_VERSION "1.0.0"
+#define CLI_VERSION "2.0.0"
 
 /* Default paths */
 #ifndef LAPRDUS_DATA_DIR
