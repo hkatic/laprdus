@@ -994,6 +994,80 @@ TEST_CASE("Punctuation selects intonation", "[formant][prosody]") {
     REQUIRE(close_to(question_end, statement_end, 0.05));
 }
 
+TEST_CASE("A mark glued to a word is read by name, not as a clause end", "[formant][text]") {
+    // eSpeak's rule: a period, comma, colon or other mark ends the clause
+    // only when whitespace, a bracket or quote, or the end of the text
+    // follows. Inside a word or a number it is spoken (točka / tačka,
+    // dvotočka, zarez); a comma or question mark inside a word is silent.
+    // Synthesis is deterministic, so the audio must equal the spelled-out
+    // text sample for sample.
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    auto same = [&](const char* a, const char* b) { return speak(engine.handle, a) == speak(engine.handle, b); };
+
+    SECTION("Period inside a word") {
+        REQUIRE(same("datoteka.txt", "datoteka to\xC4\x8Dka txt"));
+        REQUIRE(same("www.index.hr", "www to\xC4\x8Dka index to\xC4\x8Dka hr"));
+        REQUIRE(same(".txt", "to\xC4\x8Dka txt"));
+        REQUIRE_FALSE(same("datoteka.txt", "datoteka txt"));
+    }
+    SECTION("Decimal point and comma") {
+        REQUIRE(same("3.14", "tri to\xC4\x8Dka \xC4\x8D" "etrnaest"));
+        REQUIRE(same("3,14", "tri zarez \xC4\x8D" "etrnaest"));
+        REQUIRE(same("0.05", "nula to\xC4\x8Dka nula pet"));
+        REQUIRE(same("3.14159", "tri to\xC4\x8Dka jedan \xC4\x8D" "etiri jedan pet devet"));
+        REQUIRE(same("1.000", "jedan to\xC4\x8Dka nula nula nula"));
+    }
+    SECTION("Dotted identifiers are read group by group") {
+        REQUIRE(same("192.168.1.1", "sto devedeset dva to\xC4\x8Dka sto \xC5\xA1" "ezdeset osam to\xC4\x8Dka jedan to\xC4\x8Dka jedan"));
+        REQUIRE(same("2.0.1", "dva to\xC4\x8Dka nula to\xC4\x8Dka jedan"));
+    }
+    SECTION("Digit mode keeps the separator") {
+        REQUIRE(laprdus_set_number_mode(engine.handle, LAPRDUS_NUMBER_MODE_DIGIT) == LAPRDUS_OK);
+        REQUIRE(same("3.14", "tri to\xC4\x8Dka jedan \xC4\x8D" "etiri"));
+        REQUIRE(same("3,14", "tri zarez jedan \xC4\x8D" "etiri"));
+        REQUIRE(same("12:30", "dvanaest trideset"));
+        REQUIRE(same("7.10.2026", "sedmi deseti dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "est"));
+        // The sections share one engine in this harness
+        REQUIRE(laprdus_set_number_mode(engine.handle, LAPRDUS_NUMBER_MODE_WHOLE) == LAPRDUS_OK);
+    }
+    SECTION("Clock times and dates are read without the separators") {
+        REQUIRE(same("12:30", "dvanaest trideset"));
+        REQUIRE(same("9:05", "devet nula pet"));
+        REQUIRE(same("12:30:45", "dvanaest trideset \xC4\x8D" "etrdeset pet"));
+        REQUIRE(same("u 12:30 sati", "u dvanaest trideset sati"));
+        REQUIRE(same("7.10.2026.", "sedmi deseti dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "est."));
+        REQUIRE(same("07.10.26", "sedmi deseti dvadeset \xC5\xA1" "est"));
+        REQUIRE(same("31.12.1999", "trideset prvi dvanaesti tisu\xC4\x87u devetsto devedeset devet"));
+        // Not a time or a date: the marks are read
+        REQUIRE(same("3:1", "tri dvoto\xC4\x8Dka jedan"));
+        REQUIRE(same("25:00", "dvadeset pet dvoto\xC4\x8Dka nula nula"));
+        REQUIRE(same("7.13.2026", "sedam to\xC4\x8Dka trinaest to\xC4\x8Dka dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "est"));
+    }
+    SECTION("Colon and exclamation mark inside a word, silent comma and question mark") {
+        REQUIRE(same("a:b", "a dvoto\xC4\x8Dka be"));
+        REQUIRE(same("Hej!ti", "Hej uskli\xC4\x8Dnik ti"));
+        REQUIRE(same("a,b", "a b"));
+        REQUIRE(same("a?b", "a b"));
+    }
+    SECTION("A mark before a space, bracket, quote or the end still ends the clause") {
+        REQUIRE_FALSE(same("Kraj. Novi", "Kraj Novi"));
+        REQUIRE(same("Stvarno?!", "Stvarno?"));
+        REQUIRE(same("\xC4\x8C" "ekaj...", "\xC4\x8C" "ekaj\xE2\x80\xA6"));
+        REQUIRE(same("(Da.) Ne", "(Da. Ne"));
+        REQUIRE(same("\"Da.\" Ne", "Da. Ne"));
+    }
+    SECTION("Serbian and Bosnian voices say tačka") {
+        REQUIRE(laprdus_set_voice(engine.handle, "stojan", NO_DATA) == LAPRDUS_OK);
+        REQUIRE(same("datoteka.txt", "datoteka ta\xC4\x8Dka txt"));
+        REQUIRE(same("3.14", "tri ta\xC4\x8Dka \xC4\x8D" "etrnaest"));
+        REQUIRE(same("a:b", "a dvota\xC4\x8Dka be"));
+        REQUIRE(same("7.10.2026", "sedmi deseti dve hiljade dvadeset \xC5\xA1" "est"));
+        REQUIRE(laprdus_set_voice(engine.handle, "mirsad", NO_DATA) == LAPRDUS_OK);
+        REQUIRE(same("Hej!ti", "Hej uzvi\xC4\x8Dnik ti"));
+    }
+}
+
 TEST_CASE("Short questions and exclamations are audible", "[formant][prosody]") {
     // In a clause of a few words the end is all there is to hear the
     // punctuation by. Every question ends with a rise, also after a question

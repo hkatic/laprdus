@@ -18,7 +18,13 @@ text ──▶ TTSEngine::preprocess_text()        emoji, pronunciation dictiona
      ──▶ KlattSynth::render()                frames ──▶ 16-bit PCM, 22050 Hz
 ```
 
-The first two steps are shared with the concatenative voices.
+The first two steps are shared with the concatenative voices. A mark ends a
+clause only when whitespace, a bracket or quote, or the end of the text follows
+it (eSpeak's rule); glued to the next character ("datoteka.txt", "3.14",
+"12:30") it stays in the clause and the front end's symbol table reads it by
+name (*točka*/*tačka*, *dvotočka*/*dvotačka*, *uskličnik*/*uzvičnik*), while
+the number converter writes the decimal comma as *zarez* and reads clock times
+("12:30") and dates ("7.10.2026") without the separators.
 
 | File | Role |
 |------|------|

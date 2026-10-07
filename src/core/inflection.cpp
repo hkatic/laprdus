@@ -31,6 +31,32 @@ PauseSettings InflectionProcessor::pause_settings() const {
 // Analyze Text for Inflection Points
 // =============================================================================
 
+namespace {
+
+// Whitespace in the sense of "what follows a clause-ending mark".
+bool is_space(char32_t c) {
+    return c == U' ' || c == U'\t' || c == U'\n' || c == U'\r' || c == U'\f' ||
+           c == U'\v' || c == 0xA0 || (c >= 0x2000 && c <= 0x200B) || c == 0x3000;
+}
+
+// Brackets and quotation marks: a mark followed by one of these still ends
+// the clause ("(Dobro.)", "\"Idemo!\"").
+bool is_bracket_or_quote(char32_t c) {
+    switch (c) {
+        case U'(': case U')': case U'[': case U']': case U'{': case U'}':
+        case U'"': case U'\'': case U'<': case U'>':
+        case 0xAB: case 0xBB:                   // « »
+        case 0x2018: case 0x2019: case 0x201A:  // ‘ ’ ‚
+        case 0x201C: case 0x201D: case 0x201E:  // “ ” „
+        case 0x2039: case 0x203A:               // ‹ ›
+            return true;
+        default:
+            return false;
+    }
+}
+
+} // namespace
+
 std::vector<TextSegment> InflectionProcessor::analyze_text(const std::string& text) {
     std::vector<TextSegment> segments;
 
@@ -45,31 +71,62 @@ std::vector<TextSegment> InflectionProcessor::analyze_text(const std::string& te
     size_t segment_start = 0;
 
     for (size_t i = 0; i < utf32.size(); ++i) {
-        char32_t ch = utf32[i];
-        Punctuation punct = PhonemeMapper::detect_punctuation(ch);
-
-        if (punct != Punctuation::NONE) {
-            // End current segment at this punctuation
-            if (i > segment_start) {
-                current.text = utf32.substr(segment_start, i - segment_start);
-            }
-
-            current.trailing_punct = punct;
-            current.inflection = punct_to_inflection(punct);
-
-            // Check if this ends a sentence
-            current.is_end_of_sentence = (punct == Punctuation::PERIOD ||
-                                           punct == Punctuation::QUESTION ||
-                                           punct == Punctuation::EXCLAMATION);
-
-            if (!current.text.empty()) {
-                segments.push_back(std::move(current));
-            }
-
-            // Start new segment
-            current = TextSegment{};
-            segment_start = i + 1;
+        Punctuation punct = PhonemeMapper::detect_punctuation(utf32[i]);
+        if (punct == Punctuation::NONE) {
+            continue;
         }
+
+        // A run of marks ("...", "?!", ".)") is one boundary. Like eSpeak,
+        // a mark ends the clause only when whitespace, a bracket or quote,
+        // or the end of the text follows it. A mark glued to the next
+        // character is part of a word ("datoteka.txt", "3.14", "12:30",
+        // "www.index.hr") and stays in the clause text, where the front end
+        // reads it by name. An ellipsis character always ends the clause.
+        size_t run_end = i;
+        size_t dots = 0;
+        bool question = false, exclamation = false, ellipsis = false;
+        while (run_end < utf32.size()) {
+            Punctuation p = PhonemeMapper::detect_punctuation(utf32[run_end]);
+            if (p == Punctuation::NONE) break;
+            if (utf32[run_end] == U'.') ++dots;
+            if (p == Punctuation::QUESTION) question = true;
+            if (p == Punctuation::EXCLAMATION) exclamation = true;
+            if (p == Punctuation::ELLIPSIS) ellipsis = true;
+            ++run_end;
+        }
+        const bool ends_clause = ellipsis || run_end >= utf32.size() ||
+                                 is_space(utf32[run_end]) ||
+                                 is_bracket_or_quote(utf32[run_end]);
+        if (!ends_clause) {
+            i = run_end - 1;
+            continue;
+        }
+
+        if (ellipsis || dots >= 3) punct = Punctuation::ELLIPSIS;
+        else if (question) punct = Punctuation::QUESTION;
+        else if (exclamation) punct = Punctuation::EXCLAMATION;
+
+        // End current segment at this punctuation
+        if (i > segment_start) {
+            current.text = utf32.substr(segment_start, i - segment_start);
+        }
+
+        current.trailing_punct = punct;
+        current.inflection = punct_to_inflection(punct);
+
+        // Check if this ends a sentence
+        current.is_end_of_sentence = (punct == Punctuation::PERIOD ||
+                                       punct == Punctuation::QUESTION ||
+                                       punct == Punctuation::EXCLAMATION);
+
+        if (!current.text.empty()) {
+            segments.push_back(std::move(current));
+        }
+
+        // Start new segment after the whole run
+        current = TextSegment{};
+        segment_start = run_end;
+        i = run_end - 1;
     }
 
     // Handle remaining text (no trailing punctuation)

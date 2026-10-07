@@ -277,6 +277,24 @@ TEST_CASE("Streaming gives the same audio as one buffer", "[concat][streaming]")
     REQUIRE(streamed == whole);
 }
 
+TEST_CASE("A period inside a word or a number is read by name", "[concat][text]") {
+    // The recorded voices share the front end, so "datoteka.txt" is spoken
+    // as "datoteka točka txt" (tačka for Vlado) and "3.14" as a decimal.
+    const char* dir = data_dir();
+    if (!dir) return;
+    Engine engine;
+    auto same = [&](const char* a, const char* b) { return speak(engine.handle, a) == speak(engine.handle, b); };
+
+    REQUIRE(laprdus_set_voice(engine.handle, "josip", dir) == LAPRDUS_OK);
+    REQUIRE(same("datoteka.txt", "datoteka to\xC4\x8Dka txt"));
+    REQUIRE(same("3.14", "tri to\xC4\x8Dka \xC4\x8D" "etrnaest"));
+    REQUIRE_FALSE(same("Kraj. Novi", "Kraj Novi"));
+
+    REQUIRE(laprdus_set_voice(engine.handle, "vlado", dir) == LAPRDUS_OK);
+    REQUIRE(same("datoteka.txt", "datoteka ta\xC4\x8Dka txt"));
+    REQUIRE(same("3,14", "tri zarez \xC4\x8D" "etrnaest"));
+}
+
 TEST_CASE("Spelling works with a recorded voice", "[concat][spelling]") {
     const char* dir = data_dir();
     if (!dir) return;

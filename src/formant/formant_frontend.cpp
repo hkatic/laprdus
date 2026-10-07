@@ -322,7 +322,15 @@ struct SymbolName {
     const char32_t* eastern;
 };
 
+// Symbols that are read by name wherever they stand. The marks are here for
+// the cases where InflectionProcessor leaves them inside a clause: glued to
+// the next character, as in "datoteka.txt", "3.14", "12:30" (eSpeak reads
+// them the same way; a comma, semicolon or question mark inside a word is
+// silent there and here).
 const SymbolName SYMBOLS[] = {
+    {U'.', U"točka", U"tačka"},
+    {U':', U"dvotočka", U"dvotačka"},
+    {U'!', U"uskličnik", U"uzvičnik"},
     {U'%', U"posto", nullptr},
     {U'&', U"i", nullptr},
     {U'+', U"plus", nullptr},

@@ -452,6 +452,17 @@ Vrijednosti se izražavaju u milisekundama (ms). Raspon je od 0 do 2000 ms.
 
 **Napomena:** Korisnički konfigurator (Windows/Android) koristi jedinstveno podešavanje od 100 ms za sve znakove kraja rečenice (točka, uskličnik, upitnik), dok naredbeni program omogućuje zasebno podešavanje svakog znaka.
 
+#### Interpunkcija unutar riječi
+
+Čitanje interpunkcije inače određuje čitač ekrana: on zamjenjuje znakove njihovim imenima prema odabranoj razini interpunkcije, a Laprdus dobiva već pripremljen tekst. Iznimka su znakovi koji nisu kraj rečenice nego dio riječi ili broja, jer bi bez njih tekst izgubio smisao. Kao i eSpeak, Laprdus ih čita uvijek, bez obzira na razinu interpunkcije:
+
+- **Točka u riječi** - "datoteka.txt" čita se *datoteka točka te iks te*, "www.index.hr" *duplo ve duplo ve duplo ve točka index točka ha er*. Srpski i bosanski glasovi kažu *tačka*.
+- **Decimalna točka i zarez** - "3.14" čita se *tri točka četrnaest*, "3,14" *tri zarez četrnaest*. Do dvije znamenke iza decimalnog znaka čitaju se kao broj, više njih znamenka po znamenka (*tri točka jedan četiri jedan pet devet*), a početne nule svaka kao *nula* (*tri točka nula pet*). Broj s dvije ili više točaka, kao inačica programa ili IP adresa, čita se skupinu po skupinu: "192.168.1.1" je *sto devedeset dva točka sto šezdeset osam točka jedan točka jedan*.
+- **Vrijeme i datum** - sat i datum čitaju se bez znakova: "12:30" je *dvanaest trideset*, "9:05" *devet nula pet*, a "7.10.2026." *sedmi deseti dvije tisuće dvadeset šest* (točke u datumu označavaju redne brojeve). Vrijeme je sat od 0 do 23, dvotočka i dvije znamenke minuta, po želji još dvotočka i dvije znamenke sekundi; datum je dan od 1 do 31, mjesec od 1 do 12 i godina od dvije ili četiri znamenke. Datum bez godine ("7.10.") čita se kao decimalni broj, *sedam točka deset*, jer se ne može razlikovati od njega. Vrijeme i datum čitaju se ovako i u načinu čitanja znamenkama.
+- **Dvotočka i uskličnik u riječi** - koji nisu dio vremena čitaju se imenom: "3:1" je *tri dvotočka jedan*.
+
+Znak je kraj rečenice samo kad iza njega slijedi razmak, zagrada, navodnik ili kraj teksta; tada se izgovara pauza i rečenična melodija, a sam znak ne čita se (osim ako ga je čitač ekrana zamijenio imenom). Niz znakova, kao "..." ili "?!", jedna je granica: tri točke čitaju se kao trotočje, a "?!" kao upitnik.
+
 ### 4.5 Način čitanja brojeva
 
 Laprdus može čitati brojeve na dva načina:

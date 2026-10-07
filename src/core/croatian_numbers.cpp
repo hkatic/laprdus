@@ -5,6 +5,8 @@
 #include "croatian_numbers.hpp"
 #include <algorithm>
 #include <cctype>
+#include <string_view>
+#include <vector>
 
 namespace laprdus {
 
@@ -433,6 +435,144 @@ std::string CroatianNumbers::number_to_words(std::string_view number_str) {
 // Convert Numbers in Text (main entry point)
 // =============================================================================
 
+namespace {
+
+bool is_digit(char c) { return c >= '0' && c <= '9'; }
+
+// A period or comma glued between two digits: "3.14", "3,14", "192.168.1.1".
+bool is_separator_between_digits(const std::string& text, size_t i) {
+    return i > 0 && i + 1 < text.size() && (text[i] == '.' || text[i] == ',') &&
+           is_digit(text[i - 1]) && is_digit(text[i + 1]);
+}
+
+size_t digits_end(const std::string& text, size_t i) {
+    while (i < text.size() && is_digit(text[i])) ++i;
+    return i;
+}
+
+// Value of a group of at most 4 digits
+int group_value(std::string_view group) {
+    int value = 0;
+    for (char c : group) value = value * 10 + (c - '0');
+    return value;
+}
+
+// A clock time at position i: h or hh, a colon, exactly two minute digits,
+// optionally a colon and two second digits, and no digit after that
+// ("12:30", "9:05", "12:30:45"). Fills the groups and returns the end.
+size_t parse_time(const std::string& text, size_t i, std::vector<std::string_view>& groups) {
+    groups.clear();
+    size_t hours_end = digits_end(text, i);
+    size_t hours_len = hours_end - i;
+    if (hours_len < 1 || hours_len > 2) return 0;
+    if (group_value(std::string_view(text.data() + i, hours_len)) > 23) return 0;
+    size_t pos = hours_end;
+    for (int part = 0; part < 2; ++part) {
+        if (pos >= text.size() || text[pos] != ':') break;
+        size_t start = pos + 1;
+        size_t end = digits_end(text, start);
+        if (end - start != 2) return part == 0 ? 0 : pos;
+        if (group_value(std::string_view(text.data() + start, 2)) > 59) return part == 0 ? 0 : pos;
+        if (part == 0) groups.push_back(std::string_view(text.data() + i, hours_len));
+        groups.push_back(std::string_view(text.data() + start, 2));
+        pos = end;
+    }
+    return groups.empty() ? 0 : pos;
+}
+
+// A date at position i: day 1-31, a period, month 1-12, a period, a year
+// of two or four digits, and no digit after that ("7.10.2026", "07.10.26").
+// A period after the year is left in the text: it ends the sentence or
+// the clause as usual.
+size_t parse_date(const std::string& text, size_t i, std::vector<std::string_view>& groups) {
+    groups.clear();
+    size_t pos = i;
+    for (int part = 0; part < 3; ++part) {
+        size_t end = digits_end(text, pos);
+        std::string_view group(text.data() + pos, end - pos);
+        int value = group_value(group);
+        if (part == 0 && (group.size() > 2 || value < 1 || value > 31)) return 0;
+        if (part == 1 && (group.size() > 2 || value < 1 || value > 12)) return 0;
+        if (part == 2 && group.size() != 2 && group.size() != 4) return 0;
+        groups.push_back(group);
+        pos = end;
+        if (part < 2) {
+            if (pos + 1 >= text.size() || text[pos] != '.' || !is_digit(text[pos + 1])) return 0;
+            ++pos;
+        }
+    }
+    return pos;
+}
+
+} // namespace
+
+// Ordinal of a day or month (1-31), masculine: "7." -> sedmi, "10." -> deseti
+std::string CroatianNumbers::ordinal_to_words(int n) {
+    static const char* const ONES[] = {
+        "", "prvi", "drugi", u8"treći", u8"četvrti", "peti", u8"šesti", "sedmi", "osmi", "deveti",
+        "deseti", "jedanaesti", "dvanaesti", "trinaesti", u8"četrnaesti", "petnaesti",
+        u8"šesnaesti", "sedamnaesti", "osamnaesti", "devetnaesti", "dvadeseti",
+    };
+    if (n <= 0) return "";
+    if (n <= 20) return ONES[n];
+    if (n == 30) return "trideseti";
+    std::string words = n < 30 ? "dvadeset " : "trideset ";
+    return words + ONES[n % 10];
+}
+
+// "12:30" -> dvanaest trideset, "9:05" -> devet nula pet
+std::string CroatianNumbers::time_to_words(const std::vector<std::string_view>& groups) {
+    std::string words;
+    for (size_t k = 0; k < groups.size(); ++k) {
+        if (k > 0) words += ' ';
+        words += k == 0 ? number_to_words(groups[k]) : digit_group_to_words(groups[k]);
+    }
+    return words;
+}
+
+// "7.10.2026" -> sedmi deseti dvije tisuće dvadeset šest
+std::string CroatianNumbers::date_to_words(const std::vector<std::string_view>& groups) {
+    return ordinal_to_words(group_value(groups[0])) + ' ' +
+           ordinal_to_words(group_value(groups[1])) + ' ' + number_to_words(groups[2]);
+}
+
+// A time or date at position i, read without the separators; returns the
+// end of what was consumed, 0 when there is none.
+size_t CroatianNumbers::convert_time_or_date(const std::string& text, size_t i, std::string& result) {
+    std::vector<std::string_view> groups;
+    if (size_t end = parse_time(text, i, groups)) {
+        result += time_to_words(groups);
+        return end;
+    }
+    if (size_t end = parse_date(text, i, groups)) {
+        result += date_to_words(groups);
+        return end;
+    }
+    return 0;
+}
+
+// Words for a group of digits: every leading zero is "nula", the rest is
+// one number ("007" -> "nula nula sedam", "000" -> "nula nula nula").
+std::string CroatianNumbers::digit_group_to_words(std::string_view group) {
+    std::string words;
+    while (group.size() > 1 && group[0] == '0') {
+        words += "nula ";
+        group.remove_prefix(1);
+    }
+    words += number_to_words(group);
+    return words;
+}
+
+// The separator itself, as the front end will read it. A period stays a
+// period glued to the digits on both sides: InflectionProcessor then keeps it
+// inside the clause and the front end names it in the voice's language
+// (točka / tačka). The decimal comma is "zarez" in every language, so the
+// word is written here; a comma in the text would otherwise be a clause
+// break.
+std::string CroatianNumbers::separator_words(char separator) {
+    return separator == '.' ? "." : " zarez ";
+}
+
 std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
     std::string result;
     result.reserve(text.size() * 2);  // Estimate - numbers expand to words
@@ -443,7 +583,7 @@ std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
     while (i < length) {
         // Find start of non-digit text
         size_t text_start = i;
-        while (i < length && (text[i] < '0' || text[i] > '9')) {
+        while (i < length && !is_digit(text[i])) {
             i++;
         }
 
@@ -454,12 +594,25 @@ std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
 
         if (i >= length) break;
 
+        // A clock time or a date is read as such, without the separators:
+        // the colon of "12:30" is silent and the periods of "7.10.2026."
+        // make the day and month ordinals.
+        if (size_t end = convert_time_or_date(text, i, result)) {
+            i = end;
+            continue;
+        }
+
         // Handle leading zeros specially
-        // Each leading zero becomes " nula "
+        // Each leading zero becomes "nula ", set off from a preceding letter
+        // but glued to a separator ("25:00" must stay one token)
         while (i < length && text[i] == '0') {
             // Check if this is a leading zero (more digits follow)
-            if (i + 1 < length && text[i + 1] >= '0' && text[i + 1] <= '9') {
-                result += " nula ";
+            if (i + 1 < length && is_digit(text[i + 1])) {
+                if (!result.empty()) {
+                    unsigned char back = static_cast<unsigned char>(result.back());
+                    if (std::isalnum(back) || back >= 0x80) result += ' ';
+                }
+                result += "nula ";
                 i++;
             } else {
                 // This is the last digit (either standalone 0 or end of number)
@@ -469,9 +622,7 @@ std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
 
         // Find end of number sequence
         size_t num_start = i;
-        while (i < length && text[i] >= '0' && text[i] <= '9') {
-            i++;
-        }
+        i = digits_end(text, i);
 
         // Convert number to words
         if (i > num_start) {
@@ -480,6 +631,49 @@ std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
             if (!words.empty()) {
                 result += words;
             }
+        }
+
+        // Digits after a period or comma glued to the number. One separator
+        // is a decimal mark (eSpeak's rule for Croatian): up to two digits
+        // after it are read as one number, more are read one by one, leading
+        // zeros each as "nula" ("3.14" -> tri.četrnaest, "3.05" -> tri.nula
+        // pet, "3.14159" -> tri.jedan četiri jedan pet devet). Two or more
+        // separators make a dotted identifier (version, IP address) and
+        // every group is a whole number ("192.168.1.1", "2.0.1").
+        if (!is_separator_between_digits(text, i)) continue;
+
+        size_t separators = 0;
+        for (size_t k = i; is_separator_between_digits(text, k); k = digits_end(text, k + 1)) {
+            ++separators;
+        }
+
+        while (is_separator_between_digits(text, i)) {
+            result += separator_words(text[i]);
+            size_t group_start = i + 1;
+            size_t group_end = digits_end(text, group_start);
+            std::string_view group(text.data() + group_start, group_end - group_start);
+            if (separators >= 2) {
+                result += digit_group_to_words(group);
+            } else {
+                std::string_view rest = group;
+                bool first = true;
+                while (rest.size() > 1 && rest[0] == '0') {
+                    result += first ? "nula" : " nula";
+                    rest.remove_prefix(1);
+                    first = false;
+                }
+                if (rest.size() <= 2) {
+                    if (!first) result += ' ';
+                    result += number_to_words(rest);
+                } else {
+                    for (char d : rest) {
+                        if (!first) result += ' ';
+                        result += digit_to_word(d);
+                        first = false;
+                    }
+                }
+            }
+            i = group_end;
         }
     }
 
@@ -519,9 +713,23 @@ std::string CroatianNumbers::convert_digits_in_text(const std::string& text) {
 
         if (i >= length) break;
 
-        // Convert each digit to its word form
+        // A time or a date is not a string of digits: read it as in the
+        // whole-number mode
+        if (size_t end = convert_time_or_date(text, i, result)) {
+            i = end;
+            continue;
+        }
+
+        // Convert each digit to its word form; a period or comma glued
+        // between digits is read by name ("3.14" -> tri.jedan četiri)
         bool first_digit = true;
-        while (i < length && text[i] >= '0' && text[i] <= '9') {
+        while (i < length && (is_digit(text[i]) || is_separator_between_digits(text, i))) {
+            if (!is_digit(text[i])) {
+                result += separator_words(text[i]);
+                first_digit = true;   // glued to the period, or after the spaces of " zarez "
+                i++;
+                continue;
+            }
             if (!first_digit) {
                 result += " ";
             }

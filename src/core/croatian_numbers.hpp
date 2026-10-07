@@ -7,6 +7,7 @@
 
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace laprdus {
 
@@ -86,6 +87,16 @@ private:
     std::string get_milliard_variant(std::string_view prefix, char last_digit);
     std::string get_large_number_suffix(int group_index, char last_digit);
     bool is_feminine_scale(int group_index);
+
+    // Digits after a decimal mark or inside a dotted identifier
+    std::string digit_group_to_words(std::string_view group);
+    static std::string separator_words(char separator);
+
+    // Clock times and dates ("12:30", "7.10.2026")
+    size_t convert_time_or_date(const std::string& text, size_t i, std::string& result);
+    std::string time_to_words(const std::vector<std::string_view>& groups);
+    std::string date_to_words(const std::vector<std::string_view>& groups);
+    static std::string ordinal_to_words(int n);
 
     // Group processing
     std::string group_to_words(std::string_view group);

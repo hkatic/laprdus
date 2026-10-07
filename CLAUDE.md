@@ -54,7 +54,7 @@ It has two kinds of voices:
 ### Processing Pipeline
 
 1. Text → `TTSEngine::preprocess_text()` → Number expansion, dictionaries
-2. → `InflectionProcessor::analyze_text()` → Segment into clauses by punctuation
+2. → `InflectionProcessor::analyze_text()` → Segment into clauses by punctuation (a mark glued to the next character, as in `datoteka.txt`, `3.14`, `12:30`, is not a clause end: it stays in the text and is read by name by the front end's `SYMBOLS` table; the number converter reads the decimal comma as *zarez*, and clock times `12:30` and dates `7.10.2026` without the separators, the day and month as ordinals)
 3. → `formant::Frontend::process()` → phones with stress, words, clause kind (both kinds of voices)
 4. → Recorded voices: `concat::plan_clause()` (durations, pitch contour) → `concat::render()` (TD-PSOLA)
    Formant voices: `ClauseBuilder` → `KlattSynth`
