@@ -106,6 +106,30 @@ const char* const COMMON[] = {
     // emòtikon in every case; not in the dictionaries, accented like
     // emòcija, against the rule for loans in -on (emotikóna)
     u8"em'otikon*",
+    // ubrzánje (HJP), the participle and adverb ȕbrzan, ȕbrzano; the verb
+    // ubr̀zati is in VERBS
+    u8"ubrz'a:nj*", u8"^ubrzan*",
+    // podèsiv, podèsivo like the other adjectives in -iv from prefixed
+    // verbs (izvèdiv, dokàziv, podnòšljiv, prilagòdljiv in HJP; the word
+    // itself is in no dictionary), podesívōst like održívōst
+    u8"pod'esiv*", u8"nepod'esiv*", u8"podes'i:vost*", u8"podes'i:vošću",
+    // mȍnoton, mȍnotono in every form (HJP); the noun monotònija and the
+    // comparative monotòniji need their own stem, the shorter one would
+    // take them
+    u8"m^onoton*", u8"monot'onij*",
+    // pàuza, sȁuna, fàuna (HJP): the long-stem rule had taken "au" for a
+    // long u (paúza)
+    u8"p/auz*", u8"s^aun*", u8"f/aun*",
+    // kòrisnīk, kòrisnica, kòrisnički (HJP) and the adjective kȍristan,
+    // kȍrisno, the noun kȍrīst; the verb kòristiti is in VERBS, and
+    // "koristi" is read as the noun
+    u8"k/orisnik*", u8"k/orisnic*", u8"k/orisniče", u8"k/orisničk*",
+    u8"k^oristan", u8"k^orisn|a|o|i|e|u|og|om|oj|ih|im|ima|oga|ome",
+    u8"k^orist", u8"k^oristi",
+    // rédak, rétka, réci, rȇdākā (HJP), also spelled redka, redci; "reci"
+    // stays the imperative rèci, the far commoner word
+    u8"r/e:dak", u8"r/e:tk|a|u|om|e|i|o|ih|im|ima|og|oj", u8"r/e:dk|a|u|om|e|i",
+    u8"r/e:tc|i|ima", u8"r/e:dc|i|ima", u8"r/e:cima", u8"r/eci", u8"r^e:daka",
 
     // ---- Places ----
     u8"Z'a:greb*", u8"Be'ograd*", u8"S/arajev*", u8"Ljublj'a:n*", u8"Eur'o:p*",
@@ -339,6 +363,8 @@ const char* const SERBIAN[] = {
     u8"okt'o:br*", u8"nov'embar", u8"nov'embr*", u8"dec'embar", u8"dec'embr*",
     u8"d/e:te", u8"vr/e:me", u8"l/e:p*", u8"ml/e:k*", u8"r/e:k*", u8"b/e:l*",
     u8"sv^e:t", u8"r^e:č",
+    u8"m^onoto:no", u8"r^e:da:ka:", u8"k/orisni:k*", u8"k/orisni:ci", u8"k/orisni:cima",
+    u8"k/orisni:če", u8"k^ori:stan", u8"k^ori:st",
 };
 
 const char* const BOSNIAN[] = {
@@ -347,6 +373,8 @@ const char* const BOSNIAN[] = {
     u8"j^u:l", u8"^august*", u8"sept'embar", u8"sept'embr*", u8"okt'o:bar",
     u8"okt'o:br*", u8"nov'embar", u8"nov'embr*", u8"dec'embar", u8"dec'embr*",
     u8"k^ahv*", u8"k^af*", u8"l^ahko", u8"m^ehk*",
+    u8"m^onoto:no", u8"r^e:da:ka:", u8"k/orisni:k*", u8"k/orisni:ci", u8"k/orisni:cima",
+    u8"k/orisni:če", u8"k^ori:stan", u8"k^ori:st",
 };
 
 // Verbs whose root has the long "ije" (podijéliti, promijéniti, zalijévati).
@@ -431,6 +459,7 @@ const char* const VERBS[] = {
     u8"nahr'a:n=i<p", u8"zašt'i:t=i<pn", u8"odg'od=i<pn", u8"dog'od=i<", u8"pog'od=i<p",
     u8"ug'od=i<pn", u8"prilag'od=i<p", u8"pohv'a:l=i<pn", u8"hv'a:l=i", u8"zahv'a:l=i<n",
     u8"up'a:l=i<pn", u8"zap'a:l=i<p", u8"ug'a:s=i<p", u8"g'a:s=i", u8"ispr'o:b=a<p",
+    u8"p'odes=i", u8"k'orist=in", u8"ub'rz=a<",
     u8"pr'o:b=a", u8"proč'it=ap", u8"oč'it=ap", u8"izrač'un=aPn", u8"rač'un=an",
     u8"obrač'un=aPn", u8"zaklj'uč=ap", u8"otklj'uč=ap", u8"p'i:t=a", u8"up'i:t=a<p",
     u8"zap'i:t=a<p", u8"pr'i:č=a", u8"ispr'i:č=a<p", u8"sv'i:r=a", u8"m'o:r=a",

@@ -562,6 +562,38 @@ TEST_CASE("Lexicon accents cover the whole paradigm", "[formant][text]") {
         {"jednostavnost", "jednost\xC3\xA1vn\xC5\x8Dst"},   // jednostávnōst
         {"Instagram", "\xC8\x88nstagram"},   // Ȉnstagram
         {"Instagramu", "\xC8\x88nstagramu"},   // Ȉnstagramu
+        {"ubrzanje", "ubrz\xC3\xA1nje"},   // ubrzánje
+        {"ubrzanja", "ubrz\xC3\xA1nja"},   // ubrzánja
+        {"ubrzanjem", "ubrz\xC3\xA1njem"},   // ubrzánjem
+        {"ubrzano", "\xC8\x95" "brzano"},   // ȕbrzano
+        {"podesivo", "pod\xC3\xA8sivo"},   // podèsivo
+        {"podesivih", "pod\xC3\xA8sivih"},   // podèsivih
+        {"nepodesiv", "nepod\xC3\xA8siv"},   // nepodèsiv
+        {"podesivost", "podes\xC3\xADvost"},   // podesívost
+        {"monoton", "m\xC8\x8Dnoton"},   // mȍnoton
+        {"monotono", "m\xC8\x8Dnotono"},   // mȍnotono
+        {"monotonih", "m\xC8\x8Dnotonih"},   // mȍnotonih
+        {"monotonija", "monot\xC3\xB2nija"},   // monotònija
+        {"pauza", "p\xC3\xA0uza"},   // pàuza
+        {"pauze", "p\xC3\xA0uze"},   // pàuze
+        {"pauzama", "p\xC3\xA0uzama"},   // pàuzama
+        {"sauna", "s\xC8\x81una"},   // sȁuna
+        {"fauna", "f\xC3\xA0una"},   // fàuna
+        {"korisni\xC4\x8Dki", "k\xC3\xB2risni\xC4\x8Dki"},   // kòrisnički
+        {"korisni\xC4\x8Dkih", "k\xC3\xB2risni\xC4\x8Dkih"},   // kòrisničkih
+        {"korisni\xC4\x8Dkim", "k\xC3\xB2risni\xC4\x8Dkim"},   // kòrisničkim
+        {"korisnik", "k\xC3\xB2risnik"},   // kòrisnik
+        {"korisnici", "k\xC3\xB2risnici"},   // kòrisnici
+        {"koristan", "k\xC8\x8Dristan"},   // kȍristan
+        {"korisno", "k\xC8\x8Drisno"},   // kȍrisno
+        {"korist", "k\xC8\x8Drist"},   // kȍrist
+        {"redak", "r\xC3\xA9" "dak"},   // rédak
+        {"retka", "r\xC3\xA9tka"},   // rétka
+        {"redka", "r\xC3\xA9" "dka"},   // rédka
+        {"retku", "r\xC3\xA9tku"},   // rétku
+        {"retkom", "r\xC3\xA9tkom"},   // rétkom
+        {"recima", "r\xC3\xA9" "cima"},   // récima
+        {"redaka", "r\xC8\x87" "daka"},   // rȇdaka
     };
     Engine engine;
     REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);

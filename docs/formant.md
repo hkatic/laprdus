@@ -805,7 +805,19 @@ with their tone, their comparatives (*jednostàvniji*) and their nouns in
 *-nost* (*legálnōst, jednostávnōst*). *Jednostavan* had been *jednòstavan*
 by an earlier entry; HJP has *jȅdnostāvan*. *Ȉnstagram* is not in the
 dictionaries and follows *ȉnternet* rather than the *-gram* rule
-(*instàgram*). Three choices go with common Croatian
+(*instàgram*). *Ubrzánje* (the stress had gone to the syllabic r), the
+participle and adverb *ȕbrzan, ȕbrzano* and the present *ùbrzām* (Zvonko
+keeps *ubr̀zam*, as for every verb); *mȍnoton, mȍnotono* with *monotònija*;
+*pàuza* with *sȁuna* and *fàuna* (the long-stem rule had read "au" as a long
+*u*, *paúza*); *kòrisnički* with *kòrisnīk, kòrisnica, kȍristan, kȍrisno,
+kȍrīst, kòristiti*; *rédak, rétka, réci, récima, rȇdākā*, also spelled
+*redka, redci* (Croatian orthography) and the Serbian adjective *rédak,
+rétka* "rare", which has the same accent. *Reci* stays the imperative *rèci*
+and *reče* the aorist *rȅče*, both far commoner than the noun's plural and
+vocative. *Podèsiv, podèsivo* and *podesívōst* are in no dictionary and
+follow the adjectives in *-iv* from prefixed verbs (*izvèdiv, dokàziv,
+podnòšljiv, prilagòdljiv; održívōst*); the verb is *pòdesiti, pòdesīm,
+pòdešen*. Three choices go with common Croatian
 speech rather than the dictionary, at the request of a native listener:
 
 - unstressed length is left out where it is not heard (*dȍdatno, kòntrolni,
