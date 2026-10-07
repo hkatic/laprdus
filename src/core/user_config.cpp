@@ -221,7 +221,7 @@ std::string generate_settings_json(const UserSettings& settings) {
     json << "        \"force.speed\": \"Use Laprdus speed setting instead of system/SAPI5 (true/false)\",\n";
     json << "        \"force.pitch\": \"Use Laprdus pitch setting instead of system/SAPI5 (true/false)\",\n";
     json << "        \"force.volume\": \"Use Laprdus volume setting instead of system/SAPI5 (true/false)\",\n";
-    json << "        \"dictionaries.user_enabled\": \"Apply user dictionaries (user.json, spelling.json, emoji.json) during synthesis (true/false)\"\n";
+    json << "        \"dictionaries.user_enabled\": \"Apply user dictionaries (user.json, spelling.json, emoji.json, accents.json) during synthesis (true/false)\"\n";
     json << "    },\n";
     json << "\n";
     json << "    \"voice\": {\n";
@@ -512,6 +512,10 @@ std::string UserConfig::get_user_spelling_dictionary_path() const {
 
 std::string UserConfig::get_user_emoji_dictionary_path() const {
     return get_config_file_path("emoji.json");
+}
+
+std::string UserConfig::get_user_accent_lexicon_path() const {
+    return get_config_file_path("accents.json");
 }
 
 bool UserConfig::user_dictionary_exists(const std::string& filename) const {

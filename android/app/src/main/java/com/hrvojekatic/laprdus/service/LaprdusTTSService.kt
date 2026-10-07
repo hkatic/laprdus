@@ -391,10 +391,26 @@ class LaprdusTTSService : TextToSpeechService() {
         }
         if (!settings.userDictionariesEnabled) {
             logDebug { "User dictionaries disabled, skipping" }
+            tts?.clearAccentLexicon()
             return
         }
 
         val engine = tts ?: return
+
+        // The accent lexicon of the formant voices is one file the engine
+        // parses itself (it replaces the previous one; a missing file clears it).
+        val accents = File(dictionaryDir, LaprdusStorage.ACCENT_LEXICON_FILE_NAME)
+        if (accents.isFile) {
+            try {
+                val accepted = engine.loadAccentLexicon(accents.readText(Charsets.UTF_8))
+                Log.i(TAG, "Loaded user ${accents.name}: accepted=$accepted")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to load user ${accents.name}: ${e.message}")
+                engine.clearAccentLexicon()
+            }
+        } else {
+            engine.clearAccentLexicon()
+        }
 
         // Every dictionary type is saved in the same entry format.
         for (type in DictionaryType.entries) {

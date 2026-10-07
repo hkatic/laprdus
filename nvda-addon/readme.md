@@ -40,6 +40,7 @@ Inačica 2.0
    - [5.8 Ručno uređivanje JSON datoteka](#58-ručno-uređivanje-json-datoteka-napredno)
    - [5.9 Primjeri praktične uporabe](#59-primjeri-praktične-uporabe)
    - [5.10 Rješavanje problema s rječnicima](#510-rješavanje-problema-s-rječnicima)
+   - [5.11 Naglasni rječnik (accents.json)](#511-naglasni-rječnik-accentsjson)
 6. [Glasovi](#6-glasovi)
    - [6.1 Dostupni glasovi](#61-dostupni-glasovi)
    - [6.2 Osnovni i izvedeni glasovi](#62-osnovni-i-izvedeni-glasovi)
@@ -491,13 +492,14 @@ Rječnici omogućuju prilagodbu načina na koji Laprdus izgovara određene rije�
 
 ### 5.1 Vrste rječnika
 
-Laprdus koristi tri vrste rječnika, od kojih svaki ima posebnu namjenu:
+Laprdus koristi tri vrste rječnika, od kojih svaki ima posebnu namjenu, i uz njih naglasni rječnik formantnih glasova:
 
 | Vrsta rječnika | Datoteka | Namjena |
 |----------------|----------|---------|
 | **Glavni rječnik** | `user.json` | Zamjena riječi i fraza prilagođenim izgovorom |
 | **Rječnik slovkanja** | `spelling.json` | Izgovor pojedinačnih znakova (slova, brojeva, simbola) |
 | **Rječnik emodžija** | `emoji.json` | Pretvaranje emodžija u tekstualni opis |
+| **Naglasni rječnik** | `accents.json` | Naglasak, dužina i ton riječi za formantne glasove (vidi [5.11](#511-naglasni-rječnik-accentsjson)) |
 
 ### 5.2 Lokacije datoteka rječnika
 
@@ -527,6 +529,7 @@ Datoteke u ovom direktoriju:
 | `user.json` | Vaš korisnički rječnik izgovora |
 | `spelling.json` | Rječnik slovkanja (izgovor znakova) |
 | `emoji.json` | Rječnik emodžija |
+| `accents.json` | Naglasni rječnik formantnih glasova |
 
 **Napomena:** Ove datoteke se stvaraju automatski kada prvi put dodate unos putem Laprdus Konfiguratora. Također ih možete stvoriti ručno.
 
@@ -538,7 +541,7 @@ Datoteke rječnika nalaze se u:
 ~/.config/Laprdus/
 ```
 
-Koristite iste nazive datoteka kao na Windowsu (`user.json`, `spelling.json`, `emoji.json`).
+Koristite iste nazive datoteka kao na Windowsu (`user.json`, `spelling.json`, `emoji.json`, `accents.json`).
 
 #### Android
 
@@ -896,6 +899,7 @@ Ova metoda je namijenjena **naprednim korisnicima** koji žele izravno uređivat
   - `user.json` za glavni rječnik
   - `spelling.json` za rječnik slovkanja
   - `emoji.json` za rječnik emodžija
+  - `accents.json` za naglasni rječnik formantnih glasova (zapis u [5.11](#511-naglasni-rječnik-accentsjson))
 
 **Korak 3: Uredite sadržaj**
 
@@ -1181,6 +1185,56 @@ Primjer problema: Unos za "TV" zamjenjuje i "aktivator" jer sadrži "TV".
 4. Spremite postavke
 
 ---
+
+### 5.11 Naglasni rječnik (accents.json)
+
+Formantni glasovi (Zvonko, Stojan, Mirsad i pjevački glasovi) sami određuju mjesto naglaska, dužinu i ton svake riječi: prvo iz naglasnih znakova u tekstu, zatim iz ugrađenog leksikona, pa po pravilima za nastavke, a ako ništa ne pogodi, naglasak ide na prvi slog. Riječ koja tako ispadne krivo može se ispraviti u naglasnom rječniku, i to ne samo jedan njezin oblik: unos može pokriti cijelu osnovu, popis oblika ili cijeli glagol sa svim licima i vremenima. Snimljeni glasovi (Josip, Vlado) ga ne koriste.
+
+Datoteka `accents.json` stoji uz ostale rječnike (`%APPDATA%\Laprdus` na Windowsu, `~/.config/Laprdus` na Linuxu) i učitava se zajedno s njima kad su korisnički rječnici uključeni. Učitava se jednom, pri pokretanju i pri promjeni datoteke; govor zbog nje nije ništa sporiji.
+
+#### Zapis
+
+Unosi se pišu u zapisu ugrađenog leksikona:
+
+| Znak | Značenje |
+|------|----------|
+| `'` | ispred naglašenog samoglasnika (ili slogotvornog r); ton se bira sam |
+| `^` | ispred naglašenog samoglasnika: silazni naglasak |
+| `/` | ispred naglašenog samoglasnika: uzlazni naglasak |
+| `:` | iza dugog samoglasnika |
+| `*` | na kraju: osnova, koja vrijedi i za oblike s do tri slova više (kontróla, kontróle, kontrólom) |
+| `\|` | `osnova\|nastavak\|nastavak`: po jedan točan oblik za svaki nastavak; prazan nastavak je sama osnova |
+
+Primjer datoteke:
+
+```json
+{
+    "version": "1.0",
+    "entries": [
+        { "word": "kontr'o:l*", "comment": "kontróla, kontróle, kontrólom" },
+        { "word": "sign'a:l|a|u|om|e|i|ima", "comment": "signála, signálu...; sìgnal ostaje kako jest" },
+        { "word": "p^oruk*", "comment": "pȍruka: silazni naglasak na prvom slogu" },
+        { "word": "dir'ektor*", "language": "sr", "comment": "samo za Stojana" },
+        { "verb": "ur'e:d=i<p", "comment": "uréditi, urédim, urédio, uređen" },
+        { "verb": "dijel:i", "comment": "podijeliti, raspodijeliti, podijelim, podijeljen" }
+    ]
+}
+```
+
+- `word`: riječ, osnova (`*`) ili popis oblika (`|`).
+- `verb`: glagol. Piše se cijela osnova s naglaskom infinitiva, znak `=` i vrsta: `i` za glagole na -iti/-im, `a` na -ati/-am, `u` na -nuti/-nem, `t` na -ati s drugom osnovom u prezentu i `e` za tu osnovu (`pok'a:z=t` i `pok'a:ž=e`). Iza vrste mogu stajati oznake: `<` pomiče naglasak jedan slog unatrag u prezentu, `p` i u trpnom pridjevu (tako govore Stojan i Mirsad, Zvonko zadržava naglasak infinitiva), `n` kad je imperativ jednak obliku neke imenice (potvrdi, uredi), pa se čita kao glagol samo na početku rečenice. Glagol s dugim *ije* u korijenu piše se kao `korijen:vrsta` i vrijedi sa svakim prefiksom.
+- `language`: `hr`, `sr` ili `bs` ograničava unos na glas tog jezika; bez toga vrijedi za sva tri.
+- `comment`: bilješka za vas, Laprdus je ne čita.
+
+Točan oblik ima prednost pred osnovom, dulja osnova pred kraćom, a vaš unos pred ugrađenim. Naglasni znakovi napisani u samom tekstu, ili u zamjeni glavnog rječnika (`telèfon`), imaju prednost pred svime.
+
+Neispravan unos (bez naglasnog znaka, s dva naglaska, s nepoznatim slovom ili nepoznatom vrstom glagola) preskače se, a ostali vrijede. Na naredbenoj liniji `laprdus -w` ispisuje koliko je unosa prihvaćeno i što je bilo krivo s prvim odbijenim; NVDA dodatak to upisuje u svoj dnevnik. Rezultat možete odmah čuti:
+
+```bash
+laprdus -v zvonko "kontrola, signala, uredio"
+```
+
+**Android i Apple:** datoteka `accents.json` čita se iz istog direktorija kao ostali rječnici kad su korisnički rječnici uključeni, ali aplikacije za sada nemaju uređivač za nju.
 
 ## 6. Glasovi
 

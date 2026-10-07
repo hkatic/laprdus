@@ -643,6 +643,57 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_append_emoji_dictionary(
  */
 LAPRDUS_API void LAPRDUS_CALL laprdus_clear_emoji_dictionary(LaprdusHandle handle);
 
+// =============================================================================
+// Accent Lexicon Functions (user accent entries for the formant voices)
+// =============================================================================
+
+/**
+ * Load the user's accent lexicon from a JSON file, replacing the current one.
+ * The entries use the notation of the built-in lexicon (formant_lexicon.cpp):
+ *   { "entries": [ { "word": "kontr'o:l*" }, { "word": "sign'a:l|a|u|om" },
+ *                  { "verb": "ur'e:d=i<p" }, { "verb": "dijel:i", "language": "hr" } ] }
+ * "word" is a word, a stem (*) or a paradigm (|); "verb" a whole stem or a
+ * root with a long ije; "language" (hr, sr, bs) limits an entry to one voice.
+ * Only the formant voices (Zvonko, Stojan, Mirsad and the singing presets)
+ * use it; it is kept across voice changes. The file is parsed once; a bad
+ * entry is skipped, and laprdus_get_accent_lexicon_report() tells what was
+ * accepted and what was wrong with the first bad entry.
+ * @param handle Engine handle.
+ * @param lexicon_path Path to the accent lexicon JSON file.
+ * @return LAPRDUS_OK if at least one entry was accepted, error code otherwise.
+ */
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_load_accent_lexicon(
+    LaprdusHandle handle,
+    const char* lexicon_path
+);
+
+/**
+ * Load the user's accent lexicon from memory, replacing the current one.
+ * @param handle Engine handle.
+ * @param json_content JSON content as a string.
+ * @param length Length of the content (0 for null-terminated).
+ * @return LAPRDUS_OK if at least one entry was accepted, error code otherwise.
+ */
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_load_accent_lexicon_from_memory(
+    LaprdusHandle handle,
+    const char* json_content,
+    size_t length
+);
+
+/**
+ * Remove the user's accent lexicon.
+ * @param handle Engine handle.
+ */
+LAPRDUS_API void LAPRDUS_CALL laprdus_clear_accent_lexicon(LaprdusHandle handle);
+
+/**
+ * What the last accent lexicon load accepted and rejected, for example
+ * "12 words, 3 verbs; 1 rejected (first: kontrola: no stress or length mark)".
+ * @param handle Engine handle.
+ * @return A string valid until the next load; "" if nothing was loaded.
+ */
+LAPRDUS_API const char* LAPRDUS_CALL laprdus_get_accent_lexicon_report(LaprdusHandle handle);
+
 /**
  * Enable or disable emoji processing.
  * When enabled, emojis are converted to their text representations.

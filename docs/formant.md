@@ -597,6 +597,29 @@ To correct a word, add an entry to `formant_lexicon.cpp` (notation at the top
 of the file). Language-specific tables override the common one (*pròfesor* in
 Croatian, *profèsor* in Serbian and Bosnian).
 
+**Users can do the same without recompiling.** `accents.json` next to the user
+dictionaries (`%APPDATA%\Laprdus`, `~/.config/Laprdus`, the Android and Apple
+dictionary directories) holds entries in the same notation, as JSON:
+`{ "word": "kontr'o:l*" }`, `{ "word": "sign'a:l|a|u|om" }`,
+`{ "verb": "ur'e:d=i<p" }`, `{ "verb": "dijel:i" }`, each optionally with
+`"language": "hr" | "sr" | "bs"` and a `"comment"`. `UserLexicon::parse()`
+(`formant_frontend.cpp`) reads the file once, checks every entry (one stress
+mark, length only after a vowel, known verb classes) and counts the ones it
+skips; `laprdus_get_accent_lexicon_report()` returns the counts and the first
+reason. `Frontend::set_user_lexicon()` copies the entries for its language
+into hash maps of its own that are consulted before the built-in ones at every
+step (user exact form, built-in exact form, then stems by falling length, the
+user's first at each length), and the user's verbs are tried before the
+built-in verb tables. The whole cost is one or two extra hash probes per word;
+the file is capped at 20 000 word forms and 2 000 verbs so that the linear
+verb scan stays short. The lexicon lives in the engine, survives voice
+changes, and is replaced wholesale by the next load, so a removed entry is
+really gone. `laprdus_load_user_config()` and every platform's user-dictionary
+loader pick the file up; the C API is `laprdus_load_accent_lexicon()`,
+`laprdus_load_accent_lexicon_from_memory()`, `laprdus_clear_accent_lexicon()`.
+Suffix rules (the next layer down) remain code: most of what they would say
+can be written as a stem entry.
+
 **A word is more than its dictionary form.** The accent often sits somewhere
 else in the other cases and persons, and a stem entry (`kontr'o:l*`) gives
 every form the same accent. Before adding a word, look at its whole paradigm:

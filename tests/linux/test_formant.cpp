@@ -1061,3 +1061,89 @@ TEST_CASE("Singing presets spell as well", "[formant][singing]") {
     REQUIRE(count > 0);
     laprdus_free_buffer(samples);
 }
+
+// =============================================================================
+// User accent lexicon
+// =============================================================================
+
+TEST_CASE("The user's accent lexicon moves the stress of words and verbs", "[formant][lexicon]") {
+    // Words the built-in lexicon does not know get the first syllable.
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(speak(engine.handle, "balkon") != speak(engine.handle, "balk\xC3\xB3n"));       // balkón
+    REQUIRE(speak(engine.handle, "vagona") != speak(engine.handle, "vag\xC3\xB3na"));       // vagóna
+    REQUIRE(speak(engine.handle, "zatrubim") != speak(engine.handle, "zatr\xC3\xB9" "bim"));  // zatrùbim
+
+    const char* json =
+        "{ \"version\": \"1.0\", \"entries\": [\n"
+        "  { \"word\": \"balk'o:n*\", \"comment\": \"balk\\u00f3n, balk\\u00f3na\" },\n"
+        "  { \"word\": \"vag'o:n|a|u|om\" },\n"
+        "  { \"word\": \"kami'o:n*\", \"language\": \"sr\" },\n"
+        "  { \"verb\": \"zatr'ub=i\" },\n"
+        "  { \"word\": \"kabina\" },\n"
+        "  { \"verb\": \"xyz\" }\n"
+        "] }";
+    REQUIRE(laprdus_load_accent_lexicon_from_memory(engine.handle, json, 0) == LAPRDUS_OK);
+    std::string report = laprdus_get_accent_lexicon_report(engine.handle);
+    INFO(report);
+    // Two stems and three paradigm forms, one verb; the two malformed
+    // entries are reported.
+    REQUIRE(report.find("5 words, 1 verbs; 2 rejected (first: kabina: no stress or length mark)") == 0);
+
+    // A stem covers the inflected forms, a paradigm only the forms listed.
+    REQUIRE(speak(engine.handle, "balkon") == speak(engine.handle, "balk\xC3\xB3n"));
+    REQUIRE(speak(engine.handle, "balkona") == speak(engine.handle, "balk\xC3\xB3na"));
+    REQUIRE(speak(engine.handle, "vagona") == speak(engine.handle, "vag\xC3\xB3na"));
+    REQUIRE(speak(engine.handle, "vagonom") == speak(engine.handle, "vag\xC3\xB3nom"));
+    REQUIRE(speak(engine.handle, "vagon") != speak(engine.handle, "vag\xC3\xB3n"));
+    // A verb stem reaches every form the built-in verbs do.
+    REQUIRE(speak(engine.handle, "zatrubiti") == speak(engine.handle, "zatr\xC3\xB9" "biti"));
+    REQUIRE(speak(engine.handle, "zatrubim") == speak(engine.handle, "zatr\xC3\xB9" "bim"));
+    REQUIRE(speak(engine.handle, "zatrubio") == speak(engine.handle, "zatr\xC3\xB9" "bio"));
+    // An entry for Serbian only leaves Zvonko alone.
+    REQUIRE(speak(engine.handle, "kamion") != speak(engine.handle, "kami\xC3\xB3n"));       // kamión
+    // Built-in entries, suffix rules and accent marks in the text still apply.
+    REQUIRE(speak(engine.handle, "kontrola") == speak(engine.handle, "kontr\xC3\xB3la"));
+    REQUIRE(speak(engine.handle, "organizacija") == speak(engine.handle, "organiz\xC3\xA1" "cija"));
+    REQUIRE(speak(engine.handle, "b\xC3\xA0lkon") != speak(engine.handle, "balk\xC3\xB3n"));
+
+    // The lexicon survives a voice change, and the Serbian voice gets its entry.
+    REQUIRE(laprdus_set_voice(engine.handle, "stojan", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(speak(engine.handle, "balkon") == speak(engine.handle, "balk\xC3\xB3n"));
+    REQUIRE(speak(engine.handle, "kamion") == speak(engine.handle, "kami\xC3\xB3n"));
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(speak(engine.handle, "balkon") == speak(engine.handle, "balk\xC3\xB3n"));
+
+    // Clearing restores the defaults; so does a file with nothing usable.
+    laprdus_clear_accent_lexicon(engine.handle);
+    REQUIRE(speak(engine.handle, "balkon") != speak(engine.handle, "balk\xC3\xB3n"));
+    REQUIRE(std::string(laprdus_get_accent_lexicon_report(engine.handle)).empty());
+    REQUIRE(laprdus_load_accent_lexicon_from_memory(engine.handle, json, 0) == LAPRDUS_OK);
+    REQUIRE(speak(engine.handle, "balkon") == speak(engine.handle, "balk\xC3\xB3n"));
+    REQUIRE(laprdus_load_accent_lexicon_from_memory(engine.handle, "{ \"entries\": [ { \"word\": \"\" } ] }", 0)
+            == LAPRDUS_ERROR_LOAD_FAILED);
+    REQUIRE(speak(engine.handle, "balkon") != speak(engine.handle, "balk\xC3\xB3n"));
+    REQUIRE(laprdus_load_accent_lexicon_from_memory(engine.handle, "not json at all", 0)
+            == LAPRDUS_ERROR_LOAD_FAILED);
+    REQUIRE(laprdus_load_accent_lexicon(engine.handle, "/nonexistent/accents.json")
+            == LAPRDUS_ERROR_LOAD_FAILED);
+}
+
+TEST_CASE("The user's accent lexicon is read from a file and reports bad entries", "[formant][lexicon]") {
+    const char* tmp = std::getenv("TMPDIR");
+    std::string path = std::string(tmp ? tmp : "/tmp") + "/laprdus_test_accents.json";
+    {
+        std::ofstream out(path, std::ios::binary);
+        out << "{ \"entries\": [ { \"word\": \"balk'o:n*\" }, { \"word\": \"bal'k'on\" }, "
+               "{ \"word\": \"balkon:\" }, { \"verb\": \"zam'ol=q\" }, "
+               "{ \"word\": \"x'y\", \"language\": \"de\" } ] }";
+    }
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "mirsad", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(laprdus_load_accent_lexicon(engine.handle, path.c_str()) == LAPRDUS_OK);
+    std::string report = laprdus_get_accent_lexicon_report(engine.handle);
+    INFO(report);
+    REQUIRE(report.find("1 words, 0 verbs; 4 rejected (first: bal'k'on: two stress marks)") == 0);
+    REQUIRE(speak(engine.handle, "balkon") == speak(engine.handle, "balk\xC3\xB3n"));
+    std::remove(path.c_str());
+}

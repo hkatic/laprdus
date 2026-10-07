@@ -83,6 +83,8 @@ class LaprdusTTS private constructor() {
     private external fun nativeAddPronunciation(grapheme: String, phoneme: String, caseSensitive: Boolean, wholeWord: Boolean)
     private external fun nativeAddSpellingEntry(character: String, pronunciation: String)
     private external fun nativeAddEmojiEntry(emoji: String, text: String)
+    private external fun nativeLoadAccentLexicon(json: String): Boolean
+    private external fun nativeClearAccentLexicon()
     private external fun nativeLoadSpellingDictionaryFromAssets(assetManager: AssetManager, assetPath: String): Boolean
     private external fun nativeSynthesizeSpelled(text: String): ShortArray?
 
@@ -311,6 +313,21 @@ class LaprdusTTS private constructor() {
      */
     fun addEmojiEntry(emoji: String, text: String) {
         nativeAddEmojiEntry(emoji, text)
+    }
+
+    /**
+     * Load the user's accent lexicon (the content of accents.json) for the
+     * formant voices, replacing the current one. It is kept across voice
+     * changes. Malformed entries are skipped and logged by the engine.
+     *
+     * @param json The lexicon file's content
+     * @return true if at least one entry was accepted
+     */
+    fun loadAccentLexicon(json: String): Boolean = nativeLoadAccentLexicon(json)
+
+    /** Remove the user's accent lexicon. */
+    fun clearAccentLexicon() {
+        nativeClearAccentLexicon()
     }
 
     /**

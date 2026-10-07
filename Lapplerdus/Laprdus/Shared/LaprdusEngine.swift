@@ -108,6 +108,13 @@ final class LaprdusEngine: @unchecked Sendable {
         if let url = state.urls[.emoji] {
             _ = laprdus_append_emoji_dictionary(handle, url.path)
         }
+        // The accent lexicon of the formant voices replaces the previous one;
+        // without the file (or with user dictionaries off) it is removed.
+        if let url = state.accentLexiconURL {
+            _ = laprdus_load_accent_lexicon(handle, url.path)
+        } else {
+            laprdus_clear_accent_lexicon(handle)
+        }
         appliedDictionaryStamp = state.stamp
     }
 

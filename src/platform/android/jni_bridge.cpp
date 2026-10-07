@@ -613,6 +613,44 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeAddEmojiEntry(
 }
 
 // =============================================================================
+// Accent Lexicon Methods (formant voices)
+// =============================================================================
+
+JNIEXPORT jboolean JNICALL
+Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeLoadAccentLexicon(
+    JNIEnv* env,
+    jobject thiz,
+    jstring json) {
+
+    (void)thiz;
+    std::lock_guard<std::mutex> lock(g_engine_mutex);
+
+    if (!g_engine || !g_engine->is_initialized()) {
+        LOGE("Cannot load accent lexicon - engine not initialized");
+        return JNI_FALSE;
+    }
+
+    std::string content = jstringToString(env, json);
+    bool ok = g_engine->load_accent_lexicon_from_memory(content.data(), content.size());
+    LOGI("Accent lexicon: %s", g_engine->accent_lexicon_report().c_str());
+    return ok ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT void JNICALL
+Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeClearAccentLexicon(
+    JNIEnv* env,
+    jobject thiz) {
+
+    (void)env;
+    (void)thiz;
+    std::lock_guard<std::mutex> lock(g_engine_mutex);
+
+    if (g_engine) {
+        g_engine->clear_accent_lexicon();
+    }
+}
+
+// =============================================================================
 // Spelling Dictionary Methods
 // =============================================================================
 

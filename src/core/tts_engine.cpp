@@ -6,6 +6,8 @@
 #include "emoji_dict.hpp"
 #include "../formant/formant_synthesizer.hpp"
 #include <filesystem>
+#include <fstream>
+#include <iterator>
 
 namespace laprdus {
 
@@ -29,6 +31,11 @@ struct TTSEngine::Impl {
     std::unique_ptr<formant::FormantSynthesizer> formant;
     std::function<void(const AudioBuffer&)> formant_stream_callback;
     uint32_t formant_stream_chunk_samples = 0;
+
+    // The user's accent entries, kept across voice changes and handed to
+    // every new formant synthesizer
+    std::shared_ptr<const formant::UserLexicon> user_lexicon;
+    std::string user_lexicon_report;
 
     Impl() = default;
 };
@@ -143,6 +150,7 @@ bool TTSEngine::initialize_formant(const char* voice_id) {
     }
 
     m_impl->formant = std::make_unique<formant::FormantSynthesizer>(*voice);
+    m_impl->formant->set_user_lexicon(m_impl->user_lexicon);
     m_impl->synthesizer.reset();
     m_impl->phoneme_data.clear();   // a formant voice needs no recordings
 
@@ -686,6 +694,60 @@ void TTSEngine::clear_emoji_dictionary() {
     if (m_impl) {
         m_impl->emoji_dictionary.clear();
     }
+}
+
+// =============================================================================
+// Accent Lexicon
+// =============================================================================
+
+bool TTSEngine::load_accent_lexicon(const std::string& path) {
+    if (!m_impl) {
+        return false;
+    }
+    std::ifstream file(path, std::ios::binary);
+    if (!file) {
+        m_impl->user_lexicon_report = "cannot open " + path;
+        return false;
+    }
+    std::string json((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    return load_accent_lexicon_from_memory(json.data(), json.size());
+}
+
+bool TTSEngine::load_accent_lexicon_from_memory(const char* json_content, size_t length) {
+    if (!m_impl || !json_content) {
+        return false;
+    }
+    std::string json = length > 0 ? std::string(json_content, length) : std::string(json_content);
+    formant::UserLexicon::Report report;
+    std::shared_ptr<const formant::UserLexicon> lexicon = formant::UserLexicon::parse(json, &report);
+
+    m_impl->user_lexicon_report = std::to_string(report.words) + " words, " +
+                                  std::to_string(report.verbs) + " verbs";
+    if (report.rejected > 0) {
+        m_impl->user_lexicon_report += "; " + std::to_string(report.rejected) +
+                                       " rejected (first: " + report.first_error + ")";
+    }
+
+    m_impl->user_lexicon = lexicon->empty() ? nullptr : lexicon;
+    if (m_impl->formant) {
+        m_impl->formant->set_user_lexicon(m_impl->user_lexicon);
+    }
+    return !lexicon->empty();
+}
+
+void TTSEngine::clear_accent_lexicon() {
+    if (!m_impl) {
+        return;
+    }
+    m_impl->user_lexicon.reset();
+    m_impl->user_lexicon_report.clear();
+    if (m_impl->formant) {
+        m_impl->formant->set_user_lexicon(nullptr);
+    }
+}
+
+std::string TTSEngine::accent_lexicon_report() const {
+    return m_impl ? m_impl->user_lexicon_report : std::string();
 }
 
 void TTSEngine::set_emoji_enabled(bool enabled) {

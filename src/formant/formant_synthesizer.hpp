@@ -142,6 +142,11 @@ public:
     /** True for the singing presets. */
     bool is_singing() const { return m_voice.singing != nullptr; }
 
+    /** The user's accent entries (see UserLexicon); nullptr removes them. */
+    void set_user_lexicon(const std::shared_ptr<const UserLexicon>& lexicon) {
+        m_frontend.set_user_lexicon(lexicon);
+    }
+
 private:
     void append_group(const std::u32string& text, Punctuation punct,
                       const VoiceParams& params, AudioBuffer& audio);

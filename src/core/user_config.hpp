@@ -80,6 +80,8 @@ struct UserSettings {
  *   - user.json: User pronunciation dictionary (loaded after internal.json)
  *   - spelling.json: User spelling dictionary (overrides/extends built-in)
  *   - emoji.json: User emoji dictionary (overrides/extends built-in)
+ *   - accents.json: User accent lexicon for the formant voices (word stress,
+ *     length and tone; stems, paradigms and verbs in the built-in notation)
  *
  * The settings.json file is created with default values if it doesn't exist.
  * Dictionary files are optional and only loaded if they exist.
@@ -165,6 +167,12 @@ public:
      * @return Full path to emoji.json (in user config dir).
      */
     std::string get_user_emoji_dictionary_path() const;
+
+    /**
+     * Get the path to the user accent lexicon (formant voices).
+     * @return Full path to accents.json (in user config dir).
+     */
+    std::string get_user_accent_lexicon_path() const;
 
     /**
      * Check if a user dictionary file exists.

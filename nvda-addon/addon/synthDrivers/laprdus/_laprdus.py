@@ -270,6 +270,16 @@ def _configure_functions(lib):
     lib.laprdus_append_emoji_dictionary.argtypes = [LaprdusHandle, ctypes.c_char_p]
     lib.laprdus_append_emoji_dictionary.restype = LaprdusError
 
+    # Accent lexicon of the formant voices (word stress, length and tone)
+    lib.laprdus_load_accent_lexicon.argtypes = [LaprdusHandle, ctypes.c_char_p]
+    lib.laprdus_load_accent_lexicon.restype = LaprdusError
+
+    lib.laprdus_clear_accent_lexicon.argtypes = [LaprdusHandle]
+    lib.laprdus_clear_accent_lexicon.restype = None
+
+    lib.laprdus_get_accent_lexicon_report.argtypes = [LaprdusHandle]
+    lib.laprdus_get_accent_lexicon_report.restype = ctypes.c_char_p
+
     # User dictionary utility functions
     lib.laprdus_user_dictionary_exists.argtypes = [ctypes.c_char_p]
     lib.laprdus_user_dictionary_exists.restype = ctypes.c_int
@@ -919,6 +929,41 @@ class LaprdusEngine(object):
 
         result = self._lib.laprdus_append_emoji_dictionary(self._handle, path_bytes)
         return result == LAPRDUS_OK
+
+    # =========================================================================
+    # Accent Lexicon Methods (formant voices)
+    # =========================================================================
+
+    def load_accent_lexicon(self, lexicon_path):
+        """Load the user's accent lexicon (accents.json), replacing the
+        current one. Only the formant voices use it; it is kept across voice
+        changes.
+
+        Args:
+            lexicon_path: Path to the accent lexicon JSON file.
+
+        Returns:
+            True if at least one entry was accepted, False otherwise
+        """
+        if not os.path.exists(lexicon_path):
+            return False
+
+        if isinstance(lexicon_path, bytes):
+            path_bytes = lexicon_path
+        else:
+            path_bytes = lexicon_path.encode("utf-8")
+
+        result = self._lib.laprdus_load_accent_lexicon(self._handle, path_bytes)
+        return result == LAPRDUS_OK
+
+    def clear_accent_lexicon(self):
+        """Remove the user's accent lexicon."""
+        self._lib.laprdus_clear_accent_lexicon(self._handle)
+
+    def get_accent_lexicon_report(self):
+        """What the last accent lexicon load accepted and rejected."""
+        report = self._lib.laprdus_get_accent_lexicon_report(self._handle)
+        return report.decode("utf-8", errors="replace") if report else ""
 
     # =========================================================================
     # Pause Settings Methods

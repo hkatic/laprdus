@@ -31,6 +31,12 @@ enum DictionaryType: String, CaseIterable, Identifiable {
 }
 
 final class DictionaryStore: @unchecked Sendable {
+    /// The accent lexicon of the formant voices (word stress, length and
+    /// tone in the notation of the built-in lexicon). The engine parses it
+    /// itself; it sits next to the dictionaries under the same name on every
+    /// platform.
+    static let accentLexiconFileName = "accents.json"
+
     private let directory: URL
     private let queue = DispatchQueue(label: "com.hrvojekatic.laprdus.dictionaries")
 
@@ -40,6 +46,10 @@ final class DictionaryStore: @unchecked Sendable {
 
     func fileURL(for type: DictionaryType) -> URL {
         directory.appendingPathComponent(type.fileName)
+    }
+
+    var accentLexiconURL: URL {
+        directory.appendingPathComponent(Self.accentLexiconFileName)
     }
 
     /// A missing file yields an empty list.
@@ -93,17 +103,23 @@ final class DictionaryStore: @unchecked Sendable {
         guard userDictionariesEnabled else { return .bundledOnly }
         var urls: [DictionaryType: URL] = [:]
         var stamps: [String] = []
-        for type in DictionaryType.allCases {
-            let url = fileURL(for: type)
+        func stamp(of url: URL, as name: String) -> Bool {
             guard let attributes = try? FileManager.default.attributesOfItem(atPath: url.path) else {
-                continue
+                return false
             }
             let modified = (attributes[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
             let size = (attributes[.size] as? Int) ?? 0
-            urls[type] = url
-            stamps.append("\(type.rawValue)-\(modified)-\(size)")
+            stamps.append("\(name)-\(modified)-\(size)")
+            return true
         }
-        return DictionaryState(urls: urls, stamp: urls.isEmpty ? "absent" : stamps.joined(separator: ","))
+        for type in DictionaryType.allCases where stamp(of: fileURL(for: type), as: type.rawValue) {
+            urls[type] = fileURL(for: type)
+        }
+        let accents = accentLexiconURL
+        let accentLexiconURL = stamp(of: accents, as: "accents") ? accents : nil
+        let empty = urls.isEmpty && accentLexiconURL == nil
+        return DictionaryState(urls: urls, accentLexiconURL: accentLexiconURL,
+                               stamp: empty ? "absent" : stamps.joined(separator: ","))
     }
 }
 
@@ -113,7 +129,15 @@ final class DictionaryStore: @unchecked Sendable {
 struct DictionaryState: Equatable, Sendable {
     /// The user dictionary files that exist on disk.
     let urls: [DictionaryType: URL]
+    /// The user's accent lexicon, if the file exists.
+    let accentLexiconURL: URL?
     let stamp: String
+
+    init(urls: [DictionaryType: URL], accentLexiconURL: URL? = nil, stamp: String) {
+        self.urls = urls
+        self.accentLexiconURL = accentLexiconURL
+        self.stamp = stamp
+    }
 
     var userDictionaryURL: URL? { urls[.main] }
 

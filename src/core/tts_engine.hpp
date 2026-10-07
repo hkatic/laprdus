@@ -263,6 +263,38 @@ public:
      */
     void clear_emoji_dictionary();
 
+    // =========================================================================
+    // Accent Lexicon (user accent entries for the formant voices)
+    // =========================================================================
+
+    /**
+     * Load the user's accent lexicon from a JSON file (replaces the current
+     * one). Entries use the notation of the built-in lexicon; see
+     * formant::UserLexicon. Only the formant voices use it; the concatenative
+     * voices ignore it. The file is parsed once, and each bad entry is skipped
+     * and reported through accent_lexicon_report().
+     * @param path Path to the accent lexicon JSON file.
+     * @return true if at least one entry was accepted.
+     */
+    bool load_accent_lexicon(const std::string& path);
+
+    /**
+     * Load the user's accent lexicon from memory (replaces the current one).
+     * @param json_content JSON content.
+     * @param length Length of content (0 for null-terminated).
+     * @return true if at least one entry was accepted.
+     */
+    bool load_accent_lexicon_from_memory(const char* json_content, size_t length = 0);
+
+    /** Remove the user's accent lexicon. */
+    void clear_accent_lexicon();
+
+    /**
+     * What the last load accepted and rejected: "N words, M verbs" and, if
+     * anything was rejected, "; K rejected (first: entry: reason)".
+     */
+    std::string accent_lexicon_report() const;
+
     /**
      * Enable or disable emoji processing.
      * When enabled, emojis are converted to their text representations.

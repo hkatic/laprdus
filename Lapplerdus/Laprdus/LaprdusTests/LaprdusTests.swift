@@ -189,6 +189,7 @@ struct DictionaryStoreTests {
         #expect(DictionaryType.main.fileName == "user.json")
         #expect(DictionaryType.spelling.fileName == "spelling.json")
         #expect(DictionaryType.emoji.fileName == "emoji.json")
+        #expect(DictionaryStore.accentLexiconFileName == "accents.json")
     }
 
     @Test func stateIsEmptyWhenUserDictionariesAreDisabled() throws {
@@ -199,6 +200,38 @@ struct DictionaryStoreTests {
         let state = store.dictionaryState(userDictionariesEnabled: false)
         #expect(state.userDictionaryURL == nil)
         #expect(state.stamp == DictionaryState.bundledOnly.stamp)
+    }
+
+    @Test func stateIncludesTheAccentLexicon() throws {
+        let (store, dir) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let before = store.dictionaryState(userDictionariesEnabled: true)
+        #expect(before.accentLexiconURL == nil)
+        #expect(before.stamp == "absent")
+
+        try #"{ "entries": [ { "word": "balk'o:n*" } ] }"#
+            .write(to: store.accentLexiconURL, atomically: true, encoding: .utf8)
+        let after = store.dictionaryState(userDictionariesEnabled: true)
+        #expect(after.accentLexiconURL == store.accentLexiconURL)
+        #expect(after.urls.isEmpty)
+        #expect(after.stamp != before.stamp)
+        #expect(store.dictionaryState(userDictionariesEnabled: false).accentLexiconURL == nil)
+    }
+
+    @Test func engineAcceptsAnAccentLexicon() throws {
+        let (store, dir) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        try #"{ "entries": [ { "word": "balk'o:n*" }, { "word": "balkon" } ] }"#
+            .write(to: store.accentLexiconURL, atomically: true, encoding: .utf8)
+
+        let engine = try LaprdusEngine()
+        try engine.loadVoice("zvonko", dictionaries: store.dictionaryState(userDictionariesEnabled: true))
+        let withLexicon = try engine.synthesize("balkon").samples
+        try engine.loadVoice("zvonko", dictionaries: .bundledOnly)
+        let without = try engine.synthesize("balkon").samples
+        #expect(!withLexicon.isEmpty)
+        #expect(withLexicon != without)
     }
 
     @Test func stateReportsMissingFile() throws {

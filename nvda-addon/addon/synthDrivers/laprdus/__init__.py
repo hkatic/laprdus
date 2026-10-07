@@ -224,6 +224,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         self._userDictMtime = 0  # Last modification time of user.json
         self._userSpellingMtime = 0
         self._userEmojiMtime = 0
+        self._userAccentsMtime = 0
 
         # Voice selection
         self._voice = _default_voice()
@@ -738,6 +739,8 @@ class SynthDriver(synthDriverHandler.SynthDriver):
 
             if user_dicts_enabled:
                 self._loadUserDictionaries()
+            else:
+                self._engine.clear_accent_lexicon()
 
         except Exception as e:
             _debug_log("_loadSharedSettings: Error loading settings: %s" % str(e))
@@ -779,6 +782,19 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                 _debug_log("_loadUserDictionaries: append emoji.json from %s -> %s" % (path, result))
                 log.debug("LaprdusTTS: Appended user emoji dictionary: %s" % path)
 
+        # Accent lexicon of the formant voices (replaces the previous one)
+        if _laprdus.user_dictionary_exists("accents.json"):
+            path = _laprdus.get_user_dictionary_path("accents.json")
+            if path:
+                self._userAccentsMtime = os.path.getmtime(path) if os.path.exists(path) else 0
+                result = self._engine.load_accent_lexicon(path)
+                report = self._engine.get_accent_lexicon_report()
+                _debug_log("_loadUserDictionaries: load accents.json from %s -> %s (%s)" % (path, result, report))
+                log.debug("LaprdusTTS: Loaded accent lexicon: %s (%s)" % (path, report))
+        else:
+            self._userAccentsMtime = 0
+            self._engine.clear_accent_lexicon()
+
     def _checkConfigChanged(self):
         """Check if settings.json or user dictionaries have been modified.
 
@@ -806,6 +822,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             ("user.json", "_userDictMtime"),
             ("spelling.json", "_userSpellingMtime"),
             ("emoji.json", "_userEmojiMtime"),
+            ("accents.json", "_userAccentsMtime"),
         ]:
             if _laprdus.user_dictionary_exists(filename):
                 path = _laprdus.get_user_dictionary_path(filename)

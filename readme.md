@@ -223,6 +223,7 @@ Laprdus stores user settings and custom dictionaries in platform-specific locati
 | `user.json` | Custom pronunciation dictionary for words and phrases |
 | `spelling.json` | Character pronunciations for spelling mode |
 | `emoji.json` | Emoji-to-text mappings for emoji reading |
+| `accents.json` | Accent lexicon of the formant voices: word stress, length and tone, as words, stems, paradigms or whole verbs in the notation of the built-in lexicon (`{ "word": "kontr'o:l*" }`, `{ "verb": "ur'e:d=i<p" }`); parsed once at load, so it costs nothing per utterance |
 
 ### Dictionary Format
 

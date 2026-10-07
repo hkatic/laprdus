@@ -409,6 +409,11 @@ HRESULT LaprdusSAPIDriver::InitializeEngine() {
                 std::string userEmojiPath = userConfig.get_user_emoji_dictionary_path();
                 m_engine->append_emoji_dictionary(userEmojiPath);
             }
+
+            // Accent lexicon of the formant voices (word stress, length, tone)
+            if (userConfig.user_dictionary_exists("accents.json")) {
+                m_engine->load_accent_lexicon(userConfig.get_user_accent_lexicon_path());
+            }
         }
     }
 

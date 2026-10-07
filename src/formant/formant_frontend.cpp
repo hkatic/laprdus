@@ -745,7 +745,10 @@ struct StressResult {
 // Verbs with a long root vowel
 // =============================================================================
 
-// A verb root from lexicon_ije_verbs() or a whole stem from lexicon_verbs().
+} // namespace
+
+// A verb root from lexicon_ije_verbs() or a whole stem from lexicon_verbs(),
+// or one of the user's (UserLexicon).
 struct VerbRoot {
     std::u32string root;
     std::vector<std::u32string> soft;   // before the participle's -en: dijel -> dijelj
@@ -762,6 +765,8 @@ struct VerbRoot {
     uint8_t passive = 0;            // dictionaries: 1 = one syllable back, 2 = first
     std::vector<std::u32string> prefixes;   // empty: any verbal prefixes
 };
+
+namespace {
 
 // The consonant changes before -en: podijeljen, zamijenjen, zalijepljen,
 // proslijeđen, primijećen, obaviješten, očišćen, zamišljen, odbačen.
@@ -788,65 +793,82 @@ std::vector<std::u32string> soft_roots(const std::u32string& root) {
 
 // "root:classes[:prefixes]" (roots with a long ije) or "st'e:m=classes"
 // (whole stems, accent marked as in the lexicon); see formant_lexicon.cpp.
+// Returns false for an entry that cannot be used.
+bool parse_verb_root(const std::u32string& text, bool whole, VerbRoot& root) {
+    size_t split = text.find(whole ? U'=' : U':');
+    if (split == std::u32string::npos) return false;
+    std::u32string classes = text.substr(split + 1);
+
+    root = VerbRoot{};
+    root.whole_stem = whole;
+    if (whole) {
+        bool marked = false;
+        for (char32_t raw : text.substr(0, split)) {
+            char32_t c = to_lower(raw);
+            if (c == U'\'') {
+                if (marked) return false;
+                root.vowel = root.root.size();
+                marked = true;
+            } else if (c == U':') {
+                if (!marked || root.vowel + 1 != root.root.size()) return false;
+                root.is_long = true;
+            } else if (is_base_letter(c)) {
+                root.root.push_back(c);
+            } else {
+                return false;
+            }
+        }
+        if (!marked || root.vowel >= root.root.size()) return false;
+    } else {
+        for (char32_t raw : text.substr(0, split)) {
+            char32_t c = to_lower(raw);
+            if (!is_base_letter(c)) return false;
+            root.root.push_back(c);
+        }
+        size_t ije = root.root.find(U"ije");
+        if (ije == std::u32string::npos) return false;
+        root.vowel = ije + 2;
+        root.is_long = true;
+        // These all shift in the dictionaries: pòdijēlīm, pòdijēljen.
+        root.present_shifts = true;
+        root.passive = 1;
+        size_t second = classes.find(U':');
+        if (second != std::u32string::npos) {
+            std::vector<Word> prefixes;
+            split_words(classes.substr(second + 1), prefixes);
+            for (const Word& prefix : prefixes) root.prefixes.push_back(prefix.w);
+            classes.resize(second);
+        }
+    }
+    root.soft = soft_roots(root.root);
+    bool any_class = false;
+    for (char32_t c : classes) {
+        switch (c) {
+            case U'i': root.iti = true; any_class = true; break;
+            case U'a': root.ati = root.ati_present = true; any_class = true; break;
+            case U't': root.ati = true; any_class = true; break;
+            case U'u': root.nuti = true; any_class = true; break;
+            case U'e': root.e_present = true; any_class = true; break;
+            case U'n': root.noun_twin = true; break;
+            case U'<': root.present_shifts = true; break;
+            case U'p': root.passive = 1; break;
+            case U'P': root.passive = 2; break;
+            default: return false;
+        }
+    }
+    return any_class;
+}
+
 std::vector<VerbRoot> load_verb_roots() {
     std::vector<VerbRoot> roots;
     for (bool whole : {false, true}) {
         size_t count = 0;
         const char* const* entries = whole ? lexicon_verbs(count) : lexicon_ije_verbs(count);
         for (size_t e = 0; e < count; ++e) {
-            std::u32string text = PhonemeMapper::utf8_to_utf32(entries[e]);
-            size_t split = text.find(whole ? U'=' : U':');
-            if (split == std::u32string::npos) continue;
-            std::u32string classes = text.substr(split + 1);
-
             VerbRoot root;
-            root.whole_stem = whole;
-            if (whole) {
-                bool marked = false;
-                for (char32_t c : text.substr(0, split)) {
-                    if (c == U'\'') {
-                        root.vowel = root.root.size();
-                        marked = true;
-                    } else if (c == U':') {
-                        root.is_long = true;
-                    } else {
-                        root.root.push_back(c);
-                    }
-                }
-                if (!marked) continue;
-            } else {
-                root.root = text.substr(0, split);
-                size_t ije = root.root.find(U"ije");
-                if (ije == std::u32string::npos) continue;
-                root.vowel = ije + 2;
-                root.is_long = true;
-                // These all shift in the dictionaries: pòdijēlīm, pòdijēljen.
-                root.present_shifts = true;
-                root.passive = 1;
-                size_t second = classes.find(U':');
-                if (second != std::u32string::npos) {
-                    std::vector<Word> prefixes;
-                    split_words(classes.substr(second + 1), prefixes);
-                    for (const Word& prefix : prefixes) root.prefixes.push_back(prefix.w);
-                    classes.resize(second);
-                }
+            if (parse_verb_root(PhonemeMapper::utf8_to_utf32(entries[e]), whole, root)) {
+                roots.push_back(std::move(root));
             }
-            root.soft = soft_roots(root.root);
-            for (char32_t c : classes) {
-                switch (c) {
-                    case U'i': root.iti = true; break;
-                    case U'a': root.ati = root.ati_present = true; break;
-                    case U't': root.ati = true; break;
-                    case U'u': root.nuti = true; break;
-                    case U'e': root.e_present = true; break;
-                    case U'n': root.noun_twin = true; break;
-                    case U'<': root.present_shifts = true; break;
-                    case U'p': root.passive = 1; break;
-                    case U'P': root.passive = 2; break;
-                    default: break;
-                }
-            }
-            roots.push_back(std::move(root));
         }
     }
     return roots;
@@ -881,8 +903,10 @@ bool is_one_of(const std::u32string& s, std::initializer_list<const char32_t*> l
 
 class StressRules {
 public:
-    StressRules(const Word& word, VoiceLanguage language, bool opens_clause)
-        : m_w(word.w), m_language(language), m_opens_clause(opens_clause) {
+    StressRules(const Word& word, VoiceLanguage language, bool opens_clause,
+                const std::vector<VerbRoot>* user_verbs)
+        : m_w(word.w), m_language(language), m_opens_clause(opens_clause),
+          m_user_verbs(user_verbs) {
         for (int index : word.nuclei) {
             m_letters.push_back(word.letter[static_cast<size_t>(index)]);
         }
@@ -900,9 +924,15 @@ public:
     // accent on the root in every form; the other two follow the dictionaries.
     StressResult verb_form() const {
         StressResult r;
-        for (const VerbRoot& root : verb_roots()) {
+        if (m_user_verbs && verb_form_in(*m_user_verbs, r)) return r;
+        if (verb_form_in(verb_roots(), r)) return r;
+        return StressResult{};
+    }
+
+    bool verb_form_in(const std::vector<VerbRoot>& roots, StressResult& r) const {
+        for (const VerbRoot& root : roots) {
             if (root.whole_stem) {
-                if (form_of(root, 0, r)) return r;
+                if (form_of(root, 0, r)) return true;
                 continue;
             }
             // The root's "ije" has to be one syllable, and not the first.
@@ -916,10 +946,10 @@ public:
                     ? is_verbal_prefix(prefix)
                     : std::find(root.prefixes.begin(), root.prefixes.end(), prefix) !=
                           root.prefixes.end();
-                if (allowed && form_of(root, start, r)) return r;
+                if (allowed && form_of(root, start, r)) return true;
             }
         }
-        return StressResult{};
+        return false;
     }
 
     // Suffixes whose accent position is fixed.
@@ -1293,8 +1323,266 @@ private:
     const std::u32string& m_w;
     VoiceLanguage m_language;
     bool m_opens_clause;
+    const std::vector<VerbRoot>* m_user_verbs;
     std::vector<int> m_letters;
 };
+
+// =============================================================================
+// Lexicon entries
+// =============================================================================
+
+// A lexicon entry in the notation of formant_lexicon.cpp: letters with '
+// ^ / before the stressed vowel, : after a long vowel, * for a stem. Returns
+// false (with a reason) for an entry that is not well formed; the built-in
+// tables are assumed to be, the user's are checked.
+bool parse_lex_entry(const std::u32string& marked, std::u32string& plain, LexEntry& entry,
+                     bool& stem, const char** reason = nullptr) {
+    plain.clear();
+    entry = LexEntry{};
+    stem = false;
+    bool stressed = false;
+    bool marked_any = false;
+    auto fail = [&](const char* why) {
+        if (reason) *reason = why;
+        return false;
+    };
+
+    for (char32_t raw : marked) {
+        char32_t c = to_lower(raw);
+        if (c == U'\'' || c == U'^' || c == U'/') {
+            if (stressed) return fail("two stress marks");
+            if (plain.size() > 127) return fail("word too long");
+            stressed = marked_any = true;
+            entry.stress_letter = static_cast<int8_t>(plain.size());
+            entry.accent = c == U'^' ? Accent::Falling
+                         : c == U'/' ? Accent::Rising : Accent::None;
+        } else if (c == U':') {
+            if (plain.empty() || !(is_vowel_letter(plain.back()) || plain.back() == U'r')) {
+                return fail("length mark not after a vowel");
+            }
+            if (plain.size() > 32) return fail("length mark past the 32nd letter");
+            entry.long_letters |= 1u << (plain.size() - 1);
+            marked_any = true;
+        } else if (c == U'*') {
+            if (stem) return fail("two stem marks");
+            stem = true;
+        } else if (stem) {
+            return fail("letters after the stem mark");
+        } else if (is_base_letter(c)) {
+            plain.push_back(c);
+        } else {
+            return fail("not a letter");
+        }
+    }
+    if (plain.empty()) return fail("no letters");
+    if (!marked_any) return fail("no stress or length mark");
+    if (entry.stress_letter >= 0 && static_cast<size_t>(entry.stress_letter) >= plain.size()) {
+        return fail("stress mark after the last letter");
+    }
+    return true;
+}
+
+// "stem|ending|ending" lists one exact form per ending; anything else is one
+// form. Calls fn(form) for each.
+template <typename Fn>
+void for_each_form(const std::u32string& marked, Fn fn) {
+    size_t bar = marked.find(U'|');
+    if (bar == std::u32string::npos) {
+        fn(marked);
+        return;
+    }
+    const std::u32string stem = marked.substr(0, bar);
+    while (bar != std::u32string::npos) {
+        size_t next = marked.find(U'|', bar + 1);
+        size_t length = next == std::u32string::npos ? next : next - bar - 1;
+        fn(stem + marked.substr(bar + 1, length));
+        bar = next;
+    }
+}
+
+uint8_t language_bit(VoiceLanguage language) {
+    return static_cast<uint8_t>(1u << static_cast<unsigned>(language));
+}
+
+// ---- A small reader for the user lexicon's JSON ----
+
+// The string value of "key" in one JSON object, unescaped; empty if absent.
+std::string json_string(const std::string& object, const char* key) {
+    std::string needle = std::string("\"") + key + "\"";
+    size_t pos = 0;
+    while ((pos = object.find(needle, pos)) != std::string::npos) {
+        size_t after = pos + needle.size();
+        while (after < object.size() && (object[after] == ' ' || object[after] == '\t' ||
+                                         object[after] == '\n' || object[after] == '\r')) {
+            ++after;
+        }
+        if (after < object.size() && object[after] == ':') {
+            ++after;
+            while (after < object.size() && (object[after] == ' ' || object[after] == '\t' ||
+                                             object[after] == '\n' || object[after] == '\r')) {
+                ++after;
+            }
+            if (after >= object.size() || object[after] != '"') return "";
+            std::string value;
+            for (size_t i = after + 1; i < object.size(); ++i) {
+                char c = object[i];
+                if (c == '"') return value;
+                if (c == '\\' && i + 1 < object.size()) {
+                    char e = object[++i];
+                    switch (e) {
+                        case 'n': value.push_back('\n'); break;
+                        case 't': value.push_back('\t'); break;
+                        case 'r': value.push_back('\r'); break;
+                        case 'u': {
+                            // \uXXXX: only the Basic Multilingual Plane, which
+                            // holds every letter and mark an entry can use.
+                            if (i + 4 >= object.size()) return value;
+                            unsigned code = 0;
+                            for (int k = 1; k <= 4; ++k) {
+                                char h = object[i + static_cast<size_t>(k)];
+                                code <<= 4;
+                                if (h >= '0' && h <= '9') code |= static_cast<unsigned>(h - '0');
+                                else if (h >= 'a' && h <= 'f') code |= static_cast<unsigned>(h - 'a' + 10);
+                                else if (h >= 'A' && h <= 'F') code |= static_cast<unsigned>(h - 'A' + 10);
+                                else return value;
+                            }
+                            i += 4;
+                            if (code < 0x80) {
+                                value.push_back(static_cast<char>(code));
+                            } else if (code < 0x800) {
+                                value.push_back(static_cast<char>(0xC0 | (code >> 6)));
+                                value.push_back(static_cast<char>(0x80 | (code & 0x3F)));
+                            } else {
+                                value.push_back(static_cast<char>(0xE0 | (code >> 12)));
+                                value.push_back(static_cast<char>(0x80 | ((code >> 6) & 0x3F)));
+                                value.push_back(static_cast<char>(0x80 | (code & 0x3F)));
+                            }
+                            break;
+                        }
+                        default: value.push_back(e); break;
+                    }
+                } else {
+                    value.push_back(c);
+                }
+            }
+            return value;
+        }
+        pos = after;
+    }
+    return "";
+}
+
+// The objects of the "entries" array, each as its own text.
+std::vector<std::string> json_entries(const std::string& json) {
+    std::vector<std::string> entries;
+    size_t pos = json.find("\"entries\"");
+    if (pos == std::string::npos) return entries;
+    pos = json.find('[', pos);
+    if (pos == std::string::npos) return entries;
+
+    int depth = 0;
+    bool in_string = false;
+    size_t start = 0;
+    for (size_t i = pos; i < json.size(); ++i) {
+        char c = json[i];
+        if (in_string) {
+            if (c == '\\') ++i;
+            else if (c == '"') in_string = false;
+            continue;
+        }
+        if (c == '"') {
+            in_string = true;
+        } else if (c == '{') {
+            if (depth == 1) start = i;
+            ++depth;
+        } else if (c == '}') {
+            --depth;
+            if (depth == 1) entries.push_back(json.substr(start, i - start + 1));
+        } else if (c == '[') {
+            ++depth;
+        } else if (c == ']') {
+            if (--depth <= 0) break;
+        }
+    }
+    return entries;
+}
+
+} // namespace
+
+// =============================================================================
+// UserLexicon
+// =============================================================================
+
+struct UserLexicon::VerbEntry {
+    VerbRoot root;
+    uint8_t languages = 0;
+};
+
+UserLexicon::UserLexicon() = default;
+UserLexicon::~UserLexicon() = default;
+
+std::shared_ptr<const UserLexicon> UserLexicon::parse(const std::string& json, Report* report) {
+    std::shared_ptr<UserLexicon> lexicon(new UserLexicon());
+    Report local;
+    Report& r = report ? *report : local;
+    r = Report{};
+
+    auto reject = [&](const std::string& text, const char* why) {
+        ++r.rejected;
+        if (r.first_error.empty()) r.first_error = text + ": " + why;
+    };
+
+    for (const std::string& object : json_entries(json)) {
+        uint8_t languages = 0;
+        std::string language = json_string(object, "language");
+        if (language == "hr") languages = language_bit(VoiceLanguage::Croatian);
+        else if (language == "sr") languages = language_bit(VoiceLanguage::Serbian);
+        else if (language == "bs") languages = language_bit(VoiceLanguage::Bosnian);
+        else if (!language.empty()) { reject(language, "unknown language (hr, sr, bs)"); continue; }
+
+        std::string word = json_string(object, "word");
+        std::string verb = json_string(object, "verb");
+        if (!word.empty() && !verb.empty()) { reject(word, "both word and verb"); continue; }
+
+        if (!word.empty()) {
+            std::u32string marked = PhonemeMapper::utf8_to_utf32(word);
+            std::vector<WordEntry> forms;
+            const char* reason = "";
+            bool ok = true;
+            for_each_form(marked, [&](const std::u32string& form) {
+                WordEntry entry;
+                if (ok && parse_lex_entry(form, entry.plain, entry.entry, entry.stem, &reason)) {
+                    entry.languages = languages;
+                    forms.push_back(std::move(entry));
+                } else {
+                    ok = false;
+                }
+            });
+            if (!ok) { reject(word, reason); continue; }
+            if (lexicon->m_words.size() + forms.size() > MAX_WORDS) { reject(word, "too many words"); continue; }
+            for (WordEntry& entry : forms) lexicon->m_words.push_back(std::move(entry));
+            r.words += forms.size();
+        } else if (!verb.empty()) {
+            std::u32string text = PhonemeMapper::utf8_to_utf32(verb);
+            VerbEntry entry;
+            bool whole = text.find(U'=') != std::u32string::npos;
+            if (!parse_verb_root(text, whole, entry.root)) {
+                reject(verb, whole ? "expected st'e:m=classes (i a t u e n < p P)"
+                                   : "expected root:classes[:prefixes] with a long ije (i a t e)");
+                continue;
+            }
+            if (lexicon->m_verbs.size() >= MAX_VERBS) { reject(verb, "too many verbs"); continue; }
+            entry.languages = languages;
+            lexicon->m_verbs.push_back(std::move(entry));
+            ++r.verbs;
+        } else {
+            reject(object.size() > 60 ? object.substr(0, 60) + "..." : object, "neither word nor verb");
+        }
+    }
+    return lexicon;
+}
+
+namespace {
 
 // =============================================================================
 // Assimilation
@@ -1365,20 +1653,8 @@ Frontend::Frontend(VoiceLanguage language) : m_language(language) {
 
 void Frontend::add_entries(const char* const* entries, size_t count) {
     for (size_t e = 0; e < count; ++e) {
-        std::u32string marked = PhonemeMapper::utf8_to_utf32(entries[e]);
-        size_t bar = marked.find(U'|');
-        if (bar == std::u32string::npos) {
-            add_entry(marked);
-            continue;
-        }
-        // "stem|ending|ending": one entry per ending.
-        const std::u32string stem = marked.substr(0, bar);
-        while (bar != std::u32string::npos) {
-            size_t next = marked.find(U'|', bar + 1);
-            size_t length = next == std::u32string::npos ? next : next - bar - 1;
-            add_entry(stem + marked.substr(bar + 1, length));
-            bar = next;
-        }
+        for_each_form(PhonemeMapper::utf8_to_utf32(entries[e]),
+                      [this](const std::u32string& form) { add_entry(form); });
     }
 }
 
@@ -1386,26 +1662,28 @@ void Frontend::add_entry(const std::u32string& marked) {
     std::u32string plain;
     LexEntry entry;
     bool stem = false;
-
-    for (char32_t raw : marked) {
-        char32_t c = to_lower(raw);
-        if (c == U'\'' || c == U'^' || c == U'/') {
-            entry.stress_letter = static_cast<int8_t>(plain.size());
-            entry.accent = c == U'^' ? Accent::Falling
-                         : c == U'/' ? Accent::Rising : Accent::None;
-        } else if (c == U':') {
-            if (!plain.empty() && plain.size() <= 32) {
-                entry.long_letters |= 1u << (plain.size() - 1);
-            }
-        } else if (c == U'*') {
-            stem = true;
-        } else {
-            plain.push_back(c);
-        }
-    }
-
+    if (!parse_lex_entry(marked, plain, entry, stem)) return;
     // Later (language-specific) tables override the common one.
     (stem ? m_stems : m_exact)[plain] = entry;
+}
+
+void Frontend::set_user_lexicon(const std::shared_ptr<const UserLexicon>& lexicon) {
+    m_user_exact.clear();
+    m_user_stems.clear();
+    m_user_verbs.reset();
+    if (!lexicon) return;
+
+    const uint8_t mine = language_bit(m_language);
+    for (const UserLexicon::WordEntry& word : lexicon->m_words) {
+        if (word.languages && !(word.languages & mine)) continue;
+        (word.stem ? m_user_stems : m_user_exact)[word.plain] = word.entry;
+    }
+    auto verbs = std::make_shared<std::vector<VerbRoot>>();
+    for (const UserLexicon::VerbEntry& verb : lexicon->m_verbs) {
+        if (verb.languages && !(verb.languages & mine)) continue;
+        verbs->push_back(verb.root);
+    }
+    if (!verbs->empty()) m_user_verbs = std::move(verbs);
 }
 
 Utterance Frontend::process(const std::u32string& text, Punctuation punct) const {
@@ -1463,20 +1741,24 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
             }
         }
 
-        // 2. Lexicon: exact form, then the longest stem
+        // 2. Lexicon: exact form, then the longest stem; the user's entries
+        // before the built-in ones at every step
         if (word.stress < 0) {
             const LexEntry* entry = nullptr;
-            auto exact = m_exact.find(word.w);
-            if (exact != m_exact.end()) {
-                entry = &exact->second;
-            } else {
+            auto find_in = [](const std::unordered_map<std::u32string, LexEntry>& map,
+                              const std::u32string& key) -> const LexEntry* {
+                auto it = map.find(key);
+                return it == map.end() ? nullptr : &it->second;
+            };
+            if (!m_user_exact.empty()) entry = find_in(m_user_exact, word.w);
+            if (!entry) entry = find_in(m_exact, word.w);
+            if (!entry) {
                 size_t min_len = word.w.size() > 3 ? word.w.size() - 3 : 1;
                 for (size_t len = word.w.size(); len >= min_len && len >= 2; --len) {
-                    auto stem = m_stems.find(word.w.substr(0, len));
-                    if (stem != m_stems.end()) {
-                        entry = &stem->second;
-                        break;
-                    }
+                    std::u32string prefix = word.w.substr(0, len);
+                    if (!m_user_stems.empty()) entry = find_in(m_user_stems, prefix);
+                    if (!entry) entry = find_in(m_stems, prefix);
+                    if (entry) break;
                 }
             }
             if (entry) {
@@ -1493,7 +1775,7 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
 
         // 3. Suffix rules, 4. default: first syllable
         if (word.stress < 0) {
-            StressRules rules(word, m_language, at_head);
+            StressRules rules(word, m_language, at_head, m_user_verbs.get());
             StressResult r = rules.strong();
             if (r.nucleus < 0) r = rules.weak();
             if (r.nucleus >= 0) {

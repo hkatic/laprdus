@@ -685,6 +685,15 @@ int main(int argc, char *argv[])
                 std::string userEmojiPath = userConfig.get_user_emoji_dictionary_path();
                 laprdus_append_emoji_dictionary(engine, userEmojiPath.c_str());
             }
+
+            /* Accent lexicon of the formant voices (word stress, length, tone) */
+            if (userConfig.user_dictionary_exists("accents.json")) {
+                std::string accentsPath = userConfig.get_user_accent_lexicon_path();
+                laprdus_load_accent_lexicon(engine, accentsPath.c_str());
+                if (opts.verbose) {
+                    std::cerr << "Accent lexicon: " << laprdus_get_accent_lexicon_report(engine) << "\n";
+                }
+            }
         }
 
         /* Enable emoji if configured in user settings */

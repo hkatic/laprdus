@@ -1099,6 +1099,65 @@ LAPRDUS_API void LAPRDUS_CALL laprdus_clear_emoji_dictionary(LaprdusHandle handl
     }
 }
 
+// =============================================================================
+// Accent Lexicon Functions
+// =============================================================================
+
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_load_accent_lexicon(
+    LaprdusHandle handle,
+    const char* lexicon_path) {
+
+    if (!handle) {
+        return LAPRDUS_ERROR_INVALID_HANDLE;
+    }
+    if (!lexicon_path) {
+        return LAPRDUS_ERROR_INVALID_PARAMETER;
+    }
+
+    if (!handle->engine.load_accent_lexicon(lexicon_path)) {
+        set_error(handle, "Accent lexicon: " + handle->engine.accent_lexicon_report());
+        return LAPRDUS_ERROR_LOAD_FAILED;
+    }
+
+    return LAPRDUS_OK;
+}
+
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_load_accent_lexicon_from_memory(
+    LaprdusHandle handle,
+    const char* json_content,
+    size_t length) {
+
+    if (!handle) {
+        return LAPRDUS_ERROR_INVALID_HANDLE;
+    }
+    if (!json_content) {
+        return LAPRDUS_ERROR_INVALID_PARAMETER;
+    }
+
+    if (!handle->engine.load_accent_lexicon_from_memory(json_content, length)) {
+        set_error(handle, "Accent lexicon: " + handle->engine.accent_lexicon_report());
+        return LAPRDUS_ERROR_LOAD_FAILED;
+    }
+
+    return LAPRDUS_OK;
+}
+
+LAPRDUS_API void LAPRDUS_CALL laprdus_clear_accent_lexicon(LaprdusHandle handle) {
+    if (handle) {
+        handle->engine.clear_accent_lexicon();
+    }
+}
+
+LAPRDUS_API const char* LAPRDUS_CALL laprdus_get_accent_lexicon_report(LaprdusHandle handle) {
+    if (!handle) {
+        return "";
+    }
+    // A thread-local copy, like laprdus_get_error_message().
+    thread_local std::string report_copy;
+    report_copy = handle->engine.accent_lexicon_report();
+    return report_copy.c_str();
+}
+
 LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_emoji_enabled(
     LaprdusHandle handle,
     int enabled) {
@@ -1308,6 +1367,14 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_load_user_config(LaprdusHandle han
             std::string path = config.get_user_emoji_dictionary_path();
             handle->engine.load_emoji_dictionary(path);
         }
+
+        if (config.user_dictionary_exists("accents.json")) {
+            handle->engine.load_accent_lexicon(config.get_user_accent_lexicon_path());
+        } else {
+            handle->engine.clear_accent_lexicon();
+        }
+    } else {
+        handle->engine.clear_accent_lexicon();
     }
 
     return LAPRDUS_OK;
