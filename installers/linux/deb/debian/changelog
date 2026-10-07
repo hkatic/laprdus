@@ -1,8 +1,18 @@
 laprdus (2.0.0-1) unstable; urgency=medium
 
   * Laprdus 2.0.
-  * New formant voices synthesized by rule: Zvonko (Croatian), Stojan (Serbian)
-    and Mirsad (Bosnian), the default voice of each language.
+  * New voices synthesized by rule, clear at any rate: Zvonko (Croatian),
+    Stojan (Serbian) and Mirsad (Bosnian), the default voice of each language;
+    Bosnian is now supported, also under Speech Dispatcher.
+  * Word stress and natural sentence melody for every voice. Josip and Vlado
+    have a new engine: no clicks, natural tempo, rate and pitch independent.
+  * Ten singing voices (orguljas, klapa, pjevac, becarac, trubac, harmonikas,
+    pevac, sevdalija, sazlija, solist).
+  * CLI options -I (inflection level) and -a (acceleration) for the new
+    voices; Speech Dispatcher maps its pitch range onto the inflection level.
+  * User accent dictionary accents.json next to the other user dictionaries.
+  * Fixed: user spelling and emoji dictionaries had no effect; the derived
+    voices detence, baba and djed sounded like their base voice.
   * Library SONAME bumped to liblaprdus.so.2.
 
  -- Hrvoje Katic <hrvoje.katic@gmail.com>  Wed, 07 Oct 2026 12:00:00 +0200

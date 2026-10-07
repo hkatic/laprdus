@@ -2,7 +2,18 @@
 
 ## Verzija 2.0.0 (build 10) — u razvoju
 
-- Tri nova glasa koji se u cijelosti sintetiziraju po pravilima, bez snimaka: Zvonko (hrvatski), Stojan (srpski) i Mirsad (bosanski). Sada su zadani glas svakog jezika; Josip, Vlado i glasovi izvedeni iz njih i dalje su dostupni.
+- Tri nova glasa koji se u cijelosti sintetiziraju po pravilima, bez snimaka: Zvonko (hrvatski), Stojan (srpski) i Mirsad (bosanski). Ostaju čisti i razumljivi i pri vrlo velikim brzinama govora. Zadani su glas svakog jezika; glas koji ste sami odabrali nikada se ne zamjenjuje. Josip, Vlado, Detence, Baba i Đedo i dalje su dostupni.
+- Bosanski je sada podržan jezik, a Mirsad je njegov glas.
+- Naglasak riječi i rečenična melodija: svaka je riječ naglašena na pravom slogu (ugrađeni rječnik s nekoliko tisuća riječi i imena, pravila za česte nastavke i naglasni znakovi koje možete upisati u rječnik izgovora, na primjer `telèfon`), a svaka rečenica dobiva prirodnu intonaciju: porast na kraju pitanja, pad na točki, zadržani porast na zarezu.
+- Josip, Vlado, Detence, Baba i Đedo imaju novi govorni mehanizam: isti naglasak riječi i istu melodiju kao novi glasovi, prirodan tempo, čujne glasove p, t, k, b, d i g pri velikim brzinama i više nikakvih klikova ni pucketanja između glasova. Promjena brzine više ne mijenja visinu, promjena visine više ne čini glas hrapavim, a izvedeni glasovi zvuče kao dijete, baka i djed, a ne kao ubrzana ili usporena snimka.
+- Deset pjevajućih glasova: Zvonko Orguljaš, Klapa Zvonko, Zvonko Pjevač i Zvonko Bećarac (hrvatski), Stojan Trubač, Stojan Harmonikaš i Stojan Pevač (srpski), Mirsad Sevdalija, Mirsad Sazlija i Mirsad Solist (bosanski). Svaki tekst pjevaju na narodnu pjesmu svoje zemlje; brzina govora određuje tempo, visina transponira pjesmu, a razina infleksije vibrato.
+- Dvije nove postavke za nove glasove, prikazane samo kad je jedan od njih odabran: Razina infleksije (0% je monoton govor, 50% prirodna melodija, 100% udvostručuje svaki pomak) i Ubrzanje (množitelj brzine govora od 0,5 do 3, pa klizač brzine doseže veću ili manju najveću brzinu). Novi glasovi prihvaćaju brzinu i visinu govora od četvrtine do četverostruke uobičajene vrijednosti.
+- Naglasni rječnik: novi korisnički rječnik `accents.json` ispravlja naglasak riječi odjednom za sve njezine oblike ili cijelog glagola. Sprema se uz ostale korisničke rječnike i učitava zajedno s njima (vidi odjeljak 5.11 korisničkog priručnika).
+- Brojevi se čitaju na jeziku glasa (Zvonko: *tisuća*, *milijun*; Stojan i Mirsad: *hiljada*, *milion*), a jedan i dva slažu se s brojevnom riječi (*dvije tisuće*, *dvadeset jedna tisuća*).
+- Ispravljeno: unosi dodani u korisnički rječnik slovkanja i rječnik emodžija nisu imali učinka.
+- Naglasni rječnik čita se iz mape rječnika aplikacije, zajedno s ostalim korisničkim rječnicima.
+- Ispravljeno: kad je VoiceOver čitao stavku koja sadrži jedan znak za slovkanje, na primjer gumb s brojem na znački, cijela se stavka slovkala slovo po slovo, a naziv i vrsta kontrole stapali su se u jednu rečenicu. Svaki se dio sada čita onako kako VoiceOver traži: tekst kao tekst, znak slovkano, stanke kao stanke.
+- Sada se čuje VoiceOverova promjena visine za velika slova, a zahtjev koji VoiceOver otkaže više se ne izgovara.
 
 ## Verzija 1.0.0 (build 9) — 28. kolovoza 2026.
 

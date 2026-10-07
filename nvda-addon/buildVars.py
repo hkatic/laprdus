@@ -22,17 +22,19 @@ addon_info = AddonInfo(
     # Add-on description
     # Translators: Long description to be shown for this add-on
     addon_description=_("""Text-to-speech synthesizer for NVDA.
-Laprdus is a concatenative speech synthesizer using pre-recorded phoneme samples.
-Supports Croatian and Serbian language with natural-sounding prosody and inflection."""),
+Laprdus speaks Croatian, Serbian and Bosnian with the rule-based voices Zvonko, Stojan and Mirsad,
+the recorded voices Josip and Vlado, the presets Detence, Baba and Djed, and ten singing voices,
+with word stress and natural sentence melody."""),
     # version
     addon_version="2.0.0",
     # Brief changelog for this version
     # Translators: what's new content for the add-on version
-    addon_changelog=_("""Initial release of Laprdus TTS for NVDA.
-Features:
-- Croatian and Serbian text-to-speech synthesis
-- Available voices: Josip (Croatian) and Vlado (Serbian), plus additional voice presets (Child, Grandma and Grandpa)
-- Adjustable rate, pitch, and volume
+    addon_changelog=_("""Laprdus 2.0 for NVDA.
+- Three new voices synthesized by rule, clear at any rate: Zvonko (Croatian), Stojan (Serbian) and Mirsad (Bosnian), the default voice of each language; Bosnian is now supported
+- Word stress and natural sentence melody for every voice; Josip and Vlado have a new engine without clicks, with a natural tempo and rate and pitch that no longer affect each other
+- Ten singing voices
+- New Inflection level and Acceleration settings for the new voices, and an accent dictionary (accents.json) to correct the stress of a word
+- Fixed: user spelling and emoji dictionary entries had no effect
 """),
     # Author(s)
     addon_author="Hrvoje Katić <hrvojekatic@gmail.com>",
