@@ -110,8 +110,8 @@ std::string CroatianNumbers::two_digit_to_words(std::string_view two_digits) {
 std::string CroatianNumbers::hundreds_word(char digit) {
     switch (digit) {
         case '1': return "sto";
-        case '2': return "dvjesto";
-        case '3': return "tristo";
+        case '2': return m_dialect == Dialect::Serbian ? "dvesta" : "dvjesto";
+        case '3': return m_dialect == Dialect::Serbian ? "trista" : "tristo";
         case '4': return u8"četiristo";
         case '5': return "petsto";
         case '6': return u8"šesto";
@@ -175,6 +175,19 @@ std::string CroatianNumbers::group_to_words(std::string_view group) {
 // =============================================================================
 
 std::string_view CroatianNumbers::get_thousand_variant(char last_digit) {
+    if (m_dialect != Dialect::Croatian) {
+        switch (last_digit) {
+            case '1':
+                return "hiljadu";
+            case '2':
+            case '3':
+            case '4':
+                return "hiljade";
+            default:
+                return "hiljada";
+        }
+    }
+
     switch (last_digit) {
         case '1':
             return u8"tisuću";      // Nominative singular
@@ -193,12 +206,13 @@ std::string_view CroatianNumbers::get_thousand_variant(char last_digit) {
 
 std::string CroatianNumbers::get_million_variant(std::string_view prefix, char last_digit) {
     std::string result(prefix);
+    const bool eastern = m_dialect != Dialect::Croatian;
     switch (last_digit) {
         case '1':
-            result += "lijun";
+            result += eastern ? "lion" : "lijun";
             break;
         default:
-            result += "lijuna";
+            result += eastern ? "liona" : "lijuna";
             break;
     }
     return result;
@@ -277,6 +291,17 @@ std::string CroatianNumbers::get_large_number_suffix(int group_index, char last_
 }
 
 // =============================================================================
+// Gender of the Scale Words
+// =============================================================================
+
+bool CroatianNumbers::is_feminine_scale(int group_index) {
+    // tisuća/hiljada and the words in -ilijarda are feminine, the words in
+    // -ilijun/-ilion masculine (see get_large_number_suffix)
+    return group_index == 0 ||
+           (group_index >= 2 && group_index <= 10 && group_index % 2 == 0);
+}
+
+// =============================================================================
 // Remove Leading Zeros
 // =============================================================================
 
@@ -345,6 +370,8 @@ std::string CroatianNumbers::process_number_groups(std::string_view number) {
 
         int groups_from_end = num_groups - 1 - group_num;
         char last_digit = group_clean.back();
+        // 11-19 have no "one" or "two" of their own: jedanaest tisuća
+        bool is_teen = group_clean.size() >= 2 && group_clean[group_clean.size() - 2] == '1';
 
         // Special case: group is exactly "1" for thousands and higher
         // In Croatian, you say "tisuću" not "jedan tisuću" for 1000
@@ -355,16 +382,29 @@ std::string CroatianNumbers::process_number_groups(std::string_view number) {
             if (!result.empty()) {
                 result += " ";
             }
-            result += group_to_words(group_clean);
+            std::string words = group_to_words(group_clean);
+            // The numbers one and two agree with a feminine scale word:
+            // dvije tisuće, dve hiljade, dvadeset jedna tisuća, dvije milijarde
+            if (groups_from_end > 0 && is_feminine_scale(groups_from_end - 1) && !is_teen &&
+                (last_digit == '1' || last_digit == '2')) {
+                std::string_view masculine = digit_to_word(last_digit);
+                words.resize(words.size() - masculine.size());
+                words += last_digit == '1' ? "jedna"
+                       : (m_dialect == Dialect::Serbian ? "dve" : "dvije");
+            }
+            result += words;
         }
 
         // Add scale word (thousand, million, etc.)
         if (groups_from_end > 0) {
             // Determine which digit to use for plural form
-            // Special case: if group ends in 1 but isn't exactly "1",
-            // use '0' to get plural form (e.g., "21 tisuća" not "21 tisuću")
+            // 11-19 take the genitive plural like 5-9 (dvanaest tisuća).
+            // A group ending in 1 takes the singular: "dvadeset jedan
+            // milijun", "dvadeset jedna milijarda". For thousands that is
+            // the nominative "tisuća", spelled like the genitive plural
+            // ('1' gives the accusative "tisuću" used for 1000 itself).
             char plural_digit = last_digit;
-            if (!is_one && last_digit == '1') {
+            if (is_teen || (!is_one && last_digit == '1' && groups_from_end == 1)) {
                 plural_digit = '0';
             }
 

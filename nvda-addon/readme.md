@@ -1,6 +1,6 @@
 # Laprdus - Korisnički priručnik
 
-Inačica 1.0
+Inačica 2.0
 
 ---
 
@@ -40,6 +40,7 @@ Inačica 1.0
    - [5.8 Ručno uređivanje JSON datoteka](#58-ručno-uređivanje-json-datoteka-napredno)
    - [5.9 Primjeri praktične uporabe](#59-primjeri-praktične-uporabe)
    - [5.10 Rješavanje problema s rječnicima](#510-rješavanje-problema-s-rječnicima)
+   - [5.11 Naglasni rječnik (accents.json)](#511-naglasni-rječnik-accentsjson)
 6. [Glasovi](#6-glasovi)
    - [6.1 Dostupni glasovi](#61-dostupni-glasovi)
    - [6.2 Osnovni i izvedeni glasovi](#62-osnovni-i-izvedeni-glasovi)
@@ -137,6 +138,10 @@ Da biste instalirali Laprdus na Windows sustavu, slijedite ove korake:
    - Laprdus Detence
    - Laprdus Baba
    - Laprdus Djedo
+   - Laprdus Zvonko
+   - Laprdus Stojan
+   - Laprdus Mirsad
+   - Laprdus Zvonko Orguljaš, Klapa Zvonko, Zvonko Pjevač, Stojan Trubač, Stojan Harmonikaš, Stojan Pevač, Mirsad Sevdalija, Mirsad Sazlija, Mirsad Solist i Zvonko Bećarac (glasovi koji pjevaju)
 
 ### 2.2 NVDA dodatak
 
@@ -342,9 +347,11 @@ echo "Tekst" | laprdus
 
 | Opcija | Opis |
 |--------|------|
-| `-v, --voice` | Odabir glasa (josip, vlado, detence, baba, djed) |
-| `-r, --speech-rate` | Brzina govora (0.5-2.0, zadano: 1.0) |
-| `-p, --speech-pitch` | Visina glasa (0.5-2.0, zadano: 1.0) |
+| `-v, --voice` | Odabir glasa (josip, vlado, detence, baba, djed, zvonko, stojan, mirsad ili pjevajući glas: orguljas, klapa, trubac, harmonikas, sevdalija, sazlija, pjevac, pevac, solist, becarac) |
+| `-r, --speech-rate` | Brzina govora (0.5-2.0, zadano: 1.0; formantni glasovi 0.25-4.0) |
+| `-p, --speech-pitch` | Visina glasa (0.5-2.0, zadano: 1.0; formantni glasovi 0.25-4.0) |
+| `-I, --inflection` | Intonacija formantnih glasova, 0-100 (zadano: 50; 0 je monotono) |
+| `-a, --acceleration` | Ubrzanje formantnih glasova, množitelj brzine 0.5-3.0 (zadano: 1.0) |
 | `-V, --speech-volume` | Glasnoća (0.0-1.0, zadano: 1.0) |
 | `-d, --numbers-digits` | Čitaj brojeve znamenka po znamenka |
 | `-c, --comma-pauses` | Trajanje pauze za zarez u ms (zadano: 100) |
@@ -472,6 +479,7 @@ Konfigurator omogućuje podešavanje:
 - Načina čitanja brojeva
 - Trajanja pauza
 - Infleksije
+- Intonacije i ubrzanja formantnih glasova (Zvonko, Stojan, Mirsad): intonacija od 0% (monotono) preko 50% (zadano, prirodni pokreti) do 100% (dvostruko veći pokreti); ubrzanje množi brzinu govora (0.5x-3.0x, zadano 1.0x), pa vrh NVDA klizača brzine doseže veću ili manju brzinu, a uz klizač je ispisano koliko riječi u minuti tada doseže. Klizači brzine i visine za formantne glasove idu od 0.25x do 4.0x.
 - Prilagodbu korisničkih rječnika
 
 Postavke se spremaju u korisničkoj mapi `%APPDATA%\Laprdus` i dijele se između SAPI5 i NVDA dodatka.
@@ -484,13 +492,14 @@ Rječnici omogućuju prilagodbu načina na koji Laprdus izgovara određene rije�
 
 ### 5.1 Vrste rječnika
 
-Laprdus koristi tri vrste rječnika, od kojih svaki ima posebnu namjenu:
+Laprdus koristi tri vrste rječnika, od kojih svaki ima posebnu namjenu, i uz njih naglasni rječnik formantnih glasova:
 
 | Vrsta rječnika | Datoteka | Namjena |
 |----------------|----------|---------|
 | **Glavni rječnik** | `user.json` | Zamjena riječi i fraza prilagođenim izgovorom |
 | **Rječnik slovkanja** | `spelling.json` | Izgovor pojedinačnih znakova (slova, brojeva, simbola) |
 | **Rječnik emodžija** | `emoji.json` | Pretvaranje emodžija u tekstualni opis |
+| **Naglasni rječnik** | `accents.json` | Naglasak, dužina i ton riječi za formantne glasove (vidi [5.11](#511-naglasni-rječnik-accentsjson)) |
 
 ### 5.2 Lokacije datoteka rječnika
 
@@ -520,6 +529,7 @@ Datoteke u ovom direktoriju:
 | `user.json` | Vaš korisnički rječnik izgovora |
 | `spelling.json` | Rječnik slovkanja (izgovor znakova) |
 | `emoji.json` | Rječnik emodžija |
+| `accents.json` | Naglasni rječnik formantnih glasova |
 
 **Napomena:** Ove datoteke se stvaraju automatski kada prvi put dodate unos putem Laprdus Konfiguratora. Također ih možete stvoriti ručno.
 
@@ -531,7 +541,7 @@ Datoteke rječnika nalaze se u:
 ~/.config/Laprdus/
 ```
 
-Koristite iste nazive datoteka kao na Windowsu (`user.json`, `spelling.json`, `emoji.json`).
+Koristite iste nazive datoteka kao na Windowsu (`user.json`, `spelling.json`, `emoji.json`, `accents.json`).
 
 #### Android
 
@@ -889,6 +899,7 @@ Ova metoda je namijenjena **naprednim korisnicima** koji žele izravno uređivat
   - `user.json` za glavni rječnik
   - `spelling.json` za rječnik slovkanja
   - `emoji.json` za rječnik emodžija
+  - `accents.json` za naglasni rječnik formantnih glasova (zapis u [5.11](#511-naglasni-rječnik-accentsjson))
 
 **Korak 3: Uredite sadržaj**
 
@@ -1175,19 +1186,82 @@ Primjer problema: Unos za "TV" zamjenjuje i "aktivator" jer sadrži "TV".
 
 ---
 
+### 5.11 Naglasni rječnik (accents.json)
+
+Formantni glasovi (Zvonko, Stojan, Mirsad i pjevački glasovi) sami određuju mjesto naglaska, dužinu i ton svake riječi: prvo iz naglasnih znakova u tekstu, zatim iz ugrađenog leksikona, pa po pravilima za nastavke, a ako ništa ne pogodi, naglasak ide na prvi slog. Riječ koja tako ispadne krivo može se ispraviti u naglasnom rječniku, i to ne samo jedan njezin oblik: unos može pokriti cijelu osnovu, popis oblika ili cijeli glagol sa svim licima i vremenima. Snimljeni glasovi (Josip, Vlado) ga ne koriste.
+
+Datoteka `accents.json` stoji uz ostale rječnike (`%APPDATA%\Laprdus` na Windowsu, `~/.config/Laprdus` na Linuxu) i učitava se zajedno s njima kad su korisnički rječnici uključeni. Učitava se jednom, pri pokretanju i pri promjeni datoteke; govor zbog nje nije ništa sporiji.
+
+#### Zapis
+
+Unosi se pišu u zapisu ugrađenog leksikona:
+
+| Znak | Značenje |
+|------|----------|
+| `'` | ispred naglašenog samoglasnika (ili slogotvornog r); ton se bira sam |
+| `^` | ispred naglašenog samoglasnika: silazni naglasak |
+| `/` | ispred naglašenog samoglasnika: uzlazni naglasak |
+| `:` | iza dugog samoglasnika |
+| `*` | na kraju: osnova, koja vrijedi i za oblike s do tri slova više (kontróla, kontróle, kontrólom) |
+| `\|` | `osnova\|nastavak\|nastavak`: po jedan točan oblik za svaki nastavak; prazan nastavak je sama osnova |
+
+Primjer datoteke:
+
+```json
+{
+    "version": "1.0",
+    "entries": [
+        { "word": "kontr'o:l*", "comment": "kontróla, kontróle, kontrólom" },
+        { "word": "sign'a:l|a|u|om|e|i|ima", "comment": "signála, signálu...; sìgnal ostaje kako jest" },
+        { "word": "p^oruk*", "comment": "pȍruka: silazni naglasak na prvom slogu" },
+        { "word": "dir'ektor*", "language": "sr", "comment": "samo za Stojana" },
+        { "verb": "ur'e:d=i<p", "comment": "uréditi, urédim, urédio, uređen" },
+        { "verb": "dijel:i", "comment": "podijeliti, raspodijeliti, podijelim, podijeljen" }
+    ]
+}
+```
+
+- `word`: riječ, osnova (`*`) ili popis oblika (`|`).
+- `verb`: glagol. Piše se cijela osnova s naglaskom infinitiva, znak `=` i vrsta: `i` za glagole na -iti/-im, `a` na -ati/-am, `u` na -nuti/-nem, `t` na -ati s drugom osnovom u prezentu i `e` za tu osnovu (`pok'a:z=t` i `pok'a:ž=e`). Iza vrste mogu stajati oznake: `<` pomiče naglasak jedan slog unatrag u prezentu, `p` i u trpnom pridjevu (tako govore Stojan i Mirsad, Zvonko zadržava naglasak infinitiva), `n` kad je imperativ jednak obliku neke imenice (potvrdi, uredi), pa se čita kao glagol samo na početku rečenice. Glagol s dugim *ije* u korijenu piše se kao `korijen:vrsta` i vrijedi sa svakim prefiksom.
+- `language`: `hr`, `sr` ili `bs` ograničava unos na glas tog jezika; bez toga vrijedi za sva tri.
+- `comment`: bilješka za vas, Laprdus je ne čita.
+
+Točan oblik ima prednost pred osnovom, dulja osnova pred kraćom, a vaš unos pred ugrađenim. Naglasni znakovi napisani u samom tekstu, ili u zamjeni glavnog rječnika (`telèfon`), imaju prednost pred svime.
+
+Neispravan unos (bez naglasnog znaka, s dva naglaska, s nepoznatim slovom ili nepoznatom vrstom glagola) preskače se, a ostali vrijede. Na naredbenoj liniji `laprdus -w` ispisuje koliko je unosa prihvaćeno i što je bilo krivo s prvim odbijenim; NVDA dodatak to upisuje u svoj dnevnik. Rezultat možete odmah čuti:
+
+```bash
+laprdus -v zvonko "kontrola, signala, uredio"
+```
+
+**Android i Apple:** datoteka `accents.json` čita se iz istog direktorija kao ostali rječnici kad su korisnički rječnici uključeni, ali aplikacije za sada nemaju uređivač za nju.
+
 ## 6. Glasovi
 
 ### 6.1 Dostupni glasovi
 
-Laprdus uključuje pet glasova - dva osnovna i tri izvedena:
+Laprdus uključuje osam glasova - dva osnovna, tri izvedena i tri formantna:
 
 | Glas | Vrsta | Jezik | Opis |
 |------|-------|-------|------|
-| **Josip** | Osnovni | Hrvatski | Muški glas normalne visine. Zadani glas za hrvatski jezik. |
-| **Vlado** | Osnovni | Srpski | Muški glas normalne visine. Zadani glas za srpski jezik. |
+| **Josip** | Osnovni | Hrvatski | Muški glas normalne visine. |
+| **Vlado** | Osnovni | Srpski | Muški glas normalne visine. |
 | **Detence** | Izvedeni | Hrvatski | Dječji glas. Izveden iz glasa Josip s povišenom visinom. |
 | **Baba** | Izvedeni | Hrvatski | Ženski glas. Izveden iz glasa Josip s blago povišenom visinom. |
 | **Djedo** | Izvedeni | Srpski | Stariji muški glas. Izveden iz glasa Vlado sa sniženom visinom. |
+| **Zvonko** | Formantni | Hrvatski | Muški glas. Govor nastaje pravilima, bez snimaka. Zadani glas za hrvatski jezik. |
+| **Stojan** | Formantni | Srpski | Muški glas, dublji i tamniji. Govor nastaje pravilima, bez snimaka. Zadani glas za srpski jezik. |
+| **Mirsad** | Formantni | Bosanski | Muški glas, viši i melodičniji. Govor nastaje pravilima, bez snimaka. Zadani glas za bosanski jezik. |
+| **Zvonko Orguljaš** | Pjevajući | Hrvatski | Zvonko za orguljama: pjeva *Vilu Velebita*. |
+| **Klapa Zvonko** | Pjevajući | Hrvatski | Zvonko kao cijela klapa: pjeva *Vilu Velebita*. |
+| **Zvonko Pjevač** | Pjevajući | Hrvatski | Zvonko pjeva svojim glasom, u svojoj visini: *Vila Velebita*. |
+| **Stojan Trubač** | Pjevajući | Srpski | Stojan kao truba: pjeva *Kreće se lađa francuska*. |
+| **Stojan Harmonikaš** | Pjevajući | Srpski | Stojan kao harmonika: pjeva *Kreće se lađa francuska*. |
+| **Stojan Pevač** | Pjevajući | Srpski | Stojan pjeva svojim glasom: *Kreće se lađa francuska*. |
+| **Mirsad Sevdalija** | Pjevajući | Bosanski | Mirsad pjeva sevdah: *Kad ja pođoh na Bembašu*. |
+| **Mirsad Sazlija** | Pjevajući | Bosanski | Mirsad kao saz: pjeva *Kad ja pođoh na Bembašu*. |
+| **Mirsad Solist** | Pjevajući | Bosanski | Mirsad pjeva svojim glasom: *Kad ja pođoh na Bembašu*. |
+| **Zvonko Bećarac** | Pjevajući | Hrvatski | Zvonko svojim glasom pjeva bećarac: svaki deseterački dvostih sjeda na napjev. |
 
 ### 6.2 Osnovni i izvedeni glasovi
 
@@ -1198,6 +1272,17 @@ Laprdus uključuje pet glasova - dva osnovna i tri izvedena:
 - **Detence** koristi Josipove foneme s visinom 1.5x (viši glas)
 - **Baba** koristi Josipove foneme s visinom 1.2x (blago viši glas)
 - **Djedo** koristi Vladove foneme s visinom 0.75x (niži glas)
+
+**Formantni glasovi** (Zvonko, Stojan, Mirsad) ne koriste snimke. Govor se u cijelosti računa pravilima, kao kod sintetizatora Eloquence i DECtalk: iz teksta se određuju glasovi, naglasak i rečenična intonacija, a zatim se zvuk stvara formantnim sintetizatorom. Zato ovi glasovi:
+
+- ne trebaju datoteke s glasovnim podacima
+- ostaju čisti i razumljivi pri vrlo velikim brzinama, jer se brzina i visina ne dobivaju naknadnom obradom zvuka
+- imaju rečeničnu intonaciju (izjava, pitanje, zarez, usklik)
+- brojeve izgovaraju prema jeziku glasa (Zvonko: *tisuća*, *milijun*; Stojan i Mirsad: *hiljada*, *milion*)
+
+Ako formantni glas neku riječ naglasi na pogrešnom slogu, naglasak možete zadati u rječniku izgovora uobičajenim naglasnim znakovima, na primjer `telèfon`, `gláva`, `kȕća` ili `grȃd`.
+
+**Pjevajući glasovi** (Zvonko Orguljaš, Klapa Zvonko, Zvonko Pjevač, Stojan Trubač, Stojan Harmonikaš, Stojan Pevač, Mirsad Sevdalija, Mirsad Sazlija, Mirsad Solist, Zvonko Bećarac) su formantni glasovi koji tekst ne govore nego pjevaju, kao što su to činili DECtalk i glasovi Pipe Organ i Cellos na Macintoshu. Svaki slog dobiva jednu notu narodne pjesme svoje zemlje (hrvatski glasovi pjevaju *Vilu Velebita*, srpski *Kreće se lađa francuska*, bosanski *Kad ja pođoh na Bembašu*); prva kitica pjesme točno sjeda na melodiju, a svaki drugi tekst pjeva se na istu melodiju, slog po slog, iz početka sa svakom novom rečenicom koju program pošalje. Brzina govora određuje tempo, visina transponira pjesmu, a intonacija određuje dubinu vibrata (0% ga isključuje). Umjesto grkljana svaki glas ima svoj "instrument": orgulje s odjekom crkve, klapu od nekoliko glasova s basom oktavu niže, trubu, dvije harmonikaške piskove ugođene za nekoliko centa različito, sevdalijski glas sa širokim vibratom i saz s tremolom. Pjevač, Pevač i Solist pjevaju običnim glasom Zvonka, Stojana i Mirsada, bez instrumenta i odjeka, a pjesma im je prenesena u visinu u kojoj inače govore.
 
 ### 6.3 Odabir glasa
 

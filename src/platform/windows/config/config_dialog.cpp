@@ -9,6 +9,7 @@
 #include "resource.h"
 #include <sapi.h>
 #include <sphelper.h>
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 
@@ -23,18 +24,47 @@ static const char* VOICE_IDS[] = {
     "vlado",
     "detence",
     "baba",
-    "djed"
+    "djed",
+    "zvonko",
+    "stojan",
+    "mirsad",
+    // Singing presets (formant voices)
+    "orguljas",
+    "klapa",
+    "trubac",
+    "harmonikas",
+    "sevdalija",
+    "sazlija",
+    "pjevac",
+    "pevac",
+    "solist",
+    "becarac"
 };
 static const int NUM_VOICES = sizeof(VOICE_IDS) / sizeof(VOICE_IDS[0]);
 
-// Slider ranges
+// Index of the first formant voice in VOICE_IDS (zvonko, stojan, mirsad and
+// the singing presets after them)
+static const int FIRST_FORMANT_VOICE = 5;
+
+// Slider ranges (percent). The recorded voices stop at 0.5x and 2.0x; the
+// formant voices go from 0.25x to 4.0x.
 static const int SPEED_MIN = 50;   // 0.5x
 static const int SPEED_MAX = 200;  // 2.0x
 static const int SPEED_DEFAULT = 100;
+static const int FORMANT_SPEED_MIN_PCT = 25;    // 0.25x
+static const int FORMANT_SPEED_MAX_PCT = 400;   // 4.0x
 
 static const int PITCH_MIN = 50;   // 0.5x
 static const int PITCH_MAX = 200;  // 2.0x
 static const int PITCH_DEFAULT = 100;
+static const int FORMANT_PITCH_MIN_PCT = 25;    // 0.25x
+static const int FORMANT_PITCH_MAX_PCT = 400;   // 4.0x
+
+// Formant voices only
+static const int INFLECTION_MIN = 0;      // monotone
+static const int INFLECTION_MAX = 100;    // twice the measured movements
+static const int ACCELERATION_MIN_PCT = 50;    // 0.5x
+static const int ACCELERATION_MAX_PCT = 300;   // 3.0x
 
 static const int VOLUME_MIN = 0;
 static const int VOLUME_MAX = 100;
@@ -129,6 +159,7 @@ INT_PTR ConfigDialog::OnInitDialog(HWND hDlg) {
     SetControlText(hDlg, IDC_GROUP_PAUSES, IDS_GROUP_PAUSES);
     SetControlText(hDlg, IDC_GROUP_OPTIONS, IDS_GROUP_OPTIONS);
     SetControlText(hDlg, IDC_GROUP_DICTIONARIES, IDS_GROUP_DICTIONARIES);
+    SetControlText(hDlg, IDC_GROUP_FORMANT, IDS_GROUP_FORMANT);
 
     // Set label texts
     SetControlText(hDlg, IDC_VOICE_LABEL, IDS_VOICE_LABEL);
@@ -141,6 +172,8 @@ INT_PTR ConfigDialog::OnInitDialog(HWND hDlg) {
     SetControlText(hDlg, IDC_COMMA_LABEL, IDS_COMMA_LABEL);
     SetControlText(hDlg, IDC_SENTENCE_LABEL, IDS_SENTENCE_LABEL);
     SetControlText(hDlg, IDC_NEWLINE_LABEL, IDS_NEWLINE_LABEL);
+    SetControlText(hDlg, IDC_INFLECTION_LABEL, IDS_INFLECTION_LABEL);
+    SetControlText(hDlg, IDC_ACCELERATION_LABEL, IDS_ACCELERATION_LABEL);
 
     // Set checkbox texts
     SetControlText(hDlg, IDC_INFLECTION_CHECK, IDS_INFLECTION);
@@ -195,6 +228,19 @@ void ConfigDialog::InitializeVoiceCombo(HWND hDlg) {
     SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_DETENCE).c_str());
     SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_BABA).c_str());
     SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_DJEDO).c_str());
+    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_ZVONKO).c_str());
+    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_STOJAN).c_str());
+    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_MIRSAD).c_str());
+    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_ORGULJAS).c_str());
+    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_KLAPA).c_str());
+    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_TRUBAC).c_str());
+    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_HARMONIKAS).c_str());
+    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_SEVDALIJA).c_str());
+    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_SAZLIJA).c_str());
+    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_PJEVAC).c_str());
+    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_PEVAC).c_str());
+    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_SOLIST).c_str());
+    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_BECARAC).c_str());
 }
 
 void ConfigDialog::InitializeSliders(HWND hDlg) {
@@ -239,28 +285,89 @@ void ConfigDialog::InitializeSliders(HWND hDlg) {
         SendMessageW(hNewline, TBM_SETRANGE, TRUE, MAKELPARAM(PAUSE_MIN, PAUSE_MAX));
         SendMessageW(hNewline, TBM_SETTICFREQ, 200, 0);
     }
+
+    // Inflection level slider (formant voices)
+    HWND hInflection = GetDlgItem(hDlg, IDC_INFLECTION_SLIDER);
+    if (hInflection) {
+        SendMessageW(hInflection, TBM_SETRANGE, TRUE, MAKELPARAM(INFLECTION_MIN, INFLECTION_MAX));
+        SendMessageW(hInflection, TBM_SETTICFREQ, 10, 0);
+    }
+
+    // Acceleration slider (formant voices)
+    HWND hAcceleration = GetDlgItem(hDlg, IDC_ACCELERATION_SLIDER);
+    if (hAcceleration) {
+        SendMessageW(hAcceleration, TBM_SETRANGE, TRUE, MAKELPARAM(ACCELERATION_MIN_PCT, ACCELERATION_MAX_PCT));
+        SendMessageW(hAcceleration, TBM_SETTICFREQ, 25, 0);
+    }
+}
+
+bool ConfigDialog::IsFormantVoiceSelected(HWND hDlg) const {
+    int voiceIndex = static_cast<int>(SendDlgItemMessageW(hDlg, IDC_VOICE_COMBO, CB_GETCURSEL, 0, 0));
+    return voiceIndex >= FIRST_FORMANT_VOICE && voiceIndex < NUM_VOICES;
+}
+
+// The speed and pitch sliders follow the selected voice: the recorded voices
+// stop at 0.5x and 2.0x, the formant voices reach 0.25x and 4.0x. A value
+// outside the new range is pulled back inside it. The inflection and
+// acceleration sliders stay enabled whatever the combo says: SAPI5
+// applications pick the voice themselves, and the group title names the
+// voices the sliders are for.
+void ConfigDialog::UpdateVoiceRanges(HWND hDlg) {
+    const bool formant = IsFormantVoiceSelected(hDlg);
+    const int speedMin = formant ? FORMANT_SPEED_MIN_PCT : SPEED_MIN;
+    const int speedMax = formant ? FORMANT_SPEED_MAX_PCT : SPEED_MAX;
+    const int pitchMin = formant ? FORMANT_PITCH_MIN_PCT : PITCH_MIN;
+    const int pitchMax = formant ? FORMANT_PITCH_MAX_PCT : PITCH_MAX;
+
+    HWND hSpeed = GetDlgItem(hDlg, IDC_SPEED_SLIDER);
+    if (hSpeed) {
+        int pos = static_cast<int>(SendMessageW(hSpeed, TBM_GETPOS, 0, 0));
+        SendMessageW(hSpeed, TBM_SETRANGE, TRUE, MAKELPARAM(speedMin, speedMax));
+        SendMessageW(hSpeed, TBM_SETPOS, TRUE, std::clamp(pos, speedMin, speedMax));
+        UpdateSliderValue(hDlg, IDC_SPEED_SLIDER, IDC_SPEED_VALUE, true);
+    }
+
+    HWND hPitch = GetDlgItem(hDlg, IDC_PITCH_SLIDER);
+    if (hPitch) {
+        int pos = static_cast<int>(SendMessageW(hPitch, TBM_GETPOS, 0, 0));
+        SendMessageW(hPitch, TBM_SETRANGE, TRUE, MAKELPARAM(pitchMin, pitchMax));
+        SendMessageW(hPitch, TBM_SETPOS, TRUE, std::clamp(pos, pitchMin, pitchMax));
+        UpdateSliderValue(hDlg, IDC_PITCH_SLIDER, IDC_PITCH_VALUE, true);
+    }
 }
 
 void ConfigDialog::LoadSettingsToControls(HWND hDlg) {
     // Voice combo box
-    int voiceIndex = 0;  // Default to josip
+    // Without a saved voice the default is Zvonko
+    const std::string selected = m_settings.default_voice.empty() ? "zvonko" : m_settings.default_voice;
+    int voiceIndex = 0;
     for (int i = 0; i < NUM_VOICES; i++) {
-        if (m_settings.default_voice == VOICE_IDS[i]) {
+        if (selected == VOICE_IDS[i]) {
             voiceIndex = i;
             break;
         }
     }
     SendDlgItemMessageW(hDlg, IDC_VOICE_COMBO, CB_SETCURSEL, voiceIndex, 0);
+    UpdateVoiceRanges(hDlg);
 
-    // Speed slider (0.5-2.0 mapped to 50-200)
-    int speedValue = static_cast<int>(m_settings.speed * 100.0f);
+    // Speed slider (0.5-2.0 mapped to 50-200; formant voices 25-400)
+    int speedValue = static_cast<int>(std::lround(m_settings.speed * 100.0f));
     SendDlgItemMessageW(hDlg, IDC_SPEED_SLIDER, TBM_SETPOS, TRUE, speedValue);
     UpdateSliderValue(hDlg, IDC_SPEED_SLIDER, IDC_SPEED_VALUE, true);
 
     // Pitch slider
-    int pitchValue = static_cast<int>(m_settings.user_pitch * 100.0f);
+    int pitchValue = static_cast<int>(std::lround(m_settings.user_pitch * 100.0f));
     SendDlgItemMessageW(hDlg, IDC_PITCH_SLIDER, TBM_SETPOS, TRUE, pitchValue);
     UpdateSliderValue(hDlg, IDC_PITCH_SLIDER, IDC_PITCH_VALUE, true);
+
+    // Formant voice sliders
+    int inflectionValue = static_cast<int>(std::lround(m_settings.inflection_level * 100.0f));
+    SendDlgItemMessageW(hDlg, IDC_INFLECTION_SLIDER, TBM_SETPOS, TRUE, inflectionValue);
+    UpdateSliderValue(hDlg, IDC_INFLECTION_SLIDER, IDC_INFLECTION_VALUE);
+
+    int accelerationValue = static_cast<int>(std::lround(m_settings.acceleration * 100.0f));
+    SendDlgItemMessageW(hDlg, IDC_ACCELERATION_SLIDER, TBM_SETPOS, TRUE, accelerationValue);
+    UpdateAccelerationValue(hDlg);
 
     // Volume slider
     int volumeValue = static_cast<int>(m_settings.volume * 100.0f);
@@ -296,9 +403,9 @@ void ConfigDialog::UpdateSliderValue(HWND hDlg, int sliderId, int valueId, bool 
     wchar_t text[32];
 
     if (isSpeed) {
-        // Format as multiplier (e.g., "1.0x")
+        // Format as multiplier (e.g., "1.0x"; "0.25x" where one decimal is not enough)
         float value = pos / 100.0f;
-        swprintf_s(text, L"%.1fx", value);
+        swprintf_s(text, (pos % 10) ? L"%.2fx" : L"%.1fx", value);
     } else if (isMs) {
         // Format as milliseconds
         swprintf_s(text, L"%d ms", pos);
@@ -310,6 +417,20 @@ void ConfigDialog::UpdateSliderValue(HWND hDlg, int sliderId, int valueId, bool 
     SetDlgItemTextW(hDlg, valueId, text);
 }
 
+// "1.5x (up to 525 WPM)": the multiplier and the rate the top of a rate
+// slider then reaches with the reference formant voice (the slider's 2.0x
+// times the nominal words per minute times the acceleration).
+void ConfigDialog::UpdateAccelerationValue(HWND hDlg) {
+    int pos = static_cast<int>(SendDlgItemMessageW(hDlg, IDC_ACCELERATION_SLIDER, TBM_GETPOS, 0, 0));
+    float acceleration = pos / 100.0f;
+    int topWpm = static_cast<int>(std::lround(FORMANT_NOMINAL_WPM * 2.0f * acceleration));
+    std::wstring format = LoadLocalizedString(IDS_VALUE_WPM);
+    if (format.empty()) format = L"%.1fx (up to %d WPM)";
+    wchar_t text[64];
+    swprintf_s(text, format.c_str(), acceleration, topWpm);
+    SetDlgItemTextW(hDlg, IDC_ACCELERATION_VALUE, text);
+}
+
 void ConfigDialog::CollectSettingsFromControls(HWND hDlg) {
     // Voice
     int voiceIndex = static_cast<int>(SendDlgItemMessageW(hDlg, IDC_VOICE_COMBO, CB_GETCURSEL, 0, 0));
@@ -317,9 +438,15 @@ void ConfigDialog::CollectSettingsFromControls(HWND hDlg) {
         m_settings.default_voice = VOICE_IDS[voiceIndex];
     }
 
-    // Speed (50-200 mapped to 0.5-2.0)
+    // Speed (50-200 mapped to 0.5-2.0; formant voices 25-400)
     int speedValue = static_cast<int>(SendDlgItemMessageW(hDlg, IDC_SPEED_SLIDER, TBM_GETPOS, 0, 0));
     m_settings.speed = speedValue / 100.0f;
+
+    // Formant voice sliders
+    int inflectionValue = static_cast<int>(SendDlgItemMessageW(hDlg, IDC_INFLECTION_SLIDER, TBM_GETPOS, 0, 0));
+    m_settings.inflection_level = inflectionValue / 100.0f;
+    int accelerationValue = static_cast<int>(SendDlgItemMessageW(hDlg, IDC_ACCELERATION_SLIDER, TBM_GETPOS, 0, 0));
+    m_settings.acceleration = accelerationValue / 100.0f;
 
     // Pitch
     int pitchValue = static_cast<int>(SendDlgItemMessageW(hDlg, IDC_PITCH_SLIDER, TBM_GETPOS, 0, 0));
@@ -389,6 +516,7 @@ INT_PTR ConfigDialog::OnCommand(HWND hDlg, WPARAM wParam, LPARAM lParam) {
 
     case IDC_VOICE_COMBO:
         if (HIWORD(wParam) == CBN_SELCHANGE) {
+            UpdateVoiceRanges(hDlg);
             m_settingsChanged = true;
         }
         return TRUE;
@@ -431,6 +559,16 @@ INT_PTR ConfigDialog::OnHScroll(HWND hDlg, WPARAM wParam, LPARAM lParam) {
 
     case IDC_NEWLINE_SLIDER:
         UpdateSliderValue(hDlg, IDC_NEWLINE_SLIDER, IDC_NEWLINE_VALUE, false, true);
+        m_settingsChanged = true;
+        break;
+
+    case IDC_INFLECTION_SLIDER:
+        UpdateSliderValue(hDlg, IDC_INFLECTION_SLIDER, IDC_INFLECTION_VALUE);
+        m_settingsChanged = true;
+        break;
+
+    case IDC_ACCELERATION_SLIDER:
+        UpdateAccelerationValue(hDlg);
         m_settingsChanged = true;
         break;
     }

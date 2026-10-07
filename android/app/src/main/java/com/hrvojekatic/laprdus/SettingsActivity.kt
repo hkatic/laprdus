@@ -50,6 +50,8 @@ class SettingsActivity : ComponentActivity() {
                     // Advanced settings
                     onEmojiEnabledChange = viewModel::setEmojiEnabled,
                     onInflectionEnabledChange = viewModel::setInflectionEnabled,
+                    onInflectionLevelChange = viewModel::setInflectionLevel,
+                    onAccelerationChange = viewModel::setAcceleration,
                     onSentencePauseChange = viewModel::setSentencePause,
                     onCommaPauseChange = viewModel::setCommaPause,
                     onNewlinePauseChange = viewModel::setNewlinePause,

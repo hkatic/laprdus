@@ -1,7 +1,7 @@
 # Maintainer: Hrvoje Katic <hrvoje.katic@gmail.com>
 
 pkgname=laprdus
-pkgver=1.0.0
+pkgver=2.0.0
 pkgrel=1
 pkgdesc="Croatian/Serbian Text-to-Speech Engine"
 arch=('x86_64' 'aarch64')
@@ -25,8 +25,8 @@ package() {
 
     # Install library
     install -Dm755 build/linux-x64-release/liblaprdus.so \
-        "$pkgdir/usr/lib/liblaprdus.so.1.0.0"
-    ln -s liblaprdus.so.1.0.0 "$pkgdir/usr/lib/liblaprdus.so.1"
+        "$pkgdir/usr/lib/liblaprdus.so.2.0.0"
+    ln -s liblaprdus.so.2.0.0 "$pkgdir/usr/lib/liblaprdus.so.2"
     ln -s liblaprdus.so.1 "$pkgdir/usr/lib/liblaprdus.so"
 
     # Install CLI

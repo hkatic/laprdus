@@ -137,6 +137,36 @@ bool Laprdus::inflectionEnabled() const {
     return true;
 }
 
+void Laprdus::setInflectionLevel(float level) {
+    if (m_engine) {
+        VoiceParams params = m_engine->voice_params();
+        params.inflection_level = level;
+        m_engine->set_voice_params(params);
+    }
+}
+
+float Laprdus::inflectionLevel() const {
+    if (m_engine) {
+        return m_engine->voice_params().inflection_level;
+    }
+    return INFLECTION_LEVEL_DEFAULT;
+}
+
+void Laprdus::setAcceleration(float acceleration) {
+    if (m_engine) {
+        VoiceParams params = m_engine->voice_params();
+        params.acceleration = acceleration;
+        m_engine->set_voice_params(params);
+    }
+}
+
+float Laprdus::acceleration() const {
+    if (m_engine) {
+        return m_engine->voice_params().acceleration;
+    }
+    return ACCELERATION_DEFAULT;
+}
+
 // =============================================================================
 // Utility
 // =============================================================================

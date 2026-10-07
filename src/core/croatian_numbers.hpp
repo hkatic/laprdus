@@ -22,12 +22,24 @@ namespace laprdus {
  * Croatian number grammar rules:
  * - 1: singular (jedan, tisuću, milijun)
  * - 2-4: special plural (dva, tisuće, milijuna)
- * - 5+, 0: genitive plural (pet, tisuća, milijuna)
+ * - 5+, 0, 11-19: genitive plural (pet, tisuća, milijuna)
+ * - one and two agree with feminine scale words (dvije tisuće, dve hiljade,
+ *   dvadeset jedna tisuća, dvije milijarde)
  */
 class CroatianNumbers {
 public:
     CroatianNumbers() = default;
     ~CroatianNumbers() = default;
+
+    /**
+     * Regional number words.
+     * Croatian: tisuća, milijun, dvjesto
+     * Serbian:  hiljada, milion, dvesta
+     * Bosnian:  hiljada, milion, dvjesto
+     */
+    enum class Dialect { Croatian, Serbian, Bosnian };
+
+    void set_dialect(Dialect dialect) { m_dialect = dialect; }
 
     /**
      * Convert all numbers in text to Croatian words (whole number mode).
@@ -73,6 +85,7 @@ private:
     std::string get_million_variant(std::string_view prefix, char last_digit);
     std::string get_milliard_variant(std::string_view prefix, char last_digit);
     std::string get_large_number_suffix(int group_index, char last_digit);
+    bool is_feminine_scale(int group_index);
 
     // Group processing
     std::string group_to_words(std::string_view group);
@@ -81,6 +94,8 @@ private:
     // Utility
     std::string_view remove_leading_zeros(std::string_view number);
     bool is_valid_number(std::string_view str);
+
+    Dialect m_dialect = Dialect::Croatian;
 };
 
 } // namespace laprdus

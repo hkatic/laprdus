@@ -18,6 +18,8 @@ using namespace ATL;
 #include <sapi.h>
 #include <sphelper.h>
 #include <memory>
+#include <string>
+#include <vector>
 
 #include "core/tts_engine.hpp"
 
@@ -99,9 +101,20 @@ private:
     // Initialize the TTS engine from token attributes
     HRESULT InitializeEngine();
 
-    // Convert SAPI text fragments to plain text
-    // Sets useSpelledSynthesis to true if SPVA_SpellOut is encountered
-    std::wstring ExtractText(const SPVTEXTFRAG* pTextFragList, bool& useSpelledSynthesis);
+    // A stretch of an utterance that is synthesized in one go: text that is
+    // either spoken or spelled, or (with no text) a silence
+    struct TextRun {
+        std::wstring text;
+        bool spell = false;
+        unsigned long silence_ms = 0;
+    };
+
+    // Convert SAPI text fragments to runs. SPVA_SpellOut applies to its own
+    // fragment only, never to the text around it
+    std::vector<TextRun> ExtractRuns(const SPVTEXTFRAG* pTextFragList);
+
+    // Synthesize the runs one after another into a single buffer
+    HRESULT SynthesizeRuns(const std::vector<TextRun>& runs, ISpTTSEngineSite* pSite, AudioBuffer& audio);
 
     // Convert wide string to UTF-8
     std::string WideToUtf8(const std::wstring& wide);

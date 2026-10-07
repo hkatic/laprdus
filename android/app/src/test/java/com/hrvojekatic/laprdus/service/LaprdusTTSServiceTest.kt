@@ -172,21 +172,27 @@ class LaprdusTTSServiceTest {
     // ==========================================================================
 
     @Test
-    fun `default voice for Croatian is josip`() {
+    fun `default voice for Croatian is zvonko`() {
         val voice = getDefaultVoiceFor("hr", "HR")
-        assertEquals("josip", voice)
+        assertEquals("zvonko", voice)
     }
 
     @Test
-    fun `default voice for Serbian is vlado`() {
+    fun `default voice for Serbian is stojan`() {
         val voice = getDefaultVoiceFor("sr", "RS")
-        assertEquals("vlado", voice)
+        assertEquals("stojan", voice)
     }
 
     @Test
-    fun `default voice for unknown language is josip`() {
+    fun `default voice for Bosnian is mirsad`() {
+        val voice = getDefaultVoiceFor("bos", "BIH")
+        assertEquals("mirsad", voice)
+    }
+
+    @Test
+    fun `default voice for unknown language is zvonko`() {
         val voice = getDefaultVoiceFor("en", "US")
-        assertEquals("josip", voice)
+        assertEquals("zvonko", voice)
     }
 
     // ==========================================================================
@@ -195,7 +201,7 @@ class LaprdusTTSServiceTest {
 
     @Test
     fun `all voice IDs are lowercase`() {
-        val validVoices = listOf("josip", "vlado", "detence", "baba", "djed")
+        val validVoices = listOf("josip", "vlado", "detence", "baba", "djed", "zvonko", "stojan", "mirsad")
         validVoices.forEach { voice ->
             assertEquals(voice, voice.lowercase())
         }
@@ -236,9 +242,9 @@ class LaprdusTTSServiceTest {
     private fun getDefaultVoiceFor(lang: String, country: String?): String {
         val normalizedLang = lang.lowercase()
         return when {
-            normalizedLang == "hr" || normalizedLang == "hrv" -> "josip"
-            normalizedLang == "sr" || normalizedLang == "srp" -> "vlado"
-            else -> "josip"
+            normalizedLang == "sr" || normalizedLang == "srp" -> "stojan"
+            normalizedLang == "bs" || normalizedLang == "bos" -> "mirsad"
+            else -> "zvonko"
         }
     }
 

@@ -6,7 +6,6 @@
 #define LAPRDUS_TTS_ENGINE_HPP
 
 #include "laprdus/types.hpp"
-#include "phoneme_mapper.hpp"
 #include "croatian_numbers.hpp"
 #include "inflection.hpp"
 #include "pronunciation_dict.hpp"
@@ -26,9 +25,10 @@ namespace laprdus {
  * Orchestrates the complete TTS pipeline:
  * 1. Text preprocessing (number expansion)
  * 2. Text segmentation (by punctuation)
- * 3. Phoneme mapping (character to phoneme)
- * 4. Audio synthesis (phoneme concatenation)
- * 5. Inflection application (pitch contours)
+ * 3. Text front end (letter-to-sound, stress, clitics; src/formant/)
+ * 4. Prosody (durations, pitch contour)
+ * 5. Waveform: TD-PSOLA over the recordings (recorded voices) or the
+ *    Klatt synthesizer (formant voices)
  *
  * Thread safety: Create one engine per thread,
  * or use external synchronization.
@@ -66,6 +66,30 @@ public:
      */
     bool initialize_from_memory(const uint8_t* data, size_t size,
                                span<const uint8_t> key = {});
+
+    /**
+     * Initialize engine with a formant voice. No phoneme data is needed:
+     * speech is produced by rule (see src/formant/).
+     * @param voice_id Formant voice ID ("zvonko", "stojan", "mirsad") or a
+     *        singing preset ("orguljas", "klapa", "trubac", "harmonikas",
+     *        "sevdalija", "sazlija", "pjevac", "pevac", "solist", "becarac").
+     * @return true on success, false if the ID is not a formant voice.
+     */
+    bool initialize_formant(const char* voice_id);
+
+    /**
+     * Set the language of a recorded voice (Josip: Croatian, Vlado:
+     * Serbian): chooses the text front end's rules and lexicon. Formant
+     * voices carry their own language and ignore this.
+     * @param language Voice language.
+     */
+    void set_language(VoiceLanguage language);
+
+    /**
+     * Check if the engine currently speaks with a formant voice.
+     * @return true for formant synthesis, false for concatenative.
+     */
+    bool is_formant() const;
 
     /**
      * Check if engine is initialized and ready.
@@ -106,7 +130,7 @@ public:
 
     /**
      * Get engine version string.
-     * @return Version string (e.g., "1.0.0").
+     * @return Version string (e.g., "2.0.0").
      */
     static const char* version();
 
@@ -153,6 +177,20 @@ public:
      */
     void add_pronunciation(const std::string& grapheme, const std::string& phoneme,
                            bool case_sensitive = false, bool whole_word = true);
+
+    /**
+     * Add a single spelling entry (replaces an existing one for the character).
+     * @param character Character to match.
+     * @param pronunciation How the character is named when spelling.
+     */
+    void add_spelling_entry(const std::string& character, const std::string& pronunciation);
+
+    /**
+     * Add a single emoji entry (replaces an existing one for the emoji).
+     * @param emoji UTF-8 emoji.
+     * @param text Spoken text.
+     */
+    void add_emoji_entry(const std::string& emoji, const std::string& text);
 
     /**
      * Clear the pronunciation dictionary.
@@ -229,6 +267,38 @@ public:
      * Clear the emoji dictionary.
      */
     void clear_emoji_dictionary();
+
+    // =========================================================================
+    // Accent Lexicon (user accent entries for the formant voices)
+    // =========================================================================
+
+    /**
+     * Load the user's accent lexicon from a JSON file (replaces the current
+     * one). Entries use the notation of the built-in lexicon; see
+     * formant::UserLexicon. Only the formant voices use it; the concatenative
+     * voices ignore it. The file is parsed once, and each bad entry is skipped
+     * and reported through accent_lexicon_report().
+     * @param path Path to the accent lexicon JSON file.
+     * @return true if at least one entry was accepted.
+     */
+    bool load_accent_lexicon(const std::string& path);
+
+    /**
+     * Load the user's accent lexicon from memory (replaces the current one).
+     * @param json_content JSON content.
+     * @param length Length of content (0 for null-terminated).
+     * @return true if at least one entry was accepted.
+     */
+    bool load_accent_lexicon_from_memory(const char* json_content, size_t length = 0);
+
+    /** Remove the user's accent lexicon. */
+    void clear_accent_lexicon();
+
+    /**
+     * What the last load accepted and rejected: "N words, M verbs" and, if
+     * anything was rejected, "; K rejected (first: entry: reason)".
+     */
+    std::string accent_lexicon_report() const;
 
     /**
      * Enable or disable emoji processing.
@@ -307,6 +377,8 @@ public:
     NumberMode number_mode() const;
 
 private:
+    // Start of a synthesis call: a singing preset begins its song again.
+    void begin_utterance();
     struct Impl;
     std::unique_ptr<Impl> m_impl;
 

@@ -12,25 +12,25 @@ Build a portable tarball package that works on any Linux distribution. Includes 
 ## Build Steps
 
 ```bash
-cd installers/linux/tarball && ./build-tarball.sh 1.0.0 && cd ../../..
+cd installers/linux/tarball && ./build-tarball.sh 2.0.0 && cd ../../..
 ```
 
 **Arguments:**
-- `$ARGUMENTS[0]` or default: Version number (e.g., "1.0.0")
+- `$ARGUMENTS[0]` or default: Version number (e.g., "2.0.0")
 
 ## Expected Output
 
-- `installers/linux/tarball/laprdus-1.0.0-linux-x86_64.tar.xz`
+- `installers/linux/tarball/laprdus-2.0.0-linux-x86_64.tar.xz`
 
 ## Tarball Contents
 
 ```
-laprdus-1.0.0-linux-x86_64/
+laprdus-2.0.0-linux-x86_64/
 ├── bin/laprdus              # CLI tool
 ├── lib/
-│   ├── liblaprdus.so        # Symlink → .so.1
-│   ├── liblaprdus.so.1      # Symlink → .so.1.0.0
-│   └── liblaprdus.so.1.0.0  # Library (with SONAME)
+│   ├── liblaprdus.so        # Symlink → .so.2
+│   ├── liblaprdus.so.2      # Symlink → .so.2.0.0
+│   └── liblaprdus.so.2.0.0  # Library (with SONAME)
 ├── lib/speech-dispatcher-modules/
 │   └── sd_laprdus           # Speech Dispatcher module
 ├── share/laprdus/
@@ -63,15 +63,15 @@ laprdus-1.0.0-linux-x86_64/
 ## Copy to ~/Downloads
 
 ```bash
-cp installers/linux/tarball/laprdus-1.0.0-linux-x86_64.tar.xz ~/Downloads/
+cp installers/linux/tarball/laprdus-2.0.0-linux-x86_64.tar.xz ~/Downloads/
 ```
 
 ## Installation
 
 ```bash
 # Extract
-tar xf laprdus-1.0.0-linux-x86_64.tar.xz
-cd laprdus-1.0.0-linux-x86_64
+tar xf laprdus-2.0.0-linux-x86_64.tar.xz
+cd laprdus-2.0.0-linux-x86_64
 
 # System-wide install (default: /usr/local, requires root)
 sudo ./install.sh

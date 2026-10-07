@@ -103,17 +103,19 @@ class SettingsRepositoryTest {
     }
 
     @Test
-    fun `setSpeed clamps value below 0_5 to 0_5`() = runTest {
+    fun `setSpeed clamps value below 0_25 to 0_25`() = runTest {
+        // The repository takes the formant voices' range; the engine narrows
+        // it to 0.5 - 2.0 for the recorded voices.
         repository.setSpeed(0.1f)
         val speed = repository.speed.first()
-        assertEquals(0.5f, speed)
+        assertEquals(0.25f, speed)
     }
 
     @Test
-    fun `setSpeed clamps value above 2_0 to 2_0`() = runTest {
+    fun `setSpeed clamps value above 4_0 to 4_0`() = runTest {
         repository.setSpeed(5.0f)
         val speed = repository.speed.first()
-        assertEquals(2.0f, speed)
+        assertEquals(4.0f, speed)
     }
 
     @Test
@@ -134,17 +136,17 @@ class SettingsRepositoryTest {
     }
 
     @Test
-    fun `setPitch clamps value below 0_5 to 0_5`() = runTest {
+    fun `setPitch clamps value below 0_25 to 0_25`() = runTest {
         repository.setPitch(0.1f)
         val pitch = repository.pitch.first()
-        assertEquals(0.5f, pitch)
+        assertEquals(0.25f, pitch)
     }
 
     @Test
-    fun `setPitch clamps value above 2_0 to 2_0`() = runTest {
+    fun `setPitch clamps value above 4_0 to 4_0`() = runTest {
         repository.setPitch(5.0f)
         val pitch = repository.pitch.first()
-        assertEquals(2.0f, pitch)
+        assertEquals(4.0f, pitch)
     }
 
     @Test
@@ -353,6 +355,57 @@ class SettingsRepositoryTest {
         repository.setInflectionEnabled(true)
         val inflection = repository.inflectionEnabled.first()
         assertTrue(inflection)
+    }
+
+    // ==========================================================================
+    // Formant Voice Settings Tests (inflection level, acceleration)
+    // ==========================================================================
+
+    @Test
+    fun `inflectionLevel defaults to the measured contour`() = runTest {
+        assertEquals(0.5f, repository.inflectionLevel.first(), 0.0001f)
+        assertEquals(1.0f, repository.acceleration.first(), 0.0001f)
+    }
+
+    @Test
+    fun `setInflectionLevel persists and clamps`() = runTest {
+        repository.setInflectionLevel(0.8f)
+        assertEquals(0.8f, repository.inflectionLevel.first(), 0.0001f)
+        repository.setInflectionLevel(3.0f)
+        assertEquals(1.0f, repository.inflectionLevel.first(), 0.0001f)
+        repository.setInflectionLevel(-1.0f)
+        assertEquals(0.0f, repository.inflectionLevel.first(), 0.0001f)
+    }
+
+    @Test
+    fun `setAcceleration persists and clamps`() = runTest {
+        repository.setAcceleration(2.0f)
+        assertEquals(2.0f, repository.acceleration.first(), 0.0001f)
+        repository.setAcceleration(9.0f)
+        assertEquals(3.0f, repository.acceleration.first(), 0.0001f)
+        repository.setAcceleration(0.1f)
+        assertEquals(0.5f, repository.acceleration.first(), 0.0001f)
+    }
+
+    @Test
+    fun `speed and pitch accept the formant voice range`() = runTest {
+        repository.setSpeed(4.0f)
+        assertEquals(4.0f, repository.speed.first(), 0.0001f)
+        repository.setSpeed(0.1f)
+        assertEquals(0.25f, repository.speed.first(), 0.0001f)
+        repository.setPitch(0.25f)
+        assertEquals(0.25f, repository.pitch.first(), 0.0001f)
+        repository.setPitch(5.0f)
+        assertEquals(4.0f, repository.pitch.first(), 0.0001f)
+    }
+
+    @Test
+    fun `allSettings includes the formant voice settings`() = runTest {
+        repository.setInflectionLevel(0.25f)
+        repository.setAcceleration(1.5f)
+        val settings = repository.allSettings.first()
+        assertEquals(0.25f, settings.inflectionLevel, 0.0001f)
+        assertEquals(1.5f, settings.acceleration, 0.0001f)
     }
 
     // ==========================================================================

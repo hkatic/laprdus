@@ -146,6 +146,30 @@ public:
     bool inflectionEnabled() const;
 
     /**
+     * Set the inflection level of the formant voices.
+     * @param level 0.0 (monotone) to 1.0 (maximum), 0.5 as measured.
+     */
+    void setInflectionLevel(float level);
+
+    /**
+     * Get the inflection level.
+     * @return Inflection level (0.0 - 1.0).
+     */
+    float inflectionLevel() const;
+
+    /**
+     * Set the acceleration of the formant voices (rate multiplier).
+     * @param acceleration 0.5 - 3.0, 1.0 leaves the rate alone.
+     */
+    void setAcceleration(float acceleration);
+
+    /**
+     * Get the acceleration.
+     * @return Acceleration (0.5 - 3.0).
+     */
+    float acceleration() const;
+
+    /**
      * Get sample rate of output audio.
      * @return Sample rate in Hz.
      */

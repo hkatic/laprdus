@@ -1,7 +1,7 @@
 %global debug_package %{nil}
 
 Name:           laprdus
-Version:        1.0.0
+Version:        2.0.0
 Release:        1%{?dist}
 Summary:        Croatian/Serbian Text-to-Speech Engine
 
@@ -94,6 +94,12 @@ MARKER_START="# BEGIN LAPRDUS TTS"
 MARKER_END="# END LAPRDUS TTS"
 
 if [ -f "$SPEECHD_CONF" ]; then
+    # A block written by a version that did not know Bosnian yet is removed
+    # here and written again below.
+    if grep -q "$MARKER_START" "$SPEECHD_CONF" 2>/dev/null && \
+       ! grep -q 'LanguageDefaultModule "bs" "laprdus"' "$SPEECHD_CONF" 2>/dev/null; then
+        sed -i "/$MARKER_START/,/$MARKER_END/d" "$SPEECHD_CONF"
+    fi
     # Check if already configured
     if ! grep -q "$MARKER_START" "$SPEECHD_CONF" 2>/dev/null; then
         # Check for existing manual configuration
@@ -112,6 +118,8 @@ LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"
 LanguageDefaultModule "sr-RS" "laprdus"
+LanguageDefaultModule "bs" "laprdus"
+LanguageDefaultModule "bs-BA" "laprdus"
 # END LAPRDUS TTS
 EOF
             else
@@ -124,6 +132,8 @@ LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"
 LanguageDefaultModule "sr-RS" "laprdus"
+LanguageDefaultModule "bs" "laprdus"
+LanguageDefaultModule "bs-BA" "laprdus"
 # END LAPRDUS TTS
 EOF
             fi
@@ -183,6 +193,11 @@ fi
 %{_includedir}/laprdus/
 
 %changelog
+* Wed Oct 07 2026 Hrvoje Katic <hrvoje.katic@gmail.com> - 2.0.0-1
+- Laprdus 2.0
+- New formant voices synthesized by rule: Zvonko (Croatian), Stojan (Serbian) and Mirsad (Bosnian), the default voice of each language
+- Library SONAME bumped to liblaprdus.so.2
+
 * Sun Feb 08 2026 Hrvoje Katic <hrvoje.katic@gmail.com> - 1.0.0-1
 - Merge speechd module into main package for single-package installation
 - Add SONAME to shared library for proper dependency resolution

@@ -81,13 +81,13 @@ typedef struct LaprdusVoiceParams {
 typedef struct LaprdusVoiceInfo {
     const char* id;              // Internal ID: "josip", "vlado", etc.
     const char* display_name;    // Display name: "Laprdus Josip (Croatian)"
-    const char* language_code;   // Language code: "hr-HR" or "sr-RS"
-    uint16_t language_lcid;      // Windows LCID: 0x041A or 0x081A
+    const char* language_code;   // Language code: "hr-HR", "sr-RS" or "bs-BA"
+    uint16_t language_lcid;      // Windows LCID: 0x041A, 0x081A or 0x141A
     const char* gender;          // "Male" or "Female"
     const char* age;             // "Child", "Adult", or "Senior"
     float base_pitch;            // Base pitch multiplier (1.0 for normal)
     const char* base_voice_id;   // Base voice ID for derived voices (NULL if physical)
-    const char* data_filename;   // Phoneme data file (NULL for derived voices)
+    const char* data_filename;   // Phoneme data file (NULL for formant voices, which need none)
 } LaprdusVoiceInfo;
 
 // =============================================================================
@@ -184,8 +184,10 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_get_voice_params(
 
 /**
  * Set speech speed.
+ * Recorded voices accept 0.5 - 4.0, formant voices 0.25 - 4.0; formant
+ * voices multiply it by the acceleration (laprdus_set_acceleration).
  * @param handle Engine handle.
- * @param speed Speed factor (0.5 - 2.0, default 1.0).
+ * @param speed Speed factor (default 1.0).
  * @return LAPRDUS_OK on success, error code on failure.
  */
 LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_speed(
@@ -212,8 +214,9 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_pitch(
  * Use this for user-controlled pitch adjustment.
  * Note: This does NOT cause chipmunk effect - preserves voice character.
  * For voice character changes, use laprdus_set_pitch instead.
+ * Recorded voices accept 0.5 - 2.0, formant voices 0.25 - 4.0.
  * @param handle Engine handle.
- * @param pitch Pitch factor (0.5 - 2.0, default 1.0).
+ * @param pitch Pitch factor (default 1.0).
  * @return LAPRDUS_OK on success, error code on failure.
  */
 LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_user_pitch(
@@ -242,6 +245,60 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_inflection_enabled(
     LaprdusHandle handle,
     int enabled
 );
+
+/**
+ * Set the inflection level of the formant voices (Zvonko, Stojan, Mirsad;
+ * on the singing presets it sets the depth of the vibrato, 0 switches it off):
+ * how large their pitch movements are. 0.0 is a monotone, 0.5 (the default)
+ * the movements as measured on real speech, 1.0 twice those movements.
+ * Recorded voices ignore it.
+ * @param handle Engine handle.
+ * @param level Inflection level (0.0 - 1.0, default 0.5).
+ * @return LAPRDUS_OK on success, error code on failure.
+ */
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_inflection_level(
+    LaprdusHandle handle,
+    float level
+);
+
+/**
+ * Get the inflection level (see laprdus_set_inflection_level).
+ * @param handle Engine handle.
+ * @return Inflection level, or 0.5 for an invalid handle.
+ */
+LAPRDUS_API float LAPRDUS_CALL laprdus_get_inflection_level(LaprdusHandle handle);
+
+/**
+ * Set the acceleration of the formant voices: a multiplier applied to the
+ * speech speed, so the top of a host's rate range reaches a higher (or
+ * lower) rate. 1.0 (the default) leaves the speed alone; 2.0 doubles it.
+ * The product of speed and acceleration is limited to 0.25 - 8.0.
+ * Recorded voices ignore it.
+ * @param handle Engine handle.
+ * @param acceleration Rate multiplier (0.5 - 3.0, default 1.0).
+ * @return LAPRDUS_OK on success, error code on failure.
+ */
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_acceleration(
+    LaprdusHandle handle,
+    float acceleration
+);
+
+/**
+ * Get the acceleration (see laprdus_set_acceleration).
+ * @param handle Engine handle.
+ * @return Acceleration, or 1.0 for an invalid handle.
+ */
+LAPRDUS_API float LAPRDUS_CALL laprdus_get_acceleration(LaprdusHandle handle);
+
+/**
+ * Words per minute a voice speaks at speed 1.0 and acceleration 1.0, so a
+ * user interface can show rate limits in words per minute
+ * (nominal_wpm * speed * acceleration). Measured on running text.
+ * @param voice_id Voice ID ("zvonko", "josip", ...), or NULL for the
+ *                 reference formant voice.
+ * @return Words per minute, or 0.0 for an unknown voice.
+ */
+LAPRDUS_API float LAPRDUS_CALL laprdus_get_nominal_wpm(const char* voice_id);
 
 // =============================================================================
 // Voice Selection
@@ -585,6 +642,57 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_append_emoji_dictionary(
  * @param handle Engine handle.
  */
 LAPRDUS_API void LAPRDUS_CALL laprdus_clear_emoji_dictionary(LaprdusHandle handle);
+
+// =============================================================================
+// Accent Lexicon Functions (user accent entries for the formant voices)
+// =============================================================================
+
+/**
+ * Load the user's accent lexicon from a JSON file, replacing the current one.
+ * The entries use the notation of the built-in lexicon (formant_lexicon.cpp):
+ *   { "entries": [ { "word": "kontr'o:l*" }, { "word": "sign'a:l|a|u|om" },
+ *                  { "verb": "ur'e:d=i<p" }, { "verb": "dijel:i", "language": "hr" } ] }
+ * "word" is a word, a stem (*) or a paradigm (|); "verb" a whole stem or a
+ * root with a long ije; "language" (hr, sr, bs) limits an entry to one voice.
+ * Only the formant voices (Zvonko, Stojan, Mirsad and the singing presets)
+ * use it; it is kept across voice changes. The file is parsed once; a bad
+ * entry is skipped, and laprdus_get_accent_lexicon_report() tells what was
+ * accepted and what was wrong with the first bad entry.
+ * @param handle Engine handle.
+ * @param lexicon_path Path to the accent lexicon JSON file.
+ * @return LAPRDUS_OK if at least one entry was accepted, error code otherwise.
+ */
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_load_accent_lexicon(
+    LaprdusHandle handle,
+    const char* lexicon_path
+);
+
+/**
+ * Load the user's accent lexicon from memory, replacing the current one.
+ * @param handle Engine handle.
+ * @param json_content JSON content as a string.
+ * @param length Length of the content (0 for null-terminated).
+ * @return LAPRDUS_OK if at least one entry was accepted, error code otherwise.
+ */
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_load_accent_lexicon_from_memory(
+    LaprdusHandle handle,
+    const char* json_content,
+    size_t length
+);
+
+/**
+ * Remove the user's accent lexicon.
+ * @param handle Engine handle.
+ */
+LAPRDUS_API void LAPRDUS_CALL laprdus_clear_accent_lexicon(LaprdusHandle handle);
+
+/**
+ * What the last accent lexicon load accepted and rejected, for example
+ * "12 words, 3 verbs; 1 rejected (first: kontrola: no stress or length mark)".
+ * @param handle Engine handle.
+ * @return A string valid until the next load; "" if nothing was loaded.
+ */
+LAPRDUS_API const char* LAPRDUS_CALL laprdus_get_accent_lexicon_report(LaprdusHandle handle);
 
 /**
  * Enable or disable emoji processing.

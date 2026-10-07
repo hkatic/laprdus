@@ -15,6 +15,11 @@
 					<string>HKTC</string>
 					<key>name</key>
 					<string>Laprdus: Laprdus Voices</string>
+					<!-- Required: the system loads speech synthesizers from
+					     sandboxed processes, which only see audio units
+					     that declare themselves sandbox-safe. -->
+					<key>sandboxSafe</key>
+					<true/>
 					<key>subtype</key>
 					<string>lprd</string>
 					<key>tags</key>
@@ -25,9 +30,11 @@
 					<string>ausp</string>
 					<!-- Bump whenever the exposed voice list or voice names
 					     change: the system caches them per component version,
-					     so without this an update keeps serving old names. -->
+					     so without this an update keeps serving old names.
+					     The value is major << 16 | minor << 8 | patch
+					     (131072 = 2.0.0). -->
 					<key>version</key>
-					<integer>2</integer>
+					<integer>131072</integer>
 				</dict>
 			</array>
 		</dict>

@@ -1,0 +1,44 @@
+# Laprdus — Version History
+
+This file lists what changed for users between released versions of Laprdus, on every platform. Changes made during the development of a version (alpha, beta and release candidate builds) are not listed separately: each entry describes the released version as a whole.
+
+## Version 2.0
+
+### All platforms
+
+- Three new voices synthesized entirely by rule, with no recordings: Zvonko (Croatian), Stojan (Serbian) and Mirsad (Bosnian). They stay clear and intelligible at very high speech rates, because rate and pitch are not obtained by processing recorded sound afterwards.
+- Bosnian is now a supported language, with Mirsad as its voice.
+- The new voices are the default voice of their language on every platform. A voice you have chosen yourself is never replaced. Josip, Vlado, Detence, Baba and Đedo remain available.
+- Word stress: the new voices place the accent of each word using a built-in dictionary of several thousand words and names, rules for common endings, and the accent marks you can write in the pronunciation dictionary (for example `telèfon`). The old voices stressed nothing.
+- Sentence melody: every clause gets a natural contour, with a movement on each stressed word, a rise at the end of a question (also after a question word, such as "Kako si ti?"), a fall at a full stop, a suspended rise at a comma and a wider range at an exclamation mark.
+- Josip, Vlado and the voices derived from them have a new speech engine. They now have the same word stress and sentence melody as the new voices, use the accent dictionary and the accent marks of the pronunciation dictionary, speak at a natural tempo (Vlado's drawn-out vowels are gone) and keep the bursts of p, t, k, b, d and g audible at high rates. The clicks and crackles between sounds are gone.
+- Changing the speech rate of Josip and Vlado no longer changes their pitch, and changing the pitch no longer makes the voice rough or muffled. Detence, Baba and Đedo now sound like a child, a grandmother and a grandfather instead of a sped-up or slowed-down recording.
+- Ten singing voices: Zvonko Orguljaš, Klapa Zvonko, Zvonko Pjevač and Zvonko Bećarac (Croatian), Stojan Trubač, Stojan Harmonikaš and Stojan Pevač (Serbian), Mirsad Sevdalija, Mirsad Sazlija and Mirsad Solist (Bosnian). They sing any text to a folk song of their country, one syllable per note; the speech rate sets the tempo, the pitch transposes the song and the inflection level sets the depth of the vibrato.
+- Two new settings for the new voices, shown only when one of them is selected: Inflection level (0% is a monotone, 50% is the natural melody, 100% doubles every movement) and Acceleration (a multiplier of the speech rate, from 0.5 to 3, so the rate slider can reach a higher or lower top speed).
+- The new voices accept a wider range of speech rate and pitch: a quarter to four times the normal value.
+- Accent dictionary: a new user dictionary, `accents.json`, lets you correct the stress of a word for all its forms at once, or of a whole verb with all its persons and tenses. It is stored next to the other user dictionaries and loaded with them. See section 5.11 of the user guide.
+- Numbers are read in the language of the voice: Zvonko says *tisuća* and *milijun*, Stojan and Mirsad *hiljada* and *milion*. One and two now agree with the number word (*dvije tisuće*, *dvadeset jedna tisuća*, *dvije milijarde*).
+- Fixed: entries added to the user spelling and emoji dictionaries had no effect; they now change how characters and emoji are read.
+- Fixed: on the command line and under Speech Dispatcher, Detence, Baba and Đedo sounded exactly like Josip and Vlado.
+
+### Windows (SAPI5 and NVDA)
+
+- The new voices, the singing voices, the Inflection level and Acceleration settings and the accent dictionary are available in SAPI5 applications, in the Laprdus Configurator and in the NVDA add-on. The NVDA add-on picks the new voice of NVDA's language by default and reloads the accent dictionary when the file changes.
+- Fixed: when a program asked SAPI5 to spell only part of a text, Laprdus spelled all of it, and a requested silence was spoken as a space.
+
+### Linux
+
+- The new voices, the singing voices and the accent dictionary are available in the command-line tool and in Speech Dispatcher. The command-line tool has the new options `-I` (inflection, 0-100) and `-a` (acceleration); under Speech Dispatcher the pitch range setting controls the inflection level.
+- Speech Dispatcher now offers Laprdus for Bosnian as well as Croatian and Serbian; the packages add the mapping on upgrade too.
+
+### Android
+
+- The new voices and the singing voices are available as system voices, with the Inflection level and Acceleration settings in the app.
+- Laprdus now offers Bosnian to the system. When an app asks for a language your chosen voice already speaks, that voice is kept instead of being switched.
+- Fixed: the spelling and emoji dictionaries edited in the app were not used by the speech service; all three user dictionaries now take effect as soon as a voice is loaded. The accent dictionary is read from the same folder.
+
+### iPhone, iPad and Mac
+
+- The new voices and the singing voices appear among the system voices, with the Inflection level and Acceleration settings in the app. The accent dictionary is read from the app's dictionary folder.
+- Fixed: when VoiceOver read an item that contains a single character to be spelled out, such as a button with a badge count, the whole item was spelled letter by letter, and the name and the type of a control ran together into one phrase. Each part is now read as VoiceOver asks: text as text, the character spelled, pauses as pauses.
+- VoiceOver's pitch change for capital letters is now heard, a request that VoiceOver cancels is no longer spoken, and the spelling and emoji dictionaries are loaded together with the pronunciation dictionary.

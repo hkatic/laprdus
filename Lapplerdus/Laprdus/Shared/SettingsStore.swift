@@ -14,6 +14,8 @@ enum SettingsKey {
     static let forceVolume = "force_volume"
     static let emojiEnabled = "emoji_enabled"
     static let inflectionEnabled = "inflection_enabled"
+    static let inflectionLevel = "inflection_level"
+    static let acceleration = "acceleration"
     static let sentencePause = "sentence_pause"
     static let commaPause = "comma_pause"
     static let newlinePause = "newline_pause"
@@ -24,7 +26,7 @@ enum SettingsKey {
 /// Immutable snapshot of all settings, safe to pass across threads and used
 /// by the speech extension (which has no UI and no observation needs).
 struct SettingsSnapshot: Sendable {
-    var defaultVoice = "josip"
+    var defaultVoice = VoiceCatalog.defaultVoiceID
     var speed: Float = 1.0
     var pitch: Float = 1.0
     var volume: Float = 1.0
@@ -33,11 +35,19 @@ struct SettingsSnapshot: Sendable {
     var forceVolume = false
     var emojiEnabled = false
     var inflectionEnabled = true
+    /// Formant voices: size of the pitch movements, 0 (monotone) to 1, 0.5 as measured.
+    var inflectionLevel: Float = SettingsSnapshot.defaultInflectionLevel
+    /// Formant voices: multiplier on the speech rate, 0.5 to 3.0.
+    var acceleration: Float = SettingsSnapshot.defaultAcceleration
     var sentencePause = 100
     var commaPause = 100
     var newlinePause = 100
     var numberMode = 0
     var userDictionariesEnabled = true
+
+    static let defaultInflectionLevel: Float = 0.5
+    static let defaultAcceleration: Float = 1.0
+    static let accelerationRange: ClosedRange<Float> = 0.5...3.0
 
     static func load(from defaults: UserDefaults = AppGroup.defaults) -> SettingsSnapshot {
         var snapshot = SettingsSnapshot()
@@ -51,6 +61,12 @@ struct SettingsSnapshot: Sendable {
         snapshot.emojiEnabled = defaults.bool(forKey: SettingsKey.emojiEnabled)
         if defaults.object(forKey: SettingsKey.inflectionEnabled) != nil {
             snapshot.inflectionEnabled = defaults.bool(forKey: SettingsKey.inflectionEnabled)
+        }
+        if defaults.object(forKey: SettingsKey.inflectionLevel) != nil {
+            snapshot.inflectionLevel = defaults.float(forKey: SettingsKey.inflectionLevel)
+        }
+        if defaults.object(forKey: SettingsKey.acceleration) != nil {
+            snapshot.acceleration = defaults.float(forKey: SettingsKey.acceleration)
         }
         if defaults.object(forKey: SettingsKey.sentencePause) != nil { snapshot.sentencePause = defaults.integer(forKey: SettingsKey.sentencePause) }
         if defaults.object(forKey: SettingsKey.commaPause) != nil { snapshot.commaPause = defaults.integer(forKey: SettingsKey.commaPause) }
@@ -67,16 +83,21 @@ struct SettingsSnapshot: Sendable {
     /// be corrupted); out-of-range or non-finite values would break the
     /// settings sliders even though the engine clamps its own parameters.
     private mutating func sanitize() {
-        speed = speed.clamped(to: 0.5...2.0, fallback: 1.0)
-        pitch = pitch.clamped(to: 0.5...2.0, fallback: 1.0)
+        if VoiceCatalog.voice(withID: defaultVoice) == nil {
+            defaultVoice = VoiceCatalog.defaultVoiceID
+        }
+        // The recorded voices stop at 0.5x and 2.0x, the formant voices go
+        // from 0.25x to 4.0x.
+        let range = VoiceCatalog.speedPitchRange(forVoice: defaultVoice)
+        speed = speed.clamped(to: range, fallback: 1.0)
+        pitch = pitch.clamped(to: range, fallback: 1.0)
         volume = volume.clamped(to: 0.0...1.0, fallback: 1.0)
+        inflectionLevel = inflectionLevel.clamped(to: 0.0...1.0, fallback: SettingsSnapshot.defaultInflectionLevel)
+        acceleration = acceleration.clamped(to: SettingsSnapshot.accelerationRange, fallback: SettingsSnapshot.defaultAcceleration)
         sentencePause = min(max(sentencePause, 0), 2000)
         commaPause = min(max(commaPause, 0), 2000)
         newlinePause = min(max(newlinePause, 0), 2000)
         numberMode = numberMode == 1 ? 1 : 0
-        if VoiceCatalog.voice(withID: defaultVoice) == nil {
-            defaultVoice = "josip"
-        }
     }
 }
 
@@ -101,6 +122,8 @@ final class SettingsStore: ObservableObject {
     @Published var forceVolume: Bool { didSet { defaults.set(forceVolume, forKey: SettingsKey.forceVolume) } }
     @Published var emojiEnabled: Bool { didSet { defaults.set(emojiEnabled, forKey: SettingsKey.emojiEnabled) } }
     @Published var inflectionEnabled: Bool { didSet { defaults.set(inflectionEnabled, forKey: SettingsKey.inflectionEnabled) } }
+    @Published var inflectionLevel: Float { didSet { defaults.set(inflectionLevel, forKey: SettingsKey.inflectionLevel) } }
+    @Published var acceleration: Float { didSet { defaults.set(acceleration, forKey: SettingsKey.acceleration) } }
     @Published var sentencePause: Int { didSet { defaults.set(sentencePause, forKey: SettingsKey.sentencePause) } }
     @Published var commaPause: Int { didSet { defaults.set(commaPause, forKey: SettingsKey.commaPause) } }
     @Published var newlinePause: Int { didSet { defaults.set(newlinePause, forKey: SettingsKey.newlinePause) } }
@@ -119,6 +142,8 @@ final class SettingsStore: ObservableObject {
         forceVolume = snapshot.forceVolume
         emojiEnabled = snapshot.emojiEnabled
         inflectionEnabled = snapshot.inflectionEnabled
+        inflectionLevel = snapshot.inflectionLevel
+        acceleration = snapshot.acceleration
         sentencePause = snapshot.sentencePause
         commaPause = snapshot.commaPause
         newlinePause = snapshot.newlinePause
@@ -137,6 +162,8 @@ final class SettingsStore: ObservableObject {
             forceVolume: forceVolume,
             emojiEnabled: emojiEnabled,
             inflectionEnabled: inflectionEnabled,
+            inflectionLevel: inflectionLevel,
+            acceleration: acceleration,
             sentencePause: sentencePause,
             commaPause: commaPause,
             newlinePause: newlinePause,

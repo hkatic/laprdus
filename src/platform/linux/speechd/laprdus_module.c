@@ -24,12 +24,14 @@
 /*
  * LaprdusTTS Speech Dispatcher Module
  *
- * This module provides Croatian/Serbian text-to-speech synthesis through
+ * This module provides Croatian/Serbian/Bosnian text-to-speech synthesis through
  * Speech Dispatcher, enabling TTS functionality in applications like Orca,
  * Emacspeak, and other SSIP clients.
  *
  * Features:
- * - 5 Croatian/Serbian voices (Josip, Vlado, Detence, Baba, Djedo)
+ * - 3 formant voices (Zvonko - Croatian, Stojan - Serbian, Mirsad - Bosnian),
+ *   the default for their language
+ * - 5 recorded voices (Josip, Vlado, Detence, Baba, Djedo)
  * - Full SSIP parameter support (rate, pitch, volume)
  * - Spelling mode support
  * - Punctuation mode support (via pauses)
@@ -54,11 +56,11 @@
 
 /* Module identification */
 #define MODULE_NAME "laprdus"
-#define MODULE_VERSION "1.0.0"
+#define MODULE_VERSION "2.0.0"
 
 /* Default paths */
 #define DEFAULT_DATA_DIR "/usr/share/laprdus"
-#define DEFAULT_VOICE "josip"
+#define DEFAULT_VOICE "zvonko"
 
 /* Configuration options */
 static char *laprdus_data_dir = NULL;
@@ -74,6 +76,8 @@ static volatile int speaking = 0;
 static char *current_voice_name = NULL;
 static int current_rate = 0;      /* -100 to +100, default 0 */
 static int current_pitch = 0;     /* -100 to +100, default 0 */
+static int current_pitch_range = 0; /* -100 to +100, default 0 (SSIP PITCH_RANGE) */
+static float configured_inflection = 0.5f; /* inflection level from settings.json */
 static int current_volume = 0;    /* -100 to +100, default 0 */
 static int spelling_mode = 0;
 static int punctuation_mode = 0;  /* 0=none, 1=some, 2=most, 3=all */
@@ -184,8 +188,18 @@ static void apply_parameters(void)
     laprdus_set_user_pitch(engine, user_pitch);
     laprdus_set_volume(engine, vol);
 
-    DBG("Applied params: rate=%d->speed=%.2f, pitch=%d->user_pitch=%.2f, volume=%d->vol=%.2f",
-        current_rate, speed, current_pitch, user_pitch, current_volume, vol);
+    /* Pitch range scales the configured inflection level: 0 keeps it,
+     * -100 flattens the voice, +100 doubles the configured level (capped at
+     * the maximum). Recorded voices ignore the level. */
+    float inflection = configured_inflection * (1.0f + current_pitch_range / 100.0f);
+    if (inflection > 1.0f) inflection = 1.0f;
+    if (inflection < 0.0f) inflection = 0.0f;
+    laprdus_set_inflection_level(engine, inflection);
+
+    DBG("Applied params: rate=%d->speed=%.2f, pitch=%d->user_pitch=%.2f, volume=%d->vol=%.2f, "
+        "pitch_range=%d->inflection=%.2f",
+        current_rate, speed, current_pitch, user_pitch, current_volume, vol,
+        current_pitch_range, inflection);
 }
 
 /**
@@ -199,6 +213,19 @@ static const char* get_voice_display_name(const char *id)
     if (strcmp(id, "detence") == 0) return "Detence";
     if (strcmp(id, "baba") == 0) return "Baba";
     if (strcmp(id, "djed") == 0) return "\xc4\x90" "edo";  /* Đedo in UTF-8 */
+    if (strcmp(id, "zvonko") == 0) return "Zvonko";
+    if (strcmp(id, "stojan") == 0) return "Stojan";
+    if (strcmp(id, "mirsad") == 0) return "Mirsad";
+    if (strcmp(id, "orguljas") == 0) return "Orgulja\xc5\xa1";       /* Orguljaš */
+    if (strcmp(id, "klapa") == 0) return "Klapa";
+    if (strcmp(id, "trubac") == 0) return "Truba\xc4\x8d";           /* Trubač */
+    if (strcmp(id, "harmonikas") == 0) return "Harmonika\xc5\xa1";   /* Harmonikaš */
+    if (strcmp(id, "sevdalija") == 0) return "Sevdalija";
+    if (strcmp(id, "sazlija") == 0) return "Sazlija";
+    if (strcmp(id, "pjevac") == 0) return "Pjeva\xc4\x8d";           /* Pjevač */
+    if (strcmp(id, "pevac") == 0) return "Peva\xc4\x8d";             /* Pevač */
+    if (strcmp(id, "solist") == 0) return "Solist";
+    if (strcmp(id, "becarac") == 0) return "Be\xc4\x87" "arac";         /* Bećarac */
     return id;
 }
 
@@ -370,8 +397,10 @@ int module_init(char **msg)
     snprintf(dict_path, sizeof(dict_path), "%s/spelling.json", data_dir);
     laprdus_load_spelling_dictionary(engine, dict_path);
 
-    /* Load user configuration from ~/.config/Laprdus */
+    /* Load user configuration from ~/.config/Laprdus (speed, pitch, pauses,
+     * the inflection level and acceleration of the formant voices, ...) */
     laprdus_load_user_config(engine);
+    configured_inflection = laprdus_get_inflection_level(engine);
 
     /* Build voice list for module_list_voices */
     build_voice_list();
@@ -390,6 +419,35 @@ SPDVoice **module_list_voices(void)
 }
 
 /**
+ * Default voice of a language ("hr", "sr-RS", ...), NULL for other languages
+ */
+static const char *default_voice_for_language(const char *lang)
+{
+    if (!lang) return NULL;
+    if (strncasecmp(lang, "hr", 2) == 0) return "zvonko";
+    if (strncasecmp(lang, "sr", 2) == 0) return "stojan";
+    if (strncasecmp(lang, "bs", 2) == 0) return "mirsad";
+    return NULL;
+}
+
+/**
+ * Language code of the voice in use ("hr-HR", ...), NULL if unknown
+ */
+static const char *current_voice_language(void)
+{
+    const char *id = engine ? laprdus_get_current_voice(engine) : NULL;
+    if (!id) return NULL;
+    uint32_t count = laprdus_get_voice_count();
+    for (uint32_t i = 0; i < count; i++) {
+        LaprdusVoiceInfo info;
+        if (laprdus_get_voice_info(i, &info) == LAPRDUS_OK && strcmp(info.id, id) == 0) {
+            return info.language_code;
+        }
+    }
+    return NULL;
+}
+
+/**
  * Set a parameter
  */
 int module_set(const char *var, const char *val)
@@ -399,11 +457,16 @@ int module_set(const char *var, const char *val)
     if (!var || !val) return -1;
 
     if (strcmp(var, "voice") == 0) {
-        /* Voice type (MALE1, FEMALE1, etc.) - map to our voices */
+        /* Voice type (MALE1, FEMALE1, etc.) - map to our voices.
+         * MALE1 is the default voice of the language in use, MALE2 the
+         * recorded voice of that language. */
+        const char *lang = current_voice_language();
+        int serbian = lang && strncasecmp(lang, "sr", 2) == 0;
         if (strcasecmp(val, "male1") == 0) {
-            return set_voice("josip");
+            const char *voice = default_voice_for_language(lang);
+            return set_voice(voice ? voice : DEFAULT_VOICE);
         } else if (strcasecmp(val, "male2") == 0) {
-            return set_voice("vlado");
+            return set_voice(serbian ? "vlado" : "josip");
         } else if (strcasecmp(val, "male3") == 0) {
             return set_voice("djed");
         } else if (strcasecmp(val, "female1") == 0 || strcasecmp(val, "female3") == 0) {
@@ -428,6 +491,26 @@ int module_set(const char *var, const char *val)
         if (strcasecmp(val, "Vlado") == 0) return set_voice("vlado");
         if (strcasecmp(val, "Detence") == 0) return set_voice("detence");
         if (strcasecmp(val, "Baba") == 0) return set_voice("baba");
+        if (strcasecmp(val, "Zvonko") == 0) return set_voice("zvonko");
+        if (strcasecmp(val, "Stojan") == 0) return set_voice("stojan");
+        if (strcasecmp(val, "Mirsad") == 0) return set_voice("mirsad");
+        /* Singing presets */
+        if (strcasecmp(val, "Orgulja\xc5\xa1") == 0 ||
+            strcasecmp(val, "Orguljas") == 0) return set_voice("orguljas");
+        if (strcasecmp(val, "Klapa") == 0) return set_voice("klapa");
+        if (strcasecmp(val, "Truba\xc4\x8d") == 0 ||
+            strcasecmp(val, "Trubac") == 0) return set_voice("trubac");
+        if (strcasecmp(val, "Harmonika\xc5\xa1") == 0 ||
+            strcasecmp(val, "Harmonikas") == 0) return set_voice("harmonikas");
+        if (strcasecmp(val, "Sevdalija") == 0) return set_voice("sevdalija");
+        if (strcasecmp(val, "Sazlija") == 0) return set_voice("sazlija");
+        if (strcasecmp(val, "Pjeva\xc4\x8d") == 0 ||
+            strcasecmp(val, "Pjevac") == 0) return set_voice("pjevac");
+        if (strcasecmp(val, "Peva\xc4\x8d") == 0 ||
+            strcasecmp(val, "Pevac") == 0) return set_voice("pevac");
+        if (strcasecmp(val, "Solist") == 0) return set_voice("solist");
+        if (strcasecmp(val, "Be\xc4\x87" "arac") == 0 ||
+            strcasecmp(val, "Becarac") == 0) return set_voice("becarac");
         /* Đedo - try both UTF-8 and ASCII forms */
         if (strcasecmp(val, "\xc4\x90" "edo") == 0 ||
             strcasecmp(val, "Djed") == 0 ||
@@ -444,19 +527,15 @@ int module_set(const char *var, const char *val)
         return -1;
     }
     else if (strcmp(var, "language") == 0) {
-        /* Set voice by language code */
-        /* Find first voice matching language */
-        uint32_t count = laprdus_get_voice_count();
-        for (uint32_t i = 0; i < count; i++) {
-            LaprdusVoiceInfo info;
-            if (laprdus_get_voice_info(i, &info) == LAPRDUS_OK) {
-                if (strstr(info.language_code, val)) {
-                    return set_voice(info.id);
-                }
-            }
+        /* Set voice by language code. A voice that already speaks the
+         * language is kept; otherwise the default voice of the language is
+         * used. Other languages continue with the current voice. */
+        const char *voice = default_voice_for_language(val);
+        const char *lang = current_voice_language();
+        if (!voice || (lang && strncasecmp(lang, val, 2) == 0)) {
+            return 0;
         }
-        /* No voice found for language, continue with current */
-        return 0;
+        return set_voice(voice);
     }
     else if (strcmp(var, "rate") == 0) {
         current_rate = atoi(val);
@@ -473,8 +552,13 @@ int module_set(const char *var, const char *val)
         return 0;
     }
     else if (strcmp(var, "pitch_range") == 0) {
-        /* Pitch range affects inflection intensity */
-        /* For now we don't have a direct mapping */
+        /* SSIP pitch range (-100..100) is the inflection level of the
+         * formant voices: -100 a monotone, 0 the measured movements (the
+         * user's configured level), +100 twice those movements. */
+        current_pitch_range = atoi(val);
+        if (current_pitch_range < -100) current_pitch_range = -100;
+        if (current_pitch_range > 100) current_pitch_range = 100;
+        apply_parameters();
         return 0;
     }
     else if (strcmp(var, "volume") == 0) {

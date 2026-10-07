@@ -40,7 +40,9 @@ object LaprdusStorage {
     const val LEGACY_SETTINGS_RELATIVE_PATH = "datastore/$SETTINGS_FILE_NAME"
     const val DEBUG_CRASH_POINT_RELATIVE_PATH = "debug/crash_point"
     const val ENGINE_CRASH_MARKER_FILE_NAME = "engine_crash_marker"
-    val DICTIONARY_FILE_NAMES: List<String> = listOf("user.json", "spelling.json", "emoji.json")
+    const val ACCENT_LEXICON_FILE_NAME = "accents.json"
+    val DICTIONARY_FILE_NAMES: List<String> =
+        listOf("user.json", "spelling.json", "emoji.json", ACCENT_LEXICON_FILE_NAME)
 
     private val lock = Any()
 

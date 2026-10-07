@@ -29,6 +29,8 @@ VoiceParams UserSettings::to_voice_params() const {
     params.user_pitch = user_pitch;
     params.volume = volume;
     params.inflection_enabled = inflection_enabled;
+    params.inflection_level = inflection_level;
+    params.acceleration = acceleration;
     params.emoji_enabled = emoji_enabled;
     params.number_mode = number_mode;
     params.pause_settings = get_pause_settings();
@@ -41,6 +43,8 @@ void UserSettings::from_voice_params(const VoiceParams& params) {
     user_pitch = params.user_pitch;
     volume = params.volume;
     inflection_enabled = params.inflection_enabled;
+    inflection_level = params.inflection_level;
+    acceleration = params.acceleration;
     emoji_enabled = params.emoji_enabled;
     number_mode = params.number_mode;
     apply_pause_settings(params.pause_settings);
@@ -201,11 +205,13 @@ std::string generate_settings_json(const UserSettings& settings) {
     json << "    \"description\": \"LaprdusTTS user settings\",\n";
     json << "\n";
     json << "    \"_help\": {\n";
-    json << "        \"voice.default\": \"Default voice ID: josip, vlado, detence, baba, djed (empty = auto)\",\n";
-    json << "        \"speech.speed\": \"Speech rate from 0.5 (slow) to 2.0 (fast), default 1.0\",\n";
-    json << "        \"speech.pitch\": \"Voice pitch from 0.5 (low) to 2.0 (high), default 1.0\",\n";
+    json << "        \"voice.default\": \"Default voice ID: zvonko, stojan, mirsad, josip, vlado, detence, baba, djed, or a singing preset orguljas, klapa, trubac, harmonikas, sevdalija, sazlija, pjevac, pevac, solist, becarac (empty = auto)\",\n";
+    json << "        \"speech.speed\": \"Speech rate from 0.5 (slow) to 2.0 (fast), default 1.0; formant voices accept 0.25 to 4.0\",\n";
+    json << "        \"speech.pitch\": \"Voice pitch from 0.5 (low) to 2.0 (high), default 1.0; formant voices accept 0.25 to 4.0\",\n";
     json << "        \"speech.volume\": \"Volume from 0.0 (silent) to 1.0 (full), default 1.0\",\n";
     json << "        \"speech.inflection\": \"Enable natural pitch variation based on punctuation (true/false)\",\n";
+    json << "        \"speech.inflection_level\": \"Size of the pitch movements of the formant voices: 0.0 (monotone) to 1.0 (maximum), default 0.5\",\n";
+    json << "        \"speech.acceleration\": \"Rate multiplier of the formant voices from 0.5 to 3.0, default 1.0 (2.0 doubles the rate the rate slider reaches)\",\n";
     json << "        \"speech.emoji\": \"Convert emoji to spoken text descriptions (true/false)\",\n";
     json << "        \"numbers.mode\": \"Number reading: 'words' (twenty-three) or 'digits' (two-three)\",\n";
     json << "        \"pauses.sentence\": \"Pause after sentences (. ! ?) in milliseconds, 0-2000\",\n";
@@ -215,7 +221,7 @@ std::string generate_settings_json(const UserSettings& settings) {
     json << "        \"force.speed\": \"Use Laprdus speed setting instead of system/SAPI5 (true/false)\",\n";
     json << "        \"force.pitch\": \"Use Laprdus pitch setting instead of system/SAPI5 (true/false)\",\n";
     json << "        \"force.volume\": \"Use Laprdus volume setting instead of system/SAPI5 (true/false)\",\n";
-    json << "        \"dictionaries.user_enabled\": \"Apply user dictionaries (user.json, spelling.json, emoji.json) during synthesis (true/false)\"\n";
+    json << "        \"dictionaries.user_enabled\": \"Apply user dictionaries (user.json, spelling.json, emoji.json, accents.json) during synthesis (true/false)\"\n";
     json << "    },\n";
     json << "\n";
     json << "    \"voice\": {\n";
@@ -227,6 +233,8 @@ std::string generate_settings_json(const UserSettings& settings) {
     json << "        \"pitch\": " << settings.user_pitch << ",\n";
     json << "        \"volume\": " << settings.volume << ",\n";
     json << "        \"inflection\": " << (settings.inflection_enabled ? "true" : "false") << ",\n";
+    json << "        \"inflection_level\": " << settings.inflection_level << ",\n";
+    json << "        \"acceleration\": " << settings.acceleration << ",\n";
     json << "        \"emoji\": " << (settings.emoji_enabled ? "true" : "false") << "\n";
     json << "    },\n";
     json << "\n";
@@ -270,6 +278,10 @@ bool parse_settings_json(const std::string& json, UserSettings& settings) {
     settings.user_pitch = static_cast<float>(extract_number_value(json, "pitch", 1.0));
     settings.volume = static_cast<float>(extract_number_value(json, "volume", 1.0));
     settings.inflection_enabled = extract_bool_value(json, "inflection", true);
+    settings.inflection_level = static_cast<float>(
+        extract_number_value(json, "inflection_level", INFLECTION_LEVEL_DEFAULT));
+    settings.acceleration = static_cast<float>(
+        extract_number_value(json, "acceleration", ACCELERATION_DEFAULT));
     settings.emoji_enabled = extract_bool_value(json, "emoji", false);
 
     // Extract number mode
@@ -500,6 +512,10 @@ std::string UserConfig::get_user_spelling_dictionary_path() const {
 
 std::string UserConfig::get_user_emoji_dictionary_path() const {
     return get_config_file_path("emoji.json");
+}
+
+std::string UserConfig::get_user_accent_lexicon_path() const {
+    return get_config_file_path("accents.json");
 }
 
 bool UserConfig::user_dictionary_exists(const std::string& filename) const {

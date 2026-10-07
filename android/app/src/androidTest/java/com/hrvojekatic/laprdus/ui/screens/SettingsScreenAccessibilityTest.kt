@@ -381,6 +381,8 @@ class SettingsScreenAccessibilityTest {
                 onNewlinePauseChange = {},
                 onNumberModeChange = {},
                 onInflectionEnabledChange = {},
+                onInflectionLevelChange = {},
+                onAccelerationChange = {},
                 onUserDictionariesEnabledChange = {}
             )
         }
@@ -422,6 +424,8 @@ class SettingsScreenAccessibilityTest {
                 onNewlinePauseChange = {},
                 onNumberModeChange = {},
                 onInflectionEnabledChange = {},
+                onInflectionLevelChange = {},
+                onAccelerationChange = {},
                 onUserDictionariesEnabledChange = {}
             )
         }
@@ -462,6 +466,8 @@ class SettingsScreenAccessibilityTest {
                 onNewlinePauseChange = {},
                 onNumberModeChange = {},
                 onInflectionEnabledChange = {},
+                onInflectionLevelChange = {},
+                onAccelerationChange = {},
                 onUserDictionariesEnabledChange = {}
             )
         }
@@ -505,6 +511,8 @@ class SettingsScreenAccessibilityTest {
                 onNewlinePauseChange = {},
                 onNumberModeChange = {},
                 onInflectionEnabledChange = {},
+                onInflectionLevelChange = {},
+                onAccelerationChange = {},
                 onUserDictionariesEnabledChange = {}
             )
         }

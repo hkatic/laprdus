@@ -11,7 +11,7 @@ from SCons.Script import *
 # Version Information
 # =============================================================================
 
-VERSION_MAJOR = 1
+VERSION_MAJOR = 2
 VERSION_MINOR = 0
 VERSION_PATCH = 0
 VERSION_STRING = f"{VERSION_MAJOR}.{VERSION_MINOR}.{VERSION_PATCH}"
@@ -210,7 +210,7 @@ elif target_platform == 'macos':
     min_version = '13.0'
 
     # -std=c++17 must not land in CCFLAGS: clang treats it as an error when
-    # compiling C (src/audio/sonic/sonic.c), unlike gcc which only warns.
+    # compiling C, unlike gcc which only warns.
     common_flags = [
         '-Wall',
         '-Wextra',
@@ -297,7 +297,6 @@ elif target_platform == 'android':
 env.Append(CPPPATH=[
     '#include',
     '#src',
-    '#src/audio/sonic',
 ])
 
 # =============================================================================
@@ -327,9 +326,15 @@ core_sources = [
     'src/core/user_config.cpp',
     'src/audio/phoneme_data.cpp',
     'src/audio/audio_synthesizer.cpp',
-    'src/audio/sonic_processor.cpp',
-    'src/audio/sonic/sonic.c',
-    'src/audio/formant_pitch.cpp',
+    'src/audio/unit_bank.cpp',
+    'src/audio/psola.cpp',
+    'src/audio/concat_prosody.cpp',
+    'src/formant/klatt_synth.cpp',
+    'src/formant/formant_phonemes.cpp',
+    'src/formant/formant_lexicon.cpp',
+    'src/formant/formant_frontend.cpp',
+    'src/formant/formant_intonation.cpp',
+    'src/formant/formant_synthesizer.cpp',
     'src/c_api/laprdus_api.cpp',
     'src/laprdus.cpp',
 ]
@@ -494,9 +499,15 @@ if target_platform == 'windows':
         'src/core/user_config.cpp',
         'src/audio/phoneme_data.cpp',
         'src/audio/audio_synthesizer.cpp',
-        'src/audio/sonic_processor.cpp',
-        'src/audio/sonic/sonic.c',
-        'src/audio/formant_pitch.cpp',
+        'src/audio/unit_bank.cpp',
+        'src/audio/psola.cpp',
+        'src/audio/concat_prosody.cpp',
+        'src/formant/klatt_synth.cpp',
+        'src/formant/formant_phonemes.cpp',
+        'src/formant/formant_lexicon.cpp',
+        'src/formant/formant_frontend.cpp',
+        'src/formant/formant_intonation.cpp',
+        'src/formant/formant_synthesizer.cpp',
         # C API for NVDA and other consumers
         'src/c_api/laprdus_api.cpp',
         # SAPI5 platform code
@@ -567,9 +578,15 @@ if target_platform == 'windows':
             'src/core/user_config.cpp',
             'src/audio/phoneme_data.cpp',
             'src/audio/audio_synthesizer.cpp',
-            'src/audio/sonic_processor.cpp',
-            'src/audio/sonic/sonic.c',
-            'src/audio/formant_pitch.cpp',
+            'src/audio/unit_bank.cpp',
+            'src/audio/psola.cpp',
+            'src/audio/concat_prosody.cpp',
+            'src/formant/klatt_synth.cpp',
+            'src/formant/formant_phonemes.cpp',
+            'src/formant/formant_lexicon.cpp',
+            'src/formant/formant_frontend.cpp',
+            'src/formant/formant_intonation.cpp',
+            'src/formant/formant_synthesizer.cpp',
             # C API
             'src/c_api/laprdus_api.cpp',
             # CLI-specific
@@ -728,8 +745,8 @@ elif target_platform == 'linux':
 
     # Set SONAME for proper shared library versioning
     # This ensures binaries record 'liblaprdus.so.1' as their NEEDED library,
-    # allowing versioned symlinks (liblaprdus.so.1 -> liblaprdus.so.1.0.0) to work
-    env.Append(SHLINKFLAGS=['-Wl,-soname,liblaprdus.so.1'])
+    # allowing versioned symlinks (liblaprdus.so.2 -> liblaprdus.so.2.0.0) to work
+    env.Append(SHLINKFLAGS=['-Wl,-soname,liblaprdus.so.2'])
 
     lib = env.SharedLibrary(
         target=f'{build_dir}/liblaprdus',
@@ -958,6 +975,8 @@ LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"
 LanguageDefaultModule "sr-RS" "laprdus"
+LanguageDefaultModule "bs" "laprdus"
+LanguageDefaultModule "bs-BA" "laprdus"
 # END LAPRDUS TTS
 '''
         else:
@@ -968,6 +987,8 @@ LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"
 LanguageDefaultModule "sr-RS" "laprdus"
+LanguageDefaultModule "bs" "laprdus"
+LanguageDefaultModule "bs-BA" "laprdus"
 # END LAPRDUS TTS
 '''
         try:
@@ -1146,7 +1167,7 @@ if target_platform == 'windows':
         return result.returncode
 
     nvda_addon_package = env.Command(
-        target='nvda-addon/laprdus-1.0.0.nvda-addon',
+        target='nvda-addon/laprdus-2.0.0.nvda-addon',
         source=[nvda_addon_files],
         action=build_nvda_addon
     )

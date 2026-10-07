@@ -9,7 +9,7 @@
 
 set -e
 
-VERSION="${1:-1.0.0}"
+VERSION="${1:-2.0.0}"
 PACKAGE_NAME="laprdus-${VERSION}-linux-x86_64"
 BUILD_DIR="$(pwd)/build-tarball"
 OUTPUT_DIR="$(pwd)"
@@ -44,8 +44,8 @@ echo "Copying files..."
 # Library (versioned with symlinks)
 cp build/linux-x64-release/liblaprdus.so "${PKG}/lib/liblaprdus.so.${VERSION}"
 cd "${PKG}/lib"
-ln -sf "liblaprdus.so.${VERSION}" "liblaprdus.so.1"
-ln -sf "liblaprdus.so.1" "liblaprdus.so"
+ln -sf "liblaprdus.so.${VERSION}" "liblaprdus.so.2"
+ln -sf "liblaprdus.so.2" "liblaprdus.so"
 cd "${PROJECT_ROOT}"
 
 # CLI
@@ -325,8 +325,13 @@ configure_speechd() {
 
     # Check if already configured
     if grep -q "$MARKER_START" "$SPEECHD_CONF" 2>/dev/null; then
-        echo "LaprdusTTS already configured in Speech Dispatcher."
-        return 0
+        # A block written by a version that did not know Bosnian yet is
+        # removed here and written again below.
+        if grep -q 'LanguageDefaultModule "bs" "laprdus"' "$SPEECHD_CONF" 2>/dev/null; then
+            echo "LaprdusTTS already configured in Speech Dispatcher."
+            return 0
+        fi
+        sed -i "/$MARKER_START/,/$MARKER_END/d" "$SPEECHD_CONF"
     fi
 
     # Check for existing manual configuration
@@ -354,6 +359,8 @@ LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"
 LanguageDefaultModule "sr-RS" "laprdus"
+LanguageDefaultModule "bs" "laprdus"
+LanguageDefaultModule "bs-BA" "laprdus"
 # END LAPRDUS TTS
 SPEECHD_EOF
     else
@@ -369,6 +376,8 @@ LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"
 LanguageDefaultModule "sr-RS" "laprdus"
+LanguageDefaultModule "bs" "laprdus"
+LanguageDefaultModule "bs-BA" "laprdus"
 # END LAPRDUS TTS
 SPEECHD_EOF
     fi
@@ -540,7 +549,12 @@ Speech Dispatcher (for Orca):
 Voices
 ------
 
-  josip   - Croatian male adult (default)
+  zvonko  - Croatian male adult (formant synthesis, default)
+  stojan  - Serbian male adult (formant synthesis)
+  mirsad  - Bosnian male adult (formant synthesis)
+  orguljas, klapa, trubac, harmonikas, sevdalija, sazlija, pjevac, pevac, solist, becarac
+          - singing presets of the formant voices
+  josip   - Croatian male adult
   vlado   - Serbian male adult
   detence - Croatian child
   baba    - Croatian female senior

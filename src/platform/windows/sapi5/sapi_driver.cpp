@@ -7,6 +7,7 @@
 #include "core/voice_registry.hpp"
 #include "core/user_config.hpp"
 #include <string>
+#include <vector>
 #include <filesystem>
 #include <cstdlib>
 
@@ -104,6 +105,8 @@ STDMETHODIMP LaprdusSAPIDriver::Speak(
         if (SUCCEEDED(pOutputSite->GetRate(&sapiRate)) && sapiRate != 0) {
             // Map -10..+10 to 0.5..2.0 exponentially
             // Only apply if rate is not default (0)
+            // The formant voices multiply this by the acceleration setting,
+            // so +10 reaches 2.0 times the acceleration.
             float rateMultiplier = std::pow(2.0f, sapiRate / 10.0f);
             params.speed = std::clamp(rateMultiplier, 0.5f, 2.0f);
         } else {
@@ -141,62 +144,16 @@ STDMETHODIMP LaprdusSAPIDriver::Speak(
 
     m_engine->set_voice_params(params);
 
-    // Extract text and spell mode from fragments
-    bool useSpelledSynthesis = false;
-    std::wstring text = ExtractText(pTextFragList, useSpelledSynthesis);
-    if (text.empty()) {
+    // Split the fragments into runs that are spoken, spelled or silent
+    std::vector<TextRun> runs = ExtractRuns(pTextFragList);
+    if (runs.empty()) {
         return S_OK;  // Nothing to speak
     }
 
-    // Trim whitespace from text (SAPI5 often adds trailing spaces/newlines)
-    while (!text.empty() && (text.back() == L' ' || text.back() == L'\t' ||
-                              text.back() == L'\r' || text.back() == L'\n')) {
-        text.pop_back();
-    }
-    while (!text.empty() && (text.front() == L' ' || text.front() == L'\t' ||
-                              text.front() == L'\r' || text.front() == L'\n')) {
-        text.erase(0, 1);
-    }
-
-    if (text.empty()) {
-        return S_OK;
-    }
-
-    // Convert to UTF-8
-    std::string utf8_text = WideToUtf8(text);
-    if (utf8_text.empty()) {
-        return S_OK;
-    }
-
-    // Check if text is a single UTF-8 character
-    // Many SAPI5 apps spell by sending individual characters with SPVA_Speak
-    // (not SPVA_SpellOut), so we detect single characters and use spelled synthesis
-    bool isSingleChar = false;
-    {
-        size_t charCount = 0;
-        size_t pos = 0;
-        while (pos < utf8_text.size() && charCount < 2) {
-            unsigned char c = utf8_text[pos];
-            size_t charLen = 1;
-            if ((c & 0x80) == 0) charLen = 1;
-            else if ((c & 0xE0) == 0xC0) charLen = 2;
-            else if ((c & 0xF0) == 0xE0) charLen = 3;
-            else if ((c & 0xF8) == 0xF0) charLen = 4;
-            pos += charLen;
-            charCount++;
-        }
-        isSingleChar = (charCount == 1);
-    }
-
-    // Synthesize (use spelled synthesis for SPVA_SpellOut or single characters)
-    SynthesisResult result;
-    if (useSpelledSynthesis || isSingleChar) {
-        result = m_engine->synthesize_spelled(utf8_text);
-    } else {
-        result = m_engine->synthesize(utf8_text);
-    }
-    if (!result.success) {
-        return E_FAIL;
+    AudioBuffer audio;
+    HRESULT hrSynth = SynthesizeRuns(runs, pOutputSite, audio);
+    if (FAILED(hrSynth)) {
+        return hrSynth;
     }
 
     // Check for cancellation
@@ -205,7 +162,7 @@ STDMETHODIMP LaprdusSAPIDriver::Speak(
     }
 
     // Send audio to output site
-    HRESULT hr = SendAudio(pOutputSite, result.audio);
+    HRESULT hr = SendAudio(pOutputSite, audio);
 
     return hr;
 }
@@ -352,11 +309,28 @@ HRESULT LaprdusSAPIDriver::InitializeEngine() {
     // Create engine
     m_engine = std::make_unique<TTSEngine>();
 
-    // Convert path to UTF-8 and initialize
-    std::string utf8Path = WideToUtf8(dataPath);
-    if (!m_engine->initialize(utf8Path)) {
-        m_engine.reset();
-        return E_FAIL;
+    // Formant voices are synthesized by rule and load no phoneme data; for
+    // them dataPath only locates the install directory (dictionaries below).
+    const laprdus::VoiceDefinition* voiceDef = nullptr;
+    if (voiceId && voiceId.m_psz) {
+        voiceDef = laprdus::VoiceRegistry::find_by_id(WideToUtf8(voiceId.m_psz).c_str());
+    }
+
+    if (laprdus::VoiceRegistry::is_formant_voice(voiceDef)) {
+        if (!m_engine->initialize_formant(voiceDef->id)) {
+            m_engine.reset();
+            return E_FAIL;
+        }
+    } else {
+        // Convert path to UTF-8 and initialize
+        std::string utf8Path = WideToUtf8(dataPath);
+        if (!m_engine->initialize(utf8Path)) {
+            m_engine.reset();
+            return E_FAIL;
+        }
+        if (voiceDef) {
+            m_engine->set_language(voiceDef->language);
+        }
     }
 
     // Apply base pitch for derived voices
@@ -414,6 +388,8 @@ HRESULT LaprdusSAPIDriver::InitializeEngine() {
         params.user_pitch = settings.user_pitch;
         params.volume = settings.volume;
         params.inflection_enabled = settings.inflection_enabled;
+        params.inflection_level = settings.inflection_level;
+        params.acceleration = settings.acceleration;
         params.emoji_enabled = settings.emoji_enabled;
         params.number_mode = settings.number_mode;
         params.pause_settings = settings.get_pause_settings();
@@ -436,6 +412,11 @@ HRESULT LaprdusSAPIDriver::InitializeEngine() {
                 std::string userEmojiPath = userConfig.get_user_emoji_dictionary_path();
                 m_engine->append_emoji_dictionary(userEmojiPath);
             }
+
+            // Accent lexicon of the formant voices (word stress, length, tone)
+            if (userConfig.user_dictionary_exists("accents.json")) {
+                m_engine->load_accent_lexicon(userConfig.get_user_accent_lexicon_path());
+            }
         }
     }
 
@@ -443,39 +424,37 @@ HRESULT LaprdusSAPIDriver::InitializeEngine() {
     return S_OK;
 }
 
-std::wstring LaprdusSAPIDriver::ExtractText(const SPVTEXTFRAG* pTextFragList, bool& useSpelledSynthesis) {
-    std::wstring result;
-    useSpelledSynthesis = false;
+std::vector<LaprdusSAPIDriver::TextRun> LaprdusSAPIDriver::ExtractRuns(const SPVTEXTFRAG* pTextFragList) {
+    std::vector<TextRun> runs;
+
+    // Consecutive fragments of the same kind stay one run, so a sentence
+    // that SAPI cut at a tag is still synthesized as one sentence
+    auto append = [&runs](const SPVTEXTFRAG* pFrag, bool spell) {
+        if (!pFrag->pTextStart || pFrag->ulTextLen == 0) {
+            return;
+        }
+        if (runs.empty() || runs.back().silence_ms > 0 || runs.back().spell != spell) {
+            TextRun run;
+            run.spell = spell;
+            runs.push_back(run);
+        }
+        runs.back().text.append(pFrag->pTextStart, pFrag->ulTextLen);
+    };
 
     const SPVTEXTFRAG* pFrag = pTextFragList;
     while (pFrag) {
         // Handle different fragment actions
         switch (pFrag->State.eAction) {
-            case SPVA_Speak:
-                if (pFrag->pTextStart && pFrag->ulTextLen > 0) {
-                    result.append(pFrag->pTextStart, pFrag->ulTextLen);
-                }
-                break;
-
             case SPVA_SpellOut:
-                // Spell mode - use spelled synthesis
-                useSpelledSynthesis = true;
-                if (pFrag->pTextStart && pFrag->ulTextLen > 0) {
-                    result.append(pFrag->pTextStart, pFrag->ulTextLen);
-                }
+                // Spell mode - only this fragment is spelled
+                append(pFrag, true);
                 break;
 
             case SPVA_Silence:
-                // Add pause marker
-                // TODO: Handle silence duration from pFrag->State.SilenceMSecs
-                result += L" ";
-                break;
-
-            case SPVA_Pronounce:
-                // Phoneme pronunciation hint - not directly supported
-                // Fall back to normal speech
-                if (pFrag->pTextStart && pFrag->ulTextLen > 0) {
-                    result.append(pFrag->pTextStart, pFrag->ulTextLen);
+                if (pFrag->State.SilenceMSecs > 0) {
+                    TextRun run;
+                    run.silence_ms = pFrag->State.SilenceMSecs;
+                    runs.push_back(run);
                 }
                 break;
 
@@ -483,18 +462,139 @@ std::wstring LaprdusSAPIDriver::ExtractText(const SPVTEXTFRAG* pTextFragList, bo
                 // Bookmark markers - not directly supported
                 break;
 
+            case SPVA_Speak:
+            case SPVA_Pronounce:
+                // Phoneme pronunciation hint - not directly supported
+                // Fall back to normal speech
+                append(pFrag, false);
+                break;
+
             default:
                 // Unknown action, try to speak if there's text
-                if (pFrag->pTextStart && pFrag->ulTextLen > 0) {
-                    result.append(pFrag->pTextStart, pFrag->ulTextLen);
-                }
+                append(pFrag, false);
                 break;
         }
 
         pFrag = pFrag->pNext;
     }
 
+    // Trim whitespace from text (SAPI5 often adds trailing spaces/newlines)
+    // and drop the runs that have nothing left
+    std::vector<TextRun> result;
+    for (TextRun& run : runs) {
+        if (run.silence_ms == 0) {
+            const wchar_t* whitespace = L" \t\r\n";
+            const size_t first = run.text.find_first_not_of(whitespace);
+            if (first == std::wstring::npos) {
+                continue;
+            }
+            const size_t last = run.text.find_last_not_of(whitespace);
+            run.text = run.text.substr(first, last - first + 1);
+        }
+        result.push_back(std::move(run));
+    }
+
     return result;
+}
+
+HRESULT LaprdusSAPIDriver::SynthesizeRuns(
+    const std::vector<TextRun>& runs,
+    ISpTTSEngineSite* pSite,
+    AudioBuffer& audio) {
+
+    const unsigned long spellingPauseMs = m_engine->voice_params().pause_settings.spelling_pause_ms;
+
+    auto appendSilence = [&audio](unsigned long ms) {
+        const size_t samples = static_cast<size_t>(SAMPLE_RATE) * ms / 1000;
+        audio.samples.resize(audio.samples.size() + samples, 0);
+    };
+
+    size_t textRuns = 0;
+    for (const TextRun& run : runs) {
+        if (run.silence_ms == 0) {
+            textRuns++;
+        }
+    }
+
+    bool anySucceeded = false;
+    bool anyFailed = false;
+    // True while the audio so far ends in a pause (or there is none yet)
+    bool separated = true;
+    bool previousSpelled = false;
+
+    for (const TextRun& run : runs) {
+        if (ShouldStop(pSite)) {
+            return S_OK;
+        }
+
+        if (run.silence_ms > 0) {
+            appendSilence(run.silence_ms);
+            separated = true;
+            continue;
+        }
+
+        // Convert to UTF-8
+        std::string utf8_text = WideToUtf8(run.text);
+        if (utf8_text.empty()) {
+            continue;
+        }
+
+        // Check if text is a single UTF-8 character
+        bool isSingleChar = false;
+        {
+            size_t charCount = 0;
+            size_t pos = 0;
+            while (pos < utf8_text.size() && charCount < 2) {
+                unsigned char c = utf8_text[pos];
+                size_t charLen = 1;
+                if ((c & 0x80) == 0) charLen = 1;
+                else if ((c & 0xE0) == 0xC0) charLen = 2;
+                else if ((c & 0xF0) == 0xE0) charLen = 3;
+                else if ((c & 0xF8) == 0xF0) charLen = 4;
+                pos += charLen;
+                charCount++;
+            }
+            isSingleChar = (charCount == 1);
+        }
+
+        // Many SAPI5 apps spell by sending individual characters with SPVA_Speak
+        // (not SPVA_SpellOut), so an utterance that is a single character uses
+        // spelled synthesis too
+        const bool spell = run.spell || (textRuns == 1 && isSingleChar);
+
+        SynthesisResult result;
+        if (spell) {
+            result = m_engine->synthesize_spelled(utf8_text);
+        } else {
+            result = m_engine->synthesize(utf8_text);
+        }
+        if (!result.success) {
+            // One run that cannot be spoken must not silence the others
+            anyFailed = true;
+            continue;
+        }
+        anySucceeded = true;
+
+        // Spelled characters are kept apart by the spelling pause; so is the
+        // spoken text next to them
+        if (!separated && spell != previousSpelled) {
+            appendSilence(spellingPauseMs);
+        }
+
+        audio.samples.insert(
+            audio.samples.end(),
+            result.audio.samples.begin(),
+            result.audio.samples.end());
+
+        // The engine ends a single spelled character with the spelling pause
+        separated = spell && isSingleChar;
+        previousSpelled = spell;
+    }
+
+    if (anyFailed && !anySucceeded) {
+        return E_FAIL;
+    }
+    return S_OK;
 }
 
 std::string LaprdusSAPIDriver::WideToUtf8(const std::wstring& wide) {

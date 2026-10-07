@@ -81,7 +81,7 @@ class EngineRuntimeTest {
 
     @Test
     fun `requested voice loads without fallback`() {
-        val engine = FakeSpeechEngine("josip", "vlado")
+        val engine = FakeSpeechEngine("zvonko", "vlado")
         val runtime = runtime(engine)
 
         val result = runtime.ensureReady("vlado")
@@ -92,14 +92,14 @@ class EngineRuntimeTest {
     }
 
     @Test
-    fun `requested voice fails and josip fallback loads`() {
-        val engine = FakeSpeechEngine("josip")
+    fun `requested voice fails and zvonko fallback loads`() {
+        val engine = FakeSpeechEngine("zvonko")
         val runtime = runtime(engine)
 
         val result = runtime.ensureReady("vlado")
 
-        assertEquals(EngineRuntime.ReadyResult.Ready("josip", usedFallback = true), result)
-        assertEquals(listOf("vlado", "josip"), engine.calls)
+        assertEquals(EngineRuntime.ReadyResult.Ready("zvonko", usedFallback = true), result)
+        assertEquals(listOf("vlado", "zvonko"), engine.calls)
         assertFalse("falling back is not fatal and must not touch the marker", markerFile.exists())
     }
 
@@ -110,7 +110,7 @@ class EngineRuntimeTest {
 
         assertFatal(runtime, EngineRuntime.DEFAULT_FALLBACK_VOICE)
 
-        assertEquals(listOf("josip"), engine.calls)
+        assertEquals(listOf("zvonko"), engine.calls)
     }
 
     @Test
@@ -127,9 +127,9 @@ class EngineRuntimeTest {
     @Test
     fun `successful load leaves an existing marker untouched`() {
         markerFile.writeText("$START_TIME")
-        val runtime = runtime(FakeSpeechEngine("josip"))
+        val runtime = runtime(FakeSpeechEngine("zvonko"))
 
-        runtime.ensureReady("josip")
+        runtime.ensureReady("zvonko")
 
         assertEquals(listOf(START_TIME), markerTimestamps())
     }
@@ -145,10 +145,10 @@ class EngineRuntimeTest {
 
         val error = assertFatal(runtime, "vlado")
 
-        assertEquals(listOf("vlado", "josip"), engine.calls)
+        assertEquals(listOf("vlado", "zvonko"), engine.calls)
         assertEquals(listOf(START_TIME), markerTimestamps())
         assertTrue("message should name the requested voice", error.message!!.contains("vlado"))
-        assertTrue("message should name the fallback voice", error.message!!.contains("josip"))
+        assertTrue("message should name the fallback voice", error.message!!.contains("zvonko"))
     }
 
     @Test
@@ -292,7 +292,7 @@ class EngineRuntimeTest {
 
     @Test
     fun `onSynthesisSucceeded without a marker is a no-op`() {
-        val runtime = runtime(FakeSpeechEngine("josip"))
+        val runtime = runtime(FakeSpeechEngine("zvonko"))
 
         runtime.onSynthesisSucceeded()
 
@@ -329,7 +329,7 @@ class EngineRuntimeTest {
             assertEquals(Int.MAX_VALUE, runtime.recordFatalAttempt())
             assertEquals(EngineRuntime.ReadyResult.Unavailable, runtime.ensureReady("vlado"))
             assertFalse("nothing could be written", marker.exists())
-            assertEquals(listOf("vlado", "josip"), engine.calls)
+            assertEquals(listOf("vlado", "zvonko"), engine.calls)
         } finally {
             readOnlyDir.setWritable(true)
         }

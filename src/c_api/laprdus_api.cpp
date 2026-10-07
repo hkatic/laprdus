@@ -5,6 +5,8 @@
 #include "../core/tts_engine.hpp"
 #include "../core/voice_registry.hpp"
 #include "../core/user_config.hpp"
+#include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <new>
 #include <mutex>
@@ -21,6 +23,7 @@ struct LaprdusEngine {
     std::string current_voice_id;     // Currently active voice ID
     std::string data_directory;       // Directory containing voice .bin files
     float voice_base_pitch = 1.0f;    // Base pitch of current voice
+    float character_pitch = 1.0f;     // Last value given to laprdus_set_pitch
     std::mutex mutex;  // For thread-safe error message access
 
     LaprdusEngine() = default;
@@ -221,6 +224,15 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_speed(
     return LAPRDUS_OK;
 }
 
+// Effective voice-character pitch: the base pitch of the current voice
+// (derived voices: child, grandma, grandpa) times the caller's own setting.
+// On concatenative voices this shifts formants too.
+static void apply_character_pitch(LaprdusHandle handle) {
+    laprdus::VoiceParams vp = handle->engine.voice_params();
+    vp.pitch = std::clamp(handle->voice_base_pitch * handle->character_pitch, 0.25f, 4.0f);
+    handle->engine.set_voice_params(vp);
+}
+
 LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_pitch(
     LaprdusHandle handle,
     float pitch) {
@@ -229,18 +241,8 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_pitch(
         return LAPRDUS_ERROR_INVALID_HANDLE;
     }
 
-    // Apply effective pitch: voice base pitch * user pitch
-    // This allows derived voices (child, grandma, grandpa) to have their
-    // own base pitch while still allowing user adjustment
-    // Note: This shifts formants (chipmunk effect) - for voice character changes
-    float effective_pitch = handle->voice_base_pitch * pitch;
-
-    // Clamp to valid range (wider range for better compatibility)
-    effective_pitch = std::clamp(effective_pitch, 0.25f, 4.0f);
-
-    laprdus::VoiceParams vp = handle->engine.voice_params();
-    vp.pitch = effective_pitch;
-    handle->engine.set_voice_params(vp);
+    handle->character_pitch = std::isfinite(pitch) ? pitch : 1.0f;
+    apply_character_pitch(handle);
     return LAPRDUS_OK;
 }
 
@@ -255,8 +257,8 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_user_pitch(
     // User pitch preference - formant-preserving pitch shift
     // This does NOT shift formants - voice character stays the same
     // Use this for user-controlled pitch adjustment (NVDA/SAPI5 slider)
-    pitch = std::clamp(pitch, 0.5f, 2.0f);
-
+    // VoiceParams::clamp() limits it to 0.25 - 4.0; the recorded voices
+    // narrow that to 0.5 - 2.0 themselves.
     laprdus::VoiceParams vp = handle->engine.voice_params();
     vp.user_pitch = pitch;
     handle->engine.set_voice_params(vp);
@@ -289,6 +291,52 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_inflection_enabled(
     vp.inflection_enabled = (enabled != 0);
     handle->engine.set_voice_params(vp);
     return LAPRDUS_OK;
+}
+
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_inflection_level(
+    LaprdusHandle handle,
+    float level) {
+
+    if (!handle) {
+        return LAPRDUS_ERROR_INVALID_HANDLE;
+    }
+
+    laprdus::VoiceParams vp = handle->engine.voice_params();
+    vp.inflection_level = level;
+    handle->engine.set_voice_params(vp);
+    return LAPRDUS_OK;
+}
+
+LAPRDUS_API float LAPRDUS_CALL laprdus_get_inflection_level(LaprdusHandle handle) {
+    if (!handle) {
+        return laprdus::INFLECTION_LEVEL_DEFAULT;
+    }
+    return handle->engine.voice_params().inflection_level;
+}
+
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_acceleration(
+    LaprdusHandle handle,
+    float acceleration) {
+
+    if (!handle) {
+        return LAPRDUS_ERROR_INVALID_HANDLE;
+    }
+
+    laprdus::VoiceParams vp = handle->engine.voice_params();
+    vp.acceleration = acceleration;
+    handle->engine.set_voice_params(vp);
+    return LAPRDUS_OK;
+}
+
+LAPRDUS_API float LAPRDUS_CALL laprdus_get_acceleration(LaprdusHandle handle) {
+    if (!handle) {
+        return laprdus::ACCELERATION_DEFAULT;
+    }
+    return handle->engine.voice_params().acceleration;
+}
+
+LAPRDUS_API float LAPRDUS_CALL laprdus_get_nominal_wpm(const char* voice_id) {
+    return laprdus::VoiceRegistry::nominal_wpm(voice_id ? voice_id : "zvonko");
 }
 
 // =============================================================================
@@ -682,6 +730,21 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_voice(
         return LAPRDUS_ERROR_INVALID_PARAMETER;
     }
 
+    // Formant voices are synthesized by rule and have no data file to load
+    if (laprdus::VoiceRegistry::is_formant_voice(voice)) {
+        if (handle->current_voice_id != voice_id || !handle->engine.is_formant()) {
+            if (!handle->engine.initialize_formant(voice->id)) {
+                set_error(handle, "Failed to initialize formant voice: " + std::string(voice_id));
+                return LAPRDUS_ERROR_LOAD_FAILED;
+            }
+        }
+        handle->data_directory = data_directory;
+        handle->current_voice_id = voice_id;
+        handle->voice_base_pitch = voice->base_pitch;
+        apply_character_pitch(handle);
+        return LAPRDUS_OK;
+    }
+
     // Get the physical voice (same as voice if it's physical, or base voice if derived)
     const laprdus::VoiceDefinition* physical = laprdus::VoiceRegistry::get_physical_voice(voice);
     if (!physical) {
@@ -707,6 +770,7 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_voice(
         laprdus::VoiceRegistry::get_physical_voice(current_voice) : nullptr;
 
     bool need_reload = !handle->engine.is_initialized() ||
+                       handle->engine.is_formant() ||
                        current_physical != physical ||
                        handle->data_directory != data_directory;
 
@@ -726,16 +790,14 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_voice(
 
         handle->data_directory = data_directory;
     }
+    handle->engine.set_language(voice->language);
 
-    // Store current voice and apply base pitch
+    // Store current voice and apply its base pitch, so that a derived voice
+    // sounds like itself (and its base voice like itself again) without the
+    // caller having to set the pitch after every voice change.
     handle->current_voice_id = voice_id;
     handle->voice_base_pitch = voice->base_pitch;
-
-    // Apply the voice's base pitch to the engine
-    laprdus::VoiceParams params = handle->engine.voice_params();
-    // The effective pitch will be base_pitch * user_pitch
-    // We store base_pitch separately and apply it in synthesis
-    handle->engine.set_voice_params(params);
+    apply_character_pitch(handle);
 
     return LAPRDUS_OK;
 }
@@ -1038,6 +1100,65 @@ LAPRDUS_API void LAPRDUS_CALL laprdus_clear_emoji_dictionary(LaprdusHandle handl
     }
 }
 
+// =============================================================================
+// Accent Lexicon Functions
+// =============================================================================
+
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_load_accent_lexicon(
+    LaprdusHandle handle,
+    const char* lexicon_path) {
+
+    if (!handle) {
+        return LAPRDUS_ERROR_INVALID_HANDLE;
+    }
+    if (!lexicon_path) {
+        return LAPRDUS_ERROR_INVALID_PARAMETER;
+    }
+
+    if (!handle->engine.load_accent_lexicon(lexicon_path)) {
+        set_error(handle, "Accent lexicon: " + handle->engine.accent_lexicon_report());
+        return LAPRDUS_ERROR_LOAD_FAILED;
+    }
+
+    return LAPRDUS_OK;
+}
+
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_load_accent_lexicon_from_memory(
+    LaprdusHandle handle,
+    const char* json_content,
+    size_t length) {
+
+    if (!handle) {
+        return LAPRDUS_ERROR_INVALID_HANDLE;
+    }
+    if (!json_content) {
+        return LAPRDUS_ERROR_INVALID_PARAMETER;
+    }
+
+    if (!handle->engine.load_accent_lexicon_from_memory(json_content, length)) {
+        set_error(handle, "Accent lexicon: " + handle->engine.accent_lexicon_report());
+        return LAPRDUS_ERROR_LOAD_FAILED;
+    }
+
+    return LAPRDUS_OK;
+}
+
+LAPRDUS_API void LAPRDUS_CALL laprdus_clear_accent_lexicon(LaprdusHandle handle) {
+    if (handle) {
+        handle->engine.clear_accent_lexicon();
+    }
+}
+
+LAPRDUS_API const char* LAPRDUS_CALL laprdus_get_accent_lexicon_report(LaprdusHandle handle) {
+    if (!handle) {
+        return "";
+    }
+    // A thread-local copy, like laprdus_get_error_message().
+    thread_local std::string report_copy;
+    report_copy = handle->engine.accent_lexicon_report();
+    return report_copy.c_str();
+}
+
 LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_emoji_enabled(
     LaprdusHandle handle,
     int enabled) {
@@ -1223,6 +1344,8 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_load_user_config(LaprdusHandle han
     params.user_pitch = settings.user_pitch;
     params.volume = settings.volume;
     params.inflection_enabled = settings.inflection_enabled;
+    params.inflection_level = settings.inflection_level;
+    params.acceleration = settings.acceleration;
     params.emoji_enabled = settings.emoji_enabled;
     params.number_mode = settings.number_mode;
     params.pause_settings = settings.get_pause_settings();
@@ -1245,6 +1368,14 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_load_user_config(LaprdusHandle han
             std::string path = config.get_user_emoji_dictionary_path();
             handle->engine.load_emoji_dictionary(path);
         }
+
+        if (config.user_dictionary_exists("accents.json")) {
+            handle->engine.load_accent_lexicon(config.get_user_accent_lexicon_path());
+        } else {
+            handle->engine.clear_accent_lexicon();
+        }
+    } else {
+        handle->engine.clear_accent_lexicon();
     }
 
     return LAPRDUS_OK;

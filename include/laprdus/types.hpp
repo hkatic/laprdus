@@ -11,6 +11,7 @@
 #include <string>
 #include <memory>
 #include <algorithm>
+#include <cmath>
 
 // Simple span implementation (works in C++17 and C++20)
 // We use our own implementation to avoid MSVC STL warnings about C++20 features
@@ -251,22 +252,77 @@ struct PauseSettings {
 // Voice Parameters
 // =============================================================================
 
+// Limits of the user-controlled speech rate and pitch. The recorded
+// (concatenative) voices are rendered by PSOLA from their pitch marks and
+// keep the narrower ranges (beyond them the periods thin out or pile up);
+// the formant voices apply rate and pitch at the source and accept the wider
+// ones. VoiceParams::clamp() enforces the wide limits; the concatenative
+// planner narrows them again for itself.
+constexpr float CONCAT_SPEED_MIN = 0.5f;
+constexpr float CONCAT_SPEED_MAX = 4.0f;     // 4.0x for NVDA rate boost
+constexpr float CONCAT_USER_PITCH_MIN = 0.5f;
+constexpr float CONCAT_USER_PITCH_MAX = 2.0f;
+constexpr float FORMANT_SPEED_MIN = 0.25f;
+constexpr float FORMANT_SPEED_MAX = 4.0f;    // before acceleration
+constexpr float FORMANT_USER_PITCH_MIN = 0.25f;
+constexpr float FORMANT_USER_PITCH_MAX = 4.0f;
+
+// Acceleration multiplies the speech rate of the formant voices, so the
+// same rate slider reaches a higher (or lower) top speed. 1.0 leaves the
+// rate alone.
+constexpr float ACCELERATION_MIN = 0.5f;
+constexpr float ACCELERATION_MAX = 3.0f;
+constexpr float ACCELERATION_DEFAULT = 1.0f;
+// Fastest rate the formant synthesizer renders (speed * acceleration).
+constexpr float FORMANT_EFFECTIVE_SPEED_MAX = 8.0f;
+
+// Words per minute of the formant voices at speed 1.0 and acceleration 1.0,
+// measured on running Croatian text with Zvonko (the other two voices differ
+// by their FormantVoice::tempo). Used to show rate limits in words per minute.
+constexpr float FORMANT_NOMINAL_WPM = 175.0f;
+
+// Inflection level of the formant voices: 0.0 is a monotone, 0.5 the
+// measured pitch movements, 1.0 twice those movements.
+constexpr float INFLECTION_LEVEL_DEFAULT = 0.5f;
+
 struct VoiceParams {
-    float speed = 1.0f;       // Speech rate (0.5 - 4.0) - Sonic time-stretching
-    float pitch = 1.0f;       // Voice character pitch (0.25 - 4.0) - Sonic, shifts formants
-    float user_pitch = 1.0f;  // User pitch preference (0.5 - 2.0) - Formant-preserving
+    // Both kinds of voices apply these at the source: durations and the
+    // pitch contour (PSOLA for the recorded voices, the Klatt source for the
+    // formant voices).
+    float speed = 1.0f;       // Speech rate (0.5 - 4.0; formant voices 0.25 - 4.0)
+    float pitch = 1.0f;       // Voice character pitch (0.25 - 4.0)
+    float user_pitch = 1.0f;  // User pitch preference (0.5 - 2.0; formant voices 0.25 - 4.0)
     float volume = 1.0f;      // Volume (0.0 - 1.0)
     bool inflection_enabled = true;  // Enable punctuation inflection
+    float inflection_level = INFLECTION_LEVEL_DEFAULT;  // Size of the pitch movements (0.0 - 1.0), formant voices only
+    float acceleration = ACCELERATION_DEFAULT;          // Rate multiplier (0.5 - 3.0), formant voices only
     bool emoji_enabled = false;      // Enable emoji to text conversion (disabled by default)
     NumberMode number_mode = NumberMode::WholeNumbers;  // Number processing mode
     PauseSettings pause_settings;    // Pause duration settings
 
     void clamp() {
-        speed = std::clamp(speed, 0.5f, 4.0f);  // 4.0x max for NVDA rate boost
+        // std::clamp passes NaN through, and a NaN rate or pitch would reach
+        // the durations and filters of the formant voices.
+        if (!std::isfinite(speed)) speed = 1.0f;
+        if (!std::isfinite(pitch)) pitch = 1.0f;
+        if (!std::isfinite(user_pitch)) user_pitch = 1.0f;
+        if (!std::isfinite(volume)) volume = 1.0f;
+        if (!std::isfinite(inflection_level)) inflection_level = INFLECTION_LEVEL_DEFAULT;
+        if (!std::isfinite(acceleration)) acceleration = ACCELERATION_DEFAULT;
+        speed = std::clamp(speed, FORMANT_SPEED_MIN, FORMANT_SPEED_MAX);
         pitch = std::clamp(pitch, 0.25f, 4.0f);       // Voice character - wider range
-        user_pitch = std::clamp(user_pitch, 0.5f, 2.0f);  // User preference - moderate range
+        user_pitch = std::clamp(user_pitch, FORMANT_USER_PITCH_MIN, FORMANT_USER_PITCH_MAX);
         volume = std::clamp(volume, 0.0f, 1.0f);
+        inflection_level = std::clamp(inflection_level, 0.0f, 1.0f);
+        acceleration = std::clamp(acceleration, ACCELERATION_MIN, ACCELERATION_MAX);
         pause_settings.clamp();
+    }
+
+    /** Speech rate the formant voices actually render: speed times acceleration. */
+    [[nodiscard]] float formant_speed() const {
+        float s = speed * acceleration;
+        if (!std::isfinite(s)) return 1.0f;
+        return std::clamp(s, FORMANT_SPEED_MIN, FORMANT_EFFECTIVE_SPEED_MAX);
     }
 };
 
@@ -365,7 +421,14 @@ constexpr uint16_t PHONEME_FLAG_TRUNCATED = 0x0004;
 // Voice language codes
 enum class VoiceLanguage : uint8_t {
     Croatian = 0,   // hr-HR, LCID 0x041A
-    Serbian = 1     // sr-RS, LCID 0x081A (Latin)
+    Serbian = 1,    // sr-RS, LCID 0x081A (Latin)
+    Bosnian = 2     // bs-BA, LCID 0x141A (Latin)
+};
+
+// How a voice produces sound
+enum class VoiceSynthesis : uint8_t {
+    Concatenative = 0,  // recorded phonemes from a .bin file
+    Formant = 1         // rule-based formant synthesis, no data file
 };
 
 // Voice gender
@@ -390,17 +453,19 @@ struct VoiceDefinition {
     VoiceAge age;
     const char* base_voice_id;   // nullptr if physical voice, else "josip" or "vlado"
     float base_pitch;            // Pitch multiplier: 1.0, 1.5, 1.2, 0.75
-    const char* data_filename;   // "Josip.bin", nullptr for derived voices
+    const char* data_filename;   // "Josip.bin", nullptr for derived and formant voices
+    VoiceSynthesis synthesis = VoiceSynthesis::Concatenative;
 };
 
 // Voice count
-constexpr size_t VOICE_COUNT = 5;
+constexpr size_t VOICE_COUNT = 18;
 
 // Language code helpers
 inline const char* voice_language_code(VoiceLanguage lang) {
     switch (lang) {
         case VoiceLanguage::Croatian: return "hr-HR";
         case VoiceLanguage::Serbian: return "sr-RS";
+        case VoiceLanguage::Bosnian: return "bs-BA";
         default: return "hr-HR";
     }
 }
@@ -409,6 +474,7 @@ inline uint16_t voice_language_lcid(VoiceLanguage lang) {
     switch (lang) {
         case VoiceLanguage::Croatian: return 0x041A;
         case VoiceLanguage::Serbian: return 0x081A;
+        case VoiceLanguage::Bosnian: return 0x141A;
         default: return 0x041A;
     }
 }

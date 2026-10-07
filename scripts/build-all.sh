@@ -129,7 +129,7 @@ build_sapi5_installer() {
 
     "$ISCC" "$PROJECT_ROOT/installers/windows/laprdus_sapi5.iss"
 
-    if [[ -f "$PROJECT_ROOT/installers/windows/Output/Laprdus_SAPI5_Setup_1.0.0.exe" ]]; then
+    if [[ -f "$PROJECT_ROOT/installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe" ]]; then
         log_success "SAPI5 Installer built successfully"
     else
         log_error "Failed to build SAPI5 Installer"

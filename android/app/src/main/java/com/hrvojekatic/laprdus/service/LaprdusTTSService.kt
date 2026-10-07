@@ -22,6 +22,7 @@ import com.hrvojekatic.laprdus.data.migration.MigrationResult
 import com.hrvojekatic.laprdus.data.migration.SimulatedMigrationCrashException
 import com.hrvojekatic.laprdus.data.storage.LaprdusStorage
 import com.hrvojekatic.laprdus.tts.LaprdusTTS
+import com.hrvojekatic.laprdus.tts.VoiceInfo
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -230,6 +231,8 @@ class LaprdusTTSService : TextToSpeechService() {
         try {
             engine.emojiEnabled = settings.emojiEnabled
             engine.inflectionEnabled = settings.inflectionEnabled
+            engine.inflectionLevel = settings.inflectionLevel
+            engine.acceleration = settings.acceleration
             engine.sentencePause = settings.sentencePause
             engine.commaPause = settings.commaPause
             engine.newlinePause = settings.newlinePause
@@ -371,9 +374,11 @@ class LaprdusTTSService : TextToSpeechService() {
     }
 
     /**
-     * Load user dictionary entries from the device-protected user.json into the
-     * native engine. Entries are appended to the already-loaded bundled
-     * dictionary using addPronunciation(), which does NOT clear existing entries.
+     * Load the user's dictionary entries from the device-protected user.json,
+     * spelling.json and emoji.json into the native engine. Entries are added
+     * to the already-loaded bundled dictionaries one by one, which does NOT
+     * clear existing entries; a spelling or emoji entry replaces the bundled
+     * one for the same character or emoji.
      * Respects the userDictionariesEnabled setting; fails closed (defers the
      * load) while the settings are not known yet.
      */
@@ -386,29 +391,53 @@ class LaprdusTTSService : TextToSpeechService() {
         }
         if (!settings.userDictionariesEnabled) {
             logDebug { "User dictionaries disabled, skipping" }
+            tts?.clearAccentLexicon()
             return
         }
 
         val engine = tts ?: return
 
-        val userDictFile = File(dictionaryDir, DictionaryType.MAIN.fileName)
-        if (!userDictFile.isFile) {
-            logDebug { "No user dictionary file found" }
-            return
+        // The accent lexicon of the formant voices is one file the engine
+        // parses itself (it replaces the previous one; a missing file clears it).
+        val accents = File(dictionaryDir, LaprdusStorage.ACCENT_LEXICON_FILE_NAME)
+        if (accents.isFile) {
+            try {
+                val accepted = engine.loadAccentLexicon(accents.readText(Charsets.UTF_8))
+                Log.i(TAG, "Loaded user ${accents.name}: accepted=$accepted")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to load user ${accents.name}: ${e.message}")
+                engine.clearAccentLexicon()
+            }
+        } else {
+            engine.clearAccentLexicon()
         }
 
-        try {
-            val entries = DictionaryJson.parse(userDictFile.readText(Charsets.UTF_8))
-            var count = 0
-            for (entry in entries) {
-                if (entry.phoneme.isNotEmpty()) {
-                    engine.addPronunciation(entry.grapheme, entry.phoneme, entry.caseSensitive, entry.wholeWord)
+        // Every dictionary type is saved in the same entry format.
+        for (type in DictionaryType.entries) {
+            val file = File(dictionaryDir, type.fileName)
+            if (!file.isFile) {
+                logDebug { "No user ${type.fileName} found" }
+                continue
+            }
+
+            try {
+                val entries = DictionaryJson.parse(file.readText(Charsets.UTF_8))
+                var count = 0
+                for (entry in entries) {
+                    if (entry.grapheme.isEmpty() || entry.phoneme.isEmpty()) continue
+                    when (type) {
+                        DictionaryType.MAIN -> engine.addPronunciation(
+                            entry.grapheme, entry.phoneme, entry.caseSensitive, entry.wholeWord
+                        )
+                        DictionaryType.SPELLING -> engine.addSpellingEntry(entry.grapheme, entry.phoneme)
+                        DictionaryType.EMOJI -> engine.addEmojiEntry(entry.grapheme, entry.phoneme)
+                    }
                     count++
                 }
+                Log.i(TAG, "Loaded $count user entries from ${type.fileName}")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to load user ${type.fileName}: ${e.message}")
             }
-            Log.i(TAG, "Loaded $count user dictionary entries")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to load user dictionary: ${e.message}")
         }
     }
 
@@ -458,10 +487,11 @@ class LaprdusTTSService : TextToSpeechService() {
 
     /**
      * Check if a language is supported.
-     * Supports Croatian (hr) and Serbian (sr).
+     * Supports Croatian (hr), Serbian (sr) and Bosnian (bs).
      *
      * The Android framework passes ISO3 codes on this boundary ("hrv"/"HRV",
-     * "srp"/"SRB"), while apps may pass ISO2 ("hr"/"HR"), so both are accepted.
+     * "srp"/"SRB", "bos"/"BIH"), while apps may pass ISO2 ("hr"/"HR"), so both
+     * are accepted.
      *
      * For any other language this deliberately still reports LANG_AVAILABLE
      * instead of LANG_NOT_SUPPORTED: TTS settings and screen readers probe
@@ -489,6 +519,13 @@ class LaprdusTTSService : TextToSpeechService() {
                     TextToSpeech.LANG_AVAILABLE
                 }
             }
+            "bs", "bos" -> {
+                if (normalizedCountry == "ba" || normalizedCountry == "bih") {
+                    TextToSpeech.LANG_COUNTRY_AVAILABLE
+                } else {
+                    TextToSpeech.LANG_AVAILABLE
+                }
+            }
             else -> TextToSpeech.LANG_AVAILABLE
         }
     }
@@ -498,10 +535,33 @@ class LaprdusTTSService : TextToSpeechService() {
      * The framework expects ISO3 language and country codes here.
      */
     override fun onGetLanguage(): Array<String> {
-        return when {
-            currentVoiceId in listOf("vlado", "djed") -> arrayOf("srp", "SRB", "")
+        return when (languageOfVoice(currentVoiceId)) {
+            "sr" -> arrayOf("srp", "SRB", "")
+            "bs" -> arrayOf("bos", "BIH", "")
             else -> arrayOf("hrv", "HRV", "")
         }
+    }
+
+    /** Two-letter language of a voice. */
+    private fun languageOfVoice(voiceId: String): String = when (voiceId) {
+        "vlado", "djed", "stojan", "trubac", "harmonikas", "pevac" -> "sr"
+        "mirsad", "sevdalija", "sazlija", "solist" -> "bs"
+        else -> "hr"
+    }
+
+    /** Two-letter code of a language Laprdus speaks, null for any other. */
+    private fun spokenLanguage(lang: String): String? = when (lang.lowercase()) {
+        "hr", "hrv" -> "hr"
+        "sr", "srp" -> "sr"
+        "bs", "bos" -> "bs"
+        else -> null
+    }
+
+    /** Default voice of a language: its formant voice. */
+    private fun defaultVoiceFor(language: String?): String = when (language) {
+        "sr" -> "stojan"
+        "bs" -> "mirsad"
+        else -> "zvonko"
     }
 
     /**
@@ -512,12 +572,13 @@ class LaprdusTTSService : TextToSpeechService() {
     override fun onLoadLanguage(lang: String, country: String?, variant: String?): Int {
         val available = onIsLanguageAvailable(lang, country, variant)
 
-        // Select appropriate default voice
-        val normalizedLang = lang.lowercase()
-        val voiceId = when {
-            normalizedLang == "hr" || normalizedLang == "hrv" -> "josip"
-            normalizedLang == "sr" || normalizedLang == "srp" -> "vlado"
-            else -> currentVoiceId
+        // A voice that already speaks the requested language is kept, so the
+        // voice the user chose is not replaced by the language's default.
+        val language = spokenLanguage(lang)
+        val voiceId = if (language == null || language == languageOfVoice(currentVoiceId)) {
+            currentVoiceId
+        } else {
+            defaultVoiceFor(language)
         }
 
         return try {
@@ -548,6 +609,7 @@ class LaprdusTTSService : TextToSpeechService() {
             val locale = when (info.languageCode) {
                 "hr-HR" -> Locale.forLanguageTag("hr-HR")
                 "sr-RS" -> Locale.forLanguageTag("sr-RS")
+                "bs-BA" -> Locale.forLanguageTag("bs-BA")
                 else -> Locale.forLanguageTag("hr-HR")
             }
 
@@ -622,12 +684,7 @@ class LaprdusTTSService : TextToSpeechService() {
         country: String?,
         variant: String?
     ): String {
-        val normalizedLang = lang.lowercase()
-        return when {
-            normalizedLang == "hr" || normalizedLang == "hrv" -> "josip"
-            normalizedLang == "sr" || normalizedLang == "srp" -> "vlado"
-            else -> "josip"
-        }
+        return defaultVoiceFor(spokenLanguage(lang))
     }
 
     /**
@@ -708,13 +765,17 @@ class LaprdusTTSService : TextToSpeechService() {
             // Use cached settings (non-blocking) - falls back to defaults if not yet loaded
             val settings = cachedSettings
 
+            // The recorded voices take 0.5 - 2.0, the formant voices 0.25 - 4.0
+            // (and multiply the rate by the acceleration setting).
+            val range = VoiceInfo.rangeFor(currentVoiceId)
+
             // Apply speech rate - use Laprdus settings if force is enabled
             val speechRate = if (settings?.forceSpeed == true) {
                 logDebug { "Using forced Laprdus speed: ${settings.speed}" }
                 settings.speed
             } else {
                 // Android uses 100 as normal = 1.0
-                (request.speechRate / 100f).coerceIn(0.5f, 2.0f)
+                (request.speechRate / 100f).coerceIn(range)
             }
             engine.speed = speechRate
 
@@ -724,7 +785,7 @@ class LaprdusTTSService : TextToSpeechService() {
                 settings.pitch
             } else {
                 // Android uses 100 as normal = 1.0
-                (request.pitch / 100f).coerceIn(0.5f, 2.0f)
+                (request.pitch / 100f).coerceIn(range)
             }
             engine.pitch = pitch
 

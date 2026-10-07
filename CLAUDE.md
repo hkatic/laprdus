@@ -4,11 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-LaprdusTTS is a Croatian/Serbian text-to-speech (TTS) engine supporting:
+LaprdusTTS is a Croatian/Serbian/Bosnian text-to-speech (TTS) engine supporting:
 - **SAPI5** (Windows Speech API) for system-wide TTS integration
 - **NVDA** screen reader synthesizer driver
 
-It uses concatenative synthesis by joining pre-recorded phoneme WAV files to produce speech output.
+It has two kinds of voices:
+- **Concatenative** voices (Josip, Vlado and the voices derived from them) are rendered from pre-recorded phoneme WAV files by TD-PSOLA. See "Recorded Voices" below and `docs/concatenative.md`.
+- **Formant** voices (Zvonko, Stojan, Mirsad) are synthesized entirely by rule and need no data files. See "Formant Voices" below.
 
 ## Architecture
 
@@ -25,11 +27,20 @@ It uses concatenative synthesis by joining pre-recorded phoneme WAV files to pro
 | `src/core/tts_engine.cpp` | Main engine orchestrating synthesis pipeline |
 | `src/core/phoneme_mapper.cpp` | UTF-8 text → phoneme token conversion |
 | `src/core/croatian_numbers.cpp` | Number-to-words (supports up to centillions) |
-| `src/core/inflection.cpp` | Punctuation-based pitch/emphasis modulation |
+| `src/core/inflection.cpp` | Clause segmentation at punctuation, pause settings |
 | `src/core/voice_registry.cpp` | Voice definitions (Josip, Vlado, derived voices) |
-| `src/audio/audio_synthesizer.cpp` | Phoneme concatenation with crossfade |
+| `src/audio/audio_synthesizer.cpp` | Recorded voices: clause synthesis (front end → planner → renderer) |
+| `src/audio/unit_bank.cpp` | Recorded voices: analysis of the recordings (pitch marks, voicing, bursts) |
+| `src/audio/concat_prosody.cpp` | Recorded voices: durations, closures, word gaps, pitch contour |
+| `src/audio/psola.cpp` | Recorded voices: TD-PSOLA renderer |
 | `src/audio/phoneme_data.cpp` | WAV file loading from .bin or directory |
 | `src/c_api/laprdus_api.cpp` | C API for external consumers |
+| `src/formant/formant_frontend.cpp` | Formant voices: text → phones (letter-to-sound, stress, clitics, assimilation) |
+| `src/formant/formant_lexicon.cpp` | Formant voices: built-in accent lexicon |
+| `src/formant/formant_intonation.cpp` | Intonation model (accents, boundary movements, declination) shared by both kinds of voices |
+| `src/formant/formant_phonemes.cpp` | Formant voices: acoustic targets of every phone |
+| `src/formant/formant_synthesizer.cpp` | Formant voices: durations, formant tracks, intonation |
+| `src/formant/klatt_synth.cpp` | Formant voices: cascade/parallel (Klatt) synthesizer |
 
 ### Platform-Specific Code
 
@@ -42,21 +53,20 @@ It uses concatenative synthesis by joining pre-recorded phoneme WAV files to pro
 
 ### Processing Pipeline
 
-1. Text → `TTSEngine::preprocess_text()` → Number expansion
-2. → `InflectionProcessor::analyze_text()` → Segment by punctuation
-3. → `PhonemeMapper::map_text()` → UTF-8 to phoneme tokens
-4. → `AudioSynthesizer::synthesize()` → Concatenate WAV samples with crossfade
-5. → Apply volume, rate, pitch transformations
-6. → `InflectionProcessor::apply_inflection()` → Pitch contours
-7. → Output 16-bit PCM @ 22050Hz mono
+1. Text → `TTSEngine::preprocess_text()` → Number expansion, dictionaries
+2. → `InflectionProcessor::analyze_text()` → Segment into clauses by punctuation
+3. → `formant::Frontend::process()` → phones with stress, words, clause kind (both kinds of voices)
+4. → Recorded voices: `concat::plan_clause()` (durations, pitch contour) → `concat::render()` (TD-PSOLA)
+   Formant voices: `ClauseBuilder` → `KlattSynth`
+5. → Output 16-bit PCM @ 22050Hz mono; rate, pitch, volume and intonation are applied at the source by both
 
 ### Phoneme System
 
 - **Format**: 16-bit PCM WAV, 22050 Hz, mono
 - **Storage**: Packed `.bin` files (Josip.bin, Vlado.bin) or raw WAV directory
 - **Croatian phonemes**: A-Z + č, ć, đ, š, ž, lj, nj, dž
-- **Truncation**: L, M, N, S, SH, V, Z, ZH capped at 2000 bytes
-- **Crossfade**: 64 samples (~3ms) between phonemes
+- **Analysis at load**: DC removal, pitch marks, voicing, burst onset per recording (`unit_bank.cpp`)
+- **Joins**: pitch-synchronous crossfade of whole periods (no fixed crossfade, no truncation)
 
 ### Voice System
 
@@ -67,17 +77,66 @@ It uses concatenative synthesis by joining pre-recorded phoneme WAV files to pro
 | detence | Derived (josip) | Croatian | 1.5 (child) |
 | baba | Derived (josip) | Croatian | 1.2 (grandma) |
 | djed | Derived (vlado) | Serbian | 0.75 (grandpa, Đedo) |
+| zvonko | Formant | Croatian | 1.0 |
+| stojan | Formant | Serbian | 1.0 |
+| mirsad | Formant | Bosnian | 1.0 |
+| orguljas | Singing preset (zvonko) | Croatian | 1.0 (pipe organ) |
+| klapa | Singing preset (zvonko) | Croatian | 1.0 (klapa choir) |
+| trubac | Singing preset (stojan) | Serbian | 1.0 (trumpet) |
+| harmonikas | Singing preset (stojan) | Serbian | 1.0 (accordion) |
+| sevdalija | Singing preset (mirsad) | Bosnian | 1.0 (sevdah singer) |
+| sazlija | Singing preset (mirsad) | Bosnian | 1.0 (saz) |
+| pjevac | Singing preset (zvonko) | Croatian | 1.0 (own voice, own pitch) |
+| pevac | Singing preset (stojan) | Serbian | 1.0 (own voice, own pitch) |
+| solist | Singing preset (mirsad) | Bosnian | 1.0 (own voice, own pitch) |
+| becarac | Singing preset (zvonko) | Croatian | 1.0 (own voice, bećarac tune) |
+
+**Default voices.** The formant voice of a language is its default on every platform: Zvonko for Croatian, Stojan for Serbian, Mirsad for Bosnian (CLI `-v` default, Speech Dispatcher `MALE1` and language requests, Android `DEFAULT_VOICE` / `onLoadLanguage` / fallback voice, NVDA by NVDA's language, Apple by the device's preferred language, Windows config GUI). A voice the user has chosen is never replaced when it already speaks the requested language. The recorded voices stay available. SAPI5 has no Laprdus-side default: Windows picks among the registered tokens.
+
+`laprdus_set_voice()` applies the voice's base pitch itself (times the last `laprdus_set_pitch()` value), so derived voices sound right without a pitch call after every voice change.
+
+`VoiceDefinition::synthesis` (`VoiceSynthesis::Concatenative` / `Formant`) tells the two kinds apart. Formant voices have no `data_filename`; `laprdus_set_voice()` accepts any data directory for them. New voices must be appended to the registry: existing code and saved settings rely on the order of the first five.
 
 ### Audio Parameters (types.hpp)
 
 ```cpp
 struct VoiceParams {
-    float speed = 1.0f;       // 0.5 - 2.0 (tempo, time-stretching)
+    float speed = 1.0f;       // 0.5 - 2.0 (tempo, time-stretching); formant voices 0.25 - 4.0
     float pitch = 1.0f;       // 0.25 - 4.0 (voice character pitch)
-    float user_pitch = 1.0f;  // 0.5 - 2.0 (user pitch preference)
+    float user_pitch = 1.0f;  // 0.5 - 2.0 (user pitch preference); formant voices 0.25 - 4.0
     float volume = 1.0f;      // 0.0 - 1.0
     bool inflection_enabled = true;
+    float inflection_level = 0.5f;  // formant voices: 0 monotone, 0.5 as measured, 1 twice the movements
+    float acceleration = 1.0f;      // formant voices: rate multiplier 0.5 - 3.0
 };
+```
+
+## Formant Voices
+
+Zvonko (hr), Stojan (sr) and Mirsad (bs) live in `src/formant/` and share the text preprocessing of the concatenative voices (emoji and pronunciation dictionaries, number expansion, clause segmentation). From there `TTSEngine::synthesize_segments()` hands each clause to `FormantSynthesizer::synthesize_clause()`:
+
+1. `Frontend::process()` - Cyrillic → Latin, digraphs (lj, nj, dž), the ijekavian *ije* diphthong, syllabic r, spelled-out abbreviations; stress from accent marks in the text, the lexicon, suffix rules, or the first syllable; proclitics/enclitics; voicing and place assimilation.
+2. `ClauseBuilder` - segment durations, formant targets and locus-based transitions, source amplitudes, and the F0 contour (word accents, declination, boundary movement chosen by the clause's punctuation).
+3. `KlattSynth::render()` - glottal source, cascade formants for voiced sound and aspiration, parallel resonators for frication and bursts.
+
+Things to know before changing them:
+
+- **Speed, pitch and volume are applied at the source** (durations, F0, gain), so `VoiceParams::pitch` and `user_pitch` both simply scale F0.
+- **Wider ranges and two settings of their own.** `VoiceParams::clamp()` allows speed and `user_pitch` from 0.25 to 4.0; the concatenative `AudioSynthesizer` narrows them to its 0.5-4.0 / 0.5-2.0 itself, so every platform may pass the wide range and let the engine sort it out. `inflection_level` (0-1, default 0.5) scales the whole F0 contour in semitones (0 is a monotone, 1 doubles every movement) and `acceleration` (0.5-3.0, default 1.0) multiplies the speed (`VoiceParams::formant_speed()`, capped at 8.0), so a host's rate slider reaches a higher or lower top rate. Both are `laprdus_set_inflection_level()` / `laprdus_set_acceleration()` in the C API, `speech.inflection_level` / `speech.acceleration` in `settings.json`, keys `inflection_level` / `acceleration` on Android and Apple, and are shown only for formant voices. `laprdus_get_nominal_wpm(voice)` (175 words/min for Zvonko at speed 1.0, times the voice's tempo) lets a UI print the top rate in words per minute: nominal × 2.0 (the slider's top) × acceleration. The Speech Dispatcher module maps SSIP `pitch_range` onto the inflection level.
+- **Number words follow the voice language**: `CroatianNumbers::set_dialect()` is set by `TTSEngine::initialize_formant()` (tisuća/milijun/dvjesto, hiljada/milion/dvesta, hiljada/milion/dvjesto) and reset to Croatian when a concatenative voice is loaded, so Josip and Vlado are unchanged. One and two agree with the feminine scale words in every dialect (dvije tisuće, dve hiljade, dvadeset jedna tisuća, dvije milijarde).
+- **Synthesis is deterministic**: the same text and settings give the same samples (`tests/linux/test_formant.cpp` relies on it).
+- **Acoustic values come from measurements**, not from taste: vowel formants and durations from Bakran's work on standard Croatian, consonant spectra, levels and transitions from analysis of recorded Croatian speech. `docs/formant.md` records the sources, the measured values and how to repeat the measurements. Change numbers in `formant_phonemes.cpp` only with a measurement or a listening test behind them.
+- **Stress** is lexical and cannot be fully predicted. To fix a word, add it to `formant_lexicon.cpp` (notation at the top of the file) and check its whole paradigm, not just the dictionary form: the accent often moves in the other cases and persons (sìgnal/signála, podátak/pòdātākā, obavijéstiti/obàvijēstīm), and a stem entry also catches derived words with a different accent (see "Stress" in `docs/formant.md`). Verbs are not listed form by form: `IJE_VERBS` has the roots with a long *ije* (podijeliti, promijeniti), `VERBS` whole stems with accent and conjugation class (`ur'e:d=i`), and `StressRules::verb_form()` builds the forms; an imperative that is also a noun's case (potvrdi, uredi) is the verb only at the head of a clause; users can do the same from a pronunciation dictionary by writing accent marks in the replacement (`telèfon`).
+- **Users have their own accent lexicon**: `accents.json` next to the user dictionaries, entries in the built-in notation as JSON (`{ "word": "kontr'o:l*" }`, `{ "verb": "ur'e:d=i<p" }`, optional `"language"`). `formant::UserLexicon` parses and validates it once; `Frontend::set_user_lexicon()` consults the user's forms, stems and verbs before the built-in ones. The engine keeps it across voice changes (`TTSEngine::load_accent_lexicon()`, C API `laprdus_load_accent_lexicon()`, report via `laprdus_get_accent_lexicon_report()`); `laprdus_load_user_config()`, both CLIs, SAPI5, NVDA, Android (`LaprdusTTS.loadAccentLexicon`) and Apple (`DictionaryState.accentLexiconURL`) load it with the user dictionaries, and user dictionaries off removes it. See "Stress" in `docs/formant.md` and 5.11 in `docs/laprdus.md`.
+- Platform code that bypasses `laprdus_set_voice()` must check `VoiceRegistry::is_formant_voice()` and call `TTSEngine::initialize_formant()` (see the Android JNI bridge and the SAPI5 driver).
+
+**Singing presets.** `orguljas`, `klapa`, `pjevac` (Zvonko), `trubac`, `harmonikas`, `pevac` (Stojan), `sevdalija`, `sazlija`, `solist` (Mirsad), `becarac` (Zvonko, the bećarac tune) are formant voices whose `FormantVoice::singing` points at a `SingingStyle` (song, sound source, chorus, sub-octave, reverb, vibrato, note envelope, transpose; all in `formant_synthesizer.cpp`). They sing the text to a public-domain folk song, one syllable per note (a `~` note in the song notation is a melisma, `R` a rest), the vowel on the beat with the consonants before it; the song restarts with every synthesis call (`TTSEngine::begin_utterance()`), and clauses of one call continue it. Rate = tempo, pitch = transposition, inflection level = vibrato depth. `SingingStyle::dry` (pjevac, pevac, solist) keeps the voice's own source and phonation and transposes the song so the middle of its range sits five semitones above the voice's `base_f0`. Notes without a rest between them are legato: the attack envelope is applied only after a rest or at the start of a clause. Base voice is in `base_voice_id` (platform code uses it only as metadata; `data_filename` stays null). The instrument sources (`SourceKind`), chorus, sub-octave and reverb live in `klatt_synth.cpp`; the speaking voices do not use them and their output is unchanged. See "Singing presets" in `docs/formant.md`.
+
+```bash
+B=build/macos-arm64-release
+$B/laprdus -D $B -v zvonko "Dobar dan, kako ste?"
+$B/laprdus -D $B -v stojan -o out.wav "Добар дан!"
+$B/laprdus -D $B -v mirsad -r 2.0 "Brzo, ali razgovijetno."
 ```
 
 ## C API
@@ -102,29 +161,24 @@ laprdus_destroy(handle);
 
 ## Audio Processing
 
-### Sonic Library Integration
-Rate and pitch are controlled independently using the Sonic library (`src/audio/sonic/`):
-- **Speed** (rate): Time-stretching via PICOLA algorithm - changes tempo WITHOUT changing pitch
-- **Pitch** (voice character): Pitch-shifting with formant shift - intentionally changes voice character (used for derived voices like child, grandma, grandpa)
-- **User Pitch**: Pitch-shifting for user preference - intended to preserve voice character
+### Recorded Voices (TD-PSOLA)
 
-The wrapper is in `src/audio/sonic_processor.cpp`.
+Rate, pitch and intonation of Josip and Vlado are produced by time-domain pitch-synchronous overlap-add over the pitch marks of the recordings (`src/audio/psola.cpp`), with no third-party library. `docs/concatenative.md` has the full description.
+
+- **Speed** (rate): the planner shortens or lengthens every segment's duration (same rules as the formant voices, rate floors for consonants); the renderer repeats or skips periods. Bursts are never stretched; closures take the time at slow rates and lose it first at fast ones.
+- **Pitch** (voice character, derived voices): the spectrum of the recordings is warped by `sqrt(pitch)` at analysis time (a child's vocal tract), and the pitch itself by `pitch` at rendering.
+- **User Pitch**: the output period spacing alone; formants stay where they are.
+- **Intonation**: the shared `formant::Intonation` model draws the contour from the front end's stress and clause kind.
 
 ### Dual Pitch System
 Two separate pitch parameters serve different purposes:
 
 | Parameter | Range | Purpose | Effect |
 |-----------|-------|---------|--------|
-| `pitch` | 0.25 - 4.0 | Voice character (derived voices) | Shifts formants - changes voice identity |
-| `user_pitch` | 0.5 - 2.0 | User preference (SAPI5/NVDA slider) | Adjusts F0 - keeps voice identity |
+| `pitch` | 0.25 - 4.0 | Voice character (derived voices) | Recorded: formants × sqrt(pitch), F0 × pitch. Formant voices: F0 × pitch |
+| `user_pitch` | 0.5 - 2.0 (formant 0.25 - 4.0) | User preference (SAPI5/NVDA slider) | F0 only - keeps voice identity |
 
-**Processing order in AudioSynthesizer::synthesize():**
-1. Volume adjustment
-2. Speed/rate (Sonic time-stretching)
-3. Voice character pitch (`pitch`) - Sonic pitch shift
-4. User pitch preference (`user_pitch`) - formant_pitch.cpp
-
-**Note:** The formant-preserving algorithm in `src/audio/formant_pitch.cpp` currently uses Sonic as a placeholder. The architecture is in place for a true formant-preserving implementation (e.g., stftPitchShift with cepstral analysis) when C++20 compatibility allows it.
+`TTSEngine::set_language()` tells the recorded voices' front end which language's rules and lexicon to use (`laprdus_set_voice()`, the SAPI5 driver and the Android bridge call it); number words stay Croatian for Josip and Vlado.
 
 ## Dependencies
 
@@ -262,7 +316,7 @@ scons --platform=windows --arch=x86 --build-config=release sapi5
 iscc installers/windows/laprdus_sapi5.iss
 ```
 
-Output: `installers/windows/Output/Laprdus_SAPI5_Setup_1.0.0.exe`
+Output: `installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe`
 
 #### Windows CLI
 
@@ -306,9 +360,11 @@ echo "Text" | laprdus.exe -o output.wav
 **CLI Options:**
 | Option | Description |
 |--------|-------------|
-| `-v, --voice` | Select voice (josip, vlado, detence, baba, djed) |
-| `-r, --speech-rate` | Speech rate 0.5-2.0 (default: 1.0) |
-| `-p, --speech-pitch` | Speech pitch 0.5-2.0 (default: 1.0) |
+| `-v, --voice` | Select voice (zvonko (default), stojan, mirsad, josip, vlado, detence, baba, djed) |
+| `-r, --speech-rate` | Speech rate 0.5-2.0 (default: 1.0); formant voices 0.25-4.0 |
+| `-p, --speech-pitch` | Speech pitch 0.5-2.0 (default: 1.0); formant voices 0.25-4.0 |
+| `-I, --inflection` | Inflection of the formant voices 0-100 (default: 50; 0 is a monotone) |
+| `-a, --acceleration` | Rate multiplier of the formant voices 0.5-3.0 (default: 1.0) |
 | `-V, --speech-volume` | Volume 0.0-1.0 (default: 1.0) |
 | `-d, --numbers-digits` | Speak numbers as digits |
 | `-c, --comma-pauses` | Comma pause duration in ms |
@@ -495,7 +551,7 @@ The native library uses `-Wl,-z,max-page-size=16384` linker flag for Android 15+
 `LaprdusTTSService` is `android:directBootAware="true"` so TalkBack can use Laprdus on the lock screen after a reboot, before the first unlock. Everything the service needs at that point lives in **device-protected (DE) storage** under `/data/user_de/0/<pkg>/files`:
 
 - settings DataStore: `datastore/laprdus_settings.preferences_pb` (opened via `deviceProtectedDataStoreFile`, process singleton in `LaprdusStorage`)
-- user dictionaries: `user.json`, `spelling.json`, `emoji.json` (written atomically via `AtomicFiles`)
+- user dictionaries: `user.json`, `spelling.json`, `emoji.json` (written atomically via `AtomicFiles`), and the accent lexicon `accents.json` if present (no editor yet)
 
 Voice data and bundled dictionaries load from APK assets, so synthesis itself never depends on storage.
 
@@ -574,9 +630,11 @@ laprdus -l
 
 | Option | Long Form | Description |
 |--------|-----------|-------------|
-| `-v` | `--voice` | Select voice (josip, vlado, detence, baba, djed) |
-| `-r` | `--speech-rate` | Speech rate (0.5-2.0, default 1.0) |
-| `-p` | `--speech-pitch` | Speech pitch (0.5-2.0, default 1.0) |
+| `-v` | `--voice` | Select voice (zvonko (default), stojan, mirsad, josip, vlado, detence, baba, djed) |
+| `-r` | `--speech-rate` | Speech rate (0.5-2.0, default 1.0; formant voices 0.25-4.0) |
+| `-p` | `--speech-pitch` | Speech pitch (0.5-2.0, default 1.0; formant voices 0.25-4.0) |
+| `-I` | `--inflection` | Inflection of the formant voices (0-100, default 50) |
+| `-a` | `--acceleration` | Rate multiplier of the formant voices (0.5-3.0, default 1.0) |
 | `-V` | `--speech-volume` | Volume (0.0-1.0, default 1.0) |
 | `-d` | `--numbers-digits` | Speak numbers as digits |
 | `-c` | `--comma-pauses` | Comma pause duration in ms |
@@ -633,12 +691,12 @@ DefaultModule laprdus  # Optional: set as default
 
 ```bash
 # Debian/Ubuntu
-sudo dpkg -i laprdus_1.0.0_amd64.deb
-sudo dpkg -i laprdus-speechd_1.0.0_amd64.deb
+sudo dpkg -i laprdus_2.0.0_amd64.deb
+sudo dpkg -i laprdus-speechd_2.0.0_amd64.deb
 
 # Fedora/RHEL
-sudo rpm -i laprdus-1.0.0.x86_64.rpm
-sudo rpm -i laprdus-speechd-1.0.0.x86_64.rpm
+sudo rpm -i laprdus-2.0.0.x86_64.rpm
+sudo rpm -i laprdus-speechd-2.0.0.x86_64.rpm
 
 # Arch Linux
 makepkg -si  # From PKGBUILD directory
@@ -647,8 +705,8 @@ makepkg -si  # From PKGBUILD directory
 #### From tarball
 
 ```bash
-tar xf laprdus-1.0.0-linux-x86_64.tar.xz
-cd laprdus-1.0.0-linux-x86_64
+tar xf laprdus-2.0.0-linux-x86_64.tar.xz
+cd laprdus-2.0.0-linux-x86_64
 sudo ./install.sh
 ```
 
@@ -696,7 +754,7 @@ cd ..
 |----------|-------------|
 | Windows SAPI5 x64 | `build/windows-x64-release/laprd64.dll` |
 | Windows SAPI5 x86 | `build/windows-x86-release/laprd32.dll` |
-| Windows Installer | `installers/windows/Output/Laprdus_SAPI5_Setup_1.0.0.exe` |
+| Windows Installer | `installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe` |
 | Linux Library | `build/linux-x64-release/liblaprdus.so` |
 | Linux CLI | `build/linux-x64-release/laprdus` |
 | Linux Speech Dispatcher | `build/linux-x64-release/sd_laprdus` |
@@ -726,7 +784,7 @@ No manual copying is required - the build systems handle this automatically.
 ### When to Trigger Full Rebuild
 
 Rebuild all platforms after changes to:
-- **C++ core engine** (`src/core/`, `src/audio/`, `src/c_api/`)
+- **C++ core engine** (`src/core/`, `src/audio/`, `src/formant/`, `src/c_api/`)
 - **SAPI5 driver** (`src/platform/windows/sapi5/`)
 - **NVDA addon** (`nvda-addon/addon/synthDrivers/laprdus/`)
 - **Dictionaries** (`data/dictionary/*.json`)
@@ -824,10 +882,10 @@ After rebuilding, launch installers for user testing:
 
 ```bash
 # Launch SAPI5 installer
-start "" "installers/windows/Output/Laprdus_SAPI5_Setup_1.0.0.exe"
+start "" "installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe"
 
 # Launch NVDA addon installer
-start "" "nvda-addon/laprdus-1.0.0.nvda-addon"
+start "" "nvda-addon/laprdus-2.0.0.nvda-addon"
 ```
 
 ### Android Device Testing
@@ -923,6 +981,24 @@ LD_LIBRARY_PATH=build/linux-x64-release \
     LAPRDUS_DATA=./build/linux-x64-release \
     ./build/linux-x64-release/test_cli
 
+# Formant voice tests (need no voice data except for one voice-switching test)
+g++ -std=c++17 -I include -I tests/linux tests/linux/test_formant.cpp \
+    -o build/linux-x64-release/test_formant -L build/linux-x64-release -llaprdus -lpthread
+LD_LIBRARY_PATH=build/linux-x64-release LAPRDUS_DATA=./build/linux-x64-release \
+    ./build/linux-x64-release/test_formant
+
+# Recorded voice tests (rate, pitch, derived voices, melody, streaming)
+g++ -std=c++17 -I include -I tests/linux tests/linux/test_concat.cpp \
+    -o build/linux-x64-release/test_concat -L build/linux-x64-release -llaprdus -lpthread
+LD_LIBRARY_PATH=build/linux-x64-release LAPRDUS_DATA=./build/linux-x64-release \
+    ./build/linux-x64-release/test_concat
+
+# The same tests on macOS (the dylib is found through @rpath next to the binary)
+B=build/macos-arm64-release
+clang++ -std=c++17 -I include -I tests/linux tests/linux/test_formant.cpp \
+    -o $B/test_formant -L $B -llaprdus -Wl,-rpath,@loader_path
+LAPRDUS_DATA=$B $B/test_formant
+
 # Run Speech Dispatcher tests (should show "5 passed, 0 failed")
 LD_LIBRARY_PATH=build/linux-x64-release \
     ./build/linux-x64-release/test_speechd_module
@@ -939,9 +1015,11 @@ LD_LIBRARY_PATH=build/linux-x64-release \
 - [ ] CLI tests pass (20/20)
 - [ ] Speech Dispatcher tests pass (5/5 mapping tests, integration tests may skip)
 - [ ] CLI `-h` displays help correctly
-- [ ] CLI `-l` lists all 5 voices
+- [ ] CLI `-l` lists all 8 voices
 - [ ] CLI synthesizes audio to WAV file correctly
-- [ ] All voices synthesize correctly (josip, vlado, detence, baba, djed)
+- [ ] All voices synthesize correctly (josip, vlado, detence, baba, djed, zvonko, stojan, mirsad)
+- [ ] Formant voice tests pass (`test_formant`)
+- [ ] Recorded voice tests pass (`test_concat`, needs `LAPRDUS_DATA`)
 
 #### Linux Package Testing (if building packages)
 
@@ -974,7 +1052,7 @@ rpmdev-setuptree
 **3. Create source tarball and build:**
 ```bash
 # From project root
-tar --transform='s,^\.,laprdus-1.0.0,' -czf ~/rpmbuild/SOURCES/laprdus-1.0.0.tar.gz \
+tar --transform='s,^\.,laprdus-2.0.0,' -czf ~/rpmbuild/SOURCES/laprdus-2.0.0.tar.gz \
     --exclude='.git' --exclude='build' --exclude='*.pyc' --exclude='__pycache__' \
     --exclude='android/.gradle' --exclude='android/app/build' \
     --exclude='nvda-addon/*.nvda-addon' --exclude='.sconsign*' .
@@ -986,9 +1064,9 @@ rpmbuild -ba ~/rpmbuild/SPECS/laprdus.spec
 
 **4. Output files:**
 ```
-~/rpmbuild/RPMS/x86_64/laprdus-1.0.0-1.fc*.x86_64.rpm      # Main package
-~/rpmbuild/RPMS/x86_64/laprdus-devel-1.0.0-1.fc*.x86_64.rpm # Dev headers
-~/rpmbuild/SRPMS/laprdus-1.0.0-1.fc*.src.rpm               # Source RPM
+~/rpmbuild/RPMS/x86_64/laprdus-2.0.0-1.fc*.x86_64.rpm      # Main package
+~/rpmbuild/RPMS/x86_64/laprdus-devel-2.0.0-1.fc*.x86_64.rpm # Dev headers
+~/rpmbuild/SRPMS/laprdus-2.0.0-1.fc*.src.rpm               # Source RPM
 ```
 
 **5. Copy to project directory:**
@@ -1000,8 +1078,8 @@ cp ~/rpmbuild/RPMS/x86_64/laprdus*.rpm ~/rpmbuild/SRPMS/laprdus*.rpm \
 **6. Install and test:**
 ```bash
 # Install (use rpm directly due to self-dependency on liblaprdus.so)
-sudo rpm -ivh --nodeps ~/rpmbuild/RPMS/x86_64/laprdus-1.0.0-1.fc*.x86_64.rpm \
-    ~/rpmbuild/RPMS/x86_64/laprdus-devel-1.0.0-1.fc*.x86_64.rpm
+sudo rpm -ivh --nodeps ~/rpmbuild/RPMS/x86_64/laprdus-2.0.0-1.fc*.x86_64.rpm \
+    ~/rpmbuild/RPMS/x86_64/laprdus-devel-2.0.0-1.fc*.x86_64.rpm
 
 # Test
 laprdus -l              # List voices
@@ -1157,7 +1235,7 @@ The Apple port lives in `Lapplerdus/Laprdus/Laprdus.xcodeproj` (Xcode 26+) and m
 | Target | Purpose |
 |--------|---------|
 | `Laprdus` | Multiplatform SwiftUI app (iOS, iPadOS, macOS) with a 4-tab layout: Main (sample text + play button), Settings, Dictionaries, About |
-| `LaprdusVoices` | Speech synthesis provider app extension (`AVSpeechSynthesisProviderAudioUnit`, `ausp` Audio Unit) — exposes the 5 voices system-wide to VoiceOver/Spoken Content, like the Android `TextToSpeechService` |
+| `LaprdusVoices` | Speech synthesis provider app extension (`AVSpeechSynthesisProviderAudioUnit`, `ausp` Audio Unit) — exposes the 8 voices system-wide to VoiceOver/Spoken Content, like the Android `TextToSpeechService` |
 | `LaprdusTests` | Unit tests (Swift Testing), hosted in the app |
 
 ### Structure
@@ -1175,8 +1253,15 @@ Lapplerdus/Laprdus/
 
 - The C++ engine is compiled **directly into both targets** from `src/core`, `src/audio`, `src/c_api` (same approach as the Android CMake build; file references in the Xcode project point at `../../src/...`). C++17, `LAPRDUS_VERSION_*` defines set in build settings.
 - Voice data (`data/voices/*.bin`) and dictionaries (`data/dictionary/*.json`) are bundle resources of both targets. **On a fresh checkout, generate voice data first** (`scons ... voice-data` or `./scripts/build-all.sh voice-data`) — `.bin` files are gitignored.
+- **What the system needs before it lists the voices** (from Apple's "Creating a custom speech synthesizer" sample and from other working speech extensions; all three were missing until October 2026). Note: on macOS 27 the voice load was still failing after these were added (`TextToSpeech.MultiError`, extension never launched), with the cause not yet found:
+  - the extension's `AudioComponents` entry declares `sandboxSafe` (`Config/LaprdusVoices-Info.plist`);
+  - the app calls `AVSpeechSynthesisProviderVoice.updateSpeechVoices()` (`SystemVoices.update()` in `LaprdusApp.swift`); registering the extension alone is not enough;
+  - the app group is one the platform actually grants: `group.com.hrvojekatic.laprdus` on iOS, `<team id>.com.hrvojekatic.laprdus` on macOS. Both come from the build setting `LAPRDUS_APP_GROUP` (per-SDK in the project file), are expanded into the entitlements, and are read back at run time by `AppGroup.identifier`. A `group.` identifier that the macOS provisioning profile does not list is refused by the system.
+- To check what the system did with the voices: `/usr/bin/log show --last 10m --predicate 'process == "axassetsd" AND category == "VoiceDB"'` ("Set N records for loader: ausp_lprd_HKTC" is success).
 - Settings use the shared app-group `UserDefaults` suite with the **same keys and defaults as the Android DataStore** (`default_voice`, `speed`, `pitch`, `volume`, `force_speed`/`force_pitch`/`force_volume`, `emoji_enabled`, `inflection_enabled`, `*_pause`, `number_mode`, `user_dictionaries_enabled`). The user pitch slider maps to `laprdus_set_user_pitch`; voice-character pitch comes from the registry via `laprdus_set_voice`.
-- User dictionaries are stored in the app group container (`Dictionaries/user.json`, `spelling.json`, `emoji.json`) in the **same JSON format as Android**, and are applied both in-app and in the extension.
+- User dictionaries are stored in the app group container (`Dictionaries/user.json`, `spelling.json`, `emoji.json`, plus `accents.json` for the formant voices' accent lexicon, which has no editor yet) in the **same JSON format as Android**, and are applied both in-app and in the extension. All three files use `grapheme`/`phoneme` entries (that is what every platform's editor writes); the engine's spelling and emoji parsers accept those keys next to the bundled files' `character`/`pronunciation` and `emoji`/`text`.
+- One speech request is not one phrase. VoiceOver describes an item as a row of `<voice>` elements (name, value, type), puts `<break>` between some of them, and marks only a part as `<say-as interpret-as="characters">` (a one-character badge count next to a button name). `SSMLParser` therefore returns ordered parts (text, spelled text, pause, phrase boundary), each with its own rate and pitch, and `LaprdusAudioUnit` synthesizes them one by one: a `<break>` is silence of its length, a boundary between `<voice>`/`<p>`/`<s>` elements is the user's comma pause. Never decide spelling, rate or pitch for a whole request.
+- VoiceOver nests `<prosody>` elements (a neutral outer one, an inner `pitch="+50.0%"` for capital letters); `SSMLParser` treats inner values as relative to the outer ones. The extension logs the markup and the parts of each request (never the text): `log show --info --predicate 'subsystem == "com.hrvojekatic.laprdus"'`.
 - Localization: `Localizable.xcstrings` string catalog with en/hr/sr (translations taken from the Android `values-hr`/`values-sr`).
 
 ### Building
@@ -1190,7 +1275,7 @@ xcodebuild -scheme Laprdus -destination 'platform=macOS' build -allowProvisionin
 # iOS Simulator
 xcodebuild -scheme Laprdus -destination 'generic/platform=iOS Simulator' build
 
-# Unit tests (12 tests: engine synthesis, dictionary store, settings)
+# Unit tests (engine synthesis, dictionary store, SSML, settings)
 xcodebuild test -scheme Laprdus -destination 'platform=macOS'
 ```
 

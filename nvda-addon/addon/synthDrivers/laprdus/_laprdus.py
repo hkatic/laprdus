@@ -134,6 +134,22 @@ def _configure_functions(lib):
     lib.laprdus_set_inflection_enabled.argtypes = [LaprdusHandle, ctypes.c_int]
     lib.laprdus_set_inflection_enabled.restype = LaprdusError
 
+    # Formant voices only: size of the pitch movements and rate multiplier
+    lib.laprdus_set_inflection_level.argtypes = [LaprdusHandle, ctypes.c_float]
+    lib.laprdus_set_inflection_level.restype = LaprdusError
+
+    lib.laprdus_get_inflection_level.argtypes = [LaprdusHandle]
+    lib.laprdus_get_inflection_level.restype = ctypes.c_float
+
+    lib.laprdus_set_acceleration.argtypes = [LaprdusHandle, ctypes.c_float]
+    lib.laprdus_set_acceleration.restype = LaprdusError
+
+    lib.laprdus_get_acceleration.argtypes = [LaprdusHandle]
+    lib.laprdus_get_acceleration.restype = ctypes.c_float
+
+    lib.laprdus_get_nominal_wpm.argtypes = [ctypes.c_char_p]
+    lib.laprdus_get_nominal_wpm.restype = ctypes.c_float
+
     # Synthesis functions
     lib.laprdus_synthesize.argtypes = [
         LaprdusHandle,
@@ -253,6 +269,16 @@ def _configure_functions(lib):
 
     lib.laprdus_append_emoji_dictionary.argtypes = [LaprdusHandle, ctypes.c_char_p]
     lib.laprdus_append_emoji_dictionary.restype = LaprdusError
+
+    # Accent lexicon of the formant voices (word stress, length and tone)
+    lib.laprdus_load_accent_lexicon.argtypes = [LaprdusHandle, ctypes.c_char_p]
+    lib.laprdus_load_accent_lexicon.restype = LaprdusError
+
+    lib.laprdus_clear_accent_lexicon.argtypes = [LaprdusHandle]
+    lib.laprdus_clear_accent_lexicon.restype = None
+
+    lib.laprdus_get_accent_lexicon_report.argtypes = [LaprdusHandle]
+    lib.laprdus_get_accent_lexicon_report.restype = ctypes.c_char_p
 
     # User dictionary utility functions
     lib.laprdus_user_dictionary_exists.argtypes = [ctypes.c_char_p]
@@ -495,7 +521,10 @@ class LaprdusEngine(object):
         return self._initialized and bool(self._lib.laprdus_is_initialized(self._handle))
 
     def set_speed(self, speed):
-        """Set speech speed (0.5 to 2.0, default 1.0)."""
+        """Set speech speed (0.5 to 4.0, default 1.0).
+
+        The formant voices multiply it by the acceleration setting.
+        """
         result = self._lib.laprdus_set_speed(self._handle, ctypes.c_float(speed))
         return result == LAPRDUS_OK
 
@@ -510,7 +539,7 @@ class LaprdusEngine(object):
         return result == LAPRDUS_OK
 
     def set_user_pitch(self, pitch):
-        """Set user pitch preference (0.5 to 2.0, default 1.0).
+        """Set user pitch preference (0.5 to 2.0, default 1.0; formant voices 0.25 to 4.0).
 
         This preserves formants and keeps the voice character.
         Use this for user-controlled pitch adjustment (NVDA pitch slider).
@@ -531,6 +560,37 @@ class LaprdusEngine(object):
             1 if enabled else 0
         )
         return result == LAPRDUS_OK
+
+    def set_inflection_level(self, level):
+        """Set the inflection level of the formant voices (0.0 to 1.0).
+
+        0.0 is a monotone, 0.5 (default) the measured pitch movements,
+        1.0 twice those movements. The recorded voices ignore it.
+        """
+        result = self._lib.laprdus_set_inflection_level(self._handle, ctypes.c_float(level))
+        return result == LAPRDUS_OK
+
+    def get_inflection_level(self):
+        """Get the inflection level of the formant voices (0.0 to 1.0)."""
+        return float(self._lib.laprdus_get_inflection_level(self._handle))
+
+    def set_acceleration(self, acceleration):
+        """Set the acceleration of the formant voices (0.5 to 3.0, default 1.0).
+
+        Multiplies the speech speed, so the top of NVDA's rate slider
+        reaches a higher (or lower) rate. The recorded voices ignore it.
+        """
+        result = self._lib.laprdus_set_acceleration(self._handle, ctypes.c_float(acceleration))
+        return result == LAPRDUS_OK
+
+    def get_acceleration(self):
+        """Get the acceleration of the formant voices."""
+        return float(self._lib.laprdus_get_acceleration(self._handle))
+
+    def get_nominal_wpm(self, voice_id=None):
+        """Words per minute of a voice at speed 1.0 and acceleration 1.0."""
+        arg = voice_id.encode('utf-8') if voice_id else None
+        return float(self._lib.laprdus_get_nominal_wpm(arg))
 
     def synthesize(self, text):
         """
@@ -869,6 +929,41 @@ class LaprdusEngine(object):
 
         result = self._lib.laprdus_append_emoji_dictionary(self._handle, path_bytes)
         return result == LAPRDUS_OK
+
+    # =========================================================================
+    # Accent Lexicon Methods (formant voices)
+    # =========================================================================
+
+    def load_accent_lexicon(self, lexicon_path):
+        """Load the user's accent lexicon (accents.json), replacing the
+        current one. Only the formant voices use it; it is kept across voice
+        changes.
+
+        Args:
+            lexicon_path: Path to the accent lexicon JSON file.
+
+        Returns:
+            True if at least one entry was accepted, False otherwise
+        """
+        if not os.path.exists(lexicon_path):
+            return False
+
+        if isinstance(lexicon_path, bytes):
+            path_bytes = lexicon_path
+        else:
+            path_bytes = lexicon_path.encode("utf-8")
+
+        result = self._lib.laprdus_load_accent_lexicon(self._handle, path_bytes)
+        return result == LAPRDUS_OK
+
+    def clear_accent_lexicon(self):
+        """Remove the user's accent lexicon."""
+        self._lib.laprdus_clear_accent_lexicon(self._handle)
+
+    def get_accent_lexicon_report(self):
+        """What the last accent lexicon load accepted and rejected."""
+        report = self._lib.laprdus_get_accent_lexicon_report(self._handle)
+        return report.decode("utf-8", errors="replace") if report else ""
 
     # =========================================================================
     # Pause Settings Methods

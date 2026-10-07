@@ -17,6 +17,7 @@
     <!-- Language names -->
     <string name="language_croatian">Croatian</string>
     <string name="language_serbian">Serbian</string>
+    <string name="language_bosnian">Bosnian</string>
 
     <!-- Voice attributes -->
     <string name="gender_male">Male</string>
@@ -52,6 +53,18 @@
     <!-- Inflection settings -->
     <string name="setting_inflection_enabled_title">Voice inflection</string>
     <string name="setting_inflection_enabled_subtitle">Vary pitch for questions, exclamations, and pauses</string>
+
+    <!-- Formant voices (Zvonko, Stojan, Mirsad) -->
+    <string name="category_formant_voices">Formant voice</string>
+    <string name="setting_inflection_level">Inflection</string>
+    <string name="setting_inflection_level_desc">Size of the pitch movements: 0% is a monotone, 50% the natural movements, 100% the maximum</string>
+    <string name="setting_acceleration">Acceleration</string>
+    <string name="setting_acceleration_desc">Multiplies the speech rate, so the top of the rate range reaches a higher or lower rate</string>
+    <string name="acceleration_value">%1$.1fx (up to %2$d WPM)</string>
+    <string name="restore_default_inflection_level">Restore default inflection</string>
+    <string name="restore_default_acceleration">Restore default acceleration</string>
+    <string name="cd_restore_inflection_level_desc">Sets inflection to 50%</string>
+    <string name="cd_restore_acceleration_desc">Sets acceleration to 1.0x</string>
 
     <!-- Number mode settings -->
     <string name="setting_number_mode_title">Digit-by-digit numbers</string>
@@ -162,4 +175,5 @@
          Always in the voice's own language, so not translatable. -->
     <string name="tts_sample_text_hr" translatable="false">Ovo je primjer govora na hrvatskom jeziku.</string>
     <string name="tts_sample_text_sr" translatable="false">Ovo je primer govora na srpskom jeziku.</string>
+    <string name="tts_sample_text_bs" translatable="false">Ovo je primjer govora na bosanskom jeziku.</string>
 </resources>

@@ -23,6 +23,23 @@ string_types = (str,)
 _DEBUG_ENABLED = _os.path.exists(_os.path.join(_tempfile.gettempdir(), "laprdus_debug"))
 _DEBUG_LOG_PATH = _os.path.join(_tempfile.gettempdir(), "laprdus_debug.log") if _DEBUG_ENABLED else None
 
+def _default_voice():
+    """Voice of a new installation: the formant voice of NVDA's language.
+
+    NVDA saves the voice the user picks, so this only applies until then.
+    """
+    try:
+        import languageHandler
+        lang = (languageHandler.getLanguage() or "").lower()
+    except Exception:
+        lang = ""
+    if lang.startswith("sr"):
+        return "stojan"
+    if lang.startswith("bs"):
+        return "mirsad"
+    return "zvonko"
+
+
 def _debug_log(msg):
     """Log debug message to file if debug mode is enabled."""
     if not _DEBUG_ENABLED or _DEBUG_LOG_PATH is None:
@@ -68,6 +85,9 @@ CHANNELS = 1
 RATE_MIN = 0.5          # Minimum rate (same for both modes)
 RATE_NORMAL_MAX = 2.0   # Maximum rate without boost
 RATE_BOOST_MAX = 4.0    # Maximum rate with boost enabled
+# The formant voices (Zvonko, Stojan, Mirsad) multiply the rate by the
+# "acceleration" from settings.json on top of this, so their top rate is
+# RATE_NORMAL_MAX (or RATE_BOOST_MAX) times the acceleration.
 
 
 def _nvda_to_rate_factor(nvda_rate, rate_boost=False):
@@ -204,9 +224,10 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         self._userDictMtime = 0  # Last modification time of user.json
         self._userSpellingMtime = 0
         self._userEmojiMtime = 0
+        self._userAccentsMtime = 0
 
         # Voice selection
-        self._voice = "josip"  # Default voice
+        self._voice = _default_voice()
         self._availableVoices = None  # Cached voice dict
 
         # Current playback sample rate (for rate changes)
@@ -348,7 +369,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                 return
 
             # Use actual sample rate from synthesis - rate control is handled by
-            # Sonic library in the engine via set_speed(), not by playback sample rate
+            # the engine via set_speed() (durations), not by playback sample rate
             # Only hold lock during player creation, not during playback (which blocks)
             with self._playerLock:
                 if self._player is None or self._currentSampleRate != sample_rate:
@@ -600,7 +621,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             # This is the NVDA pitch slider, separate from voice character pitch
             if not self._forcePitch:
                 self._engine.set_user_pitch(_nvda_to_laprdus_pitch(self._pitch))
-            # Apply speed/rate to engine (Sonic time-stretching)
+            # Apply speed/rate to engine (segment durations)
             # This changes speed WITHOUT affecting pitch
             # Rate boost expands max rate from 2.0x to 4.0x
             if not self._forceSpeed:
@@ -615,6 +636,8 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         Settings loaded from settings.json structure:
         - speech.speed, speech.pitch, speech.volume (with force flags)
         - speech.inflection: whether to use pitch variation
+        - speech.inflection_level: size of the formant voices' pitch movements (0.0-1.0)
+        - speech.acceleration: rate multiplier of the formant voices (0.5-3.0)
         - speech.emoji: whether to convert emoji to text
         - numbers.mode: 'words' or 'digits'
         - pauses.sentence, pauses.comma, pauses.newline, pauses.spelling
@@ -677,6 +700,16 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             self._engine.set_inflection(inflection)
             _debug_log("_loadSharedSettings: inflection=%s" % inflection)
 
+            # Formant voices: inflection level and acceleration. The
+            # acceleration multiplies the speed set from the rate slider,
+            # so the slider's top reaches 2.0 (4.0 with rate boost) times it.
+            inflection_level = float(speech.get('inflection_level', 0.5))
+            self._engine.set_inflection_level(inflection_level)
+            acceleration = float(speech.get('acceleration', 1.0))
+            self._engine.set_acceleration(acceleration)
+            _debug_log("_loadSharedSettings: inflection_level=%.2f acceleration=%.2f" % (
+                inflection_level, acceleration))
+
             # Apply emoji setting
             emoji_enabled = speech.get('emoji', False)
             self._engine.set_emoji_enabled(emoji_enabled)
@@ -706,6 +739,8 @@ class SynthDriver(synthDriverHandler.SynthDriver):
 
             if user_dicts_enabled:
                 self._loadUserDictionaries()
+            else:
+                self._engine.clear_accent_lexicon()
 
         except Exception as e:
             _debug_log("_loadSharedSettings: Error loading settings: %s" % str(e))
@@ -747,6 +782,19 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                 _debug_log("_loadUserDictionaries: append emoji.json from %s -> %s" % (path, result))
                 log.debug("LaprdusTTS: Appended user emoji dictionary: %s" % path)
 
+        # Accent lexicon of the formant voices (replaces the previous one)
+        if _laprdus.user_dictionary_exists("accents.json"):
+            path = _laprdus.get_user_dictionary_path("accents.json")
+            if path:
+                self._userAccentsMtime = os.path.getmtime(path) if os.path.exists(path) else 0
+                result = self._engine.load_accent_lexicon(path)
+                report = self._engine.get_accent_lexicon_report()
+                _debug_log("_loadUserDictionaries: load accents.json from %s -> %s (%s)" % (path, result, report))
+                log.debug("LaprdusTTS: Loaded accent lexicon: %s (%s)" % (path, report))
+        else:
+            self._userAccentsMtime = 0
+            self._engine.clear_accent_lexicon()
+
     def _checkConfigChanged(self):
         """Check if settings.json or user dictionaries have been modified.
 
@@ -774,6 +822,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             ("user.json", "_userDictMtime"),
             ("spelling.json", "_userSpellingMtime"),
             ("emoji.json", "_userEmojiMtime"),
+            ("accents.json", "_userAccentsMtime"),
         ]:
             if _laprdus.user_dictionary_exists(filename):
                 path = _laprdus.get_user_dictionary_path(filename)
@@ -816,7 +865,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         # If force speed is enabled, ignore NVDA slider - keep Laprdus config value
         if self._forceSpeed:
             return
-        # Apply rate to engine using Sonic-based time-stretching
+        # Apply rate to engine (segment durations)
         # This changes speed WITHOUT affecting pitch
         # Rate boost expands max rate from 2.0x to 4.0x
         if self._engine:
@@ -925,9 +974,9 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         except Exception as e:
             log.error("LaprdusTTS: Error building voice dict: %s" % str(e))
             # Fallback to single default voice
-            voices["josip"] = VoiceInfo(
-                "josip",
-                "Laprdus Josip (Croatian)",
+            voices["zvonko"] = VoiceInfo(
+                "zvonko",
+                "Laprdus Zvonko (Croatian)",
                 "hr-HR"
             )
         return voices

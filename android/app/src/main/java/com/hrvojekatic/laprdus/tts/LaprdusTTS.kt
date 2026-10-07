@@ -37,6 +37,10 @@ class LaprdusTTS private constructor() {
         @JvmStatic
         external fun nativeGetVersion(): String
 
+        const val DEFAULT_INFLECTION_LEVEL = 0.5f
+        const val DEFAULT_ACCELERATION = 1.0f
+        val ACCELERATION_RANGE = 0.5f..3.0f
+
         @Volatile
         private var instance: LaprdusTTS? = null
 
@@ -59,8 +63,6 @@ class LaprdusTTS private constructor() {
     // Native method declarations
     // ==========================================================================
 
-    private external fun nativeInit(phonemeDataPath: String): Boolean
-    private external fun nativeInitFromAssets(assetManager: AssetManager, assetPath: String): Boolean
     private external fun nativeShutdown()
     private external fun nativeIsInitialized(): Boolean
     private external fun nativeSynthesize(text: String): ShortArray?
@@ -69,6 +71,9 @@ class LaprdusTTS private constructor() {
     private external fun nativeSetUserPitch(pitch: Float)
     private external fun nativeSetVolume(volume: Float)
     private external fun nativeSetInflectionEnabled(enabled: Boolean)
+    private external fun nativeSetInflectionLevel(level: Float)
+    private external fun nativeSetAcceleration(acceleration: Float)
+    private external fun nativeGetNominalWpm(voiceId: String): Float
     private external fun nativeGetSampleRate(): Int
     private external fun nativeCancel()
     private external fun nativeGetVoiceCount(): Int
@@ -76,6 +81,10 @@ class LaprdusTTS private constructor() {
     private external fun nativeSetVoice(voiceId: String, assetManager: AssetManager): Boolean
     private external fun nativeLoadDictionaryFromAssets(assetManager: AssetManager, assetPath: String): Boolean
     private external fun nativeAddPronunciation(grapheme: String, phoneme: String, caseSensitive: Boolean, wholeWord: Boolean)
+    private external fun nativeAddSpellingEntry(character: String, pronunciation: String)
+    private external fun nativeAddEmojiEntry(emoji: String, text: String)
+    private external fun nativeLoadAccentLexicon(json: String): Boolean
+    private external fun nativeClearAccentLexicon()
     private external fun nativeLoadSpellingDictionaryFromAssets(assetManager: AssetManager, assetPath: String): Boolean
     private external fun nativeSynthesizeSpelled(text: String): ShortArray?
 
@@ -103,27 +112,6 @@ class LaprdusTTS private constructor() {
     // ==========================================================================
 
     /**
-     * Initialize the TTS engine from a file path
-     * @param phonemeDataPath Path to the .bin voice data file
-     * @return true if initialization succeeded
-     */
-    fun initFromFile(phonemeDataPath: String): Boolean {
-        Log.d(TAG, "Initializing from file: $phonemeDataPath")
-        return nativeInit(phonemeDataPath)
-    }
-
-    /**
-     * Initialize the TTS engine from APK assets
-     * @param assetManager Asset manager from context
-     * @param voiceAssetPath Path to voice .bin file within assets (e.g., "Josip.bin")
-     * @return true if initialization succeeded
-     */
-    fun initFromAssets(assetManager: AssetManager, voiceAssetPath: String): Boolean {
-        Log.d(TAG, "Initializing from assets: $voiceAssetPath")
-        return nativeInitFromAssets(assetManager, voiceAssetPath)
-    }
-
-    /**
      * Shutdown the TTS engine and release resources
      */
     fun shutdown() {
@@ -149,22 +137,25 @@ class LaprdusTTS private constructor() {
     }
 
     /**
-     * Speech rate/speed (0.5 - 2.0, default 1.0)
-     * Uses Sonic time-stretching - changes tempo without changing pitch
+     * Speech rate/speed (0.25 - 4.0, default 1.0).
+     * The recorded voices narrow it to 0.5 - 2.0 and time-stretch with Sonic;
+     * the formant voices apply it at the source and multiply it by
+     * [acceleration].
      */
     var speed: Float = 1.0f
         set(value) {
-            field = value.coerceIn(0.5f, 2.0f)
+            field = value.coerceIn(VoiceInfo.FORMANT_RANGE)
             nativeSetSpeed(field)
         }
 
     /**
-     * User pitch preference (0.5 - 2.0, default 1.0)
-     * Uses formant-preserving pitch shift - keeps voice character
+     * User pitch preference (0.25 - 4.0, default 1.0).
+     * The recorded voices narrow it to 0.5 - 2.0 and use a formant-preserving
+     * pitch shift that keeps the voice character.
      */
     var pitch: Float = 1.0f
         set(value) {
-            field = value.coerceIn(0.5f, 2.0f)
+            field = value.coerceIn(VoiceInfo.FORMANT_RANGE)
             nativeSetUserPitch(field)
         }
 
@@ -186,6 +177,34 @@ class LaprdusTTS private constructor() {
             field = value
             nativeSetInflectionEnabled(value)
         }
+
+    /**
+     * Inflection level of the formant voices (0.0 - 1.0, default 0.5):
+     * 0.0 is a monotone, 0.5 the measured pitch movements, 1.0 twice those.
+     * The recorded voices ignore it.
+     */
+    var inflectionLevel: Float = DEFAULT_INFLECTION_LEVEL
+        set(value) {
+            field = value.coerceIn(0.0f, 1.0f)
+            nativeSetInflectionLevel(field)
+        }
+
+    /**
+     * Acceleration of the formant voices (0.5 - 3.0, default 1.0): a
+     * multiplier on [speed], so the top of the rate slider reaches a higher
+     * (or lower) rate. The recorded voices ignore it.
+     */
+    var acceleration: Float = DEFAULT_ACCELERATION
+        set(value) {
+            field = value.coerceIn(ACCELERATION_RANGE)
+            nativeSetAcceleration(field)
+        }
+
+    /**
+     * Words per minute a voice speaks at speed 1.0 and acceleration 1.0
+     * (0 for an unknown voice).
+     */
+    fun getNominalWpm(voiceId: String): Float = nativeGetNominalWpm(voiceId)
 
     /**
      * Get the audio sample rate (always 22050 Hz)
@@ -223,7 +242,7 @@ class LaprdusTTS private constructor() {
      * Set the active voice for synthesis
      * For derived voices (child, grandma, grandpa), this also applies the appropriate pitch
      *
-     * @param voiceId Voice ID: "josip", "vlado", "detence", "baba", or "djed"
+     * @param voiceId Voice ID: "zvonko", "stojan", "mirsad", "josip", "vlado", "detence", "baba" or "djed"
      * @param assetManager Asset manager to load voice data
      * @return true if voice was set successfully
      */
@@ -272,6 +291,43 @@ class LaprdusTTS private constructor() {
      */
     fun addPronunciation(grapheme: String, phoneme: String, caseSensitive: Boolean = false, wholeWord: Boolean = true) {
         nativeAddPronunciation(grapheme, phoneme, caseSensitive, wholeWord)
+    }
+
+    /**
+     * Add a single entry to the spelling dictionary, replacing the bundled
+     * name of that character if there is one.
+     *
+     * @param character The character to match
+     * @param pronunciation How the character is named when spelling
+     */
+    fun addSpellingEntry(character: String, pronunciation: String) {
+        nativeAddSpellingEntry(character, pronunciation)
+    }
+
+    /**
+     * Add a single entry to the emoji dictionary, replacing the bundled
+     * description of that emoji if there is one.
+     *
+     * @param emoji The emoji to match
+     * @param text The text spoken for it
+     */
+    fun addEmojiEntry(emoji: String, text: String) {
+        nativeAddEmojiEntry(emoji, text)
+    }
+
+    /**
+     * Load the user's accent lexicon (the content of accents.json) for the
+     * formant voices, replacing the current one. It is kept across voice
+     * changes. Malformed entries are skipped and logged by the engine.
+     *
+     * @param json The lexicon file's content
+     * @return true if at least one entry was accepted
+     */
+    fun loadAccentLexicon(json: String): Boolean = nativeLoadAccentLexicon(json)
+
+    /** Remove the user's accent lexicon. */
+    fun clearAccentLexicon() {
+        nativeClearAccentLexicon()
     }
 
     /**
