@@ -596,6 +596,147 @@ TEST_CASE("Lexicon accents cover the whole paradigm", "[formant][text]") {
     }
 }
 
+TEST_CASE("Word-class rules place the accent of loans, derived nouns and prefixed verbs", "[formant][text]") {
+    // Words outside the lexicon: the rules for nouns with a long last stem
+    // syllable, prefixed verbs, verbs in -ovati, nouns in -ica and -anin and
+    // adjectives in -izan/-ozan (StressRules::strong).
+    struct Case { const char* plain; const char* accented; };
+    const Case cases[] = {
+        // nouns with a long last stem syllable: case forms
+        {"zemljaka", "zemlj\xC3\xA1ka"},   // zemljáka
+        {"\xC4\x8D" "arobnjaka", "\xC4\x8D" "arobnj\xC3\xA1ka"},   // čarobnjáka
+        {"\xC4\x8D" "arobnjacima", "\xC4\x8D" "arobnj\xC3\xA1" "cima"},   // čarobnjácima
+        {"programera", "program\xC3\xA9ra"},   // programéra
+        {"in\xC5\xBE" "enjera", "in\xC5\xBE" "enj\xC3\xA9ra"},   // inženjéra
+        {"rezultata", "rezult\xC3\xA1ta"},   // rezultáta
+        {"rezultatima", "rezult\xC3\xA1tima"},   // rezultátima
+        {"kapetana", "kapet\xC3\xA1na"},   // kapetána
+        {"balkona", "balk\xC3\xB3na"},   // balkóna
+        {"sezone", "sez\xC3\xB3ne"},   // sezóne
+        {"broj ra\xC4\x8Duna", "broj ra\xC4\x8D\xC3\xBAna"},   // broj račúna
+        {"ra\xC4\x8Duna", "ra\xC4\x8D\xC3\xBAna"},   // račúna (the verb carries the noun-twin flag)
+        {"\xC4\x8Duvara", "\xC4\x8Duv\xC3\xA1ra"},   // čuvára
+        {"novinari", "novin\xC3\xA1ri"},   // novinári
+        {"prodava\xC4\x8D" "a", "prodav\xC3\xA1\xC4\x8D" "a"},   // prodaváča
+        {"igra\xC4\x8D" "a", "igr\xC3\xA1\xC4\x8D" "a"},   // igráča
+        {"ko\xC5\xA1" "arka\xC5\xA1" "a", "ko\xC5\xA1" "ark\xC3\xA1\xC5\xA1" "a"},   // košarkáša
+        {"\xC4\x8Dokolade", "\xC4\x8Dokol\xC3\xA1" "de"},   // čokoláde
+        {"piramida", "piram\xC3\xAD" "da"},   // piramída
+        {"analiza", "anal\xC3\xADza"},   // analíza
+        {"kanalom", "kan\xC3\xA1lom"},   // kanálom
+        {"materijalu", "materij\xC3\xA1lu"},   // materijálu
+        {"motiva", "mot\xC3\xADva"},   // motíva
+        {"Francuza", "Franc\xC3\xBAza"},   // Francúza
+        {"u\xC4\x8D" "enika", "u\xC4\x8D" "en\xC3\xADka"},   // učeníka
+        {"u\xC4\x8D" "enici", "u\xC4\x8D" "en\xC3\xAD" "ci"},   // učeníci
+        {"zarobljenika", "zarobljen\xC3\xADka"},   // zarobljeníka
+        {"dobitka", "dob\xC3\xADtka"},   // dobítka
+        {"Amerikanca", "Amerik\xC3\xA1nca"},   // Amerikánca
+        {"Amerikanac", "Amerik\xC3\xA1nac"},   // Amerikánac
+        {"\xC4\x8Duvarov", "\xC4\x8Duv\xC3\xA1rov"},   // čuvárov
+        // the nominative: one syllable back, Zvonko without the length
+        {"\xC4\x8D" "arobnjak", "\xC4\x8D" "ar\xC3\xB2" "bnjak"},   // čaròbnjak
+        {"in\xC5\xBE" "enjer", "in\xC5\xBE\xC3\xA8njer"},   // inžènjer
+        {"rezultat", "rez\xC3\xB9ltat"},   // rezùltat
+        {"prodava\xC4\x8D", "prod\xC3\xA0va\xC4\x8D"},   // prodàvač
+        {"vitamin", "vit\xC3\xA0min"},   // vitàmin
+        {"festival", "fest\xC3\xACval"},   // festìval
+        {"zarobljenik", "zar\xC3\xB2" "bljenik"},   // zaròbljenik
+        // prefixed verbs follow the infinitive
+        {"pogledala", "pogl\xC3\xA8" "dala"},   // poglèdala
+        {"pogledamo", "pogl\xC3\xA8" "damo"},   // poglèdamo
+        {"napravio", "napr\xC3\xA0vio"},   // napràvio
+        {"do\xC4\x8D" "ekali", "do\xC4\x8D\xC3\xA8kali"},   // dočèkali
+        {"iskusio", "isk\xC3\xB9sio"},   // iskùsio
+        {"zahvalismo", "zahv\xC3\xA1lismo"},   // zahválismo (VERBS: zahváliti)
+        {"zatra\xC5\xBEismo", "zatr\xC3\xA1\xC5\xBEismo"},   // zatrážismo
+        {"pohvalismo", "pohv\xC3\xA1lismo"},   // pohválismo
+        {"ispitasmo", "isp\xC3\xACtasmo"},   // ispìtasmo
+        {"poku\xC5\xA1" "av\xC5\xA1i", "pok\xC3\xB9\xC5\xA1" "av\xC5\xA1i"},   // pokùšavši
+        {"po\xC5\xBE" "eljeti", "po\xC5\xBE\xC3\xA8ljeti"},   // požèljeti
+        // verbs in -ovati
+        {"putovao", "put\xC3\xB2vao"},   // putòvao
+        {"kupovala", "kup\xC3\xB2vala"},   // kupòvala
+        {"vjerovao", "vj\xC8\x85rovao"},   // vjȅrovao
+        // nouns in -ica, inhabitants, adjectives
+        {"\xC4\x8Duvarica", "\xC4\x8Duv\xC3\xA0rica"},   // čuvàrica
+        {"voditeljica", "vodit\xC3\xA8ljica"},   // voditèljica
+        {"dr\xC5\xBE" "avljanin", "dr\xC5\xBE\xC3\xA0vljanin"},   // držàvljanin
+        {"dr\xC5\xBE" "avljanina", "dr\xC5\xBE\xC3\xA0vljanina"},   // držàvljanina
+        {"precizan", "prec\xC3\xACzan"},   // precìzan
+        {"nervozna", "nerv\xC3\xB3zna"},   // nervózna
+        // the -ina rule and its exceptions
+        {"balerina", "baler\xC3\xACna"},   // balerìna
+        {"ku\xC4\x87" "etina", "ku\xC4\x87\xC3\xA8tina"},   // kućètina
+        {"mje\xC5\xA1" "avina", "mje\xC5\xA1\xC3\xA0vina"},   // mješàvina
+        {"planina", "plan\xC3\xACna"},   // planìna
+        {"tre\xC4\x87ina", "tre\xC4\x87\xC3\xACna"},   // trećìna
+        // the words the rules would otherwise take: lexicon
+        {"zakona", "z\xC3\xA1kona"},   // zákona
+        {"spomenika", "sp\xC8\x8Dmenika"},   // spȍmenika
+        {"vojnika", "vojn\xC3\xADka"},   // vojníka
+        {"milijuna", "milij\xC3\xBAna"},   // milijúna
+    };
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    for (const auto& c : cases) {
+        std::vector<int16_t> plain = speak(engine.handle, c.plain);
+        std::vector<int16_t> accented = speak(engine.handle, c.accented);
+        INFO(c.plain);
+        REQUIRE(!plain.empty());
+        REQUIRE(plain == accented);
+    }
+
+    // Native words of the same shape keep the first syllable: the rules
+    // must not move their accent.
+    const Case not_these[] = {
+        {"jezera", "jez\xC3\xA9ra"},   // jezéra
+        {"ve\xC4\x8D" "era", "ve\xC4\x8D\xC3\xA9ra"},   // večéra
+        {"servera", "serv\xC3\xA9ra"},   // servéra
+        {"predmeta", "predm\xC3\xA9ta"},   // predméta
+        {"poslana", "posl\xC3\xA1na"},   // poslána
+        {"poznata", "pozn\xC3\xA1ta"},   // poznáta
+        {"imate", "im\xC3\xA1te"},   // imáte
+        {"gledati", "gled\xC3\xA1ti"},   // gledáti
+        {"gledala", "gled\xC3\xA1la"},   // gledála
+        {"radnika", "radn\xC3\xADka"},   // radníka
+        {"korisnika", "korisn\xC3\xADka"},   // korisníka
+        {"osjetljiva", "osjetlj\xC3\xADva"},   // osjetljíva
+        {"naziva", "naz\xC3\xADva"},   // nazíva
+        {"Ivanin", "Iv\xC3\xA0nin"},   // Ivànin
+        {"mamina", "mam\xC3\xACna"},   // mamìna
+        {"lozinke", "loz\xC3\xADnke"},   // lozínke
+        {"zadruzi", "zadr\xC3\xBAzi"},   // zadrúzi
+        {"poseban", "pos\xC3\xA8" "ban"},   // posèban
+        {"dosadan", "dos\xC3\xA0" "dan"},   // dosàdan
+        {"nagrada", "nagr\xC3\xA1" "da"},   // nagráda
+        {"svijeta", "svij\xC3\xA9ta"},   // svijéta
+        {"doga\xC4\x91" "aju", "dog\xC3\xA0\xC4\x91" "aju"},   // dogàđaju
+        {"u\xC4\x8D" "enik", "u\xC4\x8D\xC3\xA8nik"},   // učènik (ùčenik)
+        {"udara", "ud\xC3\xA1ra"},   // udára (ùdara, a verb in VERBS)
+        {"ispune", "isp\xC3\xBAne"},   // ispúne (ìspune)
+        {"umire", "um\xC3\xADre"},   // umíre (ùmire)
+    };
+    for (const auto& c : not_these) {
+        INFO(c.plain);
+        REQUIRE(speak(engine.handle, c.plain) != speak(engine.handle, c.accented));
+    }
+
+    // Stojan keeps the length the dictionaries write after the retracted
+    // accent of the nominative.
+    const Case serbian[] = {
+        {"\xC4\x8D" "arobnjak", "\xC4\x8D" "ar\xC3\xB2" "bnj\xC4\x81k"},   // čaròbnjāk
+        {"prodava\xC4\x8D", "prod\xC3\xA0v\xC4\x81\xC4\x8D"},   // prodàvāč
+        {"zarobljenik", "zar\xC3\xB2" "bljen\xC4\xABk"},   // zaròbljenīk
+        {"prodava\xC4\x8D" "a", "prodav\xC3\xA1\xC4\x8D" "a"},   // prodaváča
+    };
+    REQUIRE(laprdus_set_voice(engine.handle, "stojan", NO_DATA) == LAPRDUS_OK);
+    for (const auto& c : serbian) {
+        INFO(c.plain);
+        REQUIRE(speak(engine.handle, c.plain) == speak(engine.handle, c.accented));
+    }
+}
+
 // =============================================================================
 // Parameters
 // =============================================================================
@@ -1071,13 +1212,13 @@ TEST_CASE("The user's accent lexicon moves the stress of words and verbs", "[for
     Engine engine;
     REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
     REQUIRE(speak(engine.handle, "balkon") != speak(engine.handle, "balk\xC3\xB3n"));       // balkón
-    REQUIRE(speak(engine.handle, "vagona") != speak(engine.handle, "vag\xC3\xB3na"));       // vagóna
+    REQUIRE(speak(engine.handle, "balzama") != speak(engine.handle, "balz\xC3\xA1ma"));     // balzáma
     REQUIRE(speak(engine.handle, "zatrubim") != speak(engine.handle, "zatr\xC3\xB9" "bim"));  // zatrùbim
 
     const char* json =
         "{ \"version\": \"1.0\", \"entries\": [\n"
         "  { \"word\": \"balk'o:n*\", \"comment\": \"balk\\u00f3n, balk\\u00f3na\" },\n"
-        "  { \"word\": \"vag'o:n|a|u|om\" },\n"
+        "  { \"word\": \"balz'a:m|a|u|om\" },\n"
         "  { \"word\": \"kami'o:n*\", \"language\": \"sr\" },\n"
         "  { \"verb\": \"zatr'ub=i\" },\n"
         "  { \"word\": \"kabina\" },\n"
@@ -1093,9 +1234,9 @@ TEST_CASE("The user's accent lexicon moves the stress of words and verbs", "[for
     // A stem covers the inflected forms, a paradigm only the forms listed.
     REQUIRE(speak(engine.handle, "balkon") == speak(engine.handle, "balk\xC3\xB3n"));
     REQUIRE(speak(engine.handle, "balkona") == speak(engine.handle, "balk\xC3\xB3na"));
-    REQUIRE(speak(engine.handle, "vagona") == speak(engine.handle, "vag\xC3\xB3na"));
-    REQUIRE(speak(engine.handle, "vagonom") == speak(engine.handle, "vag\xC3\xB3nom"));
-    REQUIRE(speak(engine.handle, "vagon") != speak(engine.handle, "vag\xC3\xB3n"));
+    REQUIRE(speak(engine.handle, "balzama") == speak(engine.handle, "balz\xC3\xA1ma"));
+    REQUIRE(speak(engine.handle, "balzamom") == speak(engine.handle, "balz\xC3\xA1mom"));
+    REQUIRE(speak(engine.handle, "balzam") != speak(engine.handle, "balz\xC3\xA1m"));
     // A verb stem reaches every form the built-in verbs do.
     REQUIRE(speak(engine.handle, "zatrubiti") == speak(engine.handle, "zatr\xC3\xB9" "biti"));
     REQUIRE(speak(engine.handle, "zatrubim") == speak(engine.handle, "zatr\xC3\xB9" "bim"));

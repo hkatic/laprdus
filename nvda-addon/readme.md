@@ -1188,7 +1188,7 @@ Primjer problema: Unos za "TV" zamjenjuje i "aktivator" jer sadrži "TV".
 
 ### 5.11 Naglasni rječnik (accents.json)
 
-Formantni glasovi (Zvonko, Stojan, Mirsad i pjevački glasovi) sami određuju mjesto naglaska, dužinu i ton svake riječi: prvo iz naglasnih znakova u tekstu, zatim iz ugrađenog leksikona, pa po pravilima za nastavke, a ako ništa ne pogodi, naglasak ide na prvi slog. Riječ koja tako ispadne krivo može se ispraviti u naglasnom rječniku, i to ne samo jedan njezin oblik: unos može pokriti cijelu osnovu, popis oblika ili cijeli glagol sa svim licima i vremenima. Snimljeni glasovi (Josip, Vlado) ga ne koriste.
+Formantni glasovi (Zvonko, Stojan, Mirsad i pjevački glasovi) sami određuju mjesto naglaska, dužinu i ton svake riječi: prvo iz naglasnih znakova u tekstu, zatim iz ugrađenog leksikona, pa po pravilima za nastavke i vrste riječi (posuđenice i izvedenice s dugim zadnjim slogom osnove, glagoli s prefiksom, glagoli na -ovati), a ako ništa ne pogodi, naglasak ide na prvi slog. Riječ koja tako ispadne krivo može se ispraviti u naglasnom rječniku, i to ne samo jedan njezin oblik: unos može pokriti cijelu osnovu, popis oblika ili cijeli glagol sa svim licima i vremenima. Snimljeni glasovi (Josip, Vlado) ga ne koriste.
 
 Datoteka `accents.json` stoji uz ostale rječnike (`%APPDATA%\Laprdus` na Windowsu, `~/.config/Laprdus` na Linuxu) i učitava se zajedno s njima kad su korisnički rječnici uključeni. Učitava se jednom, pri pokretanju i pri promjeni datoteke; govor zbog nje nije ništa sporiji.
 

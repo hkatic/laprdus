@@ -561,10 +561,13 @@ The front end tries, in this order:
    *-fon* ...),
    for surnames in *-ović/-ević* of four or more syllables (stress on the
    syllable before the suffix: *Jovánović*, *Kováčević*, *Milénković*; the
-   three-syllable *Pètrović*, *Màrković* keep the first), for agent nouns in
-   *-ač* and *-ačica* (*prodàvāč*, *pjevàčica*) and for nouns in *-ina*
-   (*brzìna*, *planìna*, *veličìna*, *Katarína*; *-ovina/-evina* on the
+   three-syllable *Pètrović*, *Màrković* keep the first), for feminine agent
+   nouns in *-ačica* (*pjevàčica*) and for nouns in *-ina* of four or more
+   syllables (*veličìna*, *Katarína*, *balerína*; *-ovina/-evina* on the
    syllable before: *dòmovina*, *králjevina*),
+   then the word-class rules described under "Word classes" below (nouns
+   with a long last stem syllable, prefixed verbs, verbs in *-ovati*, nouns
+   in *-ica* and *-anin*, adjectives in *-izan/-ozan*),
 4. the first syllable, the most common position in Neo-Štokavian.
 
 The name and *-ina* rules and the lexicon entries for names, surnames and
@@ -596,6 +599,107 @@ onto prepositions before a fixed list of words (*ù grād*, *nà more*).
 To correct a word, add an entry to `formant_lexicon.cpp` (notation at the top
 of the file). Language-specific tables override the common one (*pròfesor* in
 Croatian, *profèsor* in Serbian and Bosnian).
+
+**Word classes** (`StressRules::strong()`, after the suffix rules). The
+single suffixes above cover a few hundred words each; the rules below cover
+whole classes of words by their shape. Each covers an accent pattern that
+the dictionaries give regularly, and is kept only where its shape is
+reliable; where the same letters are also an inflection of common native
+words, the rule is limited or left out, and the words that still collide
+are lexicon entries.
+
+- **Nouns with a long last stem syllable** (`long_stem()`): the loans
+  (*telefon, restoran, kapetan, rezultat, aparat, programer, inženjer,
+  kabinet, piramida, analiza, čokolada, motiv, Francuz*) and the derived
+  nouns in *-ač, -ar, -aš, -njak, -ljak, -enik, -anac, -inac* (*prodavač,
+  čuvar, novinar, košarkaš, stručnjak, zemljak, učenik, zarobljenik,
+  Amerikanac, Dalmatinac*). In every case form the long vowel carries a
+  rising accent, in all three voices: *telefóna, restorána, rezultáta,
+  programéra, prodaváča, čuvára, zemljáka, učeníka, učeníci, Amerikánca*;
+  so do the possessives (*čuvárov, zemljákova*). In the nominative, where
+  that syllable is the last one and cannot carry a rising accent, the
+  dictionaries move the accent one syllable back and leave the length
+  behind it: *telèfōn, restòrān, prodàvāč, čaròbnjāk, inžènjēr, vitàmīn*.
+  Stojan and Mirsad say exactly that; Zvonko leaves the unstressed length
+  out (*restòran, prodàvač, čaròbnjak*), as with *sìgnal* and *kòntrolni*
+  above. The nouns in *-enik/-anik* keep the accent of their participle in
+  the nominative, the syllable before the suffix (*ùčenīk, pòslanīk,
+  zaròbljenīk, zapòslenīk, osigùranīk*). The nouns in
+  *-anac, -inac, -unac* keep the long vowel in the nominative too, because
+  the fleeting *a* makes it the second-to-last syllable (*Amerikánac,
+  Dalmatínac, bjegúnac*).
+
+  The shapes and their limits: *-ač, -až, -ar, -ir, -un, -aš* always
+  (*-aše* only from three syllables, because *gledaše, imaše* are the
+  imperfect); *-on, -at, -ad, -iz* not after a verbal prefix (*zákon,
+  nàslon, pòznat, zàhvat, nágrada, západ, ùgriz* keep the first syllable)
+  and *-at* not before *-e/-i*, which are the present of every verb in
+  *-ati* (*imate, gledati*); *-an* only with two syllables before it, not
+  after a prefix and not after *-av-, -iv-, -ir-*, because of the passive
+  participles (*pȍslana, pròdāvāna, planírana*) and the names (*Ìvana,
+  Stjȅpana*); *-er, -et, -id* with two syllables before them (*programéra,
+  kabinéta, piramída*, but *jȅzera, vȅčera, sȅrvera, prȅdmeta, dȅteta,
+  ȕvida*), *-et* not before *-e* (*odaberete*); *-ak* only as *-njak,
+  -ljak*, with the plural *-njaci* (*jùnāk, čàrdak, pȅtak* go both ways);
+  *-ik* only as *-nik* after
+  a vowel in a prefixed word (*rȁdnīk, pȕtnīk, kȍrisnīk* keep the first
+  syllable; *spȍmenīk, zàmjenīk, ùdžbenīk* are lexicon entries); *-iv* only
+  as *-tiv, -hiv, -siv* (not the adjectives in *-ljiv* and *náziv, pȍziv*);
+  *-al* only before *-u, -om, -ima* and in the nominative (*kanálu,
+  generálom, festìval*), never before *-a, -i, -o, -e*, which are the
+  participles (*gledala, čitali*); *-uz* not before *-i, -e* (*zȁdruzi,
+  ȕsluzi*); *-in* only in the nominative of longer words whose letter before
+  the suffix is not *n, c, č, k, j* (*vitàmin, magàzin*; the possessives
+  *Ìvanin, kràljičin, bȁkin, Mȁjin* are not touched) and in *-inima* and
+  the possessives (*vitamínima*); *-itak, -utak* in the oblique cases
+  (*dobítka, trenútka*). The *e* of *ije* never counts (*svȉjeta,
+  cvȉjeta*).
+- **Prefixed verbs** (`prefixed_verb()`): a word that begins with a verbal
+  prefix, has a thematic vowel (*a, i, u*, or *je*) before one of the
+  verbal endings and at least one root syllable between the two gets the
+  accent on the syllable before the thematic vowel: *poglèdati, poglèdala,
+  poglèdavši, poglèdasmo, poglèdam, poglèdate; napràvio, dočèkala,
+  iskùsio, zahvàlio, pokùšamo, požèljeti*. The long infinitives already had
+  that syllable from the antepenult rule; the other forms now follow the
+  infinitive, as the verbs in `VERBS` do by name. The endings taken are the
+  infinitive, the l-participle, the aorist and imperfect, the two verbal
+  adverbs and the present in *-am, -aš, -amo, -ate*. The third person
+  *-a/-aju*, the imperative in *-aj*, the present in *-im/-i/-e* and the
+  passive participle in *-an* are left out: they are spelled like too many
+  nouns and adjectives (*pȍkušāj, dȍgađāju, dòsljednim, pȍseban, dȍsadan,
+  pȍznat*). (*ȍgledalo*, which looks like *dočekalo*, is a lexicon entry.)
+- **Verbs in *-ovati*** (`ov_verb()`): the infinitive, the participle and
+  the aorist have the accent on the *o* (*kupòvati, putòvao, stanòvala,
+  darovàsmo*), next to the present in *-ujem* above. *Vjȅrovati, rȁdovati
+  se, mìlovati, pȍštovati* keep the first syllable and are lexicon entries.
+- **Nouns in *-ica*** (`ica_noun()`) of four or more syllables built on
+  *-ar, -on, -un, -ovn, -ern, -arn, -telj* have the accent on that syllable
+  (*čuvàrica, kuhàrica, radiònica, račùnica, putòvnica, cvjećàrnica,
+  ravnatèljica, voditèljica*), like *-ačica*. The others are left alone,
+  because many keep the first syllable (*pȍzornica, ȉskaznica, slȕžbenica,
+  djèvōjčica*).
+- **Inhabitants in *-čanin, -ćanin, -đanin, -šanin, -žanin, -janin,
+  -ljanin, -njanin*** (`anin_noun()`): the accent is on the syllable before
+  the suffix in the singular cases that keep the *-in-* (*gràđanin,
+  Rìmljanin, kr̀šćanin, držàvljanin, Lìčanin*).
+- **Adjectives in *-izan, -ozan*** (`izan_adjective()`): *precìzan,
+  koncìzna, nervózan, religiózni, grandiózno*.
+- The **-ina** rule now starts at four syllables and skips the possessives
+  of nouns in *-ica, -ka, -ja* (*kraljičina, bakina, Majina*), the
+  inhabitants (*građanina*) and the augmentatives in *-etina, -urina,
+  -ština, -avina, -čina*, which have the accent on the syllable before the
+  suffix (*kućètina, ptičùrina, čakàvština, mješàvina, junàčina*). The
+  common three-syllable nouns (*brzìna, planìna, širìna, ravnìna, trećìna,
+  čistìna*) are lexicon entries, because the rest of that shape are mostly
+  possessives and nouns with the first syllable stressed (*mȁmina,
+  sȅstrina, Ȁnina, nȍvina, mȁlina, Tùrčina*). The rule for *-ija* also
+  covers the possessives (*Màrijin*).
+
+A few verbs whose forms are spelled like the case forms of these nouns went
+into `VERBS` so that the verb reading wins (*ùdara, ìspune, ùmire, ìskače,
+spȁda*), and *računa, izračuna, obračuna* carry the noun-twin flag, so that
+*računa* alone is the genitive of *ràčūn* (*račúna*) and the verb only at
+the head of a clause.
 
 **Users can do the same without recompiling.** `accents.json` next to the user
 dictionaries (`%APPDATA%\Laprdus`, `~/.config/Laprdus`, the Android and Apple

@@ -1015,29 +1015,50 @@ public:
             return r;
         }
 
-        // Agent nouns in -ač and their feminines in -ačica are stressed on
-        // the syllable before the suffix (prodàvāč, pretražìvāč, navìjāč,
-        // pjevàčica); two-syllable ones (kòvāč) are the default anyway.
+        // Feminine agent nouns in -ačica are stressed on the syllable before
+        // the suffix (pjevàčica, prodavàčica, čistàčica). The masculine
+        // nouns in -ač (prodàvāč, prodaváča) are handled with the other
+        // nouns whose last stem syllable is long, see long_stem().
         static const char32_t* const AC_CASES[] = {
-            U"", U"a", U"u", U"em", U"e", U"i", U"ima", U"ica", U"ice", U"ici",
-            U"icu", U"icom", U"ico", U"icama",
+            U"ica", U"ice", U"ici", U"icu", U"icom", U"ico", U"icama",
         };
         if (n >= 3 && before_suffix(U"ač", AC_CASES, r)) return r;
 
         // Nouns in -ina: abstract nouns, loans and female names are stressed
-        // on the i (brzìna, planìna, veličìna, mašína, Katarína); the
+        // on the i (veličìna, Katarína, balerína, vitamína, četvrtìna); the
         // possessive -ovina/-evina on the syllable before it (dòmovina,
         // králjevina, polòvina). Nouns in -bina go both ways (sudbìna,
         // rȍdbina) and are left to the lexicon, as are the exceptions
         // (gȍdina, ȉstina, cȁrina, svȉnjetina, Vȍjvodina).
+        //
+        // Not every -ina is that suffix. The possessives of nouns in -ica,
+        // -ka and -ja (kraljičin, učiteljičina, bakina, mačkine, Majina)
+        // keep the accent of their noun, the inhabitants in -čanin, -đanin
+        // (gràđanina) are anin_noun()'s, and the augmentatives in -etina,
+        // -urina, -ština, -avina and -čina have it on the syllable before
+        // the suffix (kućètina, ptičùrina, čakàvština, mješàvina,
+        // junàčina). Three-syllable words are left alone: the common
+        // abstract nouns (brzìna, planìna, širìna, ravnìna, trećìna) are
+        // lexicon entries, and the rest of that shape are mostly
+        // possessives (mȁmina, sȅstrina, Ȁnina, Ȉvina) and nouns with the
+        // first syllable stressed (nȍvina, mȁlina, kȕpina, Tùrčina).
         static const char32_t* const A_CASES[] = {
             U"a", U"e", U"i", U"u", U"om", U"ama",
         };
-        if (n >= 3 && !ends_with_any(m_w, {U"bina", U"bine", U"bini", U"binu", U"binom", U"binama"})) {
-            if (before_suffix(U"ovin", A_CASES, r) || before_suffix(U"evin", A_CASES, r)) {
-                return r;
+        size_t in_pos = 0;
+        if (n >= 4 && !ends_with_any(m_w, {U"bina", U"bine", U"bini", U"binu", U"binom", U"binama"}) &&
+            match(U"in", A_CASES, in_pos) && in_pos >= 2 && nucleus_at(in_pos) >= 2) {
+            const std::u32string base = m_w.substr(0, in_pos);
+            if (!ends_with_any(base, {U"ič", U"ic", U"k", U"j", U"čan", U"ćan", U"đan", U"šan", U"žan", U"jan"})) {
+                if (before_suffix(U"ovin", A_CASES, r) || before_suffix(U"evin", A_CASES, r)) {
+                    return r;
+                }
+                if (ends_with_any(base, {U"et", U"ur", U"št", U"av", U"č"}) &&
+                    before_suffix(U"in", A_CASES, r)) {
+                    return r;
+                }
+                if (at_suffix(U"in", A_CASES, 0, r)) return r;
             }
-            if (at_suffix(U"in", A_CASES, 0, r)) return r;
         }
 
         // -irati verbs: telefonírati, kombinírām, kopíran
@@ -1066,7 +1087,8 @@ public:
         // syllable before (policija, organizácija, Itàlija, pamètnijī)
         static const char32_t* const IJ_ENDINGS[] = {
             U"a", U"e", U"i", U"u", U"o", U"om", U"ama", U"em", U"eg", U"ega",
-            U"emu", U"ih", U"im", U"ima", U"oj",
+            U"emu", U"ih", U"im", U"ima", U"oj", U"in", U"ina", U"ine", U"ini",
+            U"inu", U"inom",
         };
         if (n >= 3 && before_suffix(U"ij", IJ_ENDINGS, r)) {
             size_t li = static_cast<size_t>(m_letters[static_cast<size_t>(r.nucleus)]);
@@ -1148,8 +1170,301 @@ public:
             return r;
         }
 
+        // Word classes rather than single suffixes, from the most to the
+        // least specific. The verbs first: a prefixed verb's forms would
+        // otherwise be read as nouns (izabrana, pokušamo).
+        if (prefixed_verb(r)) return r;
+        if (ov_verb(r)) return r;
+        if (ica_noun(r)) return r;
+        if (anin_noun(r)) return r;
+        if (izan_adjective(r)) return r;
+        if (long_stem(r)) return r;
+
         return StressResult{};
     }
+
+    // Prefixed verbs keep the accent of the infinitive on the root in the
+    // whole paradigm: poglèdati, poglèdala, poglèdavši, poglèdasmo,
+    // poglèdam, poglèdate; napràviti, napràvio; iskùsiti, iskùsio;
+    // dočèkati, dočèkala; pokùšati, pokùšamo. The long infinitives
+    // already had their antepenult from weak(); this gives the other forms
+    // the same syllable, which is what the verbs in VERBS do by name. It
+    // takes a word that starts with a verbal prefix, has a thematic vowel
+    // (a, i, u, or je) before one of the verbal endings, and at least one
+    // root syllable between the two, and stresses the syllable before the
+    // thematic vowel. The present in -im/-i/-e, the third person -a, the
+    // imperative in -aj and the passive participle in -an are left out:
+    // they are spelled like too many nouns and adjectives (dosljednim,
+    // pokušaj, događaju, pȍseban, dȍsadan, pȍznat).
+    bool prefixed_verb(StressResult& r) const {
+        struct Ending { const char32_t* text; bool a_only; };
+        static const Ending ENDINGS[] = {
+            {U"jući", true}, {U"vši", false}, {U"smo", false}, {U"ste", false},
+            {U"še", false}, {U"hu", false}, {U"ti", false}, {U"t", false},
+            {U"la", false}, {U"lo", false}, {U"li", false}, {U"le", false},
+            {U"o", false},
+            {U"m", true}, {U"š", true}, {U"mo", true}, {U"te", true},
+        };
+        for (const Ending& e : ENDINGS) {
+            const std::u32string ending(e.text);
+            if (m_w.size() < ending.size() + 3 || !ends_with(m_w, ending)) continue;
+            const size_t t = m_w.size() - ending.size() - 1;
+            const char32_t v = m_w[t];
+            const bool thematic = v == U'a' || v == U'i' || v == U'u' ||
+                                  (v == U'e' && m_w[t - 1] == U'j');
+            if (!thematic || (e.a_only && v != U'a') || is_vowel_letter(m_w[t - 1])) continue;
+            if (!prefixed_before(t)) return false;
+            const int k = nucleus_at(t);
+            if (k < 2) return false;        // the prefix's vowel and a root vowel
+            r.nucleus = k - 1;
+            r.accent = Accent::Rising;
+            return true;
+        }
+        return false;
+    }
+
+    // Verbs in -ovati carry the accent on the o in the infinitive, the
+    // participle and the aorist (kupòvati, putòvao, stanòvala, darovàsmo);
+    // the present in -ujem is handled above. The few that keep the first
+    // syllable (vjȅrovati, rȁdovati se, mìlovati, pȍštovati) are lexicon
+    // entries.
+    bool ov_verb(StressResult& r) const {
+        static const char32_t* const OV_ENDINGS[] = {
+            U"ati", U"at", U"ao", U"ala", U"alo", U"ali", U"ale", U"avši",
+            U"asmo", U"aste", U"aše", U"ahu",
+        };
+        if (!at_suffix(U"ov", OV_ENDINGS, 0, r)) return false;
+        r.accent = Accent::Rising;
+        return true;
+    }
+
+    // Nouns in -ica of four or more syllables built on -ar, -on, -un,
+    // -ovn, -ern, -arn and -telj have the accent on that syllable
+    // (čuvàrica, kuhàrica, radiònica, račùnica, putòvnica, cvjećàrnica,
+    // ravnatèljica, voditèljica), like the -ačica above. The others are
+    // left alone: many keep the first syllable (pȍzornica, ȉskaznica,
+    // slȕžbenica, djèvōjčica) and the rest are lexicon entries.
+    bool ica_noun(StressResult& r) const {
+        static const char32_t* const ICA_CASES[] = {
+            U"ica", U"ice", U"ici", U"icu", U"icom", U"ico", U"icama",
+        };
+        size_t pos = 0;
+        if (count() < 4 || !match(U"", ICA_CASES, pos)) return false;
+        const std::u32string base = m_w.substr(0, pos);
+        if (!ends_with_any(base, {U"ar", U"on", U"un", U"ovn", U"ern", U"arn", U"telj"})) {
+            return false;
+        }
+        const int k = nucleus_before(pos);
+        if (k <= 0) return false;
+        r.nucleus = k;
+        return true;
+    }
+
+    // Inhabitant nouns in -čanin, -ćanin, -đanin, -šanin, -žanin, -janin,
+    // -ljanin, -njanin: the accent is on the syllable before the suffix
+    // (gràđanin, Rìmljanin, kr̀šćanin, držàvljanin, Lìčanin), in the
+    // singular cases that keep the -in-.
+    bool anin_noun(StressResult& r) const {
+        static const char32_t* const ANIN[] = {
+            U"in", U"ina", U"inu", U"inom", U"ine", U"ini",
+        };
+        size_t pos = 0;
+        if (!match(U"an", ANIN, pos) || pos == 0) return false;
+        const char32_t c = m_w[pos - 1];
+        if (c != U'č' && c != U'ć' && c != U'đ' && c != U'š' && c != U'ž' && c != U'j') return false;
+        const int k = nucleus_before(pos);
+        if (k < 0) return false;
+        r.nucleus = k;
+        return true;
+    }
+
+    // Adjectives in -izan and -ozan: precìzan, koncìzna, nervózan,
+    // religiózni, grandiózno.
+    bool izan_adjective(StressResult& r) const {
+        static const char32_t* const ADJ_ENDINGS[] = {
+            U"an", U"na", U"no", U"ni", U"ne", U"nu", U"nog", U"nom", U"nih", U"nim",
+            U"noj", U"noga", U"nome", U"nomu", U"nima", U"nija", U"nije", U"niji",
+        };
+        if (at_suffix(U"iz", ADJ_ENDINGS, 0, r)) return true;
+        if (at_suffix(U"oz", ADJ_ENDINGS, 0, r)) {
+            r.is_long = true;
+            return true;
+        }
+        return false;
+    }
+
+    // Nouns whose last stem syllable is long: loans (telefon, restoran,
+    // kapetan, rezultat, programer, piramida, analiza) and the derived
+    // nouns in -ač, -ar, -aš, -njak, -ljak, -enik (prodavač, čuvar,
+    // košarkaš, stručnjak, zemljak, učenik). Every case form has a long
+    // rising accent on that syllable (telefóna, restorána, rezultáta,
+    // programéra, prodaváča, čuvára, zemljáka, učeníka), and so do the
+    // possessives (čuvárov, zemljákova) and the genitive plural. In the
+    // nominative, where the syllable is the last one and cannot carry a
+    // rising accent, the dictionaries move the accent one syllable back
+    // and leave the length behind it (telèfōn, restòrān, prodàvāč,
+    // čaròbnjāk, učènīk); Stojan and Mirsad say exactly that, the
+    // Croatian voice leaves the unstressed length out (restòran,
+    // prodàvač), as Croatian is commonly spoken.
+    //
+    // Which stem endings are long is decided by their shape, and only
+    // where that shape is reliable; the rest stays with the default and
+    // the lexicon. Where an ending is also an inflection of native words
+    // (-ala of participles, -ana of passive participles, -ina of
+    // possessives) it is left out or limited, see long_rhyme().
+    bool long_stem(StressResult& r) const {
+        static const char32_t* const ENDINGS[] = {
+            U"ovom", U"ovog", U"ovoj", U"ovih", U"ovim", U"evom", U"evog", U"evoj",
+            U"evih", U"evim", U"ima", U"ama", U"ova", U"ovo", U"ovi", U"ove", U"ovu",
+            U"eva", U"evo", U"evi", U"eve", U"evu", U"om", U"em", U"ov", U"ev",
+            U"a", U"e", U"i", U"u", U"o", U"",
+        };
+        // -anac, -inac, -unac, -onac, -enac, -irac: the vowel before the
+        // fleeting a is the long one, in the nominative as well
+        // (Amerikánac, Dalmatínac, bjegúnac, Alžírac).
+        if (ends_with(m_w, U"ac") && m_w.size() >= 5) {
+            const std::u32string pair = m_w.substr(m_w.size() - 4, 2);
+            if (is_one_of(pair, {U"an", U"in", U"un", U"on", U"en", U"ir"})) {
+                const int k = nucleus_at(m_w.size() - 4);
+                if (k >= 1) {
+                    r.nucleus = k;
+                    r.is_long = true;
+                    return true;
+                }
+            }
+        }
+        for (const char32_t* text : ENDINGS) {
+            const std::u32string ending(text);
+            if (!ends_with(m_w, ending)) continue;
+            const std::u32string stem = m_w.substr(0, m_w.size() - ending.size());
+            if (stem.size() < 3 || is_vowel_letter(stem.back())) continue;
+            size_t p = stem.size();
+            while (p > 0 && !is_vowel_letter(stem[p - 1])) --p;
+            if (p == 0) continue;
+            --p;                                    // the last vowel of the stem
+            if (stem.size() - p > 4) continue;      // rhyme: vowel + up to three consonants
+            const int k = nucleus_at(p);
+            if (k < 1) continue;                    // not the first syllable
+            if (!long_rhyme(stem, p, k, ending)) continue;
+            if (ending.empty()) {
+                // The nouns in -enik, -anik keep the accent of the
+                // participle they come from, the syllable before the
+                // suffix (ùčenīk, pòslanīk, zaròbljenīk, zapòslenīk,
+                // osigùranīk); the rest move it one syllable back.
+                const bool nik = stem.compare(p, 2, U"ik") == 0;
+                r.nucleus = nik ? std::max(0, k - 2) : k - 1;
+                if (m_language != VoiceLanguage::Croatian) r.long_after = k;
+            } else {
+                r.nucleus = k;
+                r.is_long = true;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    // Is the stem's last syllable, whose vowel is at `p` (nucleus `k`),
+    // one of the long shapes? `ending` is the inflection after the stem.
+    bool long_rhyme(const std::u32string& stem, size_t p, int k, const std::u32string& ending) const {
+        const std::u32string rhyme = stem.substr(p);
+        if (p >= 2 && stem[p] == U'e' && stem[p - 1] == U'j' && stem[p - 2] == U'i') {
+            return false;                           // the e of "ije" (svijeta, cvijeta)
+        }
+        auto preceded_by = [&](std::initializer_list<const char32_t*> list) {
+            return ends_with_any(stem.substr(0, p), list);
+        };
+        const bool nominative = ending.empty();
+        const bool possessive = ending.size() >= 2 && (ending[0] == U'o' || ending[0] == U'e') &&
+                                ending[1] == U'v';
+        // Unconditional: prodavač/prodaváča, garaža, čuvar/čuvára, papir,
+        // suvenir, račun/račúna, majmun, analiza, košarkaš/košarkáša.
+        if (is_one_of(rhyme, {U"ač", U"až", U"ar", U"ir", U"un"})) return true;
+        // -aš: the same, but -aše after one syllable is the imperfect
+        // (gledaše, imaše), not nogometáše.
+        if (rhyme == U"aš") return ending != U"e" || k >= 2;
+        // Not after a verbal prefix, where native words have the same
+        // shape with the first syllable stressed (zákon, nàslon, pòznat,
+        // zàhvat, nágrada, západ, ùgriz): telefon, balkon, sezona,
+        // rezultat, aparat, format, čokolada, limunada, komad, analiza.
+        if (is_one_of(rhyme, {U"on", U"ad", U"iz"})) return !prefixed_word();
+        // -at the same, and not before -e and -i, which are the present of
+        // every verb in -ati (imate, gledate, čitati): rezultata, aparatu,
+        // formatom, kandidatima.
+        if (rhyme == U"at") return !prefixed_word() && !is_one_of(ending, {U"e", U"i"});
+        // -an also needs two syllables before it and no -av-/-iv-/-ir-,
+        // because of the passive participles (poslana, prodavana,
+        // planirana) and the names (Ìvana, Stjȅpana): kapetan, Talijan,
+        // šarlatan.
+        if (rhyme == U"an") {
+            return k >= 2 && !prefixed_word() && !preceded_by({U"av", U"iv", U"ir"});
+        }
+        // -er, -et, -id need two syllables before them: programer,
+        // inženjer, dizajner, kabinet, piramida, invalid, but jȅzera,
+        // vȅčera, sȅrvera, prȅdmeta, dȅteta, ȕvida. -ete is the present
+        // of the verbs in -eti (odaberete, pošaljete).
+        if (is_one_of(rhyme, {U"er", U"id"})) return k >= 2;
+        if (rhyme == U"et") return k >= 2 && ending != U"e";
+        // -in: the case forms are the -ina rule's, and -ino is a
+        // possessive (mȁmino, Ȁnino); here the nominative of longer words
+        // (vitàmin, magàzin, aspìrin; not the possessives Ìvanin, Jȅlenin,
+        // kràljičin, bȁkin, Mȁjin, told by the letter before the suffix),
+        // the dative plural and the possessives of the nouns (vitamínima,
+        // Antonínov).
+        if (rhyme == U"in") {
+            if (is_one_of(ending, {U"a", U"e", U"i", U"u", U"o", U"om", U"ama"})) return false;
+            if (nominative) {
+                return k >= 2 && !is_one_of(stem.substr(p - 1, 1), {U"n", U"c", U"č", U"k", U"j"});
+            }
+            return true;
+        }
+        // -njak, -ljak, with the plural in -njaci: stručnjak, zemljak,
+        // seljak, bezveznjak, duhovnjak, čarobnjácima; the other nouns in
+        // -ak go both ways (jùnāk, čàrdak, pȅtak).
+        if (rhyme == U"ak" || (rhyme == U"ac" && is_one_of(ending, {U"i", U"ima"}))) {
+            return preceded_by({U"nj", U"lj"});
+        }
+        // -nik after a vowel in a prefixed word, with its plural in -nici:
+        // učenik, učeníci, zarobljenik, zaposlenik, osiguranik, poznanik;
+        // not rȁdnīk, pȕtnīk, kȍrisnīk (consonant before the n) and not
+        // spȍmenīk, zàmjenīk (lexicon).
+        if (rhyme == U"ik" || (rhyme == U"ic" && is_one_of(ending, {U"i", U"ima"}))) {
+            return p >= 2 && stem[p - 1] == U'n' && is_vowel_letter(stem[p - 2]) && prefixed_word();
+        }
+        // -tiv, -hiv, -siv: motiv, arhiv, kolektiv, perspektiva, masiv;
+        // not the adjectives in -ljiv, -čiv and the nouns in -ziv (náziv).
+        if (rhyme == U"iv") return preceded_by({U"t", U"h", U"s"});
+        // -uz: Francuza, kukuruza; not the dative of zadruga, usluga.
+        if (rhyme == U"uz") return is_one_of(ending, {U"", U"a", U"u", U"om", U"em", U"ima"}) || possessive;
+        // -al only where no participle can be spelled the same way
+        // (kanálu, kanálom, generálima, materijálom; not -ala, -ali).
+        if (rhyme == U"al") return is_one_of(ending, {U"", U"u", U"om", U"em", U"ima"}) || possessive;
+        // -itak, -utak: dobitka, užitka, imutka (the nominatives dobitak,
+        // užitak have the fleeting a, which puts the long syllable before
+        // the last one: dobítak). Not -inka: lȍzīnka next to Dalmatínka.
+        if (is_one_of(rhyme, {U"itk", U"utk"})) return !nominative;
+        // The case forms of the -anac, -inac nouns above.
+        if (is_one_of(rhyme, {U"anc", U"inc", U"unc", U"onc", U"enc", U"irc", U"alc", U"olc"})) {
+            return !nominative;
+        }
+        return false;
+    }
+
+    // Does the word begin with one or more verbal prefixes (po, iz, raz-po,
+    // u) followed by a root that has a vowel before letter `end`? The lone
+    // s- is not counted when the whole word is asked about (sezona, senat
+    // are not prefixed).
+    bool prefixed_before(size_t end, bool whole_word = false) const {
+        for (size_t len = 1; len < end && len <= 6; ++len) {
+            if (whole_word && len == 1 && m_w[0] == U's') continue;
+            if (!is_verbal_prefix(m_w.substr(0, len))) continue;
+            for (size_t i = len; i < end; ++i) {
+                if (is_vowel_letter(m_w[i])) return true;
+            }
+        }
+        return false;
+    }
+
+    bool prefixed_word() const { return prefixed_before(m_w.size(), true); }
 
     // Long infinitives are most often stressed on the antepenult
     // (govòriti, zabòraviti, razùmjeti).

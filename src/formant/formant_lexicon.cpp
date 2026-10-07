@@ -38,9 +38,12 @@ const char* const COMMON[] = {
     u8"sedamd'ese:t", u8"osamd'ese:t", u8"deved'ese:t",
     u8"st^o:", u8"dvj^esto", u8"dvj^esta", u8"dv^esta", u8"tr^isto", u8"tr^ista",
     u8"č/etiristo", u8"p^e:tsto", u8"š^e:ststo", u8"s^edamsto", u8"^osamsto",
-    u8"d^evetsto", u8"t^isuć*", u8"h^iljad*", u8"mil'iju:n*", u8"mil'io:n*",
-    u8"milij'a:rd*", u8"bil'iju:n*", u8"bil'io:n*", u8"p'rv*", u8"dr^ug*",
-    u8"tr^eć*", u8"č/etvrt*", u8"z^arez", u8"c^ije:l*", u8"c^e:l*",
+    u8"d^evetsto", u8"t^isuć*", u8"h^iljad*",
+    // milìjūn but milijúna, like the other nouns with a long last stem
+    // syllable (StressRules::long_stem)
+    u8"mil'iju:n", u8"milij'u:n|a|u|om|e|i|ima|sk*", u8"mil'io:n", u8"mili'o:n|a|u|om|e|i|ima|sk*",
+    u8"milij'a:rd*", u8"bil'iju:n", u8"bilij'u:n|a|u|om|e|i|ima", u8"bil'io:n", u8"bili'o:n|a|u|om|e|i|ima", u8"p'rv*", u8"dr^ug*",
+    u8"tr^eć*", u8"č/etvrt|i|a|o|e|u|og|oga|om|ome|oj|ih|im|ima", u8"z^arez", u8"c^ije:l*", u8"c^e:l*",
 
     // ---- Very frequent words: tone and length ----
     u8"d^a:n", u8"d^obar", u8"d^obro", u8"d^obra", u8"hv/a:la", u8"m^oli:m",
@@ -100,11 +103,11 @@ const char* const COMMON[] = {
     u8"j/edina", u8"j/edine", u8"j/edini", u8"j/edinu", u8"j/edino", u8"j/edinom",
     u8"j/edinog", u8"j/edinoj", u8"j/edinih", u8"j/edinim", u8"j/edinoga",
     // loans with a long i
-    u8"maš'i:n*", u8"kab'i:n*", u8"vitr'i:n*", u8"medic'i:n*", u8"vakc'i:n*",
+    u8"maš'i:n*", u8"kab'i:n|a|e|i|u|om|ama", u8"vitr'i:n*", u8"medic'i:n*", u8"vakc'i:n*",
     u8"benz'i:n*", u8"discipl'i:n*", u8"rut'i:n*", u8"kuž'i:n*", u8"terr'i:n*",
 
     // ---- Nouns in -ica with non-initial stress ----
-    u8"učit'eljic*", u8"jed'inic*", u8"tipk'o:vnic*", u8"uči'onic*", u8"rad'ionic*",
+    u8"učit'eljic*", u8"jed'inic*", u8"tipk'o:vnic*", u8"uči'onic*", u8"radi'onic*",
     u8"lub'enic*", u8"gol'ubic*", u8"kob'asic*", u8"prodav'aonic*", u8"spav'aonic*",
     u8"čit'aonic*", u8"bolnič'a:rk*",
 
@@ -239,7 +242,33 @@ const char* const COMMON[] = {
     // ---- Food, places in town, everyday loans ----
     u8"rest'ora:n*", u8"aer'odrom*", u8"apot'e:k*", u8"ljek'a:rn*", u8"trg'ovin*",
     u8"kupa'onic*", u8"bibliot'e:k*", u8"ban'a:n*", u8"čokol'a:d*", u8"sal'a:t*",
-    u8"par'adajz*", u8"fak'ulte:t*", u8"sveuč'ilišt*",
+    u8"par'adajz*", u8"fak'ulte:t*", u8"sveuč'ilišt*", u8"ćev'a:p*",
+
+    // ---- Words shaped like the loans with a long last stem syllable
+    // (StressRules::long_stem) that keep their native accent ----
+    // zákon, nágrada; spȍmenīk, zàmjenīk, ùdžbenīk, zlòčin next to učeník,
+    // zločínac; vòjnīk but vojníka; mȅnadžer, hȁmburger
+    u8"z/a:kon*", u8"n/a:grad*", u8"sp^omenik*", u8"z/amjenik*", u8"'udžbenik*",
+    u8"zl/očin*", u8"zloč'inc*", u8"zloč'inac", u8"v/ojnik", u8"v/ojniče",
+    u8"vojn'i:|ka|ku|kom|ci|cima|ke", u8"m^enadžer*", u8"h^amburger*",
+    u8"čvrst'in*", u8"četvrt'in*", u8"pol'ovic*", u8"činj'enic*", u8"b'aterij*",
+    u8"/ogledal*", u8"četvrt'i:nk*", u8"Dalmat'i:nk*", u8"b/ogat*", u8"pr^evar*", u8"s/udar*",
+    u8"dom'aćin*", u8"dom'aćic*", u8"B/alkan", u8"Balk'a:n|a|u|om|e|i|ima", u8"balk'a:nsk*",
+    // Three-syllable nouns in -ina (the rule needs four syllables, see
+    // StressRules::strong): abstract nouns and loans with a long i
+    u8"ravn'in*", u8"niz'in*", u8"treć'in*", u8"osm'in*", u8"pet'in*", u8"šest'in*",
+    u8"sedm'in*", u8"devet'in*", u8"čist'in*", u8"led'in*", u8"vrl'in*", u8"tuđ'in*",
+    u8"crn'in*", u8"bjel'in*", u8"bel'in*", u8"modr'in*", u8"vedr'in*", u8"puč'in*",
+    u8"turb'i:n*", u8"doktr'i:n*", u8"kant'i:n*", u8"delf'i:n*", u8"dup'i:n*", u8"pingv'i:n*",
+    u8"term'i:n|a|u|om|e|i|ima",
+    // ùmire (umrijeti), not umíre (umiriti) and not papíre
+    u8"'umir|e|em|eš|emo|ete|u|ući", u8"'izumir|e|em|eš|emo|ete|u|ući",
+    // zȅmlja against zemljáka, bolèsnīk, bolesníka
+    u8"z/emljak", u8"zemlj'a:|ka|ku|kom|ci|cima|ke|če|kov*", u8"bol'esnik", u8"bol'esniče",
+    u8"bolesn'i:|ka|ku|kom|ci|cima|ke", u8"bol'esnic*",
+    // Verbs in -ovati that keep the first syllable against the rule for
+    // -ovati (vjȅrovati, rȁdovati se, mìlovati, pȍštovati)
+    u8"vj^erov*", u8"r^adov*", u8"m/ilov*", u8"p^oštov*",
 };
 
 const char* const CROATIAN[] = {
@@ -356,8 +385,8 @@ const char* const VERBS[] = {
     u8"nahr'a:n=i<p", u8"zašt'i:t=i<pn", u8"odg'od=i<pn", u8"dog'od=i<", u8"pog'od=i<p",
     u8"ug'od=i<pn", u8"prilag'od=i<p", u8"pohv'a:l=i<pn", u8"hv'a:l=i", u8"zahv'a:l=i<n",
     u8"up'a:l=i<pn", u8"zap'a:l=i<p", u8"ug'a:s=i<p", u8"g'a:s=i", u8"ispr'o:b=a<p",
-    u8"pr'o:b=a", u8"proč'it=ap", u8"oč'it=ap", u8"izrač'un=aP", u8"rač'un=a",
-    u8"obrač'un=aP", u8"zaklj'uč=ap", u8"otklj'uč=ap", u8"p'i:t=a", u8"up'i:t=a<p",
+    u8"pr'o:b=a", u8"proč'it=ap", u8"oč'it=ap", u8"izrač'un=aPn", u8"rač'un=an",
+    u8"obrač'un=aPn", u8"zaklj'uč=ap", u8"otklj'uč=ap", u8"p'i:t=a", u8"up'i:t=a<p",
     u8"zap'i:t=a<p", u8"pr'i:č=a", u8"ispr'i:č=a<p", u8"sv'i:r=a", u8"m'o:r=a",
     u8"up'ozn=ap", u8"prep'ozn=ap", u8"prid'od=aP", u8"k'a:z=t", u8"k'a:ž=e",
     u8"pok'a:z=tp", u8"pok'a:ž=e<", u8"prik'a:z=tp", u8"prik'a:ž=e<", u8"dok'a:z=tp",
@@ -429,6 +458,15 @@ const char* const VERBS[] = {
     u8"pom'e:š=a<p", u8"um'e:š=a<p", u8"izm'e:š=a<p", u8"zam'e:š=a<p", u8"prom'e:š=a<p",
     u8"zaht'e:v=a<p", u8"usp'e:v=a<p", u8"dosp'e:v=a<p", u8"razum'e:v=a<p",
     u8"zal'e:v=a<p", u8"prel'e:v=a<p",
+    // Verbs whose forms are spelled like the case forms of the nouns with
+    // a long last stem syllable (StressRules::long_stem): ùdara is not
+    // udára, ìspune not račúne, ìskače not koláče, spȁda not čokoláda;
+    // odmárati, zamárati follow their accent. (The present of umrijeti,
+    // ùmire, is in the lexicon: as a stem it would take umíri, umíriti.)
+    u8"'udar=a", u8"'ispun=i", u8"n'apun=i", u8"d'opun=i", u8"p'opun=i",
+    u8"'iskak=t", u8"'iskač=e", u8"'uskak=t", u8"'uskač=e",
+    u8"z'aplak=t", u8"z'aplač=e", u8"sp'ad=a", u8"odm'a:r=a<", u8"zam'a:r=a<",
+    u8"um'a:r=a<", u8"raz'a:r=a<",
 };
 
 template <size_t N>
