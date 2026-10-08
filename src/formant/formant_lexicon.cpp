@@ -469,6 +469,43 @@ const char* const CROATIAN[] = {
     // Bèla, the Croatian name of the kings Béla (Zlatna bula Bele IV.);
     // in Serbian "bela, bele" is the adjective
     u8"B/el|a|e|i|u|om",
+
+    // Listener's second October 2026 list. Školski rječnik hrvatskoga
+    // jezika, cross-checked with HJP; sources and homographs in
+    // docs/formant.md. As elsewhere in this table, omit unstressed length.
+    // The currency stays on the first syllable in every case (dȍlāra,
+    // dȍlārā), unlike the productive -ar rule. ŠR ȅuro, HJP èuro: use ŠR.
+    u8"d^olar*", u8"^eur|o|a|u|om|i|ima|e",
+    u8"n/a:ravan", u8"n/a:ravn*",
+    // Exact noun forms: a priča stem would also swallow príčati/príčao.
+    // The present prȋčā shares the noun's tone; Croatian drops its final
+    // length. Other present/imperative forms are falling, príčajū rising.
+    u8"pr^i:č|a|e|i|u|o|om|ama|am|aš|amo|ate|aj|ajmo|ajte",
+    u8"pr^i:čan*",
+    u8"dj^elomičan", u8"dj^elomičn*", u8"č^injenic*",
+    u8"n^emoguć*",   // nemogúćnost keeps its own longer entry
+    u8"pop/o:dne*", u8"pop/o:dnevima", u8"pop/o:dnevn*", u8"pop/o:dnevan",
+    // èuropskī differs from Európa; do not change the place name's stem.
+    u8"/europsk*", u8"osigur/a:nj*",
+    // The noun shifts onto its long i in the oblique cases; the adjective
+    // retains the nominative's accent (automòbīlskī).
+    u8"autom/obil", u8"automob/i:l*", u8"autom/obilsk*",
+    u8"tek/ućin*", u8"k/afić", u8"kaf/i:ć*",
+    // pomòćnīk / pomoćníka / pomoćníci, but pomòćnica and pomòćničkī.
+    // "pomoćnici" defaults to the masculine plural, not the feminine D/L.
+    u8"pom/oćnik", u8"pomoćn/i:k*", u8"pomoćn/i:c|i|ima",
+    u8"p^omoćniče", u8"pom/oćnic*", u8"pom/oćničk*",
+    u8"t^amo", u8"progn/o:z*", u8"kab/anic*",
+    // Mrežnik and HJP: kȉšobrān, kȉšobrāna, kȉšobrāni. Exact noun
+    // forms keep the short falling i without imposing it on derivatives.
+    u8"k^išobran||a|u|e|om|i|ima",
+    u8"sloj/evit||a|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    u8"sloj/evitost*", u8"sloj/evitošću",
+    // Derivatives checked separately so verb/noun stems cannot take them.
+    // proslavi/proslave default to the noun, as other exact homographs do.
+    u8"pr^oslav|a|e|i|u|o|om|ama", u8"ves/e:lj*",
+    // HJP zàštīćenōst, like the participle (zaštititi shifts in VERBS).
+    u8"z/aštićenost*", u8"z/aštićenošću",
 };
 
 const char* const SERBIAN[] = {
@@ -577,7 +614,7 @@ const char* const IJE_VERBS[] = {
 // keep that accent on the root (urédi, urédio, otvòri, pročìtaj, pokréni);
 // StressRules::verb_form() builds the forms.
 //
-//   st'e:m=class and flags
+//   st'e:m=class and flags (' automatic tone, / rising, ^ falling)
 //   i  -iti, -im      (urediti, uredim, uredi, uredio, uređen)
 //   a  -ati, -am      (pročitati, pročitam, pročitaj, pročitao, pročitan)
 //   u  -nuti, -nem    (pokrenuti, pokrenem, pokreni, pokrenuo, pokrenut)
@@ -624,13 +661,14 @@ const char* const VERBS[] = {
     u8"obr'a:d=i<pn", u8"ur'a:d=i<p", u8"zar'a:d=i<pn", u8"odr'a:d=i<p",
     u8"prer'a:d=i<pn", u8"nagr'a:d=i<pn", u8"ugr'a:d=i<p", u8"izgr'a:d=i<p",
     u8"sagr'a:d=i<p", u8"gr'a:d=i", u8"pohr'a:n=i<pn", u8"sahr'a:n=i<pn", u8"hr'a:n=i",
-    u8"nahr'a:n=i<p", u8"zašt'i:t=i<pn", u8"odg'od=i<pn", u8"dog'od=i<", u8"pog'od=i<p",
+    // HJP: zaštítiti, but zàštītīm and zàštīćen in Croatian too.
+    u8"nahr'a:n=i<p", u8"zašt'i:t=i<pn!", u8"odg'od=i<pn", u8"dog'od=i<", u8"pog'od=i<p",
     u8"ug'od=i<pn", u8"prilag'od=i<p", u8"pohv'a:l=i<pn", u8"hv'a:l=i", u8"zahv'a:l=i<n",
     u8"up'a:l=i<pn", u8"zap'a:l=i<p", u8"ug'a:s=i<p", u8"g'a:s=i", u8"ispr'o:b=a<p",
     u8"p'odes=i", u8"k'orist=in", u8"ub'rz=a<",
     u8"pr'o:b=a", u8"proč'it=ap", u8"oč'it=ap", u8"izrač'un=aPn", u8"rač'un=an",
     u8"obrač'un=aPn", u8"zaklj'uč=ap", u8"otklj'uč=ap", u8"p'i:t=a", u8"up'i:t=a<p",
-    u8"zap'i:t=a<p", u8"pr'i:č=a", u8"ispr'i:č=a<p", u8"sv'i:r=a", u8"m'o:r=a",
+    u8"zap'i:t=a<p", u8"pr/i:č=a", u8"ispr'i:č=a<p", u8"sv'i:r=a", u8"m'o:r=a",
     u8"up'ozn=ap", u8"prep'ozn=ap", u8"prid'od=aP", u8"k'a:z=t", u8"k'a:ž=e",
     u8"pok'a:z=tp", u8"pok'a:ž=e<", u8"prik'a:z=tp", u8"prik'a:ž=e<", u8"dok'a:z=tp",
     u8"dok'a:ž=e<", u8"otk'a:z=tp", u8"otk'a:ž=e<", u8"zak'a:z=tp", u8"zak'a:ž=e<",
@@ -721,6 +759,8 @@ const char* const VERBS[] = {
     u8"razv'i:j=a<!", u8"pr'edstav=i", u8"pr'edstavlj=a", u8"n'astav=i", u8"n'astavlj=a",
     u8"p'otic=t", u8"p'otič=e", u8"p'odstic=t", u8"p'odstič=e",
     u8"inspir'i:r=a<p!", u8"insp'iris=t", u8"insp'iriš=e",
+    // ŠR and HJP: pròslaviti/pròslavīm/pròslavljen; vesèliti/vesèlīm.
+    u8"pr/oslav=i", u8"ves'el=i",
 };
 
 template <size_t N>

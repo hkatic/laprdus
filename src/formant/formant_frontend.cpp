@@ -838,6 +838,7 @@ struct VerbRoot {
     std::vector<std::u32string> soft;   // before the participle's -en: dijel -> dijelj
     size_t vowel = 0;               // letter of the accented vowel within the root
     bool is_long = false;
+    Accent accent = Accent::None;   // optional explicit tone of a whole stem
     bool whole_stem = false;        // starts the word, takes no further prefix
     bool iti = false;               // urediti, uredim, uredi, uredio, uređen
     bool ati = false;               // pročitati, pročitao, pročitan
@@ -890,9 +891,11 @@ bool parse_verb_root(const std::u32string& text, bool whole, VerbRoot& root) {
         bool marked = false;
         for (char32_t raw : text.substr(0, split)) {
             char32_t c = to_lower(raw);
-            if (c == U'\'') {
+            if (c == U'\'' || c == U'^' || c == U'/') {
                 if (marked) return false;
                 root.vowel = root.root.size();
+                root.accent = c == U'^' ? Accent::Falling
+                            : c == U'/' ? Accent::Rising : Accent::None;
                 marked = true;
             } else if (c == U':') {
                 if (!marked || root.vowel + 1 != root.root.size()) return false;
@@ -1724,6 +1727,7 @@ private:
         } else {
             r.nucleus = k;
             r.is_long = root.is_long;
+            r.accent = root.accent;
         }
         return true;
     }

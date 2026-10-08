@@ -1025,7 +1025,8 @@ Three things to know:
   *uključiti, isključiti, zaključiti, priključiti* (*ùključeno*,
   *ìsključeno*, the status words of every settings screen, which the same
   listener heard as wrong with the accent on *-klju-*), *rasporediti*
-  (*raspòređeni*), *osnažiti* and *potaknuti* (October 2026). Zvonko gets
+  (*raspòređeni*), *osnažiti*, *potaknuti* and *zaštititi* (*zàštićen*,
+  October 2026). Zvonko gets
   the shift without the length after it (*ùključen* for the dictionaries'
   *ùkljūčen*).
 - **Noun twins.** The imperative is often spelled like a case of a noun:
@@ -1130,6 +1131,75 @@ looks each infinitive up and prints the table entry, the dictionary's forms
 and any noun twin (or says that the verb needs no entry, or that it is
 irregular and belongs in the lexicon). Then check the forms at the head of a
 clause and inside one.
+
+**The second list, checked 8 October 2026.** The following corrections use
+the Institute for Croatian Language's normative *Školski rječnik hrvatskoga
+jezika*, cross-checked against *Hrvatski jezični portal* (HJP). These are
+lexical accents, not a new rule inferred from twenty words. The table gives
+the dictionaries' lengths; Zvonko keeps the existing policy of shortening
+unstressed vowels, so, for example, *dȍlāra* is synthesized as *dȍlara*,
+*automòbīl* as *automòbil*, but the stressed vowel in *automobíla* stays long.
+
+| Collected spelling | Dictionary accent and paradigm | Primary entry |
+|---|---|---|
+| dolara | *dȍlāra* (G singular), *dȍlārā* (G plural); initial falling accent throughout | [dolar](https://rjecnik.hr/search/?strict=yes&q=dolar) |
+| eura | *ȅura* (G singular), *ȅūrā* (G plural) | [euro](https://rjecnik.hr/search/?strict=yes&q=euro) |
+| naravno | *nárāvno*; HJP has *náravno*, same stressed vowel and tone | [naravno](https://rjecnik.hr/search/?strict=yes&q=naravno) |
+| priča | N singular *prȋča*; G plural and present *prȋčā* | [priča](https://rjecnik.hr/search/?strict=yes&q=pri%C4%8Da), [pričati](https://rjecnik.hr/search/?strict=yes&q=pri%C4%8Dati) |
+| djelomično | *djȅlomično*, *djȅlomičan*, *djȅlomična* | [djelomičan](https://rjecnik.hr/search/?strict=yes&q=djelomi%C4%8Dan) |
+| činjenica | *čȉnjenica*, G plural *čȉnjenīcā* | [činjenica](https://rjecnik.hr/search/?strict=yes&q=%C4%8Dinjenica) |
+| nemoguće | *nȅmogūće*, *nȅmogūć*, *nȅmogūća*; the noun keeps *nemogúćnost* | [nemoguć](https://rjecnik.hr/search/?strict=yes&q=nemogu%C4%87) |
+| popodne | *popódnē*, *popódnēva*; same stressed long o in *popodnevima* | [popodne](https://rjecnik.hr/search/?strict=yes&q=popodne) |
+| proslaviti | *pròslaviti*, *pròslavīm*, *pròslavio*, *pròslavljen* | [proslaviti](https://rjecnik.hr/search/?strict=yes&q=proslaviti) |
+| europska | *èuropskā*, unlike *Európa* | [europski (HJP)](https://hjp.znanje.hr/index.php?show=search_by_id&id=fFtjWRI%3D) |
+| osiguranja | *osiguránja* (G singular/N plural), *osiguránjā* (G plural) | [osiguranje](https://rjecnik.hr/search/?strict=yes&q=osiguranje) |
+| veselimo | *vesèlīmo*, from *vesèliti*, *vesèlīm*; noun *vesélje* | [veseliti](https://rjecnik.hr/search/?strict=yes&q=veseliti) |
+| automobil | *automòbīl*, G *automobíla*, N plural *automobíli*; adjective *automòbīlskī* | [automobil](https://rjecnik.hr/search/?strict=yes&q=automobil), [automobilski](https://rjecnik.hr/search/?strict=yes&q=automobilski) |
+| tekučina | Standard spelling *tekućina*, accented *tekùćina* | [tekućina](https://rjecnik.hr/search/?strict=yes&q=teku%C4%87ina) |
+| kafić | *kàfīć*, *kafíća*, *kafíći* | [kafić](https://rjecnik.hr/search/?strict=yes&q=kafi%C4%87) |
+| pomoćnici | *pomoćníci*, from *pomòćnīk*, *pomoćníka*; vocative *pȍmoćnīče* | [pomoćnik](https://rjecnik.hr/search/?strict=yes&q=pomo%C4%87nik) |
+| tamo | *tȁmo*, short falling, not the former *támo* | [tamo](https://rjecnik.hr/search/?strict=yes&q=tamo) |
+| prognoza | *prognóza*, *prognózē*, *prognóze* | [prognoza](https://rjecnik.hr/search/?strict=yes&q=prognoza) |
+| kabanica | *kabànica*, *kabànicē*, *kabànīcā* | [kabanica](https://rjecnik.hr/search/?strict=yes&q=kabanica) |
+| slojevita | *slojèvita*, *slojèvit*, *slojèvito*; noun *slojèvitōst* | [slojevit](https://rjecnik.hr/search/?strict=yes&q=slojevit) |
+| kišobran (follow-up) | *kȉšobrān*, *kȉšobrāna*, *kȉšobrāni*, *kȉšobrānima*: short falling i throughout | [Mrežnik](https://rjecnik.hr/mreznik/kisobran/), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=elxnXRg%3D) |
+| zaštićen (follow-up) | *zàštīćen*, *zàštīćena*, *zàštīćeno*; infinitive *zaštítiti*, present *zàštītīm* | [zaštititi (HJP)](https://hjp.znanje.hr/index.php?show=search_by_id&id=f15kURN9) |
+
+For *euro* the sources disagree in tone: Školski rječnik gives *ȅuro*,
+[HJP gives *èuro*](https://hjp.znanje.hr/index.php?show=search_by_id&id=fFtiXhg%3D).
+The Croatian entry follows Školski rječnik, as in the earlier list. Neither
+source puts the accent on *u* in *eura*. The spelling *tekučina* is treated
+as a typo in this report; the engine entry is for *tekućina*, without an
+automatic č-to-ć substitution in input text.
+
+The noun corrections are in `CROATIAN`, leaving the other language tables
+alone. `VERBS` gains *proslaviti* and *veseliti*. Whole verb stems now accept
+`/` and `^` as explicit rising/falling tone, just like word entries:
+`pr/oslav=i` carries the rising accent through the paradigm. Existing `'`
+entries retain their automatic tone. `pr/i:č=a` gives *príčati, príčao,
+príčajū*; exact Croatian forms supply *prȋča, prȋčam, prȋčaj, prȋčan*.
+A broad *prič-* stem would have swallowed both patterns.
+
+Homographs still need a reading choice: *pomoćnici* defaults to the
+masculine N plural (*pomoćníci*), not D/L singular of *pomòćnica*;
+*proslavi/proslave* default to the noun *prȍslava*, not the verb. Explicit
+accent marks override those choices. This change adds no grammatical
+disambiguator. Regression checks compare synthesized audio with explicitly
+accented text for all twenty items and the follow-ups *kišobran* and
+*zaštićen*, their case and verb forms, contrasting derivatives, and short phrases. *Kišobran*
+uses exact noun forms to avoid assigning its accent to derived words;
+Zvonko renders *kȉšobran*, following the same unstressed-length policy.
+
+For *zaštićen*, the existing `zašt'i:t=i<pn` verb entry already encoded
+the dictionary's present and passive shifts, but applied them only outside
+Croatian. Adding `!` enables them for Zvonko too: *zàštićen, zàštićena,
+zàštićeno, zàštićenima, zàštitim*. The infinitive, active participle and
+imperative retain *zaštítiti, zaštítio, zaštíti*. The noun
+[*zàštīćenōst* (HJP)](https://hjp.znanje.hr/index.php?show=search_by_id&id=f15kURJ0)
+has a separate Croatian entry, without unstressed length. The existing
+negative *nezàštīćen* (also confirmed by
+[Školski rječnik](https://rjecnik.hr/search/?strict=yes&q=neza%C5%A1ti%C4%87en))
+and the Serbian/Bosnian shifted forms keep their existing behaviour.
 
 ## 5. Timing and melody (`formant_synthesizer.cpp`)
 
