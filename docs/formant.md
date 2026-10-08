@@ -1148,6 +1148,63 @@ falls). L&H TruVoice, often praised for its intonation, was a diphone
 synthesizer whose intonation rules were never published, so it could not be
 followed directly.
 
+**Words of one vowel.** The conjunctions *i* and *a* and the prepositions *u*
+and *o* are clitics like any other, but they have nothing besides their
+vowel, and the clitic rules took that away: shortened as an unstressed
+clitic (×0.9) and once more next to a vowel (×0.9), weakened to 80% of a
+full vowel, centralized by 15%, and with 45% of their length given to the
+formant transition on each side, they came out at 30-40 ms, 6-9 dB below
+their neighbours, and never reached their own formants (Zvonko's *i* in *ja i
+ona* peaked at F2 2010 Hz instead of 2150). Between two vowels such a word
+was only a glide: *ja i ona* was heard as *jajona*, *mislim o tome* as
+*mislimo tome*, *ona u vlaku* as *ona vlaku*. Eloquence gives the same words
+of Spanish and Italian (*y, o, u, a; e, o, a*) 50-70 ms at the level of the
+vowels around them with the target held (*siete u ocho*: F2 at 870 Hz for
+60 ms); the natural Croatian voice Lana gives the *i* of *ja i ona* about
+100 ms and sets it off from both vowels with a break in the voice.
+
+Since October 2026 the front end marks such a word (`Phone::vowel_word`: the
+whole word is one unstressed vowel; a lone *u*, a clause-final one and
+spelled letters are stressed words and are not marked) and both kinds of
+voices give it a syllable of its own:
+
+- 1.30 times the inherent duration, a little more than the stressed vowel
+  of a function word, with no shortening for a neighbouring vowel or for the
+  consonants after it, which belong to the next word. In Zvonko's voice at
+  rate 1 *i* in *ja i ona* now adds 86 ms to the clause and *u* in *idemo u
+  Vukovar* 78 ms, against 54 and 46 before;
+- the level and colour of a stressed vowel (no centralization, no extra
+  tilt);
+- next to a vowel of another word, a quarter of its length for the formant
+  transition on its side instead of 45%, so it holds its target in the
+  middle;
+- next to a vowel or *j* of another word, the voicing dips to 15% for 18 ms
+  at the join (shrinking with the rate, at least 8 ms), as at a soft glottal
+  onset: *ja | i | ona*, *njoj | i njenom*, *ona | u vlaku*. In the recorded
+  voices the 22 ms word gap does the same (`docs/concatenative.md`).
+
+The values were chosen with a speech recognizer (Whisper small) on 40
+sentences with 88 of these words, scoring each one by word alignment:
+
+| Zvonko | words of one vowel, 1.0x | other words, 1.0x | CER 1.0x | words of one vowel, 1.7x | CER 1.7x |
+|---|---|---|---|---|---|
+| before | 31 | 98 of 177 | 16.8% | 12 | 30.8% |
+| level and colour only | 30 | 92 | 17.5% | | |
+| ×1.15, dip to 30% for 12 ms | 47 | 92 | 14.0% | 26 | 27.8% |
+| the same without the dip | 40 | 94 | 15.0% | | |
+| ×1.15, voice 15% louder | 44 | 95 | 14.1% | | |
+| ×1.30, dip to 30% for 12 ms | 51 | 92 | 13.7% | 25 | 26.5% |
+| ×1.30, dip to 15% for 18 ms | 56 | 101 | 12.3% | 25 | 27.6% |
+| ×1.45, dip to 15% for 18 ms | 52 | 100 | 12.9% | 27 | 27.4% |
+
+Level and colour alone did nothing; the length, the held target and the
+dip did. A deeper dip that shrank only like the transitions (with the square
+root of the rate) was relatively longer at 1.7x and lost two words and
+three points of CER there; shrinking it with the rate itself took that back
+without changing anything at 1.0x. With the final values at 1.0x Stojan
+went from 27 to 46 of the 88 words (CER 18.3% to 14.3%) and Josip, with the
+word gap, from 26 to 40 (29.3% to 26.8%).
+
 ## 6. The three speakers
 
 | | Zvonko | Stojan | Mirsad |

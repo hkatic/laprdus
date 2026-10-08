@@ -2613,6 +2613,10 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
                 }
             }
             phone.syllable = static_cast<int16_t>(current);
+            // The conjunctions i and a and the prepositions u and o are a
+            // syllable each: the synthesizers give them their full vowel.
+            phone.vowel_word = word.phones.size() == 1 && phone.nucleus &&
+                               is_vowel(phone.ph) && !phone.stressed && !word.joined;
             utt.phones.push_back(phone);
         }
         syllable += n;

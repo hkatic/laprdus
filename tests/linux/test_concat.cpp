@@ -195,6 +195,24 @@ TEST_CASE("Rate changes the duration, not the pitch", "[concat][rate]") {
     REQUIRE(close_to(median_pitch(slow), f0_normal, 0.12));
 }
 
+TEST_CASE("A word of one vowel is a syllable of its own", "[concat][rate]") {
+    // i, a, u, o keep a full short vowel and are set off from a vowel
+    // next to them by the word gap ("ja i ona" was "jajona").
+    const char* dir = data_dir();
+    if (!dir) return;
+    Engine engine;
+    auto ms = [](const std::vector<int16_t>& audio) {
+        return static_cast<double>(audio.size()) * 1000.0 / 22050.0;
+    };
+    for (const char* voice : {"josip", "vlado"}) {
+        REQUIRE(laprdus_set_voice(engine.handle, voice, dir) == LAPRDUS_OK);
+        INFO(voice);
+        REQUIRE(ms(speak(engine.handle, "Ja i ona.")) - ms(speak(engine.handle, "Ja ona.")) >= 90.0);
+        REQUIRE(ms(speak(engine.handle, "Idemo u Vukovar.")) -
+                ms(speak(engine.handle, "Idemo Vukovar.")) >= 85.0);
+    }
+}
+
 TEST_CASE("User pitch moves the pitch and keeps the duration", "[concat][pitch]") {
     const char* dir = data_dir();
     if (!dir) return;

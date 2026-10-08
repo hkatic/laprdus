@@ -379,6 +379,8 @@ private:
                     factor = p.is_long ? 1.90f : 1.35f;
                     if (p.prominence < 2) factor = p.is_long ? 1.50f : 1.15f;
                     if (p.word_syllables == 1 && p.prominence == 2) factor *= 1.12f;
+                } else if (p.vowel_word) {
+                    factor = VOWEL_WORD_LENGTH;
                 } else {
                     factor = p.is_long ? m_voice.postaccent_length : 1.0f;
                     if (p.prominence == 0) factor *= 0.90f;
@@ -392,10 +394,13 @@ private:
                     !ph_def(next->ph).voiced) {
                     factor *= 0.93f;
                 }
-                if ((next && is_vowel(next->ph)) || (prev && is_vowel(prev->ph))) {
+                if (!p.vowel_word &&
+                    ((next && is_vowel(next->ph)) || (prev && is_vowel(prev->ph)))) {
                     factor *= 0.90f;
                 }
-                if (next && is_consonant(next->ph) &&
+                // A word of one vowel is an open syllable: the consonants
+                // after it belong to the next word.
+                if (!p.vowel_word && next && is_consonant(next->ph) &&
                     (!next2 || is_consonant(next2->ph))) {
                     factor *= 0.93f;    // closed syllable
                 }
@@ -467,6 +472,21 @@ private:
     // from a stop. The consonant keeps its own level: eSpeak's sit at
     // 20-45% of the vowel that follows, and so do these.
     static constexpr float ISOLATED_AFFRICATE_MS = 110.0f;
+
+    // A word that is one vowel (the conjunctions i and a, the prepositions u
+    // and o) is a syllable of its own, not a clitic vowel: as long as the
+    // stressed vowel of a function word and a little more, at full level,
+    // and set off from a vowel or j of the word next to it by a short dip
+    // of the voice. Shortened, weakened and gliding like the other clitics
+    // it was lost between its neighbours ("ja i ona" as "jajona"). The
+    // values gave a speech recognizer the most of these words (see "Words
+    // of one vowel" in docs/formant.md). The dip shrinks with the rate like
+    // the sounds around it: shrinking only like the transitions, it was
+    // relatively longer at 1.7x and cost the recognizer words there.
+    static constexpr float VOWEL_WORD_LENGTH = 1.30f;
+    static constexpr float VOWEL_WORD_DIP = 0.15f;      // voicing at the join
+    static constexpr float VOWEL_WORD_DIP_MS = 18.0f;   // at rate 1
+    static constexpr float VOWEL_WORD_DIP_MIN_MS = 8.0f;
 
     // -------------------------------------------------------------------------
     // Singing: notes
@@ -627,10 +647,11 @@ private:
                     Seg& seg = add_seg(p.ph, SegKind::Plain, i, d);
                     seg.has_target = true;
                     float level = p.stressed ? 1.0f : (p.prominence == 0 ? 0.80f : 0.86f);
+                    if (p.vowel_word) level = 1.0f;     // i, a, u, o: a syllable of their own
                     if (p.nucleus_tail) level *= 0.45f;     // second half of syllabic r
                     if (m_singing && !p.nucleus_tail) level = 1.0f;   // every vowel is sung in full
                     seg.av = def.av * level;
-                    seg.tilt = m_voice.tilt + (p.stressed || m_singing ? 0.0f : 1.5f);
+                    seg.tilt = m_voice.tilt + (p.stressed || p.vowel_word || m_singing ? 0.0f : 1.5f);
                     // Intrinsic pitch: high vowels are slightly higher.
                     seg.f0_shift = (p.ph == Ph::I || p.ph == Ph::U) ? 0.5f
                                  : (p.ph == Ph::A ? -0.4f : 0.0f);
@@ -937,6 +958,7 @@ private:
         // Unstressed vowels are slightly centralized; BCS has no real vowel
         // reduction, so the effect is kept small.
         float central = (p && p->stressed) || m_singing ? 0.0f : ((p && p->prominence == 0) ? 0.15f : 0.11f);
+        if (p && p->vowel_word) central = 0.0f;
         for (int k = 0; k < 3; ++k) {
             float f = def.f[k] + central * (SCHWA_F[k] - def.f[k]);
             out[k] = f * m_voice.formant_scale;
@@ -1076,8 +1098,10 @@ private:
                     float v = 0.5f * (x.self[k] + y.self[k]);
                     x.rb[k] = v;
                     y.lb[k] = v;
-                    x.tr[k] = 0.45f * x.dur;
-                    y.tl[k] = 0.45f * y.dur;
+                    // A word of one vowel holds its target between the
+                    // two glides (ja i ona).
+                    x.tr[k] = (vowel_word_seg(x) ? 0.25f : 0.45f) * x.dur;
+                    y.tl[k] = (vowel_word_seg(y) ? 0.25f : 0.45f) * y.dur;
                 } else {
                     Seg& dom = x.rank > y.rank ? x : y;
                     Seg& other = x.rank > y.rank ? y : x;
@@ -1163,6 +1187,11 @@ private:
                 }
             }
         }
+    }
+
+    bool vowel_word_seg(const Seg& seg) const {
+        const Phone* p = phone_at(seg.phone);
+        return p && p->vowel_word && is_full_vowel(seg) && !m_singing;
     }
 
     float formant_at(const Seg& seg, int k, float t) const {
@@ -1285,6 +1314,29 @@ private:
                     }
                 }
                 level[idx] = gain;
+            }
+        }
+
+        // A word of one vowel next to a vowel or j of another word: the
+        // voice dips for a moment at the join, as at a soft glottal onset.
+        if (!m_singing) {
+            for (int si = 0; si + 1 < nsegs; ++si) {
+                const Seg& x = m_segs[static_cast<size_t>(si)];
+                const Seg& y = m_segs[static_cast<size_t>(si) + 1];
+                if (!vowel_word_seg(x) && !vowel_word_seg(y)) continue;
+                const Phone* px = phone_at(x.phone);
+                const Phone* py = phone_at(y.phone);
+                if (!px || !py || px->word == py->word) continue;
+                auto open = [](const Seg& seg) {
+                    return seg.kind == SegKind::Plain && (is_vowel(seg.ph) || seg.ph == Ph::J);
+                };
+                if (!open(x) || !open(y)) continue;
+                const float half = 0.5f * rate(VOWEL_WORD_DIP_MS, VOWEL_WORD_DIP_MIN_MS);
+                int j0 = lead + static_cast<int>(std::lround((y.start - half) / FRAME_MS));
+                int j1 = lead + static_cast<int>(std::lround((y.start + half) / FRAME_MS));
+                for (int j = std::max(j0, 0); j < std::min(j1, total); ++j) {
+                    av[static_cast<size_t>(j)] *= VOWEL_WORD_DIP;
+                }
             }
         }
 

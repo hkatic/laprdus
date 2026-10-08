@@ -1294,6 +1294,24 @@ TEST_CASE("Short questions and exclamations are audible", "[formant][prosody]") 
     }
 }
 
+TEST_CASE("A word of one vowel is a syllable of its own", "[formant][prosody]") {
+    // The conjunctions i and a and the prepositions u and o used to be
+    // shortened as clitics and once more next to a vowel, and were lost
+    // between their neighbours ("ja i ona" as "jajona"). They now add a
+    // full short vowel to the clause.
+    auto ms = [](const std::vector<int16_t>& audio) {
+        return static_cast<double>(audio.size()) * 1000.0 / 22050.0;
+    };
+    for (const char* voice : FORMANT_VOICES) {
+        Engine engine;
+        REQUIRE(laprdus_set_voice(engine.handle, voice, NO_DATA) == LAPRDUS_OK);
+        INFO(voice);
+        REQUIRE(ms(speak(engine.handle, "Ja i ona.")) - ms(speak(engine.handle, "Ja ona.")) >= 70.0);
+        REQUIRE(ms(speak(engine.handle, "Idemo u Vukovar.")) -
+                ms(speak(engine.handle, "Idemo Vukovar.")) >= 65.0);
+    }
+}
+
 // =============================================================================
 // Stops
 // =============================================================================

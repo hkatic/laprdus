@@ -111,7 +111,11 @@ at their natural rate, the time left over goes to the closure, first from
 the recording's own closure or murmur, then as silence, and a fast rate cuts
 the tail and the closure but never the burst (at least 20 ms of it). A
 **22 ms gap** (floor 5 ms at fast rates) separates words; clitics join their
-host without one.
+host without one. A word of one vowel (*i, a, u, o*) is the exception: it
+gets the gap from a vowel or *j* of the word next to it (*ja i ona*, *njoj
+i njenom*), or the two vowels run together into one, and it is 1.30 times
+the vowel's inherent duration instead of a clitic's 0.9, with no shortening
+for its neighbours (see "Words of one vowel" in `docs/formant.md`).
 
 **Pitch** comes from `formant::Intonation` (`src/formant/formant_intonation.cpp`),
 the model extracted from the formant synthesizer so that both kinds of voices

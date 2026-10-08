@@ -19,6 +19,10 @@ using formant::ph_def;
 
 namespace {
 
+// Duration factor of a word that is one vowel (i, a, u, o), as in the
+// formant voices: a syllable of its own, not a shortened clitic vowel
+constexpr float VOWEL_WORD_LENGTH = 1.30f;
+
 // Gap between two words (ms at rate 1.0); clitics join their host without one
 constexpr float WORD_GAP_MS = 22.0f;
 constexpr float WORD_GAP_MIN_MS = 5.0f;
@@ -156,6 +160,8 @@ ClausePlan plan_clause(const formant::Utterance& utt, const UnitBank& bank,
                 factor = p.is_long ? 1.90f : 1.35f;
                 if (p.prominence < 2) factor = p.is_long ? 1.50f : 1.15f;
                 if (p.word_syllables == 1 && p.prominence == 2) factor *= 1.12f;
+            } else if (p.vowel_word) {
+                factor = VOWEL_WORD_LENGTH;
             } else {
                 factor = p.is_long ? 1.25f : 1.0f;
                 if (p.prominence == 0) factor *= 0.90f;
@@ -169,10 +175,14 @@ ClausePlan plan_clause(const formant::Utterance& utt, const UnitBank& bank,
                 !ph_def(next->ph).voiced) {
                 factor *= 0.93f;
             }
-            if ((next && formant::is_vowel(next->ph)) || (prev && formant::is_vowel(prev->ph))) {
+            if (!p.vowel_word &&
+                ((next && formant::is_vowel(next->ph)) || (prev && formant::is_vowel(prev->ph)))) {
                 factor *= 0.90f;
             }
-            if (next && is_consonant_ph(next->ph) && (!next2 || is_consonant_ph(next2->ph))) {
+            // A word of one vowel is an open syllable: the consonants after
+            // it belong to the next word.
+            if (!p.vowel_word && next && is_consonant_ph(next->ph) &&
+                (!next2 || is_consonant_ph(next2->ph))) {
                 factor *= 0.93f;    // closed syllable
             }
             if (final_syl) {
@@ -258,8 +268,15 @@ ClausePlan plan_clause(const formant::Utterance& utt, const UnitBank& bank,
         const Phone& p = ph[static_cast<size_t>(i)];
         const float d_ms = dur[static_cast<size_t>(i)];
 
-        // A short gap before a word that is not a clitic
-        if (i > 0 && p.word_start && p.prominence >= 1 && prev_is_unit) {
+        // A short gap before a word that is not a clitic, and between a
+        // word of one vowel and a vowel or j of the word next to it (ja i
+        // ona, njoj i njenom, i od toga), or the two run together into one
+        // syllable
+        const Phone* before = phone_at(i - 1);
+        auto open = [](const Phone* q) { return formant::is_vowel(q->ph) || q->ph == Ph::J; };
+        const bool hiatus = before && before->word != p.word &&
+                            (p.vowel_word || before->vowel_word) && open(before) && open(&p);
+        if (i > 0 && p.word_start && (p.prominence >= 1 || hiatus) && prev_is_unit) {
             add_silence(rate(WORD_GAP_MS, WORD_GAP_MIN_MS) * samples_per_ms);
             prev_is_unit = false;
         }

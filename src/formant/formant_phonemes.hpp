@@ -120,6 +120,7 @@ struct Phone {
     bool is_long = false;
     bool short_glide = false;   // first half of the "ije" diphthong
     bool word_start = false;
+    bool vowel_word = false;    // the whole word is this one unstressed vowel (i, a, u, o)
     Accent accent = Accent::None;
     uint8_t prominence = 0;     // 0 clitic, 1 function word, 2 content word
     uint16_t word = 0;          // word index within the clause
