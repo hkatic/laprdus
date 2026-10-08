@@ -388,3 +388,60 @@ TEST_CASE("Volume scales the output", "[concat][volume]") {
     REQUIRE(quiet.size() == loud.size());
     REQUIRE(rms(quiet) < rms(loud) * 0.4);
 }
+
+TEST_CASE("Recorded voices share surname stress and vowel length", "[concat][text]") {
+    const char* dir = data_dir();
+    if (!dir) SKIP("Set LAPRDUS_DATA to test the recorded surname accents");
+    struct Case { const char* plain; const char* accented; };
+    const Case cases[] = {
+        {u8"Isaković", u8"Ìsaković"},
+        {u8"Isakovića", u8"Ìsakovića"},
+        {u8"Isakovićevima", u8"Ìsakovićevima"},
+        {u8"Исаковић", u8"Ìsaković"},
+        {u8"Spasojević", u8"Spàsojević"},
+        {u8"Spasojevićem", u8"Spàsojevićem"},
+        {u8"Spasojevićevima", u8"Spàsojevićevima"},
+        {u8"Спасојевић", u8"Spàsojević"},
+        {u8"Isaković i Spasojević", u8"Ìsaković i Spàsojević"},
+        {u8"Knezović", u8"Knȇzović"},
+        {u8"Knezovića", u8"Knȇzovića"},
+        {u8"Knezovićevima", u8"Knȇzovićevima"},
+        {u8"Кнезовић", u8"Knȇzović"},
+        {u8"Knežević", u8"Knéžević"},
+        {u8"Kneževićem", u8"Knéževićem"},
+        {u8"Kneževićevima", u8"Knéževićevima"},
+        {u8"Кнежевић", u8"Knéžević"},
+        {u8"Knezović i Knežević", u8"Knȇzović i Knéžević"},
+    };
+    Engine engine;
+    for (const char* voice : {"josip", "vlado", "detence", "baba", "djed"}) {
+        INFO(voice);
+        REQUIRE(laprdus_set_voice(engine.handle, voice, dir) == LAPRDUS_OK);
+        for (const auto& c : cases) {
+            INFO(c.plain);
+            const auto plain = speak(engine.handle, c.plain);
+            REQUIRE(!plain.empty());
+            REQUIRE(plain == speak(engine.handle, c.accented));
+        }
+        // Initial stress must not return to a; changing only a's length
+        // must make the output longer. The same check protects short o.
+        REQUIRE(speak(engine.handle, u8"Isaković") !=
+                speak(engine.handle, u8"Isàković"));
+        REQUIRE(speak(engine.handle, u8"Isaković").size() <
+                speak(engine.handle, u8"Ìsāković").size());
+        REQUIRE(speak(engine.handle, u8"Spasojević").size() <
+                speak(engine.handle, u8"Spàsōjević").size());
+        REQUIRE(speak(engine.handle, u8"Spasojević") !=
+                speak(engine.handle, u8"Spasòjević"));
+        REQUIRE(speak(engine.handle, u8"Spasojević") !=
+                speak(engine.handle, u8"Spasójević"));
+        REQUIRE(speak(engine.handle, u8"Knezović").size() >
+                speak(engine.handle, u8"Knȅzović").size());
+        REQUIRE(speak(engine.handle, u8"Knežević").size() >
+                speak(engine.handle, u8"Knèžević").size());
+        REQUIRE(speak(engine.handle, u8"Knezović") !=
+                speak(engine.handle, u8"Knézović"));
+        REQUIRE(speak(engine.handle, u8"Knežević") !=
+                speak(engine.handle, u8"Knȇžević"));
+    }
+}

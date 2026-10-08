@@ -80,11 +80,18 @@
             "comment": "Social media platform"
         },
         {
-            "grapheme": "Messenger",
-            "phoneme": "Mesindžer",
+            "grapheme": "Messenger(a|u|e|om)?",
+            "phoneme": "Mesindžer$1",
             "caseSensitive": false,
             "wholeWord": true,
-            "comment": "Messaging app"
+            "comment": "Messaging app and Croatian case endings; first-syllable stress in the accent lexicon"
+        },
+        {
+            "grapheme": "WinTalker(a|u|e|om)?",
+            "phoneme": "Vintoker$1",
+            "caseSensitive": false,
+            "wholeWord": true,
+            "comment": "Speech synthesizer and Croatian case endings; user-requested vin-TO-ker in the accent lexicon"
         },
         {
             "grapheme": "Teams",

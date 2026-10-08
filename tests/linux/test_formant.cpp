@@ -722,7 +722,7 @@ TEST_CASE("Lexicon accents cover the whole paradigm", "[formant][text]") {
         {"vi", "v\xC8\x8B"},   // vȋ
         {"oni", "\xC3\xB2ni"},   // òni
         {"njih", "nj\xC8\x8Bh"},   // njȋh
-        {"enida", "\xC3\xA8nida"},   // ènida
+        {u8"enida", u8"enída"},   // listener's long stressed i
         {"brklja\xC4\x8D" "a", "b\xC8\x91klja\xC4\x8D" "a"},   // bȑkljača
         {"ivan\xC5\xA1\xC4\x8Dica", "iv\xC3\xA0n\xC5\xA1\xC4\x8Dica"},   // ivànščica
         {"teodora", "teod\xC3\xB3ra"},   // teodóra
@@ -1038,6 +1038,283 @@ TEST_CASE("Collected Croatian accents retain tone and inflection", "[formant][te
         const auto plain = speak(engine.handle, c.plain);
         REQUIRE(!plain.empty());
         REQUIRE(plain == speak(engine.handle, c.accented));
+    }
+}
+
+TEST_CASE("Personal names preserve verified stress and length", "[formant][text]") {
+    // Listener corrections: Enída, Ìsaković, Greblìčki and Spàsojević.
+    // HJP confirms long initial e: Knȇzović (falling), Knéžević (rising).
+    // Exercise the shared lexicon in every language, including Cyrillic.
+    struct Case { const char* plain; const char* accented; };
+    const Case cases[] = {
+        {u8"Enida", u8"Enída"},
+        {u8"enida", u8"enída"},
+        {u8"ENIDA", u8"ENÍDA"},
+        {u8"Enide", u8"Eníde"},
+        {u8"Enidi", u8"Enídi"},
+        {u8"Enidu", u8"Enídu"},
+        {u8"Enidom", u8"Enídom"},
+        {u8"Enidama", u8"Enídama"},
+        {u8"Enidin", u8"Enídin"},
+        {u8"Enidina", u8"Enídina"},
+        {u8"Enidino", u8"Enídino"},
+        {u8"Enidinoga", u8"Enídinoga"},
+        {u8"Enidinim", u8"Enídinim"},
+        {u8"Enidinima", u8"Enídinima"},
+        {u8"Isaković", u8"Ìsaković"},
+        {u8"isaković", u8"ìsaković"},
+        {u8"ISAKOVIĆ", u8"ÌSAKOVIĆ"},
+        {u8"Isakovića", u8"Ìsakovića"},
+        {u8"Isakoviću", u8"Ìsakoviću"},
+        {u8"Isakovićem", u8"Ìsakovićem"},
+        {u8"Isakovići", u8"Ìsakovići"},
+        {u8"Isakoviće", u8"Ìsakoviće"},
+        {u8"Isakovićima", u8"Ìsakovićima"},
+        {u8"Isakovićev", u8"Ìsakovićev"},
+        {u8"Isakovićeva", u8"Ìsakovićeva"},
+        {u8"Isakovićevo", u8"Ìsakovićevo"},
+        {u8"Isakovićevoga", u8"Ìsakovićevoga"},
+        {u8"Isakovićevom", u8"Ìsakovićevom"},
+        {u8"Isakovićevim", u8"Ìsakovićevim"},
+        {u8"Isakovićevima", u8"Ìsakovićevima"},
+        {u8"Енида", u8"Enída"},
+        {u8"Енидиним", u8"Enídinim"},
+        {u8"Исаковић", u8"Ìsaković"},
+        {u8"Исаковићевима", u8"Ìsakovićevima"},
+        {u8"Enida Isaković", u8"Enída Ìsaković"},
+        {u8"razgovaram s Enidom", u8"razgovaram s Enídom"},
+        {u8"knjiga gospodina Isakovića", u8"knjiga gospodina Ìsakovića"},
+        {u8"Greblički", u8"Greblìčki"},
+        {u8"greblički", u8"greblìčki"},
+        {u8"GREBLIČKI", u8"GREBLÌČKI"},
+        {u8"Greblička", u8"Greblìčka"},
+        {u8"Grebličke", u8"Greblìčke"},
+        {u8"Grebličku", u8"Greblìčku"},
+        {u8"Grebličkog", u8"Greblìčkog"},
+        {u8"Grebličkoga", u8"Greblìčkoga"},
+        {u8"Grebličkom", u8"Greblìčkom"},
+        {u8"Grebličkome", u8"Greblìčkome"},
+        {u8"Grebličkomu", u8"Greblìčkomu"},
+        {u8"Grebličkoj", u8"Greblìčkoj"},
+        {u8"Grebličkih", u8"Greblìčkih"},
+        {u8"Grebličkim", u8"Greblìčkim"},
+        {u8"Grebličkima", u8"Greblìčkima"},
+        {u8"Греблички", u8"Greblìčki"},
+        {u8"Гребличким", u8"Greblìčkim"},
+        {u8"razgovaram s Grebličkim", u8"razgovaram s Greblìčkim"},
+        {u8"Spasojević", u8"Spàsojević"},
+        {u8"spasojević", u8"spàsojević"},
+        {u8"SPASOJEVIĆ", u8"SPÀSOJEVIĆ"},
+        {u8"Spasojevića", u8"Spàsojevića"},
+        {u8"Spasojeviću", u8"Spàsojeviću"},
+        {u8"Spasojevićem", u8"Spàsojevićem"},
+        {u8"Spasojevići", u8"Spàsojevići"},
+        {u8"Spasojeviće", u8"Spàsojeviće"},
+        {u8"Spasojevićima", u8"Spàsojevićima"},
+        {u8"Spasojevićev", u8"Spàsojevićev"},
+        {u8"Spasojevićeva", u8"Spàsojevićeva"},
+        {u8"Spasojevićevo", u8"Spàsojevićevo"},
+        {u8"Spasojevićevoga", u8"Spàsojevićevoga"},
+        {u8"Spasojevićevim", u8"Spàsojevićevim"},
+        {u8"Spasojevićevima", u8"Spàsojevićevima"},
+        {u8"Спасојевић", u8"Spàsojević"},
+        {u8"Спасојевићевима", u8"Spàsojevićevima"},
+        {u8"razgovaram sa Spasojevićem", u8"razgovaram sa Spàsojevićem"},
+        {u8"Knezović", u8"Knȇzović"},
+        {u8"knezović", u8"knȇzović"},
+        {u8"KNEZOVIĆ", u8"KNȆZOVIĆ"},
+        {u8"Knezovića", u8"Knȇzovića"},
+        {u8"Knezoviću", u8"Knȇzoviću"},
+        {u8"Knezovićem", u8"Knȇzovićem"},
+        {u8"Knezovići", u8"Knȇzovići"},
+        {u8"Knezoviće", u8"Knȇzoviće"},
+        {u8"Knezovićima", u8"Knȇzovićima"},
+        {u8"Knezovićev", u8"Knȇzovićev"},
+        {u8"Knezovićeva", u8"Knȇzovićeva"},
+        {u8"Knezovićevo", u8"Knȇzovićevo"},
+        {u8"Knezovićevoga", u8"Knȇzovićevoga"},
+        {u8"Knezovićevom", u8"Knȇzovićevom"},
+        {u8"Knezovićevim", u8"Knȇzovićevim"},
+        {u8"Knezovićevima", u8"Knȇzovićevima"},
+        {u8"Кнезовић", u8"Knȇzović"},
+        {u8"Кнезовићевима", u8"Knȇzovićevima"},
+        {u8"Knežević", u8"Knéžević"},
+        {u8"knežević", u8"knéžević"},
+        {u8"KNEŽEVIĆ", u8"KNÉŽEVIĆ"},
+        {u8"Kneževića", u8"Knéževića"},
+        {u8"Kneževiću", u8"Knéževiću"},
+        {u8"Kneževićem", u8"Knéževićem"},
+        {u8"Kneževići", u8"Knéževići"},
+        {u8"Kneževiće", u8"Knéževiće"},
+        {u8"Kneževićima", u8"Knéževićima"},
+        {u8"Kneževićev", u8"Knéževićev"},
+        {u8"Kneževićeva", u8"Knéževićeva"},
+        {u8"Kneževićevo", u8"Knéževićevo"},
+        {u8"Kneževićevoga", u8"Knéževićevoga"},
+        {u8"Kneževićevom", u8"Knéževićevom"},
+        {u8"Kneževićevim", u8"Knéževićevim"},
+        {u8"Kneževićevima", u8"Knéževićevima"},
+        {u8"Кнежевић", u8"Knéžević"},
+        {u8"Кнежевићевима", u8"Knéževićevima"},
+        {u8"razgovaram s Knezovićem i Kneževićem", u8"razgovaram s Knȇzovićem i Knéževićem"},
+    };
+    Engine engine;
+    for (const char* voice : FORMANT_VOICES) {
+        INFO(voice);
+        REQUIRE(laprdus_set_voice(engine.handle, voice, NO_DATA) == LAPRDUS_OK);
+        for (const auto& c : cases) {
+            INFO(c.plain);
+            const auto plain = speak(engine.handle, c.plain);
+            REQUIRE(!plain.empty());
+            REQUIRE(plain == speak(engine.handle, c.accented));
+        }
+        // Check length separately from placement: Enida keeps long i;
+        // Isakovic has initial stress and short a; Spasojevic has initial stress and short unstressed o.
+        REQUIRE(speak(engine.handle, u8"Enida").size() >
+                speak(engine.handle, u8"Enìda").size());
+        REQUIRE(speak(engine.handle, u8"Isaković").size() <
+                speak(engine.handle, u8"Ìsāković").size());
+        REQUIRE(speak(engine.handle, u8"Isaković") !=
+                speak(engine.handle, u8"Isàković"));
+        REQUIRE(speak(engine.handle, u8"Spasojević").size() <
+                speak(engine.handle, u8"Spàsōjević").size());
+        REQUIRE(speak(engine.handle, u8"Spasojević") !=
+                speak(engine.handle, u8"Spasòjević"));
+        REQUIRE(speak(engine.handle, u8"Spasojević") !=
+                speak(engine.handle, u8"Spasójević"));
+        // Both surnames keep long e, with their distinct falling/rising tones.
+        REQUIRE(speak(engine.handle, u8"Knezović").size() >
+                speak(engine.handle, u8"Knȅzović").size());
+        REQUIRE(speak(engine.handle, u8"Knežević").size() >
+                speak(engine.handle, u8"Knèžević").size());
+        REQUIRE(speak(engine.handle, u8"Knezović") !=
+                speak(engine.handle, u8"Knézović"));
+        REQUIRE(speak(engine.handle, u8"Knežević") !=
+                speak(engine.handle, u8"Knȇžević"));
+    }
+}
+
+TEST_CASE("Battery and reading-list accents follow the Croatian dictionaries", "[formant][text]") {
+    // Školski rječnik / Mrežnik, checked 2026-10-08. In particular,
+    // batèrija differs from HJP, and prȍčitan differs from pročìtati.
+    // Croatian omits the dictionaries' unstressed lengths, as elsewhere.
+    struct Case { const char* plain; const char* accented; };
+    const Case cases[] = {
+        {u8"baterija", u8"batèrija"},
+        {u8"baterije", u8"batèrije"},
+        {u8"bateriji", u8"batèriji"},
+        {u8"bateriju", u8"batèriju"},
+        {u8"baterijom", u8"batèrijom"},
+        {u8"baterijama", u8"batèrijama"},
+        {u8"baterijski", u8"batèrijski"},
+        {u8"baterijskoga", u8"batèrijskoga"},
+        {u8"baterijskim", u8"batèrijskim"},
+        {u8"baterija je prazna", u8"batèrija je prazna"},
+        {u8"poslušati", u8"pòslušati"},
+        {u8"poslušat ću", u8"pòslušat ću"},
+        {u8"poslušam", u8"pòslušam"},
+        {u8"poslušaš", u8"pòslušaš"},
+        {u8"posluša", u8"pòsluša"},
+        {u8"poslušamo", u8"pòslušamo"},
+        {u8"poslušate", u8"pòslušate"},
+        {u8"poslušaju", u8"pòslušaju"},
+        {u8"poslušaj", u8"pòslušaj"},
+        {u8"poslušajmo", u8"pòslušajmo"},
+        {u8"poslušajte", u8"pòslušajte"},
+        {u8"poslušao", u8"pòslušao"},
+        {u8"poslušala", u8"pòslušala"},
+        {u8"poslušali", u8"pòslušali"},
+        {u8"poslušavši", u8"pòslušavši"},
+        {u8"poslušan", u8"pòslušan"},
+        {u8"poslušanima", u8"pòslušanima"},
+        {u8"želim poslušati poruku", u8"želim pòslušati poruku"},
+        {u8"pročitati", u8"pročìtati"},
+        {u8"pročitat ću", u8"pročìtat ću"},
+        {u8"pročitam", u8"pročìtam"},
+        {u8"pročitaš", u8"pročìtaš"},
+        {u8"pročita", u8"pročìta"},
+        {u8"pročitamo", u8"pročìtamo"},
+        {u8"pročitate", u8"pročìtate"},
+        {u8"pročitaju", u8"pročìtaju"},
+        {u8"pročitaj", u8"pročìtaj"},
+        {u8"pročitajmo", u8"pročìtajmo"},
+        {u8"pročitajte", u8"pročìtajte"},
+        {u8"pročitao", u8"pročìtao"},
+        {u8"pročitala", u8"pročìtala"},
+        {u8"pročitali", u8"pročìtali"},
+        {u8"pročitavši", u8"pročìtavši"},
+        {u8"pročitan", u8"prȍčitan"},
+        {u8"pročitana", u8"prȍčitana"},
+        {u8"pročitano", u8"prȍčitano"},
+        {u8"pročitani", u8"prȍčitani"},
+        {u8"pročitane", u8"prȍčitane"},
+        {u8"pročitanu", u8"prȍčitanu"},
+        {u8"pročitanoga", u8"prȍčitanoga"},
+        {u8"pročitanome", u8"prȍčitanome"},
+        {u8"pročitanomu", u8"prȍčitanomu"},
+        {u8"pročitanoj", u8"prȍčitanoj"},
+        {u8"pročitanih", u8"prȍčitanih"},
+        {u8"pročitanima", u8"prȍčitanima"},
+        {u8"nepročitan", u8"nepròčitan"},
+        {u8"nepročitanima", u8"nepròčitanima"},
+        {u8"poruka je pročitana", u8"poruka je prȍčitana"},
+    };
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    for (const auto& c : cases) {
+        INFO(c.plain);
+        const auto plain = speak(engine.handle, c.plain);
+        REQUIRE(!plain.empty());
+        REQUIRE(plain == speak(engine.handle, c.accented));
+    }
+}
+
+TEST_CASE("Foreign app names keep their pronunciation and stress in case forms", "[formant][text][dictionary]") {
+    // Exercise the shipped replacements as well as the accent lexicon.
+    // Run from the repository root, or set LAPRDUS_DICTIONARY to internal.json.
+    const char* dictionary = std::getenv("LAPRDUS_DICTIONARY");
+    Engine engine;
+    REQUIRE(laprdus_load_dictionary(engine.handle,
+        dictionary ? dictionary : "data/dictionary/internal.json") == LAPRDUS_OK);
+    struct Case { const char* plain; const char* accented; };
+    const Case cases[] = {
+        {"messenger", u8"Mȅsindžer"},
+        {"Messenger", u8"Mȅsindžer"},
+        {"MESSENGER", u8"Mȅsindžer"},
+        {"Messengera", u8"Mȅsindžera"},
+        {"Messengeru", u8"Mȅsindžeru"},
+        {"Messengerom", u8"Mȅsindžerom"},
+        {u8"poruka na Messengeru", u8"poruka na Mȅsindžeru"},
+        {"tiktok", u8"Tȉktok"},
+        {"TikTok", u8"Tȉktok"},
+        {"TIKTOK", u8"Tȉktok"},
+        {"TikToka", u8"Tȉktoka"},
+        {"TikToku", u8"Tȉktoku"},
+        {"TikTokom", u8"Tȉktokom"},
+        {u8"video na TikToku", u8"video na Tȉktoku"},
+        {"wintalker", u8"Vintòker"},
+        {"WinTalker", u8"Vintòker"},
+        {"WINTALKER", u8"Vintòker"},
+        {"WinTalkera", u8"Vintòkera"},
+        {"WinTalkeru", u8"Vintòkeru"},
+        {"WinTalkerom", u8"Vintòkerom"},
+        {u8"govori WinTalkerom", u8"govori Vintòkerom"},
+    };
+    for (const char* voice : FORMANT_VOICES) {
+        INFO(voice);
+        REQUIRE(laprdus_set_voice(engine.handle, voice, NO_DATA) == LAPRDUS_OK);
+        for (const auto& c : cases) {
+            INFO(c.plain);
+            const auto plain = speak(engine.handle, c.plain);
+            REQUIRE(!plain.empty());
+            REQUIRE(plain == speak(engine.handle, c.accented));
+        }
+        // Whole-word suffix patterns must not rewrite longer unrelated words.
+        for (const char* text : {"messengerica", "wintalkerica"}) {
+            Engine bare;
+            REQUIRE(laprdus_set_voice(bare.handle, voice, NO_DATA) == LAPRDUS_OK);
+            REQUIRE(speak(engine.handle, text) == speak(bare.handle, text));
+        }
     }
 }
 

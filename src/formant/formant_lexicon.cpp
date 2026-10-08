@@ -330,6 +330,16 @@ const char* const COMMON[] = {
 
     // ---- Surnames: exceptions to the -ović/-ević rule ----
     u8"'ivanović*", u8"j'osipović*", u8"m'aksimović*", u8"dr'agović*", u8"v'idović*",
+    // Listener corrections: Ìsaković stresses the initial short i (a is
+    // unstressed and short); Spàsojević stresses Spa, with short unstressed
+    // o. Override the generic
+    // surname rule in every language, including cases and possessives.
+    u8"/Isaković||a|u|em|i|e|ima", u8"/Isakovićev*",
+    u8"Sp/asojević||a|u|em|i|e|ima", u8"Sp/asojevićev*",
+    // HJP onomastics under knez: Knȇzović and Knéžević, both long initial e.
+    // Full surname stems avoid changing the noun plurals knȅzovi / knéževi.
+    u8"Kn^e:zović||a|u|em|i|e|ima", u8"Kn^e:zovićev*",
+    u8"Kn/e:žević||a|u|em|i|e|ima", u8"Kn/e:ževićev*",
 
     // ---- More places ----
     u8"Var'aždin*", u8"Kr'agujevac", u8"Kr'agujevc*", u8"Mak'edo:nij*", u8"At'e:n*",
@@ -433,17 +443,28 @@ const char* const COMMON[] = {
     // words), Mátić, Ìvanović, Aleksándar, Teodóra (the man's name is
     // Tèodor; "Teodora" is read as hers), Crnògorac with Crnogórci,
     // Ivànščica, bȑkljača. Without a dictionary entry, from names and words
-    // of the same shape: Ènida like Èdita and Ànita, Nàida, Adrijàna like
+    // of the same shape: Nàida, Adrijàna like
     // Dijàna and Marijàna, Mȉlosava like Mȉroslava, Márkovina from Mȃrko like
-    // králjevina, Prȗgovečkī from Prȗgovac, Grȅbličkī, Vládić from Vládo,
+    // králjevina, Prȗgovečkī from Prȗgovac, Vládić from Vládo,
     // Tȉhić, Rȍtić, Lȅtić, Jȕsić
     u8"M/ihajl*", u8"/Anit*", u8"^E:v|a|i|u|om", u8"M/a:j|a|e|i|u|o|om", u8"M/a:to",
     u8"M/a:tić*", u8"Teod/o:r|a|e|i|u|o|om", u8"T/eodor", u8"Crn/ogorac",
     u8"Crn/ogorc|a|u|em", u8"Crn/ogorče", u8"Crnog'o:rc|i|ima|e", u8"Crn/ogoraca",
     u8"Crn/ogork*", u8"crn/ogorsk*", u8"Iv/anščic*", u8"Iv/ančic*", u8"B^rkljač*",
-    u8"/Enid*", u8"N/aid*", u8"Adrij/an|a|e|i|u|o|om", u8"M^ilosav*", u8"M/a:rkovin*",
-    u8"Pr^u:govečk*", u8"Gr^ebličk*", u8"Vl/a:dić*", u8"T^ihić*", u8"R^otić*",
+    // Enída: the listener's long stressed i replaces the earlier analogy
+    // Ènida; the possessive needs its own stem for forms such as Enídinima.
+    u8"En/i:d|a|e|i|u|o|om|ama", u8"En/i:din*",
+    u8"N/aid*", u8"Adrij/an|a|e|i|u|o|om", u8"M^ilosav*", u8"M/a:rkovin*",
+    // Listener correction: gre-BLIČ-ki, retaining the short vowel.
+    u8"Pr^u:govečk*", u8"Grebl/ičk*", u8"Vl/a:dić*", u8"T^ihić*", u8"R^otić*",
     u8"L^etić*", u8"J^usić*",
+
+    // Foreign app names after internal.json's pronunciation replacements.
+    // Collins/Oxford: initial stress in Messenger and TikTok; falling tone
+    // is our Croatian adaptation, not an English lexical pitch accent.
+    // WinTalker: the user's vin-TO-ker, with short rising o.
+    u8"m^esindžer||a|u|e|om", u8"t^iktok||a|u|e|om",
+    u8"vint/oker||a|u|e|om",
 };
 
 const char* const CROATIAN[] = {
@@ -506,6 +527,12 @@ const char* const CROATIAN[] = {
     u8"pr^oslav|a|e|i|u|o|om|ama", u8"ves/e:lj*",
     // HJP zàštīćenōst, like the participle (zaštititi shifts in VERBS).
     u8"z/aštićenost*", u8"z/aštićenošću",
+
+    // Školski rječnik and Mrežnik: batèrija (HJP has bàtērija).
+    u8"bat/erij|a|e|i|u|o|om|ama", u8"bat/erijsk*",
+    // ŠR and HJP: pročìtati/pročìtām, but prȍčitān. The passive needs
+    // a separate falling-tone paradigm; the negative stays nepròčitan.
+    u8"pr^očitan||a|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
 };
 
 const char* const SERBIAN[] = {
@@ -648,7 +675,7 @@ const char* const VERBS[] = {
     u8"usp'ostav=in", u8"zab'orav=in", u8"obj'a:v=i<pn", u8"prij'a:v=i<pn",
     u8"odj'a:v=i<pn", u8"naj'a:v=i<pn", u8"izj'a:v=i<pn", u8"j'a:v=i", u8"poj'a:v=i<n",
     u8"ispr'a:zn=i<pn", u8"uč'in=i<p", u8"nač'in=i<pn", u8"za'ustavlj=a",
-    u8"pr'esluš=a", u8"pr'egled=a", u8"vr'a:t=i", u8"povr'a:t=i<p",
+    u8"pr'esluš=a", u8"p/osluš=a", u8"pr'egled=a", u8"vr'a:t=i", u8"povr'a:t=i<p",
     u8"svr'a:t=i", u8"navr'a:t=i<n", u8"odvr'a:t=i<p", u8"obr'a:t=i<p", u8"pl'a:t=i",
     u8"upl'a:t=i<pn", u8"ispl'a:t=i<pn", u8"napl'a:t=i<pn", u8"dopl'a:t=i<pn",
     u8"k'u:p=i", u8"otk'u:p=i<pn", u8"proš'i:r=i<p", u8"raš'i:r=i<p",

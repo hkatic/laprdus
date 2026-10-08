@@ -1097,8 +1097,8 @@ accent of names of the same shape. What came out of it:
   *Marijàna* (was long), *Mìhājlo, Ànita, Ȇva, Mája, Máto, Mátić,
   Teodóra* (the man's *Tèodor* keeps only the nominative), *Crnògorac* /
   *Crnogórci, Ivànščica, Bȑkljača*, *Bèla* (Croatian voice only; in
-  Serbian *bela, bele* is the adjective); by analogy *Ènida, Nàida,
-  Adrijàna, Mȉlosava, Márkovina, Prȗgovečkī, Grȅbličkī, Vládić, Tȉhić,
+  Serbian *bela, bele* is the adjective); by analogy *Nàida,
+  Adrijàna, Mȉlosava, Márkovina, Prȗgovečkī, Vládić, Tȉhić,
   Rȍtić, Lȅtić, Jȕsić*.
 - Several words were already right in place and tone (*istòvremeno,
   inteligèncija, sùdjelujete*) and were heard as wrong because the rising
@@ -1200,6 +1200,90 @@ has a separate Croatian entry, without unstressed length. The existing
 negative *nezàštīćen* (also confirmed by
 [Školski rječnik](https://rjecnik.hr/search/?strict=yes&q=neza%C5%A1ti%C4%87en))
 and the Serbian/Bosnian shifted forms keep their existing behaviour.
+
+**Battery, listening, reading and app names (8 October 2026 follow-up).**
+The Croatian noun and verb forms were checked against Školski rječnik,
+Mrežnik and HJP. The same policy of omitting unstressed lengths applies.
+
+| Word | Chosen accent and related forms | Evidence |
+|---|---|---|
+| baterija | *batèrija*, *batèrijē*, *batèrije*, *batèrījā*, *batèrijama*; adjective *batèrījskī* | [Mrežnik](https://rjecnik.hr/mreznik/baterija/), [Školski rječnik](https://rjecnik.hr/search/?strict=yes&q=baterija), [baterijski](https://rjecnik.hr/search/?strict=yes&q=baterijski) |
+| poslušati | *pòslušati*, *pòslušām*, *pòslušāj*, *pòslušao*, *pòslušān* | [Školski rječnik](https://rjecnik.hr/search/?strict=yes&q=poslu%C5%A1ati), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eVpuWhI%3D) |
+| pročitati | *pročìtati*, *pročìtām*, *pročìtāj*, *pročìtao*, but passive *prȍčitān* | [Školski rječnik](https://rjecnik.hr/search/?strict=yes&q=pro%C4%8Ditati), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=f1plWRA%3D) |
+| Messenger | First-syllable stress; the existing *Mesindžer* transcription now has explicit *Mȅsindžer* | [Collins](https://www.collinsdictionary.com/us/dictionary/english/messenger), British /ˈmɛsɪndʒə/ |
+| TikTok | First-syllable stress, rendered *Tȉktok* | [Oxford Advanced Learner's Dictionary](https://www.oxfordlearnersdictionaries.com/definition/english/tiktoktm), British /ˈtɪktɒk/ |
+| WinTalker | *Vintòker*, with stress on *to*, also in *Vintòkera, Vintòkeru, Vintòkerom* | User's explicit pronunciation choice, **vin-TO-ker**; no authoritative accent entry found |
+
+HJP gives *bàtērija*; the Croatian entry follows the Institute's two
+dictionaries, which agree on *batèrija*. Exact noun forms and a separate
+adjective stem cover the cases without assigning their accent to arbitrary
+derivatives. `p/osluš=a` supplies the listening verb's rising tone throughout
+its paradigm. The existing `proč'it=ap` already gives the correct infinitive,
+present, imperative and active participle. A Croatian passive paradigm in
+the lexicon supplies its exceptional falling tone, *prȍčitan*; the negative
+*nepròčitan* and the Serbian/Bosnian readings are unchanged.
+
+English stress does not specify a Croatian rising/falling pitch accent.
+The short falling tones of *Mȅsindžer* and *Tȉktok* are explicit synthesis
+adaptations of initial English stress, not claims of dictionary-prescribed
+Croatian brand accents. *Vintòker* uses a short rising vowel to realize the
+user's chosen non-initial stress. These name entries are shared by the
+voices. `internal.json` transcribes Messenger and WinTalker with bounded
+whole-word patterns and optional Croatian case endings; TikTok needs no
+spelling replacement. Regression tests load the actual bundled dictionary
+and compare the names, capitalization variants, cases and phrases against
+explicitly accented input in all three formant voices. Longer unrelated
+words are checked to remain outside the replacement patterns.
+
+**Enida, Isaković, Greblički and Spasojević (8 October 2026 follow-up).** The listener specifies
+a long stressed *i* in *Enída*. This replaces the earlier *Ènida* guess by
+analogy; no dictionary entry for Enida was found. The shared lexicon now
+keeps *Enída, Eníde, Enídi, Enídu, Enídom* and the possessive *Enídin*,
+including longer forms such as *Enídinima*.
+
+The listener clarified that *Isaković* is stressed on its **initial i**:
+*Ìsaković*, with a short stressed *i* and a short **unstressed a**. Cases
+and possessives retain this reading (*Ìsakovića, Ìsakovićem,
+Ìsakovićevima*). The explicit entry overrides the generic surname rule in
+`COMMON`, which every language loads; it was never Bosnian-only. The earlier long
+reading came from [HJP's entry for Alija
+Isaković](https://hjp.znanje.hr/index.php?show=search_by_id&id=fVllWhM%3D)
+and Stipe Kekez's study of surname accents,
+[*Prezime na naglasnoj razini kao razlikovni, identifikacijski čimbenik.
+Kako ga očuvati?*](https://hrcak.srce.hr/file/122620), *Fluminensia* 23/2
+(2011), 57–70, which records *Ìsāk → Isáković*. Those examples do not
+establish the pronunciation of every bearer; the listener's correction
+determines this entry.
+
+The same listener places the stress of *Greblički* on the first *i*,
+*gre-BLIČ-ki*. Its entry is now *Greblìčki*, retaining the existing short
+vowel and using the engine's rising tone for non-initial stress. Its case
+forms follow the same stem (*Greblìčkoga, Greblìčkim, Greblìčkima*).
+No authoritative accented entry was found for this surname.
+
+The listener clarified *Spasojević* as **SPA-so-je-vić**: *Spàsojević*,
+with initial stress and a short **unstressed o**, also in *Spàsojevića,
+Spàsojevićem, Spàsojevićevima*. Merely shortening the previously stressed
+*o* did not implement that pronunciation. Explicit name and possessive
+entries in `COMMON` prevent the generic *-ević* rule from restoring stress
+and length on *o*. Both recorded and
+formant voices use this front end. Tests cover cases, possessives,
+capitalization, Cyrillic input and phrases in Zvonko, Stojan and Mirsad;
+dedicated tests also check Josip, Vlado, Detence, Baba and Djed. Audio must
+match explicitly accented input. Duration comparisons keep Enida's *i*
+long, Isaković's unstressed *a* short and Spasojević's unstressed *o* short;
+separate comparisons reject the previous stress on Isaković's *a* and on
+Spasojević's *o* (both the short and long readings).
+
+**Knezović and Knežević (8 October 2026 follow-up).** [HJP's onomastics
+under *knez*](https://hjp.znanje.hr/index.php?show=search_by_id&id=elxuXBQ%3D)
+records *Knȇzović* (long falling initial *e*) and *Knéžević* (long rising
+initial *e*). Both match the listener's request for stress on *KNE* with
+long *e*. HJP also records *Knezòvić*; the requested initial-stress variant
+is used here. Shared entries retain the accent in cases and possessives
+without matching the noun plurals *knezovi/kneževi*. Tests compare explicit
+accents, vowel duration and tone in all eight speaking voices, including
+Cyrillic input.
 
 ## 5. Timing and melody (`formant_synthesizer.cpp`)
 
