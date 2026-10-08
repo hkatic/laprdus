@@ -420,8 +420,8 @@ TEST_CASE("Lexicon accents cover the whole paradigm", "[formant][text]") {
         {"proslje\xC4\x91ivati", "proslje\xC4\x91\xC3\xADvati"},   // prosljeđívati
         {"podijeli", "podij\xC3\xA9li"},   // podijéli
         {"podijelio", "podij\xC3\xA9lio"},   // podijélio
-        {"podijelim", "podij\xC3\xA9lim"},   // podijélim
-        {"podijeljeno", "podij\xC3\xA9ljeno"},   // podijéljeno
+        {"podijelim", "p\xC3\xB2" "dijelim"},   // pòdijelim
+        {"podijeljeno", "p\xC3\xB2" "dijeljeno"},   // pòdijeljeno
         {"raspodijeli", "raspodij\xC3\xA9li"},   // raspodijéli
         {"promijeni", "promij\xC3\xA9ni"},   // promijéni
         {"zalijepi", "zalij\xC3\xA9pi"},   // zalijépi
@@ -832,8 +832,8 @@ TEST_CASE("Lexicon accents cover the whole paradigm", "[formant][text]") {
         REQUIRE(speak(engine.handle, c.plain) != speak(engine.handle, c.accented));
     }
 
-    // Mirsad follows the dictionaries: the present and the passive participle
-    // have the accent one syllable earlier.
+    // Mirsad follows the dictionaries' shifts throughout; Croatian also
+    // shifts podijeliti, while keeping the root accent in the other verbs.
     const Case bosnian[] = {
         {"podijelim", "p\xC3\xB2" "dijelim"},   // pòdijelim
         {"podijeljen", "p\xC3\xB2" "dijeljen"},   // pòdijeljen
@@ -876,6 +876,191 @@ TEST_CASE("Lexicon accents cover the whole paradigm", "[formant][text]") {
         INFO(c.plain);
         REQUIRE(speak(engine.handle, c.plain) == speak(engine.handle, c.accented));
     }
+}
+
+TEST_CASE("Croatian ideja besplatan and podijelim follow dictionary accents", "[formant][text]") {
+    // Mrežnik: idéja (the same accent throughout its cases), bèsplatan.
+    // HJP: podijéliti, present pòdijēlīm, passive pòdijēljen.
+    // Zvonko keeps its usual omission of post-accent length; the long ije
+    // is already supplied by phonemization, including after the accent.
+    struct Case { const char* plain; const char* accented; };
+    const Case cases[] = {
+        {u8"ideja", u8"idéja"},
+        {u8"ideje", u8"idéje"},
+        {u8"ideji", u8"idéji"},
+        {u8"ideju", u8"idéju"},
+        {u8"idejo", u8"idéjo"},
+        {u8"idejom", u8"idéjom"},
+        {u8"idejama", u8"idéjama"},
+        {u8"besplatan", u8"bèsplatan"},
+        {u8"besplatna", u8"bèsplatna"},
+        {u8"besplatno", u8"bèsplatno"},
+        {u8"besplatni", u8"bèsplatni"},
+        {u8"besplatne", u8"bèsplatne"},
+        {u8"besplatnu", u8"bèsplatnu"},
+        {u8"besplatnog", u8"bèsplatnog"},
+        {u8"besplatnoga", u8"bèsplatnoga"},
+        {u8"besplatnom", u8"bèsplatnom"},
+        {u8"besplatnome", u8"bèsplatnome"},
+        {u8"besplatnomu", u8"bèsplatnomu"},
+        {u8"besplatnoj", u8"bèsplatnoj"},
+        {u8"besplatnih", u8"bèsplatnih"},
+        {u8"besplatnim", u8"bèsplatnim"},
+        {u8"besplatnima", u8"bèsplatnima"},
+        {u8"podijelim", u8"pòdijelim"},
+        {u8"podijeliš", u8"pòdijeliš"},
+        {u8"podijelimo", u8"pòdijelimo"},
+        {u8"podijele", u8"pòdijele"},
+        {u8"podijeljen", u8"pòdijeljen"},
+        {u8"podijeljena", u8"pòdijeljena"},
+        {u8"podijeljeno", u8"pòdijeljeno"},
+        {u8"podijeljeni", u8"pòdijeljeni"},
+        {u8"podijeljenih", u8"pòdijeljenih"},
+        {u8"podijeljenima", u8"pòdijeljenima"},
+        {u8"nepodijeljen", u8"nepòdijeljen"},
+        {u8"podijeliti", u8"podijéliti"},
+        {u8"podijelio", u8"podijélio"},
+        {u8"podijelila", u8"podijélila"},
+        // Ambiguous -i/-ite forms retain the existing imperative reading.
+        {u8"podijeli", u8"podijéli"},
+        {u8"podijelite", u8"podijélite"},
+        // Other prefixes must not inherit the podijeliti override.
+        {u8"raspodijelim", u8"raspodijélim"},
+        {u8"dodijelim", u8"dodijélim"},
+        {u8"To je ideja", u8"To je idéja"},
+        {u8"Ulaz je besplatan", u8"Ulaz je bèsplatan"},
+        {u8"Želim da podijelim ideju", u8"Želim da pòdijelim idéju"},
+    };
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    for (const auto& c : cases) {
+        INFO(c.plain);
+        const auto plain = speak(engine.handle, c.plain);
+        REQUIRE(!plain.empty());
+        REQUIRE(plain == speak(engine.handle, c.accented));
+    }
+    REQUIRE(speak(engine.handle, u8"ideja") != speak(engine.handle, u8"idèja"));
+    REQUIRE(speak(engine.handle, u8"besplatan") != speak(engine.handle, u8"bȅsplatan"));
+    REQUIRE(speak(engine.handle, u8"podijelim") != speak(engine.handle, u8"podijélim"));
+}
+
+TEST_CASE("Croatian sucelje and otici keep their lexical accents", "[formant][text]") {
+    // HJP: súčēlje; HJP / Školski rječnik: òtīći, òtišao, òtišla.
+    // Croatian omits unstressed length, but the stressed u stays long.
+    struct Case { const char* plain; const char* accented; };
+    const Case cases[] = {
+        {u8"sučelje", u8"súčelje"},
+        {u8"sučelja", u8"súčelja"},
+        {u8"sučelju", u8"súčelju"},
+        {u8"sučeljem", u8"súčeljem"},
+        {u8"sučeljima", u8"súčeljima"},
+        {u8"otići", u8"òtići"},
+        {u8"otišao", u8"òtišao"},
+        {u8"otišla", u8"òtišla"},
+        {u8"otišlo", u8"òtišlo"},
+        {u8"otišli", u8"òtišli"},
+        {u8"otišle", u8"òtišle"},
+        {u8"otišavši", u8"òtišavši"},
+        {u8"Korisničko sučelje", u8"Korisničko súčelje"},
+        {u8"Otići ću kući", u8"Òtići ću kući"},
+        {u8"Otišao je kući", u8"Òtišao je kući"},
+        {u8"Otišla je kući", u8"Òtišla je kući"},
+        {u8"Oni su otišli", u8"Oni su òtišli"},
+    };
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    for (const auto& c : cases) {
+        INFO(c.plain);
+        const auto plain = speak(engine.handle, c.plain);
+        REQUIRE(!plain.empty());
+        REQUIRE(plain == speak(engine.handle, c.accented));
+    }
+    REQUIRE(speak(engine.handle, u8"sučelje") != speak(engine.handle, u8"sùčelje"));
+    REQUIRE(speak(engine.handle, u8"sučelje") != speak(engine.handle, u8"sȗčelje"));
+    REQUIRE(speak(engine.handle, u8"otići") != speak(engine.handle, u8"otíći"));
+    REQUIRE(speak(engine.handle, u8"otišao") != speak(engine.handle, u8"otìšao"));
+    REQUIRE(speak(engine.handle, u8"otišla") != speak(engine.handle, u8"ȍtišla"));
+}
+
+TEST_CASE("Croatian sat and rad distinguish case accents", "[formant][text]") {
+    // Školski rječnik / HJP noun paradigms, including D vs L sg and
+    // N/V vs G pl sati. Stressed length stays; unstressed length is omitted.
+    struct Case { const char* plain; const char* accented; };
+    const Case cases[] = {
+        {u8"sat", u8"sȃt"},
+        {u8"sata", u8"sȃta"},
+        {u8"satu", u8"sȃtu"},
+        {u8"sate", u8"sȃte"},
+        {u8"satom", u8"sȃtom"},
+        {u8"sati", u8"sȃti"},
+        {u8"satima", u8"sátima"},
+        {u8"satovi", u8"sȁtovi"},
+        {u8"satova", u8"sȁtova"},
+        {u8"satove", u8"sȁtove"},
+        {u8"satovima", u8"sȁtovima"},
+        {u8"rad", u8"rȃd"},
+        {u8"rada", u8"rȃda"},
+        {u8"radu", u8"rȃdu"},
+        {u8"rade", u8"rȃde"},
+        {u8"radom", u8"rȃdom"},
+        {u8"radovi", u8"rȁdovi"},
+        {u8"radova", u8"rȁdova"},
+        {u8"radove", u8"rȁdove"},
+        {u8"radovima", u8"rȁdovima"},
+        {u8"Dva sata", u8"Dva sȃta"},
+        {u8"Pet sati", u8"Pet sáti"},
+        {u8"Dvanaest sati", u8"Dvanaest sáti"},
+        {u8"25 sati", u8"25 sáti"},
+        {u8"Nekoliko sati", u8"Nekoliko sáti"},
+        {u8"Do kasnih sati", u8"Do kasnih sáti"},
+        {u8"Pet radnih sati", u8"Pet radnih sáti"},
+        {u8"Koliko je sati", u8"Koliko je sáti"},
+        {u8"Sati prolaze", u8"Sȃti prolaze"},
+        {u8"To su dugi sati", u8"To su dugi sȃti"},
+        {u8"Na satu", u8"Na sátu"},
+        {u8"Na tom satu", u8"Na tom sátu"},
+        {u8"Prema satu", u8"Prema sȃtu"},
+        {u8"Na radu", u8"Na rádu"},
+        {u8"O radu", u8"O rádu"},
+        {u8"Pri radu", u8"Pri rádu"},
+        {u8"U radu", u8"U rádu"},
+        {u8"Po radu", u8"Po rádu"},
+        {u8"O svom novom radu", u8"O svom novom rádu"},
+        {u8"O našem radu", u8"O našem rádu"},
+        {u8"Pristup radu", u8"Pristup rȃdu"},
+        {u8"Prema dobrom radu", u8"Prema dobrom rȃdu"},
+        {u8"Na poslu se posvetio radu", u8"Na poslu se posvetio rȃdu"},
+        {u8"Nema rada", u8"Nema rȃda"},
+        {u8"Oni rade", u8"Oni rȃde"},
+        // Exact paradigms must not catch the verb or unrelated sat- words.
+        {u8"raditi", u8"ráditi"},
+        {u8"radila", u8"rádila"},
+        {u8"satelit", u8"satèlit"},
+    };
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    for (const auto& c : cases) {
+        INFO(c.plain);
+        const auto plain = speak(engine.handle, c.plain);
+        REQUIRE(!plain.empty());
+        REQUIRE(plain == speak(engine.handle, c.accented));
+    }
+    REQUIRE(speak(engine.handle, u8"sati") != speak(engine.handle, u8"sáti"));
+    REQUIRE(speak(engine.handle, u8"pet sati") != speak(engine.handle, u8"pet sȃti"));
+    REQUIRE(speak(engine.handle, u8"o radu") != speak(engine.handle, u8"o rȃdu"));
+    REQUIRE(speak(engine.handle, u8"prema radu") != speak(engine.handle, u8"prema rádu"));
+    REQUIRE(speak(engine.handle, u8"satovi") != speak(engine.handle, u8"sȃtovi"));
+
+    // User entries override these contextual guesses; written accents
+    // still take precedence over a user entry.
+    const char* json = R"({"entries":[{"word":"s^a:ti"},{"word":"r^a:du"},{"word":"s^a:tu"}]})";
+    REQUIRE(laprdus_load_accent_lexicon_from_memory(engine.handle, json, 0) == LAPRDUS_OK);
+    REQUIRE(speak(engine.handle, u8"pet sati") == speak(engine.handle, u8"pet sȃti"));
+    REQUIRE(speak(engine.handle, u8"o radu") == speak(engine.handle, u8"o rȃdu"));
+    REQUIRE(speak(engine.handle, u8"na satu") == speak(engine.handle, u8"na sȃtu"));
+    REQUIRE(speak(engine.handle, u8"o radu") != speak(engine.handle, u8"o rádu"));
+    laprdus_clear_accent_lexicon(engine.handle);
+    REQUIRE(speak(engine.handle, u8"o radu") == speak(engine.handle, u8"o rádu"));
 }
 
 TEST_CASE("The tens keep their long first vowel", "[formant][text]") {

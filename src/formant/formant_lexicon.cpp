@@ -468,6 +468,29 @@ const char* const COMMON[] = {
 };
 
 const char* const CROATIAN[] = {
+    // Mrežnik / HJP: idéja, bèsplatan (checked 2026-10-08).
+    // Exact paradigms keep unrelated derivatives out; Croatian omits the
+    // dictionaries' post-accent lengths, as elsewhere in this table.
+    // https://rjecnik.hr/mreznik/ideja/
+    // https://rjecnik.hr/mreznik/besplatan/
+    u8"id/e:j|a|e|i|u|o|om|ama",
+    u8"b/esplatan", u8"b/esplatn|a|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    // HJP súčēlje; HJP / Školski rječnik òtīći, òtišao, òtišla.
+    // Keep Croatian's usual omission of unstressed length. Exact noun
+    // and irregular verb forms avoid catching sučèliti or otíđi.
+    // https://hjp.znanje.hr/index.php?show=search_by_id&id=d1pjWBU%3D
+    // https://hjp.znanje.hr/index.php?show=search_by_id&id=eFdmXhI%3D
+    u8"s/u:čelj|e|a|u|em|ima",
+    u8"/otići", u8"/otiš|ao|la|lo|li|le|avši",
+    // Školski rječnik / HJP: sȃt, rȃd, but L sátu/rádu, G pl sátī,
+    // and short falling sȁtovi/rȁdovi. Frontend resolves the contextual
+    // forms; isolated satu/radu and sati use D sg and N pl respectively.
+    // Kapović, Filologija 54 (2010), also records DLI pl sátima.
+    // https://rjecnik.hr/search/?q=sat&strict=yes
+    // https://rjecnik.hr/search/?q=rad&strict=yes
+    // https://hrcak.srce.hr/file/77788
+    u8"s^a:t||a|u|e|om|i", u8"s/a:tima", u8"s^atov|i|a|e|ima",
+    u8"r^a:d||a|u|e|om", u8"r^adov|i|a|e|ima",
     // Forty to ninety without the length of the last syllable (četrdèset,
     // pedèset for the dictionaries' četrdèsēt, pedèsēt), as the other
     // entries for this voice do. Ordinals and -ak forms follow the stem.
@@ -611,8 +634,8 @@ const char* const BOSNIAN[] = {
 // Verbs whose root has the long "ije" (podijéliti, promijéniti, zalijévati).
 // After a prefix the spelling "ije" marks the verb: the nouns beside it have
 // the short "je" (podjela, promjena, zamjena). The front end puts the accent
-// on the "ije" in every form built from a root listed here
-// (StressRules::ije_verb); nothing else tells it that "podijeli", "podijelio"
+// on the "ije", or shifts it in the present and passive participle
+// (StressRules::verb_form); nothing else tells it that "podijeli", "podijelio"
 // and "podijeljen" belong to "podijeliti".
 //
 //   root:classes[:prefixes]
@@ -620,9 +643,15 @@ const char* const BOSNIAN[] = {
 //   a  verb in -ati (pomiješati, pomiješam, pomiješaj, pomiješao, pomiješan)
 //   t  verb in -ati whose present has another root (dolijetati)
 //   e  that present root (dolijećem, podliježem)
+//   !  Croatian also shifts the present and passive accent (pòdijelim)
 //   prefixes: the only ones the root takes, where any prefix would also
 //   match nouns (povijest, pripovijest, zapovijed)
 const char* const IJE_VERBS[] = {
+    // HJP podijéliti, prez. pòdijēlīm, prid. trp. pòdijēljen.
+    // Keep this restricted entry before the generic root: other prefixes
+    // retain their existing Croatian treatment (e.g. raspodijelim).
+    // https://hjp.znanje.hr/index.php?show=search_by_id&id=eVxlXhY%3D
+    u8"dijel:i!:po",
     u8"dijel:i", u8"mijen:i", u8"lijep:i", u8"cijen:i", u8"bijed:i", u8"slijed:i",
     u8"vrijed:i", u8"zlijed:i", u8"trijeb:i", u8"riješ:i", u8"liječ:i", u8"slijep:i",
     u8"bijel:i", u8"cijel:i", u8"mijet:i", u8"svijetl:i", u8"rijed:i", u8"prijet:i",

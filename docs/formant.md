@@ -725,6 +725,45 @@ To correct a word, add an entry to `formant_lexicon.cpp` (notation at the top
 of the file). Language-specific tables override the common one (*pròfesor* in
 Croatian, *profèsor* in Serbian and Bosnian).
 
+The Croatian entries for *sučelje* and *otići* were checked on 8 October 2026.
+[HJP gives *súčēlje*](https://hjp.znanje.hr/index.php?show=search_by_id&id=d1pjWBU%3D),
+with long rising *u*; its exact case forms share that accent.
+[HJP gives *òtīći, òtišao, òtišla*](https://hjp.znanje.hr/index.php?show=search_by_id&id=eFdmXhI%3D),
+with short rising *o*, agreeing with
+[Školski rječnik's *òtīći, òtišao*](https://rjecnik.hr/search/?q=oti%C4%87i&strict=yes).
+The irregular participle is listed as *òtišao, òtišla, òtišlo, òtišli, òtišle*,
+alongside the past adverb *òtišāvši*, rather than guessed by a suffix rule.
+These exact entries do not reach *sučèliti* or the imperative *otíđi*.
+Unstressed lengths follow the Croatian voice's existing policy, so it says
+*súčelje, òtići, òtišavši* while preserving the stressed vowel's length and tone.
+
+The full noun paradigms of *sat* and *rad* were checked on 8 October 2026
+against [Školski rječnik: sat](https://rjecnik.hr/search/?q=sat&strict=yes)
+and [rad](https://rjecnik.hr/search/?q=rad&strict=yes), cross-checked with
+[HJP: sat](https://hjp.znanje.hr/index.php?show=search_by_id&id=dldvWhI%3D)
+and [rad](https://hjp.znanje.hr/index.php?show=search_by_id&id=dl1vXhE%3D).
+The singular has *sȃt, sȃta, sȃtu, sȃte, sȃtom* and
+*rȃd, rȃda, rȃdu, rȃde, rȃdom*, except for locative *sátu, rádu*.
+The short plural has N/V *sȃti*, G *sátī*, A *sȃte*, D/L/I *sátima*
+(also discussed by [Kapović, Filologija 54 (2010)](https://hrcak.srce.hr/file/77788)).
+The expanded plurals have short falling accents: *sȁtovi, sȁtove,
+sȁtovima, sȁtōvā* and *rȁdovi, rȁdove, rȁdovima, rȁdōvā*.
+Croatian continues to omit unstressed lengths (*sáti, sȁtova, rȁdova*).
+
+These are exact forms, so they do not spread to unrelated derivatives.
+The front end selects locative *sátu/rádu* after *u, na, o, po, pri*, also
+across up to two adjacent modifiers with dative/locative endings
+(*o svom novom rádu*). It selects genitive *sáti* after numbers from five
+upward, common quantity/genitive cues (*nekoliko sáti, raspored sáti*),
+an adjacent *-ih* modifier (*do kasnih sáti*), and in *koliko je sáti*.
+These are limited context heuristics, not a syntactic parser: without such
+cues the defaults remain dative *sȃtu/rȃdu* and nominative *sȃti*.
+Written accents and user accent entries take precedence over these rules.
+The homographic adjective *rȁd* ‘willing’ and personal names require an
+explicit accent or user entry. The noun's vocative *rȃde* also matches the
+stressed vowel of present *rȃdē* ‘they work’; the rest of *raditi* is a
+separate verb paradigm.
+
 **Word classes** (`StressRules::strong()`, after the suffix rules). The
 single suffixes above cover a few hundred words each; the rules below cover
 whole classes of words by their shape. Each covers an accent pattern that
@@ -982,8 +1021,8 @@ speech rather than the dictionary, at the request of a native listener:
 - of *obavijestimo* and *obavijestite*, which are both present and
   imperative, the first is read as present (*obàvijēstīmo*) and the second
   as imperative (*obavijéstite*), the more frequent use of each.
-- verbs keep the accent of the infinitive in every form for Zvonko (see
-  below).
+- verbs generally keep the accent of the infinitive in every form for
+  Zvonko, with lexical exceptions (see below).
 
 **Verbs.** The accent of a verb's infinitive stays on its root in most other
 forms: *uréditi, urédi, urédio; otvòriti, otvòri, otvòrio; pročìtati,
@@ -1016,8 +1055,8 @@ Three things to know:
 - **Dictionary and common speech.** In the present and the passive participle
   the dictionaries usually move the accent one syllable back (*ùrēdīm,
   ùrēđen, òtvorīm, pòdijēlīm, pòkrēnēm*). Stojan and Mirsad do that. Zvonko
-  keeps the accent of the infinitive in every form (*urédim, uréđen,
-  otvòrim, podijélim, pokrénem*), as Croatian is commonly spoken and as a
+  generally keeps the accent of the infinitive (*urédim, uréđen,
+  otvòrim, pokrénem*), as Croatian is commonly spoken and as a
   native listener asked for the verbs with a long vowel; the verbs with a
   short one follow for consistency. *Obavijestiti, razumijevati* and the
   present of *započeti, preuzeti*, which are lexicon entries, do the same.
@@ -1025,10 +1064,25 @@ Three things to know:
   *uključiti, isključiti, zaključiti, priključiti* (*ùključeno*,
   *ìsključeno*, the status words of every settings screen, which the same
   listener heard as wrong with the accent on *-klju-*), *rasporediti*
-  (*raspòređeni*), *osnažiti*, *potaknuti* and *zaštititi* (*zàštićen*,
-  October 2026). Zvonko gets
+  (*raspòređeni*), *osnažiti*, *potaknuti*, *zaštititi* (*zàštićen*) and
+  *podijeliti* (*pòdijelim, pòdijeljen*, October 2026). Zvonko gets
   the shift without the length after it (*ùključen* for the dictionaries'
   *ùkljūčen*).
+
+  Checked on 8 October 2026: [Mrežnik's *ideja*](https://rjecnik.hr/mreznik/ideja/)
+  gives *idéja, idéjē, idéji, idéju, idéjōm, idéjā, idéjama*;
+  [*besplatan*](https://rjecnik.hr/mreznik/besplatan/) gives *bèsplatan,
+  bèsplatna, bèsplatno, bèsplatnī*. These have exact Croatian paradigms so
+  the entries do not catch derivatives.
+  [HJP's *podijeliti*](https://hjp.znanje.hr/index.php?show=search_by_id&id=eVxlXhY%3D)
+  gives *podijéliti*, present *pòdijēlīm* and passive *pòdijēljen*.
+  The restricted `dijel:i!:po` entry precedes the generic `dijel:i` root;
+  it corrects the present and passive without changing other prefixes.
+  The infinitive, active participle and imperative keep their root accent.
+  Ambiguous *podijeli/podijelite* retain the front end's imperative reading;
+  *podijelimo* retains its present reading. The spelling *ije* supplies its
+  length even after the accent; other unstressed lengths follow the voice's
+  existing policy.
 - **Noun twins.** The imperative is often spelled like a case of a noun:
   *potvrdi* (*potvrda*), *uredi* (*ured*), *otvori* (*otvor*), *objavi,
   prijavi, načini*. Such a form is read as the command only at the head of

@@ -136,6 +136,7 @@ struct Word {
     uint8_t prominence = 2;
     bool clitic = false;
     bool explicit_stress = false;
+    bool user_accent = false;       // do not reinterpret a user's lexical accent
     bool letter_name = false;       // part of a spelled-out abbreviation
     bool joined = false;            // one word with the previous ("ne znam")
     bool spell = false;             // a letter of a dotted abbreviation ("s.a.r.s.")
@@ -2388,12 +2389,14 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
                 return it == map.end() ? nullptr : &it->second;
             };
             if (!m_user_exact.empty()) entry = find_in(m_user_exact, word.w);
+            if (entry) word.user_accent = true;
             if (!entry) entry = find_in(m_exact, word.w);
             if (!entry) {
                 size_t min_len = word.w.size() > 3 ? word.w.size() - 3 : 1;
                 for (size_t len = word.w.size(); len >= min_len && len >= 2; --len) {
                     std::u32string prefix = word.w.substr(0, len);
                     if (!m_user_stems.empty()) entry = find_in(m_user_stems, prefix);
+                    if (entry) word.user_accent = true;
                     if (!entry) entry = find_in(m_stems, prefix);
                     if (entry) break;
                 }
@@ -2502,6 +2505,48 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
             }
         } else if (millions.count(next.w)) {
             next.phones[static_cast<size_t>(next.nuclei.back())].is_long = true;
+        }
+    }
+
+    // Croatian sȃt/rȃd keep falling accents in D sg, but have rising L sg
+    // sátu/rádu. Recognize a governing locative preposition, allowing up
+    // to two adjacent modifiers ("o svom novom radu"). This is a local
+    // cue, not a general case parser; other contexts keep the exact entry.
+    // N/V pl sȃti likewise differs from G pl sátī ("pet sati"). Croatian
+    // omits the unstressed final length, as in the rest of its lexicon.
+    if (m_language == VoiceLanguage::Croatian) {
+        static const WordSet locative = {U"u", U"na", U"o", U"po", U"pri"};
+        static const WordSet genitive_hours = {
+            U"nula", U"koliko", U"nekoliko", U"toliko", U"puno", U"mnogo",
+            U"malo", U"više", U"manje", U"dosta", U"par", U"bez", U"do",
+            U"od", U"između", U"poslije", U"prije", U"nakon", U"oko",
+            U"usred", U"tijekom", U"broj", U"raspored",
+        };
+        for (size_t i = 1; i < count; ++i) {
+            Word& word = words[i];
+            if (word.explicit_stress || word.user_accent || word.letter_name ||
+                word.nuclei.empty()) continue;
+            bool rising = false;
+            if (word.w == U"satu" || word.w == U"radu") {
+                size_t cue = i;
+                for (int modifiers = 0; cue > 0 && modifiers < 2 &&
+                     ends_with_any(words[cue - 1].w, {U"om", U"ome", U"omu", U"em", U"emu"});
+                     ++modifiers) {
+                    --cue;
+                }
+                rising = cue > 0 && locative.count(words[cue - 1].w);
+            } else if (word.w == U"sati") {
+                const auto& previous = words[i - 1].w;
+                rising = counting_numbers().count(previous) || genitive_hours.count(previous) ||
+                         (previous.size() > 2 && ends_with(previous, U"ih"));
+                // The frequent question "koliko je sati" has the same G.
+                if (i >= 2 && previous == U"je" && words[i - 2].w == U"koliko") rising = true;
+            }
+            if (rising) {
+                word.stress = 0;
+                word.accent = Accent::Rising;
+                word.phones[static_cast<size_t>(word.nuclei[0])].is_long = true;
+            }
         }
     }
 
