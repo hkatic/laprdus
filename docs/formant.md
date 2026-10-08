@@ -931,7 +931,14 @@ and *reče* the aorist *rȅče*, both far commoner than the noun's plural and
 vocative. *Podèsiv, podèsivo* and *podesívōst* are in no dictionary and
 follow the adjectives in *-iv* from prefixed verbs (*izvèdiv, dokàziv,
 podnòšljiv, prilagòdljiv; održívōst*); the verb is *pòdesiti, pòdesīm,
-pòdešen*. Three choices go with common Croatian
+pòdešen*. *Rȍđendān* (the default rules had *rođèndan, rođendána*) in every
+case. *Zauzet* is *zȁuzēt, zȁuzēta, zȁuzēto* in every voice, as the
+adjective "busy" and as the passive participle, with *zȁuzeo, zȁuzētōst* and
+the verbal noun *zauzéće* (HJP, Školski rječnik hrvatskoga jezika); an
+earlier entry had given it the infinitive's *zaùzet* like *preùzet*, and
+*zauzéta*. The infinitive and imperative keep *zaùzēti, zaùzmi*, so the
+plural adjective *zȁuzēti* ("zauzeti smo") is read as the infinitive.
+Three choices go with common Croatian
 speech rather than the dictionary, at the request of a native listener:
 
 - unstressed length is left out where it is not heard (*dȍdatno, kòntrolni,

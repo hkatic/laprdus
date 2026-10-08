@@ -153,6 +153,9 @@ const char* const COMMON[] = {
     // pàuza, sȁuna, fàuna (HJP): the long-stem rule had taken "au" for a
     // long u (paúza)
     u8"p/auz*", u8"s^aun*", u8"f/aun*",
+    // rȍđendān, rȍđendāna (HJP, Školski rječnik, Wiktionary); the default
+    // rules stressed the second syllable (rođèndan, rođendána)
+    u8"r^ođendan*",
     // kòrisnīk, kòrisnica, kòrisnički (HJP) and the adjective kȍristan,
     // kȍrisno, the noun kȍrīst; the verb kòristiti is in VERBS, and
     // "koristi" is read as the noun
@@ -240,7 +243,13 @@ const char* const COMMON[] = {
     // prevesti: prevèla. (The present of these is in the Croatian table.)
     u8"zap'oč|eti|et|ni|nimo|nite", u8"pre'uz|eti|et|mi|mimo|mite",
     u8"od'uz|eti|et|mi|mimo|mite", u8"pod'uz|eti|et|mi|mimo|mite",
-    u8"za'uz|eti|et|mi|mimo|mite", u8"pron'a:đ|i|imo|ite",
+    u8"za'uz|eti|mi|mimo|mite", u8"pron'a:đ|i|imo|ite",
+    // zauzeti is the exception among them: the dictionaries' zȁuzēt (also
+    // the adjective "busy"), zȁuzeo, zȁuzētōst on the prefix in every voice,
+    // the verbal noun zauzéće (HJP, Školski rječnik); only the infinitive and
+    // imperative keep zaùzēti, zaùzmi, and the plural adjective zȁuzēti
+    // gives way to the infinitive
+    u8"z^auzet*", u8"z^auz|eo|ela|elo|eli|ele", u8"zauz'e:ć*",
     u8"prev'el|a|o|i|e", u8"dov'el|a|o|i|e", u8"uv'el|a|o|i|e", u8"izv'el|a|o|i|e",
     u8"prov'el|a|o|i|e", u8"odv'el|a|o|i|e", u8"nav'el|a|o|i|e", u8"zav'el|a|o|i|e",
 
@@ -405,6 +414,7 @@ const char* const SERBIAN[] = {
     u8"sv^e:t", u8"r^e:č",
     u8"m^onoto:no", u8"r^e:da:ka:", u8"k/orisni:k*", u8"k/orisni:ci", u8"k/orisni:cima",
     u8"k/orisni:če", u8"k^ori:stan", u8"k^ori:st",
+    u8"r^ođenda:n*", u8"z^auze:t*",
 };
 
 const char* const BOSNIAN[] = {
@@ -427,6 +437,7 @@ const char* const BOSNIAN[] = {
     u8"k^ahv*", u8"k^af*", u8"l^ahko", u8"m^ehk*",
     u8"m^onoto:no", u8"r^e:da:ka:", u8"k/orisni:k*", u8"k/orisni:ci", u8"k/orisni:cima",
     u8"k/orisni:če", u8"k^ori:stan", u8"k^ori:st",
+    u8"r^ođenda:n*", u8"z^auze:t*",
 };
 
 // Verbs whose root has the long "ije" (podijéliti, promijéniti, zalijévati).

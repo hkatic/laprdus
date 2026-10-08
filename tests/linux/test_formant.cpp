@@ -644,6 +644,18 @@ TEST_CASE("Lexicon accents cover the whole paradigm", "[formant][text]") {
         {"retkom", "r\xC3\xA9tkom"},   // rétkom
         {"recima", "r\xC3\xA9" "cima"},   // récima
         {"redaka", "r\xC8\x87" "daka"},   // rȇdaka
+        {"ro\xC4\x91" "endan", "r\xC8\x8D\xC4\x91" "endan"},   // rȍđendan
+        {"ro\xC4\x91" "endana", "r\xC8\x8D\xC4\x91" "endana"},   // rȍđendana
+        {"ro\xC4\x91" "endanima", "r\xC8\x8D\xC4\x91" "endanima"},   // rȍđendanima
+        {"zauzet", "z\xC8\x81uzet"},   // zȁuzet
+        {"zauzeta", "z\xC8\x81uzeta"},   // zȁuzeta
+        {"zauzeto", "z\xC8\x81uzeto"},   // zȁuzeto
+        {"zauzetog", "z\xC8\x81uzetog"},   // zȁuzetog
+        {"zauzetost", "z\xC8\x81uzetost"},   // zȁuzetost
+        {"zauzeo", "z\xC8\x81uzeo"},   // zȁuzeo
+        {"zauzela", "z\xC8\x81uzela"},   // zȁuzela
+        {"zauzeti", "za\xC3\xB9zeti"},   // zaùzeti
+        {"zauze\xC4\x87" "e", "zauz\xC3\xA9\xC4\x87" "e"},   // zauzéće
     };
     Engine engine;
     REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
