@@ -446,7 +446,7 @@ TEST_CASE("Lexicon accents cover the whole paradigm", "[formant][text]") {
         {"otvoren", "otv\xC3\xB2ren"},   // otvòren
         {"zatvori", "zatv\xC3\xB2ri"},   // zatvòri
         {"isklju\xC4\x8Di", "isklj\xC3\xBA\xC4\x8Di"},   // iskljúči
-        {"isklju\xC4\x8D" "eno", "isklj\xC3\xBA\xC4\x8D" "eno"},   // iskljúčeno
+        {"isklju\xC4\x8D" "eno", "\xC3\xACsklju\xC4\x8D" "eno"},   // ìsključeno
         {"potvrdi", "potv\xC5\x95" "di"},   // potvŕdi
         {"potvr\xC4\x91" "eno", "potv\xC5\x95\xC4\x91" "eno"},   // potvŕđeno
         {"objavi", "obj\xC3\xA1vi"},   // objávi
@@ -656,6 +656,126 @@ TEST_CASE("Lexicon accents cover the whole paradigm", "[formant][text]") {
         {"zauzela", "z\xC8\x81uzela"},   // zȁuzela
         {"zauzeti", "za\xC3\xB9zeti"},   // zaùzeti
         {"zauze\xC4\x87" "e", "zauz\xC3\xA9\xC4\x87" "e"},   // zauzéće
+        // The list of October 2026 (docs/formant.md, "Stress")
+        {"potpuno", "p\xC3\xB2tpuno"},   // pòtpuno
+        {"maslinovu", "m\xC8\x81slinovu"},   // mȁslinovu
+        {"mobitel", "m\xC3\xB2" "bitel"},   // mòbitel
+        {"mobitela", "m\xC3\xB2" "bitela"},   // mòbitela
+        {"oaza", "o\xC3\xA1za"},   // oáza
+        {"raketa", "rak\xC3\xA8ta"},   // rakèta
+        {"kralj", "kr\xC8\x83lj"},   // krȃlj
+        {"kralja", "kr\xC3\xA1lja"},   // králja
+        {"kraljevi", "kr\xC3\xA1ljevi"},   // králjevi
+        {"uistinu", "\xC3\xB9istinu"},   // ùistinu
+        {"higijena", "higij\xC3\xA9na"},   // higijéna
+        {"javno", "j\xC8\x83vno"},   // jȃvno
+        {"srednja", "sr\xC8\x85" "dnja"},   // srȅdnja
+        {"ekipa", "ek\xC3\xADpa"},   // ekípa
+        {"inspirirana", "insp\xC3\xACrirana"},   // inspìrirana
+        {"inspirirati", "inspir\xC3\xADrati"},   // inspirírati
+        {"uklju\xC4\x8D" "eno", "\xC3\xB9klju\xC4\x8D" "eno"},   // ùključeno
+        {"uklju\xC4\x8D" "en", "\xC3\xB9klju\xC4\x8D" "en"},   // ùključen
+        {"uklju\xC4\x8Dim", "\xC3\xB9klju\xC4\x8Dim"},   // ùključim
+        {"uklju\xC4\x8Di", "uklj\xC3\xBA\xC4\x8Di"},   // ukljúči
+        {"\xC5\xBE" "eljezni\xC4\x8D" "ar", "\xC5\xBE\xC3\xA8ljezni\xC4\x8D" "ar"},   // žèljezničar
+        {"strelja\xC5\xA1tvo", "strelj\xC3\xA1\xC5\xA1tvo"},   // streljáštvo
+        {"direktno", "d\xC3\xACrektno"},   // dìrektno
+        {"najdra\xC5\xBEi", "n\xC8\x83jdra\xC5\xBEi"},   // nȃjdraži
+        {"me\xC4\x91unarodni", "me\xC4\x91un\xC3\xA1rodni"},   // međunárodni
+        {"odr\xC5\xBEivi", "odr\xCC\x80\xC5\xBEivi"},   // odr̀živi
+        {"kampanji", "kamp\xC3\xA0nji"},   // kampànji
+        {"zajedni\xC4\x8Dki", "z\xC8\x81jedni\xC4\x8Dki"},   // zȁjednički
+        {"obrazovanje", "\xC3\xB2" "brazovanje"},   // òbrazovanje
+        {"vid", "v\xC8\x8B" "d"},   // vȋd
+        {"vidu", "v\xC3\xAD" "du"},   // vídu
+        {"iskustvo", "isk\xC3\xBAstvo"},   // iskústvo
+        {"iskustava", "\xC3\xACskustava"},   // ìskustava
+        {"alat", "\xC3\xA0lat"},   // àlat
+        {"alati", "al\xC3\xA1ti"},   // aláti
+        {"model", "m\xC3\xB2" "del"},   // mòdel
+        {"modeli", "mod\xC3\xA8li"},   // modèli
+        {"razvijaju", "razv\xC3\xADjaju"},   // razvíjaju
+        {"razvijen", "razv\xC3\xACjen"},   // razvìjen
+        {"raspore\xC4\x91" "eni", "rasp\xC3\xB2re\xC4\x91" "eni"},   // raspòređeni
+        {"rasporediti", "raspor\xC3\xA9" "diti"},   // rasporéditi
+        {"programersko", "progr\xC3\xA0mersko"},   // progràmersko
+        {"ekran", "\xC3\xA8kran"},   // èkran
+        {"ekrana", "ekr\xC3\xA1na"},   // ekrána
+        {"zaslon", "z\xC3\xA1slon"},   // záslon
+        {"osna\xC5\xBEiti", "osn\xC3\xA1\xC5\xBEiti"},   // osnážiti
+        {"potaknuti", "pot\xC3\xA0knuti"},   // potàknuti
+        {"potakni", "pot\xC3\xA0kni"},   // potàkni
+        {"potaknem", "p\xC3\xB2taknem"},   // pòtaknem
+        {"suradnja", "sur\xC3\xA1" "dnja"},   // surádnja
+        {"saradnja", "sar\xC3\xA0" "dnja"},   // saràdnja
+        {"istovremeno", "ist\xC3\xB2vremeno"},   // istòvremeno
+        {"znanje", "zn\xC3\xA1nje"},   // znánje
+        {"moderator", "mod\xC3\xA8rator"},   // modèrator
+        {"moderatorica", "mod\xC3\xA8ratorica"},   // modèratorica
+        {"sudjelujete", "s\xC3\xB9" "djelujete"},   // sùdjelujete
+        {"u\xC4\x8D" "estvujete", "\xC3\xB9\xC4\x8D" "estvujete"},   // ùčestvujete
+        {"sudjelovati", "s\xC3\xB9" "djelovati"},   // sùdjelovati
+        {"ja", "j\xC8\x83"},   // jȃ
+        {"ti", "t\xC8\x8B"},   // tȋ
+        {"on", "\xC8\x8Fn"},   // ȏn
+        {"mi", "m\xC8\x8B"},   // mȋ
+        {"vi", "v\xC8\x8B"},   // vȋ
+        {"oni", "\xC3\xB2ni"},   // òni
+        {"njih", "nj\xC8\x8Bh"},   // njȋh
+        {"enida", "\xC3\xA8nida"},   // ènida
+        {"brklja\xC4\x8D" "a", "b\xC8\x91klja\xC4\x8D" "a"},   // bȑkljača
+        {"ivan\xC5\xA1\xC4\x8Dica", "iv\xC3\xA0n\xC5\xA1\xC4\x8Dica"},   // ivànščica
+        {"teodora", "teod\xC3\xB3ra"},   // teodóra
+        {"crnogorac", "crn\xC3\xB2gorac"},   // crnògorac
+        {"crnogorci", "crnog\xC3\xB3rci"},   // crnogórci
+        {"milosava", "m\xC8\x89losava"},   // mȉlosava
+        {"markovina", "m\xC3\xA1rkovina"},   // márkovina
+        {"prugove\xC4\x8Dki", "pr\xC8\x97gove\xC4\x8Dki"},   // prȗgovečki
+        {"danijel", "d\xC3\xA0nijel"},   // dànijel
+        {"daniel", "d\xC3\xA0niel"},   // dàniel
+        {"danijela", "d\xC3\xA0nijela"},   // dànijela
+        {"roti\xC4\x87", "r\xC8\x8Dti\xC4\x87"},   // rȍtić
+        {"tihi\xC4\x87", "t\xC8\x89hi\xC4\x87"},   // tȉhić
+        {"leti\xC4\x87", "l\xC8\x85ti\xC4\x87"},   // lȅtić
+        {"mati\xC4\x87", "m\xC3\xA1ti\xC4\x87"},   // mátić
+        {"jusi\xC4\x87", "j\xC8\x95si\xC4\x87"},   // jȕsić
+        {"mato", "m\xC3\xA1to"},   // máto
+        {"maja", "m\xC3\xA1ja"},   // mája
+        {"anita", "\xC3\xA0nita"},   // ànita
+        {"sandra", "s\xC8\x83ndra"},   // sȃndra
+        {"sini\xC5\xA1" "a", "s\xC3\xACni\xC5\xA1" "a"},   // sìniša
+        {"mihajlo", "m\xC3\xAChajlo"},   // mìhajlo
+        {"naida", "n\xC3\xA0ida"},   // nàida
+        {"vladi\xC4\x87", "vl\xC3\xA1" "di\xC4\x87"},   // vládić
+        {"eva", "\xC8\x87va"},   // ȇva
+        {"adrijana", "adrij\xC3\xA0na"},   // adrijàna
+        {"aleksandar", "aleks\xC3\xA1ndar"},   // aleksándar
+        {"proteza", "prot\xC3\xA9za"},   // protéza
+        {"protezu", "prot\xC3\xA9zu"},   // protézu
+        {"protezama", "prot\xC3\xA9zama"},   // protézama
+        {"proteti\xC4\x8D" "ar", "prot\xC3\xA8ti\xC4\x8D" "ar"},   // protètičar
+        {"zubna", "z\xC8\x97" "bna"},   // zȗbna
+        {"o\xC4\x8Dna", "\xC3\xB2\xC4\x8Dna"},   // òčna
+        {"javnost", "j\xC3\xA1vnost"},   // jávnost
+        {"javnosti", "j\xC3\xA1vnosti"},   // jávnosti
+        {"potpunosti", "p\xC3\xB2tpunosti"},   // pòtpunosti
+        {"iskustveni", "isk\xC3\xB9stveni"},   // iskùstveni
+        {"najbolji", "n\xC8\x83jbolji"},   // nȃjbolji
+        {"najbolje", "n\xC8\x83jbolje"},   // nȃjbolje
+        {"najve\xC4\x87i", "n\xC8\x83jve\xC4\x87i"},   // nȃjveći
+        {"najmanje", "n\xC8\x83jmanje"},   // nȃjmanje
+        {"najvi\xC5\xA1" "e", "n\xC8\x83jvi\xC5\xA1" "e"},   // nȃjviše
+        {"najja\xC4\x8Di", "n\xC8\x83jja\xC4\x8Di"},   // nȃjjači
+        {"najbr\xC5\xBEi", "n\xC8\x83jbr\xC5\xBEi"},   // nȃjbrži
+        {"najljep\xC5\xA1i", "n\xC8\x83jljep\xC5\xA1i"},   // nȃjljepši
+        {"naj\xC4\x8D" "e\xC5\xA1\xC4\x87" "e", "n\xC8\x83j\xC4\x8D" "e\xC5\xA1\xC4\x87" "e"},   // nȃjčešće
+        {"najprije", "n\xC8\x83jprije"},   // nȃjprije
+        {"najposlije", "n\xC8\x83jposlije"},   // nȃjposlije
+        {"najgori", "n\xC8\x83jgori"},   // nȃjgori
+        {"najnoviji", "najn\xC3\xB2viji"},   // najnòviji
+        {"najva\xC5\xBEniji", "najv\xC3\xA0\xC5\xBEniji"},   // najvàžniji
+        {"najstariji", "najst\xC3\xA0riji"},   // najstàriji
+        {"najjednostavniji", "najjednost\xC3\xA0vniji"},   // najjednostàvniji
     };
     Engine engine;
     REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
@@ -1111,6 +1231,32 @@ TEST_CASE("Punctuation selects intonation", "[formant][prosody]") {
     REQUIRE(close_to(question_end, statement_end, 0.05));
 }
 
+TEST_CASE("A comma ends between a statement and a question", "[formant][prosody]") {
+    // A comma gets a small fall after the last accent and a slight rise on
+    // the last syllable (docs/formant.md, "The melody of read Croatian"):
+    // it ends well above the same clause as a statement, but clearly below
+    // it as a question, which a rise of four semitones from the level did
+    // not.
+    for (const char* voice : FORMANT_VOICES) {
+        Engine engine;
+        REQUIRE(laprdus_set_voice(engine.handle, voice, NO_DATA) == LAPRDUS_OK);
+        REQUIRE(laprdus_set_sentence_pause(engine.handle, 0) == LAPRDUS_OK);
+        REQUIRE(laprdus_set_comma_pause(engine.handle, 0) == LAPRDUS_OK);
+        for (float speed : {1.0f, 2.0f}) {
+            REQUIRE(laprdus_set_speed(engine.handle, speed) == LAPRDUS_OK);
+            for (const char* text : {"Ona ima novu lampu", "Vlada je danas usvojila prijedlog novog zakona"}) {
+                const double statement = final_pitch_hz(speak(engine.handle, (std::string(text) + ".").c_str()));
+                const double comma = final_pitch_hz(speak(engine.handle, (std::string(text) + ",").c_str()));
+                const double question = final_pitch_hz(speak(engine.handle, (std::string(text) + "?").c_str()));
+                INFO(voice << " " << speed << " " << text);
+                REQUIRE(statement > 50.0);
+                REQUIRE(comma > statement * 1.19);      // three semitones
+                REQUIRE(comma * 1.12 < question);       // two semitones
+            }
+        }
+    }
+}
+
 TEST_CASE("A mark glued to a word is read by name, not as a clause end", "[formant][text]") {
     // eSpeak's rule: a period, comma, colon or other mark ends the clause
     // only when whitespace, a bracket or quote, or the end of the text
@@ -1146,7 +1292,7 @@ TEST_CASE("A mark glued to a word is read by name, not as a clause end", "[forma
         // that joins a word to the letters before it is silent (a screen
         // reader's label "7.listopada.u20:03")
         REQUIRE(same("u20:03", "u dvadeset nula tri"));
-        REQUIRE(same("7.listopada.u20:03", "sedmi listopada u dvadeset nula tri"));
+        REQUIRE(same("7.listopada.u20:03", "sedam listopada u dvadeset nula tri"));
         REQUIRE(same("od20do30", "od dvadeset do trideset"));
         REQUIRE(same("5kg", "pet kg"));
         REQUIRE(same("COVID19", "COVID devetnaest"));
@@ -1158,6 +1304,15 @@ TEST_CASE("A mark glued to a word is read by name, not as a clause end", "[forma
         REQUIRE(same("3,14159", "tri zarez jedan \xC4\x8D" "etiri jedan pet devet"));
         REQUIRE(same("1.000", "jedan to\xC4\x8Dka nula nula nula"));
     }
+    SECTION("The commas of a phone number spelled digit by digit are pauses") {
+        // Screen readers write a phone number one digit at a time, with a
+        // comma glued between the groups; a decimal comma stays one
+        REQUIRE(same("+ 1 2 3,5 6,7 8 9,8 7 6", "+ 1 2 3, 5 6, 7 8 9, 8 7 6"));
+        REQUIRE(same("0 9 1,2 3 4,5 6 7 8", "nula devet jedan, dva tri \xC4\x8D" "etiri, pet \xC5\xA1" "est sedam osam"));
+        REQUIRE_FALSE(same("+ 1 2 3,5 6,7 8 9,8 7 6", "plus jedan dva tri zarez pet \xC5\xA1" "est zarez sedam osam devet zarez osam sedam \xC5\xA1" "est"));
+        REQUIRE(same("4,5 3,5 5,0", "\xC4\x8D" "etiri zarez pet tri zarez pet pet zarez nula"));
+        REQUIRE(same("Ocjena 4,5.", "Ocjena \xC4\x8D" "etiri zarez pet."));
+    }
     SECTION("A period after a single letter is an abbreviation dot: silent, the letters by name") {
         // (Letter names are full words, so "a" and "u" spelled from an
         // abbreviation differ from the typed conjunction and preposition;
@@ -1167,6 +1322,18 @@ TEST_CASE("A mark glued to a word is read by name, not as a clause end", "[forma
         REQUIRE(same("b.b.", "be be."));
         REQUIRE_FALSE(same("s.a.r.s.", "s to\xC4\x8Dka a to\xC4\x8Dka er to\xC4\x8Dka es."));
         REQUIRE_FALSE(same("U.S.A.", "u to\xC4\x8Dka es to\xC4\x8Dka a."));
+    }
+    SECTION("Abbreviations are read as written, not expanded") {
+        // A word whose only syllable would be a final r is spelled
+        REQUIRE(same("dr. Ivi\xC4\x87", "de er. Ivi\xC4\x87"));
+        REQUIRE(same("npr. ovo", "en pe er. ovo"));
+        REQUIRE(same("mr. Ana", "em er. Ana"));
+        REQUIRE(same("5 mm", "pet em em"));
+        REQUIRE_FALSE(same("dr. Ivi\xC4\x87", "doktor. Ivi\xC4\x87"));
+        REQUIRE_FALSE(same("5 km", "pet kilometara"));
+        // A syllabic r inside or at the head of a word is still a syllable
+        REQUIRE_FALSE(same("rt", "er te"));
+        REQUIRE_FALSE(same("krv", "ka er ve"));
     }
     SECTION("The prepositions s and k are words wherever a capital says nothing") {
         // At the head of a sentence and in all-caps text a capital S or K
@@ -1216,16 +1383,17 @@ TEST_CASE("A mark glued to a word is read by name, not as a clause end", "[forma
         REQUIRE(same("Prvi red.\nDrugi red.", "Prvi red. Drugi red."));
         REQUIRE_FALSE(same("Prvi red\nDrugi red", "Prvi red Drugi red"));
     }
-    SECTION("A number with a period before a lowercase word is an ordinal") {
-        // The period is silent and does not end the clause. Before an
-        // uppercase word it ends the sentence as before.
-        REQUIRE(same("7. listopada 2026.", "sedmi listopada dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "est."));
-        REQUIRE(same("u 19. stolje\xC4\x87u", "u devetnaesti stolje\xC4\x87u"));
-        REQUIRE(same("1990. godine", "tisu\xC4\x87u devetsto devedeseti godine"));
-        REQUIRE(same("2000. godine", "dvijetisu\xC4\x87iti godine"));
-        REQUIRE(same("100. put", "stoti put"));
-        REQUIRE(same("21. put", "dvadeset prvi put"));
-        REQUIRE(same("7.listopada", "sedmi listopada"));
+    SECTION("A number with a period before a lowercase word is read as a cardinal") {
+        // An ordinal would need the case of the noun, so the number is read
+        // as written; the period is silent and does not end the clause.
+        // Before an uppercase word it ends the sentence as before.
+        REQUIRE(same("7. listopada 2026.", "sedam listopada dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "est."));
+        REQUIRE(same("u 19. stolje\xC4\x87u", "u devetnaest stolje\xC4\x87u"));
+        REQUIRE(same("1990. godine", "tisu\xC4\x87u devetsto devedeset godine"));
+        REQUIRE(same("2000. godine", "dvije tisu\xC4\x87" "e godine"));
+        REQUIRE(same("100. put", "sto put"));
+        REQUIRE(same("21. put", "dvadeset jedan put"));
+        REQUIRE(same("7.listopada", "sedam listopada"));
         REQUIRE(same("7. Listopad.", "sedam. Listopad."));
         REQUIRE(same("Ima ih 7. Sutra", "Ima ih sedam. Sutra"));
         REQUIRE(same("0. element", "nula. element"));
@@ -1240,7 +1408,8 @@ TEST_CASE("A mark glued to a word is read by name, not as a clause end", "[forma
         REQUIRE(same("3.14", "tri to\xC4\x8Dka jedan \xC4\x8D" "etiri"));
         REQUIRE(same("3,14", "tri zarez jedan \xC4\x8D" "etiri"));
         REQUIRE(same("12:30", "dvanaest trideset"));
-        REQUIRE(same("7.10.2026", "sedmi deseti dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "est"));
+        REQUIRE(same("0 9 1,2 3 4,5 6 7 8", "0 9 1, 2 3 4, 5 6 7 8"));
+        REQUIRE(same("7.10.2026", "sedam deset dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "est"));
         // The sections share one engine in this harness
         REQUIRE(laprdus_set_number_mode(engine.handle, LAPRDUS_NUMBER_MODE_WHOLE) == LAPRDUS_OK);
     }
@@ -1249,10 +1418,10 @@ TEST_CASE("A mark glued to a word is read by name, not as a clause end", "[forma
         REQUIRE(same("9:05", "devet nula pet"));
         REQUIRE(same("12:30:45", "dvanaest trideset \xC4\x8D" "etrdeset pet"));
         REQUIRE(same("u 12:30 sati", "u dvanaest trideset sati"));
-        REQUIRE(same("7.10.2026.", "sedmi deseti dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "est."));
-        REQUIRE(same("7. 10. 2026.", "sedmi deseti dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "est."));
-        REQUIRE(same("07.10.26", "sedmi deseti dvadeset \xC5\xA1" "est"));
-        REQUIRE(same("31.12.1999", "trideset prvi dvanaesti tisu\xC4\x87u devetsto devedeset devet"));
+        REQUIRE(same("7.10.2026.", "sedam deset dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "est."));
+        REQUIRE(same("7. 10. 2026.", "sedam deset dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "est."));
+        REQUIRE(same("07.10.26", "sedam deset dvadeset \xC5\xA1" "est"));
+        REQUIRE(same("31.12.1999", "trideset jedan dvanaest tisu\xC4\x87u devetsto devedeset devet"));
         // Not a time or a date: the marks are read
         REQUIRE(same("3:1", "tri dvoto\xC4\x8Dka jedan"));
         REQUIRE(same("25:00", "dvadeset pet dvoto\xC4\x8Dka nula nula"));
@@ -1260,6 +1429,10 @@ TEST_CASE("A mark glued to a word is read by name, not as a clause end", "[forma
     }
     SECTION("Colon and exclamation mark inside a word, silent comma and question mark") {
         REQUIRE(same("a:b", "a dvoto\xC4\x8Dka be"));
+        // The colon of a web address is silent, like its slashes
+        REQUIRE(same("https://www.index.hr", "https www.index.hr"));
+        REQUIRE(same("http://example.com", "http example.com"));
+        REQUIRE_FALSE(same("https://www.index.hr", "https dvoto\xC4\x8Dka www.index.hr"));
         REQUIRE(same("Hej!ti", "Hej uskli\xC4\x8Dnik ti"));
         REQUIRE(same("a,b", "a b"));
         REQUIRE(same("a?b", "a b"));
@@ -1276,8 +1449,8 @@ TEST_CASE("A mark glued to a word is read by name, not as a clause end", "[forma
         REQUIRE(same("datoteka.txt", "datoteka ta\xC4\x8Dka txt"));
         REQUIRE(same("3.14", "tri ta\xC4\x8Dka \xC4\x8D" "etrnaest"));
         REQUIRE(same("a:b", "a dvota\xC4\x8Dka be"));
-        REQUIRE(same("7.10.2026", "sedmi deseti dve hiljade dvadeset \xC5\xA1" "est"));
-        REQUIRE(same("2000. godine", "dvehiljaditi godine"));
+        REQUIRE(same("7.10.2026", "sedam deset dve hiljade dvadeset \xC5\xA1" "est"));
+        REQUIRE(same("2000. godine", "dve hiljade godine"));
         REQUIRE(same("p.s.", "pe es."));
         REQUIRE(laprdus_set_voice(engine.handle, "mirsad", NO_DATA) == LAPRDUS_OK);
         REQUIRE(same("Hej!ti", "Hej uzvi\xC4\x8Dnik ti"));

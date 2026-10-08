@@ -127,10 +127,12 @@ public:
      * @param text Clause text without its final punctuation mark.
      * @param punct Punctuation that ended the clause (selects intonation).
      * @param params Voice parameters (speed, pitch, user_pitch, volume, inflection).
+     * @param sentence_initial false when the clause goes on a sentence (the
+     *        clause before it ended with a comma, semicolon or colon).
      * @return 16-bit mono audio at SAMPLE_RATE, without a trailing pause.
      */
     AudioBuffer synthesize_clause(const std::u32string& text, Punctuation punct,
-                                  const VoiceParams& params);
+                                  const VoiceParams& params, bool sentence_initial = true);
 
     /**
      * The sound of one letter alone, for spelling by sounds (see
@@ -160,7 +162,7 @@ public:
 
 private:
     void append_group(const std::u32string& text, Punctuation punct,
-                      const VoiceParams& params, AudioBuffer& audio);
+                      const VoiceParams& params, AudioBuffer& audio, bool sentence_initial);
     void render_utterance(const Utterance& utt, const VoiceParams& params,
                           AudioBuffer& audio, bool sing);
 

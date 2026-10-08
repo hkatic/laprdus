@@ -1828,7 +1828,8 @@ void FormantSynthesizer::rewind_song() {
 
 AudioBuffer FormantSynthesizer::synthesize_clause(const std::u32string& text,
                                                   Punctuation punct,
-                                                  const VoiceParams& params) {
+                                                  const VoiceParams& params,
+                                                  bool sentence_initial) {
     AudioBuffer audio;
     audio.sample_rate = SAMPLE_RATE;
     audio.bits_per_sample = BITS_PER_SAMPLE;
@@ -1859,7 +1860,8 @@ AudioBuffer FormantSynthesizer::synthesize_clause(const std::u32string& text,
         }
         const bool last = end >= text.size();
         append_group(text.substr(start, end - start),
-                     last ? punct : Punctuation::COMMA, params, audio);
+                     last ? punct : Punctuation::COMMA, params, audio,
+                     sentence_initial && start == 0);
         start = end;
     }
     return audio;
@@ -1877,8 +1879,11 @@ AudioBuffer FormantSynthesizer::synthesize_letter_sound(const std::u32string& le
 }
 
 void FormantSynthesizer::append_group(const std::u32string& text, Punctuation punct,
-                                      const VoiceParams& params, AudioBuffer& audio) {
-    render_utterance(m_frontend.process(text, punct), params, audio, m_voice.singing != nullptr);
+                                      const VoiceParams& params, AudioBuffer& audio,
+                                      bool sentence_initial) {
+    Utterance utt = m_frontend.process(text, punct);
+    utt.sentence_initial = sentence_initial;
+    render_utterance(utt, params, audio, m_voice.singing != nullptr);
 }
 
 void FormantSynthesizer::render_utterance(const Utterance& utt, const VoiceParams& params,

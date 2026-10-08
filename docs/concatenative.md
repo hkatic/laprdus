@@ -119,11 +119,12 @@ for its neighbours (see "Words of one vowel" in `docs/formant.md`).
 
 **Pitch** comes from `formant::Intonation` (`src/formant/formant_intonation.cpp`),
 the model extracted from the formant synthesizer so that both kinds of voices
-share one melody: a movement on the stressed syllable of every content word
-(shape by accent type, shrinking along the clause), a rise on the focused
-word of a yes/no question and a final rise, a fall after the last accent of
-a statement, the suspended rise of a comma, and a declining baseline of about
-two semitones per second. The contour is sampled every millisecond, raised by
+share one melody: a raised start of a sentence, a movement on the stressed
+syllable of every content word (shape by accent type, the first one the
+largest), a rise on the focused word of a yes/no question and a final rise,
+a fall after the last accent of a statement, a small fall and a slight rise at a comma, and a
+level that declines by 1.3 to 2 semitones over the clause (see "The melody
+of read Croatian" in `docs/formant.md`). The contour is sampled every millisecond, raised by
 0.9 semitones decaying over 18 ms after a voiceless consonant, smoothed with a
 16 ms time constant in both directions, scaled by the inflection level
 (0 monotone, 0.5 as measured, 1 doubled) and multiplied onto

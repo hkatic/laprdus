@@ -57,9 +57,12 @@ public:
      * Synthesize one clause.
      * @param text The clause (UTF-32), without its punctuation.
      * @param punct The punctuation that ended it (chooses the melody).
+     * @param sentence_initial false when the clause goes on a sentence (the
+     *        clause before it ended with a comma, semicolon or colon).
      * @return The clause's sound; no pause is appended.
      */
-    AudioBuffer synthesize_clause(const std::u32string& text, Punctuation punct);
+    AudioBuffer synthesize_clause(const std::u32string& text, Punctuation punct,
+                                  bool sentence_initial = true);
 
     /**
      * The sound of one letter alone, for spelling by sounds (see

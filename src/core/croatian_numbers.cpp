@@ -546,56 +546,16 @@ size_t parse_date(const std::string& text, size_t i, std::vector<std::string_vie
 
 } // namespace
 
-// Ordinal of a number of up to four digits, masculine nominative: the day
-// and month of a date, and a number followed by a period before a word
-// ("7." sedmi, "21." dvadeset prvi, "100." stoti, "1990." tisuću devetsto
-// devedeseti, "2000." dvijetisućiti). As in the orthography only the last
-// word of the cardinal takes the ordinal form, and a numeral before
-// tisuća/hiljada is written together with it.
-std::string CroatianNumbers::ordinal_to_words(std::string_view digits) {
-    std::string cardinal = number_to_words(digits);
-    if (cardinal.empty() || cardinal == "nula") return cardinal;
-
-    size_t space = cardinal.rfind(' ');
-    std::string head = space == std::string::npos ? "" : cardinal.substr(0, space + 1);
-    std::string last = space == std::string::npos ? cardinal : cardinal.substr(space + 1);
-
-    static const struct { const char* cardinal; const char* ordinal; } UNITS[] = {
-        {"jedan", "prvi"}, {"dva", "drugi"}, {"tri", u8"treći"}, {u8"četiri", u8"četvrti"},
-        {"pet", "peti"}, {u8"šest", u8"šesti"}, {"sedam", "sedmi"}, {"osam", "osmi"},
-        {"devet", "deveti"}, {"dvesta", "dvestoti"}, {"trista", "tristoti"},
-    };
-    for (const auto& unit : UNITS) {
-        if (last == unit.cardinal) return head + unit.ordinal;
-    }
-
-    auto starts_with = [&](const char* prefix) { return last.rfind(prefix, 0) == 0; };
-    auto ends_with = [&](const char* suffix) {
-        std::string_view sv(suffix);
-        return last.size() >= sv.size() && last.compare(last.size() - sv.size(), sv.size(), sv) == 0;
-    };
-    if (starts_with(u8"tisuć") || starts_with("hiljad")) {
-        // tisuću -> tisućiti; dvije tisuće -> dvijetisućiti; pet hiljada -> pethiljaditi
-        std::string ordinal = m_dialect == Dialect::Croatian ? u8"tisućiti" : "hiljaditi";
-        if (head.empty()) return ordinal;
-        size_t prev = head.rfind(' ', head.size() - 2);
-        std::string before = prev == std::string::npos ? "" : head.substr(0, prev + 1);
-        std::string numeral = head.substr(before.size());
-        numeral.pop_back();
-        return before + numeral + ordinal;
-    }
-    if (ends_with("sto")) return head + last + "ti";       // sto -> stoti, petsto -> petstoti
-    return head + last + "i";                               // deset, dvanaest, dvadeset ... devedeset
-}
-
 // A number of up to four digits without a leading zero, standing at the
 // start of a word and followed by a period and a lowercase word, is an
-// ordinal: "7. listopada" (sedmi), "u 19. stoljeću" (devetnaestom, read as
-// devetnaesti), "1990. godine". The period is silent and does not end the
+// ordinal ("7. listopada", "u 19. stoljeću", "1990. godine"). Its words
+// would need the case of the noun (sedmog listopada, devetnaestom
+// stoljeću), which the converter cannot know, so it is read as the
+// cardinal (sedam listopada). The period is silent and does not end the
 // clause. Before an uppercase word the period ends the sentence as usual
 // ("Ima ih 7. Sutra ..."); eSpeak draws the same line. Returns the position
-// after the period, 0 when the number is not an ordinal.
-size_t CroatianNumbers::ordinal_dot_end(const std::string& text, size_t start, size_t end) {
+// after the period, 0 when the number is not such an ordinal.
+size_t CroatianNumbers::silent_dot_end(const std::string& text, size_t start, size_t end) {
     if (end - start > 4 || text[start] == '0') return 0;
     if (start > 0 && is_word_byte(text[start - 1])) return 0;
     if (end >= text.size() || text[end] != '.') return 0;
@@ -614,9 +574,10 @@ std::string CroatianNumbers::time_to_words(const std::vector<std::string_view>& 
     return words;
 }
 
-// "7.10.2026" -> sedmi deseti dvije tisuće dvadeset šest
+// "7.10.2026" -> sedam deset dvije tisuće dvadeset šest. The day and month
+// are cardinals for the same reason as "7. listopada" above.
 std::string CroatianNumbers::date_to_words(const std::vector<std::string_view>& groups) {
-    return ordinal_to_words(groups[0]) + ' ' + ordinal_to_words(groups[1]) + ' ' +
+    return number_to_words(groups[0]) + ' ' + number_to_words(groups[1]) + ' ' +
            number_to_words(groups[2]);
 }
 
@@ -684,6 +645,38 @@ void set_off_from_letters(std::string& result, bool compound) {
     result += ' ';
 }
 
+// A comma between two single digits of a spaced-out digit string is a
+// grouping mark, not a decimal comma: screen readers write a phone number
+// digit by digit, with a comma where a group ends ("+ 1 2 3,5 6,7 8 9,8 7 6").
+// Such a string is a run of single digits, each separated from the next by
+// one space or a glued comma, with at least six digits and at least two of
+// them touching no comma, so that a list of decimals ("4,5 3,5 5,0") stays
+// a list of decimals.
+bool is_grouping_comma(const std::string& text, size_t i) {
+    if (!is_separator_between_digits(text, i) || text[i] != ',') return false;
+    auto single = [&](size_t d) {
+        return (d == 0 || !is_digit(text[d - 1])) && (d + 1 >= text.size() || !is_digit(text[d + 1]));
+    };
+    auto linked = [&](size_t d) {   // the digit at d is followed by one at d + 2
+        return d + 2 < text.size() && (text[d + 1] == ' ' || text[d + 1] == ',') &&
+               is_digit(text[d + 2]) && single(d + 2);
+    };
+    if (!single(i - 1) || !single(i + 1)) return false;
+
+    size_t first = i - 1;
+    while (first >= 2 && is_digit(text[first - 2]) && single(first - 2) && linked(first - 2)) {
+        first -= 2;
+    }
+    size_t digits = 0, lone = 0;
+    for (size_t d = first;; d += 2) {
+        ++digits;
+        bool comma = (d > first && text[d - 1] == ',') || (d + 1 < text.size() && text[d + 1] == ',');
+        if (!comma) ++lone;
+        if (!linked(d)) break;
+    }
+    return digits >= 6 && lone >= 2;
+}
+
 } // namespace
 
 std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
@@ -718,8 +711,7 @@ std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
         after_number = true;
 
         // A clock time or a date is read as such, without the separators:
-        // the colon of "12:30" is silent and the periods of "7.10.2026."
-        // make the day and month ordinals.
+        // the colon of "12:30" and the periods of "7.10.2026." are silent.
         if (size_t end = convert_time_or_date(text, i, result)) {
             i = end;
             continue;
@@ -747,9 +739,9 @@ std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
         size_t num_start = i;
         i = digits_end(text, i);
 
-        // "7. listopada", "1990. godine": an ordinal, with the period silent
-        if (size_t end = ordinal_dot_end(text, num_start, i)) {
-            result += ordinal_to_words(std::string_view(text.data() + num_start, i - num_start));
+        // "7. listopada", "1990. godine": the period is silent
+        if (size_t end = silent_dot_end(text, num_start, i)) {
+            result += number_to_words(std::string_view(text.data() + num_start, i - num_start));
             if (text[end] != ' ' && text[end] != '\t') result += ' ';   // "7.listopada"
             i = end;
             continue;
@@ -773,6 +765,13 @@ std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
         // it are read as one number, more are read one by one ("3,14" -> tri
         // zarez četrnaest, "3,14159" -> tri zarez jedan četiri jedan pet
         // devet); with two or more commas every group is a whole number.
+        // In a phone number spelled out digit by digit the comma is a
+        // pause between the groups.
+        if (is_grouping_comma(text, i)) {
+            result += ", ";
+            ++i;
+            continue;
+        }
         if (!is_separator_between_digits(text, i)) continue;
 
         size_t separators = 0;
@@ -855,11 +854,12 @@ std::string CroatianNumbers::convert_digits_in_text(const std::string& text) {
         }
 
         // Convert each digit to its word form; a period or comma glued
-        // between digits is read by name ("3.14" -> tri.jedan četiri)
+        // between digits is read by name ("3.14" -> tri.jedan četiri),
+        // except the comma between the groups of a phone number
         bool first_digit = true;
         while (i < length && (is_digit(text[i]) || is_separator_between_digits(text, i))) {
             if (!is_digit(text[i])) {
-                result += separator_words(text[i]);
+                result += is_grouping_comma(text, i) ? ", " : separator_words(text[i]);
                 first_digit = true;   // glued to the period, or after the spaces of " zarez "
                 i++;
                 continue;

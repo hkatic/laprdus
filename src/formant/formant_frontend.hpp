@@ -30,6 +30,7 @@ struct Utterance {
     int syllable_count = 0;
     int focus_word = -1;        // word carrying the question peak (-1: last accented)
     bool isolated_sound = false;    // one letter's sound alone (Frontend::letter_sound)
+    bool sentence_initial = true;   // false: the clause goes on a sentence (after a comma)
 };
 
 /**

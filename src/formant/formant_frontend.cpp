@@ -141,6 +141,7 @@ struct Word {
     bool spell = false;             // a letter of a dotted abbreviation ("s.a.r.s.")
     bool before_hyphen = false;     // a hyphen follows directly ("s-klasa")
     bool after_opening = false;     // after an opening quote or bracket ("„S tobom")
+    bool foreign = false;           // spelled with x, q, w or y ("Wi" in Wi-Fi)
 
     Word() = default;
     explicit Word(const std::u32string& text) : w(text), marks(text.size(), 0) {}
@@ -182,8 +183,9 @@ bool is_syllabic_r(const std::u32string& w, size_t i) {
     return true;
 }
 
-bool has_syllabic_r(const std::u32string& w) {
-    for (size_t i = 0; i < w.size(); ++i) {
+// A syllabic r anywhere but at the end of the word (prst, vrt, rt; not dr)
+bool has_inner_syllabic_r(const std::u32string& w) {
+    for (size_t i = 0; i + 1 < w.size(); ++i) {
         if (w[i] == U'r' && is_syllabic_r(w, i)) return true;
     }
     return false;
@@ -308,32 +310,6 @@ const WordSet& short_vc_words() {
     return set;
 }
 
-struct Expansion {
-    const char32_t* key;
-    const char32_t* croatian;
-    const char32_t* eastern;    // Serbian and Bosnian, nullptr = same
-};
-
-const Expansion ABBREVIATIONS[] = {
-    {U"npr", U"na primjer", U"na primer"},
-    {U"tj", U"to jest", nullptr},
-    {U"itd", U"i tako dalje", nullptr},
-    {U"tzv", U"takozvani", nullptr},
-    {U"dr", U"doktor", nullptr},
-    {U"mr", U"magistar", nullptr},
-    {U"br", U"broj", nullptr},
-    {U"str", U"stranica", U"strana"},
-    {U"sl", U"slično", nullptr},
-    {U"kn", U"kuna", nullptr},
-    {U"km", U"kilometara", nullptr},
-    {U"cm", U"centimetara", nullptr},
-    {U"mm", U"milimetara", nullptr},
-    {U"kg", U"kilograma", nullptr},
-    {U"ml", U"mililitara", nullptr},
-    {U"gđa", U"gospođa", nullptr},
-    {U"sv", U"sveti", nullptr},
-};
-
 struct SymbolName {
     char32_t symbol;
     const char32_t* croatian;
@@ -436,7 +412,8 @@ std::vector<Word> tokenize(const std::u32string& text, bool eastern) {
         after_abbreviation_dot = false;
     };
 
-    for (char32_t raw : text) {
+    for (size_t pos = 0; pos < text.size(); ++pos) {
+        char32_t raw = text[pos];
         char32_t c = to_lower(raw);
         bool upper = c != raw;
 
@@ -506,6 +483,11 @@ std::vector<Word> tokenize(const std::u32string& text, bool eastern) {
         } else if (c != U' ') {
             opening = false;
         }
+        // The colon of a web address ("https://", "ftp://") is silent, like
+        // the slashes after it.
+        if (c == U':' && pos + 2 < text.size() && text[pos + 1] == U'/' && text[pos + 2] == U'/') {
+            continue;
+        }
         for (const auto& symbol : SYMBOLS) {
             if (symbol.symbol == c) {
                 const char32_t* name = (eastern && symbol.eastern) ? symbol.eastern
@@ -520,11 +502,14 @@ std::vector<Word> tokenize(const std::u32string& text, bool eastern) {
 }
 
 // Abbreviations without a vowel and short all-caps tokens are read letter by
-// letter ("HR" -> "ha er", "USB" -> "u es be").
+// letter ("HR" -> "ha er", "USB" -> "u es be"). A word whose only syllable
+// would be an r at its end is an abbreviation too ("dr", "mr", "str", "npr",
+// "hr"): a syllabic r stands inside a word (prst, vrt, krv) or at its head
+// (rt, rđa), never alone at the end after consonants.
 bool needs_spelling(const Word& word) {
     const std::u32string& w = word.w;
     bool vowel = has_vowel(w);
-    if (!vowel && !has_syllabic_r(w)) return true;
+    if (!vowel && !has_inner_syllabic_r(w)) return true;
     if (!word.all_caps || w.size() > 5) return false;
     if (w.size() == 1) return !is_vowel_letter(w[0]);
 
@@ -580,7 +565,7 @@ bool leaning_preposition(const std::vector<Word>& tokens, size_t t) {
     return caps_word(next) || (next.all_caps && caps_word(tokens[t - 1]));  // S USB KABELOM
 }
 
-std::vector<Word> expand_words(std::vector<Word> tokens, bool eastern, bool serbian) {
+std::vector<Word> expand_words(std::vector<Word> tokens, bool serbian) {
     // Decided before the loop below moves the tokens away.
     std::vector<bool> leaning(tokens.size());
     for (size_t t = 0; t < tokens.size(); ++t) leaning[t] = leaning_preposition(tokens, t);
@@ -598,18 +583,9 @@ std::vector<Word> expand_words(std::vector<Word> tokens, bool eastern, bool serb
             continue;
         }
 
+        // Abbreviations are not expanded (dr., npr., km): they are read as
+        // written, by the rules for any other word.
         if (!marked) {
-            bool expanded = false;
-            for (const auto& abbr : ABBREVIATIONS) {
-                if (token.w == abbr.key) {
-                    split_words((eastern && abbr.eastern) ? abbr.eastern : abbr.croatian,
-                                words);
-                    expanded = true;
-                    break;
-                }
-            }
-            if (expanded) continue;
-
             if (!leaning[t] && needs_spelling(token)) {
                 for (char32_t c : token.w) {
                     size_t first = words.size();
@@ -703,6 +679,7 @@ void rewrite_foreign(Word& word) {
             marks.push_back(m);
         }
     }
+    word.foreign = w != in;
     word.w = std::move(w);
     word.marks = std::move(marks);
 }
@@ -756,6 +733,17 @@ bool is_ije_diphthong(const std::u32string& w, size_t i) {
     }
     if (starts_with(rest, U"nt")) return false;
     if (starts_with(w, U"higijen") || starts_with(w, U"hijen")) return false;
+    // The Hebrew names in -el (Dà-ni-jel, Gà-bri-jel), not jat
+    if (starts_with(w, U"danijel") || starts_with(w, U"gabrijel")) return false;
+    // The passive participles of viti with a prefix (razvìjen, sàvijen,
+    // zàvijen, ùvijen): vi-jen, not jat
+    if (w[i - 1] == U'v' && starts_with(rest, U"n")) {
+        const std::u32string prefix = w.substr(0, i - 1);
+        for (const char32_t* p : {U"raz", U"sa", U"za", U"u", U"pre", U"iz", U"po", U"od",
+                                  U"oba", U"pod", U"nad"}) {
+            if (prefix == p) return false;
+        }
+    }
     if (starts_with(w, U"dijet") && w != U"dijete" && w.size() <= 8 &&
         (rest == U"ta" || rest == U"ti" || rest == U"tu" || rest == U"tom" ||
          rest == U"tama")) {
@@ -859,6 +847,7 @@ struct VerbRoot {
     bool noun_twin = false;         // "potvrdi", "uredi" are also forms of a noun
     bool present_shifts = false;    // dictionaries: ùrēdīm for uréditi
     uint8_t passive = 0;            // dictionaries: 1 = one syllable back, 2 = first
+    bool shifts_everywhere = false; // the Croatian voice shifts too (ùključen)
     std::vector<std::u32string> prefixes;   // empty: any verbal prefixes
 };
 
@@ -949,6 +938,7 @@ bool parse_verb_root(const std::u32string& text, bool whole, VerbRoot& root) {
             case U'<': root.present_shifts = true; break;
             case U'p': root.passive = 1; break;
             case U'P': root.passive = 2; break;
+            case U'!': root.shifts_everywhere = true; break;
             default: return false;
         }
     }
@@ -1062,6 +1052,20 @@ public:
         StressResult r = verb_form();
         if (r.nucleus >= 0) return r;
         int n = count();
+
+        // Superlatives of the two-syllable comparatives (bȍljī, vȅćī,
+        // mȁnjē, ljȅpšī, jȁčī, bȑžī) have the long falling accent on naj-
+        // and none on the rest: nȃjboljī, nȃjmanjē, nȃjljepšī, nȃjjačī
+        // (Hrvatski mrežni rječnik and Školski rječnik hrvatskoga jezika;
+        // Jonke; Alić for Bosnian). The superlatives of the comparatives
+        // in -iji keep the comparative's accent with naj- unaccented
+        // (najnòvijī, najvàžnijī), which the rule for -ij gives below.
+        if (superlative_of_short_comparative()) {
+            r.nucleus = 0;
+            r.is_long = true;
+            r.accent = Accent::Falling;
+            return r;
+        }
 
         // Present, imperative and present participle of the verbs in -ivati
         // and -ovati: the accent is on the syllable before -uj (ukljùčujem,
@@ -1705,20 +1709,49 @@ private:
             } else if (root.passive == 1 || !root.whole_stem || !prefixed_root(root, start)) {
                 shifted = std::max(0, k - 1);
             }
-        } else if (m_language != VoiceLanguage::Croatian) {
+        } else if (m_language != VoiceLanguage::Croatian || root.shifts_everywhere) {
             if (form == Form::Present && root.present_shifts) shifted = k - 1;
             if (form == Form::Passive && root.passive == 1) shifted = k - 1;
             if (form == Form::Passive && root.passive == 2) shifted = 0;
         }
         if (shifted >= 0 && shifted < k) {
             r.nucleus = shifted;
-            if (root.is_long) r.long_after = k;
+            // The Croatian voice has no length after the accent (ùključen
+            // for the dictionaries' ùkljūčen)
+            const bool croatian_shift = !negated && m_language == VoiceLanguage::Croatian;
+            if (root.is_long && !croatian_shift) r.long_after = k;
             r.accent = Accent::Rising;
         } else {
             r.nucleus = k;
             r.is_long = root.is_long;
         }
         return true;
+    }
+
+    // naj- + a comparative of one syllable and its ending: najbolji,
+    // najveće, najmanjoj, najbrži, najprije. The stem of such a comparative
+    // ends in a palatal (bolj, već, mlađ, draž, ljepš, češć) or is gor.
+    bool superlative_of_short_comparative() const {
+        if (count() < 2 || !starts_with(m_w, U"naj")) return false;
+        const std::u32string rest = m_w.substr(3);
+        if (rest.empty() || is_vowel_letter(rest[0])) return false;     // najam, najava
+        static const char32_t* const ENDINGS[] = {
+            U"ima", U"ega", U"emu", U"eg", U"em", U"oj", U"om", U"ih", U"im",
+            U"i", U"a", U"e", U"o", U"u",
+        };
+        for (const char32_t* ending : ENDINGS) {
+            if (!ends_with(rest, ending)) continue;
+            const std::u32string stem =
+                rest.substr(0, rest.size() - std::char_traits<char32_t>::length(ending));
+            int vowels = 0;
+            for (char32_t c : stem) {
+                if (is_vowel_letter(c)) ++vowels;
+            }
+            if (vowels > 1 || (vowels == 0 && !has_inner_syllabic_r(stem))) return false;
+            return stem == U"gor" ||
+                   ends_with_any(stem, {U"j", U"ć", U"đ", U"č", U"ž", U"š"});
+        }
+        return false;
     }
 
     int nucleus_at(size_t letter) const {
@@ -2288,7 +2321,7 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
     const bool eastern = m_language != VoiceLanguage::Croatian;
 
     std::vector<Word> words =
-        expand_words(tokenize(cyrillic::to_latin(text), eastern), eastern,
+        expand_words(tokenize(cyrillic::to_latin(text), eastern),
                      m_language == VoiceLanguage::Serbian);
     if (words.empty()) {
         return utt;
@@ -2340,8 +2373,10 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
         }
 
         // 2. Lexicon: exact form, then the longest stem; the user's entries
-        // before the built-in ones at every step
-        if (word.stress < 0) {
+        // before the built-in ones at every step. A word of one syllable
+        // spelled with a foreign letter is not the native word it is
+        // rewritten to ("Wi" of Wi-Fi is not the pronoun vȋ).
+        if (word.stress < 0 && !(word.foreign && n == 1)) {
             const LexEntry* entry = nullptr;
             auto find_in = [](const std::unordered_map<std::u32string, LexEntry>& map,
                               const std::u32string& key) -> const LexEntry* {
@@ -2412,8 +2447,11 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
             word.clitic = true;
         } else if (enclitic && i > 0) {
             // Enclitics cannot open a clause; there the same form is a full
-            // word ("Ti si...", "Je li...").
+            // word ("Ti si...", "Je li..."). They have no length either: the
+            // long vowel of the pronouns tȋ, mȋ is not that of the dative
+            // clitics ("Kažem ti", "Daj mi").
             word.clitic = true;
+            for (Phone& phone : word.phones) phone.is_long = false;
         } else if (proclitic || enclitic || function_words().count(word.w)) {
             word.prominence = 1;
         }

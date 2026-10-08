@@ -131,7 +131,7 @@ const char* const COMMON[] = {
     u8"glasn'oć*",
 
     // ---- Technology and screen reader vocabulary ----
-    u8"sint'e:z*", u8"rač'unal*", u8"rač'una:r*", u8"kompj'u:ter*", u8"mob'itel*",
+    u8"sint'e:z*", u8"rač'unal*", u8"rač'una:r*", u8"kompj'u:ter*", u8"m/obitel*",
     u8"datot'e:k*", u8"pretraž'ivač*", u8"kontr'o:l*", u8"adr'es*", u8"tastat'u:r*",
     u8"'internet*", u8"^instagram*", u8"'auto", u8"'autor*", u8"aut'obus*", u8"autom'obi:l*",
     u8"aut'omat*", u8"telev'i:zor*", u8"kil'omet*", u8"cent'imet*", u8"mil'imet*",
@@ -198,7 +198,7 @@ const char* const COMMON[] = {
     u8"tak'o:đer", u8"stan'o:vni*", u8"stan'o:vnik*", u8"sveuč'ilišn*",
     u8"iz'u:zetn*", u8"pojed'in*", u8"pojed'inac", u8"pojed'inc*", u8"ist'ovremen*",
     u8"vjer'ojatn*", u8"ver'ovatn*", u8"nar'avn*",
-    u8"objašnj'e:nj*", u8"obr'a:zovanj*", u8"obr'a:zovn*", u8"infor'ma:cij*",
+    u8"objašnj'e:nj*", u8"/obrazovanj*", u8"/obrazovn*", u8"/obrazov*", u8"/obrazuj*", u8"infor'ma:cij*",
 
     // ---- Nouns in -tak: the plural loses the t (podátak, podáci), the
     // genitive plural moves the accent to the front (pòdātākā) ----
@@ -318,15 +318,15 @@ const char* const COMMON[] = {
     u8"Sab'i:n*", u8"Alb'i:n*", u8"Reg'i:n*", u8"Georg'i:n*", u8"Ir'e:n*", u8"Hel'e:n*",
     u8"mart'i:na", u8"mart'i:ne", u8"mart'i:ni", u8"mart'i:nu", u8"mart'i:nom",
     u8"mar'i:na", u8"mar'i:ne", u8"mar'i:ni", u8"mar'i:nu", u8"mar'i:nom",
-    u8"marij'a:na", u8"marij'a:ne", u8"marij'a:ni", u8"marij'a:nu", u8"marij'a:nom",
+    u8"marij/ana", u8"marij/ane", u8"marij/ani", u8"marij/anu", u8"marij/anom",
     u8"kristij'a:na", u8"kristij'a:ne", u8"kristij'a:ni", u8"kristij'a:nu", u8"kristij'a:nom",
     // Nàtaša like Mìrjana (the rule for -aš would give Natáša)
     u8"N/ataš*", u8"N/atašin*",
     u8"Daj'a:n*", u8"T/ijan*", u8"Dij'an*", u8"Mih'ovil*", u8"Muh'amed*", u8"Hus'ein*",
-    u8"Ibr'a:him*", u8"Sul'ejman*", u8"Slob'odan*", u8"Sin'iš*", u8"Mih'ael*",
+    u8"Ibr'a:him*", u8"Sul'ejman*", u8"Slob'odan*", u8"S/iniš*", u8"Mih'ael*",
     u8"elv'i:ra", u8"elv'i:re", u8"elv'i:ri", u8"elv'i:ru", u8"elv'i:rom",
     u8"Ant'o:nio", u8"Ant'o:nij*", u8"Ant'o:nia", u8"Ant'o:nie", u8"Ant'o:niu",
-    u8"Ren'a:t*", u8"Sand'r*", u8"Natal'ij*", u8"Vikt'o:rij*", u8"Dan'ijel*",
+    u8"Ren'a:t*", u8"S^a:ndr*", u8"Natal'ij*", u8"Vikt'o:rij*", u8"D/anijel*", u8"D/aniel*",
 
     // ---- Surnames: exceptions to the -ović/-ević rule ----
     u8"'ivanović*", u8"j'osipović*", u8"m'aksimović*", u8"dr'agović*", u8"v'idović*",
@@ -369,6 +369,81 @@ const char* const COMMON[] = {
     // Verbs in -ovati that keep the first syllable against the rule for
     // -ovati (vjȅrovati, rȁdovati se, mìlovati, pȍštovati)
     u8"vj^erov*", u8"r^adov*", u8"m/ilov*", u8"p^oštov*",
+
+    // ---- Words checked in October 2026 against Školski rječnik
+    // hrvatskoga jezika, Hrvatski mrežni rječnik, HJP and Wiktionary, with
+    // their whole paradigms (the lengths after the accent are in the
+    // Serbian and Bosnian tables) ----
+    // The personal pronouns: jȃ, tȋ, ȏn, mȋ, vȋ, òni, òna, òno, òne and
+    // their long forms; the clitics (me, ti, ga, nas, ...) stay unstressed
+    u8"j^a:", u8"t^i:", u8"^o:n", u8"m^i:", u8"v^i:", u8"/oni", u8"/ona", u8"/ono", u8"/one",
+    u8"mn^o:m", u8"nj^i:m", u8"nj^e:", u8"nj^o:j", u8"nj^u:", u8"n^a:s", u8"v^a:s",
+    u8"nj^i:h", u8"nj^ima", u8"m^ene", u8"m^eni", u8"t^ebe", u8"t^ebi", u8"t^obom",
+    u8"nj^ega", u8"nj^emu", u8"n^ama", u8"v^ama",
+    // zȁjednički; vȋd, vȋda, u vídu, vȉdovi; iskústvo, ìskūstāvā; àlāt,
+    // aláta; mòdel, modèla; progràmērskī; èkrān, ekrána; záslon; znánje;
+    // modèrātor, modèrātorica; surádnja (Školski rječnik; HJP suràdnja),
+    // saràdnja; sùdjelovati, ùčestvovati (the present sùdjelujēm,
+    // ùčestvujēm with the verbs in -ovati below)
+    u8"z^ajedničk*", u8"v^i:d", u8"v^i:da", u8"v^i:dom", u8"v/i:du", u8"v^idov|i|a|e|ima",
+    u8"isk'u:stv*", u8"/iskustava", u8"/alat", u8"al'a:t|a|u|om|i|e|ima",
+    u8"m/odel", u8"mod/el|a|u|om|i|e|ima", u8"progr/amersk*", u8"/ekran",
+    u8"ekr'a:n|a|u|om|i|e|ima", u8"z/a:slon*", u8"zn/a:nj*", u8"mod/erator*",
+    u8"mod/eratoric*", u8"mod/eratork*", u8"sur'a:dnj*", u8"sar/adnj*", u8"s/udjelov*",
+    u8"s/udjelovanj*", u8"s/udelov*", u8"s/udeluj*", u8"s/udelovanj*", u8"/učestvov*",
+    u8"/učestvuj*", u8"/učestvovanj*",
+    // razvíjajū against the other persons (ràzvījām); razvìjen from
+    // ràzviti; pòtaći, pòtakao, pòdstaći
+    // pòtpun(o), potpùnijī; mȁslina, mȁslinov (Školski rječnik; HJP and the
+    // Serbian dictionary also mà-, in the Serbian and Bosnian tables);
+    // oáza; rakèta; krȃlj, králja, králjevi, králjevina; ùistinu;
+    // higijéna; jȃvnī, jȃvno, jàvnijī; srȅdnjī; ekípa; žèljezničār,
+    // žèljeznica, žèljeznīčkī; streljáštvo; dìrektan, dìrektno, dirèktnijī;
+    // drȃg, drága, drȃgo, drȁžī (nȃjdražī by the rule for naj-);
+    // međunárodnī; odr̀živ, odr̀živōst;
+    // kampànja (HJP and Wiktionary; also kàmpānja)
+    u8"p/otpun*", u8"potp/unij*", u8"m^aslin*", u8"m^aslinov*", u8"o/a:z*", u8"rak/et*",
+    u8"kr^a:lj", u8"kr/a:lj|a|u|em|om", u8"kr/a:ljev*", u8"/uistinu", u8"/uistini",
+    u8"higij'e:n|a|e|i|u|o|om|ama", u8"j^a:vn*", u8"j^a:van", u8"j/avnij*", u8"sr^ednj*",
+    u8"ek'i:p*", u8"ž/eljezničar*", u8"ž/eljeznic*", u8"ž/eljezničk*", u8"ž/elezničar*",
+    u8"ž/eleznic*", u8"ž/elezničk*", u8"strelj'a:štv*", u8"d/irektan", u8"d/irektn*",
+    u8"dir/ektnij*", u8"dr^a:g", u8"dr/a:ga", u8"dr^a:gi", u8"dr^a:go",
+    u8"dr^až|i|a|e|eg|em|oj|ih|im", u8"međun'a:rodn*", u8"međun'a:rodan",
+    // Superlative adverbs outside the rule for naj- (StressRules::strong):
+    // nȃjposlije, nȃjposlē, nȃjprē, nȁjzad; pònājprije, pònājviše
+    u8"n^a:jposlije", u8"n^a:jposle", u8"n^a:jpre", u8"n^ajzad", u8"p/onajprije",
+    u8"p/onajviše",
+    u8"od/rživ*", u8"održ/ivij*", u8"kamp/anj*",
+    // The nouns in -ost and the adjectives beside them, whose stems would
+    // otherwise end the entries above after three letters (jȃvnī but
+    // jávnōst, javnosti; pòtpunōst; odr̀živōst) or take the noun's accent
+    // (iskùstven against iskústvo); srȅdnjoškolskī like srȅdnjī
+    u8"j/a:vnost*", u8"j/a:vnošću", u8"p/otpunost*", u8"p/otpunošću", u8"od/rživost*",
+    u8"od/rživošću", u8"isk/ustven*", u8"sr^ednjoškolsk*",
+    // protéza in every form, protètika, protètičār; zȗbnī, òčnī (zubna,
+    // očna proteza)
+    u8"prot/e:z*", u8"prot/etik*", u8"prot/etičar*", u8"z^u:bn*", u8"/očn*",
+    // inspirírati with the dictionaries' shifts (inspìrīrām, inspìrīrān,
+    // inspirírajū), Serbian inspìrisati, inspìrišēm, inspìrisan
+    u8"inspir'i:raju", u8"inspir'i:rajući",
+    u8"razv'i:jaju", u8"razv'i:jajući", u8"razv/ijen*", u8"p/otaći", u8"p/otakao",
+    u8"p/otakl|a|o|i|e", u8"p/odstaći", u8"p/odstakao", u8"p/odstakl|a|o|i|e",
+    // Names (HJP, Wiktionary): Sȃndra, Sìniša, Dànijel(a), Dàniel(a),
+    // Mìhājlo, Ànita, Ȇva, Mája, Máto (from Máte; no stem, mati and matu are
+    // words), Mátić, Ìvanović, Aleksándar, Teodóra (the man's name is
+    // Tèodor; "Teodora" is read as hers), Crnògorac with Crnogórci,
+    // Ivànščica, bȑkljača. Without a dictionary entry, from names and words
+    // of the same shape: Ènida like Èdita and Ànita, Nàida, Adrijàna like
+    // Dijàna and Marijàna, Mȉlosava like Mȉroslava, Márkovina from Mȃrko like
+    // králjevina, Prȗgovečkī from Prȗgovac, Grȅbličkī, Vládić from Vládo,
+    // Tȉhić, Rȍtić, Lȅtić, Jȕsić
+    u8"M/ihajl*", u8"/Anit*", u8"^E:v|a|i|u|om", u8"M/a:j|a|e|i|u|o|om", u8"M/a:to",
+    u8"M/a:tić*", u8"Teod/o:r|a|e|i|u|o|om", u8"T/eodor", u8"Crn/ogorac",
+    u8"Crn/ogorc|a|u|em", u8"Crn/ogorče", u8"Crnog'o:rc|i|ima|e", u8"Crn/ogoraca",
+    u8"Crn/ogork*", u8"crn/ogorsk*", u8"Iv/anščic*", u8"Iv/ančic*", u8"B^rkljač*",
+    u8"/Enid*", u8"N/aid*", u8"Adrij/an|a|e|i|u|o|om", u8"M^ilosav*", u8"M/a:rkovin*",
+    u8"Pr^u:govečk*", u8"Gr^ebličk*", u8"Vl/a:dić*", u8"T^ihić*", u8"R^otić*",
+    u8"L^etić*", u8"J^usić*",
 };
 
 const char* const CROATIAN[] = {
@@ -391,6 +466,9 @@ const char* const CROATIAN[] = {
     u8"zap'očn|em|eš|e|emo|ete|u", u8"pre'uzm|em|eš|e|emo|ete|u",
     u8"od'uzm|em|eš|e|emo|ete|u", u8"pod'uzm|em|eš|e|emo|ete|u",
     u8"za'uzm|em|eš|e|emo|ete|u",
+    // Bèla, the Croatian name of the kings Béla (Zlatna bula Bele IV.);
+    // in Serbian "bela, bele" is the adjective
+    u8"B/el|a|e|i|u|om",
 };
 
 const char* const SERBIAN[] = {
@@ -415,6 +493,19 @@ const char* const SERBIAN[] = {
     u8"m^onoto:no", u8"r^e:da:ka:", u8"k/orisni:k*", u8"k/orisni:ci", u8"k/orisni:cima",
     u8"k/orisni:če", u8"k^ori:stan", u8"k^ori:st",
     u8"r^ođenda:n*", u8"z^auze:t*",
+    // The words and names checked in October 2026 (see COMMON) with their
+    // length after the accent
+    u8"/obrazova:nj*", u8"/obrazo:vn*", u8"/isku:sta:va:", u8"/ala:t",
+    u8"progr/ame:rsk*", u8"/ekra:n", u8"mod/era:tor*", u8"mod/era:toric*",
+    u8"mod/era:tork*", u8"razv'i:jaju:", u8"t^obo:m", u8"M/iha:jl*",
+    u8"Crn/ogo:rc|a|u|em", u8"Crn/ogo:rče", u8"Crn/ogora:ca:", u8"Crn/ogo:rk*",
+    u8"n^a:jposle:", u8"n^a:jpre:", u8"p/ona:jprije", u8"p/ona:jviše",
+    u8"j/a:vno:st", u8"p/otpuno:st",
+    u8"crn/ogo:rsk*", u8"prot/etiča:r*", u8"ž/eljezniča:r*", u8"ž/elezniča:r*", u8"ž/eljezni:čk*",
+    u8"ž/elezni:čk*", u8"od/rživo:st", u8"inspir'i:raju:",
+    // màslina, màslinov and rakéta are the first forms of the Serbian
+    // dictionary (Rečnik Matice srpske: ма̀слина и ма̏слина, раке́та и ракѐта)
+    u8"m/aslin*", u8"m/aslinov*", u8"rak/e:t*",
 };
 
 const char* const BOSNIAN[] = {
@@ -438,6 +529,19 @@ const char* const BOSNIAN[] = {
     u8"m^onoto:no", u8"r^e:da:ka:", u8"k/orisni:k*", u8"k/orisni:ci", u8"k/orisni:cima",
     u8"k/orisni:če", u8"k^ori:stan", u8"k^ori:st",
     u8"r^ođenda:n*", u8"z^auze:t*",
+    // The words and names checked in October 2026 (see COMMON) with their
+    // length after the accent
+    u8"/obrazova:nj*", u8"/obrazo:vn*", u8"/isku:sta:va:", u8"/ala:t",
+    u8"progr/ame:rsk*", u8"/ekra:n", u8"mod/era:tor*", u8"mod/era:toric*",
+    u8"mod/era:tork*", u8"razv'i:jaju:", u8"t^obo:m", u8"M/iha:jl*",
+    u8"Crn/ogo:rc|a|u|em", u8"Crn/ogo:rče", u8"Crn/ogora:ca:", u8"Crn/ogo:rk*",
+    u8"n^a:jposle:", u8"n^a:jpre:", u8"p/ona:jprije", u8"p/ona:jviše",
+    u8"j/a:vno:st", u8"p/otpuno:st",
+    u8"crn/ogo:rsk*", u8"prot/etiča:r*", u8"ž/eljezniča:r*", u8"ž/elezniča:r*", u8"ž/eljezni:čk*",
+    u8"ž/elezni:čk*", u8"od/rživo:st", u8"inspir'i:raju:",
+    // màslina, màslinov and rakéta are the first forms of the Serbian
+    // dictionary (Rečnik Matice srpske: ма̀слина и ма̏слина, раке́та и ракѐта)
+    u8"m/aslin*", u8"m/aslinov*", u8"rak/e:t*",
 };
 
 // Verbs whose root has the long "ije" (podijéliti, promijéniti, zalijévati).
@@ -482,6 +586,7 @@ const char* const IJE_VERBS[] = {
 //   <  the dictionaries move the accent one syllable back in the present
 //      (ùrēdīm, òtvorīm, pòkāžēm); Stojan and Mirsad do, Zvonko does not
 //   p  ... and in the passive participle (ùrēđen);  P: to the first syllable
+//   !  Zvonko moves it too, as the dictionaries do (ùključen, raspòrēđen)
 //   n  the imperative is spelled like a form of a noun or adjective (potvrdi,
 //      uredi, otvori, načini; for class a the third person: oprema, proba).
 //      It is read as the verb only at the head of a clause ("Potvrdi",
@@ -493,7 +598,7 @@ const char* const IJE_VERBS[] = {
 // infinitive or if the first syllable carries its accent anyway.
 const char* const VERBS[] = {
     u8"ur'e:d=i<pn", u8"odr'e:d=i<pn", u8"nar'e:d=i<p", u8"sr'e:d=i", u8"preur'e:d=i<p",
-    u8"uklj'u:č=i<p", u8"isklj'u:č=i<p", u8"zaklj'u:č=i<p", u8"priklj'u:č=i<p",
+    u8"uklj'u:č=i<p!", u8"isklj'u:č=i<p!", u8"zaklj'u:č=i<p!", u8"priklj'u:č=i<p!",
     u8"odl'u:č=i<p", u8"na'uč=i<p", u8"pro'uč=i<p", u8"po'uč=i<p", u8"ur'u:č=i<p",
     u8"nar'u:č=i<p", u8"por'u:č=i<p", u8"prepor'u:č=i<p", u8"ispor'u:č=i<p",
     u8"potv'r:d=i<pn", u8"utv'r:d=i<pn", u8"tv'r:d=i", u8"ob'uhvat=i", u8"pretr'a:ž=i<p",
@@ -605,6 +710,17 @@ const char* const VERBS[] = {
     u8"'iskak=t", u8"'iskač=e", u8"'uskak=t", u8"'uskač=e",
     u8"z'aplak=t", u8"z'aplač=e", u8"sp'ad=a", u8"odm'a:r=a<", u8"zam'a:r=a<",
     u8"um'a:r=a<", u8"raz'a:r=a<",
+    // Checked against Školski rječnik hrvatskoga jezika, Hrvatski mrežni
+    // rječnik and HJP in October 2026, with the shifts of the present and
+    // the participle in every voice: rasporéditi, raspòrēdīm, raspòrēđen;
+    // osnážiti, òsnāžīm, òsnāžen; potàknuti, pòtaknēm, potàkni, pòtaknūt
+    // (Serbian and Bosnian podstàknuti); razvíjati, ràzvījām (razvíjajū is
+    // in the lexicon); prèdstaviti, nàstaviti and their imperfectives keep
+    // the accent on the prefix.
+    u8"raspor'e:d=i<p!", u8"osn'a:ž=i<p!", u8"pot'ak=u<p!", u8"podst'ak=u<p!",
+    u8"razv'i:j=a<!", u8"pr'edstav=i", u8"pr'edstavlj=a", u8"n'astav=i", u8"n'astavlj=a",
+    u8"p'otic=t", u8"p'otič=e", u8"p'odstic=t", u8"p'odstič=e",
+    u8"inspir'i:r=a<p!", u8"insp'iris=t", u8"insp'iriš=e",
 };
 
 template <size_t N>

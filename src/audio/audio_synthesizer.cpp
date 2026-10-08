@@ -83,7 +83,8 @@ void AudioSynthesizer::ensure_bank() {
 // Synthesis
 // =============================================================================
 
-AudioBuffer AudioSynthesizer::synthesize_clause(const std::u32string& text, Punctuation punct) {
+AudioBuffer AudioSynthesizer::synthesize_clause(const std::u32string& text, Punctuation punct,
+                                                bool sentence_initial) {
     AudioBuffer result;
     result.sample_rate = SAMPLE_RATE;
     result.bits_per_sample = BITS_PER_SAMPLE;
@@ -93,7 +94,9 @@ AudioBuffer AudioSynthesizer::synthesize_clause(const std::u32string& text, Punc
     ensure_bank();
     if (!m_bank.loaded()) return result;
 
-    return render_utterance(m_frontend->process(text, punct));
+    formant::Utterance utt = m_frontend->process(text, punct);
+    utt.sentence_initial = sentence_initial;
+    return render_utterance(utt);
 }
 
 AudioBuffer AudioSynthesizer::synthesize_letter_sound(const std::u32string& letter) {

@@ -37,12 +37,19 @@ on the *u*), and the period that joins a word to such letters, as a screen
 reader glues the parts of a label ("7.listopada.u20:03"), becomes a word
 break instead of *točka*. The number converter reads every group of digits after a period as a
 whole number ("1.317" *jedan točka tristo sedamnaest*, eSpeak's reading),
-writes the decimal comma as *zarez*, reads clock times ("12:30") and dates
+writes the decimal comma as *zarez*, except between the single digits of a
+phone number spelled out by a screen reader ("+ 1 2 3,5 6,7 8 9,8 7 6": at
+least six single digits separated by spaces or glued commas, at least two of
+them touching no comma), where it writes a comma and a space, so the groups
+are clauses with the comma pause. It reads clock times ("12:30") and dates
 ("7.10.2026", "7. 10. 2026.") without the separators, and a number of up to
-four digits followed by a period before a lowercase word as a masculine
-ordinal ("7. listopada" *sedmi listopada*, "1990. godine", "2000. godine"
-*dvijetisućiti godine*) with the period silent; before an uppercase word the
-period ends the sentence as usual. A line break ends the clause too (since
+four digits followed by a period before a lowercase word as the cardinal
+("7. listopada" *sedam listopada*, "1990. godine") with the period silent;
+before an uppercase word the period ends the sentence as usual. Ordinals
+(*sedmi*, the day and month of a date as *sedmi deseti*) were read until
+October 2026 and taken out: they need the case of the noun (*sedmog
+listopada*), which the converter cannot know, and the nominative was wrong
+more often than right. A line break ends the clause too (since
 October 2026), with the newline pause and the contour of a clause without a
 mark, so the lines of a post, a list or a label are phrases of their own; a
 run of breaks and spaces (a blank line, CR LF) is one boundary, and after a
@@ -644,7 +651,12 @@ python3 tools/formant/sibilants.py assa.wav asha.wav
   consonants (*bez zuba*). /v/ and the sonorants neither cause nor undergo
   voicing assimilation, and there is no final devoicing.
 - **Abbreviations** with no vowel and short all-caps tokens are spelled out
-  (HR, USB, NVDA); a few common ones are expanded (npr., tj., itd.).
+  (HR, USB, NVDA). None is expanded (since October 2026; *dr.* was *doktor*,
+  *npr.* *na primjer*, *km* *kilometara* before): they are read as written,
+  and a word whose only syllable would be a final *r* (*dr, mr, str, npr*)
+  is spelled, as no native word ends in a syllabic r after consonants alone
+  (*prst, vrt, rt* keep theirs). The colon of a web address (*https://*) is
+  silent, like the slashes.
   The prepositions *s* and *k* are the exception: before another word they
   are words (*s njom*, *k meni*), alone they are letters. A capital *S* or
   *K* is the preposition where a capital says nothing, at the head of a
@@ -1009,6 +1021,13 @@ Three things to know:
   native listener asked for the verbs with a long vowel; the verbs with a
   short one follow for consistency. *Obavijestiti, razumijevati* and the
   present of *započeti, preuzeti*, which are lexicon entries, do the same.
+  The exceptions carry a `!` and follow the dictionaries in every voice:
+  *uključiti, isključiti, zaključiti, priključiti* (*ùključeno*,
+  *ìsključeno*, the status words of every settings screen, which the same
+  listener heard as wrong with the accent on *-klju-*), *rasporediti*
+  (*raspòređeni*), *osnažiti* and *potaknuti* (October 2026). Zvonko gets
+  the shift without the length after it (*ùključen* for the dictionaries'
+  *ùkljūčen*).
 - **Noun twins.** The imperative is often spelled like a case of a noun:
   *potvrdi* (*potvrda*), *uredi* (*ured*), *otvori* (*otvor*), *objavi,
   prijavi, načini*. Such a form is read as the command only at the head of
@@ -1042,6 +1061,69 @@ Three things to know:
   (*započni, preuzmi, pronađi, prevela*). The participle of verbs in
   *-ovati* (*putovao*) and the passive participles in *-ivan, -avan* are not
   covered: adjectives like *pozitivan* have the same ending.
+
+**The list of October 2026.** A native listener sent about eighty words,
+pronouns and names collected from what the voices read. Each was looked up
+with its whole paradigm in Školski rječnik hrvatskoga jezika (rjecnik.hr),
+Hrvatski mrežni rječnik, HJP, Wiktionary and, for Serbian, the scans of
+Rečnik srpskoga jezika (Matica srpska, 2011); names without an entry got the
+accent of names of the same shape. What came out of it:
+
+- Most were plain lexicon gaps: *pòtpuno, mȁslinov, mòbitel* (the entry had
+  *mobìtel*), *oáza, rakèta, krȃlj, ùistinu, higijéna, jȃvno, srȅdnjī,
+  ekípa, žèljezničār, streljáštvo, dìrektno, međunárodnī, odr̀živ,
+  kampànja, zȁjednički, òbrazovānje* (the entry had *obrázovanje*), *vȋd,
+  iskústvo* (genitive plural *ìskūstāvā*), *àlāt / aláti, mòdel / modèli,
+  progràmērskī, èkrān / ekrána, záslon, znánje, modèrātor, surádnja,
+  saràdnja*, and the verbs *rasporéditi, osnážiti, potàknuti, podstàknuti,
+  razvíjati, prèdstaviti, nàstaviti, inspirírati, inspìrisati* in `VERBS`.
+  Their derivatives were checked too, where the accent differs or a stem
+  would not reach the longer forms: *jávnōst* (against *jȃvnī*), *pòtpunōst,
+  odr̀živōst, iskùstven* (against *iskústvo*), *srȅdnjoškolskī*.
+  Where the dictionaries differ, the choice is the Školski rječnik's
+  (*mȁslinov, surádnja, òbrazovānje*), with the Serbian dictionary's first
+  form in the Serbian and Bosnian tables (*màslinov, rakéta*).
+- The personal pronouns had no length: *jȃ, tȋ, ȏn, mȋ, vȋ, nȃs, vȃs, njȋh,
+  njȋm, mnȏm* are long, *òni, òna, òno* rising. The clitics spelled like
+  them (*Kažem ti, Daj mi*) keep a short vowel: an enclitic loses any length
+  now. A one-syllable word spelled with a foreign letter skips the lexicon,
+  so *Wi-Fi* is not read with the pronoun *vȋ*.
+- *Danijel(a)* and the participles of *viti* (*razvìjen, zàvijen*) were read
+  with the jat diphthong (*Danjel*, *razvjen*); they are now excluded from
+  it.
+- Names from the dictionaries: *Sȃndra* (the entry had the stress mark
+  before the r), *Sìniša* (was *Siníša*), *Dànijel* (was *Danìjel*),
+  *Marijàna* (was long), *Mìhājlo, Ànita, Ȇva, Mája, Máto, Mátić,
+  Teodóra* (the man's *Tèodor* keeps only the nominative), *Crnògorac* /
+  *Crnogórci, Ivànščica, Bȑkljača*, *Bèla* (Croatian voice only; in
+  Serbian *bela, bele* is the adjective); by analogy *Ènida, Nàida,
+  Adrijàna, Mȉlosava, Márkovina, Prȗgovečkī, Grȅbličkī, Vládić, Tȉhić,
+  Rȍtić, Lȅtić, Jȕsić*.
+- Several words were already right in place and tone (*istòvremeno,
+  inteligèncija, sùdjelujete*) and were heard as wrong because the rising
+  accent put its pitch peak on the next syllable; that was fixed in the
+  intonation (see "Pitch" in section 5).
+- *Proteza* is *protéza* in every form (HJP, Školski rječnik), with
+  *protètika, protètičār* and the words it comes with, *zȗbnā, òčnā*.
+- **Superlatives** follow the rule of Hrvatski mrežni rječnik and Školski
+  rječnik (no exception among about fifty forms they print): the superlative
+  of a two-syllable comparative with a short falling accent (*bȍljī, vȅćī,
+  mȁnjē, ljȅpšī, jȁčī, bȑžī, gȍrī*) has the long falling accent on *naj-* and
+  none on the rest (*nȃjboljī, nȃjmanjē, nȃjjačī*); the superlative of a
+  comparative in *-iji* keeps the comparative's short rising accent, *naj-*
+  unaccented (*najnòvijī, najvàžnijī, najjednostàvnijī*). Before, *naj-*
+  had a short, neutral accent (and *najjači* came out *najjáči*). The rule is
+  `StressRules::superlative_of_short_comparative()`: *naj* + a consonant +
+  one syllable + an adjective ending, the stem ending in a palatal or being
+  *gor* (*najam, najava, najlon, najmiti* are not superlatives). The
+  grammars (Vukušić, Zoričić and Grasselli-Vukušić 2007, Jonke; Klajn for
+  Serbian, Alić for Bosnian) also describe a second, long falling accent on
+  *naj-* of the longer superlatives (*nȃjstàrijī*); the voices have one
+  accent per word and follow the dictionaries. *Nȃjposlije, nȃjposlē,
+  nȃjprē, nȁjzad, pònājprije* are lexicon entries.
+- *modela* is read as the genitive singular *modèla*, not the genitive plural
+  *modélā*; *Teodora* as the woman's name; *vidu* as the locative *vídu*
+  (*u vidu*).
 
 To add a verb, run `tools/formant/verb_accents.py urediti otvoriti ...`: it
 looks each infinitive up and prints the table entry, the dictionary's forms
@@ -1081,17 +1163,31 @@ their tempo (`VoiceRegistry::nominal_wpm()`), so the top of a 2.0 slider is
 
 **Pitch** is the sum of:
 
-- a baseline that drifts down along the clause (declination), about two
-  semitones per second, at most six in all,
+- a level that drifts down only a little along the clause (declination),
+  0.6 semitones per second, 1.3 to 2 semitones in all,
+- at the head of a sentence, a raised start: the stretch before the first
+  accent is 1.5 semitones up and comes down into that accent's peak,
 - one movement per accented word: falling accents peak early in the stressed
-  vowel, rising accents peak in the following syllable. The first is the
-  largest (4.5 semitones), later ones shrink gradually,
+  vowel and fall within it; rising accents are high and nearly level through
+  the stressed vowel up to a peak at its end, and the following syllable
+  starts as high and comes down
+  (until October 2026 the peak lay inside the following syllable, which was
+  then heard as the stressed one: *inteligenCIja*, *istoVREmeno*,
+  *uključENo*; the stressed *o* of *istòvremeno* now averages +3.3 semitones
+  and the *e* after it -0.6, against +1.5 and +0.3 before). The first is the
+  largest (4.5 semitones; 3.4 in a clause that goes on a sentence after a
+  comma), later ones are 2.6 and shrink slowly (to 80%), words of lower
+  prominence 1.4,
 - a boundary movement chosen by the punctuation that ended the clause:
-  - statement: a drop of 4 semitones completed within 180 ms of the last
+  - statement: a drop of 4.5 semitones completed within 180 ms of the last
     accent, after which the voice stays low,
   - exclamation: wider movements throughout, a raised first and last accent
     and a drop of 5.5 semitones,
-  - comma, semicolon, colon: a rise of 4 semitones over the last syllable,
+  - comma, semicolon, colon: a fall of 1.5 semitones after the last accent
+    and a rise of 2.5 on the last syllable (from the middle of the last
+    accent when that is the last syllable), so the clause ends about at the
+    level: 4-5 semitones above the statement and 3 or more below the
+    question,
   - yes/no question: low on the stressed syllable of the focused word, 7
     semitones up right after it (the "inverse" pattern of Croatian and
     Serbian questions); the focused word is the one before *li* if there is
@@ -1119,6 +1215,56 @@ syllable was a 6-semitone glide, steep enough to hide the pitch step a screen
 reader uses to mark a capital letter. That holds for statements only: a
 one-syllable question keeps its whole rise and a one-syllable exclamation
 (*Ne!*, *Stoj!*) 70% of its movements, or it could not be told from *Ne.*
+
+**The melody of read Croatian (October 2026).** The contour above replaced
+one with a baseline falling two semitones per second (up to six), first
+accents of 4.5 and later ones of 3.6 semitones, and a 4-semitone rise at
+every comma. Asked for "the intonation of a Croatian radio announcer", it was
+compared with the natural Croatian voices of macOS (Lana, Marija), with
+Eloquence (Italian, the same news sentences translated) and with eSpeak, on
+ten news sentences (`tools/formant/pitch.py`, plus plots of the engine's own
+contour with the words marked):
+
+- The natural voices and Eloquence keep the middle of a sentence on a level:
+  averaged over eight statements and twelve slices of their length, Lana's
+  pitch lies between -0.2 and +0.7 semitones of her median from the second
+  slice to the tenth, Eloquence's between -0.7 and +0.5, and the slope of
+  that stretch is -0.1 and 0.0 semitones. Zvonko fell steadily, 0.6 semitones
+  over the same stretch and -1.9 in the eleventh slice already, so the
+  second half of a long sentence sounded like its end.
+- All of them fall on the last word: Lana from about 0 to -5, Eloquence and
+  Marija to -4.5, the old Zvonko to -7.5 below the start of the plateau.
+- The local movements were larger in Zvonko (standard deviation around the
+  trend 1.73 semitones) than in Lana (1.42), Eloquence (1.22) and Marija
+  (1.15); Lana and Eloquence open a sentence 3 to 5 semitones up and then
+  move by about two.
+- At a comma Lana and Marija fall to 2 to 3.5 semitones below the level
+  (*statistiku,*, *stupnjeva,*, *financija,*) and start the next part of
+  the sentence 2.5 to 4.5 up; Eloquence's Italian does the same. Zvonko
+  rose 4 semitones from the level there, ending as high as the question.
+
+The published measurements were checked as well. No study gives a
+declination slope for Croatian or Serbian; Godjevac (2005) describes each
+following word of a phrase as downstepped, with one peak raised again in a
+long phrase. Readers of Croatian Radio (Langston 2018, *Govorimo hrvatski*
+on HR1) raise the last word before a pause inside a sentence by 1.5 to 4.6
+semitones, typically 2.4 to 3.2, from its accented to its next syllable,
+and DECtalk's rules give a comma "a weaker fall followed by a slight
+continuation rise" (12 Hz below the baseline, then two small impulses at
+the end of the last vowel). The natural voices' fall at the comma is
+therefore not followed: the comma has a small fall and a slight rise.
+Eloquence ends a statement 6.1 semitones below its last peak (Hertz et al.
+1999) and DECtalk 6.6; Zvonko's fall of 4.5 on top of the declination ends
+5 to 6 below the level. Standard speakers realize a rising accent as a high,
+nearly level stressed syllable with the next one starting as high and
+falling (Pletikos Olof and Bradfield 2019), which is the new shape of the
+rising accent below.
+
+With the new values the plateau and the fall match the natural voices in
+the plots; questions and clauses of a single syllable were left as they
+were (see below), and the declination keeps its old floor of 1.3 semitones
+so that a short statement still ends clearly lower than its question at 2x
+speed. The values apply to the recorded voices too.
 
 **Short questions.** In a clause of a few words the end is all there is to
 hear the question mark by, and three things used to hide it:

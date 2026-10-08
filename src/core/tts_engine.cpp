@@ -406,6 +406,9 @@ AudioBuffer TTSEngine::synthesize_segments(const std::vector<TextSegment>& segme
     result.bits_per_sample = BITS_PER_SAMPLE;
     result.channels = NUM_CHANNELS;
 
+    // A clause after a comma, semicolon or colon goes on the sentence and
+    // starts lower than one that opens a sentence.
+    bool sentence_initial = true;
     for (const auto& segment : segments) {
         if (segment.text.empty()) {
             continue;
@@ -417,10 +420,14 @@ AudioBuffer TTSEngine::synthesize_segments(const std::vector<TextSegment>& segme
         AudioBuffer clause;
         if (m_impl->formant) {
             clause = m_impl->formant->synthesize_clause(
-                segment.text, segment.trailing_punct, m_impl->voice_params);
+                segment.text, segment.trailing_punct, m_impl->voice_params, sentence_initial);
         } else if (m_impl->synthesizer) {
-            clause = m_impl->synthesizer->synthesize_clause(segment.text, segment.trailing_punct);
+            clause = m_impl->synthesizer->synthesize_clause(segment.text, segment.trailing_punct,
+                                                            sentence_initial);
         }
+        sentence_initial = segment.trailing_punct != Punctuation::COMMA &&
+                           segment.trailing_punct != Punctuation::SEMICOLON &&
+                           segment.trailing_punct != Punctuation::COLON;
         if (clause.empty()) {
             continue;
         }

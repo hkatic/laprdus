@@ -106,11 +106,17 @@ Intonation::Intonation(const Utterance& utt, const std::vector<Syllable>& syls,
             continue;
         }
 
-        // Every content word gets a clearly audible movement (the
-        // "pointed hats" of the classic rule-based synthesizers),
-        // largest on the first one and shrinking along the clause.
-        float p = syl.prominence >= 2 ? (ai == 0 ? 4.5f : 3.6f) : 1.8f;
-        p *= std::max(0.75f, 1.0f - 0.06f * static_cast<float>(ai));
+        // Every content word gets an audible movement (the "pointed
+        // hats" of the classic rule-based synthesizers), the first one
+        // the largest: read Croatian (and Eloquence) opens a sentence
+        // high, then keeps the voice on a level with movements of two to
+        // three semitones. A clause that goes on a sentence after a
+        // comma starts again, but lower than the sentence did.
+        float p = 1.4f;
+        if (syl.prominence >= 2) {
+            p = ai == 0 ? (utt.sentence_initial ? 4.5f : 3.4f)
+                        : 2.6f * std::max(0.8f, 1.0f - 0.04f * static_cast<float>(ai - 1));
+        }
         if (ai == 0 && kind == ClauseKind::WhQuestion) p = 5.5f;
         if (kind == ClauseKind::Exclamation) {
             // Emphatic: a high start and a strong last accent to
@@ -134,12 +140,17 @@ Intonation::Intonation(const Utterance& utt, const std::vector<Syllable>& syls,
                 b.add(post ? post->t1 + 20.0f : t1 + 110.0f, 0.0f);
                 break;
             case Accent::Rising:
-                // Rising through the stressed vowel; the peak is in
-                // the following syllable.
+                // High and nearly level through the stressed vowel, up to
+                // a peak at its end; the following syllable starts as high
+                // and comes down (the "55.53" of standard Croatian
+                // speakers, Pletikos Olof & Bradfield 2019). With the peak
+                // inside the following syllable, as until October 2026,
+                // that syllable was heard as the stressed one:
+                // inteligenCIja, istoVREmeno, uključENo.
                 b.add(t0 - 25.0f, 0.0f);
-                b.add(t0 + 0.15f * d, -0.4f);
-                b.add(t1, 0.75f * p);
-                b.add(post->t0 + 0.4f * (post->t1 - post->t0), p);
+                b.add(t0 + 0.15f * d, 0.45f * p);
+                b.add(t0 + 0.85f * d, p);
+                b.add(post->t0 + 0.5f * (post->t1 - post->t0), 0.7f * p);
                 b.add(post->t1 + 40.0f, 0.0f);
                 break;
             case Accent::Neutral:
@@ -176,13 +187,19 @@ Intonation::Intonation(const Utterance& utt, const std::vector<Syllable>& syls,
 
         Bump b;
         if (kind == ClauseKind::Continuation) {
-            // The rise has to win against declination and the tail
-            // of the last accent to be heard as "more follows".
+            // A comma: a smaller fall after the last accent and a slight
+            // rise on the last syllable, DECtalk's "weaker fall followed
+            // by a slight continuation rise". Croatian Radio readers
+            // raise the last word before a pause inside a sentence by
+            // 2.4 to 3.2 semitones (Langston 2018). Until October 2026
+            // the rise was 4 semitones from the level, which sounded like
+            // a question at every comma.
+            if (!nuclear_is_last) fall_after_nucleus(1.5f);
             float start = nuclear_is_last
                 ? nuclear.t0 + 0.5f * (nuclear.t1 - nuclear.t0)
-                : (final_syl.t0 >= 0.0f ? final_syl.t0 - 40.0f : total - 160.0f);
+                : (final_syl.t0 >= 0.0f ? final_syl.t0 - 20.0f : total - 120.0f);
             b.add(start, 0.0f);
-            b.add(total, 4.0f * range);
+            b.add(total, 2.5f * range);
         } else if (question) {
             // Every question ends going up. Where the main movement
             // lies earlier (on the word before "li", on a question
@@ -204,15 +221,31 @@ Intonation::Intonation(const Utterance& utt, const std::vector<Syllable>& syls,
                 b.add(total, lift);
             }
         } else {
-            fall_after_nucleus(kind == ClauseKind::Exclamation ? 5.5f : 4.0f);
+            fall_after_nucleus(kind == ClauseKind::Exclamation ? 5.5f : 4.5f);
         }
         if (!b.points.empty()) m_bumps.push_back(std::move(b));
     }
 
-    // Declination: the baseline drifts down along the clause, about
-    // two semitones per second, so a long clause covers more of the
-    // range than a short one.
-    m_drop = std::clamp(total * 0.002f, 1.3f, 6.0f);
+    // A sentence starts high: the stretch before its first accent is
+    // raised and comes down into the accent's peak (Lana and the
+    // natural voices start a sentence three to four semitones above the
+    // level they then keep).
+    if (utt.sentence_initial && accents.size() >= 2) {
+        const Syllable& first = syls[static_cast<size_t>(accents.front())];
+        Bump onset;
+        onset.add(-1.0f, 1.5f * range);
+        onset.add(first.t0 - 40.0f, 1.3f * range);
+        onset.add(first.t0 + 0.25f * (first.t1 - first.t0), 0.0f);
+        m_bumps.push_back(std::move(onset));
+    }
+
+    // Declination: the level drifts down only a little along the
+    // clause, 1.3 to 2 semitones in all, however long it is; the fall
+    // that ends a sentence belongs to its last word. (A baseline that
+    // fell two semitones per second, up to six, as before October
+    // 2026, took the second half of a long sentence down with it, where
+    // read speech keeps it level.)
+    m_drop = std::clamp(total * 0.0006f, 1.3f, 2.0f);
 }
 
 float Intonation::at(float t) const {
