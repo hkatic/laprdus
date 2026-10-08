@@ -640,6 +640,16 @@ python3 tools/formant/sibilants.py assa.wav asha.wav
   voicing assimilation, and there is no final devoicing.
 - **Abbreviations** with no vowel and short all-caps tokens are spelled out
   (HR, USB, NVDA); a few common ones are expanded (npr., tj., itd.).
+  The prepositions *s* and *k* are the exception: before another word they
+  are words (*s njom*, *k meni*), alone they are letters. A capital *S* or
+  *K* is the preposition where a capital says nothing, at the head of a
+  sentence or after an opening quote or bracket (*S tobom sam htio sve*,
+  „*S tobom*“) and in all-caps text (*ALI SAM S NJOM*), and the letter
+  anywhere else (*Mercedes S klasa*, *pritisnite S za spremanje*). Before a
+  hyphen (*S-klasa*), a single letter (*S i M*) or a clitic (*S je slovo*,
+  *slovo s je*) it is always the letter, since no preposition stands there.
+  Spelling and typed characters do not go through this: they are named by
+  the spelling code.
 
 ### Stress
 

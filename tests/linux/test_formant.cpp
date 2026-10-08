@@ -1168,6 +1168,28 @@ TEST_CASE("A mark glued to a word is read by name, not as a clause end", "[forma
         REQUIRE_FALSE(same("s.a.r.s.", "s to\xC4\x8Dka a to\xC4\x8Dka er to\xC4\x8Dka es."));
         REQUIRE_FALSE(same("U.S.A.", "u to\xC4\x8Dka es to\xC4\x8Dka a."));
     }
+    SECTION("The prepositions s and k are words wherever a capital says nothing") {
+        // At the head of a sentence and in all-caps text a capital S or K
+        // is the preposition, as a lowercase one is anywhere
+        REQUIRE(same("S tobom sam htio sve, ali sam s njom dobio puno vi\xC5\xA1" "e.",
+                     "s tobom sam htio sve, ali sam s njom dobio puno vi\xC5\xA1" "e."));
+        REQUIRE(same("K meni.", "k meni."));
+        REQUIRE(same("(S tobom)", "(s tobom)"));
+        REQUIRE(same("\xD0\xA1 \xD1\x82\xD0\xBE\xD0\xB1\xD0\xBE\xD0\xBC.", "s tobom."));   // С тобом
+        REQUIRE(same("ALI SAM S NJOM.", "ali sam s njom."));
+        REQUIRE(same("SPOJITE S USB KABELOM.", "spojite s USB kabelom."));
+        REQUIRE_FALSE(same("S tobom.", "es tobom."));
+        // Elsewhere a capital, a letter alone, before a hyphen, a single
+        // letter or a word no preposition takes is the letter's name
+        REQUIRE(same("Mercedes S klasa.", "Mercedes es klasa."));
+        REQUIRE(same("Pritisnite S za spremanje.", "Pritisnite es za spremanje."));
+        REQUIRE(same("S je slovo.", "es je slovo."));
+        REQUIRE(same("slovo s je", "slovo es je"));
+        REQUIRE(same("S-klasa", "es klasa"));
+        REQUIRE(same("S i M.", "es i em."));
+        REQUIRE(same("S", "es"));
+        REQUIRE(same("K", "ka"));
+    }
     SECTION("A number with a period before a lowercase word is an ordinal") {
         // The period is silent and does not end the clause. Before an
         // uppercase word it ends the sentence as before.

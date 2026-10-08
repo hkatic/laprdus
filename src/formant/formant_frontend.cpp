@@ -139,6 +139,8 @@ struct Word {
     bool letter_name = false;       // part of a spelled-out abbreviation
     bool joined = false;            // one word with the previous ("ne znam")
     bool spell = false;             // a letter of a dotted abbreviation ("s.a.r.s.")
+    bool before_hyphen = false;     // a hyphen follows directly ("s-klasa")
+    bool after_opening = false;     // after an opening quote or bracket ("„S tobom")
 
     Word() = default;
     explicit Word(const std::u32string& text) : w(text), marks(text.size(), 0) {}
@@ -419,10 +421,13 @@ std::vector<Word> tokenize(const std::u32string& text, bool eastern) {
     Word current;
     size_t upper_count = 0;
     bool after_abbreviation_dot = false;
+    bool opening = false;
 
     auto flush = [&]() {
         if (!current.w.empty()) {
             current.all_caps = upper_count == current.w.size();
+            current.after_opening = opening;
+            opening = false;
             if (after_abbreviation_dot && current.w.size() == 1) current.spell = true;
             words.push_back(std::move(current));
         }
@@ -491,7 +496,16 @@ std::vector<Word> tokenize(const std::u32string& text, bool eastern) {
             continue;
         }
 
+        if (c == U'-' || c == 0x2010 || c == 0x2011) current.before_hyphen = true;
         flush();
+        // Quotes and brackets open a sentence of their own (Rekla je „S tobom
+        // nikad“); spaces keep that, every other character ends it.
+        if (c == U'"' || c == U'(' || c == U'[' || c == U'{' || c == 0x201E ||
+            c == 0x201C || c == 0x201A || c == 0x2018 || c == 0xAB || c == 0xBB) {
+            opening = true;
+        } else if (c != U' ') {
+            opening = false;
+        }
         for (const auto& symbol : SYMBOLS) {
             if (symbol.symbol == c) {
                 const char32_t* name = (eastern && symbol.eastern) ? symbol.eastern
@@ -534,7 +548,37 @@ bool needs_spelling(const Word& word) {
     return true;                                                // VCC, VVC
 }
 
+// The prepositions "s" and "k" are single consonants that lean on the next
+// word ("s njom", "k meni"); alone they are just letters. A capital says
+// nothing at the head of a sentence ("S tobom sam htio sve", "K meni") or in
+// all-caps text ("ALI SAM S NJOM"), so the letter is a preposition there too;
+// a capital anywhere else is a letter ("Mercedes S klasa", "pritisnite S za
+// spremanje"). Never before a hyphen ("S-klasa", "k-pop"), a single letter
+// ("S i M") or a word no preposition is followed by ("S je slovo").
+bool leaning_preposition(const std::vector<Word>& tokens, size_t t) {
+    const Word& token = tokens[t];
+    if ((token.w != U"s" && token.w != U"k") || token.before_hyphen ||
+        t + 1 >= tokens.size()) {
+        return false;
+    }
+    const Word& next = tokens[t + 1];
+    if (next.w.size() == 1 || enclitics().count(next.w) != 0 ||
+        (proclitics().count(next.w) != 0 && next.w != U"ne")) {     // s ne malo truda
+        return false;
+    }
+    if (!token.all_caps || t == 0 || token.after_opening) return true;
+
+    auto caps_word = [](const Word& w) {
+        return w.all_caps && w.w.size() > 1 && !needs_spelling(w);
+    };
+    return caps_word(next) || (next.all_caps && caps_word(tokens[t - 1]));  // S USB KABELOM
+}
+
 std::vector<Word> expand_words(std::vector<Word> tokens, bool eastern, bool serbian) {
+    // Decided before the loop below moves the tokens away.
+    std::vector<bool> leaning(tokens.size());
+    for (size_t t = 0; t < tokens.size(); ++t) leaning[t] = leaning_preposition(tokens, t);
+
     std::vector<Word> words;
     for (size_t t = 0; t < tokens.size(); ++t) {
         Word& token = tokens[t];
@@ -560,11 +604,7 @@ std::vector<Word> expand_words(std::vector<Word> tokens, bool eastern, bool serb
             }
             if (expanded) continue;
 
-            // The prepositions "s" and "k" are single consonants that lean on
-            // the next word; alone they are just letters.
-            bool leaning = (token.w == U"s" || token.w == U"k") &&
-                           t + 1 < tokens.size() && !token.all_caps;
-            if (!leaning && needs_spelling(token)) {
+            if (!leaning[t] && needs_spelling(token)) {
                 for (char32_t c : token.w) {
                     size_t first = words.size();
                     split_words(letter_name(c, serbian), words);
