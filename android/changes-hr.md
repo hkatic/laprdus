@@ -11,6 +11,7 @@
 - Naglasni rječnik: novi korisnički rječnik `accents.json` ispravlja naglasak riječi odjednom za sve njezine oblike ili cijelog glagola. Sprema se uz ostale korisničke rječnike i učitava zajedno s njima (vidi odjeljak 5.11 korisničkog priručnika).
 - Brojevi se čitaju na jeziku glasa (Zvonko: *tisuća*, *milijun*; Stojan i Mirsad: *hiljada*, *milion*), a jedan i dva slažu se s brojevnom riječi (*dvije tisuće*, *dvadeset jedna tisuća*).
 - Ispravljeno: unosi dodani u korisnički rječnik slovkanja i rječnik emodžija nisu imali učinka.
+- Ispravljeno: postavka pauze za novi red nije imala učinka, a retci objave ili popisa stapali su se u jednu rečenicu. Prijelom retka sada završava frazu tom pauzom, a sljedeći redak počinje novu rečenicu (redak koji počinje s „S ponosom” više ne počinje slovom *es*).
 - Laprdus sada sustavu nudi i bosanski. Kad aplikacija zatraži jezik kojim vaš odabrani glas već govori, taj se glas zadržava umjesto da se zamijeni.
 - Ispravljeno: rječnik slovkanja i rječnik emodžija uređeni u aplikaciji govorna jedinica nije koristila; sva tri korisnička rječnika sada vrijede čim se glas učita. Naglasni rječnik čita se iz iste mape.
 

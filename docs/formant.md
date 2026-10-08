@@ -42,7 +42,12 @@ writes the decimal comma as *zarez*, reads clock times ("12:30") and dates
 four digits followed by a period before a lowercase word as a masculine
 ordinal ("7. listopada" *sedmi listopada*, "1990. godine", "2000. godine"
 *dvijetisućiti godine*) with the period silent; before an uppercase word the
-period ends the sentence as usual.
+period ends the sentence as usual. A line break ends the clause too (since
+October 2026), with the newline pause and the contour of a clause without a
+mark, so the lines of a post, a list or a label are phrases of their own; a
+run of breaks and spaces (a blank line, CR LF) is one boundary, and after a
+mark that already ended the clause it adds nothing. Until then a line break
+was a space and the newline pause setting did nothing.
 
 | File | Role |
 |------|------|
@@ -645,11 +650,17 @@ python3 tools/formant/sibilants.py assa.wav asha.wav
   *K* is the preposition where a capital says nothing, at the head of a
   sentence or after an opening quote or bracket (*S tobom sam htio sve*,
   „*S tobom*“) and in all-caps text (*ALI SAM S NJOM*), and the letter
-  anywhere else (*Mercedes S klasa*, *pritisnite S za spremanje*). Before a
-  hyphen (*S-klasa*), a single letter (*S i M*) or a clitic (*S je slovo*,
-  *slovo s je*) it is always the letter, since no preposition stands there.
-  Spelling and typed characters do not go through this: they are named by
-  the spelling code.
+  anywhere else (*Mercedes S klasa*, *pritisnite S za spremanje*). A line
+  starts a sentence too, since a line break ends the clause (section 1,
+  `analyze_text`): in a post VoiceOver reads as "prije 18 h, Javno⏎S ponosom
+  predstavljam" the *S* used to sit mid-clause and was read *es*. Before an
+  instrumental (*-om, -em, -im, -ima, -ama, -lju, -šću*) a capital *S* is
+  the preposition anywhere, for hosts that join lines with a space (*Javno
+  S ponosom*, *razgovarao sam S Ivanom*); no letter S stands before one,
+  while *Mercedes S klasu* keeps the letter. Before a hyphen (*S-klasa*), a
+  single letter (*S i M*) or a clitic (*S je slovo*, *slovo s je*) it is
+  always the letter, since no preposition stands there. Spelling and typed
+  characters do not go through this: they are named by the spelling code.
 
 ### Stress
 

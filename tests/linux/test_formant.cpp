@@ -1189,6 +1189,32 @@ TEST_CASE("A mark glued to a word is read by name, not as a clause end", "[forma
         REQUIRE(same("S i M.", "es i em."));
         REQUIRE(same("S", "es"));
         REQUIRE(same("K", "ka"));
+        // A line starts a sentence of its own: the lines of a post as
+        // VoiceOver reads it ("Javno" / "S ponosom predstavljam")
+        REQUIRE(same("prije 18 h, Javno\nS ponosom predstavljam.",
+                     "prije 18 h, Javno\ns ponosom predstavljam."));
+        REQUIRE(same("Javno\r\n\r\nK meni.", "Javno\r\n\r\nk meni."));
+        // Before an instrumental a capital S is the preposition anywhere,
+        // for a host that joins the lines with a space
+        REQUIRE(same("Javno S ponosom predstavljam.", "Javno s ponosom predstavljam."));
+        REQUIRE(same("Razgovarao sam S Ivanom.", "Razgovarao sam s Ivanom."));
+        REQUIRE(same("Do\xC5\xA1la je S rado\xC5\xA1\xC4\x87u.", "Do\xC5\xA1la je s rado\xC5\xA1\xC4\x87u."));
+        REQUIRE(same("Vozim Mercedes S klasu.", "Vozim Mercedes es klasu."));
+        REQUIRE(same("Mercedes S-klasom.", "Mercedes es klasom."));
+    }
+    SECTION("A line break ends the clause with the newline pause") {
+        REQUIRE(laprdus_set_newline_pause(engine.handle, 0) == LAPRDUS_OK);
+        std::vector<int16_t> short_pause = speak(engine.handle, "Prvi red\nDrugi red");
+        REQUIRE(laprdus_set_newline_pause(engine.handle, 500) == LAPRDUS_OK);
+        std::vector<int16_t> long_pause = speak(engine.handle, "Prvi red\nDrugi red");
+        const double added_ms = (static_cast<double>(long_pause.size()) -
+                                 static_cast<double>(short_pause.size())) * 1000.0 / 22050.0;
+        REQUIRE(added_ms > 490.0);
+        REQUIRE(added_ms < 510.0);
+        // A blank line or CR LF is one break; after a full stop it adds nothing
+        REQUIRE(same("Prvi red\r\n\r\nDrugi red", "Prvi red\nDrugi red"));
+        REQUIRE(same("Prvi red.\nDrugi red.", "Prvi red. Drugi red."));
+        REQUIRE_FALSE(same("Prvi red\nDrugi red", "Prvi red Drugi red"));
     }
     SECTION("A number with a period before a lowercase word is an ordinal") {
         // The period is silent and does not end the clause. Before an

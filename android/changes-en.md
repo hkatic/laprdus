@@ -11,6 +11,7 @@
 - Accent dictionary: a new user dictionary, `accents.json`, corrects the stress of a word for all its forms at once, or of a whole verb. It is stored next to the other user dictionaries and loaded with them (see section 5.11 of the user guide).
 - Numbers are read in the language of the voice (Zvonko: *tisuća*, *milijun*; Stojan and Mirsad: *hiljada*, *milion*), and one and two agree with the number word (*dvije tisuće*, *dvadeset jedna tisuća*).
 - Fixed: entries added to the user spelling and emoji dictionaries had no effect.
+- Fixed: the newline pause setting had no effect and the lines of a post or a list ran together into one sentence. A line break now ends a phrase with that pause, and the next line starts a new sentence (a line beginning with "S ponosom" no longer starts with the letter *es*).
 - Laprdus now offers Bosnian to the system. When an app asks for a language your chosen voice already speaks, that voice is kept instead of being switched.
 - Fixed: the spelling and emoji dictionaries edited in the app were not used by the speech service; all three user dictionaries now take effect as soon as a voice is loaded. The accent dictionary is read from the same folder.
 

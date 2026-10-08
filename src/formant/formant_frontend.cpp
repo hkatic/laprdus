@@ -553,8 +553,10 @@ bool needs_spelling(const Word& word) {
 // nothing at the head of a sentence ("S tobom sam htio sve", "K meni") or in
 // all-caps text ("ALI SAM S NJOM"), so the letter is a preposition there too;
 // a capital anywhere else is a letter ("Mercedes S klasa", "pritisnite S za
-// spremanje"). Never before a hyphen ("S-klasa", "k-pop"), a single letter
-// ("S i M") or a word no preposition is followed by ("S je slovo").
+// spremanje"), unless an instrumental follows it ("Javno S ponosom", where
+// a host joined two lines with a space): no letter S stands before one.
+// Never before a hyphen ("S-klasa", "k-pop"), a single letter ("S i M") or a
+// word no preposition is followed by ("S je slovo").
 bool leaning_preposition(const std::vector<Word>& tokens, size_t t) {
     const Word& token = tokens[t];
     if ((token.w != U"s" && token.w != U"k") || token.before_hyphen ||
@@ -571,6 +573,10 @@ bool leaning_preposition(const std::vector<Word>& tokens, size_t t) {
     auto caps_word = [](const Word& w) {
         return w.all_caps && w.w.size() > 1 && !needs_spelling(w);
     };
+    if (token.w == U"s" && !next.all_caps &&
+        ends_with_any(next.w, {U"om", U"em", U"im", U"ima", U"ama", U"lju", U"šću"})) {
+        return true;                                            // Javno S ponosom
+    }
     return caps_word(next) || (next.all_caps && caps_word(tokens[t - 1]));  // S USB KABELOM
 }
 

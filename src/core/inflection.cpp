@@ -36,7 +36,8 @@ namespace {
 // Whitespace in the sense of "what follows a clause-ending mark".
 bool is_space(char32_t c) {
     return c == U' ' || c == U'\t' || c == U'\n' || c == U'\r' || c == U'\f' ||
-           c == U'\v' || c == 0xA0 || (c >= 0x2000 && c <= 0x200B) || c == 0x3000;
+           c == U'\v' || c == 0x85 || c == 0xA0 || (c >= 0x2000 && c <= 0x200B) ||
+           c == 0x2028 || c == 0x2029 || c == 0x3000;
 }
 
 // Brackets and quotation marks: a mark followed by one of these still ends
@@ -53,6 +54,12 @@ bool is_bracket_or_quote(char32_t c) {
         default:
             return false;
     }
+}
+
+// A line break, in any of its encodings.
+bool is_line_break(char32_t c) {
+    return c == U'\n' || c == U'\r' || c == U'\v' || c == U'\f' || c == 0x85 ||
+           c == 0x2028 || c == 0x2029;
 }
 
 bool is_alnum(char32_t c) {
@@ -108,6 +115,31 @@ std::vector<TextSegment> InflectionProcessor::analyze_text(const std::string& te
     size_t segment_start = 0;
 
     for (size_t i = 0; i < utf32.size(); ++i) {
+        // A line break ends the clause, with the newline pause: the lines of
+        // a post, a list or a label are phrases of their own ("Javno" /
+        // "S ponosom predstavljam"), and the next line starts a sentence of
+        // its own. A run of breaks and spaces (a blank line, "\r\n") is one
+        // boundary; after a mark that ended the clause it adds nothing.
+        if (is_line_break(utf32[i])) {
+            size_t run_end = i + 1;
+            while (run_end < utf32.size() && is_space(utf32[run_end])) ++run_end;
+            bool blank = true;
+            for (size_t k = segment_start; k < i; ++k) {
+                if (!is_space(utf32[k])) blank = false;
+            }
+            if (!blank) {
+                current.text = utf32.substr(segment_start, i - segment_start);
+                current.trailing_punct = Punctuation::NEWLINE;
+                current.inflection = punct_to_inflection(Punctuation::NEWLINE);
+                current.is_end_of_sentence = false;
+                segments.push_back(std::move(current));
+                current = TextSegment{};
+            }
+            segment_start = run_end;
+            i = run_end - 1;
+            continue;
+        }
+
         Punctuation punct = PhonemeMapper::detect_punctuation(utf32[i]);
         if (punct == Punctuation::NONE) {
             continue;

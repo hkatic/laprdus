@@ -11,6 +11,7 @@
 - Accent dictionary: a new user dictionary, `accents.json`, corrects the stress of a word for all its forms at once, or of a whole verb. It is stored next to the other user dictionaries and loaded with them (see section 5.11 of the user guide).
 - Numbers are read in the language of the voice (Zvonko: *tisuća*, *milijun*; Stojan and Mirsad: *hiljada*, *milion*), and one and two agree with the number word (*dvije tisuće*, *dvadeset jedna tisuća*).
 - Fixed: entries added to the user spelling and emoji dictionaries had no effect.
+- Fixed: the newline pause setting had no effect and the lines of a post or a list ran together into one sentence. A line break now ends a phrase with that pause, and the next line starts a new sentence (a line beginning with "S ponosom" no longer starts with the letter *es*).
 - The accent dictionary is read from the app's dictionary folder, together with the other user dictionaries.
 - Fixed: when VoiceOver read an item that contains a single character to be spelled out, such as a button with a badge count, the whole item was spelled letter by letter, and the name and the type of a control ran together into one phrase. Each part is now read as VoiceOver asks: text as text, the character spelled, pauses as pauses.
 - VoiceOver's pitch change for capital letters is now heard, and a request that VoiceOver cancels is no longer spoken.

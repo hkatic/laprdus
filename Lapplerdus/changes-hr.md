@@ -11,6 +11,7 @@
 - Naglasni rječnik: novi korisnički rječnik `accents.json` ispravlja naglasak riječi odjednom za sve njezine oblike ili cijelog glagola. Sprema se uz ostale korisničke rječnike i učitava zajedno s njima (vidi odjeljak 5.11 korisničkog priručnika).
 - Brojevi se čitaju na jeziku glasa (Zvonko: *tisuća*, *milijun*; Stojan i Mirsad: *hiljada*, *milion*), a jedan i dva slažu se s brojevnom riječi (*dvije tisuće*, *dvadeset jedna tisuća*).
 - Ispravljeno: unosi dodani u korisnički rječnik slovkanja i rječnik emodžija nisu imali učinka.
+- Ispravljeno: postavka pauze za novi red nije imala učinka, a retci objave ili popisa stapali su se u jednu rečenicu. Prijelom retka sada završava frazu tom pauzom, a sljedeći redak počinje novu rečenicu (redak koji počinje s „S ponosom” više ne počinje slovom *es*).
 - Naglasni rječnik čita se iz mape rječnika aplikacije, zajedno s ostalim korisničkim rječnicima.
 - Ispravljeno: kad je VoiceOver čitao stavku koja sadrži jedan znak za slovkanje, na primjer gumb s brojem na znački, cijela se stavka slovkala slovo po slovo, a naziv i vrsta kontrole stapali su se u jednu rečenicu. Svaki se dio sada čita onako kako VoiceOver traži: tekst kao tekst, znak slovkano, stanke kao stanke.
 - Sada se čuje VoiceOverova promjena visine za velika slova, a zahtjev koji VoiceOver otkaže više se ne izgovara.
