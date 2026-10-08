@@ -726,14 +726,25 @@ private:
                                         next_cls == PhClass::Affricate;
                     // BCS voiceless stops are unaspirated: short voice onset
                     // times, longest for the velar.
+                    const bool labial = p.ph == Ph::P || p.ph == Ph::B;
                     float release = voiced
-                        ? (p.ph == Ph::G ? 14.0f : 8.0f)
+                        ? (p.ph == Ph::G ? 14.0f : (p.ph == Ph::B ? 12.0f : 8.0f))
                         : (p.ph == Ph::K ? 34.0f : (p.ph == Ph::T ? 16.0f : 14.0f));
                     // Before another stop the release is short but audible
                     // (the recorded speaker's "atka", "akta": 24-40 ms of
                     // noise 16-28 dB below the vowels).
                     if (weak_release) release = voiced ? 7.0f : 14.0f;
-                    release = std::min(release, d * 0.45f);
+                    // The labial release follows Eloquence: the click and
+                    // then breath through the opening glottis, 22-28 ms of
+                    // broadband noise some 30 dB below the vowel, running
+                    // straight into it (16 ms when fast). A version with a
+                    // silent gap between burst and voice, as in eSpeak and
+                    // the Klatt voice, was heard as a gap in the word. See
+                    // "p and b once more" in docs/formant.md.
+                    if (!voiced && labial && !weak_release) release = rate(24.0f, 14.0f);
+                    release = std::min(release, labial && !weak_release
+                                                    ? std::max(d - 12.0f, 10.0f)
+                                                    : d * 0.45f);
                     float closure = std::max(d - release, 12.0f);
 
                     // After friction the silent gap is the only thing that
@@ -762,16 +773,30 @@ private:
 
                     Seg& cl = add_seg(p.ph, SegKind::Closure, i, closure);
                     if (voiced) {
-                        // Voice bar: low-frequency murmur during the closure.
-                        cl.av = 0.60f;
-                        cl.tilt = 26.0f;
+                        // Voice bar: low-frequency murmur during the closure,
+                        // the loud, steady buzz of Eloquence and DECtalk
+                        // (6-20 dB below the vowels, nothing above 1 kHz),
+                        // which is what makes their b stand out. Eloquence's
+                        // d and g between vowels dip just as little (7-9 dB
+                        // in "ada", a recorded speaker 10 dB); with the
+                        // weaker bar they had before (21 dB down) the closure
+                        // of "dvadeset" was a gap that split the word.
+                        cl.av = 0.95f;
+                        cl.tilt = 22.0f;
                         cl.f0_shift = -0.8f;
                     }
+                    // The first formant is heavily damped once the lips
+                    // close. With the vowel's 70 Hz bandwidth kept through
+                    // the closure the resonator rang on for 20-25 ms after
+                    // the voice stopped (4 dB per 2 ms), and the vowel faded
+                    // into the stop; the classic synthesizers cut it off
+                    // within 8-16 ms.
+                    if (labial) cl.bw[0] = 250.0f;
                     cl.noise = noise_for(p.ph);
                     cl.has_noise = true;
 
                     Seg& rel = add_seg(p.ph, SegKind::Release, i, release);
-                    rel.burst = def.af * (voiced ? 0.90f : 1.0f) *
+                    rel.burst = def.af * (voiced && !labial ? 0.90f : 1.0f) *
                                 (weak_release ? (voiced ? 0.4f : 0.7f) : 1.0f);
                     if (prepausal) {
                         rel.burst_tail = p.ph == Ph::K ? 0.20f : 0.50f;
@@ -782,6 +807,9 @@ private:
                         // "peć", "brać".
                         rel.ah = 0.30f;
                     }
+                    // (A flat 18 ms labial burst as in the classic synthesizers
+                    // was tried and cost a recognizer one word in ten; the
+                    // burst keeps its quick fall and is 2 dB stronger instead.)
                     rel.burst_decay = p.ph == Ph::K || p.ph == Ph::G ? 8.0f
                                     : (p.ph == Ph::T || p.ph == Ph::D ? 5.0f : 4.0f);
                     rel.noise = noise_for(p.ph);
@@ -793,13 +821,10 @@ private:
                         rel.av = 0.70f;
                         rel.tilt = m_voice.tilt + 3.0f;
                         rel.f0_shift = -0.8f;
-                    } else if ((next_vocalic || next_cls == PhClass::Tap) && p.ph != Ph::P) {
+                    } else if (next_vocalic || next_cls == PhClass::Tap) {
                         // /r/ after a stop opens with a vocalic stretch, so
                         // the stop is released into it as into a vowel.
-                        // /p/ has no aspiration: its click is followed by a
-                        // few milliseconds of silence and then the voice
-                        // sets in at once, as in Eloquence and eSpeak.
-                        rel.ah = p.ph == Ph::K ? 0.45f : 0.20f;
+                        rel.ah = p.ph == Ph::K ? 0.45f : (p.ph == Ph::P ? 0.32f : 0.20f);
                     }
                     break;
                 }
@@ -1071,8 +1096,22 @@ private:
                     // swelled over 20-30 ms and p, b, d sounded soft.
                     if (k == 0 && &dom == &x && x.kind == SegKind::Release &&
                         ph_def(x.ph).cls == PhClass::Stop) {
-                        v = x.anchor[0] + 0.55f * (y.self[0] - x.anchor[0]);
-                        t_other = std::min(t_other, transition_rate(12.0f));
+                        // After p and b the vowel snaps in, as in eSpeak and
+                        // the Klatt voice (full level within 6-8 ms).
+                        bool labial = x.ph == Ph::P || x.ph == Ph::B;
+                        v = x.anchor[0] + (labial ? 0.72f : 0.55f) * (y.self[0] - x.anchor[0]);
+                        t_other = std::min(t_other, transition_rate(labial ? 8.0f : 12.0f));
+                    }
+                    // The lips close as fast as they open: F1 reaches the
+                    // closure of p and b within about 14 ms (Eloquence 16 ms,
+                    // eSpeak 10-20, the Klatt voice within a frame). Gliding
+                    // down over 36 ms, the vowel faded into the stop instead
+                    // of being cut off by it. (Applied to every stop it did
+                    // nothing for p and b and cost a recognizer a few t and
+                    // k words, so the other stops keep their transitions.)
+                    if (k == 0 && &dom == &y && y.kind == SegKind::Closure &&
+                        (y.ph == Ph::P || y.ph == Ph::B)) {
+                        t_other = std::min(t_other, transition_rate(14.0f));
                     }
                     if (&dom == &x) {
                         x.rb[k] = v;
@@ -1201,7 +1240,8 @@ private:
                 // the release stands out against it.
                 if (seg.kind == SegKind::Closure && seg.av > 0.0f &&
                     ph_def(seg.ph).cls == PhClass::Stop && seg.dur > 0.0f) {
-                    av[idx] *= 1.0f - 0.55f * std::clamp(2.0f * t / seg.dur - 1.0f, 0.0f, 1.0f);
+                    float fade = seg.ph == Ph::B ? 0.35f : 0.55f;
+                    av[idx] *= 1.0f - fade * std::clamp(2.0f * t / seg.dur - 1.0f, 0.0f, 1.0f);
                 }
                 ah[idx] = seg.ah;
                 // A release into a pause dies away; its last few

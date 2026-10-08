@@ -55,6 +55,43 @@ bool is_bracket_or_quote(char32_t c) {
     }
 }
 
+bool is_alnum(char32_t c) {
+    return (c >= U'0' && c <= U'9') || (c >= U'a' && c <= U'z') || (c >= U'A' && c <= U'Z') ||
+           c >= 0x80;
+}
+
+bool is_upper(char32_t c) {
+    return (c >= U'A' && c <= U'Z') || c == 0x10C || c == 0x106 || c == 0x110 || c == 0x160 ||
+           c == 0x17D || (c >= 0x400 && c <= 0x42F);
+}
+
+// A single period glued to the next character stays in the clause, to be
+// read by name, only after a single letter (the dot of an abbreviation,
+// "s.a.r.s.", "U.S.A.", which the front end silences and spells) and
+// before a file extension or domain label: one to five letters or digits
+// in one case, with a letter among them, and nothing of a word after them
+// ("datoteka.txt", "pjesma.mp3", "www.index.hr", "README.TXT"). Any other
+// glued period ends the clause like one before a space; a screen reader
+// glues the items of a label that way ("Preslušano.Nestajuća poruka",
+// "1.Prvi"). A decimal point never gets here: the number converter writes
+// it as another character.
+bool period_stays_in_word(const std::u32string& text, size_t i) {
+    if (i + 1 >= text.size()) return false;
+    if (i > 0 && is_alnum(text[i - 1]) && (i == 1 || !is_alnum(text[i - 2]))) return true;
+    size_t end = i + 1;
+    bool letter = false, lower = false, upper = false;
+    while (end < text.size() && is_alnum(text[end])) {
+        char32_t c = text[end];
+        if (c < U'0' || c > U'9') {
+            letter = true;
+            if (is_upper(c)) upper = true; else lower = true;
+        }
+        ++end;
+    }
+    size_t length = end - i - 1;
+    return letter && length >= 1 && length <= 5 && !(lower && upper);
+}
+
 } // namespace
 
 std::vector<TextSegment> InflectionProcessor::analyze_text(const std::string& text) {
@@ -79,9 +116,11 @@ std::vector<TextSegment> InflectionProcessor::analyze_text(const std::string& te
         // A run of marks ("...", "?!", ".)") is one boundary. Like eSpeak,
         // a mark ends the clause only when whitespace, a bracket or quote,
         // or the end of the text follows it. A mark glued to the next
-        // character is part of a word ("datoteka.txt", "3.14", "12:30",
-        // "www.index.hr") and stays in the clause text, where the front end
-        // reads it by name. An ellipsis character always ends the clause.
+        // character is part of a word ("12:30", "Hej!ti") and stays in the
+        // clause text, where the front end reads it by name; a glued period
+        // does so only in a file name or after an abbreviated letter
+        // (period_stays_in_word). An ellipsis character always ends the
+        // clause.
         size_t run_end = i;
         size_t dots = 0;
         bool question = false, exclamation = false, ellipsis = false;
@@ -94,9 +133,11 @@ std::vector<TextSegment> InflectionProcessor::analyze_text(const std::string& te
             if (p == Punctuation::ELLIPSIS) ellipsis = true;
             ++run_end;
         }
+        const bool lone_period = run_end == i + 1 && utf32[i] == U'.';
         const bool ends_clause = ellipsis || run_end >= utf32.size() ||
                                  is_space(utf32[run_end]) ||
-                                 is_bracket_or_quote(utf32[run_end]);
+                                 is_bracket_or_quote(utf32[run_end]) ||
+                                 (lone_period && !period_stays_in_word(utf32, i));
         if (!ends_clause) {
             i = run_end - 1;
             continue;

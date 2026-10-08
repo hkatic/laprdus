@@ -647,15 +647,44 @@ std::string CroatianNumbers::digit_group_to_words(std::string_view group) {
     return words;
 }
 
-// The separator itself, as the front end will read it. A period stays a
-// period glued to the digits on both sides: InflectionProcessor then keeps it
-// inside the clause and the front end names it in the voice's language
-// (točka / tačka). The decimal comma is "zarez" in every language, so the
-// word is written here; a comma in the text would otherwise be a clause
+// The separator itself, as the front end will read it. A period between
+// digits becomes the one dot leader (U+2024) glued to the digits on both
+// sides: InflectionProcessor does not know it, so it stays inside the
+// clause, and the front end names it in the voice's language (točka /
+// tačka). A period itself would be the end of a clause there, as every
+// period in the text that is not a decimal point or part of a file name
+// now is. The decimal comma is "zarez" in every language, so the word is
+// written here; a comma in the text would otherwise be a clause
 // break.
 std::string CroatianNumbers::separator_words(char separator) {
-    return separator == '.' ? "." : " zarez ";
+    return separator == '.' ? "\xE2\x80\xA4" : " zarez ";
 }
+
+namespace {
+
+bool is_letter_byte(char c) {
+    unsigned char u = static_cast<unsigned char>(c);
+    return std::isalpha(u) || u >= 0x80;
+}
+
+// A number glued to letters ("u20:03", "5kg", "COVID19") is set off from
+// them, or the letters would be read as part of the number word
+// ("udvadeset", stressed on the u). When the number is a time, a date or
+// a decimal (compound), a period that joins a word to the letter run
+// ("listopada.u20:03", the way a screen reader glues the parts of a
+// label) is a word break, not a period to read by name; before a plain
+// number it stays, for the file extensions "pjesma.mp3", "film.mp4".
+void set_off_from_letters(std::string& result, bool compound) {
+    if (result.empty() || !is_letter_byte(result.back())) return;
+    size_t k = result.size();
+    while (k > 0 && is_letter_byte(result[k - 1])) --k;
+    if (compound && k >= 2 && result[k - 1] == '.' && is_letter_byte(result[k - 2])) {
+        result[k - 1] = ' ';
+    }
+    result += ' ';
+}
+
+} // namespace
 
 std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
     std::string result;
@@ -663,6 +692,7 @@ std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
 
     size_t i = 0;
     size_t length = text.size();
+    bool after_number = false;
 
     while (i < length) {
         // Find start of non-digit text
@@ -671,12 +701,21 @@ std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
             i++;
         }
 
-        // Append non-digit text unchanged
+        // Append non-digit text unchanged, set off from a number it is
+        // glued to ("20:03h", "2x")
         if (i > text_start) {
+            if (after_number && is_letter_byte(text[text_start])) result += ' ';
             result.append(text, text_start, i - text_start);
         }
 
         if (i >= length) break;
+        {
+            size_t digits = digits_end(text, i);
+            bool compound = (digits < length && text[digits] == ':') ||
+                            is_separator_between_digits(text, digits);
+            set_off_from_letters(result, compound);
+        }
+        after_number = true;
 
         // A clock time or a date is read as such, without the separators:
         // the colon of "12:30" is silent and the periods of "7.10.2026."

@@ -212,6 +212,21 @@ const WordSet& enclitics() {
 }
 
 // Stressed, but weaker than content words.
+// Cardinal numbers after which a thousand or million word stands in the
+// genitive plural (pet tisuća, dvadeset hiljada, sto milijuna).
+const WordSet& counting_numbers() {
+    static const WordSet set = {
+        U"pet", U"šest", U"sedam", U"osam", U"devet", U"deset",
+        U"jedanaest", U"dvanaest", U"trinaest", U"četrnaest", U"petnaest",
+        U"šesnaest", U"sedamnaest", U"osamnaest", U"devetnaest",
+        U"dvadeset", U"trideset", U"četrdeset", U"pedeset", U"šezdeset",
+        U"sedamdeset", U"osamdeset", U"devedeset",
+        U"sto", U"stotinu", U"dvjesto", U"dvjesta", U"dvesta", U"tristo", U"trista",
+        U"četiristo", U"petsto", U"šeststo", U"sedamsto", U"osamsto", U"devetsto",
+    };
+    return set;
+}
+
 const WordSet& function_words() {
     static const WordSet set = {
         U"ali", U"ili", U"ako", U"kad", U"kada", U"dok", U"jer", U"nego", U"kao",
@@ -330,6 +345,7 @@ struct SymbolName {
 // silent there and here).
 const SymbolName SYMBOLS[] = {
     {U'.', U"točka", U"tačka"},
+    {0x2024, U"točka", U"tačka"},     // the decimal point, from the number converter
     {U':', U"dvotočka", U"dvotačka"},
     {U'!', U"uskličnik", U"uzvičnik"},
     {U'%', U"posto", nullptr},
@@ -2375,6 +2391,30 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
         next.phones[static_cast<size_t>(next.nuclei[0])].is_long = true;
         next.stress = 0;
         next.accent = next.nuclei.size() == 1 ? Accent::Falling : Accent::Rising;
+    }
+
+    // After a number the thousand words stand in the genitive plural, whose
+    // accent is not the dictionary form's: pet tȉsūćā, sto hȉljādā (tìsuća,
+    // hȉljada), pet milijúnā, pet milijárdī. On their own and after one to
+    // four (tisuća, tisuću, dvije tisuće) they keep the lexicon's accent.
+    for (size_t i = 0; i + 1 < count; ++i) {
+        static const WordSet thousands = {U"tisuća", U"hiljada"};
+        static const WordSet millions = {U"milijuna", U"miliona", U"milijardi",
+                                         U"bilijuna", U"biliona"};
+        Word& next = words[i + 1];
+        if (next.explicit_stress || next.nuclei.size() < 2 ||
+            !counting_numbers().count(words[i].w)) {
+            continue;
+        }
+        if (thousands.count(next.w)) {
+            next.stress = 0;
+            next.accent = Accent::Falling;
+            for (size_t k = 1; k < next.nuclei.size(); ++k) {
+                next.phones[static_cast<size_t>(next.nuclei[k])].is_long = true;
+            }
+        } else if (millions.count(next.w)) {
+            next.phones[static_cast<size_t>(next.nuclei.back())].is_long = true;
+        }
     }
 
     auto take_accent = [](Word& host, Word& donor) {

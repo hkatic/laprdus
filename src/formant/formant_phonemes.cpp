@@ -217,7 +217,7 @@ Table::Table() {
     // 500 Hz, with a flat floor up to 5 kHz about 10 dB under it. Following
     // the formants it could peak where a /t/ or /k/ burst does.
     for (Ph ph : {Ph::P, Ph::B}) {
-        t[ph].af = 0.50f;
+        t[ph].af = 0.63f;
         set_formant_noise(t[ph], 0.0f, 0.0f, 0.0f);
         set_noise(t[ph], 350.0f, 500.0f, 0.8f, 4000.0f, 3000.0f, 0.0f,
                   6000.0f, 3000.0f, 0.0f, 0.20f);

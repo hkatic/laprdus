@@ -117,22 +117,34 @@ double energy_at(const std::vector<int16_t>& audio, size_t start, size_t window)
     return energy;
 }
 
-// Fundamental frequency of one window, by autocorrelation.
+// Fundamental frequency of one window, by normalized autocorrelation. Takes
+// the shortest period that correlates nearly as well as the best one (a
+// local maximum within 10% of it), so a moving pitch, or a window that
+// takes in the voice bar of a b, is not mistaken for its octave below.
 double pitch_at(const std::vector<int16_t>& audio, size_t start, size_t window) {
-    double best_corr = 0.0;
-    size_t best_lag = 0;
-    for (size_t lag = 22050 / 400; lag <= 22050 / 50 && lag < window; ++lag) {
-        double corr = 0.0;
+    const size_t min_lag = 22050 / 400;
+    const size_t max_lag = std::min<size_t>(22050 / 50, window - 1);
+    std::vector<double> corr(max_lag + 2, 0.0);
+    double best = 0.0;
+    for (size_t lag = min_lag - 1; lag <= max_lag + 1 && lag < window; ++lag) {
+        double sum = 0.0, left = 0.0, right = 0.0;
         for (size_t i = 0; i + lag < window; ++i) {
-            corr += static_cast<double>(audio[start + i]) * audio[start + i + lag];
+            double a = audio[start + i];
+            double b = audio[start + i + lag];
+            sum += a * b;
+            left += a * a;
+            right += b * b;
         }
-        corr /= static_cast<double>(window - lag);
-        if (corr > best_corr) {
-            best_corr = corr;
-            best_lag = lag;
+        corr[lag] = left > 0.0 && right > 0.0 ? sum / std::sqrt(left * right) : 0.0;
+        if (lag >= min_lag && lag <= max_lag) best = std::max(best, corr[lag]);
+    }
+    if (best <= 0.0) return 0.0;
+    for (size_t lag = min_lag; lag <= max_lag; ++lag) {
+        if (corr[lag] >= 0.9 * best && corr[lag] >= corr[lag - 1] && corr[lag] >= corr[lag + 1]) {
+            return 22050.0 / static_cast<double>(lag);
         }
     }
-    return best_lag ? 22050.0 / static_cast<double>(best_lag) : 0.0;
+    return 0.0;
 }
 
 // Fundamental frequency of the loudest ~93 ms within [from, to) (fractions
@@ -531,11 +543,49 @@ TEST_CASE("Lexicon accents cover the whole paradigm", "[formant][text]") {
         {"sada", "s\xC8\x81" "da"},   // sȁda
         {"Novi Sad", "Novi S\xC8\x83" "d"},   // Novi Sȃd
         {"Novog Sada", "Novog S\xC3\xA1" "da"},   // Novog Sáda
-        {"dvadeset", "dv\xC8\x81" "deset"},   // dvȁdeset
-        {"dvadeseti", "dv\xC8\x81" "deseti"},   // dvȁdeseti
-        {"trideset", "tr\xC8\x89" "deset"},   // trȉdeset
+        {"dvadeset", "dv\xC3\xA2" "deset"},   // dvâdeset
+        {"dvadeseti", "dv\xC3\xA2" "deseti"},   // dvâdeseti
+        {"dvadeset jedan", "dv\xC3\xA2" "deset jedan"},   // dvâdeset jedan
+        {"trideset", "tr\xC3\xAE" "deset"},   // trîdeset
         {"pedeset", "ped\xC3\xA8set"},   // pedèset
-        {"dvadeset jedan", "dv\xC8\x81" "deset jedan"},   // dvȁdeset jedan
+        {"pedeseti", "ped\xC3\xA8seti"},   // pedèseti
+        {"nula", "n\xC8\x95la"},   // nȕla
+        {"nule", "n\xC8\x95le"},   // nȕle
+        {"nulti", "n\xC8\x95lti"},   // nȕlti
+        {"\xC4\x8D" "etiristo", "\xC4\x8D\xC8\x85tiristo"},   // čȅtiristo
+        {"tisu\xC4\x87" "a", "t\xC3\xACsu\xC4\x87" "a"},   // tìsuća
+        {"tisu\xC4\x87u", "t\xC3\xACsu\xC4\x87u"},   // tìsuću
+        {"tisu\xC4\x87" "e", "t\xC3\xACsu\xC4\x87" "e"},   // tìsuće
+        {"tisu\xC4\x87iti", "t\xC3\xACsu\xC4\x87iti"},   // tìsućiti
+        {"dvije tisu\xC4\x87" "e", "dvije t\xC3\xACsu\xC4\x87" "e"},   // dvije tìsuće
+        {"dvadeset jedna tisu\xC4\x87" "a", "dvadeset jedna t\xC3\xACsu\xC4\x87" "a"},   // dvadeset jedna tìsuća
+        {"pet tisu\xC4\x87" "a", "pet t\xC8\x89s\xC5\xAB\xC4\x87\xC4\x81"},   // pet tȉsūćā
+        {"dvadeset tisu\xC4\x87" "a", "dvadeset t\xC8\x89s\xC5\xAB\xC4\x87\xC4\x81"},   // dvadeset tȉsūćā
+        {"sto tisu\xC4\x87" "a", "sto t\xC8\x89s\xC5\xAB\xC4\x87\xC4\x81"},   // sto tȉsūćā
+        {"milijarda", "mil\xC3\xACjarda"},   // milìjarda
+        {"milijarde", "mil\xC3\xACjarde"},   // milìjarde
+        {"milijardi", "mil\xC3\xACjardi"},   // milìjardi
+        {"milijunti", "mil\xC3\xACjunti"},   // milìjunti
+        {"peti", "p\xC8\x87ti"},   // pȇti
+        {"peta", "p\xC8\x87ta"},   // pȇta
+        {"petog", "p\xC8\x87tog"},   // pȇtog
+        {"\xC5\xA1" "esti", "\xC5\xA1\xC8\x87sti"},   // šȇsti
+        {"sedmi", "s\xC8\x87" "dmi"},   // sȇdmi
+        {"sedmog", "s\xC8\x87" "dmog"},   // sȇdmog
+        {"osmi", "\xC8\x8Fsmi"},   // ȏsmi
+        {"osma", "\xC8\x8Fsma"},   // ȏsma
+        {"deveti", "d\xC3\xA8veti"},   // dèveti
+        {"devetoga", "d\xC3\xA8vetoga"},   // dèvetoga
+        {"deseti", "d\xC3\xA8seti"},   // dèseti
+        {"desetog", "d\xC3\xA8setog"},   // dèsetog
+        {"stoti", "st\xC8\x8Fti"},   // stȏti
+        {"dvjestoti", "dvj\xC8\x85stoti"},   // dvjȅstoti
+        {"dvoje", "dv\xC8\x8Dje"},   // dvȍje
+        {"troje", "tr\xC8\x8Dje"},   // trȍje
+        {"oba", "\xC8\x8D" "ba"},   // ȍba
+        {"obje", "\xC8\x8D" "bje"},   // ȍbje
+        {"dvojica", "dv\xC3\xB2jica"},   // dvòjica
+        {"\xC4\x8D" "etvorica", "\xC4\x8D" "etv\xC3\xB2rica"},   // četvòrica
         {"ina\xC4\x8D" "e", "\xC8\x89na\xC4\x8D" "e"},   // ȉnače
         {"uostalom", "u\xC3\xB2stalom"},   // uòstalom
         {"ionako", "ion\xC3\xA0ko"},   // ionàko
@@ -693,6 +743,29 @@ TEST_CASE("Lexicon accents cover the whole paradigm", "[formant][text]") {
     for (const auto& c : ekavian) {
         INFO(c.plain);
         REQUIRE(speak(engine.handle, c.plain) == speak(engine.handle, c.accented));
+    }
+}
+
+TEST_CASE("The tens keep their long first vowel", "[formant][text]") {
+    // dvádeset, trídeset (HJP): the first vowel is long, and the accent
+    // peaks inside it (the long falling accent of the lexicon entry). A
+    // short first vowel, or the rising accent with its peak on "de", was
+    // heard as "dva deset". The vowel's length shows in the duration: the
+    // word is longer than with the short falling accent written out, and
+    // the reading is neither the short falling nor the long rising one.
+    Engine engine;
+    const char* voices[] = {"zvonko", "stojan", "mirsad"};
+    for (const char* voice : voices) {
+        REQUIRE(laprdus_set_voice(engine.handle, voice, NO_DATA) == LAPRDUS_OK);
+        INFO(voice);
+        std::vector<int16_t> plain = speak(engine.handle, "dvadeset");
+        std::vector<int16_t> short_falling = speak(engine.handle, "dv\xC8\x81" "deset");   // dvȁdeset
+        std::vector<int16_t> long_rising = speak(engine.handle, "dv\xC3\xA1" "deset");   // dvádeset
+        REQUIRE(plain.size() > short_falling.size() + 22050 / 40);   // 25 ms or more
+        REQUIRE(plain != short_falling);
+        REQUIRE(plain != long_rising);
+        std::vector<int16_t> thirty = speak(engine.handle, "trideset");
+        REQUIRE(thirty.size() > speak(engine.handle, "tr\xC8\x89" "deset").size() + 22050 / 40);   // trȉdeset
     }
 }
 
@@ -1040,6 +1113,15 @@ TEST_CASE("A mark glued to a word is read by name, not as a clause end", "[forma
     SECTION("Period inside a word") {
         REQUIRE(same("datoteka.txt", "datoteka to\xC4\x8Dka txt"));
         REQUIRE(same("www.index.hr", "www to\xC4\x8Dka index to\xC4\x8Dka hr"));
+        REQUIRE(same("pjesma.mp3", "pjesma to\xC4\x8Dka mp3"));
+        REQUIRE(same("README.TXT", "README to\xC4\x8Dka TXT"));
+        // Anywhere else a glued period ends the clause (a screen reader
+        // glues the items of a label with it)
+        REQUIRE(same("Preslu\xC5\xA1" "ano.Nestaju\xC4\x87" "a poruka", "Preslu\xC5\xA1" "ano. Nestaju\xC4\x87" "a poruka"));
+        REQUIRE_FALSE(same("Preslu\xC5\xA1" "ano.Nestaju\xC4\x87" "a", "Preslu\xC5\xA1" "ano to\xC4\x8Dka Nestaju\xC4\x87" "a"));
+        REQUIRE(same("kraj.Novi", "kraj. Novi"));
+        REQUIRE(same("1.Prvi", "jedan. Prvi"));
+        REQUIRE(same("datoteka.tekstualna", "datoteka. tekstualna"));
         REQUIRE(same(".txt", "to\xC4\x8Dka txt"));
         REQUIRE_FALSE(same("datoteka.txt", "datoteka txt"));
     }
@@ -1048,6 +1130,15 @@ TEST_CASE("A mark glued to a word is read by name, not as a clause end", "[forma
         // reads it; after the decimal comma up to two digits are a number
         // and more are read one by one.
         REQUIRE(same("3.14", "tri to\xC4\x8Dka \xC4\x8D" "etrnaest"));
+        // A number glued to letters is set off from them, and the period
+        // that joins a word to the letters before it is silent (a screen
+        // reader's label "7.listopada.u20:03")
+        REQUIRE(same("u20:03", "u dvadeset nula tri"));
+        REQUIRE(same("7.listopada.u20:03", "sedmi listopada u dvadeset nula tri"));
+        REQUIRE(same("od20do30", "od dvadeset do trideset"));
+        REQUIRE(same("5kg", "pet kg"));
+        REQUIRE(same("COVID19", "COVID devetnaest"));
+        REQUIRE(same("20:03h", "dvadeset nula tri h"));
         REQUIRE(same("3,14", "tri zarez \xC4\x8D" "etrnaest"));
         REQUIRE(same("0.05", "nula to\xC4\x8Dka nula pet"));
         REQUIRE(same("1.317", "jedan to\xC4\x8Dka tristo sedamnaest"));

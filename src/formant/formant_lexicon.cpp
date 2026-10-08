@@ -28,26 +28,59 @@ namespace formant {
 namespace {
 
 const char* const COMMON[] = {
-    // ---- Numbers ----
-    u8"n/ula", u8"j/edan", u8"j/edna", u8"j/edno", u8"d^va:", u8"dv^ije", u8"dv^e:",
+    // ---- Numbers (Hrvatski jezični portal; Wiktionary and the Serbian
+    // dictionaries for the Serbian forms) ----
+    u8"n^ul*", u8"j/edan", u8"j/edna", u8"j/edno", u8"d^va:", u8"dv^ije", u8"dv^e:",
     u8"t^ri:", u8"č/etiri", u8"p^e:t", u8"š^e:st", u8"s^edam", u8"^osam",
-    u8"d^eve:t", u8"d^ese:t",
-    u8"jed'anaest", u8"dv'a:naest", u8"tr'i:naest", u8"čet'rnaest", u8"p'etnaest",
-    u8"š'esnaest", u8"sed'amnaest", u8"os'amnaest", u8"dev'etnaest",
-    // The tens with their ordinals: dvádeset, dvadèsētī; četrdèsēt,
-    // četrdèsētī (the Croatian voice has its own, see CROATIAN)
-    u8"dv'a:deset", u8"dvad'ese:t|i|a|o|e|u|og|om|oj|ih|im|ima|oga|ome",
-    u8"tr'i:deset", u8"trid'ese:t|i|a|o|e|u|og|om|oj|ih|im|ima|oga|ome",
+    u8"d^evet", u8"d^eset",
+    // The teens and their ordinals (jedànaest, jedànaestī) share a stem; the
+    // length of -naēst is in the Serbian and Bosnian tables.
+    u8"jed'anaest*", u8"dv'a:naest*", u8"tr'i:naest*", u8"čet'rnaest*", u8"p'etnaest*",
+    u8"š'esnaest*", u8"sed'amnaest*", u8"os'amnaest*", u8"dev'etnaest*",
+    // The tens with their ordinals. The dictionaries' dvádeset, trídeset
+    // (HJP also dvádesetī) have a long first vowel, and in a recording of
+    // the word the stressed a is three times as long as the e after it,
+    // with the pitch held up through it and falling over "deset". With a
+    // short first vowel, or with the rising accent (whose peak lies on the
+    // next syllable), the word was heard as the two words "dva deset"; so
+    // the entries keep the length and take the falling accent, whose peak
+    // comes early in the stressed vowel (the neutral accent rises through
+    // its first half, which on a long vowel was again heard as "dva" on
+    // its own). Forty to ninety stress the "de"
+    // (četrdèsēt); the Croatian voice has them without the final length
+    // (CROATIAN), the Serbian and Bosnian ordinals are dvadèsētī.
+    u8"dv^a:deset*", u8"tr^i:deset*",
     u8"četrd'ese:t*", u8"ped'ese:t*", u8"šezd'ese:t*",
     u8"sedamd'ese:t*", u8"osamd'ese:t*", u8"deved'ese:t*",
     u8"st^o:", u8"dvj^esto", u8"dvj^esta", u8"dv^esta", u8"tr^isto", u8"tr^ista",
-    u8"č/etiristo", u8"p^e:tsto", u8"š^e:ststo", u8"s^edamsto", u8"^osamsto",
-    u8"d^evetsto", u8"t^isuć*", u8"h^iljad*",
+    u8"č^etiristo", u8"p^e:tsto", u8"š^e:ststo", u8"s^edamsto", u8"^osamsto",
+    u8"d^evetsto",
+    // The ordinals of the hundreds keep the accent of the cardinal: stȏtī,
+    // dvjȅstōtī, trȉstōtī, petstȏtī (the length of -ōtī in the Serbian and
+    // Bosnian tables)
+    u8"st^o:t|i|a|o|e|u|og|om|oj|ih|im|ima|oga|ome", u8"dvj^estot*", u8"dv^estot*",
+    u8"tr^istot*", u8"č^etiristot*", u8"p^e:tstot*", u8"š^e:ststot*", u8"s^edamstot*",
+    u8"^osamstot*", u8"d^evetstot*",
+    // tìsuća, tìsuću, tìsuće, tìsućītī; after a number the genitive plural
+    // tȉsūćā is a phrase rule of the front end. hȉljada, hȉljaditī.
+    u8"t/isuć*", u8"h^iljad*",
     // milìjūn but milijúna, like the other nouns with a long last stem
-    // syllable (StressRules::long_stem)
+    // syllable (StressRules::long_stem); milìjūntī, milìōnitī; milìjārda
+    // (its length after the accent in the Serbian and Bosnian tables)
     u8"mil'iju:n", u8"milij'u:n|a|u|om|e|i|ima|sk*", u8"mil'io:n", u8"mili'o:n|a|u|om|e|i|ima|sk*",
-    u8"milij'a:rd*", u8"bil'iju:n", u8"bilij'u:n|a|u|om|e|i|ima", u8"bil'io:n", u8"bili'o:n|a|u|om|e|i|ima", u8"p'rv*", u8"dr^ug*",
-    u8"tr^eć*", u8"č/etvrt|i|a|o|e|u|og|oga|om|ome|oj|ih|im|ima", u8"z^arez", u8"c^ije:l*", u8"c^e:l*",
+    u8"mil/ijunt*", u8"mil/ionit*", u8"mil/ijard*",
+    u8"bil'iju:n", u8"bilij'u:n|a|u|om|e|i|ima", u8"bil'io:n", u8"bili'o:n|a|u|om|e|i|ima",
+    // Ordinals one to ten: pȓvī, drȕgī, trȅćī, čètvr̄tī, pȇtī, šȇstī, sȇdmī,
+    // ȏsmī, dèvētī, dèsētī; the cardinals (pȇt, dȅvet) keep their own exact
+    // entries, so the ordinals are paradigms
+    u8"p'rv*", u8"dr^ug*", u8"tr^eć*", u8"č/etvrt|i|a|o|e|u|og|oga|om|ome|oj|ih|im|ima",
+    u8"p^e:t|i|a|o|e|u|og|om|oj|ih|im|ima|oga|ome", u8"š^e:st|i|a|o|e|u|og|om|oj|ih|im|ima|oga|ome",
+    u8"s^e:dm|i|a|o|e|u|og|om|oj|ih|im|ima|oga|ome", u8"^o:sm|i|a|o|e|u|og|om|oj|ih|im|ima|oga|ome",
+    u8"d/evet|i|a|o|e|u|og|om|oj|ih|im|ima|oga|ome", u8"d/eset|i|a|o|e|u|og|om|oj|ih|im|ima|oga|ome",
+    // dvȍje, trȍje, ȍba, ȍbje, dvòjica, tròjica, četvòrica, petòrica
+    u8"dv^oje", u8"tr^oje", u8"^oba", u8"^obje", u8"dv/ojic*", u8"tr/ojic*",
+    u8"četv/oric*", u8"pet/oric*",
+    u8"z^arez", u8"c^ije:l*", u8"c^e:l*",
 
     // ---- Very frequent words: tone and length ----
     u8"d^a:n", u8"d^obar", u8"d^obro", u8"d^obra", u8"hv/a:la", u8"m^oli:m",
@@ -330,14 +363,9 @@ const char* const COMMON[] = {
 };
 
 const char* const CROATIAN[] = {
-    // The tens as commonly spoken: the dictionaries' long rising dvádeset
-    // puts the peak of the accent on "de", and the word is heard as "dva
-    // deset"; the falling accent on a short first syllable (dvȁdeset,
-    // trȉdeset) keeps it one word. The others drop the length of the last
-    // syllable (četrdèset, pedèset for četrdèsēt, pedèsēt), as the other
+    // Forty to ninety without the length of the last syllable (četrdèset,
+    // pedèset for the dictionaries' četrdèsēt, pedèsēt), as the other
     // entries for this voice do. Ordinals and -ak forms follow the stem.
-    u8"dv^adeset", u8"dv^adeset*", u8"dv^adeset|i|a|o|e|u|og|om|oj|ih|im|ima|oga|ome",
-    u8"tr^ideset", u8"tr^ideset*", u8"tr^ideset|i|a|o|e|u|og|om|oj|ih|im|ima|oga|ome",
     u8"četrd'eset", u8"četrd'eset*", u8"ped'eset", u8"ped'eset*", u8"šezd'eset", u8"šezd'eset*",
     u8"sedamd'eset", u8"sedamd'eset*", u8"osamd'eset", u8"osamd'eset*",
     u8"deved'eset", u8"deved'eset*",
@@ -357,6 +385,18 @@ const char* const CROATIAN[] = {
 };
 
 const char* const SERBIAN[] = {
+    // Numbers: the lengths after the accent (dȅvēt, dȅsēt, jedànaēst,
+    // milìjārda, milìjūntī, dvjȅstōtī) and the ordinals dvadèsētī, tridèsētī,
+    // dèvētī, dèsētī
+    u8"d^eve:t", u8"d^ese:t",
+    u8"jed'anae:st*", u8"dv'a:nae:st*", u8"tr'i:nae:st*", u8"čet'rnae:st*", u8"p'etnae:st*",
+    u8"š'esnae:st*", u8"sed'amnae:st*", u8"os'amnae:st*", u8"dev'etnae:st*",
+    u8"dvad'ese:t|i|a|o|e|u|og|om|oj|ih|im|ima|oga|ome",
+    u8"trid'ese:t|i|a|o|e|u|og|om|oj|ih|im|ima|oga|ome",
+    u8"dvj^esto:t*", u8"dv^esto:t*", u8"tr^isto:t*", u8"č^etiristo:t*", u8"p^e:tsto:t*",
+    u8"š^e:ststo:t*", u8"s^edamsto:t*", u8"^osamsto:t*", u8"d^evetsto:t*",
+    u8"mil/ija:rd*", u8"mil/iju:nt*", u8"mil/io:nit*",
+    u8"d/eve:t|i|a|o|e|u|og|om|oj|ih|im|ima|oga|ome", u8"d/ese:t|i|a|o|e|u|og|om|oj|ih|im|ima|oga|ome",
     u8"prof'esor*", u8"proc'enat", u8"proc'ent*", u8"Vojv'odin*", u8"Ukraj'i:n*",
     u8"j^anua:r*", u8"f^ebrua:r*", u8"m^art*", u8"/apri:l*", u8"m^a:j", u8"j^u:n",
     u8"j^u:l", u8"^avgust*", u8"sept'embar", u8"sept'embr*", u8"okt'o:bar",
@@ -368,6 +408,18 @@ const char* const SERBIAN[] = {
 };
 
 const char* const BOSNIAN[] = {
+    // Numbers: the lengths after the accent (dȅvēt, dȅsēt, jedànaēst,
+    // milìjārda, milìjūntī, dvjȅstōtī) and the ordinals dvadèsētī, tridèsētī,
+    // dèvētī, dèsētī
+    u8"d^eve:t", u8"d^ese:t",
+    u8"jed'anae:st*", u8"dv'a:nae:st*", u8"tr'i:nae:st*", u8"čet'rnae:st*", u8"p'etnae:st*",
+    u8"š'esnae:st*", u8"sed'amnae:st*", u8"os'amnae:st*", u8"dev'etnae:st*",
+    u8"dvad'ese:t|i|a|o|e|u|og|om|oj|ih|im|ima|oga|ome",
+    u8"trid'ese:t|i|a|o|e|u|og|om|oj|ih|im|ima|oga|ome",
+    u8"dvj^esto:t*", u8"dv^esto:t*", u8"tr^isto:t*", u8"č^etiristo:t*", u8"p^e:tsto:t*",
+    u8"š^e:ststo:t*", u8"s^edamsto:t*", u8"^osamsto:t*", u8"d^evetsto:t*",
+    u8"mil/ija:rd*", u8"mil/iju:nt*", u8"mil/io:nit*",
+    u8"d/eve:t|i|a|o|e|u|og|om|oj|ih|im|ima|oga|ome", u8"d/ese:t|i|a|o|e|u|og|om|oj|ih|im|ima|oga|ome",
     u8"prof'esor*", u8"proc'enat", u8"proc'ent*", u8"Vojv'odin*", u8"Ukraj'i:n*",
     u8"j^anua:r*", u8"f^ebrua:r*", u8"m^art*", u8"/apri:l*", u8"m^a:j", u8"j^u:n",
     u8"j^u:l", u8"^august*", u8"sept'embar", u8"sept'embr*", u8"okt'o:bar",

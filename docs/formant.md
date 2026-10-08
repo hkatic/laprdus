@@ -20,12 +20,22 @@ text ──▶ TTSEngine::preprocess_text()        emoji, pronunciation dictiona
 
 The first two steps are shared with the concatenative voices. A mark ends a
 clause only when whitespace, a bracket or quote, or the end of the text follows
-it (eSpeak's rule); glued to the next character ("datoteka.txt", "3.14",
-"12:30") it stays in the clause and the front end's symbol table reads it by
-name (*točka*/*tačka*, *dvotočka*/*dvotačka*, *uskličnik*/*uzvičnik*). A period
-after a single letter is the dot of an abbreviation ("s.a.r.s.", "U.S.A."):
-the tokenizer drops it and reads the letters by name, as eSpeak and RHVoice
-do. The number converter reads every group of digits after a period as a
+it (eSpeak's rule); glued to the next character ("12:30", "Hej!ti") it stays
+in the clause and the front end's symbol table reads it by name
+(*dvotočka*/*dvotačka*, *uskličnik*/*uzvičnik*). A glued period is read by
+name (*točka*/*tačka*) only before a file extension or domain label, one to
+five letters or digits in one case ("datoteka.txt", "pjesma.mp3",
+"www.index.hr", "README.TXT"), and the decimal point is the number
+converter's own mark (U+2024, "3.14" *tri točka četrnaest*); any other
+glued period ends the clause like one before a space, because a screen
+reader glues the items of a label that way ("Preslušano.Nestajuća poruka",
+"1.Prvi"). A period after a single letter is the dot of an abbreviation
+("s.a.r.s.", "U.S.A."): the tokenizer drops it and reads the letters by
+name, as eSpeak and RHVoice do. A number glued to letters is set off from them by the number converter
+("u20:03" *u dvadeset nula tri*; before, "udvadeset" was one word stressed
+on the *u*), and the period that joins a word to such letters, as a screen
+reader glues the parts of a label ("7.listopada.u20:03"), becomes a word
+break instead of *točka*. The number converter reads every group of digits after a period as a
 whole number ("1.317" *jedan točka tristo sedamnaest*, eSpeak's reading),
 writes the decimal comma as *zarez*, reads clock times ("12:30") and dates
 ("7.10.2026", "7. 10. 2026.") without the separators, and a number of up to
@@ -500,6 +510,74 @@ clause-final 21 → 22), and on the 20 general sentences of section 7 Zvonko,
 Stojan and Mirsad moved by -1.4, -0.9 and +2.0 points (Mirsad's losses are
 word boundaries, *padala kiša* as *pada lakiša*, and one lost p in *ptice*).
 
+### p and b once more
+
+After the rounds above p and b were still judged not noticeable enough, with
+Eloquence, DECtalk and eSpeak named as the reference. On the Mac there are
+Eloquence (`say -v "Reed (Italian (Italy))"`), eSpeak (`say -v "(null) -
+ESpeak (Croatian (Croatia))"`) and a third-party Klatt-type Croatian voice
+(`say -v "(null) - Klatt (Croatian (Croatia))"`, the nearest thing to
+DECtalk); the envelopes of *apa*, *aba*, *ipi*, *ibi*, *upu*, *ubu* every 2 ms
+(whole signal and above 1 kHz, relative to the loudest 3 ms) were compared at
+the normal rate and at 1.7 times it (`say -r 300`, `laprdus -r 1.7`). It was
+not the burst's level, as the two earlier rounds had assumed: the classic
+synthesizers make a stop out of sharp events, and Zvonko glided through
+them. The three synthesizers do not agree with each other, though, and the
+first attempt followed the wrong two.
+
+| | Eloquence | eSpeak (Croatian) | Klatt voice | Zvonko before | Zvonko now |
+|---|---|---|---|---|---|
+| Vowel cut off before p (-8 to -60 dB) | 16 ms | 8-16 ms | within 2 ms | 22-26 ms | 16 ms |
+| p release in *apa* | 22-28 ms of flat noise at -31 to -45 dB, into the vowel | 18 ms burst at -17 to -25 dB, then 12 ms of silence | 20 ms burst at -3 to -21 dB, then 10 ms of silence | 8 ms click from -20 dB, then the vowel | 24 ms: the click, then breath at -20 to -27 dB, into the vowel |
+| The same at 1.7 times the rate | 16 ms | 18 ms, 2 ms of silence | 18 ms, 2-4 ms | 8 ms | 16 ms |
+| Voice bar of b in *aba* | -6 to -20 dB, steady, nothing above 1 kHz | -16 to -43 dB, pulsing | -26 to -46 dB, weak | -21 to -27 dB, fading 7 dB | -13 to -21 dB, fading 4 dB |
+| After the b release | a 24 ms rise | voice off under the burst, then on within 6 ms | burst, 8 ms of silence, vowel | burst under the voicing, 20 ms rise | burst, vowel within 10 ms |
+
+- **The closing edge.** The voice stopped within 8 ms, but F1 kept the
+  vowel's 70 Hz bandwidth through the closure and rang on for 20-25 ms (4 dB
+  per 2 ms, the decay of that bandwidth), so the vowel faded into the stop.
+  The closure of p and b now damps F1 (bandwidth 250 Hz; the lips are shut),
+  and the vowel is cut off within 16 ms, as in Eloquence; F1 also moves into
+  the closure of p and b within 14 ms instead of gliding over 36. (Applied to
+  every stop, the fast F1 close did nothing for p and b and cost the
+  recognizer a few t and k words, so t, d, k and g are untouched.)
+- **The p release follows Eloquence**, not eSpeak: the click (14 ms, 2 dB
+  stronger than before) and then breath through the opening glottis for the
+  rest of 24 ms (16 ms when fast), running straight into the vowel or the r
+  of *pra*. Before, p had no aspiration at all and its click was over in 8
+  ms. The first attempt copied eSpeak and the Klatt voice instead, an 18 ms
+  flat burst and then 8-10 ms of silence before the voice; the recognizer
+  lost one word in ten with the flat burst (not with its level: a 14 ms
+  burst at the new level cost nothing), and the user heard the silence as a
+  gap in the word. Both are gone.
+- **b** has the loud, steady voice bar of Eloquence and DECtalk (voicing at
+  95% instead of 60%, 4 dB less tilt, fading by 4 dB over the second half
+  of the closure instead of 7), and after both labials the vowel snaps in
+  (F1 72% of the way at the boundary and the rest within 8 ms, against 55%
+  and 12 ms for the other stops). A version that held the voicing back under
+  the b release to 20%, so that the burst stood out as in eSpeak, was no
+  better for the recognizer and no better to the ear; the burst now runs
+  under voicing at 70% as before, 2 dB stronger. d and g keep the recorded
+  speaker's weaker bar.
+
+The recognizer check (section 7; Whisper "small", 40 sentences full of p
+and b, 187 words containing them; synthesis is deterministic, so a repeated
+run gives the same count and differences are between engines, not runs):
+at the normal rate it found 156 of those words with the previous engine and
+148 now (6.6% and 7.3% of the characters wrong), at 1.7 times the rate 93
+and 83 (17.3% and 19.1%). On 20 sentences full of t and k (77 words) it
+finds 55 against 56 before. The intermediate version with the eSpeak-style
+burst and gap scored 152 and 87, and its 18 ms flat burst 141 and 78. The
+recognizer is a guard against gross regressions, not the judge: the sound
+the user asked for is that of the classic synthesizers, which it hears worse
+than the recorded speaker too (section 7).
+
+```bash
+B=build/macos-arm64-release
+for w in apa aba ipi ibi; do $B/laprdus -D $B -v zvonko -o $w.wav $w; done
+python3 tools/formant/onsets.py apa.wav aba.wav ipi.wav ibi.wav
+```
+
 ### Voice colour
 
 Vowels of the same sentence (*papa*, *pipi*, *pupu*... in Italian for Reed,
@@ -795,12 +873,40 @@ reader meets; the imperfective *preglédati* is spelled the same. *Nàtaša*
 (Wiktionary) is a lexicon entry, every case and the possessive. *Sad* is the
 adverb *sȁd* everywhere, short; the town *Nȍvī Sȃd* (*Novog Sáda, Novom
 Sádu*) gets its long vowel only from the preceding *novi* (a phrase rule in
-the front end), because the adverb is the far commoner word. The tens are
-*dvȁdeset, trȉdeset, četrdèset, pedèset* ... for Zvonko (short, and the first
-two with a falling accent): the dictionaries' long rising *dvádeset* puts the
-peak of the accent on the following syllable, which made the word sound like
-*dva deset*. Stojan and Mirsad keep *dvádeset, četrdèsēt* and the ordinals
-*dvadèsētī, četrdèsētī*. *Ȉnače* (the rule for *-ač* gave *ináče*),
+the front end), because the adverb is the far commoner word. The numerals
+were checked against HJP and the Serbo-Croatian entries of Wiktionary
+(October 2026) in every voice: *nȕla, nȕltī* (the default gave a rising
+*nùla*), *dȅvet, dȅset* (Zvonko without the final length, Stojan and Mirsad
+with it, *dȅsēt*), *čȅtiristo* (was *čètiristo*), *tìsuća, tìsuću, tìsuće,
+tìsućītī* (was *tȉsuća*), *milìjārda* (was *milijárda*), *milìjūntī*, the
+ordinals *pȇtī, šȇstī, sȇdmī, ȏsmī, dèvētī, dèsētī, stȏtī, dvjȅstōtī*, and
+*dvȍje, trȍje, ȍba, ȍbje, dvòjica, tròjica, četvòrica, petòrica*. After a
+number the thousand and million words are in the genitive plural, whose
+accent is not the dictionary form's: *pet tȉsūćā, sto hȉljādā, pet
+milijúnā, pet milijárdī* are a phrase rule of the front end (any cardinal
+from five up, the teens, the tens and the hundreds before *tisuća, hiljada,
+milijuna, miliona, milijardi*); *tisuća* on its own, after one (*dvadeset
+jedna tisuća*) and *tisuće* after two to four keep *tìsuća*. The tens
+*dvadeset* and *trideset* are *dvádeset, trídeset* in the dictionaries
+(HJP also *dvádesetī*; Serbian *dvadèsētī*, which Stojan and Mirsad have).
+A recording of the word (the macOS voice Lana) has the stressed *a* 190 ms
+long against 60 ms for each *e*, with the pitch held up through the *a* and
+falling over *deset*; the length is what holds the word together. An earlier
+entry had made the first syllable short with a falling accent for Zvonko,
+and the word was still heard as the two words *dva deset*; the rising accent
+of the dictionaries is heard the same way, because the intonation model puts
+the peak of a rising accent on the following syllable (see "Intonation").
+The entries now keep the length and take the falling accent, whose peak
+comes early in the stressed vowel, for all three voices (the stressed *a*
+then takes 150 ms for Zvonko against 110 ms before; the neutral accent,
+tried first, rises through the first half of the vowel, and on a long vowel
+that glide was again heard as *dva* on its own). The closure of the *d*
+between the two syllables was the other half of the split: it dipped 21 dB
+below the vowels, where Eloquence's *d* between vowels dips 7-9 dB and a
+recorded speaker's 10 dB, so the voice bar of *d* and *g* now has the level
+of *b*'s (see "p and b once more"). *Četrdeset* to *devedeset*
+stress the *de* in every dictionary (*četrdèsēt*); Zvonko has them without
+the final length, Stojan and Mirsad with it. *Ȉnače* (the rule for *-ač* gave *ináče*),
 *uòstalom* and *ionàko* are lexicon entries (HJP). *Slȍbodan, slȍbodno* are told
 apart from the noun *slobòda*, whose stem had taken them; the name
 *Slobòdan* keeps its oblique cases, and the nominative, spelled like the
