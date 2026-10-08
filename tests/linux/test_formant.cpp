@@ -413,9 +413,9 @@ TEST_CASE("Lexicon accents cover the whole paradigm", "[formant][text]") {
         {"proslijediti", "proslij\xC3\xA9" "diti"},   // proslijéditi
         {"proslijedi", "proslij\xC3\xA9" "di"},   // proslijédi
         {"proslijedio", "proslij\xC3\xA9" "dio"},   // proslijédio
-        {"proslijedim", "proslij\xC3\xA9" "dim"},   // proslijédim
+        {"proslijedim", "pr\xC3\xB2slijedim"},   // pròslijedim
         {"proslijedite", "proslij\xC3\xA9" "dite"},   // proslijédite
-        {"proslije\xC4\x91" "eno", "proslij\xC3\xA9\xC4\x91" "eno"},   // proslijéđeno
+        {"proslije\xC4\x91" "eno", "pr\xC3\xB2slije\xC4\x91" "eno"},   // pròslijeđeno
         {"proslje\xC4\x91ujem", "proslj\xC3\xA8\xC4\x91ujem"},   // prosljèđujem
         {"proslje\xC4\x91ivati", "proslje\xC4\x91\xC3\xADvati"},   // prosljeđívati
         {"podijeli", "podij\xC3\xA9li"},   // podijéli
@@ -543,9 +543,9 @@ TEST_CASE("Lexicon accents cover the whole paradigm", "[formant][text]") {
         {"sada", "s\xC8\x81" "da"},   // sȁda
         {"Novi Sad", "Novi S\xC8\x83" "d"},   // Novi Sȃd
         {"Novog Sada", "Novog S\xC3\xA1" "da"},   // Novog Sáda
-        {"dvadeset", "dv\xC3\xA2" "deset"},   // dvâdeset
-        {"dvadeseti", "dv\xC3\xA2" "deseti"},   // dvâdeseti
-        {"dvadeset jedan", "dv\xC3\xA2" "deset jedan"},   // dvâdeset jedan
+        {"dvadeset", "dv\xC3\xA1" "deset"},   // dvádeset
+        {"dvadeseti", "dv\xC3\xA1" "deseti"},   // dvádeseti
+        {"dvadeset jedan", "dv\xC3\xA1" "deset jedan"},   // dvádeset jedan
         {"trideset", "tr\xC3\xAE" "deset"},   // trîdeset
         {"pedeset", "ped\xC3\xA8set"},   // pedèset
         {"pedeseti", "ped\xC3\xA8seti"},   // pedèseti
@@ -833,7 +833,8 @@ TEST_CASE("Lexicon accents cover the whole paradigm", "[formant][text]") {
     }
 
     // Mirsad follows the dictionaries' shifts throughout; Croatian also
-    // shifts podijeliti, while keeping the root accent in the other verbs.
+    // shifts podijeliti and proslijediti, while keeping the root accent in
+    // the other verbs here.
     const Case bosnian[] = {
         {"podijelim", "p\xC3\xB2" "dijelim"},   // pòdijelim
         {"podijeljen", "p\xC3\xB2" "dijeljen"},   // pòdijeljen
@@ -942,6 +943,65 @@ TEST_CASE("Croatian ideja besplatan and podijelim follow dictionary accents", "[
     REQUIRE(speak(engine.handle, u8"ideja") != speak(engine.handle, u8"idèja"));
     REQUIRE(speak(engine.handle, u8"besplatan") != speak(engine.handle, u8"bȅsplatan"));
     REQUIRE(speak(engine.handle, u8"podijelim") != speak(engine.handle, u8"podijélim"));
+}
+
+TEST_CASE("Croatian proslijediti shifts its present and passive accents", "[formant][text]") {
+    // HJP proslijéditi, pròslijēdīm, pròslijēđen. Croatian omits
+    // unstressed length except the ije supplied by phonemization.
+    struct Case { const char* plain; const char* accented; };
+    const Case cases[] = {
+        {u8"proslijediti", u8"proslijéditi"},
+        {u8"proslijedit ću", u8"proslijédit ću"},
+        {u8"proslijedim", u8"pròslijedim"},
+        {u8"proslijediš", u8"pròslijediš"},
+        {u8"proslijedimo", u8"pròslijedimo"},
+        {u8"proslijede", u8"pròslijede"},
+        // Ambiguous -i/-ite forms retain the existing imperative reading.
+        {u8"proslijedi", u8"proslijédi"},
+        {u8"proslijedite", u8"proslijédite"},
+        {u8"proslijedio", u8"proslijédio"},
+        {u8"proslijedila", u8"proslijédila"},
+        {u8"proslijedilo", u8"proslijédilo"},
+        {u8"proslijedili", u8"proslijédili"},
+        {u8"proslijedile", u8"proslijédile"},
+        {u8"proslijedivši", u8"proslijédivši"},
+        {u8"proslijeđen", u8"pròslijeđen"},
+        {u8"proslijeđena", u8"pròslijeđena"},
+        {u8"proslijeđeno", u8"pròslijeđeno"},
+        {u8"proslijeđeni", u8"pròslijeđeni"},
+        {u8"proslijeđene", u8"pròslijeđene"},
+        {u8"proslijeđenu", u8"pròslijeđenu"},
+        {u8"proslijeđenog", u8"pròslijeđenog"},
+        {u8"proslijeđenoga", u8"pròslijeđenoga"},
+        {u8"proslijeđenom", u8"pròslijeđenom"},
+        {u8"proslijeđenome", u8"pròslijeđenome"},
+        {u8"proslijeđenomu", u8"pròslijeđenomu"},
+        {u8"proslijeđenoj", u8"pròslijeđenoj"},
+        {u8"proslijeđenih", u8"pròslijeđenih"},
+        {u8"proslijeđenim", u8"pròslijeđenim"},
+        {u8"proslijeđenima", u8"pròslijeđenima"},
+        {u8"neproslijeđen", u8"nepròslijeđen"},
+        {u8"neproslijeđena", u8"nepròslijeđena"},
+        {u8"Poruka je proslijeđena", u8"Poruka je pròslijeđena"},
+        {u8"Želim da proslijedim poruku", u8"Želim da pròslijedim poruku"},
+        {u8"Proslijedi poruku", u8"Proslijédi poruku"},
+        // Other prefixes and the imperfective retain their existing rules.
+        {u8"naslijedim", u8"naslijédim"},
+        {u8"naslijeđen", u8"naslijéđen"},
+        {u8"prosljeđivati", u8"prosljeđívati"},
+        {u8"prosljeđujem", u8"prosljèđujem"},
+    };
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    for (const auto& c : cases) {
+        INFO(c.plain);
+        const auto plain = speak(engine.handle, c.plain);
+        REQUIRE(!plain.empty());
+        REQUIRE(plain == speak(engine.handle, c.accented));
+    }
+    REQUIRE(speak(engine.handle, u8"proslijediti") != speak(engine.handle, u8"pròslijediti"));
+    REQUIRE(speak(engine.handle, u8"proslijedim") != speak(engine.handle, u8"proslijédim"));
+    REQUIRE(speak(engine.handle, u8"proslijeđen") != speak(engine.handle, u8"proslijéđen"));
 }
 
 TEST_CASE("Croatian sucelje and otici keep their lexical accents", "[formant][text]") {
@@ -1063,13 +1123,78 @@ TEST_CASE("Croatian sat and rad distinguish case accents", "[formant][text]") {
     REQUIRE(speak(engine.handle, u8"o radu") == speak(engine.handle, u8"o rádu"));
 }
 
+TEST_CASE("Croatian pobjednik and dvadeset families follow dictionary accents", "[formant][text]") {
+    // HJP pòbjednīk/pòbjedničkī; Mrežnik dvádesēt/dvádesētī/dvadesétak;
+    // Školski rječnik dvádesetero. Croatian omits unstressed lengths.
+    struct Case { const char* plain; const char* accented; };
+    const Case cases[] = {
+        {u8"pobjednik", u8"pòbjednik"},
+        {u8"pobjednika", u8"pòbjednika"},
+        {u8"pobjedniku", u8"pòbjedniku"},
+        {u8"pobjednikom", u8"pòbjednikom"},
+        {u8"pobjedniče", u8"pòbjedniče"},
+        {u8"pobjednici", u8"pòbjednici"},
+        {u8"pobjednicima", u8"pòbjednicima"},
+        {u8"pobjednike", u8"pòbjednike"},
+        {u8"pobjednička", u8"pòbjednička"},
+        {u8"pobjednički", u8"pòbjednički"},
+        {u8"pobjedničko", u8"pòbjedničko"},
+        {u8"pobjedničke", u8"pòbjedničke"},
+        {u8"pobjedničku", u8"pòbjedničku"},
+        {u8"pobjedničkog", u8"pòbjedničkog"},
+        {u8"pobjedničkoga", u8"pòbjedničkoga"},
+        {u8"pobjedničkom", u8"pòbjedničkom"},
+        {u8"pobjedničkome", u8"pòbjedničkome"},
+        {u8"pobjedničkomu", u8"pòbjedničkomu"},
+        {u8"pobjedničkoj", u8"pòbjedničkoj"},
+        {u8"pobjedničkih", u8"pòbjedničkih"},
+        {u8"pobjedničkim", u8"pòbjedničkim"},
+        {u8"pobjedničkima", u8"pòbjedničkima"},
+        {u8"dvadeset", u8"dvádeset"},
+        {u8"dvadeseti", u8"dvádeseti"},
+        {u8"dvadeseta", u8"dvádeseta"},
+        {u8"dvadeseto", u8"dvádeseto"},
+        {u8"dvadesete", u8"dvádesete"},
+        {u8"dvadesetu", u8"dvádesetu"},
+        {u8"dvadesetog", u8"dvádesetog"},
+        {u8"dvadesetoga", u8"dvádesetoga"},
+        {u8"dvadesetom", u8"dvádesetom"},
+        {u8"dvadesetome", u8"dvádesetome"},
+        {u8"dvadesetomu", u8"dvádesetomu"},
+        {u8"dvadesetoj", u8"dvádesetoj"},
+        {u8"dvadesetih", u8"dvádesetih"},
+        {u8"dvadesetim", u8"dvádesetim"},
+        {u8"dvadesetima", u8"dvádesetima"},
+        {u8"dvadesetero", u8"dvádesetero"},
+        {u8"dvadesetak", u8"dvadesétak"},
+        {u8"Pobjednička ekipa", u8"Pòbjednička ekipa"},
+        {u8"On je pobjednik", u8"On je pòbjednik"},
+        {u8"Čestitam pobjednicima", u8"Čestitam pòbjednicima"},
+        {u8"Dvadeset pobjednika", u8"Dvádeset pòbjednika"},
+        {u8"20", u8"dvádeset"},
+        {u8"21", u8"dvádeset jedan"},
+        {u8"120", u8"sto dvádeset"},
+        {u8"Dvadesetak pobjednika", u8"Dvadesétak pòbjednika"},
+    };
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    for (const auto& c : cases) {
+        INFO(c.plain);
+        const auto plain = speak(engine.handle, c.plain);
+        REQUIRE(!plain.empty());
+        REQUIRE(plain == speak(engine.handle, c.accented));
+    }
+    REQUIRE(speak(engine.handle, u8"pobjednik") != speak(engine.handle, u8"pobjédnik"));
+    REQUIRE(speak(engine.handle, u8"pobjednička") != speak(engine.handle, u8"pobjèdnička"));
+    REQUIRE(speak(engine.handle, u8"pobjednička") != speak(engine.handle, u8"pȍbjednička"));
+    REQUIRE(speak(engine.handle, u8"dvadeset") != speak(engine.handle, u8"dvȃdeset"));
+    REQUIRE(speak(engine.handle, u8"dvadesetak") != speak(engine.handle, u8"dvádesetak"));
+}
+
 TEST_CASE("The tens keep their long first vowel", "[formant][text]") {
-    // dvádeset, trídeset (HJP): the first vowel is long, and the accent
-    // peaks inside it (the long falling accent of the lexicon entry). A
-    // short first vowel, or the rising accent with its peak on "de", was
-    // heard as "dva deset". The vowel's length shows in the duration: the
-    // word is longer than with the short falling accent written out, and
-    // the reading is neither the short falling nor the long rising one.
+    // The long first vowel prevents the earlier clipped "dva deset".
+    // Croatian twenty now has dictionary rising tone; the other voices
+    // and thirty retain their earlier falling-accent rendering.
     Engine engine;
     const char* voices[] = {"zvonko", "stojan", "mirsad"};
     for (const char* voice : voices) {
@@ -1080,7 +1205,12 @@ TEST_CASE("The tens keep their long first vowel", "[formant][text]") {
         std::vector<int16_t> long_rising = speak(engine.handle, "dv\xC3\xA1" "deset");   // dvádeset
         REQUIRE(plain.size() > short_falling.size() + 22050 / 40);   // 25 ms or more
         REQUIRE(plain != short_falling);
-        REQUIRE(plain != long_rising);
+        if (std::strcmp(voice, "zvonko") == 0) {
+            REQUIRE(plain == long_rising);
+        } else {
+            REQUIRE(plain != long_rising);
+            REQUIRE(plain == speak(engine.handle, u8"dvȃdeset"));
+        }
         std::vector<int16_t> thirty = speak(engine.handle, "trideset");
         REQUIRE(thirty.size() > speak(engine.handle, "tr\xC8\x89" "deset").size() + 22050 / 40);   // trȉdeset
     }

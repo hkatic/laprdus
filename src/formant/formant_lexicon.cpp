@@ -37,16 +37,12 @@ const char* const COMMON[] = {
     // length of -naēst is in the Serbian and Bosnian tables.
     u8"jed'anaest*", u8"dv'a:naest*", u8"tr'i:naest*", u8"čet'rnaest*", u8"p'etnaest*",
     u8"š'esnaest*", u8"sed'amnaest*", u8"os'amnaest*", u8"dev'etnaest*",
-    // The tens with their ordinals. The dictionaries' dvádeset, trídeset
-    // (HJP also dvádesetī) have a long first vowel, and in a recording of
-    // the word the stressed a is three times as long as the e after it,
-    // with the pitch held up through it and falling over "deset". With a
-    // short first vowel, or with the rising accent (whose peak lies on the
-    // next syllable), the word was heard as the two words "dva deset"; so
-    // the entries keep the length and take the falling accent, whose peak
-    // comes early in the stressed vowel (the neutral accent rises through
-    // its first half, which on a long vowel was again heard as "dva" on
-    // its own). Forty to ninety stress the "de"
+    // Shared listening-based rendering of twenty and thirty: long falling
+    // accents were chosen when a short vowel or a later pitch peak was
+    // heard as two words ("dva deset"). The Croatian exact entries below
+    // now restore dictionary dvádeset and its ordinal, and distinguish
+    // dvadesétak. The remaining shared entries keep their existing tone.
+    // Forty to ninety stress the "de"
     // (četrdèsēt); the Croatian voice has them without the final length
     // (CROATIAN), the Serbian and Bosnian ordinals are dvadèsētī.
     u8"dv^a:deset*", u8"tr^i:deset*",
@@ -468,6 +464,22 @@ const char* const COMMON[] = {
 };
 
 const char* const CROATIAN[] = {
+    // HJP: pòbjednīk, pòbjedničkī (feminine pòbjedničkā); keep initial
+    // short rising o in every case, including -nici/-nicima/-niče.
+    // Croatian omits unstressed lengths. Exact paradigms avoid derivatives.
+    // https://hjp.znanje.hr/index.php?show=search_by_id&id=eVxmXxU%3D
+    // https://hjp.znanje.hr/index.php?show=search_by_id&id=eVxmXxM%3D
+    u8"p/objedn|ik|ika|iku|ikom|ici|icima|ike|iče",
+    u8"p/objedničk|i|a|o|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    // Mrežnik: dvádesēt, dvádesētī, but dvadesétak; Školski rječnik:
+    // dvádesetero. Restore the long rising a in Croatian, replacing the
+    // older falling-accent rendering override only for these exact forms.
+    // https://rjecnik.hr/mreznik/dvadeset/
+    // https://rjecnik.hr/mreznik/dvadeseti/
+    // https://rjecnik.hr/mreznik/dvadesetak/
+    // https://rjecnik.hr/?letter=d&page=28
+    u8"dv/a:deset||i|a|o|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    u8"dv/a:desetero", u8"dvades/e:tak",
     // Mrežnik / HJP: idéja, bèsplatan (checked 2026-10-08).
     // Exact paradigms keep unrelated derivatives out; Croatian omits the
     // dictionaries' post-accent lengths, as elsewhere in this table.
@@ -652,6 +664,10 @@ const char* const IJE_VERBS[] = {
     // retain their existing Croatian treatment (e.g. raspodijelim).
     // https://hjp.znanje.hr/index.php?show=search_by_id&id=eVxlXhY%3D
     u8"dijel:i!:po",
+    // HJP proslijéditi, prez. pròslijēdīm, prid. trp. pròslijēđen.
+    // The restricted prefix preserves the treatment of naslijediti etc.
+    // https://hjp.znanje.hr/index.php?show=search_by_id&id=dl5lWRA%3D
+    u8"slijed:i!:pro",
     u8"dijel:i", u8"mijen:i", u8"lijep:i", u8"cijen:i", u8"bijed:i", u8"slijed:i",
     u8"vrijed:i", u8"zlijed:i", u8"trijeb:i", u8"riješ:i", u8"liječ:i", u8"slijep:i",
     u8"bijel:i", u8"cijel:i", u8"mijet:i", u8"svijetl:i", u8"rijed:i", u8"prijet:i",

@@ -725,6 +725,16 @@ To correct a word, add an entry to `formant_lexicon.cpp` (notation at the top
 of the file). Language-specific tables override the common one (*pròfesor* in
 Croatian, *profèsor* in Serbian and Bosnian).
 
+The Croatian *pobjednik* and *pobjednički* paradigms were checked on
+8 October 2026 against [HJP's *pòbjednīk*](https://hjp.znanje.hr/index.php?show=search_by_id&id=eVxmXxU%3D)
+and [*pòbjedničkī*](https://hjp.znanje.hr/index.php?show=search_by_id&id=eVxmXxM%3D).
+Both retain short rising *o*: *pòbjednik, pòbjednika, pòbjedniku,
+pòbjednikom, pòbjedniče, pòbjednici, pòbjednicima, pòbjednike* and
+*pòbjednička, pòbjedničko, pòbjedničkoj, pòbjedničkima*, etc.
+Exact noun and adjective paradigms prevent suffix rules from moving the
+accent onto *-jed-* or *-nik-* and do not reach other derivatives.
+As elsewhere in Croatian, the entries omit unstressed lengths.
+
 The Croatian entries for *sučelje* and *otići* were checked on 8 October 2026.
 [HJP gives *súčēlje*](https://hjp.znanje.hr/index.php?show=search_by_id&id=d1pjWBU%3D),
 with long rising *u*; its exact case forms share that accent.
@@ -958,22 +968,27 @@ accent is not the dictionary form's: *pet tȉsūćā, sto hȉljādā, pet
 milijúnā, pet milijárdī* are a phrase rule of the front end (any cardinal
 from five up, the teens, the tens and the hundreds before *tisuća, hiljada,
 milijuna, miliona, milijardi*); *tisuća* on its own, after one (*dvadeset
-jedna tisuća*) and *tisuće* after two to four keep *tìsuća*. The tens
-*dvadeset* and *trideset* are *dvádeset, trídeset* in the dictionaries
-(HJP also *dvádesetī*; Serbian *dvadèsētī*, which Stojan and Mirsad have).
-A recording of the word (the macOS voice Lana) has the stressed *a* 190 ms
-long against 60 ms for each *e*, with the pitch held up through the *a* and
-falling over *deset*; the length is what holds the word together. An earlier
-entry had made the first syllable short with a falling accent for Zvonko,
-and the word was still heard as the two words *dva deset*; the rising accent
-of the dictionaries is heard the same way, because the intonation model puts
-the peak of a rising accent on the following syllable (see "Intonation").
-The entries now keep the length and take the falling accent, whose peak
-comes early in the stressed vowel, for all three voices (the stressed *a*
-then takes 150 ms for Zvonko against 110 ms before; the neutral accent,
-tried first, rises through the first half of the vowel, and on a long vowel
-that glide was again heard as *dva* on its own). The closure of the *d*
-between the two syllables was the other half of the split: it dipped 21 dB
+jedna tisuća*) and *tisuće* after two to four keep *tìsuća*.
+
+Croatian *dvadeset* was checked again on 8 October 2026 against Mrežnik:
+[*dvádesēt*](https://rjecnik.hr/mreznik/dvadeset/) is indeclinable;
+the ordinal [*dvádesētī*](https://rjecnik.hr/mreznik/dvadeseti/) retains
+that long rising accent in *dvádeseta, dvádesetog(a), dvádesetom(u),
+dvádesetima*, etc. These exact entries replace the earlier Croatian
+falling-accent rendering override. The stressed *a* stays long; Croatian
+still omits the unstressed lengths (*dvádeset, dvádeseti*).
+Related forms have separate entries: Mrežnik's
+[*dvadesétak*](https://rjecnik.hr/mreznik/dvadesetak/) stresses the second
+*e*, whereas [Školski rječnik's *dvádesetero*](https://rjecnik.hr/?letter=d&page=28)
+keeps the first syllable. A blanket *dvadeset* stem would confuse them.
+These entries also apply when the number converter produces *dvadeset*
+from digits, including compound numbers such as *21* and *120*.
+
+The remaining shared rendering of *dvadeset* (Stojan and Mirsad) and
+*trideset* retains its earlier long falling accent, chosen in listening
+tests to avoid a perceived split into two words. Stojan and Mirsad also
+retain their separate ordinals *dvadèsētī, tridèsētī*. The earlier acoustic
+fix for the closure of *d* remains: between vowels it dipped 21 dB
 below the vowels, where Eloquence's *d* between vowels dips 7-9 dB and a
 recorded speaker's 10 dB, so the voice bar of *d* and *g* now has the level
 of *b*'s (see "p and b once more"). *Četrdeset* to *devedeset*
@@ -1064,8 +1079,9 @@ Three things to know:
   *uključiti, isključiti, zaključiti, priključiti* (*ùključeno*,
   *ìsključeno*, the status words of every settings screen, which the same
   listener heard as wrong with the accent on *-klju-*), *rasporediti*
-  (*raspòređeni*), *osnažiti*, *potaknuti*, *zaštititi* (*zàštićen*) and
-  *podijeliti* (*pòdijelim, pòdijeljen*, October 2026). Zvonko gets
+  (*raspòređeni*), *osnažiti*, *potaknuti*, *zaštititi* (*zàštićen*),
+  *podijeliti* (*pòdijelim, pòdijeljen*) and *proslijediti*
+  (*pròslijedim, pròslijeđen*, October 2026). Zvonko gets
   the shift without the length after it (*ùključen* for the dictionaries'
   *ùkljūčen*).
 
@@ -1083,6 +1099,19 @@ Three things to know:
   *podijelimo* retains its present reading. The spelling *ije* supplies its
   length even after the accent; other unstressed lengths follow the voice's
   existing policy.
+
+  The same check for [HJP's *proslijediti*](https://hjp.znanje.hr/index.php?show=search_by_id&id=dl5lWRA%3D)
+  confirms *proslijéditi*, present *pròslijēdīm* and passive *pròslijēđen*.
+  The infinitive was already correct; `slijed:i!:pro`, before the generic
+  `slijed:i`, enables the present/passive shift in Croatian without
+  changing other prefixes. It covers *pròslijedim, pròslijediš,
+  pròslijedimo, pròslijede* and the passive's case/gender forms
+  (*pròslijeđena, pròslijeđenima*). The active participle keeps
+  *proslijédio, proslijédila*. As with *podijeliti*, ambiguous
+  *proslijedi/proslijedite* retain their imperative reading
+  (*proslijédi, proslijédite*); present readings of those spellings need
+  explicit accent marks. The imperfective remains *prosljeđívati,
+  prosljèđujem*, as given in [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=dl5lWRQ%3D).
 - **Noun twins.** The imperative is often spelled like a case of a noun:
   *potvrdi* (*potvrda*), *uredi* (*ured*), *otvori* (*otvor*), *objavi,
   prijavi, načini*. Such a form is read as the command only at the head of
