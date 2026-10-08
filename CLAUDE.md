@@ -54,7 +54,7 @@ It has two kinds of voices:
 ### Processing Pipeline
 
 1. Text → `TTSEngine::preprocess_text()` → Number expansion, dictionaries
-2. → `InflectionProcessor::analyze_text()` → Segment into clauses by punctuation (a mark glued to the next character, as in `datoteka.txt`, `3.14`, `12:30`, is not a clause end: it stays in the text and is read by name by the front end's `SYMBOLS` table; the number converter reads the decimal comma as *zarez*, and clock times `12:30` and dates `7.10.2026` without the separators, the day and month as ordinals)
+2. → `InflectionProcessor::analyze_text()` → Segment into clauses by punctuation (a mark glued to the next character, as in `datoteka.txt`, `3.14`, `12:30`, is not a clause end: it stays in the text and is read by name by the front end's `SYMBOLS` table, except that a period after a single letter is an abbreviation dot, silent, with the letters read by name: `s.a.r.s.`, `U.S.A.`; the number converter reads every digit group after a period as a whole number (`1.317` jedan točka tristo sedamnaest), the decimal comma as *zarez*, clock times `12:30` and dates `7.10.2026` / `7. 10. 2026.` without the separators with the day and month as ordinals, and a number of up to four digits with a period before a lowercase word as a masculine ordinal with the period silent: `7. listopada`, `1990. godine`)
 3. → `formant::Frontend::process()` → phones with stress, words, clause kind (both kinds of voices)
 4. → Recorded voices: `concat::plan_clause()` (durations, pitch contour) → `concat::render()` (TD-PSOLA)
    Formant voices: `ClauseBuilder` → `KlattSynth`

@@ -22,9 +22,17 @@ The first two steps are shared with the concatenative voices. A mark ends a
 clause only when whitespace, a bracket or quote, or the end of the text follows
 it (eSpeak's rule); glued to the next character ("datoteka.txt", "3.14",
 "12:30") it stays in the clause and the front end's symbol table reads it by
-name (*točka*/*tačka*, *dvotočka*/*dvotačka*, *uskličnik*/*uzvičnik*), while
-the number converter writes the decimal comma as *zarez* and reads clock times
-("12:30") and dates ("7.10.2026") without the separators.
+name (*točka*/*tačka*, *dvotočka*/*dvotačka*, *uskličnik*/*uzvičnik*). A period
+after a single letter is the dot of an abbreviation ("s.a.r.s.", "U.S.A."):
+the tokenizer drops it and reads the letters by name, as eSpeak and RHVoice
+do. The number converter reads every group of digits after a period as a
+whole number ("1.317" *jedan točka tristo sedamnaest*, eSpeak's reading),
+writes the decimal comma as *zarez*, reads clock times ("12:30") and dates
+("7.10.2026", "7. 10. 2026.") without the separators, and a number of up to
+four digits followed by a period before a lowercase word as a masculine
+ordinal ("7. listopada" *sedmi listopada*, "1990. godine", "2000. godine"
+*dvijetisućiti godine*) with the period silent; before an uppercase word the
+period ends the sentence as usual.
 
 | File | Role |
 |------|------|

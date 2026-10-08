@@ -138,6 +138,7 @@ struct Word {
     bool explicit_stress = false;
     bool letter_name = false;       // part of a spelled-out abbreviation
     bool joined = false;            // one word with the previous ("ne znam")
+    bool spell = false;             // a letter of a dotted abbreviation ("s.a.r.s.")
 
     Word() = default;
     explicit Word(const std::u32string& text) : w(text), marks(text.size(), 0) {}
@@ -401,14 +402,17 @@ std::vector<Word> tokenize(const std::u32string& text, bool eastern) {
     std::vector<Word> words;
     Word current;
     size_t upper_count = 0;
+    bool after_abbreviation_dot = false;
 
     auto flush = [&]() {
         if (!current.w.empty()) {
             current.all_caps = upper_count == current.w.size();
+            if (after_abbreviation_dot && current.w.size() == 1) current.spell = true;
             words.push_back(std::move(current));
         }
         current = Word();
         upper_count = 0;
+        after_abbreviation_dot = false;
     };
 
     for (char32_t raw : text) {
@@ -459,6 +463,18 @@ std::vector<Word> tokenize(const std::u32string& text, bool eastern) {
         // Apostrophes join (elided vowels: "al'", "k'o"); everything else splits.
         if (c == U'\'' || c == 0x2019) continue;
 
+        // A period after a single letter is the dot of an abbreviation
+        // ("s.a.r.s.", "U.S.A.", "t.j."): it is silent, and the letter
+        // before it and a single letter after it are read by name, as
+        // eSpeak and RHVoice read them. (The dot after the last letter is
+        // a clause end and never reaches the front end.)
+        if (c == U'.' && current.w.size() == 1) {
+            current.spell = true;
+            flush();
+            after_abbreviation_dot = true;
+            continue;
+        }
+
         flush();
         for (const auto& symbol : SYMBOLS) {
             if (symbol.symbol == c) {
@@ -508,6 +524,13 @@ std::vector<Word> expand_words(std::vector<Word> tokens, bool eastern, bool serb
         Word& token = tokens[t];
         bool marked = std::any_of(token.marks.begin(), token.marks.end(),
                                   [](uint8_t m) { return m != 0; });
+
+        if (token.spell) {
+            size_t first = words.size();
+            split_words(letter_name(token.w[0], serbian), words);
+            for (size_t i = first; i < words.size(); ++i) words[i].letter_name = true;
+            continue;
+        }
 
         if (!marked) {
             bool expanded = false;

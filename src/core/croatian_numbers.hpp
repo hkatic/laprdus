@@ -96,7 +96,11 @@ private:
     size_t convert_time_or_date(const std::string& text, size_t i, std::string& result);
     std::string time_to_words(const std::vector<std::string_view>& groups);
     std::string date_to_words(const std::vector<std::string_view>& groups);
-    static std::string ordinal_to_words(int n);
+
+    // Ordinals ("7." -> sedmi): the day and month of a date and a number
+    // followed by a period before a lowercase word
+    std::string ordinal_to_words(std::string_view digits);
+    size_t ordinal_dot_end(const std::string& text, size_t start, size_t end);
 
     // Group processing
     std::string group_to_words(std::string_view group);

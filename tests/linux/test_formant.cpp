@@ -1044,11 +1044,41 @@ TEST_CASE("A mark glued to a word is read by name, not as a clause end", "[forma
         REQUIRE_FALSE(same("datoteka.txt", "datoteka txt"));
     }
     SECTION("Decimal point and comma") {
+        // After a period every group of digits is a whole number, as eSpeak
+        // reads it; after the decimal comma up to two digits are a number
+        // and more are read one by one.
         REQUIRE(same("3.14", "tri to\xC4\x8Dka \xC4\x8D" "etrnaest"));
         REQUIRE(same("3,14", "tri zarez \xC4\x8D" "etrnaest"));
         REQUIRE(same("0.05", "nula to\xC4\x8Dka nula pet"));
-        REQUIRE(same("3.14159", "tri to\xC4\x8Dka jedan \xC4\x8D" "etiri jedan pet devet"));
+        REQUIRE(same("1.317", "jedan to\xC4\x8Dka tristo sedamnaest"));
+        REQUIRE(same("3.14159", "tri to\xC4\x8Dka \xC4\x8D" "etrnaest tisu\xC4\x87" "a sto pedeset devet"));
+        REQUIRE(same("3,14159", "tri zarez jedan \xC4\x8D" "etiri jedan pet devet"));
         REQUIRE(same("1.000", "jedan to\xC4\x8Dka nula nula nula"));
+    }
+    SECTION("A period after a single letter is an abbreviation dot: silent, the letters by name") {
+        // (Letter names are full words, so "a" and "u" spelled from an
+        // abbreviation differ from the typed conjunction and preposition;
+        // the comparisons use letters whose names are not clitics.)
+        REQUIRE(same("p.s.", "pe es."));
+        REQUIRE(same("s.r.s.", "es er es."));
+        REQUIRE(same("b.b.", "be be."));
+        REQUIRE_FALSE(same("s.a.r.s.", "s to\xC4\x8Dka a to\xC4\x8Dka er to\xC4\x8Dka es."));
+        REQUIRE_FALSE(same("U.S.A.", "u to\xC4\x8Dka es to\xC4\x8Dka a."));
+    }
+    SECTION("A number with a period before a lowercase word is an ordinal") {
+        // The period is silent and does not end the clause. Before an
+        // uppercase word it ends the sentence as before.
+        REQUIRE(same("7. listopada 2026.", "sedmi listopada dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "est."));
+        REQUIRE(same("u 19. stolje\xC4\x87u", "u devetnaesti stolje\xC4\x87u"));
+        REQUIRE(same("1990. godine", "tisu\xC4\x87u devetsto devedeseti godine"));
+        REQUIRE(same("2000. godine", "dvijetisu\xC4\x87iti godine"));
+        REQUIRE(same("100. put", "stoti put"));
+        REQUIRE(same("21. put", "dvadeset prvi put"));
+        REQUIRE(same("7.listopada", "sedmi listopada"));
+        REQUIRE(same("7. Listopad.", "sedam. Listopad."));
+        REQUIRE(same("Ima ih 7. Sutra", "Ima ih sedam. Sutra"));
+        REQUIRE(same("0. element", "nula. element"));
+        REQUIRE(same("12345. dan", "dvanaest tisu\xC4\x87" "a tristo \xC4\x8D" "etrdeset pet. dan"));
     }
     SECTION("Dotted identifiers are read group by group") {
         REQUIRE(same("192.168.1.1", "sto devedeset dva to\xC4\x8Dka sto \xC5\xA1" "ezdeset osam to\xC4\x8Dka jedan to\xC4\x8Dka jedan"));
@@ -1069,6 +1099,7 @@ TEST_CASE("A mark glued to a word is read by name, not as a clause end", "[forma
         REQUIRE(same("12:30:45", "dvanaest trideset \xC4\x8D" "etrdeset pet"));
         REQUIRE(same("u 12:30 sati", "u dvanaest trideset sati"));
         REQUIRE(same("7.10.2026.", "sedmi deseti dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "est."));
+        REQUIRE(same("7. 10. 2026.", "sedmi deseti dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "est."));
         REQUIRE(same("07.10.26", "sedmi deseti dvadeset \xC5\xA1" "est"));
         REQUIRE(same("31.12.1999", "trideset prvi dvanaesti tisu\xC4\x87u devetsto devedeset devet"));
         // Not a time or a date: the marks are read
@@ -1095,6 +1126,8 @@ TEST_CASE("A mark glued to a word is read by name, not as a clause end", "[forma
         REQUIRE(same("3.14", "tri ta\xC4\x8Dka \xC4\x8D" "etrnaest"));
         REQUIRE(same("a:b", "a dvota\xC4\x8Dka be"));
         REQUIRE(same("7.10.2026", "sedmi deseti dve hiljade dvadeset \xC5\xA1" "est"));
+        REQUIRE(same("2000. godine", "dvehiljaditi godine"));
+        REQUIRE(same("p.s.", "pe es."));
         REQUIRE(laprdus_set_voice(engine.handle, "mirsad", NO_DATA) == LAPRDUS_OK);
         REQUIRE(same("Hej!ti", "Hej uzvi\xC4\x8Dnik ti"));
     }

@@ -450,6 +450,43 @@ size_t digits_end(const std::string& text, size_t i) {
     return i;
 }
 
+// A letter or digit, as far as the number converter needs to know: any
+// non-ASCII byte counts as part of a word.
+bool is_word_byte(char c) {
+    unsigned char b = static_cast<unsigned char>(c);
+    return b >= 0x80 || std::isalnum(b);
+}
+
+// The code point at position i of the UTF-8 text (0 at the end or at an
+// invalid byte)
+char32_t code_point_at(const std::string& text, size_t i) {
+    if (i >= text.size()) return 0;
+    unsigned char b = static_cast<unsigned char>(text[i]);
+    size_t len = b < 0x80 ? 1 : (b & 0xE0) == 0xC0 ? 2 : (b & 0xF0) == 0xE0 ? 3 : (b & 0xF8) == 0xF0 ? 4 : 0;
+    if (len == 0 || i + len > text.size()) return 0;
+    char32_t c = len == 1 ? b : b & (0x7F >> len);
+    for (size_t k = 1; k < len; ++k) {
+        unsigned char cont = static_cast<unsigned char>(text[i + k]);
+        if ((cont & 0xC0) != 0x80) return 0;
+        c = (c << 6) | (cont & 0x3F);
+    }
+    return c;
+}
+
+// A lowercase letter of the Latin (ASCII, Latin-1, Latin Extended-A) or
+// Cyrillic alphabet
+bool is_lowercase_letter(char32_t c) {
+    if (c >= U'a' && c <= U'z') return true;
+    if (c >= 0xDF && c <= 0xFF) return c != 0xF7;                   // ß à-ÿ
+    if (c >= 0x100 && c <= 0x137) return (c & 1) != 0;               // ā ă ą ć č đ ... ķ
+    if (c == 0x138) return true;                                     // ĸ
+    if (c >= 0x139 && c <= 0x148) return (c & 1) == 0;               // ĺ ļ ľ ŀ ł ń ņ ň
+    if (c >= 0x149 && c <= 0x177) return (c & 1) != 0;               // ŉ ŋ ō ... š ... ŷ
+    if (c == 0x17A || c == 0x17C || c == 0x17E || c == 0x17F) return true;  // ź ż ž ſ
+    if (c >= 0x430 && c <= 0x45F) return true;                       // а-я ѐ-џ
+    return false;
+}
+
 // Value of a group of at most 4 digits
 int group_value(std::string_view group) {
     int value = 0;
@@ -482,8 +519,9 @@ size_t parse_time(const std::string& text, size_t i, std::vector<std::string_vie
 
 // A date at position i: day 1-31, a period, month 1-12, a period, a year
 // of two or four digits, and no digit after that ("7.10.2026", "07.10.26").
-// A period after the year is left in the text: it ends the sentence or
-// the clause as usual.
+// One space may follow each period, as the orthography writes it
+// ("7. 10. 2026."). A period after the year is left in the text: it ends
+// the sentence or the clause as usual.
 size_t parse_date(const std::string& text, size_t i, std::vector<std::string_view>& groups) {
     groups.clear();
     size_t pos = i;
@@ -497,8 +535,10 @@ size_t parse_date(const std::string& text, size_t i, std::vector<std::string_vie
         groups.push_back(group);
         pos = end;
         if (part < 2) {
-            if (pos + 1 >= text.size() || text[pos] != '.' || !is_digit(text[pos + 1])) return 0;
+            if (pos >= text.size() || text[pos] != '.') return 0;
             ++pos;
+            if (pos < text.size() && text[pos] == ' ') ++pos;
+            if (pos >= text.size() || !is_digit(text[pos])) return 0;
         }
     }
     return pos;
@@ -506,18 +546,62 @@ size_t parse_date(const std::string& text, size_t i, std::vector<std::string_vie
 
 } // namespace
 
-// Ordinal of a day or month (1-31), masculine: "7." -> sedmi, "10." -> deseti
-std::string CroatianNumbers::ordinal_to_words(int n) {
-    static const char* const ONES[] = {
-        "", "prvi", "drugi", u8"treći", u8"četvrti", "peti", u8"šesti", "sedmi", "osmi", "deveti",
-        "deseti", "jedanaesti", "dvanaesti", "trinaesti", u8"četrnaesti", "petnaesti",
-        u8"šesnaesti", "sedamnaesti", "osamnaesti", "devetnaesti", "dvadeseti",
+// Ordinal of a number of up to four digits, masculine nominative: the day
+// and month of a date, and a number followed by a period before a word
+// ("7." sedmi, "21." dvadeset prvi, "100." stoti, "1990." tisuću devetsto
+// devedeseti, "2000." dvijetisućiti). As in the orthography only the last
+// word of the cardinal takes the ordinal form, and a numeral before
+// tisuća/hiljada is written together with it.
+std::string CroatianNumbers::ordinal_to_words(std::string_view digits) {
+    std::string cardinal = number_to_words(digits);
+    if (cardinal.empty() || cardinal == "nula") return cardinal;
+
+    size_t space = cardinal.rfind(' ');
+    std::string head = space == std::string::npos ? "" : cardinal.substr(0, space + 1);
+    std::string last = space == std::string::npos ? cardinal : cardinal.substr(space + 1);
+
+    static const struct { const char* cardinal; const char* ordinal; } UNITS[] = {
+        {"jedan", "prvi"}, {"dva", "drugi"}, {"tri", u8"treći"}, {u8"četiri", u8"četvrti"},
+        {"pet", "peti"}, {u8"šest", u8"šesti"}, {"sedam", "sedmi"}, {"osam", "osmi"},
+        {"devet", "deveti"}, {"dvesta", "dvestoti"}, {"trista", "tristoti"},
     };
-    if (n <= 0) return "";
-    if (n <= 20) return ONES[n];
-    if (n == 30) return "trideseti";
-    std::string words = n < 30 ? "dvadeset " : "trideset ";
-    return words + ONES[n % 10];
+    for (const auto& unit : UNITS) {
+        if (last == unit.cardinal) return head + unit.ordinal;
+    }
+
+    auto starts_with = [&](const char* prefix) { return last.rfind(prefix, 0) == 0; };
+    auto ends_with = [&](const char* suffix) {
+        std::string_view sv(suffix);
+        return last.size() >= sv.size() && last.compare(last.size() - sv.size(), sv.size(), sv) == 0;
+    };
+    if (starts_with(u8"tisuć") || starts_with("hiljad")) {
+        // tisuću -> tisućiti; dvije tisuće -> dvijetisućiti; pet hiljada -> pethiljaditi
+        std::string ordinal = m_dialect == Dialect::Croatian ? u8"tisućiti" : "hiljaditi";
+        if (head.empty()) return ordinal;
+        size_t prev = head.rfind(' ', head.size() - 2);
+        std::string before = prev == std::string::npos ? "" : head.substr(0, prev + 1);
+        std::string numeral = head.substr(before.size());
+        numeral.pop_back();
+        return before + numeral + ordinal;
+    }
+    if (ends_with("sto")) return head + last + "ti";       // sto -> stoti, petsto -> petstoti
+    return head + last + "i";                               // deset, dvanaest, dvadeset ... devedeset
+}
+
+// A number of up to four digits without a leading zero, standing at the
+// start of a word and followed by a period and a lowercase word, is an
+// ordinal: "7. listopada" (sedmi), "u 19. stoljeću" (devetnaestom, read as
+// devetnaesti), "1990. godine". The period is silent and does not end the
+// clause. Before an uppercase word the period ends the sentence as usual
+// ("Ima ih 7. Sutra ..."); eSpeak draws the same line. Returns the position
+// after the period, 0 when the number is not an ordinal.
+size_t CroatianNumbers::ordinal_dot_end(const std::string& text, size_t start, size_t end) {
+    if (end - start > 4 || text[start] == '0') return 0;
+    if (start > 0 && is_word_byte(text[start - 1])) return 0;
+    if (end >= text.size() || text[end] != '.') return 0;
+    size_t next = end + 1;
+    while (next < text.size() && (text[next] == ' ' || text[next] == '\t')) ++next;
+    return is_lowercase_letter(code_point_at(text, next)) ? end + 1 : 0;
 }
 
 // "12:30" -> dvanaest trideset, "9:05" -> devet nula pet
@@ -532,8 +616,8 @@ std::string CroatianNumbers::time_to_words(const std::vector<std::string_view>& 
 
 // "7.10.2026" -> sedmi deseti dvije tisuće dvadeset šest
 std::string CroatianNumbers::date_to_words(const std::vector<std::string_view>& groups) {
-    return ordinal_to_words(group_value(groups[0])) + ' ' +
-           ordinal_to_words(group_value(groups[1])) + ' ' + number_to_words(groups[2]);
+    return ordinal_to_words(groups[0]) + ' ' + ordinal_to_words(groups[1]) + ' ' +
+           number_to_words(groups[2]);
 }
 
 // A time or date at position i, read without the separators; returns the
@@ -624,6 +708,14 @@ std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
         size_t num_start = i;
         i = digits_end(text, i);
 
+        // "7. listopada", "1990. godine": an ordinal, with the period silent
+        if (size_t end = ordinal_dot_end(text, num_start, i)) {
+            result += ordinal_to_words(std::string_view(text.data() + num_start, i - num_start));
+            if (text[end] != ' ' && text[end] != '\t') result += ' ';   // "7.listopada"
+            i = end;
+            continue;
+        }
+
         // Convert number to words
         if (i > num_start) {
             std::string_view num_str(text.data() + num_start, i - num_start);
@@ -633,13 +725,15 @@ std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
             }
         }
 
-        // Digits after a period or comma glued to the number. One separator
-        // is a decimal mark (eSpeak's rule for Croatian): up to two digits
-        // after it are read as one number, more are read one by one, leading
-        // zeros each as "nula" ("3.14" -> tri.četrnaest, "3.05" -> tri.nula
-        // pet, "3.14159" -> tri.jedan četiri jedan pet devet). Two or more
-        // separators make a dotted identifier (version, IP address) and
-        // every group is a whole number ("192.168.1.1", "2.0.1").
+        // Digits after a period or comma glued to the number. A period is
+        // read by name and every group of digits as a whole number, as
+        // eSpeak reads it ("1.317" -> jedan.tristo sedamnaest, "3.14" ->
+        // tri.četrnaest, "192.168.1.1" and "2.0.1" group by group), leading
+        // zeros each as "nula" ("3.05" -> tri.nula pet). One comma is the
+        // decimal comma (eSpeak's rule for Croatian): up to two digits after
+        // it are read as one number, more are read one by one ("3,14" -> tri
+        // zarez četrnaest, "3,14159" -> tri zarez jedan četiri jedan pet
+        // devet); with two or more commas every group is a whole number.
         if (!is_separator_between_digits(text, i)) continue;
 
         size_t separators = 0;
@@ -648,11 +742,12 @@ std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
         }
 
         while (is_separator_between_digits(text, i)) {
-            result += separator_words(text[i]);
+            char separator = text[i];
+            result += separator_words(separator);
             size_t group_start = i + 1;
             size_t group_end = digits_end(text, group_start);
             std::string_view group(text.data() + group_start, group_end - group_start);
-            if (separators >= 2) {
+            if (separator == '.' || separators >= 2) {
                 result += digit_group_to_words(group);
             } else {
                 std::string_view rest = group;
