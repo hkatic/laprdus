@@ -123,6 +123,25 @@ private:
         void clear() { y1 = y2 = 0.0; }
     };
 
+    // A fixed frication peak. Above 1 kHz it is a true band-pass, with zeros
+    // at 0 Hz and at the Nyquist frequency: an all-pole resonator at 4.5 kHz
+    // passes low frequencies only 17 dB below its peak, and the c of "ce"
+    // carried a rumble 15 dB under its hiss (Eloquence's 30 dB, recorded
+    // Croatian 36 dB). The low labial peak keeps its all-pole skirt.
+    struct NoisePeak {
+        double a = 1.0, z = 0.0, b = 0.0, c = 0.0, x1 = 0.0, x2 = 0.0, y1 = 0.0, y2 = 0.0;
+        void set(double freq, double bw);
+        double tick(double x) {
+            double y = a * (x - z * x2) + b * y1 + c * y2;
+            x2 = x1;
+            x1 = x;
+            y2 = y1;
+            y1 = y;
+            return y;
+        }
+        void clear() { x1 = x2 = y1 = y2 = 0.0; }
+    };
+
     struct AntiResonator {
         double a = 1.0, b = 0.0, c = 0.0, x1 = 0.0, x2 = 0.0;
         void set(double freq, double bw);
@@ -175,7 +194,7 @@ private:
     Resonator m_upper[CASCADE_FIXED];
     Resonator m_nasal_pole;
     AntiResonator m_nasal_zero;
-    Resonator m_noise_bank[NOISE_PEAKS];
+    NoisePeak m_noise_bank[NOISE_PEAKS];
     Resonator m_parallel[PARALLEL_FORMANTS];
     LowPass m_fric_lp[2];
     LowPass m_voice_lp;

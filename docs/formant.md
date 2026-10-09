@@ -81,8 +81,11 @@ A cascade/parallel formant synthesizer after Klatt (1980).
   follow F2-F4 and three at fixed frequencies, plus a flat share. The moving
   ones make a /k/ burst sit on F2 and a /t/ burst on F4 *of that moment*, so
   the burst and the following vowel transition tell the ear the same thing.
-  The fixed ones shape sibilants. All frication noise first passes a
-  fourth-order low-pass at 6.6 kHz (see "Sibilants" below).
+  The fixed ones shape sibilants; from 1 kHz up they are true band-passes,
+  with zeros at 0 Hz and at the Nyquist frequency (see "Spelled d and n, c,
+  and clicks" below). All frication noise first passes a fourth-order
+  low-pass at 6.6 kHz (see "Sibilants" below). The parallel filters are
+  heard to the end of their ringing, also after the noise has stopped.
 
 Control frames are 44 samples long; parameters are interpolated in between
 and filter coefficients are recomputed twice per frame.
@@ -589,6 +592,82 @@ B=build/macos-arm64-release
 for w in apa aba ipi ibi; do $B/laprdus -D $B -v zvonko -o $w.wav $w; done
 python3 tools/formant/onsets.py apa.wav aba.wav ipi.wav ibi.wav
 ```
+
+### Spelled d and n, c, and clicks
+
+Three reports from beta testers (October 2026): when spelling, D and N were
+barely told apart, on a phone speaker and on headphones alike; the letter C
+"sounds different from the others"; and small clicks could be heard in
+running speech. Measured with 4 ms envelopes (whole signal, above 1 kHz,
+below 400 Hz) of the spelled letters at the default spelling speed, against
+MBROLA cr1 (a recorded Croatian speaker), Eloquence (`Reed`, Italian), eSpeak
+and the Klatt voice.
+
+**D and N.** The spelled d is clause-initial, and there the voice bar is
+heard on its own. At the default spelling speed (50%, durations ×1.7) it
+lasted 98 ms, 6 dB under the vowel, with F1 ringing at the vowel's 70 Hz
+bandwidth: a low resonant hum like the murmur of n, which in the spelled
+*nə* lasts 139 ms. On a phone speaker, which keeps little below 400 Hz, the
+two letters were a weak hum and a vowel each.
+
+| Initial voice bar | length | level (re the vowel's peak) | above 1 kHz |
+|---|---|---|---|
+| Eloquence *da, ba, ga* | 56-70 ms | -6 dB | -38 to -43 dB |
+| Recorded Croatian *da, ba, ga* | 34-94 ms | -11 to -13 dB | -25 to -35 dB |
+| Zvonko before, *da* / spelled *de* | 54 / 98 ms | -10 / -6 dB | -33 / -31 dB |
+| Zvonko now, *da* / spelled *de* | 54 / 64 ms | -14 / -10 dB | -36 / -33 dB |
+
+A clause-initial voiced stop now has a voice bar of at most 60 ms (not
+stretched by a slow rate), with F1 damped as in the closure of p and b
+(bandwidth 200 Hz: a closed tract has no ringing first formant) and 8 dB
+more tilt; the source is raised (voicing 1.2) to keep the level near the
+recorded speaker's. Heard as on a phone speaker (above 500 Hz) the bar of
+the spelled d is now 30 dB under the vowel, the murmur of n 13 dB: before,
+25 and 13. A first version that also weakened the bar to 19 dB under the
+vowel was dropped: that is far below both references and risks hearing b, d,
+g as p, t, k. The burst of d was left alone: above 2 kHz its first 15 ms are
+1-5 dB under the vowel's, between Eloquence's (-14 dB) and the recorded
+speaker's (+3 dB). Between vowels nothing changed (the bar of *dvadeset*,
+see "Sharp releases").
+
+**C.** The fixed frication peaks were two-pole resonators with no zeros, so
+each passed low frequencies some 17 dB under its peak. Where neighbouring
+peaks of opposite sign have similar amplitudes this cancels (č, ć, š), but c
+has one dominant peak at 4.5 kHz, and its hiss carried a rumble: 15 dB under
+the peak band in 50-200 Hz, where Eloquence's [ts] is 30 dB under and the
+recorded speaker's 36 dB. From 1 kHz up the peaks are now true band-passes
+with zeros at 0 Hz and Nyquist (the labial peak at 350 Hz keeps its skirt);
+c's rumble is 46 dB under, the floor at 0.8-2.5 kHz 5-10 dB lower, and the
+peaks of every fricative are unchanged. The spelled *ce*, *ka*, *pe*, *te*,
+*če*, *će* also started with 105-120 ms of silence, the closure of a
+clause-initial voiceless stop, where the other synthesizers and the
+recording start the release at once. A clause-initial voiceless closure is
+now 14 ms.
+
+**Clicks.** Found by listing where the output meets at least 1 ms of digital
+silence with a large sample within 0.5 ms of it, and by high-band (above
+3.5-7.5 kHz) spikes against their surroundings:
+
+- The frication filters were no longer heard once the noise had stopped,
+  though they were still ringing: before the closure of a stop ("ste",
+  "sutra") the hiss was cut from about a tenth of its level to nothing in
+  one sample (1870 of 32767 at twice the rate). They are now heard to the
+  end of their ringing; on 20 test sentences such cuts went from 2 to 0 at
+  the normal rate and from 2 to 0 at twice the rate. The edges that remain
+  are the onsets of bursts, which are meant to be sharp.
+- The pulse of each glottal period stands out above 3.5 kHz by 7 dB (median
+  per period), as in Eloquence (8 dB) and the recorded speaker (8 dB); it is
+  not a source of clicks.
+- The recorded voices had the real clicks (see "Rendering" in
+  `docs/concatenative.md`).
+
+The recognizer check (section 7; Whisper "small", words counted by word
+alignment, previous engine first): on 40 sentences full of d, n and c it
+found 118 and 128 of 205 words at the normal rate (12.7% and 10.8% of the
+characters wrong; words with d 57 and 62 of 96, with n 49 and 53 of 94, the
+first word of the sentence 19 and 24 of 40), at 1.7 times the rate 60 and
+61 (first word 8 and 11). On the p/b sentences 166 and 168 of 261 (1.7x: 100
+and 105), on the t/k ones 62 and 64 of 114 (1.7x: 34 and 42).
 
 ### Voice colour
 

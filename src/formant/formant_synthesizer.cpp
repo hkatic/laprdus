@@ -488,6 +488,15 @@ private:
     static constexpr float VOWEL_WORD_DIP_MS = 18.0f;   // at rate 1
     static constexpr float VOWEL_WORD_DIP_MIN_MS = 8.0f;
 
+    // The closure of a stop or affricate at the start of a clause: silence
+    // kept short; a voice bar with F1 damped (the source is raised to keep
+    // its level), duller and no longer than Eloquence's.
+    static constexpr float INITIAL_CLOSURE_MS = 14.0f;
+    static constexpr float INITIAL_VOICE_BAR_MS = 60.0f;
+    static constexpr float INITIAL_VOICE_BAR_AV = 1.20f;
+    static constexpr float INITIAL_VOICE_BAR_TILT = 30.0f;
+    static constexpr float INITIAL_VOICE_BAR_B1 = 200.0f;
+
     // -------------------------------------------------------------------------
     // Singing: notes
     // -------------------------------------------------------------------------
@@ -792,6 +801,17 @@ private:
                         release = rate(p.ph == Ph::K ? 64.0f : 56.0f, 36.0f);
                     }
 
+                    // At the start of a clause nothing before the closure
+                    // shows it. A voiceless one is only silence, and the
+                    // word came late: 106 ms before "ce", "ka", "pe" at the
+                    // default spelling speed, where eSpeak, MBROLA and the
+                    // Klatt voice start the release at once. A voiced one
+                    // is the voice bar alone (see below).
+                    const bool initial = !prev;
+                    if (initial) {
+                        closure = std::min(closure, voiced ? INITIAL_VOICE_BAR_MS : INITIAL_CLOSURE_MS);
+                    }
+
                     Seg& cl = add_seg(p.ph, SegKind::Closure, i, closure);
                     if (voiced) {
                         // Voice bar: low-frequency murmur during the closure,
@@ -805,6 +825,22 @@ private:
                         cl.av = 0.95f;
                         cl.tilt = 22.0f;
                         cl.f0_shift = -0.8f;
+                        if (initial) {
+                            // A clause-initial bar is heard on its own, and
+                            // drawn out by a slow rate (98 ms of "de" at the
+                            // default spelling speed) with F1 ringing at its
+                            // narrow vowel bandwidth it was a hum like the
+                            // murmur of n: spelled d and n were hard to tell
+                            // apart. A closed tract damps F1 heavily; with
+                            // F1 damped as in the closure of p and b the bar
+                            // is a plain low hum, kept about as loud as a
+                            // recorded Croatian speaker's (11-13 dB under the
+                            // vowel; Eloquence 6 dB, but duller still) and no
+                            // longer than Eloquence's 56-70 ms.
+                            cl.av = INITIAL_VOICE_BAR_AV;
+                            cl.tilt = INITIAL_VOICE_BAR_TILT;
+                            cl.bw[0] = INITIAL_VOICE_BAR_B1;
+                        }
                     }
                     // The first formant is heavily damped once the lips
                     // close. With the vowel's 70 Hz bandwidth kept through
@@ -859,6 +895,10 @@ private:
                     if (m_utt.isolated_sound) {
                         closure = rate(40.0f, 20.0f);
                         friction = std::max(d - closure, 15.0f);
+                    }
+                    // At the start of a clause, as for the stops
+                    if (!prev) {
+                        closure = std::min(closure, voiced ? INITIAL_VOICE_BAR_MS : INITIAL_CLOSURE_MS);
                     }
 
                     Seg& cl = add_seg(p.ph, SegKind::Closure, i, closure);

@@ -40,6 +40,9 @@ constexpr double FRICATION_LP_Q[2] = {0.54119610, 1.30656296};
 constexpr double VOICE_CUTOFF = 6000.0;
 constexpr double VOICE_LP_Q = 0.65;
 
+// Fixed frication peaks from here up have zeros at 0 Hz and Nyquist.
+constexpr double NOISE_ZERO_MIN_HZ = 1000.0;
+
 // Bandwidths of the parallel formants F2-F4 (wider than in the cascade).
 constexpr double PARALLEL_BW[PARALLEL_FORMANTS] = {190.0, 260.0, 360.0};
 
@@ -69,6 +72,24 @@ void KlattSynth::Resonator::set_bandpass(double freq, double bw) {
     b = 2.0 * r * std::cos(theta);
     // unity gain at the resonance peak
     a = (1.0 - r) * std::sqrt(1.0 - 2.0 * r * std::cos(2.0 * theta) + r * r);
+}
+
+void KlattSynth::NoisePeak::set(double freq, double bw) {
+    freq = std::clamp(freq, 50.0, MAX_FREQ);
+    bw = std::max(bw, 20.0);
+    double r = std::exp(-PI * bw * T);
+    double theta = 2.0 * PI * freq * T;
+    c = -r * r;
+    b = 2.0 * r * std::cos(theta);
+    // unity gain at the resonance peak, with or without the zeros
+    double peak = (1.0 - r) * std::sqrt(1.0 - 2.0 * r * std::cos(2.0 * theta) + r * r);
+    if (freq >= NOISE_ZERO_MIN_HZ) {
+        z = 1.0;
+        a = peak / (2.0 * std::sin(theta));
+    } else {
+        z = 0.0;
+        a = peak;
+    }
 }
 
 void KlattSynth::LowPass::set(double freq, double q) {
@@ -159,7 +180,7 @@ void KlattSynth::update_coefficients(const Frame& fr) {
     m_nasal_zero.set(zero, 90.0);
 
     for (int i = 0; i < NOISE_PEAKS; ++i) {
-        m_noise_bank[i].set_bandpass(fr.np_f[i], fr.np_b[i]);
+        m_noise_bank[i].set(fr.np_f[i], fr.np_b[i]);
     }
     for (int i = 0; i < PARALLEL_FORMANTS; ++i) {
         m_parallel[i].set_bandpass(fr.f[i + 1], PARALLEL_BW[i]);
@@ -430,34 +451,30 @@ void KlattSynth::render(const Frame* frames, size_t count, std::vector<float>& o
                 y = m_voice_lp.tick(y);
 
                 // ---- Parallel frication branch ----
+                // The filters are heard to the end of their ringing: dropped
+                // as soon as the noise stopped, the hiss before a stop ("st",
+                // "šk") was cut off from a tenth of its level to nothing.
                 double fric = 0.0;
+                double src = 0.0;
                 if (af > 1e-5 || prev.af > 1e-5 || next.af > 1e-5) {
                     double n2 = noise();
                     // Voiced fricatives: noise is pulsed by the glottal cycle.
                     double fmod = (av > 0.05 && !open_phase) ? 0.45 : 1.0;
-                    double src = n2 * af * fmod * FRICATION_GAIN;
-                    src = m_fric_lp[1].tick(m_fric_lp[0].tick(src));
-                    double sign = 1.0;
-                    for (int i = 0; i < PARALLEL_FORMANTS; ++i) {
-                        double amp = lerp(prev.pa[i], next.pa[i], t);
-                        fric += sign * amp * m_parallel[i].tick(src);
-                        sign = -sign;
-                    }
-                    for (int i = 0; i < NOISE_PEAKS; ++i) {
-                        double amp = lerp(prev.np_a[i], next.np_a[i], t);
-                        fric += sign * amp * m_noise_bank[i].tick(src);
-                        sign = -sign;
-                    }
-                    fric += lerp(prev.bypass, next.bypass, t) * src;
-                } else {
-                    m_fric_lp[1].tick(m_fric_lp[0].tick(0.0));
-                    for (auto& r : m_parallel) {
-                        r.tick(0.0);
-                    }
-                    for (auto& r : m_noise_bank) {
-                        r.tick(0.0);
-                    }
+                    src = n2 * af * fmod * FRICATION_GAIN;
                 }
+                src = m_fric_lp[1].tick(m_fric_lp[0].tick(src));
+                double sign = 1.0;
+                for (int i = 0; i < PARALLEL_FORMANTS; ++i) {
+                    double amp = lerp(prev.pa[i], next.pa[i], t);
+                    fric += sign * amp * m_parallel[i].tick(src);
+                    sign = -sign;
+                }
+                for (int i = 0; i < NOISE_PEAKS; ++i) {
+                    double amp = lerp(prev.np_a[i], next.np_a[i], t);
+                    fric += sign * amp * m_noise_bank[i].tick(src);
+                    sign = -sign;
+                }
+                fric += lerp(prev.bypass, next.bypass, t) * src;
 
                 double sample = y + fric;
                 if (m_quality.reverb > 0.0f) {

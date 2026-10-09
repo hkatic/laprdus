@@ -166,12 +166,16 @@ double pitch_hz(const std::vector<int16_t>& audio, double from = 0.0, double to 
     return pitch_at(audio, best_start, window);
 }
 
-// Fundamental frequency where the voice ends: the last ~46 ms that are
+// Fundamental frequency where the voice ends: the last ~35 ms that are
 // clearly periodic and not yet faded out. Takes the shortest period that
 // correlates nearly as well as the best one, so a moving pitch is not
-// mistaken for its octave below.
+// mistaken for its octave below. The search stays in the last stretch of
+// sound, where the most periodic window is taken if none is periodic
+// enough. With a 46 ms window a short final vowel falling fast at 2x fell
+// under the threshold, and the search went on into the words before it
+// (Mirsad's "Tko je to." read 133 Hz where the voice ends at 110 Hz).
 double final_pitch_hz(const std::vector<int16_t>& audio) {
-    const size_t window = 1024;
+    const size_t window = 768;
     const size_t min_lag = 22050 / 300;
     const size_t max_lag = 22050 / 60;
     if (audio.size() < window) return 0.0;
@@ -181,8 +185,15 @@ double final_pitch_hz(const std::vector<int16_t>& audio) {
     }
 
     std::vector<double> corr(max_lag + 2, 0.0);
+    bool in_sound = false;
+    double fallback_hz = 0.0;
+    double fallback_corr = 0.0;
     for (size_t start = audio.size() - window; start >= 128; start -= 128) {
-        if (energy_at(audio, start, window) < 0.03 * loudest) continue;
+        if (energy_at(audio, start, window) < 0.03 * loudest) {
+            if (in_sound) break;
+            continue;
+        }
+        in_sound = true;
         double best = 0.0;
         for (size_t lag = min_lag - 1; lag <= max_lag + 1; ++lag) {
             double sum = 0.0;
@@ -198,15 +209,21 @@ double final_pitch_hz(const std::vector<int16_t>& audio) {
             corr[lag] = left > 0.0 && right > 0.0 ? sum / std::sqrt(left * right) : 0.0;
             if (lag >= min_lag && lag <= max_lag) best = std::max(best, corr[lag]);
         }
-        if (best < 0.7) continue;
+        double hz = 0.0;
         for (size_t lag = min_lag; lag <= max_lag; ++lag) {
             if (corr[lag] >= 0.9 * best && corr[lag] >= corr[lag - 1] &&
                 corr[lag] >= corr[lag + 1]) {
-                return 22050.0 / static_cast<double>(lag);
+                hz = 22050.0 / static_cast<double>(lag);
+                break;
             }
         }
+        if (best >= 0.7) return hz;
+        if (best > fallback_corr) {
+            fallback_corr = best;
+            fallback_hz = hz;
+        }
     }
-    return 0.0;
+    return fallback_hz;
 }
 
 } // namespace

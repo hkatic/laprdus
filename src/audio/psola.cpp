@@ -61,21 +61,58 @@ int nearest_mark(const Segment& s, float pos) {
     return k;
 }
 
+int half_window(const Unit& u, int k) {
+    return std::clamp(static_cast<int>(u.period[static_cast<size_t>(k)]), 8, MAX_HALF_WINDOW);
+}
+
+// A mark whose whole window lies inside the recording, clear of its faded
+// ends. The windows of the first and last marks of a short recording reach
+// past it: the sound then faded out within 2 ms (Josip's dž, -2 dB at its
+// peak, into silence before the vowel) or came in as fast. A mark further
+// in takes their place, one of the same kind if there is one near.
+int fitting_mark(const Unit& u, int k) {
+    const int n = u.length();
+    auto room = [&](int c) {
+        const int32_t m = u.marks[static_cast<size_t>(c)];
+        const int half = half_window(u, c);
+        return std::min(m - half - EDGE_FADE, n - EDGE_FADE - (m + half));
+    };
+    if (room(k) >= 0) return k;
+    const int32_t m = u.marks[static_cast<size_t>(k)];
+    const int step = m > n / 2 ? -1 : 1;
+    const int count = static_cast<int>(u.marks.size());
+    for (int same = 1; same >= 0; --same) {
+        for (int c = k + step, tries = 0; c >= 0 && c < count && tries < 4; c += step, ++tries) {
+            if (same && u.voiced[static_cast<size_t>(c)] != u.voiced[static_cast<size_t>(k)]) continue;
+            if (room(c) >= 0) return c;
+        }
+    }
+    return k;
+}
+
 // One Hann-windowed period of a recording, centred on its mark k, added at
-// the output sample `centre`.
+// the output sample `centre`. Each half of the window is shortened where it
+// would reach past the recording, or before the output sample `earliest`, so
+// it still rises from zero: the first window of a clause was centred half a
+// period of another mark into the clause and opened on a third of a
+// period's peak (Vlado's u: -3197 as the very first sample).
 void add_window(std::vector<float>& out, const Unit& u, int k, int centre,
-                float gain, bool reversed) {
+                float gain, bool reversed, int earliest) {
     const int32_t mark = u.marks[static_cast<size_t>(k)];
-    const int half = std::clamp(static_cast<int>(u.period[static_cast<size_t>(k)]), 8, MAX_HALF_WINDOW);
+    const int half = half_window(u, k);
     const int n = u.length();
     const int out_n = static_cast<int>(out.size());
-    const float scale = PI_F / static_cast<float>(half);
-    for (int i = -half + 1; i < half; ++i) {
+    const int before = reversed ? n - 1 - mark : mark;     // recording before the mark, in output order
+    const int after = reversed ? mark : n - 1 - mark;
+    const int left = std::max(1, std::min({half, before + 1, centre - earliest + 1}));
+    const int right = std::max(1, std::min(half, after + 1));
+    const float left_scale = PI_F / static_cast<float>(left);
+    const float right_scale = PI_F / static_cast<float>(right);
+    for (int i = -left + 1; i < right; ++i) {
         const int o = centre + i;
         if (o < 0 || o >= out_n) continue;
         const int s = mark + (reversed ? -i : i);
-        if (s < 0 || s >= n) continue;
-        const float w = 0.5f * (1.0f + std::cos(scale * static_cast<float>(i)));
+        const float w = 0.5f * (1.0f + std::cos((i < 0 ? left_scale : right_scale) * static_cast<float>(i)));
         out[static_cast<size_t>(o)] += gain * w * u.samples[static_cast<size_t>(s)];
     }
 }
@@ -118,9 +155,10 @@ std::vector<float> render(const std::vector<Segment>& segments,
         if (!nb.unit) return false;
         int k = nearest_mark(nb, source_pos(nb, t));
         if (k < 0 || !nb.unit->voiced[static_cast<size_t>(k)]) return false;
+        k = fitting_mark(*nb.unit, k);
         const float ta = static_cast<float>(nb.unit->period[static_cast<size_t>(k)]);
         const float gain = weight * std::clamp(ts / ta, 0.5f, 1.6f);
-        add_window(out, *nb.unit, k, centre, gain, false);
+        add_window(out, *nb.unit, k, centre, gain, false, 0);
         return true;
     };
 
@@ -134,13 +172,15 @@ std::vector<float> render(const std::vector<Segment>& segments,
             continue;
         }
         const Unit& u = *seg.unit;
+        // A fresh start (clause start, after a pause): the first window
+        // rises from zero at the segment's start instead of opening on
+        // the peak of a period.
+        int earliest = 0;
         if (t <= seg.start) {
-            // A fresh start (clause start, after a pause): the first window
-            // rises from zero at the segment's start instead of opening on
-            // the peak of a period.
             int k0 = nearest_mark(seg, source_pos(seg, seg.start));
             float half = k0 >= 0 ? static_cast<float>(u.period[static_cast<size_t>(k0)]) : static_cast<float>(UNVOICED_HOP);
             t = seg.start + std::min(half, 0.5f * seg.length);
+            earliest = static_cast<int>(std::ceil(seg.start));
         }
 
         int last_k = -1;
@@ -150,8 +190,9 @@ std::vector<float> render(const std::vector<Segment>& segments,
                 // Too short for a whole period: still one window, in the middle
                 t = seg.start + 0.5f * seg.length;
             }
-            const int k = nearest_mark(seg, source_pos(seg, t));
+            int k = nearest_mark(seg, source_pos(seg, t));
             if (k < 0) break;
+            k = fitting_mark(u, k);
             const bool voiced = u.voiced[static_cast<size_t>(k)] != 0;
             const float ta = static_cast<float>(u.period[static_cast<size_t>(k)]);
             float ts;
@@ -177,7 +218,7 @@ std::vector<float> render(const std::vector<Segment>& segments,
 
             const float gain = seg.gain * (voiced ? weight * std::clamp(ts / ta, 0.5f, 1.6f) : 1.0f);
             const bool reversed = !voiced && k == last_k;
-            add_window(out, u, k, centre, gain, reversed);
+            add_window(out, u, k, centre, gain, reversed, placed == 0 ? earliest : 0);
             last_k = k;
             ++placed;
             t += ts;

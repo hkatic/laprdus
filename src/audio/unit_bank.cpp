@@ -29,8 +29,7 @@ constexpr int CORR_LENGTH = 331;            // 15 ms of correlation
 constexpr float VOICED_CORRELATION = 0.60f; // normalised autocorrelation of voiced sound
 constexpr float VOICED_LEVEL = 0.05f;       // of the loudest frame
 
-// Edges and sounding part
-constexpr int EDGE_FADE = 44;               // 2 ms
+// Sounding part
 constexpr float SOUNDING_LEVEL = 0.02f;     // -34 dB below the loudest block
 
 float median(std::vector<float> v) {

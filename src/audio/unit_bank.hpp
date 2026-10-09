@@ -33,6 +33,9 @@ namespace concat {
 /** Spacing of the marks in unvoiced sound (samples at 22050 Hz, 5 ms). */
 constexpr int UNVOICED_HOP = 110;
 
+/** Both ends of every recording are faded over this many samples (2 ms). */
+constexpr int EDGE_FADE = 44;
+
 /** One analysed recording. */
 struct Unit {
     std::vector<float> samples;     // -1..1, DC-free, edges faded, formant-warped

@@ -155,8 +155,21 @@ method of MBROLA, Festival's diphone voices and Praat's pitch manipulation:
   period), so there is no phase step and no click. A join with an unvoiced
   recording is the natural overlap of its windows.
 - At a fresh start (clause start, after a pause or a closure) the first mark
-  is one period in, so the window rises from zero instead of opening on a
-  peak; the last window of a clause decays into the pause.
+  is one period in, and the first window's rising half is shortened to end
+  at the segment's start if it would reach before it, so the window rises
+  from zero instead of opening on a peak; the last window of a clause decays
+  into the pause. (Before October 2026 the start was placed by the period of
+  one mark and the window drawn with the period of another: Vlado's clauses
+  opening on *u* began at -3197, a click at every one of them.)
+- A window never reaches past its recording. Every recording is faded over
+  its first and last 2 ms (`EDGE_FADE`), and the windows of marks close to
+  the ends reached into that fade and beyond: the sound fell from full level
+  to nothing within 2 ms, with digital silence after it (Josip's *dž*, -2 dB
+  at its peak, then 3 ms of zeros before the *e*; the *j* of *pričekajte*
+  into the closure of *t*). The renderer now takes the nearest mark further
+  in whose whole window lies clear of the faded ends (one of the same kind
+  if there is one within four marks), and only when there is none shortens
+  the window's halves to what the recording holds.
 - The sum is limited softly above 90% of full scale (the recordings are
   clipped at the peaks already) and scaled by the volume.
 
@@ -198,6 +211,14 @@ Things that are worth checking by ear after a change:
   the user pitch (the lower limit is where PSOLA leaves gaps between periods
   and the voice gets hollow; the recordings allow about an octave each way);
 - Vlado at rate 0.5, where every vowel period is repeated twice.
+
+Clicks show without listening where the output meets digital silence: list
+every run of at least 1 ms of zero samples and the largest sample within
+0.5 ms on either side of it. A window that rises and falls properly leaves
+less than about 500 there; a cut-off one leaves thousands. On 20 sentences
+(the corpus of the October 2026 round) Josip had 357 such edges above 150
+and Vlado 57, with peaks of 4150 and 3197; after the fixes above 113 and 16,
+none above 490, all of them the tails of windows.
 
 The analysis of every recording can be printed with a small tool compiled
 from `unit_bank.cpp`, `phoneme_data.cpp` and `phoneme_mapper.cpp` (call
