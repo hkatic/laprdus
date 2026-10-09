@@ -3378,8 +3378,8 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
     }
 
     // Croatian sȃt/rȃd/dȃr/bȏl keep falling accents in D sg, but have rising
-    // L sg sátu/rádu/dáru/bólu, and vlȃst, bȏl (f.), strána, vijȇst have
-    // vlásti, bóli, stráni, vijésti (Školski rječnik, Mrežnik).
+    // L sg sátu/rádu/dáru/bólu, and vlȃst, bȏl (f.), strána, vijȇst, čȃr have
+    // vlásti, bóli, stráni, vijésti, čári (Školski rječnik, Mrežnik).
     // Recognize a governing locative preposition, allowing up to two
     // adjacent modifiers ("o svom novom radu", "na državnoj vlasti"). This
     // is a local cue, not a general case parser; other contexts keep the
@@ -3401,7 +3401,7 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
             bool rising = false;
             if (word.w == U"satu" || word.w == U"radu" || word.w == U"daru" ||
                 word.w == U"vlasti" || word.w == U"bolu" || word.w == U"boli" ||
-                word.w == U"strani" || word.w == U"vijesti") {
+                word.w == U"strani" || word.w == U"vijesti" || word.w == U"čari") {
                 size_t cue = i;
                 for (int modifiers = 0; cue > 0 && modifiers < 2 &&
                      ends_with_any(words[cue - 1].w,

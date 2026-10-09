@@ -814,6 +814,26 @@ const char* const COMMON[] = {
     // above does not reach them
     u8"c^a:rstv|o|a|u|om|ima", u8"c^a:rstava", u8"c^a:rsk*",
     u8"kr/a:ljevstv|o|a|u|om|ima", u8"kr/a:ljevstava",
+
+    // ---- The tenth October 2026 list (HJP, Školski rječnik, Wiktionary) ----
+    // ćȃr; čȃr, čȃri, čȃrju, but čárima, G pl čárī and the locative čári
+    // after a preposition (a rule of the front end); čárati, čárao,
+    // čárajū (VERBS), but the present čȃrām, čȃrā, čȃrāj; čȁroban, čȁrobnī
+    // (čaròbnjāk is the rule for -njak). prìtisak, prìtiska, prìtisci,
+    // prìtisākā; prìtisnuti and pritískati are in VERBS, and so are
+    // ujedíniti, očárati, začárati
+    u8"ć^a:r||a|u|om", u8"č^a:r||a|i|u|om|ju", u8"č/a:rima",
+    u8"č^a:r|am|aš|amo|ate|aj|ajmo|ajte", u8"č^aroban",
+    u8"č^arobn|a|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    u8"pr/itis|ak|ka|ku|kom|ke|ci|cima|aka",
+    // minimálac, G pl minimálācā (HJP; the other cases are the rule for
+    // -alc-, which cannot take the nominative: glȅdalac, čìtalac); the
+    // adjective mȉnimālan, but minimálnōst
+    u8"minim'a:lac", u8"minim'a:laca",
+    u8"m^inimal|an|na|no|ni|ne|nu|nog|noga|nom|nome|nomu|noj|nih|nim|nima",
+    u8"minim'a:lnost*", u8"minim'a:lnošću",
+    // fȋrma in every case (HJP, Školski rječnik, Wiktionary)
+    u8"f^i:rm|a|e|i|u|o|om|ama",
 };
 
 const char* const CROATIAN[] = {
@@ -1008,7 +1028,8 @@ const char* const SERBIAN[] = {
     u8"k^ara:ta:", u8"r/a:zličito:st", u8"dok/umena:ta:",
     // rázmākā, ȉpsilōn, èpsilōn
     u8"r/a:zma:ka:", u8"^ipsilo:n*", u8"/epsilo:n*", u8"c^a:rsta:va:",
-    u8"kr/a:ljevsta:va:",
+    u8"kr/a:ljevsta:va:", u8"č^a:r|a:m|a:š|a:mo|a:te|a:j|a:jmo|a:jte", u8"č/a:raju:",
+    u8"minim'a:la:ca:", u8"minim'a:lno:st", u8"m^inima:l|an|na|no|ni|ne|nu|nog|noga|nom|nome|nomu|noj|nih|nim|nima",
     // gùbītākā, dòbītākā ... (Rečnik Matice srpske, HJP)
     u8"g/ubi:ta:ka:", u8"d/obi:ta:ka:", u8"/uži:ta:ka:", u8"pr/imi:ta:ka:", u8"/odbi:ta:ka:",
     u8"r/azvi:ta:ka:", u8"b/olji:ta:ka:", u8"zg/odi:ta:ka:", u8"pr/obi:ta:ka:", u8"/imu:ta:ka:",
@@ -1097,7 +1118,8 @@ const char* const BOSNIAN[] = {
     u8"k^ara:ta:", u8"r/a:zličito:st", u8"dok/umena:ta:",
     // rázmākā, ȉpsilōn, èpsilōn
     u8"r/a:zma:ka:", u8"^ipsilo:n*", u8"/epsilo:n*", u8"c^a:rsta:va:",
-    u8"kr/a:ljevsta:va:",
+    u8"kr/a:ljevsta:va:", u8"č^a:r|a:m|a:š|a:mo|a:te|a:j|a:jmo|a:jte", u8"č/a:raju:",
+    u8"minim'a:la:ca:", u8"minim'a:lno:st", u8"m^inima:l|an|na|no|ni|ne|nu|nog|noga|nom|nome|nomu|noj|nih|nim|nima",
     // Alić: the nouns like gubítak keep the accent in every case, the
     // genitive plural too (gubítākā)
     u8"gub'i:ta:ka:", u8"dob'i:ta:ka:", u8"už'i:ta:ka:", u8"prim'i:ta:ka:", u8"odb'i:ta:ka:",
@@ -1334,6 +1356,13 @@ const char* const VERBS[] = {
     // ràzmaknūt in every voice (`!` on its entry above); ràzmicati,
     // ràzmičēm
     u8"r/azmic=t", u8"r/azmič=e",
+    // The tenth list, in every voice as the dictionaries have them:
+    // prìtisnuti, prìtisnēm, prìtisni, prìtisnuo, prìtisnūt; pritískati,
+    // pritískao, but prìtiskām and prìtīšćēm; ujedíniti, ujedíni,
+    // ujedínio, but ujèdīnīm, ujèdīnjen; čárati (its falling present is in
+    // the lexicon); očárati, začárati, but òčārām, òčārān, zàčārām
+    u8"pr/itis=u", u8"prit'i:sk=a<!", u8"pr/itišć=e", u8"ujed'i:n=i<p!",
+    u8"č/a:r=a", u8"oč'a:r=a<p!", u8"zač'a:r=a<p!",
 };
 
 // Towns, villages and regions (PLACES_*) and personal names and surnames

@@ -1792,7 +1792,24 @@ srpske):
   rule for loans in *-on* had made it *ipsìlon*. *èpsilōn* the same.
 - *cȃrstvo, cȃrskī* and *králjevstvo* in every case, G pl *cȃrstāvā,
   králjevstāvā* (HJP, Školski rječnik, Wiktionary): they had been short,
-  and *kraljevstava* was *kraljevstáva*. On the open question of
+  and *kraljevstava* was *kraljevstáva*.
+- *ćȃr; čȃr, čȃri, čárima* and the locative *čári* after a preposition
+  (Školski rječnik); *čárati, čárao, čárajū*, but the present *čȃrām,
+  čȃrā, čȃrāj* (as *spávati, spȃvām*); *čȁroban* (was *čaròban*);
+  *očárati, začárati*, but *òčārām, òčārān* in every voice. They had been
+  short.
+- *prìtisnuti* on the first syllable in every form (was *pritìsnuti,
+  pritìsnuo*), *prìtisak*; *pritískati*, but *prìtiskām, prìtīšćēm*;
+  *ujedíniti, ujedíni, ujedínio*, but *ujèdīnīm, ujèdīnjen* in every voice
+  (was *ȕjedinjen*), so *Ujèdinjeno Králjevstvo*.
+- *minimálac, minimálca, minimálci, minimálācā* (HJP, jargon for the
+  minimum wage): the nominative and genitive plural were on the first
+  syllable; the rule for the other cases cannot take the nominative,
+  since the agent nouns in *-alac* keep the verb's accent (*glȅdalac,
+  čìtalac*). The adjective *mȉnimālan* had no tone; *minimálnōst* was on
+  the first syllable.
+- *fȋrma* in every case (HJP, Školski rječnik, Wiktionary); it had been
+  short. On the open question of
 the rising accent (*obilježila*, see the sixth list) the listener asked for
 what is most accepted for Croatian; the model keeps the post-tonic syllable
 high, as the phonetic descriptions of standard Croatian have it.
