@@ -1959,7 +1959,43 @@ srpske):
   čìtalac*). The adjective *mȉnimālan* had no tone; *minimálnōst* was on
   the first syllable.
 - *fȋrma* in every case (HJP, Školski rječnik, Wiktionary); it had been
-  short. On the open question of
+  short.
+
+**The eleventh list (10 October 2026).** *trenutaka, sitnice, nezapaženo,
+zanat, pismo, stari, mladi, tužno, detalji* (Školski rječnik, HJP, Rečnik
+Matice srpske page images, Wiktionary; they agree except where noted):
+
+- *trenútak, trenúci*, G pl *trènūtākā* had the dictionaries' accent
+  already, but Zvonko read the three lengths after it, which the lexicon
+  leaves out for Croatian everywhere else (*gùbitaka*): Zvonko now says
+  *trènutaka*, and the same for *pòdataka, dòdataka, zàdataka, òstataka,
+  pòčetaka, zavr̀šetaka, izùzetaka*. Stojan keeps *trènūtākā* (RMS, HJP);
+  Mirsad has *trenútākā, podátākā*, since Alić gives the type of
+  *gubítak* its accent in every case, as for the nouns in *-itak*.
+- *sitnìca* in every case (was *sȉtnica*).
+- *nezàpažen, zàpažen*: *zàpaziti, zàpazīm, zàpazio* are in VERBS
+  (*zapàziti* before; the participles were on the first syllable with no
+  tone), and the negated participle follows from them. With them
+  *zapážati, zapážao, zapážānje* and the present *zàpāžām*, *zàpāžān* in
+  every voice; *òpaziti, òpažen* (was *opàziti*) and *opážati, òpāžām*.
+- *zànāt, zanáta, zanáti*, G pl *zanátā*; *zànātskī* (all were on the first
+  syllable without tone or length).
+- *písmo, písma, písmima*, G pl *pȋsāmā* (were short); *pȉsmen* is
+  untouched.
+- *stȃrī, mlȃdī* and the other definite forms (*stȃrōg, stȃrā, stȃrō,
+  mlȃdōg*); they were short. The indefinite *stàra, stȁro* is the rarer
+  predicate, so *stara, staro* are read as the definite (*stara lozinka*).
+  *mlȃd* is now long (it was *mlȁd*), and *mlada* is *mláda*, the
+  indefinite and the bride.
+- *túžno* for Zvonko (Školski rječnik, adverb and neuter); HJP, Rečnik
+  Matice srpske and Wiktionary have *tȗžno*, which Stojan and Mirsad
+  keep. The same split is in *vážno* (Školski) / *vȃžno* (HJP), which was
+  not changed.
+- *dètālj, detálja, detáljem, detálji*, G pl *detáljā* (all were on the
+  first syllable); *dètāljan, dètāljna* (was *detàljan*), the adverb
+  *dȅtāljno*.
+
+On the open question of
 the rising accent (*obilježila*, see the sixth list) the listener asked for
 what is most accepted for Croatian; the model keeps the post-tonic syllable
 high, as the phonetic descriptions of standard Croatian have it.

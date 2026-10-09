@@ -219,15 +219,17 @@ const char* const COMMON[] = {
     u8"objašnj'e:nj*", u8"/obrazovanj*", u8"/obrazovn*", u8"/obrazov*", u8"/obrazuj*", u8"infor'ma:cij*",
 
     // ---- Nouns in -tak: the plural loses the t (podátak, podáci), the
-    // genitive plural moves the accent to the front (pòdātākā) ----
-    u8"pod'a:|ci|cima|tci|tcima|tče", u8"p/oda:ta:ka:",
-    u8"dod'a:|ci|cima|tci|tcima|tče", u8"d/oda:ta:ka:",
-    u8"zad'a:|ci|cima|tci|tcima|tče", u8"z/ada:ta:ka:",
-    u8"ost'a:|ci|cima|tci|tcima|tče", u8"/osta:ta:ka:",
-    u8"poč'e:|ci|cima|tci|tcima|tče", u8"p/oče:ta:ka:",
-    u8"završ'e:|ci|cima|tci|tcima|tče", u8"zav'rše:ta:ka:",
-    u8"izuz'e:|ci|cima|tci|tcima|tče", u8"iz'uze:ta:ka:",
-    u8"tren'u:|ci|cima|tci|tcima|tče", u8"tr/enu:ta:ka:",
+    // genitive plural moves the accent to the front (pòdātākā; Zvonko
+    // without the lengths after the accent, as gùbitaka below; the
+    // lengths are in the Serbian and Bosnian tables) ----
+    u8"pod'a:|ci|cima|tci|tcima|tče", u8"p/odataka",
+    u8"dod'a:|ci|cima|tci|tcima|tče", u8"d/odataka",
+    u8"zad'a:|ci|cima|tci|tcima|tče", u8"z/adataka",
+    u8"ost'a:|ci|cima|tci|tcima|tče", u8"/ostataka",
+    u8"poč'e:|ci|cima|tci|tcima|tče", u8"p/očetaka",
+    u8"završ'e:|ci|cima|tci|tcima|tče", u8"zav'ršetaka",
+    u8"izuz'e:|ci|cima|tci|tcima|tče", u8"iz'uzetaka",
+    u8"tren'u:|ci|cima|tci|tcima|tče", u8"tr/enutaka",
     // The adjectives and adverbs keep the first syllable (dȍdatno, trȅnutno).
     u8"d^odatan", u8"d^odatn*", u8"d^odatno*", u8"d^odatni*",
     u8"tr^enutan", u8"tr^enutn*", u8"tr^enutno*", u8"tr^enutni*",
@@ -834,6 +836,26 @@ const char* const COMMON[] = {
     u8"minim'a:lnost*", u8"minim'a:lnošću",
     // fȋrma in every case (HJP, Školski rječnik, Wiktionary)
     u8"f^i:rm|a|e|i|u|o|om|ama",
+
+    // ---- The eleventh October 2026 list (Školski rječnik, HJP, Rečnik
+    // Matice srpske, Wiktionary; all agree unless noted) ----
+    // trènūtākā is in the -tak block above. sitnìca in every case
+    u8"sitn/ic*",
+    // nezàpažen, zàpažen: the participles of zàpaziti (VERBS), like òpaziti
+    // zànāt, zanáta, zanáti, G pl zanátā; zànātskī
+    u8"z/anat", u8"zan'a:t|a|u|om|i|e|ima", u8"z/anatsk*",
+    // písmo, písma, písmima, G pl pȋsāmā (not pȉsmen, pȉsmeno)
+    u8"p/i:sm|o|a|u|om|ima", u8"p^i:sama",
+    // stȁr, but the definite stȃrī, stȃrōg, stȃrā, stȃrō in every other
+    // form (stari grad, stara lozinka; the indefinite stàra, stȁro is
+    // the rarer predicate); stàrijī is the rule for -iji
+    u8"st^a:r|i|a|o|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    // mlȃd, mlȃdī, mlȃdōg, mlȃdo, but mláda (also the bride)
+    u8"ml^a:d||i|o|e|u|og|oga|om|ome|omu|oj|ih|im|ima", u8"ml/a:da",
+    // dètālj, detálja, detáljem, detálji, G pl detáljā; dètāljan,
+    // dètāljna, but the adverb dȅtāljno and detàljnijī (the rule for -iji)
+    u8"d/etalj", u8"det'a:lj|a|u|em|i|e|ima",
+    u8"d/etaljan", u8"d/etaljn|a|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima", u8"d^etaljno",
 };
 
 const char* const CROATIAN[] = {
@@ -943,6 +965,9 @@ const char* const CROATIAN[] = {
     // ŠR and HJP: pročìtati/pročìtām, but prȍčitān. The passive needs
     // a separate falling-tone paradigm; the negative stays nepròčitan.
     u8"pr^očitan||a|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    // Školski rječnik: the adverb túžno, like the neuter túžno (HJP, Rečnik
+    // Matice srpske and Wiktionary tȗžno, kept for Stojan and Mirsad)
+    u8"t/u:žno",
 };
 
 const char* const SERBIAN[] = {
@@ -1034,6 +1059,12 @@ const char* const SERBIAN[] = {
     u8"g/ubi:ta:ka:", u8"d/obi:ta:ka:", u8"/uži:ta:ka:", u8"pr/imi:ta:ka:", u8"/odbi:ta:ka:",
     u8"r/azvi:ta:ka:", u8"b/olji:ta:ka:", u8"zg/odi:ta:ka:", u8"pr/obi:ta:ka:", u8"/imu:ta:ka:",
     u8"/osnu:ta:ka:", u8"pr/ivi:ta:ka:",
+    // The eleventh list: pòdātākā ... trènūtākā (the -tak block of COMMON),
+    // zànāt, zànātskī, pȋsāmā, dètālj, dètāljan, dȅtāljno
+    u8"p/oda:ta:ka:", u8"d/oda:ta:ka:", u8"z/ada:ta:ka:", u8"/osta:ta:ka:",
+    u8"p/oče:ta:ka:", u8"zav'rše:ta:ka:", u8"iz'uze:ta:ka:", u8"tr/enu:ta:ka:",
+    u8"z/ana:t", u8"z/ana:tsk*", u8"p^i:sa:ma:", u8"d/eta:lj", u8"d/eta:ljan",
+    u8"d/eta:ljn|a|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima", u8"d^eta:ljno",
 };
 
 const char* const BOSNIAN[] = {
@@ -1125,6 +1156,12 @@ const char* const BOSNIAN[] = {
     u8"gub'i:ta:ka:", u8"dob'i:ta:ka:", u8"už'i:ta:ka:", u8"prim'i:ta:ka:", u8"odb'i:ta:ka:",
     u8"razv'i:ta:ka:", u8"bolj'i:ta:ka:", u8"zgod'i:ta:ka:", u8"prob'i:ta:ka:", u8"im'u:ta:ka:",
     u8"osn'u:ta:ka:", u8"priv'i:ta:ka:",
+    // ... and the nouns in -tak of the same type: podátākā ... trenútākā
+    u8"pod'a:ta:ka:", u8"dod'a:ta:ka:", u8"zad'a:ta:ka:", u8"ost'a:ta:ka:",
+    u8"poč'e:ta:ka:", u8"završ'e:ta:ka:", u8"izuz'e:ta:ka:", u8"tren'u:ta:ka:",
+    // The eleventh list: zànāt, zànātskī, pȋsāmā, dètālj, dètāljan, dȅtāljno
+    u8"z/ana:t", u8"z/ana:tsk*", u8"p^i:sa:ma:", u8"d/eta:lj", u8"d/eta:ljan",
+    u8"d/eta:ljn|a|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima", u8"d^eta:ljno",
 };
 
 // Verbs whose root has the long "ije" (podijéliti, promijéniti, zalijévati).
@@ -1363,6 +1400,10 @@ const char* const VERBS[] = {
     // the lexicon); očárati, začárati, but òčārām, òčārān, zàčārām
     u8"pr/itis=u", u8"prit'i:sk=a<!", u8"pr/itišć=e", u8"ujed'i:n=i<p!",
     u8"č/a:r=a", u8"oč'a:r=a<p!", u8"zač'a:r=a<p!",
+    // The eleventh list (nezapaženo): zàpaziti, zàpazīm, zàpazio, zàpažen
+    // (so nezàpažen), and òpaziti the same; zapážati, zapážao, zapážānje,
+    // but zàpāžām, zàpāžān in every voice, and opážati, òpāžām the same
+    u8"z/apaz=i", u8"/opaz=i", u8"zap'a:ž=a<p!", u8"op'a:ž=a<p!",
 };
 
 // Towns, villages and regions (PLACES_*) and personal names and surnames
