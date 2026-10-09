@@ -127,7 +127,9 @@ Points specific to Croatian/Serbian/Bosnian:
   *ji*, *ija*, *moj*: with F3 at 2750 the two were the same sound and *ji*
   was a long *i*. Transitions take about 50 ms. The earlier version had F1
   near 400 Hz and was 6-11 dB down, closer to a diphthong.
-- **/v/** is an approximant: a weak low murmur with no friction.
+- **/v/** is labiodental: a weak, dull murmur with some friction and a low
+  F3. A speaker's v is an approximant, but synthesized without friction it
+  was heard as l (see "v, l, nj and d" below).
 - **č/ć and dž/đ** differ in noise spectrum and in formant loci (ć and đ have
   palatal transitions). How far apart they are is a property of the speaker
   (`hard_palatal_shift`, `soft_palatal_shift`). The affricates' friction sits
@@ -617,8 +619,9 @@ two letters were a weak hum and a vowel each.
 | Zvonko before, *da* / spelled *de* | 54 / 98 ms | -10 / -6 dB | -33 / -31 dB |
 | Zvonko now, *da* / spelled *de* | 54 / 64 ms | -14 / -10 dB | -36 / -33 dB |
 
-A clause-initial voiced stop now has a voice bar of at most 60 ms (not
-stretched by a slow rate), with F1 damped as in the closure of p and b
+A clause-initial voiced stop now has a voice bar of at most 60 ms, not
+stretched by a slow rate (for d 40 ms since a later round made it harder
+still, see "v, l, nj and d"), with F1 damped as in the closure of p and b
 (bandwidth 200 Hz: a closed tract has no ringing first formant) and 8 dB
 more tilt; the source is raised (voicing 1.2) to keep the level near the
 recorded speaker's. Heard as on a phone speaker (above 500 Hz) the bar of
@@ -668,6 +671,153 @@ characters wrong; words with d 57 and 62 of 96, with n 49 and 53 of 94, the
 first word of the sentence 19 and 24 of 40), at 1.7 times the rate 60 and
 61 (first word 8 and 11). On the p/b sentences 166 and 168 of 261 (1.7x: 100
 and 105), on the t/k ones 62 and 64 of 114 (1.7x: 34 and 42).
+
+### v, l, nj and d
+
+A second round of beta reports (October 2026, formant voices): spelled or
+typed, V and L were barely told apart, and nj was harder to understand than
+the other sounds; listening to it, the user also asked for a d "just a
+little bit harder", further from n.
+
+**A phoneme recognizer.** A word recognizer guesses whole words from its
+language model, so it hides what happened to one consonant, and it cannot
+score a spelled letter at all. A multilingual phoneme recognizer (wav2vec2
+XLSR-53 fine-tuned on Common Voice with eSpeak phoneme labels) writes out
+the phones it hears. `tools/formant/phones.py` runs 14-20 items per
+consonant (VCV, CV and words) in the three voices at the normal rate and
+1.7 times it, or the spelled letters in both spelling modes at two spelling
+speeds, each also high-passed at 500 Hz as a phone speaker plays it, and
+counts the items in which the expected consonant is heard. It made the
+complaint visible at once: the old v was heard as v in 6 of 120 items, as
+l in most of the others (*va* "la", *voli* "loli", *vuk* "luk", *dva*
+"la"), the spelled V as "me", the spelled L as "em", the spelled D as "le",
+*ada* as "ala". The same items from other voices show what can be expected
+of it (the reference voices once each, so out of 14-20):
+
+| Heard right | v | l | nj | d |
+|---|---|---|---|---|
+| Zvonko, Stojan, Mirsad before | 6 of 120 | 93 of 114 | 48 of 90 | 30 of 84 |
+| Zvonko, Stojan, Mirsad now | 96 of 120 | 109 of 114 | 56 of 90 | 65 of 84 |
+| Recorded Croatian (MBROLA cr1) | 12 of 20 | 16 of 19 | 11 of 15 | 14 of 14 |
+| Lana | 18 of 20 | 17 of 19 | 10 of 15 | 14 of 14 |
+| eSpeak (Croatian) | 10 of 20 | 15 of 19 | 3 of 15 | 3 of 14 |
+| Eloquence (Italian) | 17 of 20 | 13 of 19 | - | 8 of 14 |
+
+| Spelled letter (of 12 per mode) | V | L | D | NJ | N | M |
+|---|---|---|---|---|---|---|
+| names, before | 2 | 0 | 4 | 3 | 11 | 12 |
+| names, now | 12 | 12 | 12 | 6 | 11 | 12 |
+| sounds, before | 1 | 7 | 5 | - | 8 | 11 |
+| sounds, now | 12 | 12 | 12 | - | 8 | 11 |
+
+The two recognizers did not always agree, and every change below was kept
+only where both did (Whisper "small" on sentences, section 7).
+
+**v.** The old v had nearly the formants of l (F1-F3 300 / 1130 / 2400
+against 330 / 1100 / 2470 Hz), no friction and a third less level: a
+quieter l. Speakers' v is an approximant, but the classic synthesizers
+make it a voiced fricative (Eloquence's carries flat noise up to 5 kHz;
+DECtalk's has F3 at 2080 Hz, its l at 2880), and that is what told it from
+l: without friction 13 of 120, with weak friction 60, with the friction of
+the version kept 95. The lips also lower F3; with F3 at 2400 instead of
+2100 Hz the same v scored 76. The voicing is weak, because Whisper heard a
+louder murmur with this low F1 as m (*vuku* "muku", the spelled V as "me").
+The v is now F1-F3 250 / 1050 / 2100 Hz, voicing 0.30 with 12 dB of tilt,
+friction 0.12 with the flat spectrum of f; at the start of a clause it
+lasts at most 60 ms (the spelled "ve" had 96 ms of hum); after a voiceless
+fricative and before a pause it loses half its voicing and gains half its
+friction again (with full voicing *svaki* was heard as "slaki", a final v
+as b or m); right after a stop or affricate it keeps a third of its
+friction, because at 1.7 times the rate the burst ran into it as into an
+affricate (*tvoj* as "zvoj"). Against the vowel's peak, in *ava*:
+
+| | level | 2-4 kHz | above 4 kHz |
+|---|---|---|---|
+| v before | -14 dB | -48 dB | -58 dB |
+| v now | -17 dB | -32 dB | -29 dB |
+| Eloquence | -14 dB | -37 dB | -42 dB |
+| Recorded Croatian | -19 dB | -36 dB | -40 dB |
+| Klatt voice | -25 dB | -32 dB | -32 dB |
+
+It is now as fricative as the Klatt voice's v and more than Eloquence's or
+the recorded speaker's; less friction (0.09) scored as well at the normal
+rate but lost words on the v/l sentences at 1.7 times it.
+
+**l.** F2 stays where the "Slovenian l" round put it (more colour from the
+vowels scored best, 105 of 114, but that is the bright l taken out at the
+user's request). F3 and F4 are a little higher and F3 sharper (2600 / 3000
+Hz, bandwidth 60 instead of 2470 / 2880, 90; the recorded speaker has 2500
+/ 2900, eSpeak and DECtalk 2700-2900): next to e and i the l was heard as n
+or m (*le* "ne", *ele* "eme"). A clause-final l keeps a higher F1 (420 Hz
+instead of 330; the recorded speaker's l has 450, eSpeak's in *el* 390-450):
+with the low F1 that sets an l off between vowels, a final one was heard as
+a nasal (*sol* "son", the spelled "el" as "em" in all 12 trials, now in
+none).
+
+**nj.** The murmur of nj lay *below* that of n (F2 1500 against 1650 Hz),
+and nj was heard as n (*knjiga* "knida", *njegova* "ne", *svinja* "svina").
+Its F2 is now 1750 Hz and its oral locus a firm palatal one (2400 Hz,
+giving way 10% to the vowel instead of 2250 and 20%), and the vowel after
+it leaves that locus slowly: F1 stays low and F2 high (2100-2150 Hz in
+*anja*) for the first 20 ms, as in Lana's *nja* (F2 near 2.3 kHz, F1 rising
+over 35 ms), instead of snapping away as after n. Rejected: the bright
+murmur of Eloquence and eSpeak (2100 Hz) was heard as j (*njenom* "jenom",
+*manje* "maje"; 0 of 23 nj words in Whisper), and so was a short j between
+murmur and vowel, which has the high F3 of a real j (Whisper liked it, the
+phoneme recognizer heard "ja"); a louder or longer murmur, a sharper one
+and a lower F1 at the boundary changed nothing. Word-final nj (*konj*,
+*panj*) is lost by every voice, the recorded speaker and Lana included.
+
+**d.** The intervocalic voice bar was as loud as the b's of the "p and b
+once more" round (Eloquence's, 7-9 dB under the vowel) and ran into a short
+burst: d was heard as l or n (*ada* "ala", *idi* "ili", *do* "no"). The
+recorded speaker's bar is 10-20 dB under the vowel and dies away before the
+release, his clause-initial release 16-20 ms of noise; Lana's closure is
+nearly silent. d (only d; b and g are unchanged) now has a voice bar at
+0.45 of b's (median -21 dB in *ada*, before -14; recorded -16, Eloquence
+-8) that fades to 40% over the 15 ms before the release, a burst 1.5 times
+stronger (above 2 kHz -15.5 dB, before -19; recorded -18) with voicing at
+0.55 instead of 0.70 under it, and the vowel opens as fast as after p and b
+(F1 72% of the way at the release). At the start of a clause the bar lasts
+at most 40 ms instead of 60 and the release 16 ms with a slower decay
+instead of 8: with that the spelled D is heard as "de" in every trial
+(before 4 of 12 in each mode). Between vowels the long release made d
+sound like t, so it stays short there. A stronger burst (1.8-2.2 times),
+less voicing under it, or the bar fading to a tenth turned more d's into t
+(*voda* "vota", *da* "ta"); *dvadeset*, whose middle d was heard as l, now
+has a d and is not split.
+
+The recognizer check (Whisper "small", words found by word alignment,
+before and now; 40 sentences full of v and l, 40 full of nj, and the d/n,
+p/b, t/k and general sets of the earlier rounds):
+
+| Words found | normal rate | 1.7 times |
+|---|---|---|
+| v and l sentences (216 words) | 121 → 127 | 65 → 63 |
+| nj sentences (210 words) | 120 → 139 | 66 → 76 |
+| d/n sentences (205) | 127 → 128 | 65 → 63 |
+| p/b sentences (261) | 167 → 168 | 105 → 106 |
+| t/k sentences (114) | 64 → 58 | 42 → 34 |
+| general sentences (134) | 72 → 76 | 36 → 41 |
+| all | 671 → 696 | 379 → 383 |
+
+The character error rate fell on six of the eight sets at each rate (v/l
+sentences 10.5 / 15.4% → 8.2 / 12.9%, nj sentences 13.8 / 10.9% → 10.1 /
+8.4%) and rose on the t/k set (13.1% → 14.9%, at 1.7 times 23.2% → 25.3%),
+slightly on the p/b set at the normal rate (7.9% → 8.3%) and on the first
+v/l set at 1.7 times (22.7% → 23.3%). The loss on the t/k sentences at 1.7 times
+the rate builds up from all the changes (v about 7 words, d 4, l 3) and is
+spread over words that contain none of the changed sounds, but it repeats
+at both rates; it is the thing to listen for at high rates. The recorded
+voices (Josip, Vlado) are unchanged: their v is a fricative recording,
+heard as f or p rather than l, and their nj recording is a murmur much
+like n; playing a piece of their j recording after it was heard as l or r.
+
+```bash
+python3 tools/formant/phones.py build/macos-arm64-release/laprdus
+python3 tools/formant/phones.py --letters build/macos-arm64-release/laprdus
+python3 tools/formant/phones.py --say "Lana (Croatian (Croatia))" --classes nj
+```
 
 ### Voice colour
 
@@ -2483,7 +2633,10 @@ During development an automatic speech recognizer was also used as a rough,
 objective intelligibility check (same sentences, several voices, character
 error rate). It is useful for catching regressions and gross errors, but it
 is noisy for Croatian and it also mis-hears recorded speech, so it cannot
-settle fine phonetic questions. It does not replace listening.
+settle fine phonetic questions. It does not replace listening. For single
+consonants and spelled letters a phoneme recognizer is more telling, since
+it writes out the phones it hears instead of guessing words:
+`tools/formant/phones.py` (see "v, l, nj and d").
 
 For the record, when the voices were introduced a small general-purpose
 recognizer (Whisper "small", Croatian/Serbian/Bosnian) made these character

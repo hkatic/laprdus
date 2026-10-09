@@ -9,7 +9,7 @@
 // amplitudes follow the cascade/parallel synthesis strategy of Klatt (1980),
 // adapted to the BCS inventory: unaspirated voiceless stops, fully voiced
 // stops, dental /t d/, the č/ć and dž/đ contrasts, tapped /r/ and the
-// approximant /v/.
+// labiodental /v/ (weakly fricated).
 
 #include "formant_phonemes.hpp"
 #include <initializer_list>
@@ -154,11 +154,22 @@ Table::Table() {
     sonorant(t[Ph::J], PhClass::Glide, 270.0f, 2150.0f, 3050.0f,
              60.0f, 110.0f, 180.0f, 0.88f, 58.0f, 0.20f, 48.0f, 3, 0.18f);
     t[Ph::J].f4 = 3600.0f;
-    // /v/ is an approximant in BCS: no friction, a weak low murmur about
-    // 16-20 dB below the vowels with hardly any energy above 500 Hz.
-    sonorant(t[Ph::V], PhClass::Glide, 300.0f, 1130.0f, 2400.0f,
-             70.0f, 110.0f, 170.0f, 0.50f, 52.0f, 0.30f, 40.0f, 3, 0.20f);
-    t[Ph::V].tilt = 10.0f;
+    // /v/ is labiodental: a weak, dull murmur with some friction, as in
+    // the classic synthesizers (Eloquence's v carries flat noise up to
+    // 5 kHz, DECtalk's is a voiced fricative). Without the friction, and
+    // with F1-F3 where an l has them (300 / 1130 / 2400 Hz), a phoneme
+    // recognizer heard it as l in nearly every word ("voli" as "loli") and
+    // listeners could not tell V from L; the lips also lower F3 (DECtalk
+    // 2080 Hz) where an l keeps it high. Its voicing is weak: a louder
+    // murmur with this low F1 is heard as m. See "v, l, nj and d" in
+    // docs/formant.md.
+    sonorant(t[Ph::V], PhClass::Glide, 250.0f, 1050.0f, 2100.0f,
+             70.0f, 110.0f, 170.0f, 0.30f, 52.0f, 0.30f, 40.0f, 3, 0.20f);
+    t[Ph::V].tilt = 12.0f;
+    t[Ph::V].af = 0.12f;
+    set_formant_noise(t[Ph::V], 0.3f, 0.4f, 0.5f);
+    set_noise(t[Ph::V], 2500.0f, 2500.0f, 0.7f, 4500.0f, 3000.0f, 1.0f,
+              7000.0f, 3000.0f, 0.7f, 0.10f);
     // /l/: clearly louder than /v/, visible F2 and F3. It is a dark l: F2
     // stays low whatever the vowels around it (recorded 1150-1300 Hz next to
     // e and i, 1000-1100 Hz next to o and u). With more colour from the
@@ -166,11 +177,14 @@ Table::Table() {
     // Slovenian (1650-1800 Hz). F1 is the low one of the classic
     // synthesizers (Eloquence 310, DECtalk 310, eSpeak 390-430 Hz), not the
     // recorded speaker's 450 Hz: the deep, quick dip of F1 is what makes an
-    // l stand out between vowels, most of all at high rates.
-    sonorant(t[Ph::L], PhClass::Liquid, 330.0f, 1100.0f, 2470.0f,
-             60.0f, 100.0f, 90.0f, 0.85f, 62.0f, 0.25f, 40.0f, 4, 0.15f);
-    // F3 and F4 lie close together in laterals and reinforce each other.
-    t[Ph::L].f4 = 2880.0f;
+    // l stand out between vowels, most of all at high rates. F3 and F4 lie
+    // close together in laterals and reinforce each other; with them a
+    // little higher and F3 sharper (2600 / 3000 Hz, between the recorded
+    // speaker's 2500 / 2900 and eSpeak's and DECtalk's 2700-2900 Hz) an l
+    // next to e and i is no longer heard as n or m.
+    sonorant(t[Ph::L], PhClass::Liquid, 330.0f, 1100.0f, 2600.0f,
+             60.0f, 100.0f, 60.0f, 0.85f, 62.0f, 0.25f, 40.0f, 4, 0.15f);
+    t[Ph::L].f4 = 3000.0f;
     sonorant(t[Ph::LJ], PhClass::Liquid, 335.0f, 1800.0f, 2820.0f,
              55.0f, 120.0f, 200.0f, 0.55f, 70.0f, 0.15f, 55.0f, 4, 0.05f);
     t[Ph::LJ].tilt = 6.0f;
@@ -180,11 +194,15 @@ Table::Table() {
     // 1050 Hz for m and 1650 Hz for n, as in Eloquence (1000 / 1700) and
     // eSpeak (1080 / 1620). The recorded speaker's are closer (1150 / 1400),
     // and with those n was taken for m. The murmur of n is also the duller
-    // of the two: a clear one is taken for l.
+    // of the two: a clear one is taken for l. The murmur of nj lies a
+    // little above that of n (it was below it, and nj was heard as n), but
+    // far below Eloquence's and eSpeak's 2100 Hz, which was heard as j;
+    // its oral locus is a firm palatal one, so the vowel after it starts
+    // high (see also the slow release in formant_synthesizer.cpp).
     nasal(t[Ph::M], 1050.0f, 2250.0f, 900.0f, 0.70f, 2150.0f, 0.65f, 60.0f, 36.0f);
     nasal(t[Ph::N], 1650.0f, 2600.0f, 1750.0f, 0.40f, 2750.0f, 0.40f, 54.0f, 45.0f);
     t[Ph::N].tilt = 3.0f;
-    nasal(t[Ph::NJ], 1500.0f, 2450.0f, 2250.0f, 0.20f, 2850.0f, 0.30f, 68.0f, 55.0f);
+    nasal(t[Ph::NJ], 1750.0f, 2600.0f, 2400.0f, 0.10f, 2850.0f, 0.30f, 68.0f, 55.0f);
     nasal(t[Ph::NG], 1150.0f, 2300.0f, 1700.0f, 0.45f, 2100.0f, 0.45f, 52.0f, 55.0f);
 
     // ---- Tap /r/ ----
