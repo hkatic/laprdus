@@ -1584,6 +1584,270 @@ TEST_CASE("Battery and reading-list accents follow the Croatian dictionaries", "
     }
 }
 
+TEST_CASE("The third listener list follows the dictionaries in every voice", "[formant][text]") {
+    // prijateljstvo, nevidljiv, potencijal, snalaženje, simulacijski,
+    // doživjeti, poštovanje, interesantno with their families and classes
+    // (HJP, Školski rječnik, Mrežnik, Rečnik Matice srpske, Alić), checked
+    // 2026-10-09; see docs/formant.md. Croatian omits unstressed length.
+    struct Case { const char* voice; const char* plain; const char* accented; };
+    const Case cases[] = {
+        {"zvonko", u8"prijateljstvo", u8"prijatèljstvo"},
+        {"zvonko", u8"prijateljstva", u8"prijatèljstva"},
+        {"zvonko", u8"prijateljstvom", u8"prijatèljstvom"},
+        {"zvonko", u8"prijateljstava", u8"prijatèljstava"},
+        {"zvonko", u8"prijateljstvima", u8"prijatèljstvima"},
+        {"zvonko", u8"neprijateljstvo", u8"neprijatèljstvo"},
+        {"zvonko", u8"neprijateljstava", u8"neprijàteljstava"},
+        {"zvonko", u8"roditeljstvo", u8"roditèljstvo"},
+        {"zvonko", u8"prijatelj", u8"prȉjatelj"},
+        {"zvonko", u8"prijatelja", u8"prȉjatelja"},
+        {"zvonko", u8"prijateljima", u8"prȉjateljima"},
+        {"zvonko", u8"neprijatelj", u8"nèprijatelj"},
+        {"zvonko", u8"prijateljica", u8"prijatèljica"},
+        {"zvonko", u8"prijateljicama", u8"prijatèljicama"},
+        {"zvonko", u8"prijateljski", u8"prijatèljski"},
+        {"zvonko", u8"prijateljskoga", u8"prijatèljskoga"},
+        {"zvonko", u8"sprijateljiti", u8"sprijatèljiti"},
+        {"zvonko", u8"sprijateljio", u8"sprijatèljio"},
+        {"zvonko", u8"nevidljiv", u8"nevìdljiv"},
+        {"zvonko", u8"nevidljiva", u8"nevìdljiva"},
+        {"zvonko", u8"nevidljivoga", u8"nevìdljivoga"},
+        {"zvonko", u8"nevidljivima", u8"nevìdljivima"},
+        {"zvonko", u8"nevidljivo", u8"nevìdljivo"},
+        {"zvonko", u8"nevidljivost", u8"nevìdljivost"},
+        {"zvonko", u8"nevidljivošću", u8"nevìdljivošću"},
+        {"zvonko", u8"nevidljiviji", u8"nevidljìviji"},
+        {"zvonko", u8"vidljiv", u8"vìdljiv"},
+        {"zvonko", u8"razumljivo", u8"razùmljivo"},
+        {"zvonko", u8"prihvatljiv", u8"prihvàtljiv"},
+        {"zvonko", u8"potencijal", u8"potencìjal"},
+        {"zvonko", u8"potencijala", u8"potencijála"},
+        {"zvonko", u8"potencijalu", u8"potencijálu"},
+        {"zvonko", u8"potencijali", u8"potencijáli"},
+        {"zvonko", u8"potencijalima", u8"potencijálima"},
+        {"zvonko", u8"materijala", u8"materijála"},
+        {"zvonko", u8"potencijalan", u8"pȍtencijalan"},
+        {"zvonko", u8"potencijalno", u8"pȍtencijalno"},
+        {"zvonko", u8"potencijalnih", u8"pȍtencijalnih"},
+        {"zvonko", u8"potencijalnost", u8"potencijálnōst"},
+        {"zvonko", u8"snalaženje", u8"snàlaženje"},
+        {"zvonko", u8"snalaženja", u8"snàlaženja"},
+        {"zvonko", u8"snalaženjem", u8"snàlaženjem"},
+        {"zvonko", u8"nesnalaženje", u8"nesnàlaženje"},
+        {"zvonko", u8"snalaziti", u8"snàlaziti"},
+        {"zvonko", u8"snalazim", u8"snàlazim"},
+        {"zvonko", u8"snalazio", u8"snàlazio"},
+        {"zvonko", u8"snalazeći", u8"snàlazeći"},
+        {"zvonko", u8"dolaziti", u8"dòlaziti"},
+        {"zvonko", u8"dolaženje", u8"dòlaženje"},
+        {"zvonko", u8"pronalaziti", u8"pronàlaziti"},
+        {"zvonko", u8"pronalazi", u8"pronàlazi"},
+        {"zvonko", u8"snaći", u8"snȃći"},
+        {"zvonko", u8"snađem", u8"snȃđem"},
+        {"zvonko", u8"snađi", u8"snáđi"},
+        {"zvonko", u8"snašao", u8"snàšao"},
+        {"zvonko", u8"snalažljiv", u8"snalàžljiv"},
+        {"zvonko", u8"snalažljivost", u8"snalàžljivost"},
+        {"zvonko", u8"simulacijski", u8"simulácijski"},
+        {"zvonko", u8"simulacijskoga", u8"simulácijskoga"},
+        {"zvonko", u8"simulacijskima", u8"simulácijskima"},
+        {"zvonko", u8"simulacija", u8"simulácija"},
+        {"zvonko", u8"komunikacijski", u8"komunikácijski"},
+        {"zvonko", u8"policijski", u8"polìcijski"},
+        {"zvonko", u8"simulator", u8"simùlator"},
+        {"zvonko", u8"simulatora", u8"simùlatora"},
+        {"zvonko", u8"doživjeti", u8"dožívjeti"},
+        {"zvonko", u8"doživjet ću", u8"dožívjet ću"},
+        {"zvonko", u8"doživio", u8"dožívio"},
+        {"zvonko", u8"doživjela", u8"dožívjela"},
+        {"zvonko", u8"doživjeli", u8"dožívjeli"},
+        {"zvonko", u8"doživjevši", u8"dožívjevši"},
+        {"zvonko", u8"doživi", u8"dožívi"},
+        {"zvonko", u8"doživite", u8"dožívite"},
+        {"zvonko", u8"Doživite nešto novo", u8"Dožívite nešto novo"},
+        {"zvonko", u8"doživim", u8"dožívim"},
+        {"zvonko", u8"dožive", u8"dožíve"},
+        {"zvonko", u8"doživljen", u8"dòživljen"},
+        {"zvonko", u8"doživljeno", u8"dòživljeno"},
+        {"zvonko", u8"doživljaj", u8"dȍživljaj"},
+        {"zvonko", u8"doživljajima", u8"dȍživljajima"},
+        {"zvonko", u8"preživjeti", u8"prežívjeti"},
+        {"zvonko", u8"preživio", u8"prežívio"},
+        {"zvonko", u8"preživljen", u8"prèživljen"},
+        {"zvonko", u8"živjeti", u8"žívjeti"},
+        {"zvonko", u8"živio", u8"žívio"},
+        {"zvonko", u8"poštovanje", u8"poštovánje"},
+        {"zvonko", u8"poštovanja", u8"poštovánja"},
+        {"zvonko", u8"poštovanjem", u8"poštovánjem"},
+        {"zvonko", u8"nepoštovanje", u8"nepoštovánje"},
+        {"zvonko", u8"Poštovanje!", u8"Poštovánje!"},
+        {"zvonko", u8"poštovati", u8"poštòvati"},
+        {"zvonko", u8"poštovao", u8"poštòvao"},
+        {"zvonko", u8"poštujem", u8"pòštujem"},
+        {"zvonko", u8"poštovan", u8"pȍštovan"},
+        {"zvonko", u8"poštovani", u8"pȍštovani"},
+        {"zvonko", u8"Poštovani korisnici", u8"Pȍštovani korisnici"},
+        {"zvonko", u8"poštovatelj", u8"poštòvatelj"},
+        {"zvonko", u8"interesantno", u8"interesàntno"},
+        {"zvonko", u8"interesantan", u8"interesàntan"},
+        {"zvonko", u8"interesantna", u8"interesàntna"},
+        {"zvonko", u8"interesantnoga", u8"interesàntnoga"},
+        {"zvonko", u8"interesantniji", u8"interesàntniji"},
+        {"zvonko", u8"interesantnost", u8"interesàntnost"},
+        {"zvonko", u8"elegantno", u8"elegàntno"},
+        {"zvonko", u8"kompetentni", u8"kompetèntni"},
+        {"zvonko", u8"formantni", u8"fòrmantni"},
+        {"zvonko", u8"interes", u8"ȉnteres"},
+        {"zvonko", u8"interesima", u8"ȉnteresima"},
+        {"stojan", u8"prijateljstvo", u8"prijatéljstvo"},
+        {"stojan", u8"nevidljiv", u8"nevìdljiv"},
+        {"stojan", u8"potencijala", u8"potencijála"},
+        {"stojan", u8"potencijalno", u8"pȍtencijālno"},
+        {"stojan", u8"snalaženje", u8"snàlažēnje"},
+        {"stojan", u8"snaći", u8"snáći"},
+        {"stojan", u8"simulacijski", u8"simulácījski"},
+        {"stojan", u8"doživeti", u8"dožíveti"},
+        {"stojan", u8"doživeo", u8"dožíveo"},
+        {"stojan", u8"doživim", u8"dožívīm"},
+        {"stojan", u8"doživljaj", u8"dȍživljāj"},
+        {"stojan", u8"doživljavaju", u8"doživljávaju"},
+        {"stojan", u8"poštovanje", u8"poštovánje"},
+        {"stojan", u8"interesantno", u8"interesàntno"},
+        {"stojan", u8"interesovati", u8"ȉnteresovati"},
+        {"stojan", u8"interesujem", u8"ȉnteresujēm"},
+        {"stojan", u8"otvaraju", u8"otváraju"},
+        {"stojan", u8"poštovaću", u8"poštòvaću"},
+        // Words around these rules that keep their own accent (review of
+        // 2026-10-09): the stems of the lexicon win over the new rules
+        {"zvonko", u8"austrijskog", u8"àustrijskog"},
+        {"zvonko", u8"australijski", u8"aùstralijski"},
+        {"zvonko", u8"cementni", u8"cèmentni"},
+        {"zvonko", u8"momentna", u8"mòmentna"},
+        {"zvonko", u8"prijateljuju", u8"prijatèljuju"},
+        {"zvonko", u8"preživljenje", u8"preživljénje"},
+        {"zvonko", u8"preživjelih", u8"prežívjelih"},
+        {"zvonko", u8"poštovateljica", u8"poštovatèljica"},
+        {"zvonko", u8"snalazi", u8"snàlazi"},
+        {"zvonko", u8"vjerovanje", u8"vjȅrovanje"},
+        {"zvonko", u8"ljetovati", u8"ljȅtovati"},
+        {"stojan", u8"verovaćemo", u8"vȅrovaćemo"},
+        {"stojan", u8"interesovaćeš", u8"ȉnteresovaćeš"},
+        {"mirsad", u8"prijatelj", u8"prìjatelj"},
+        {"mirsad", u8"prijateljstvo", u8"prijatèljstvo"},
+        {"mirsad", u8"doživjeti", u8"dožívjeti"},
+        {"mirsad", u8"doživim", u8"dožívīm"},
+        {"mirsad", u8"snalaženje", u8"snàlažēnje"},
+        {"mirsad", u8"poštovanje", u8"poštovánje"},
+    };
+    Engine engine;
+    for (const auto& c : cases) {
+        INFO(c.voice << " " << c.plain);
+        REQUIRE(laprdus_set_voice(engine.handle, c.voice, NO_DATA) == LAPRDUS_OK);
+        const auto plain = speak(engine.handle, c.plain);
+        REQUIRE(!plain.empty());
+        REQUIRE(plain == speak(engine.handle, c.accented));
+    }
+    // The old readings are gone
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(speak(engine.handle, u8"snalaženje") != speak(engine.handle, u8"snalažénje"));
+    REQUIRE(speak(engine.handle, u8"poštovanje") != speak(engine.handle, u8"poštòvanje"));
+    REQUIRE(speak(engine.handle, u8"doživjeti") != speak(engine.handle, u8"dožìvjeti"));
+    REQUIRE(speak(engine.handle, u8"poštovati") != speak(engine.handle, u8"pȍštovati"));
+}
+
+TEST_CASE("The fourth listener list follows the dictionaries in every voice", "[formant][text]") {
+    // Egipat, proizvodnja, vodič, napomene with their families (HJP, Školski
+    // rječnik, Wiktionary, Rečnik Matice srpske), checked 2026-10-09; see
+    // docs/formant.md. Croatian omits unstressed length.
+    struct Case { const char* voice; const char* plain; const char* accented; };
+    const Case cases[] = {
+        {"zvonko", u8"Egipat", u8"Ègipat"},
+        {"zvonko", u8"Egipta", u8"Ègipta"},
+        {"zvonko", u8"Egiptu", u8"Ègiptu"},
+        {"zvonko", u8"Egiptom", u8"Ègiptom"},
+        {"zvonko", u8"egipatski", u8"ègipatski"},
+        {"zvonko", u8"egipatskoga", u8"ègipatskoga"},
+        {"zvonko", u8"Egipćanin", u8"Ègipćanin"},
+        {"zvonko", u8"Egipćani", u8"Ègipćani"},
+        {"zvonko", u8"Egipćanima", u8"Ègipćanima"},
+        {"zvonko", u8"Egipćanka", u8"Ègipćanka"},
+        {"zvonko", u8"proizvodnja", u8"proizvòdnja"},
+        {"zvonko", u8"proizvodnje", u8"proizvòdnje"},
+        {"zvonko", u8"proizvodnji", u8"proizvòdnji"},
+        {"zvonko", u8"proizvodnju", u8"proizvòdnju"},
+        {"zvonko", u8"proizvodnjom", u8"proizvòdnjom"},
+        {"zvonko", u8"proizvodnjama", u8"proizvòdnjama"},
+        {"zvonko", u8"proizvod", u8"proìzvod"},
+        {"zvonko", u8"proizvoda", u8"proìzvoda"},
+        {"zvonko", u8"proizvodi", u8"proìzvodi"},
+        {"zvonko", u8"Proizvodi", u8"Proìzvodi"},
+        {"zvonko", u8"proizvodima", u8"proìzvodima"},
+        {"zvonko", u8"proizvesti", u8"proìzvesti"},
+        {"zvonko", u8"proizveo", u8"proìzveo"},
+        {"zvonko", u8"proizvedem", u8"proizvèdem"},
+        {"zvonko", u8"proizveden", u8"proizvèden"},
+        {"zvonko", u8"proizvedeno", u8"proizvèdeno"},
+        {"zvonko", u8"proizvoditi", u8"proizvòditi"},
+        {"zvonko", u8"proizvodio", u8"proizvòdio"},
+        {"zvonko", u8"proizvodim", u8"proizvòdim"},
+        {"zvonko", u8"proizvođenje", u8"proìzvođenje"},
+        {"zvonko", u8"proizvođača", u8"proizvođáča"},
+        {"zvonko", u8"vodič", u8"vòdič"},
+        {"zvonko", u8"vodiča", u8"vodíča"},
+        {"zvonko", u8"vodiču", u8"vodíču"},
+        {"zvonko", u8"vodičem", u8"vodíčem"},
+        {"zvonko", u8"vodiči", u8"vodíči"},
+        {"zvonko", u8"vodiče", u8"vodíče"},
+        {"zvonko", u8"vodičima", u8"vodíčima"},
+        {"zvonko", u8"poluvodič", u8"poluvòdič"},
+        {"zvonko", u8"poluvodiča", u8"poluvodíča"},
+        {"zvonko", u8"napomena", u8"nȁpomena"},
+        {"zvonko", u8"napomene", u8"nȁpomene"},
+        {"zvonko", u8"Dodaj napomene", u8"Dodaj nȁpomene"},
+        {"zvonko", u8"u napomeni", u8"u nȁpomeni"},
+        {"zvonko", u8"napomenu", u8"nȁpomenu"},
+        {"zvonko", u8"napomenom", u8"nȁpomenom"},
+        {"zvonko", u8"napomenama", u8"nȁpomenama"},
+        {"zvonko", u8"kad napomene", u8"kad nȁpomene"},
+        {"zvonko", u8"Napomeni mu", u8"Napoméni mu"},
+        {"zvonko", u8"napomenuti", u8"napoménuti"},
+        {"zvonko", u8"napomenuo", u8"napoménuo"},
+        {"zvonko", u8"napominjati", u8"napòminjati"},
+        {"zvonko", u8"napominjem", u8"napòminjem"},
+        {"zvonko", u8"napominjao", u8"napòminjao"},
+        {"stojan", u8"Egipat", u8"Ègipat"},
+        {"stojan", u8"Egipćanka", u8"Ègipćānka"},
+        {"stojan", u8"proizvodnja", u8"proizvòdnja"},
+        {"stojan", u8"proizvod", u8"proìzvod"},
+        {"stojan", u8"proizvedeno", u8"proizvèdeno"},
+        {"stojan", u8"proizvodim", u8"proìzvodim"},
+        {"stojan", u8"vodič", u8"vòdīč"},
+        {"stojan", u8"vodiča", u8"vodíča"},
+        {"stojan", u8"poluvodič", u8"poluvòdīč"},
+        {"stojan", u8"napomena", u8"nȁpomena"},
+        {"stojan", u8"napomene", u8"nȁpomene"},
+        {"stojan", u8"napomenuti", u8"napoménuti"},
+        {"stojan", u8"napominjem", u8"napòminjem"},
+        {"mirsad", u8"Egipat", u8"Ègipat"},
+        {"mirsad", u8"proizvodnja", u8"proizvòdnja"},
+        {"mirsad", u8"vodič", u8"vòdīč"},
+        {"mirsad", u8"vodiču", u8"vodíču"},
+        {"mirsad", u8"napomene", u8"nȁpomene"},
+    };
+    Engine engine;
+    for (const auto& c : cases) {
+        INFO(c.voice << " " << c.plain);
+        REQUIRE(laprdus_set_voice(engine.handle, c.voice, NO_DATA) == LAPRDUS_OK);
+        const auto plain = speak(engine.handle, c.plain);
+        REQUIRE(!plain.empty());
+        REQUIRE(plain == speak(engine.handle, c.accented));
+    }
+    // The old readings are gone
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(speak(engine.handle, u8"Egipat") != speak(engine.handle, u8"Egìpat"));
+    REQUIRE(speak(engine.handle, u8"napomene") != speak(engine.handle, u8"napoméne"));
+}
+
 TEST_CASE("Foreign app names keep their pronunciation and stress in case forms", "[formant][text][dictionary]") {
     // Exercise the shipped replacements as well as the accent lexicon.
     // Run from the repository root, or set LAPRDUS_DICTIONARY to internal.json.
@@ -2344,12 +2608,12 @@ TEST_CASE("Letters are spelled by their sounds when asked", "[formant][spelling]
     REQUIRE(!sound.empty());
     REQUIRE(rms(sound) > 300.0);
 
-    // Every letter of the alphabet, the foreign letters, the digraph
-    // ligatures and the Cyrillic letters have a sound
+    // Every letter of the alphabet, the digraph ligatures and the Cyrillic
+    // letters have a sound
     const char* letters[] = {
         "a", "b", "c", "\xC4\x8D", "\xC4\x87", "d", "\xC4\x91", "e", "f", "g", "h", "i",
         "j", "k", "l", "m", "n", "o", "p", "r", "s", "\xC5\xA1", "t", "u", "v", "z",
-        "\xC5\xBE", "q", "w", "x", "y", "\xC7\x89", "\xC7\x8C", "\xC7\x86",
+        "\xC5\xBE", "\xC7\x89", "\xC7\x8C", "\xC7\x86",
         "\xD0\xB1", "\xD1\x99", "\xD1\x9F", "\xD1\x9B", "\xD0\x82", "Z", "\xC5\xA0",
     };
     for (const char* letter : letters) {
@@ -2359,11 +2623,20 @@ TEST_CASE("Letters are spelled by their sounds when asked", "[formant][spelling]
         REQUIRE(rms(audio) > 150.0);
     }
 
-    // Digits, punctuation and symbols keep their names
-    REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_NAMES) == LAPRDUS_OK);
-    std::vector<int16_t> digit_name = spell(engine.handle, "7");
-    REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_SOUNDS) == LAPRDUS_OK);
-    REQUIRE(spell(engine.handle, "7") == digit_name);
+    // Digits, punctuation and symbols keep their names, and so do the
+    // foreign letters (ku, duplo ve, iks, ipsilon) in every language
+    const char* named[] = { "7", "q", "w", "x", "y", "Q", "W", "X", "Y" };
+    for (const char* voice : { "zvonko", "stojan", "mirsad" }) {
+        REQUIRE(laprdus_set_voice(engine.handle, voice, NO_DATA) == LAPRDUS_OK);
+        for (const char* character : named) {
+            INFO(voice << " " << character);
+            REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_NAMES) == LAPRDUS_OK);
+            std::vector<int16_t> by_name = spell(engine.handle, character);
+            REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_SOUNDS) == LAPRDUS_OK);
+            REQUIRE(spell(engine.handle, character) == by_name);
+        }
+    }
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
 
     // Spelling a word gives the sounds with the spelling pause between them
     REQUIRE(laprdus_set_spelling_pause(engine.handle, 100) == LAPRDUS_OK);
@@ -2426,10 +2699,84 @@ TEST_CASE("The user's spelling entries win, except a letter name in sound mode",
     REQUIRE(spell(engine.handle, "j") != speak(engine.handle, "je"));
     REQUIRE(spell(engine.handle, "*") == speak(engine.handle, "zvijezda"));
 
+    // A foreign letter is named in both modes, by the user's entry if any
+    REQUIRE(laprdus_add_spelling_entry(engine.handle, "w", "dvostruko ve") == LAPRDUS_OK);
+    REQUIRE(spell(engine.handle, "w") == speak(engine.handle, "dvostruko ve"));
+    REQUIRE(spell(engine.handle, "x") == speak(engine.handle, "iks"));
+    REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_NAMES) == LAPRDUS_OK);
+    REQUIRE(spell(engine.handle, "w") == speak(engine.handle, "dvostruko ve"));
+
     // Loading the bundled dictionary again drops the user's entries
     REQUIRE(laprdus_load_spelling_dictionary_from_memory(engine.handle,
         "{ \"entries\": [ { \"character\": \"*\", \"pronunciation\": \"zvjezdica\" } ] }", 0) == LAPRDUS_OK);
     REQUIRE(spell(engine.handle, "*") == speak(engine.handle, "zvjezdica"));
+}
+
+TEST_CASE("A capital letter announced by a screen reader is spelled", "[formant][spelling]") {
+    // NVDA "veliko N", TalkBack "veliko slovo N" and "велико Н", VoiceOver
+    // "veliko početno slovo N", in English "cap N" and "capital N": the
+    // words are spoken, the letter is spelled in the spelling mode and at
+    // the spelling speed like any spelled character
+    Engine engine;
+    auto joined = [&](const char* words, const char* letter) {
+        std::vector<int16_t> audio = speak(engine.handle, words);
+        std::vector<int16_t> spelled = spell(engine.handle, letter);
+        audio.insert(audio.end(), spelled.begin(), spelled.end());
+        return audio;
+    };
+    struct Case { const char* voice; const char* text; const char* words; const char* letter; };
+    const Case cases[] = {
+        {"zvonko", "veliko N", "veliko", "N"},
+        {"zvonko", "Veliko slovo N", "Veliko slovo", "N"},
+        {"zvonko", u8"veliko početno slovo N", u8"veliko početno slovo", "N"},
+        {"zvonko", "cap N", "cap", "N"},
+        {"zvonko", "capital N", "capital", "N"},
+        {"zvonko", u8"veliko Č", "veliko", u8"Č"},
+        {"zvonko", "veliko N ", "veliko", "N"},
+        {"stojan", u8"велико Н", u8"велико", u8"Н"},
+        {"stojan", "veliko N", "veliko", "N"},
+        {"mirsad", "Veliko N", "Veliko", "N"},
+    };
+    for (auto mode : {LAPRDUS_SPELLING_LETTER_SOUNDS, LAPRDUS_SPELLING_LETTER_NAMES}) {
+        REQUIRE(laprdus_set_spelling_mode(engine.handle, mode) == LAPRDUS_OK);
+        for (const auto& c : cases) {
+            INFO(c.voice << " " << c.text << " mode " << mode);
+            REQUIRE(laprdus_set_voice(engine.handle, c.voice, NO_DATA) == LAPRDUS_OK);
+            REQUIRE(speak(engine.handle, c.text) == joined(c.words, c.letter));
+        }
+    }
+
+    // In sound mode that is the sound, not the name the text used to give
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_SOUNDS) == LAPRDUS_OK);
+    REQUIRE(speak(engine.handle, "veliko N") != joined("veliko", "en"));
+    REQUIRE(speak(engine.handle, "veliko N") != speak(engine.handle, "veliko en"));
+
+    // Running text with a letter in it is not an announcement and does not
+    // depend on the spelling mode
+    const char* texts[] = { "Plan B", "veliko N je slovo", "veliko more", "slovo N",
+                            "veliko NN", "veliko 7" };
+    for (const char* text : texts) {
+        INFO(text);
+        REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_SOUNDS) == LAPRDUS_OK);
+        const auto by_sound = speak(engine.handle, text);
+        REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_NAMES) == LAPRDUS_OK);
+        REQUIRE(speak(engine.handle, text) == by_sound);
+    }
+
+    // The streaming API gives the same samples
+    REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_SOUNDS) == LAPRDUS_OK);
+    LaprdusStreamHandle stream = laprdus_stream_begin(engine.handle, "veliko N");
+    REQUIRE(stream != nullptr);
+    std::vector<int16_t> streamed;
+    int16_t buffer[1024];
+    for (int guard = 0; guard < 100000 && !laprdus_stream_is_complete(stream); ++guard) {
+        int32_t got = laprdus_stream_read(stream, buffer, 1024);
+        if (got <= 0) break;
+        streamed.insert(streamed.end(), buffer, buffer + got);
+    }
+    laprdus_stream_destroy(stream);
+    REQUIRE(streamed == speak(engine.handle, "veliko N"));
 }
 
 TEST_CASE("Streaming API works with formant voices", "[formant][stream]") {

@@ -362,7 +362,7 @@ TEST_CASE("Letter sounds and spelling speed work with a recorded voice", "[conca
     const char* letters[] = {
         "a", "b", "c", "\xC4\x8D", "\xC4\x87", "d", "\xC4\x91", "e", "f", "g", "h", "i",
         "j", "k", "l", "m", "n", "o", "p", "r", "s", "\xC5\xA1", "t", "u", "v", "z",
-        "\xC5\xBE", "x", "\xC7\x89", "\xD1\x9F",
+        "\xC5\xBE", "\xC7\x89", "\xD1\x9F",
     };
     for (const char* letter : letters) {
         INFO(letter);
@@ -370,6 +370,17 @@ TEST_CASE("Letter sounds and spelling speed work with a recorded voice", "[conca
         REQUIRE(audio.size() > 22050 / 25);
         REQUIRE(rms(audio) > 150.0);
     }
+
+    // The foreign letters keep their names (iks, ipsilon)
+    REQUIRE(spell("x") == speak(engine.handle, "iks"));
+    REQUIRE(spell("Y") == speak(engine.handle, "ipsilon"));
+
+    // A screen reader's "veliko N" spells the letter by its sound too
+    std::vector<int16_t> capital = speak(engine.handle, "veliko");
+    std::vector<int16_t> sound = spell("N");
+    capital.insert(capital.end(), sound.begin(), sound.end());
+    REQUIRE(speak(engine.handle, "veliko N") == capital);
+    REQUIRE(speak(engine.handle, "veliko N") != speak(engine.handle, "veliko en"));
 
     // Vlado spells with Serbian names
     REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_NAMES) == LAPRDUS_OK);

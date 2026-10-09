@@ -822,8 +822,9 @@ typedef enum {
 
 /**
  * Choose whether spelled letters are read by their names (the default) or
- * by their sounds. Letter names follow the language of the voice. Digits,
- * punctuation and symbols are read by name in both modes.
+ * by their sounds. Letter names follow the language of the voice. The
+ * foreign letters q, w, x and y, digits, punctuation and symbols are read by
+ * name in both modes.
  * @param handle Engine handle.
  * @param mode Spelling mode.
  * @return LAPRDUS_OK on success, error code on failure.

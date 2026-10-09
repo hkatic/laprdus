@@ -1071,6 +1071,13 @@ public:
             return r;
         }
 
+        // Word classes whose accent sits before the endings the rules below
+        // would take for another suffix (-enje, -iti, -an).
+        if (laziti_verb(r)) return r;
+        if (teljstvo_noun(r)) return r;
+        if (ljiv_adjective(r)) return r;
+        if (ant_adjective(r)) return r;
+
         // Present, imperative and present participle of the verbs in -ivati
         // and -ovati: the accent is on the syllable before -uj (ukljùčujem,
         // prikàzuje, urèđuju, kùpujem, pùtujući). The few verbs in -ovati
@@ -1088,11 +1095,13 @@ public:
         // obavještavaju, uživaš, pokrivaj). The dictionaries have the accent
         // one syllable before the suffix (oznàčāvām, ùžīvām); the Croatian
         // voice keeps it where the infinitive has it (označávam, užívam),
-        // like the other verbs (see verb_form). The third person in -ava is
-        // spelled like many nouns and adjectives (država, zabava, krvava),
-        // so it counts only from four syllables on (označava, održava), and
-        // the one in -iva not at all (osjetljiva, perspektiva); short verbs
-        // are in the VERBS table (rješava, uživa).
+        // like the other verbs (see verb_form). The third person plural
+        // keeps the infinitive's accent in the dictionaries too (označávajū,
+        // održávajū, doživljávajū, užívajū in Školski rječnik). The third
+        // person in -ava is spelled like many nouns and adjectives (država,
+        // zabava, krvava), so it counts only from four syllables on
+        // (označava, održava), and the one in -iva not at all (osjetljiva,
+        // perspektiva); short verbs are in the VERBS table (rješava, uživa).
         static const char32_t* const AM_ENDINGS[] = {
             U"am", U"aš", U"amo", U"ate", U"aju", U"aj", U"ajmo", U"ajte",
         };
@@ -1101,7 +1110,7 @@ public:
         if ((n >= 3 && (at_suffix(U"av", AM_ENDINGS, 0, suffix) ||
                         at_suffix(U"iv", AM_ENDINGS, 0, suffix))) ||
             (n >= 4 && !ends_with(m_w, U"slava") && at_suffix(U"av", A_ENDING, 0, suffix))) {
-            if (m_language == VoiceLanguage::Croatian) {
+            if (m_language == VoiceLanguage::Croatian || ends_with(m_w, U"aju")) {
                 r.nucleus = suffix.nucleus;
                 r.is_long = true;
             } else {
@@ -1197,11 +1206,16 @@ public:
         }
 
         // -ija and its case forms, comparatives in -iji: stress falls on the
-        // syllable before (policija, organizácija, Itàlija, pamètnijī)
+        // syllable before (policija, organizácija, Itàlija, pamètnijī). The
+        // adjectives in -ijski keep their noun's accent (polìcījskī,
+        // simulácījskī, informácījskī, enèrgījskī in HJP and Školski
+        // rječnik).
         static const char32_t* const IJ_ENDINGS[] = {
             U"a", U"e", U"i", U"u", U"o", U"om", U"ama", U"em", U"eg", U"ega",
             U"emu", U"ih", U"im", U"ima", U"oj", U"in", U"ina", U"ine", U"ini",
-            U"inu", U"inom",
+            U"inu", U"inom", U"ski", U"ska", U"sko", U"ske", U"sku", U"skog",
+            U"skom", U"skoj", U"skih", U"skim", U"skoga", U"skome", U"skomu",
+            U"skima",
         };
         if (n >= 3 && before_suffix(U"ij", IJ_ENDINGS, r)) {
             size_t li = static_cast<size_t>(m_letters[static_cast<size_t>(r.nucleus)]);
@@ -1337,14 +1351,16 @@ public:
     }
 
     // Verbs in -ovati carry the accent on the o in the infinitive, the
-    // participle and the aorist (kupòvati, putòvao, stanòvala, darovàsmo);
-    // the present in -ujem is handled above. The few that keep the first
-    // syllable (vjȅrovati, rȁdovati se, mìlovati, pȍštovati) are lexicon
-    // entries.
+    // participle, the aorist and the fused future (kupòvati, putòvao,
+    // stanòvala, darovàsmo, poštòvaću);
+    // the present in -ujem is handled above (poštòvati, pòštujēm). The few
+    // that keep the first syllable (vjȅrovati, rȁdovati se, mìlovati) are
+    // lexicon entries.
     bool ov_verb(StressResult& r) const {
         static const char32_t* const OV_ENDINGS[] = {
             U"ati", U"at", U"ao", U"ala", U"alo", U"ali", U"ale", U"avši",
-            U"asmo", U"aste", U"aše", U"ahu",
+            U"asmo", U"aste", U"aše", U"ahu", U"aću", U"aćeš", U"aće", U"aćemo",
+            U"aćete",
         };
         if (!at_suffix(U"ov", OV_ENDINGS, 0, r)) return false;
         r.accent = Accent::Rising;
@@ -1404,6 +1420,93 @@ public:
             return true;
         }
         return false;
+    }
+
+    // Verbs in -laziti keep the accent on the syllable before -la- (the
+    // prefix) in the infinitive, the participles, the aorist and the
+    // imperfect, and so does their verbal noun: dòlaziti, dòlazio,
+    // dòlazēći, dòlažāh, pronàlaziti, snàlaziti, obìlaziti; dòlažēnje,
+    // snàlažēnje, pronàlažēnje (Školski rječnik, Hrvatski mrežni rječnik,
+    // HJP). The rule for long infinitives and the one for -enje would put it
+    // on -la- or -že-. The forms -lazi, -laze are also the plurals of the
+    // nouns prȍlaz, ȉzlaz, ȕlaz, nȁlaz, prȉlaz, zȁlaz, rȁzlaz, prȅlaz, so
+    // after those prefixes they count only where the accent is not on the
+    // first syllable anyway (pronàlazi; but snàlazi, dòlazi).
+    bool laziti_verb(StressResult& r) const {
+        static const char32_t* const LAZ[] = {
+            U"iti", U"it", U"io", U"ila", U"ilo", U"ili", U"ile", U"im", U"iš", U"imo",
+            U"ite", U"eći", U"ih", U"ismo", U"iste", U"iše", U"ivši", U"iću", U"ićeš",
+            U"iće", U"ićemo", U"ićete", U"i", U"e",
+        };
+        static const char32_t* const LAZ_SOFT[] = {
+            U"enje", U"enja", U"enju", U"enjem", U"enjima", U"ah", U"aše", U"asmo",
+            U"aste", U"ahu",
+        };
+        size_t pos = 0;
+        bool third_person = false;
+        if (match(U"laz", LAZ, pos)) {
+            third_person = is_one_of(m_w.substr(pos + 3), {U"i", U"e"});
+        } else if (!match(U"laž", LAZ_SOFT, pos)) {
+            return false;
+        }
+        const bool noun_twin = third_person &&
+            is_one_of(m_w.substr(0, pos), {U"pro", U"iz", U"u", U"na", U"pri", U"za", U"raz", U"pre"});
+        // The prefixes, with the linking i of obi-, nai-, razi-, si- and
+        // the ne- of a negated verbal noun (nesnàlažēnje)
+        std::u32string before = m_w.substr(0, pos);
+        if (!is_verbal_prefix(before) && starts_with(before, U"ne")) before = before.substr(2);
+        if (!is_verbal_prefix(before) && !before.empty() && before.back() == U'i') {
+            before.pop_back();
+        }
+        if (before.empty() || !is_verbal_prefix(before)) return false;
+        const int k = nucleus_before(pos);
+        if (k < 0 || (noun_twin && k == 0)) return false;
+        r.nucleus = k;
+        r.accent = Accent::Rising;
+        return true;
+    }
+
+    // Nouns in -teljstvo have the accent of -telj- in every case:
+    // prijatèljstvo, prijatèljstāvā, roditèljstvo, gledatèljstvo,
+    // ugostitèljstvo, pokrovitèljstvo (Školski rječnik; HJP has
+    // ròditēljstvo and gràditēljstvo for two of them).
+    bool teljstvo_noun(StressResult& r) const {
+        static const char32_t* const STVO[] = {
+            U"vo", U"va", U"vu", U"vom", U"vima", U"ava",
+        };
+        if (!at_suffix(U"teljst", STVO, 1, r)) return false;
+        r.accent = Accent::Rising;
+        return true;
+    }
+
+    // Adjectives in -ljiv, their adverbs and the nouns in -ljivost have the
+    // accent on the syllable before the suffix: vìdljiv, nevìdljiv,
+    // nevìdljivōst, čìtljiv, razùmljiv, prihvàtljiv, snalàžljiv,
+    // nepopràvljiv, neodòljiv (HJP, Školski rječnik, Mrežnik). The
+    // comparative has it on -ljì- (vidljìvijī), which the rule for -ij gives.
+    bool ljiv_adjective(StressResult& r) const {
+        static const char32_t* const LJIV[] = {
+            U"", U"a", U"o", U"i", U"e", U"u", U"og", U"om", U"oj", U"ih", U"im",
+            U"ima", U"oga", U"ome", U"omu", U"ost", U"osti", U"ošću", U"ostima",
+        };
+        if (!before_suffix(U"ljiv", LJIV, r)) return false;
+        r.accent = Accent::Rising;
+        return true;
+    }
+
+    // Loan adjectives in -antan and -entan keep the accent of -ant-, -ent-
+    // in every form: interesàntan, interesàntno, elegàntna, toleràntnī,
+    // kompetèntan, inteligèntnōst (HJP, Školski rječnik, Rečnik Matice
+    // srpske). The comparative (interesàntnijī) comes from the rule for -ij.
+    bool ant_adjective(StressResult& r) const {
+        static const char32_t* const ADJ[] = {
+            U"an", U"na", U"no", U"ni", U"ne", U"nu", U"nog", U"nom", U"noj", U"nih",
+            U"nim", U"noga", U"nome", U"nomu", U"nima", U"nost", U"nosti", U"nošću",
+            U"nostima",
+        };
+        if (!at_suffix(U"ant", ADJ, 0, r) && !at_suffix(U"ent", ADJ, 0, r)) return false;
+        r.accent = Accent::Rising;
+        return true;
     }
 
     // Nouns whose last stem syllable is long: loans (telefon, restoran,
@@ -1645,8 +1748,13 @@ private:
                                        U"anje", U"anja", U"anju", U"anjem", U"anjima",
                                        U"aću", U"aćeš", U"aće", U"aćemo", U"aćete"})) {
                     form = Form::Plain;
+                } else if (root.ati_present && ending == U"aju") {
+                    // The third person plural keeps the infinitive's accent
+                    // where the other persons move it (otvárajū, òtvārām;
+                    // ponávljajū, pònāvljām in Školski rječnik)
+                    form = Form::Plain;
                 } else if (root.ati_present &&
-                           (is_one_of(ending, {U"am", U"aš", U"amo", U"ate", U"aju", U"aj",
+                           (is_one_of(ending, {U"am", U"aš", U"amo", U"ate", U"aj",
                                                U"ajmo", U"ajte"}) ||
                             (ending == U"a" && !root.noun_twin))) {
                     form = Form::Present;
@@ -1658,12 +1766,15 @@ private:
             }
             if (form == Form::None && root.nuti) {
                 if (is_one_of(ending, {U"nuti", U"nuo", U"nula", U"nulo", U"nuli", U"nule",
-                                       U"nuh", U"nusmo", U"nuste", U"nuše", U"nuvši", U"ni",
+                                       U"nuh", U"nusmo", U"nuste", U"nuše", U"nuvši",
                                        U"nimo", U"nite", U"nuću", U"nućeš", U"nuće",
                                        U"nućemo", U"nućete"})) {
                     form = Form::Plain;
-                } else if (is_one_of(ending, {U"nem", U"neš", U"ne", U"nemo", U"nete",
-                                              U"nu"})) {
+                } else if (ending == U"ni") {
+                    // "Napomeni mu" is the command, "u napomeni" the noun
+                    if (!root.noun_twin || m_opens_clause) form = Form::Plain;
+                } else if (is_one_of(ending, {U"nem", U"neš", U"nemo", U"nete"}) ||
+                           (is_one_of(ending, {U"ne", U"nu"}) && !root.noun_twin)) {
                     form = Form::Present;
                 } else if (is_one_of(ending, {U"nut", U"nuta", U"nuto", U"nute", U"nutu",
                                               U"nutog", U"nutoga", U"nutom", U"nutoj",
@@ -2247,6 +2358,10 @@ std::u32string spelling_letter(char32_t raw) {
     return std::u32string();
 }
 
+bool is_foreign_letter(const std::u32string& letter) {
+    return letter == U"q" || letter == U"w" || letter == U"x" || letter == U"y";
+}
+
 std::u32string letter_name(const std::u32string& letter, VoiceLanguage language) {
     // Bosnian names the letters as Croatian does; only Serbian differs
     return letter_name(letter, language == VoiceLanguage::Serbian);
@@ -2282,15 +2397,9 @@ Utterance Frontend::letter_sound(const std::u32string& letter) const {
         phones.push_back(Ph::NJ);
     } else if (letter == U"dž") {
         phones.push_back(Ph::DZH);
-    } else if (letter.size() == 1) {
+    } else if (letter.size() == 1 && !is_foreign_letter(letter)) {
         char32_t c = letter[0];
-        if (c == U'q') c = U'k';
-        if (c == U'w') c = U'v';
-        if (c == U'y') c = U'i';
-        if (c == U'x') {
-            phones.push_back(Ph::K);
-            phones.push_back(Ph::S);
-        } else if (is_vowel_letter(c)) {
+        if (is_vowel_letter(c)) {
             phones.push_back(vowel_phone(c));
             vowel = true;
         } else {
@@ -2377,6 +2486,17 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
             }
         }
 
+        // A command at the head of its clause is the verb even where the
+        // built-in lexicon has the noun of the same spelling ("Napomeni mu",
+        // but "u napomeni"); the rules below find it. The user's entries
+        // still win.
+        bool command_at_head = false;
+        if (word.stress < 0 && at_head) {
+            command_at_head =
+                StressRules(word, m_language, true, m_user_verbs.get()).verb_form().nucleus >= 0 &&
+                StressRules(word, m_language, false, m_user_verbs.get()).verb_form().nucleus < 0;
+        }
+
         // 2. Lexicon: exact form, then the longest stem; the user's entries
         // before the built-in ones at every step. A word of one syllable
         // spelled with a foreign letter is not the native word it is
@@ -2390,14 +2510,14 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
             };
             if (!m_user_exact.empty()) entry = find_in(m_user_exact, word.w);
             if (entry) word.user_accent = true;
-            if (!entry) entry = find_in(m_exact, word.w);
+            if (!entry && !command_at_head) entry = find_in(m_exact, word.w);
             if (!entry) {
                 size_t min_len = word.w.size() > 3 ? word.w.size() - 3 : 1;
                 for (size_t len = word.w.size(); len >= min_len && len >= 2; --len) {
                     std::u32string prefix = word.w.substr(0, len);
                     if (!m_user_stems.empty()) entry = find_in(m_user_stems, prefix);
                     if (entry) word.user_accent = true;
-                    if (!entry) entry = find_in(m_stems, prefix);
+                    if (!entry && !command_at_head) entry = find_in(m_stems, prefix);
                     if (entry) break;
                 }
             }

@@ -295,7 +295,7 @@ constexpr float INFLECTION_LEVEL_DEFAULT = 0.5f;
  */
 enum class SpellingMode : uint8_t {
     LetterNames = 0,    // "b" -> "be", "h" -> "ha", "j" -> "je"
-    LetterSounds = 1    // "b" -> the sound [b], "f" -> [f], "h" -> [x]
+    LetterSounds = 1    // "b" -> the sound [b], "f" -> [f], "h" -> [x]; q, w, x, y by name
 };
 
 // Spelling speed in percent: 100 is the speech rate itself, 50 (the default)

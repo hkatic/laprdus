@@ -42,6 +42,14 @@ struct Utterance {
 std::u32string spelling_letter(char32_t c);
 
 /**
+ * True for q, w, x and y, the letters outside the Croatian, Serbian and
+ * Bosnian alphabets. They have no sound of their own in the language, so
+ * spelling reads them by their names (ku, duplo ve, iks, ipsilon) also when
+ * the other letters are spelled by their sounds.
+ */
+bool is_foreign_letter(const std::u32string& letter);
+
+/**
  * The name of a letter of the alphabet in the language ("b" -> "be",
  * "lj" -> "elj" or "lje", "x" -> "iks"); empty for anything else. The
  * Croatian and Bosnian names follow the Croatian orthography (a, be, ce,
@@ -141,10 +149,10 @@ public:
 
     /**
      * The sound of one letter alone, for spelling by sounds: a vowel as a
-     * stressed syllable, a continuant consonant held, a stop or affricate
-     * released into a short neutral vowel when voiced, "r" as syllabic r,
-     * "x" as [ks], "q" as [k], "w" as [v], "y" as [i]. The letter is as
-     * spelling_letter() returns it. An unknown letter gives no phones.
+     * stressed syllable, a consonant followed by a short neutral vowel
+     * ("bə", "sə"). The letter is as spelling_letter() returns it. An
+     * unknown letter and the foreign letters (is_foreign_letter(), which
+     * are spelled by their names) give no phones.
      */
     Utterance letter_sound(const std::u32string& letter) const;
 

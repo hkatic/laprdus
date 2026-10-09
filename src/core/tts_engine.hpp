@@ -99,6 +99,12 @@ public:
 
     /**
      * Synthesize text to audio.
+     *
+     * A text that is a screen reader's announcement of a capital letter
+     * ("veliko N", "veliko slovo N", "veliko početno slovo N", "велико Н",
+     * "cap N", "capital N") has its words spoken and the letter spelled as
+     * synthesize_spelled() spells it: by name or by sound, at the spelling
+     * speed, with the user's spelling entries.
      * @param text UTF-8 text to synthesize.
      * @return Synthesis result with audio buffer.
      */
@@ -257,8 +263,10 @@ public:
      *
      * A letter of the alphabet (Latin or Cyrillic, any case) is read by its
      * name in the language of the voice, or by its sound when the spelling
-     * mode is LetterSounds. Every other character is read by its entry in the
-     * spelling dictionary, or spoken as text when it has none.
+     * mode is LetterSounds; q, w, x and y, which are not letters of these
+     * languages, keep their names (ku, duplo ve, iks, ipsilon) in both
+     * modes. Every other character is read by its entry in the spelling
+     * dictionary, or spoken as text when it has none.
      *
      * The user's spelling entries (add_spelling_entry, append_spelling_dictionary)
      * win over all of that, with one exception: when letters are spelled by
@@ -416,6 +424,8 @@ private:
     VoiceLanguage current_language() const;
     // One character of synthesize_spelled(): its name, its sound or its entry.
     SynthesisResult spell_character(const std::string& character);
+    // "veliko N": the words spoken, the letter spelled (see synthesize()).
+    SynthesisResult synthesize_capital(const std::string& words, const std::string& letter);
     struct Impl;
     std::unique_ptr<Impl> m_impl;
 

@@ -6,6 +6,7 @@
 #include "emoji_dict.hpp"
 #include "phoneme_mapper.hpp"
 #include "../formant/formant_synthesizer.hpp"
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -211,6 +212,78 @@ bool TTSEngine::is_initialized() const {
 // Synthesize Text
 // =============================================================================
 
+namespace {
+
+// A screen reader announces a capital letter as a word or two and the
+// letter: NVDA "veliko N" (Croatian, Serbian, Bosnian) and "cap N",
+// TalkBack "veliko slovo N" (Croatian), "велико Н" (Serbian), "veliko N"
+// (Serbian Latin, Bosnian) and "capital N", VoiceOver "veliko početno
+// slovo N" (Croatian) and "cap N". They send it as text, not as a spelled
+// character, so without this the letter is read by its name in every
+// spelling mode, and at the speech rate. Returns the words and the letter.
+bool split_capital_announcement(const std::string& text, std::string& words,
+                                std::string& letter) {
+    std::u32string cps = PhonemeMapper::utf8_to_utf32(text);
+    auto is_space = [](char32_t c) { return c == U' ' || c == U'\t' || c == U'\n' || c == U'\r'; };
+    while (!cps.empty() && (is_space(cps.back()) || cps.back() == U'.')) cps.pop_back();
+    size_t start = 0;
+    while (start < cps.size() && is_space(cps[start])) ++start;
+
+    std::vector<std::u32string> tokens;
+    for (size_t i = start; i < cps.size();) {
+        size_t end = i;
+        while (end < cps.size() && !is_space(cps[end])) ++end;
+        tokens.push_back(cps.substr(i, end - i));
+        i = end;
+        while (i < cps.size() && is_space(cps[i])) ++i;
+    }
+    if (tokens.size() < 2 || tokens.size() > 4) return false;
+    if (tokens.back().size() != 1 || formant::spelling_letter(tokens.back()[0]).empty()) {
+        return false;
+    }
+
+    // The words lowercased, Cyrillic in Latin letters
+    auto plain = [](const std::u32string& word) {
+        std::u32string out;
+        for (char32_t c : word) {
+            std::u32string letter = formant::spelling_letter(c);
+            if (letter.empty()) return std::u32string();
+            out += letter;
+        }
+        return out;
+    };
+    static const std::u32string first[] = { U"veliko", U"cap", U"capital" };
+    static const std::u32string more[] = { U"slovo", U"početno", U"letter" };
+    for (size_t i = 0; i + 1 < tokens.size(); ++i) {
+        const std::u32string word = plain(tokens[i]);
+        const auto begin = i == 0 ? std::begin(first) : std::begin(more);
+        const auto end = i == 0 ? std::end(first) : std::end(more);
+        if (std::find(begin, end, word) == end) return false;
+    }
+
+    letter = PhonemeMapper::utf32_to_utf8(tokens.back());
+    std::u32string spoken;
+    for (size_t i = 0; i + 1 < tokens.size(); ++i) {
+        if (i) spoken.push_back(U' ');
+        spoken += tokens[i];
+    }
+    words = PhonemeMapper::utf32_to_utf8(spoken);
+    return true;
+}
+
+} // namespace
+
+SynthesisResult TTSEngine::synthesize_capital(const std::string& words,
+                                              const std::string& letter) {
+    SynthesisResult result = synthesize(words);
+    if (!result.success) return result;
+    SynthesisResult spelled = synthesize_spelled(letter);
+    if (!spelled.success) return spelled;
+    result.audio.samples.insert(result.audio.samples.end(), spelled.audio.samples.begin(),
+                                spelled.audio.samples.end());
+    return result;
+}
+
 SynthesisResult TTSEngine::synthesize(const std::string& text) {
     SynthesisResult result;
     begin_utterance();
@@ -224,6 +297,11 @@ SynthesisResult TTSEngine::synthesize(const std::string& text) {
     if (text.empty()) {
         result.success = true;  // Empty text is valid, just produces no audio
         return result;
+    }
+
+    std::string words, letter;
+    if (split_capital_announcement(text, words, letter)) {
+        return synthesize_capital(words, letter);
     }
 
     try {
@@ -270,6 +348,37 @@ SynthesisResult TTSEngine::synthesize_streaming(
     }
 
     if (text.empty()) {
+        result.success = true;
+        return result;
+    }
+
+    std::string words, letter;
+    if (split_capital_announcement(text, words, letter)) {
+        // Short: synthesized whole, then handed over in chunks
+        SynthesisResult whole = synthesize_capital(words, letter);
+        if (!whole.success) return whole;
+        const size_t chunk_size = chunk_ms > 0 ? (SAMPLE_RATE * chunk_ms) / 1000
+                                               : whole.audio.samples.size();
+        try {
+            for (size_t pos = 0; pos < whole.audio.samples.size(); pos += chunk_size) {
+                AudioBuffer chunk;
+                chunk.sample_rate = whole.audio.sample_rate;
+                chunk.bits_per_sample = whole.audio.bits_per_sample;
+                chunk.channels = whole.audio.channels;
+                const size_t end = std::min(pos + chunk_size, whole.audio.samples.size());
+                chunk.samples.assign(whole.audio.samples.begin() + static_cast<std::ptrdiff_t>(pos),
+                                     whole.audio.samples.begin() + static_cast<std::ptrdiff_t>(end));
+                callback(chunk);
+            }
+        } catch (const std::exception& e) {
+            result.success = false;
+            result.error_message = e.what();
+            return result;
+        } catch (...) {
+            result.success = false;
+            result.error_message = "Unknown error during synthesis";
+            return result;
+        }
         result.success = true;
         return result;
     }
@@ -603,7 +712,9 @@ SynthesisResult TTSEngine::spell_character(const std::string& character) {
     const std::u32string letter = cps.size() == 1 ? formant::spelling_letter(cps[0])
                                                    : std::u32string();
     const std::string* user = m_impl->user_spelling_dictionary.find(character);
-    const bool sounds = m_impl->voice_params.spelling_mode == SpellingMode::LetterSounds;
+    // q, w, x and y are not letters of the language: named in both modes
+    const bool sounds = m_impl->voice_params.spelling_mode == SpellingMode::LetterSounds &&
+                        !formant::is_foreign_letter(letter);
 
     std::string text;
     bool sound = false;

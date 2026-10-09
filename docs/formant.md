@@ -842,10 +842,13 @@ are lexicon entries.
   passive participle in *-an* are left out: they are spelled like too many
   nouns and adjectives (*pȍkušāj, dȍgađāju, dòsljednim, pȍseban, dȍsadan,
   pȍznat*). (*ȍgledalo*, which looks like *dočekalo*, is a lexicon entry.)
-- **Verbs in *-ovati*** (`ov_verb()`): the infinitive, the participle and
-  the aorist have the accent on the *o* (*kupòvati, putòvao, stanòvala,
-  darovàsmo*), next to the present in *-ujem* above. *Vjȅrovati, rȁdovati
-  se, mìlovati, pȍštovati* keep the first syllable and are lexicon entries.
+- **Verbs in *-ovati*** (`ov_verb()`): the infinitive, the participle, the
+  aorist and the Serbian and Bosnian fused future have the accent on the
+  *o* (*kupòvati, putòvao, stanòvala, darovàsmo, poštòvati, poštòvaću*),
+  next to the present in *-ujem* above (*pòštujēm*). *Vjȅrovati, vȅrovati,
+  rȁdovati se, mìlovati, ljȅtovati* keep the first syllable and are lexicon
+  entries, with their present (*vjȅrujēm*), verbal noun (*vjȅrovānje*) and
+  the fused future forms longer than their stems reach (*vȅrovaćemo*).
 - **Nouns in *-ica*** (`ica_noun()`) of four or more syllables built on
   *-ar, -on, -un, -ovn, -ern, -arn, -telj* have the accent on that syllable
   (*čuvàrica, kuhàrica, radiònica, račùnica, putòvnica, cvjećàrnica,
@@ -858,6 +861,39 @@ are lexicon entries.
   Rìmljanin, kr̀šćanin, držàvljanin, Lìčanin*).
 - **Adjectives in *-izan, -ozan*** (`izan_adjective()`): *precìzan,
   koncìzna, nervózan, religiózni, grandiózno*.
+- **Adjectives in *-antan, -entan*** (`ant_adjective()`): the accent of
+  *-ant-, -ent-* in every form, *interesàntan, interesàntno, elegàntna,
+  toleràntnī, kompetèntan, inteligèntnōst* (HJP, Školski rječnik, Rečnik
+  Matice srpske, twenty adjectives checked); the comparative
+  *interesàntnijī* comes from the rule for *-ij*. The adjectives of nouns
+  in *-ant, -ent* keep the noun's accent and are lexicon entries
+  (*fòrmantnī, pàtentnī, gàrantnī, dijàmantan, cèmentnī, sègmentan,
+  pìgmentnī, tàngentnī, prézentnī*), as is *mòmēntan*.
+- **Adjectives in *-ljiv*** (`ljiv_adjective()`), their adverbs and the
+  nouns in *-ljivost*: the syllable before the suffix, *vìdljiv, nevìdljiv,
+  nevìdljivōst, čìtljiv, razùmljiv, prihvàtljiv, osjètljiv, snalàžljiv,
+  nepopràvljiv, neodòljiv*; the comparative *vidljìvijī* from the rule for
+  *-ij*.
+- **Nouns in *-teljstvo*** (`teljstvo_noun()`): the accent of *-telj-* in
+  every case, *prijatèljstvo, prijatèljstāvā, roditèljstvo, gledatèljstvo,
+  ugostitèljstvo, pokrovitèljstvo* (Školski rječnik; HJP has
+  *ròditēljstvo, gràditēljstvo* for two of them). The adjectives in
+  *-teljski* go both ways (*prijatèljskī* but *ròditeljskī, ùčiteljskī,
+  ugòstiteljskī*) and are not a rule.
+- **Verbs in *-laziti*** (`laziti_verb()`): the syllable before *-la-*,
+  usually the prefix, in the infinitive, the participles, the aorist and
+  imperfect and the verbal noun: *dòlaziti, dòlazio, dòlazēći, nàlaziti,
+  pronàlaziti, snàlaziti, obìlaziti; dòlažēnje, snàlažēnje, nesnàlažēnje*
+  (Školski rječnik, Mrežnik). Without it the rule for long infinitives gave
+  *dolàziti* and the one for *-enje* *snalažénje*. *-lazi, -laze* are also
+  the plurals of the nouns (*prȍlazi, ȉzlazi*) and count only where the
+  accent is not on the first syllable anyway (*pronàlazi*).
+- **Adjectives in *-ijski*** (the rule for *-ija*): the accent of the noun,
+  *simulácījskī, informácījskī, komunikácījskī, polìcījskī, enèrgījskī,
+  kategòrījskī* (HJP, Školski rječnik; HJP's *rèvizījskī* is the one
+  exception found). A noun whose accent is a lexicon entry needs its
+  adjective there too, because a stem reaches only three letters further
+  (*àustrījskī, aùstrālījskī*, where the rule alone gave *aùstrijskog*).
 - **Negated participles** (`form_of()` with `negated`): *ne* + a passive
   participle of a verb from `VERBS` or `IJE_VERBS` is an adjective with the
   accent the dictionaries give the participle, in every voice: *nepròčitan,
@@ -1130,7 +1166,10 @@ Three things to know:
     obavještavaju, uživaš, pokrivaj*): the dictionaries have the accent one
     syllable before it (*oznàčāvām, ùžīvām*), which Stojan and Mirsad say;
     Zvonko keeps the infinitive's (*označávam, užívam*), as with the other
-    verbs. The third person is spelled like many nouns and adjectives
+    verbs. The third person plural keeps the infinitive's accent in the
+    dictionaries too (*označávajū, održávajū, doživljávajū, užívajū*; also
+    *otvárajū, ponávljajū* of the verbs in `VERBS`), in every voice. The
+    third person is spelled like many nouns and adjectives
     (*država, zabava, krvava; osjetljiva, perspektiva*), so *-ava* counts
     only from four syllables on (*označava, održava, podržava*) and *-iva*
     not at all; the short verbs are in `VERBS` (*rješava, uživa, pokriva,
@@ -1367,6 +1406,90 @@ is used here. Shared entries retain the accent in cases and possessives
 without matching the noun plurals *knezovi/kneževi*. Tests compare explicit
 accents, vowel duration and tone in all eight speaking voices, including
 Cyrillic input.
+
+**Prijateljstvo, nevidljiv, potencijal, snalaženje, simulacijski, doživjeti,
+poštovanje, interesantno (9 October 2026).** Each word was looked up with its
+whole paradigm and family in HJP, Školski rječnik, Mrežnik, Wiktionary,
+Rečnik Matice srpske (2011, page images on archive.org) and Alić's
+*Akcenat u standardnom bosanskom jeziku* (2017), and every form was checked a
+second time against the sources. Where a word showed a fault of a whole
+class, the class became a rule (see "Word classes" above).
+
+| Word | Chosen accent and related forms | Evidence |
+|---|---|---|
+| prijateljstvo | *prijatèljstvo* in every case, G pl *prijatèljstāvā*; Serbian *prijatéljstvo* (RMS). *prȉjatelj, nèprijatelj* on the first syllable (Bosnian *prìjatelj*, Alić); *prijatèljica, prijatèljskī, neprijatèljstvo* (G pl *neprijàtēljstāvā*), *sprijatèljiti, sprijàteljīm* | [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eVZnUBE%3D), [Školski rječnik](https://rjecnik.hr/search/?strict=yes&q=prijateljstvo), [RMS](https://archive.org/details/recnik-srpskoga-jezika-2011/page/n1024/mode/1up) |
+| nevidljiv | *nevìdljiv* in every form, *nevìdljivo, nevìdljivōst*, comparative *nevidljìvijī*; *vìdljiv* | [Školski rječnik](https://rjecnik.hr/search/?strict=yes&q=nevidljiv), HJP, RMS *невѝдљив* |
+| potencijal | *potencìjāl*, every other case *potencijála*; *pȍtencijālan, pȍtencijālno*, but *potencijálnōst*; also *materijála, serijála, memorijála, tutorijála* | [Školski rječnik](https://rjecnik.hr/search/?strict=yes&q=potencijal), HJP, RMS *потенцѝја̄л, -а́ла* |
+| snalaženje | *snàlažēnje* in every case; *snàlaziti, snàlazīm, snàlazio*; *snȃći, snȃđēm, snáđi, snàšao* (Serbian *snáći*); *snalàžljiv* | [Školski rječnik](https://rjecnik.hr/search/?strict=yes&q=snala%C5%BEenje), HJP *snàlaziti*, RMS *сна̀лаже̄ње* |
+| simulacijski | *simulácījskī* in every form; *simulácija, simulírati, simùlātor* | [Školski rječnik](https://rjecnik.hr/search/?strict=yes&q=simulacijski), HJP |
+| doživjeti | *dožívjeti, dožívio, dožívjela*, imperative *dožívi, dožívite*; present *dožívīm* in every voice; *dòžīvljen, dȍživljāj, doživljávati*; the same for *preživjeti, proživjeti, nadživjeti, poživjeti*, and *žívjeti* | [Školski rječnik](https://rjecnik.hr/search/?strict=yes&q=do%C5%BEivjeti), [Mrežnik](https://rjecnik.hr/mreznik/dozivjeti/), HJP, RMS *дожи́вети, -вӣм* |
+| poštovanje | *poštovánje* in every case, *nepoštovánje, samopoštovánje*; the verb *poštòvati, pòštujēm, poštòvao*; *pȍštovān, pȍštovānī*; *poštòvatelj, poštòvalac* | [Školski rječnik](https://rjecnik.hr/search/?strict=yes&q=po%C5%A1tovanje), HJP, RMS *поштова́ње* |
+| interesantno | *interesàntno, interesàntan* in every form; *ȉnteres*; Serbian and Bosnian *ȉnteresovati, ȉnteresujēm, zàinteresovati, nezàinteresovān* | [Školski rječnik](https://rjecnik.hr/search/?strict=yes&q=interesantan), HJP, RMS *интересàнтан* |
+
+Choices where the sources or the voices differ:
+
+- *poštovanje* is also the verbal noun of *poštòvati*, which HJP and
+  Wiktionary accent *poštòvānje*; every dictionary has the noun
+  *poštovánje* (respect, the greeting), and that is what the voices say.
+  The old lexicon entry *pȍštovati* was a variant of Rečnik Matice srpske
+  only; HJP, Školski rječnik and Wiktionary have *poštòvati*.
+- The Croatian dictionaries move the present of *doživjeti* to the prefix
+  (*dòžīvīm*); Rečnik Matice srpske and Rječnik bosanskoga jezika do not
+  (*dožívīm*). All three voices say *dožívīm*, which is also Zvonko's
+  policy for verbs; so *doživite* is *dožívite* whether it is the
+  imperative or the present. The passive participle *dòžīvljen* is the
+  same in all the dictionaries and moves in every voice.
+- *snašao* follows Školski rječnik (*snàšao*); HJP has *snȁšao*.
+- Rečnik Matice srpske prints the Serbian *prijatéljstvo* and
+  *neprijatéljstvo* (long rising), where the Croatian dictionaries and
+  Wiktionary have *prijatèljstvo*; Stojan follows it, keeping the accent in
+  the genitive plural (*prijatéljstāvā*), which no Serbian source prints.
+- Alić gives *prìjatelj* as the Bosnian form (*prȉjatelj* in the Croatian
+  and Serbian dictionaries); Mirsad says *prìjatelj*.
+- The spelling *potencijale* is read as the accusative plural
+  (*potencijále*), not the rare vocative (*pȍtencijāle*).
+
+An independent review of the change found that the new rules and stems
+also reached words outside them; these now have entries of their own:
+*austrijskog, australijski* (above), *cementni, segmentni, pigmentni,
+tangentni, prezentni, momentna*, *prijatèljujū* (of *prijateljèvati*),
+*preživljénje, doživljénje*, *poštovatèljica*, the declined participles
+*prežívjelīh, dožívjelōg*, and the long fused futures of the
+first-syllable *-ovati* verbs. *Snàlazī, dòlazī* get the rising accent of
+the rest of their paradigm; only the prefixes that also make a noun
+(*prȍlaz, ȉzlaz, ȕlaz, nȁlaz*) leave the third person to the default.
+
+**Egipat, proizvodnja, vodič, napomene (9 October 2026).** Looked up with
+their paradigms and families in HJP, Školski rječnik, Wiktionary (en and
+sh) and Rečnik Matice srpske (page images); the sources agree on all four.
+Alić's handbook has none of them, so Mirsad follows the other two.
+
+| Word | Chosen accent and related forms | Evidence |
+|---|---|---|
+| Egipat | *Ègipat, Ègipta* in every case (the rule for *-at* gave *egìpat*); *ègipatskī, Ègipćanin, Ègipćani, Ègipćānka* | [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=fF1kWxM%3D), Wiktionary *Ègipat*, RMS *ѐгипатскӣ, Ѐгипћанин* |
+| proizvodnja | *proizvòdnja* in every case (was *prȍizvodnja*); *proìzvod, proìzvoda, proìzvodi*; *proìzvesti, proìzveo, proizvèdēm, proizvèden*; *proizvòditi, proizvòdio, proìzvodīm* (Zvonko *proizvòdim*, his verb policy), *proìzvođēnje*. The adjective stays *prȍizvodnī* (HJP; Školski rječnik has *proìzvodnī*) | [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=dl9gXRI%3D), [Školski rječnik](https://rjecnik.hr/search/?strict=yes&q=proizvodnja), RMS *произво̀дња и произво́дња* |
+| vodič | *vòdīč*, but *vodíča, vodíču, vodíčem, vodíči, vodíče, vodíčima* (was *vȍdič, vȍdiča*); *poluvòdīč, poluvodíča* | [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=f19vXBh1), [Školski rječnik](https://rjecnik.hr/search/?strict=yes&q=vodi%C4%8D), RMS *во̀дӣч, -и́ча* |
+| napomena | *nȁpomena* in every case, G pl *nȁpomēnā*; *napoménuti, napòmēnēm* (Zvonko *napoménem*), imperative *napoméni*; *napòminjati, napòminjēm, napòminjao* (was *napomìnjati*) | [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=e1ZjWhg%3D), [Školski rječnik](https://rjecnik.hr/search/?strict=yes&q=napomena), RMS *на̏помена, напомéнути* |
+
+*Napomene, napomenu* and *napomeni* are also the present and the imperative
+of *napoménuti*. The noun has them (the `n` flag of `VERBS` now covers the
+verbs in *-nuti*: their third persons go to the noun, their imperative is
+the verb only at the head of a clause), so "Dodaj napomene", "u napomeni",
+"kad napomene" have *nȁpomene*, and "Napomeni mu" has *napoméni*. Since
+the noun has a lexicon entry, the front end now skips the lexicon for a
+word that is a command only because it opens its clause; the one other
+word this changes is a clause-initial *Koristi*, now the verb rather than
+the noun *kȍristi*. The proizvod- family had the same fault as
+*proizvodnja* (the accent on *pro-*), so *proizvod*, *proizvesti* and the
+present of *proizvoditi* were fixed with it; *proizvodi* and *proizvode*
+are the noun's (*proìzvodi*), which is also the dictionaries' present.
+
+Found along the way and left as they are: *kanala, generala, kapitala* and
+the other genitives in *-ala* of nouns in *-al* still have the first
+syllable stressed (*kanála*), because a rule for *-ala* would take the
+participles (*gledala, razvijala*); only the nouns in *-ijal* are lexicon
+entries now. The *-irati* verbs keep their accent in the present
+(*simulíram, interesíram*), as decided earlier.
 
 ## 5. Timing and melody (`formant_synthesizer.cpp`)
 
@@ -1753,7 +1876,10 @@ Croatian speaker 11.1%; eSpeak NG Croatian 23.2%; Josip 33.1%.
   (`formant::letter_name`), or spelled by their sounds
   (`Frontend::letter_sound`: an `Utterance` with `isolated_sound` set, whose
   durations the builder fixes: the consonant and a neutral release vowel
-  after it, "bə", "sə", as eSpeak's Croatian voice sounds letters out).
+  after it, "bə", "sə", as eSpeak's Croatian voice sounds letters out). The
+  foreign letters q, w, x and y (`formant::is_foreign_letter`) have no sound
+  of their own in the language and keep their names (ku, duplo ve, iks,
+  ipsilon) in that mode too.
 
 ## Sources
 

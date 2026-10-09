@@ -168,6 +168,9 @@ const char* const COMMON[] = {
     u8"Evr'o:p*", u8"Am'erik*", u8"H'rva:tsk*", u8"H'rva:t*",
     u8"S'rbij*", u8"s'rpsk*", u8"B^osn*", u8"b^osa:nsk*", u8"H/ercegovin*",
     u8"'Austrij*", u8"Austr'a:lij*", u8"C'rn*",
+    // àustrījskī, aùstrālījskī (HJP): the rule for -ijski would take the
+    // forms the stems above do not reach (austrijskog)
+    u8"/austrijsk*", u8"a/ustralijsk*",
 
     // ---- Days ----
     u8"pon'edjelj*", u8"pon'edelj*", u8"^utor*", u8"sr/ije:d*", u8"sr/e:d*",
@@ -358,6 +361,7 @@ const char* const COMMON[] = {
     u8"zl/očin*", u8"zloč'inc*", u8"zloč'inac", u8"v/ojnik", u8"v/ojniče",
     u8"vojn'i:|ka|ku|kom|ci|cima|ke", u8"m^enadžer*", u8"h^amburger*",
     u8"čvrst'in*", u8"četvrt'in*", u8"pol'ovic*", u8"činj'enic*", u8"b'aterij*",
+    u8"b'aterijsk*",
     u8"/ogledal*", u8"četvrt'i:nk*", u8"Dalmat'i:nk*", u8"b/ogat*", u8"pr^evar*", u8"s/udar*",
     u8"dom'aćin*", u8"dom'aćic*", u8"B/alkan", u8"Balk'a:n|a|u|om|e|i|ima", u8"balk'a:nsk*",
     // Three-syllable nouns in -ina (the rule needs four syllables, see
@@ -373,8 +377,15 @@ const char* const COMMON[] = {
     u8"z/emljak", u8"zemlj'a:|ka|ku|kom|ci|cima|ke|če|kov*", u8"bol'esnik", u8"bol'esniče",
     u8"bolesn'i:|ka|ku|kom|ci|cima|ke", u8"bol'esnic*",
     // Verbs in -ovati that keep the first syllable against the rule for
-    // -ovati (vjȅrovati, rȁdovati se, mìlovati, pȍštovati)
-    u8"vj^erov*", u8"r^adov*", u8"m/ilov*", u8"p^oštov*",
+    // -ovati (vjȅrovati, vȅrovati, rȁdovati se, mìlovati, ljȅtovati), with
+    // their present (vjȅrujēm, ljȅtujēm), verbal noun (vjȅrovānje, rȁdovānje,
+    // ljȅtovānje) and the fused future forms the stems do not reach
+    u8"vj^erov*", u8"v^erov*", u8"r^adov*", u8"m/ilov*", u8"lj^etov*", u8"l^etov*",
+    u8"vj^eruj*", u8"v^eruj*", u8"lj^etuj*", u8"l^etuj*",
+    u8"vj^erovanj*", u8"v^erovanj*", u8"r^adovanj*", u8"lj^etovanj*", u8"l^etovanj*",
+    u8"vj^erov|aćeš|aćemo|aćete|avši", u8"v^erov|aćeš|aćemo|aćete|avši",
+    u8"r^adov|aćeš|aćemo|aćete|avši", u8"m/ilov|aćeš|aćemo|aćete|avši",
+    u8"lj^etov|aćeš|aćemo|aćete|avši", u8"l^etov|aćeš|aćemo|aćete|avši",
 
     // ---- Words checked in October 2026 against Školski rječnik
     // hrvatskoga jezika, Hrvatski mrežni rječnik, HJP and Wiktionary, with
@@ -461,6 +472,107 @@ const char* const COMMON[] = {
     // WinTalker: the user's vin-TO-ker, with short rising o.
     u8"m^esindžer||a|u|e|om", u8"t^iktok||a|u|e|om",
     u8"vint/oker||a|u|e|om",
+
+    // ---- The listener's third October 2026 list (prijateljstvo,
+    // nevidljiv, potencijal, snalaženje, simulacijski, doživjeti,
+    // poštovanje, interesantno) and the families of these words, checked
+    // against HJP, Školski rječnik, Mrežnik, Wiktionary, Rečnik Matice srpske
+    // and Alić's Bosnian accent handbook. The classes behind them are rules
+    // (StressRules: -teljstvo, -ljiv, -laziti, -antan/-entan, -ijski);
+    // the lengths after the accent are in the Serbian and Bosnian tables ----
+    // prȉjatelj and nèprijatelj in every case (Bosnian prìjatelj, in its
+    // table); their derivatives have the accent of -telj-: prijatèljica,
+    // prijatèljskī, neprijatèljica, neprijatèljskī, and prijatèljstvo by the
+    // rule for -teljstvo, except the G pl neprijàtēljstāvā (HJP, Wiktionary)
+    u8"pr^ijatelj*", u8"prijat/eljic*", u8"prijat/eljič*", u8"prijat/eljsk*",
+    u8"prijat/eljuj*",
+    u8"n/eprijatelj*", u8"neprijat/eljic*", u8"neprijat/eljsk*", u8"neprij/ateljstava",
+    // potencìjāl by the rule for -al, potencijála in the other cases, like
+    // the other nouns in -ijal (materìjāl, materijála; serìjāl, memorìjāl,
+    // tutorìjāl, ceremonìjāl); the adjective pȍtencijālan, pȍtencijālno in
+    // every form, but potencijálnōst
+    u8"potencij'a:l|a|u|om|e|i|ima", u8"materij'a:l|a|u|om|e|i|ima",
+    u8"serij'a:l|a|u|om|e|i|ima", u8"memorij'a:l|a|u|om|e|i|ima",
+    u8"tutorij'a:l|a|u|om|e|i|ima", u8"ceremonij'a:l|a|u|om|e|i|ima",
+    u8"p^otencijal|an|na|no|ni|ne|nu|nog|nom|noj|nih|nim|noga|nome|nomu|nima",
+    u8"potencij'a:lno:st", u8"potencij'a:lnost*", u8"potencij'a:lnošću",
+    // snȃći, snȃđēm, but snáđi, snáđoh and snàšao (Školski rječnik; HJP has
+    // snȁšao); snàlaziti and snàlažēnje come from the rule for -laziti,
+    // snalàžljiv from the rule for -ljiv
+    u8"sn^a:ći", u8"sn^a:đ|em|eš|e|emo|ete|u", u8"sn/a:đ|i|imo|ite|oh|osmo|oste|oše",
+    u8"sn/aš|ao|la|lo|li|le|avši",
+    // simùlātor, simùlātorskī (HJP, Rečnik Matice srpske) against the rule
+    // for -ator; simulácija and simulácījskī are the rule for -ij
+    u8"sim/ulator*", u8"sim/ulatorsk*",
+    // dožívjeti, dožívio, dožívjela, imperative dožívi, dožívite. The
+    // Croatian dictionaries move the present to the prefix (dòžīvīm),
+    // Rečnik Matice srpske and the Bosnian dictionary keep it (dožívīm), and
+    // so does the Croatian voice, as with the verbs in VERBS. The passive
+    // participle is dòžīvljen in all of them, the noun dȍživljāj. The same
+    // for preživjeti, proživjeti, nadživjeti, poživjeti, and for žívjeti.
+    u8"dož'i:v|jeti|jet|jela|jelo|jeli|jele|jeh|je|jesmo|jeste|ješe|jevši|io|i|imo|ite|im|iš|e|jeću|jećeš|jeće|jećemo|jećete",
+    u8"dož'i:v|eti|et|ela|elo|eli|ele|eh|esmo|este|eše|evši|eo|eću|ećeš|eće|ećemo|ećete",
+    u8"prež'i:v|jeti|jet|jela|jelo|jeli|jele|jeh|je|jesmo|jeste|ješe|jevši|io|i|imo|ite|im|iš|e|jeću|jećeš|jeće|jećemo|jećete",
+    u8"prež'i:v|eti|et|ela|elo|eli|ele|eh|esmo|este|eše|evši|eo|eću|ećeš|eće|ećemo|ećete",
+    u8"prož'i:v|jeti|jet|jela|jelo|jeli|jele|jeh|je|jesmo|jeste|ješe|jevši|io|i|imo|ite|im|iš|e|jeću|jećeš|jeće|jećemo|jećete",
+    u8"prož'i:v|eti|et|ela|elo|eli|ele|eh|esmo|este|eše|evši|eo|eću|ećeš|eće|ećemo|ećete",
+    u8"nadž'i:v|jeti|jet|jela|jelo|jeli|jele|jeh|je|jesmo|jeste|ješe|jevši|io|i|imo|ite|im|iš|e|jeću|jećeš|jeće|jećemo|jećete",
+    u8"nadž'i:v|eti|et|ela|elo|eli|ele|eh|esmo|este|eše|evši|eo|eću|ećeš|eće|ećemo|ećete",
+    u8"pož'i:v|jeti|jet|jela|jelo|jeli|jele|jeh|je|jesmo|jeste|ješe|jevši|io|i|imo|ite|im|iš|e|jeću|jećeš|jeće|jećemo|jećete",
+    u8"pož'i:v|eti|et|ela|elo|eli|ele|eh|esmo|este|eše|evši|eo|eću|ećeš|eće|ećemo|ećete",
+    u8"ž/i:v|jeti|jet|jela|jelo|jeli|jele|jeh|jesmo|jeste|ješe|jevši|io|im|iš|imo|ite|jeću|jećeš|jeće|jećemo|jećete",
+    u8"ž/i:v|eti|et|ela|elo|eli|ele|eh|esmo|este|eše|evši|eo|eću|ećeš|eće|ećemo|ećete",
+    // The participle as an adjective (prežívjelī, broj prežívjelīh): its
+    // declension falls back to these stems
+    u8"dož'i:vjel*", u8"dož'i:vel*", u8"prež'i:vjel*", u8"prež'i:vel*", u8"prož'i:vjel*",
+    u8"prož'i:vel*", u8"nadž'i:vjel*", u8"nadž'i:vel*", u8"pož'i:vjel*", u8"pož'i:vel*",
+    u8"ž/i:vjel*", u8"ž/i:vel*",
+    // dòžīvljen, but the nouns preživljénje, doživljénje
+    u8"d/oživljen*", u8"pr/eživljen*", u8"pr/oživljen*", u8"n/adživljen*",
+    u8"doživlj'e:nj*", u8"preživlj'e:nj*", u8"proživlj'e:nj*", u8"nadživlj'e:nj*",
+    u8"d^oživljaj*", u8"doživlj'a:jno:st", u8"doživlj'a:jnost*",
+    // poštovánje, the noun (HJP, Školski rječnik, Rečnik Matice srpske),
+    // nepoštovánje, samopoštovánje; the verb poštòvati, pòštujēm by the
+    // rules for -ovati and -ujem; its participle pȍštovān, pȍštovānī;
+    // poštòvatelj, poštòvalac
+    u8"poštov'a:nj*", u8"nepoštov'a:nj*", u8"samopoštov'a:nj*", u8"p^oštovan*",
+    u8"pošt/ovatelj*", u8"poštovat/eljic*", u8"pošt/ovalac", u8"pošt/ovalaca",
+    u8"pošt/ovaoc*", u8"p/oštuj", u8"pošt/ova",
+    // ȉnteres and ȉnterēsnī in every form (an exact paradigm: a stem would
+    // take interesira); interesàntan is the rule for -antan, interesírati
+    // the rule for -irati. The Serbian and Bosnian ȉnteresovati,
+    // ȉnteresujēm, zàinteresovati, zàinteresujēm, nezàinteresovān (Rečnik
+    // Matice srpske) against the rules for -ovati and -ujem
+    u8"^interes||a|u|e|om|i|ima|ni|na|no|ne|nu|nog|nom|noj|nih|nim|nima|noga|nome|nomu",
+    u8"^interesov*", u8"^interesovanj*", u8"^interesuj*", u8"^interesujući",
+    // The adjectives of nouns in -ant, -ent keep the noun's accent against
+    // the rule for -antan (fòrmant, fòrmantnī; pàtentnī, gàrantnī,
+    // dijàmantan, cèmentnī, sègmentan, pìgmentnī, tàngentnī, prézentnī in
+    // HJP and Školski rječnik), and so does mòmēntan
+    u8"f/ormant*", u8"f/ormantn*", u8"p/atentn*", u8"g/arantn*", u8"dij/amant*",
+    u8"dij/amantn*", u8"c/ementn*", u8"s/egmentan", u8"s/egmentn*", u8"p/igmentn*",
+    u8"t/angentn*", u8"m/omentan", u8"m/omentn*", u8"pr/e:zentn*",
+    u8"z/ainteresov*", u8"z/ainteresovan*", u8"z/ainteresovanost*", u8"z/ainteresuj*",
+    u8"z/ainteresujući", u8"nez/ainteresovan*", u8"nez/ainteresovanost*",
+    u8"^interesov|aćeš|aćemo|aćete|avši", u8"z/ainteresov|aćeš|aćemo|aćete|avši",
+
+    // ---- The fourth October 2026 list (HJP, Školski rječnik, Wiktionary,
+    // Rečnik Matice srpske; all agree) ----
+    // Ègipat, Ègipta in every case against the rule for -at; ègipatskī,
+    // Ègipćanin, Ègipćani, Ègipćānka
+    u8"/egip*", u8"/egipatsk*", u8"/egipćan*", u8"/egipćank*",
+    // proizvòdnja in every case; proìzvod, proìzvoda (an exact paradigm: a
+    // stem would take proizvòditi, proizvòdio). The adjective stays on the
+    // first syllable as in HJP (prȍizvodnī). The verbs are in VERBS, except
+    // proìzvesti, proìzveo and the verbal noun proìzvođēnje
+    u8"proizv'odnj*", u8"pro'izvod||a|u|om|e|i|ima|eći",
+    u8"pro'izve|sti|st|o|la|lo|li|le|vši|šću|šćeš|šće|šćemo|šćete", u8"pro'izvođenj*",
+    // vòdīč, but vodíča, vodíči in the other cases; poluvòdīč the same
+    u8"v/odič", u8"vod'i:č|a|u|em|i|e|ima", u8"poluv'odič", u8"poluvod'i:č|a|u|em|i|e|ima",
+    // nȁpomena in every case. nȁpomene, nȁpomenu and nȁpomeni are also
+    // spelled like forms of napoménuti (VERBS): the noun has them, except
+    // the imperative at the head of a clause (Napoméni mu ...)
+    u8"n^apomen|a|e|i|u|o|om|ama",
 };
 
 const char* const CROATIAN[] = {
@@ -605,6 +717,21 @@ const char* const SERBIAN[] = {
     // màslina, màslinov and rakéta are the first forms of the Serbian
     // dictionary (Rečnik Matice srpske: ма̀слина и ма̏слина, раке́та и ракѐта)
     u8"m/aslin*", u8"m/aslinov*", u8"rak/e:t*",
+    // The third October 2026 list (see COMMON). Rečnik Matice srpske has
+    // prijatéljstvo, neprijatéljstvo (first form) and snáći, where the
+    // Croatian dictionaries have prijatèljstvo and snȃći
+    u8"prijat/e:ljstv|o|a|u|om|ima", u8"prijat/e:ljsta:va:",
+    u8"neprijat/e:ljstv|o|a|u|om|ima", u8"neprij/ate:ljsta:va:", u8"sn/a:ći",
+    u8"p^otencija:l|an|na|no|ni|ne|nu|nog|nom|noj|nih|nim|noga|nome|nomu|nima",
+    u8"sn/alaže:nj|e|a|u|em|ima", u8"simul'a:ci:jsk*", u8"sim/ula:tor*", u8"sim/ula:torsk*",
+    u8"dož'i:v|i:m|i:š|e:", u8"prež'i:v|i:m|i:š|e:", u8"prož'i:v|i:m|i:š|e:",
+    u8"nadž'i:v|i:m|i:š|e:", u8"pož'i:v|i:m|i:š|e:", u8"ž/i:v|i:m|i:š",
+    u8"d/oži:vljen*", u8"pr/eži:vljen*", u8"pr/oži:vljen*", u8"n/adži:vljen*",
+    u8"d^oživlja:j*", u8"nev/idljivo:st", u8"nesn/alaže:nj|e|a|u|em|ima",
+    u8"p^oštova:n*", u8"^interesova:n*", u8"^interesuj|e:m|e:š|e:|e:mo|e:te|u:",
+    u8"z/ainteresuj|e:m|e:š|e:|e:mo|e:te|u:", u8"z/ainteresova:n*", u8"nez/ainteresova:n*",
+    // The fourth list (see COMMON): vòdīč, poluvòdīč, Ègipćānka
+    u8"v/odi:č", u8"poluv'odi:č", u8"/egipća:nk*",
 };
 
 const char* const BOSNIAN[] = {
@@ -641,6 +768,21 @@ const char* const BOSNIAN[] = {
     // màslina, màslinov and rakéta are the first forms of the Serbian
     // dictionary (Rečnik Matice srpske: ма̀слина и ма̏слина, раке́та и ракѐта)
     u8"m/aslin*", u8"m/aslinov*", u8"rak/e:t*",
+    // The third October 2026 list (see COMMON). Alić's handbook gives
+    // prìjatelj as the main Bosnian form (prȉjatelj in the Croatian and
+    // Serbian dictionaries) and dožívīm as Rječnik bosanskoga jezika has it
+    u8"pr/ijatelj*", u8"prijat/eljsta:va:", u8"neprij/ate:ljsta:va:",
+    u8"sn^a:đ|e:m|e:š|e:|e:mo|e:te|u:",
+    u8"p^otencija:l|an|na|no|ni|ne|nu|nog|nom|noj|nih|nim|noga|nome|nomu|nima",
+    u8"sn/alaže:nj|e|a|u|em|ima", u8"simul'a:ci:jsk*", u8"sim/ula:tor*", u8"sim/ula:torsk*",
+    u8"dož'i:v|i:m|i:š|e:", u8"prež'i:v|i:m|i:š|e:", u8"prož'i:v|i:m|i:š|e:",
+    u8"nadž'i:v|i:m|i:š|e:", u8"pož'i:v|i:m|i:š|e:", u8"ž/i:v|i:m|i:š",
+    u8"d/oži:vljen*", u8"pr/eži:vljen*", u8"pr/oži:vljen*", u8"n/adži:vljen*",
+    u8"d^oživlja:j*", u8"nev/idljivo:st", u8"nesn/alaže:nj|e|a|u|em|ima",
+    u8"p^oštova:n*", u8"^interesova:n*", u8"^interesuj|e:m|e:š|e:|e:mo|e:te|u:",
+    u8"z/ainteresuj|e:m|e:š|e:|e:mo|e:te|u:", u8"z/ainteresova:n*", u8"nez/ainteresova:n*",
+    // The fourth list (see COMMON): vòdīč, poluvòdīč, Ègipćānka
+    u8"v/odi:č", u8"poluv'odi:č", u8"/egipća:nk*",
 };
 
 // Verbs whose root has the long "ije" (podijéliti, promijéniti, zalijévati).
@@ -697,7 +839,8 @@ const char* const IJE_VERBS[] = {
 //   p  ... and in the passive participle (ùrēđen);  P: to the first syllable
 //   !  Zvonko moves it too, as the dictionaries do (ùključen, raspòrēđen)
 //   n  the imperative is spelled like a form of a noun or adjective (potvrdi,
-//      uredi, otvori, načini; for class a the third person: oprema, proba).
+//      uredi, otvori, načini, napomeni; for classes a and u the third
+//      person: oprema, proba, napomene, napomenu).
 //      It is read as the verb only at the head of a clause ("Potvrdi",
 //      "Ne zaboravi"); elsewhere the other word has priority.
 //
@@ -754,7 +897,7 @@ const char* const VERBS[] = {
     u8"priv'e:ž=e<", u8"odv'e:z=tp", u8"odv'e:ž=e<", u8"sv'e:z=t", u8"sv'e:ž=e",
     u8"obv'e:z=tp", u8"obv'e:ž=e<", u8"pokr'e:=u<p", u8"okr'e:=u<p", u8"zakr'e:=u<p",
     u8"skr'e:=u", u8"preokr'e:=u<p", u8"pom'ak=u<p", u8"odm'ak=u<p", u8"prim'ak=u<p",
-    u8"razm'ak=u<p", u8"dod'i:r=u<p", u8"dot'ak=u<p", u8"spom'e:=u<p", u8"napom'e:=u<p",
+    u8"razm'ak=u<p", u8"dod'i:r=u<p", u8"dot'ak=u<p", u8"spom'e:=u<p", u8"napom'e:=u<pn",
     u8"iz'ostav=i", u8"up'u:t=i<pn", u8"stv'a:r=a", u8"otv'a:r=a<", u8"zatv'a:r=a<",
     u8"pretv'a:r=a<", u8"odgov'a:r=a<", u8"razgov'a:r=a<", u8"dogov'a:r=a<",
     u8"izgov'a:r=a<", u8"pon'a:vlj=a<", u8"obn'a:vlj=a<", u8"pripr'e:m=a<n",
@@ -833,6 +976,13 @@ const char* const VERBS[] = {
     u8"inspir'i:r=a<p!", u8"insp'iris=t", u8"insp'iriš=e",
     // ŠR and HJP: pròslaviti/pròslavīm/pròslavljen; vesèliti/vesèlīm.
     u8"pr/oslav=i", u8"ves'el=i",
+    // ŠR and HJP: sprijatèljiti, sprijàteljīm, sprijàteljen (Rečnik Matice
+    // srpske also sprijatèljīm)
+    u8"sprijat'elj=i<p",
+    // HJP, Školski rječnik: napòminjati, napòminjēm, napòminji, napòminjao;
+    // proizvòditi, proìzvodīm, proizvòdio, proìzvođen (proìzvodi is the
+    // noun's in the lexicon); proizvèdēm, proizvèdi, proizvèden
+    u8"nap'ominj=te", u8"proizv'od=i<p", u8"proizv'ed=e",
 };
 
 template <size_t N>
