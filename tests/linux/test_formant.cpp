@@ -1865,6 +1865,217 @@ TEST_CASE("The fourth listener list follows the dictionaries in every voice", "[
     REQUIRE(speak(engine.handle, u8"napomene") != speak(engine.handle, u8"napoméne"));
 }
 
+TEST_CASE("Age and time compounds and čestitka follow the dictionaries", "[formant][text]") {
+    // The compounds of -godišnji, -godišnjak, -godišnjica, -godište,
+    // -mjesečni, -dnevni, -tjedni, -nedeljni and -ljetan
+    // (StressRules::time_compound), gòdišnjāk, čèstitka and čestítati (HJP,
+    // Školski rječnik, Rečnik Matice srpske), checked 2026-10-09; see
+    // docs/formant.md. Croatian omits unstressed length.
+    struct Case { const char* voice; const char* plain; const char* accented; };
+    const Case cases[] = {
+        {"zvonko", u8"petogodišnji", u8"petogòdišnji"},
+        {"zvonko", u8"petogodišnja", u8"petogòdišnja"},
+        {"zvonko", u8"petogodišnjeg", u8"petogòdišnjeg"},
+        {"zvonko", u8"šestogodišnjoj", u8"šestogòdišnjoj"},
+        {"zvonko", u8"sedmogodišnji", u8"sedmogòdišnji"},
+        {"zvonko", u8"osmogodišnjem", u8"osmogòdišnjem"},
+        {"zvonko", u8"desetogodišnje", u8"desetogòdišnje"},
+        {"zvonko", u8"stogodišnji", u8"stogòdišnji"},
+        {"zvonko", u8"dvadesetogodišnjak", u8"dvadesetogòdišnjak"},
+        {"zvonko", u8"dvadesetpetogodišnji", u8"dvadesetpetogòdišnji"},
+        {"zvonko", u8"dugogodišnji", u8"dugogòdišnji"},
+        {"zvonko", u8"novogodišnja", u8"novogòdišnja"},
+        {"zvonko", u8"stogodišnjica", u8"stogòdišnjica"},
+        {"zvonko", u8"desetogodišnjicu", u8"desetogòdišnjicu"},
+        {"zvonko", u8"petogodišnjak", u8"petogòdišnjak"},
+        {"zvonko", u8"petogodišnjaka", u8"petogòdišnjaka"},
+        {"zvonko", u8"petogodišnjakinja", u8"petogodišnjàkinja"},
+        {"zvonko", u8"polugodište", u8"polugòdište"},
+        {"zvonko", u8"polugodišta", u8"polugòdišta"},
+        {"zvonko", u8"šestomjesečna", u8"šestòmjesečna"},
+        {"zvonko", u8"devetomjesečni", u8"devetòmjesečni"},
+        {"zvonko", u8"višemjesečnog", u8"višèmjesečnog"},
+        {"zvonko", u8"tromjesečni", u8"tròmjesečni"},
+        {"zvonko", u8"petodnevni", u8"petòdnevni"},
+        {"zvonko", u8"jednodnevnog", u8"jednòdnevnog"},
+        {"zvonko", u8"trotjedni", u8"tròtjedni"},
+        {"zvonko", u8"maloljetan", u8"malòljetan"},
+        {"zvonko", u8"maloljetna", u8"malòljetna"},
+        {"zvonko", u8"maloljetnik", u8"malòljetnik"},
+        {"zvonko", u8"maloljetnici", u8"malòljetnici"},
+        {"zvonko", u8"punoljetnost", u8"punòljetnost"},
+        {"zvonko", u8"stoljetni", u8"stòljetni"},
+        {"zvonko", u8"godišnjak", u8"gòdišnjak"},
+        {"zvonko", u8"godišnjaka", u8"gòdišnjaka"},
+        {"zvonko", u8"čestitka", u8"čèstitka"},
+        {"zvonko", u8"čestitke", u8"čèstitke"},
+        {"zvonko", u8"čestitku", u8"čèstitku"},
+        {"zvonko", u8"čestitaka", u8"čèstitaka"},
+        {"zvonko", u8"čestitati", u8"čestítati"},
+        {"zvonko", u8"čestitam", u8"čèstitam"},
+        {"zvonko", u8"čestitao", u8"čestítao"},
+        {"zvonko", u8"čestitaju", u8"čestítaju"},
+        {"zvonko", u8"čestitaj", u8"čèstitaj"},
+        {"stojan", u8"petogodišnji", u8"petogòdišnji"},
+        {"stojan", u8"stogodišnjica", u8"stogòdišnjica"},
+        {"stojan", u8"šestomesečna", u8"šestomèsečna"},
+        {"stojan", u8"devetomesečni", u8"devetomèsečni"},
+        {"stojan", u8"petodnevni", u8"petòdnēvni"},
+        {"stojan", u8"dvonedeljni", u8"dvonèdēljni"},
+        {"stojan", u8"maloletan", u8"malòletan"},
+        {"stojan", u8"punoletnost", u8"punòletnost"},
+        {"stojan", u8"polugodište", u8"polugòdīšte"},
+        {"stojan", u8"godišnjak", u8"gòdišnjāk"},
+        {"stojan", u8"čestitka", u8"čèstitka"},
+        {"stojan", u8"čestitam", u8"čèstītam"},
+        {"stojan", u8"čestitati", u8"čestítati"},
+        {"mirsad", u8"šestomjesečna", u8"šestomjèsečna"},
+        {"mirsad", u8"petogodišnji", u8"petogòdišnji"},
+        {"mirsad", u8"maloljetnik", u8"malòljetnik"},
+        {"mirsad", u8"čestitke", u8"čèstitke"},
+    };
+    Engine engine;
+    for (const auto& c : cases) {
+        INFO(c.voice << " " << c.plain);
+        REQUIRE(laprdus_set_voice(engine.handle, c.voice, NO_DATA) == LAPRDUS_OK);
+        const auto plain = speak(engine.handle, c.plain);
+        REQUIRE(!plain.empty());
+        REQUIRE(plain == speak(engine.handle, c.accented));
+    }
+    // The old readings are gone, and a word that only looks like such a
+    // compound keeps its own accent
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(speak(engine.handle, u8"petogodišnji") != speak(engine.handle, u8"pètogodišnji"));
+    REQUIRE(speak(engine.handle, u8"čestitka") != speak(engine.handle, u8"čestítka"));
+    REQUIRE(speak(engine.handle, u8"poletan") != speak(engine.handle, u8"pòletan"));   // pȍlētan
+}
+
+TEST_CASE("Place names follow the dictionaries in their case forms", "[formant][text]") {
+    // The place-name table (formant_proper_names.inc, from tools/formant/places.tsv;
+    // HJP, Wiktionary, Vuk's Srpski rječnik), checked 2026-10-09; see "Place
+    // names" in docs/formant.md. Croatian omits unstressed length.
+    struct Case { const char* voice; const char* plain; const char* accented; };
+    const Case cases[] = {
+        {"zvonko", u8"Idem u Pulu.", u8"Idem u Púlu."},
+        {"zvonko", u8"Pula je lijepa.", u8"Púla je lijepa."},
+        {"zvonko", u8"Knin", u8"Knȋn"},
+        {"zvonko", u8"iz Knina", u8"iz Knína"},
+        {"zvonko", u8"u Kninu", u8"u Knínu"},
+        {"zvonko", u8"u Sisku", u8"u Sísku"},
+        {"zvonko", u8"Vinkovci", u8"Vȋnkovci"},
+        {"zvonko", u8"u Vinkovcima", u8"u Vȋnkovcima"},
+        {"zvonko", u8"Slavonija", u8"Slàvonija"},
+        {"zvonko", u8"u Dalmaciji", u8"u Dàlmaciji"},
+        {"zvonko", u8"putujem u Liku", u8"putujem u Líku"},
+        {"zvonko", u8"u Bihaću", u8"u Biháću"},
+        {"zvonko", u8"Bjelovar", u8"Bjȅlovar"},
+        {"zvonko", u8"Beograd", u8"Bȅograd"},
+        {"zvonko", u8"u Beogradu", u8"u Bȅogradu"},
+        {"zvonko", u8"u Baru", u8"u Báru"},
+        {"zvonko", u8"u Slavonskom Brodu", u8"u Slàvonskom Brȏdu"},
+        {"zvonko", u8"iz Solina", u8"iz Solína"},
+        {"zvonko", u8"na Lošinju", u8"na Lošínju"},
+        {"zvonko", u8"u Rovinju", u8"u Rovínju"},
+        {"zvonko", u8"u Visokom", u8"u Vìsokom"},
+        {"zvonko", u8"Ilidža", u8"Ilìdža"},
+        {"zvonko", u8"u Zvorniku", u8"u Zvorníku"},
+        {"zvonko", u8"Idem u Niš.", u8"Idem u Nȋš."},
+        {"zvonko", u8"iz Niša", u8"iz Níša"},
+        {"stojan", u8"Beograd", u8"Beògrad"},
+        {"stojan", u8"u Beogradu", u8"u Beògradu"},
+        {"stojan", u8"Valjevo", u8"Vȃljevo"},
+        {"stojan", u8"Čačak", u8"Čáčak"},
+        {"stojan", u8"Zaječar", u8"Zȁječār"},
+        {"stojan", u8"u Kninu", u8"u Knínu"},
+        {"mirsad", u8"Ilidža", u8"Ilìdža"},
+        {"mirsad", u8"u Zvorniku", u8"u Zvorníku"},
+        {"mirsad", u8"u Visokom", u8"u Vìsokom"},
+    };
+    Engine engine;
+    for (const auto& c : cases) {
+        INFO(c.voice << " " << c.plain);
+        REQUIRE(laprdus_set_voice(engine.handle, c.voice, NO_DATA) == LAPRDUS_OK);
+        const auto plain = speak(engine.handle, c.plain);
+        REQUIRE(!plain.empty());
+        REQUIRE(plain == speak(engine.handle, c.accented));
+    }
+    // Only a word written with a capital letter is a place; a place spelled
+    // like a frequent word is not used for the first word of a sentence
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(speak(engine.handle, u8"Pula") != speak(engine.handle, u8"pula"));
+    REQUIRE(speak(engine.handle, u8"Bar ću doći.") == speak(engine.handle, u8"bar ću doći."));
+    REQUIRE(speak(engine.handle, u8"Visoko je.") == speak(engine.handle, u8"visoko je."));
+    REQUIRE(speak(engine.handle, u8"Ruda je skupa.") == speak(engine.handle, u8"ruda je skupa."));
+    // Text in capitals says nothing about places (ZATVORI PROZOR is not the
+    // town Prózor)
+    REQUIRE(speak(engine.handle, u8"ZATVORI PROZOR") == speak(engine.handle, u8"zatvori prozor"));
+    REQUIRE(speak(engine.handle, u8"u Prozoru") != speak(engine.handle, u8"u prozoru"));
+    // The user's stems come before the table
+    const char* json = u8"{ \"entries\": [ { \"word\": \"R/ovinj*\" } ] }";
+    REQUIRE(laprdus_load_accent_lexicon_from_memory(engine.handle, json, 0) == LAPRDUS_OK);
+    REQUIRE(speak(engine.handle, u8"u Rovinju") == speak(engine.handle, u8"u Ròvinju"));
+}
+
+TEST_CASE("Personal names follow the dictionaries in their case forms", "[formant][text]") {
+    // The table of given names and surnames (formant_proper_names.inc, from
+    // tools/formant/persons.tsv; HJP, Wiktionary, Vuk's Srpski rječnik) and
+    // the rule for Slavic names in -mir, -dar, -zar, checked 2026-10-09; see
+    // "Personal names" in docs/formant.md. Croatian omits unstressed length.
+    struct Case { const char* voice; const char* plain; const char* accented; };
+    const Case cases[] = {
+        {"zvonko", u8"rekao je Ante", u8"rekao je Ánte"},
+        {"zvonko", u8"s Antom", u8"s Ántom"},
+        {"zvonko", u8"Darko i Zdenko", u8"Dárko i Zdénko"},
+        {"zvonko", u8"kod Darka", u8"kod Dárka"},
+        {"zvonko", u8"pjesma Ive Andrića", u8"pjesma Ive Ándrića"},
+        {"zvonko", u8"s Ivanom Jurićem", u8"s Ivanom Júrićem"},
+        {"zvonko", u8"o Anti Starčeviću", u8"o Ánti Stárčeviću"},
+        {"zvonko", u8"Miška Kranjca", u8"Miška Kránjca"},
+        {"zvonko", u8"o Ignaciju", u8"o Ìgnaciju"},
+        {"zvonko", u8"kod Mate", u8"kod Máte"},
+        {"zvonko", u8"s Matom", u8"s Mátom"},
+        {"zvonko", u8"pozdravi Tamaru", u8"pozdravi Tàmaru"},
+        {"zvonko", u8"rekao je Luka", u8"rekao je Lȗka"},
+        {"zvonko", u8"s Markom", u8"s Mȃrkom"},
+        {"zvonko", u8"Radomir", u8"Rȁdomir"},
+        {"zvonko", u8"o Radomiru", u8"o Rȁdomiru"},
+        {"zvonko", u8"Vladimir", u8"Vlàdimir"},
+        {"zvonko", u8"Božidar", u8"Bòžidar"},
+        {"zvonko", u8"Dragan Ranković", u8"Dragan Ránković"},
+        {"zvonko", u8"s Idom", u8"s Ídom"},
+        {"stojan", u8"Božidar", u8"Bȍžidār"},
+        {"stojan", u8"Đorđe", u8"Đȏrđe"},
+        {"stojan", u8"Radomir", u8"Rȁdomīr"},
+        {"stojan", u8"rekao je Ante", u8"rekao je Ánte"},
+    };
+    Engine engine;
+    for (const auto& c : cases) {
+        INFO(c.voice << " " << c.plain);
+        REQUIRE(laprdus_set_voice(engine.handle, c.voice, NO_DATA) == LAPRDUS_OK);
+        const auto plain = speak(engine.handle, c.plain);
+        REQUIRE(!plain.empty());
+        REQUIRE(plain == speak(engine.handle, c.accented));
+    }
+    // Words spelled like a form of a name keep their own reading at the
+    // start of a sentence (ide, idi of Ìda; ali; niko) and in lowercase text
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(speak(engine.handle, u8"Ide kući.") == speak(engine.handle, u8"ide kući."));
+    REQUIRE(speak(engine.handle, u8"Ali ja ne znam.") == speak(engine.handle, u8"ali ja ne znam."));
+    REQUIRE(speak(engine.handle, u8"Niko nije došao.") == speak(engine.handle, u8"niko nije došao."));
+    REQUIRE(speak(engine.handle, u8"Luka je velika.") == speak(engine.handle, u8"luka je velika."));
+    REQUIRE(speak(engine.handle, u8"Vera u Boga.") == speak(engine.handle, u8"vera u Boga."));
+    // ... and a rare name spelled like a common word is not in the table
+    // (Kolega, Era, Lasta), nor the forms of Pètar taken by Pétra
+    REQUIRE(speak(engine.handle, u8"Dragi Kolega") == speak(engine.handle, u8"Dragi kolega"));
+    REQUIRE(speak(engine.handle, u8"Era interneta") == speak(engine.handle, u8"era interneta"));
+    REQUIRE(speak(engine.handle, u8"Svetog Petra") == speak(engine.handle, u8"svetog petra"));
+    REQUIRE(speak(engine.handle, u8"u Mali Lošinj") == speak(engine.handle, u8"u mali Lošinj"));
+    // The rule for -mir is for names only (gospòdār, uznemíri)
+    REQUIRE(speak(engine.handle, u8"Tihomira") != speak(engine.handle, u8"Tihomíra"));
+    REQUIRE(speak(engine.handle, u8"gospodar") == speak(engine.handle, u8"gospòdar"));
+    REQUIRE(speak(engine.handle, u8"Deprimira me.") == speak(engine.handle, u8"deprimira me."));
+}
+
 TEST_CASE("Foreign app names keep their pronunciation and stress in case forms", "[formant][text][dictionary]") {
     // Exercise the shipped replacements as well as the accent lexicon.
     // Run from the repository root, or set LAPRDUS_DICTIONARY to internal.json.

@@ -127,6 +127,7 @@ struct Word {
     std::u32string w;               // plain lowercase letters
     std::vector<uint8_t> marks;     // accent marks per letter
     bool all_caps = false;
+    bool capitalized = false;       // written with a capital first letter ("Pula")
 
     std::vector<Phone> phones;
     std::vector<int> letter;        // letter index of each phone
@@ -423,6 +424,7 @@ std::vector<Word> tokenize(const std::u32string& text, bool eastern) {
         if (current.w.size() >= MAX_WORD_LETTERS) flush();
 
         if (is_base_letter(c)) {
+            if (upper && current.w.empty()) current.capitalized = true;
             current.w.push_back(c);
             current.marks.push_back(0);
             if (upper) ++upper_count;
@@ -437,6 +439,7 @@ std::vector<Word> tokenize(const std::u32string& text, bool eastern) {
         bool handled = false;
         for (const auto& acc : ACCENTED) {
             if (acc.ch == c) {
+                if (upper && current.w.empty()) current.capitalized = true;
                 current.w.push_back(acc.base);
                 current.marks.push_back(acc.mark);
                 if (upper) ++upper_count;
@@ -448,6 +451,7 @@ std::vector<Word> tokenize(const std::u32string& text, bool eastern) {
 
         for (const auto& foreign : FOREIGN) {
             if (foreign.ch == c) {
+                if (upper && current.w.empty()) current.capitalized = true;
                 for (const char32_t* p = foreign.replacement; *p; ++p) {
                     current.w.push_back(*p);
                     current.marks.push_back(0);
@@ -996,7 +1000,7 @@ public:
     StressRules(const Word& word, VoiceLanguage language, bool opens_clause,
                 const std::vector<VerbRoot>* user_verbs)
         : m_w(word.w), m_language(language), m_opens_clause(opens_clause),
-          m_user_verbs(user_verbs) {
+          m_user_verbs(user_verbs), m_capitalized(word.capitalized && !word.all_caps) {
         for (int index : word.nuclei) {
             m_letters.push_back(word.letter[static_cast<size_t>(index)]);
         }
@@ -1073,6 +1077,8 @@ public:
 
         // Word classes whose accent sits before the endings the rules below
         // would take for another suffix (-enje, -iti, -an).
+        if (time_compound(r)) return r;
+        if (slavic_compound_name(r)) return r;
         if (laziti_verb(r)) return r;
         if (teljstvo_noun(r)) return r;
         if (ljiv_adjective(r)) return r;
@@ -1420,6 +1426,171 @@ public:
             return true;
         }
         return false;
+    }
+
+    // Slavic names of two parts joined by a vowel, in -mir, -dar and -zar,
+    // have the accent on the first syllable in every case: Rȁdomīr,
+    // Vlàdimir, Krȅšimir, Brȁnimir, Slȁvomir, Tȉhomir, Bȍžidār, Svȅtozār,
+    // Rȁdomira (HJP, Wiktionary). The rule for loans with a long last stem
+    // syllable would give radòmir, radomíra. The tone differs from name to
+    // name; the names in the table of personal names have theirs. Only for
+    // a word written with a capital letter: gospòdār, deprimíra and
+    // uznemíri are common words of the same shape; and not for a form in -a
+    // at the head of a clause, where Deprimira, Animira are verbs.
+    bool slavic_compound_name(StressResult& r) const {
+        static const char32_t* const ENDINGS[] = {
+            U"", U"a", U"u", U"om", U"e", U"ov", U"ova", U"ovo", U"ovi", U"ove", U"ovu",
+            U"ovog", U"ovom", U"ovoj", U"ovih", U"ovim", U"ka", U"ke", U"ki", U"ku", U"kom",
+        };
+        if (!m_capitalized || count() < 3 || starts_with(m_w, U"gospod")) return false;
+        for (const char32_t* root : {U"mir", U"dar", U"zar"}) {
+            size_t pos = 0;
+            if (!match(root, ENDINGS, pos) || pos < 3) continue;
+            if (m_opens_clause && ends_with(m_w, std::u32string(root) + U"a")) continue;
+            const char32_t linking = m_w[pos - 1];
+            if (linking != U'o' && linking != U'i' && linking != U'e') continue;
+            if (std::u32string(root) != U"mir" && linking == U'e') continue;
+            // the part before the linking vowel is a syllable of its own
+            // (Rad-o-mir, Vlad-i-mir), not a prefix (nemir, odar, pozar)
+            if (nucleus_before(pos - 1) < 0) continue;
+            r.nucleus = 0;
+            return true;
+        }
+        return false;
+    }
+
+    // Compounds of a number or quantity with the words for a year, month,
+    // week or day, which give ages and durations (petogodišnji dječak,
+    // šestomjesečna beba). With -godišnji, -godišnjak, -godišnjica and
+    // -godište the accent of gòdišnjī stays on "go": petogòdišnjī,
+    // stogòdišnjī, dvadesetogòdišnjī, novogòdišnjī, desetogòdišnjāk,
+    // pedesetogòdišnjica, polugòdīšte (HJP, Školski rječnik, Rečnik Matice
+    // srpske), but petogodišnjàkinja (Školski rječnik). With -mjesečni,
+    // -tjedni, -dnevni and -ljetan it is on the linking vowel before
+    // them: šestòmjesečnī, višèmjesečnī, tròtjednī,
+    // petòdnēvnī, malòljetan, punòljetnōst (Školski rječnik). Rečnik
+    // Matice srpske has šestomèsečnī, devetomèsečnī (but dvòmesečno,
+    // tròmesečno) and dvonèdēljnī, and petòdnēvnī, malòletan, punòletan like
+    // Croatian; the Serbian and Bosnian voices follow it.
+    bool time_compound(StressResult& r) const {
+        static const char32_t* const ADJ[] = {
+            U"i", U"a", U"e", U"o", U"u", U"eg", U"ega", U"em", U"emu", U"og", U"oga",
+            U"om", U"ome", U"omu", U"oj", U"ih", U"im", U"ima",
+        };
+        // -godišnjak, -godišnjica; not -godišnjakinja
+        static const char32_t* const YEAR_NOUN[] = {
+            U"ak", U"aka", U"aku", U"akom", U"ače", U"aci", U"acima", U"ake",
+            U"ica", U"ice", U"ici", U"icu", U"ico", U"icom", U"icama",
+        };
+        static const char32_t* const N_ADJ[] = {  // mjesečan, mjesečni
+            U"an", U"na", U"no", U"ni", U"ne", U"nu", U"nog", U"noga", U"nom", U"nome",
+            U"nomu", U"noj", U"nih", U"nim", U"nima",
+        };
+        static const char32_t* const LJET[] = {  // maloljetan, maloljetnik, maloljetnost
+            U"an", U"na", U"no", U"ni", U"ne", U"nu", U"nog", U"noga", U"nom", U"nome",
+            U"nomu", U"noj", U"nih", U"nim", U"nima", U"nost", U"nosti", U"nošću",
+            U"nostima", U"nik", U"nika", U"niku", U"nikom", U"niče", U"nici", U"nicima",
+            U"nike", U"nica", U"nice", U"nicu", U"nico", U"nicom", U"nicama",
+        };
+        auto rest_is = [&](size_t from, const char32_t* const* list, size_t size) {
+            const std::u32string rest = m_w.substr(from);
+            for (size_t i = 0; i < size; ++i) {
+                if (rest == list[i]) return true;
+            }
+            return false;
+        };
+        const bool croatian = m_language == VoiceLanguage::Croatian;
+
+        size_t p = m_w.find(U"godišnj");
+        if (p != std::u32string::npos && p > 0 &&
+            (rest_is(p + 7, ADJ, std::size(ADJ)) ||
+             rest_is(p + 7, YEAR_NOUN, std::size(YEAR_NOUN)))) {
+            r.nucleus = nucleus_at(p + 1);
+            r.accent = Accent::Rising;
+            return r.nucleus >= 0;
+        }
+        if (p != std::u32string::npos && p > 0 && m_w.compare(p + 7, 5, U"akinj") == 0 &&
+            is_one_of(m_w.substr(p + 12), {U"a", U"e", U"i", U"u", U"o", U"om", U"ama"})) {
+            r.nucleus = nucleus_at(p + 7);    // petogodišnjàkinja
+            r.accent = Accent::Rising;
+            return r.nucleus >= 0;
+        }
+        p = m_w.find(U"godišt");
+        if (p != std::u32string::npos && p > 0 &&
+            is_one_of(m_w.substr(p + 6), {U"e", U"a", U"u", U"em", U"ima"})) {
+            r.nucleus = nucleus_at(p + 1);
+            r.accent = Accent::Rising;
+            if (!croatian) r.long_after = nucleus_at(p + 3);  // polugòdīšte
+            return r.nucleus >= 0;
+        }
+
+        struct Root {
+            const char32_t* text;
+            size_t root_vowel;   // its vowel, for the Serbian -mèsečnī, -nèdēljnī
+            size_t long_vowel;   // a vowel long after the accent (dnēvnī, nèdēljnī), or 0
+            int on_root;         // the Serbian dictionary stresses the root itself after a
+                                 // prefix of this many syllables or more (0: never)
+            bool ljet;           // -ljetan and its nouns
+        };
+        static const Root ROOTS[] = {
+            {U"mjeseč", 2, 0, 2, false}, {U"meseč", 1, 0, 2, false},
+            {U"nedjeljn", 1, 4, 1, false}, {U"nedeljn", 1, 3, 1, false},
+            {U"dnevn", 2, 2, 0, false}, {U"tjedn", 2, 0, 0, false},
+            {U"ljet", 2, 0, 0, true}, {U"let", 1, 0, 0, true},
+        };
+        for (const Root& root : ROOTS) {
+            const std::u32string text(root.text);
+            p = m_w.find(text);
+            if (p == std::u32string::npos || p == 0 || !is_quantity_prefix(m_w.substr(0, p))) {
+                continue;
+            }
+            const size_t after = p + text.size();
+            const bool ok = root.ljet           ? rest_is(after, LJET, std::size(LJET))
+                            : text.back() == U'n' ? rest_is(after, ADJ, std::size(ADJ))
+                                                  : rest_is(after, N_ADJ, std::size(N_ADJ));
+            if (!ok) continue;
+            const int linking = nucleus_before(p);
+            r.nucleus = root.on_root && !croatian && linking + 1 >= root.on_root
+                ? nucleus_at(p + root.root_vowel) : linking;
+            if (r.nucleus < 0) return false;
+            r.accent = Accent::Rising;
+            if (!croatian && root.long_vowel) {
+                const int k = nucleus_at(p + root.long_vowel);
+                if (k > r.nucleus) r.long_after = k;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    // jedno-, dvo-, tro-, četvero-, peto- ... dvadeseto-, dvadesetpeto-,
+    // sto-, više-, malo-, puno-, polu-: the first part of the compounds
+    // above (-godišnji takes any first part: novogodišnji, dugogodišnji).
+    static bool is_quantity_prefix(const std::u32string& p) {
+        if (is_one_of(p, {U"jedno", U"dvo", U"tro", U"četvero", U"četvoro", U"više", U"malo",
+                          U"puno", U"polu", U"sto", U"višesto", U"dvjesto", U"dvesto",
+                          U"tristo", U"četiristo", U"petsto", U"šeststo", U"sedamsto",
+                          U"osamsto", U"devetsto"})) {
+            return true;
+        }
+        static const char32_t* const TENS[] = {
+            U"dvadeset", U"trideset", U"četrdeset", U"pedeset", U"šezdeset", U"sedamdeset",
+            U"osamdeset", U"devedeset",
+        };
+        for (const char32_t* tens : TENS) {
+            const std::u32string t(tens);
+            if (starts_with(p, t) && p.size() > t.size() + 1 &&
+                is_quantity_prefix(p.substr(t.size()))) {
+                return true;       // dvadesetpeto-
+            }
+        }
+        if (p.size() < 3 || p.back() != U'o') return false;
+        return is_one_of(p.substr(0, p.size() - 1),
+                         {U"pet", U"šest", U"sedm", U"osm", U"devet", U"deset", U"jedanaest",
+                          U"dvanaest", U"trinaest", U"četrnaest", U"petnaest", U"šesnaest",
+                          U"sedamnaest", U"osamnaest", U"devetnaest", U"dvadeset", U"trideset",
+                          U"četrdeset", U"pedeset", U"šezdeset", U"sedamdeset", U"osamdeset",
+                          U"devedeset"});
     }
 
     // Verbs in -laziti keep the accent on the syllable before -la- (the
@@ -1954,6 +2125,7 @@ private:
     VoiceLanguage m_language;
     bool m_opens_clause;
     const std::vector<VerbRoot>* m_user_verbs;
+    bool m_capitalized;
     std::vector<int> m_letters;
 };
 
@@ -2279,6 +2451,48 @@ Frontend::Frontend(VoiceLanguage language) : m_language(language) {
             break;
     }
     add_entries(entries, count);
+
+    // Place names, then personal names (which win over a place of the same
+    // spelling): the common table, then the language's own forms
+    using Table = const char* const* (*)(size_t&);
+    const Table common[] = {lexicon_places_common, lexicon_persons_common};
+    const Table own[][3] = {
+        {lexicon_places_croatian, lexicon_places_serbian, lexicon_places_bosnian},
+        {lexicon_persons_croatian, lexicon_persons_serbian, lexicon_persons_bosnian},
+    };
+    const int lang = language == VoiceLanguage::Serbian ? 1 : language == VoiceLanguage::Bosnian ? 2 : 0;
+    for (int kind = 0; kind < 2; ++kind) {
+        entries = common[kind](count);
+        add_proper_entries(entries, count);
+        entries = own[kind][lang](count);
+        add_proper_entries(entries, count);
+    }
+}
+
+bool Frontend::user_stem_matches(const std::u32string& w) const {
+    if (m_user_stems.empty()) return false;
+    const size_t min_len = w.size() > 3 ? w.size() - 3 : 1;
+    for (size_t len = w.size(); len >= min_len && len >= 2; --len) {
+        if (m_user_stems.count(w.substr(0, len))) return true;
+    }
+    return false;
+}
+
+void Frontend::add_proper_entries(const char* const* entries, size_t count) {
+    for (size_t e = 0; e < count; ++e) {
+        for_each_form(PhonemeMapper::utf8_to_utf32(entries[e]), [this](const std::u32string& form) {
+            std::u32string plain;
+            LexEntry entry;
+            bool stem = false;
+            // "=" before an entry: a name spelled like a common word, not
+            // used for the first word of a clause
+            const bool mid = !form.empty() && form[0] == U'=';
+            if (parse_lex_entry(mid ? form.substr(1) : form, plain, entry, stem) && !stem) {
+                m_proper[plain] = entry;
+                if (mid) m_proper_mid.insert(plain);   // never cleared by a later entry
+            }
+        });
+    }
 }
 
 void Frontend::add_entries(const char* const* entries, size_t count) {
@@ -2510,6 +2724,23 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
             };
             if (!m_user_exact.empty()) entry = find_in(m_user_exact, word.w);
             if (entry) word.user_accent = true;
+            // Place names and personal names (the tables of towns, villages,
+            // regions, names and surnames) only for a word written with a
+            // capital letter, so that a village or a name spelled like a
+            // common word does not change that word (Púla, pȕla; Mȋrna,
+            // mìrna); not in text written all in capitals, where a capital
+            // says nothing (ZATVORI PROZOR). The first word of a clause has
+            // its capital anyway: there a name spelled like a common word
+            // (Bȃr, bar) and a word of the built-in lexicon keep the common
+            // reading. A stem of the user's comes before the tables.
+            if (!entry && !command_at_head && word.capitalized && !word.all_caps &&
+                !user_stem_matches(word.w)) {
+                const bool clause_start = &word == &words.front() || word.after_opening;
+                if (!clause_start || !m_exact.count(word.w)) {
+                    entry = find_in(m_proper, word.w);
+                    if (entry && clause_start && m_proper_mid.count(word.w)) entry = nullptr;
+                }
+            }
             if (!entry && !command_at_head) entry = find_in(m_exact, word.w);
             if (!entry) {
                 size_t min_len = word.w.size() > 3 ? word.w.size() - 3 : 1;

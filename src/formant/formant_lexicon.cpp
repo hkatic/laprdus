@@ -163,11 +163,30 @@ const char* const COMMON[] = {
     u8"r/e:dak", u8"r/e:tk|a|u|om|e|i|o|ih|im|ima|og|oj", u8"r/e:dk|a|u|om|e|i",
     u8"r/e:tc|i|ima", u8"r/e:dc|i|ima", u8"r/e:cima", u8"r/eci", u8"r^e:daka",
 
+    // ---- Age and time ----
+    // čèstitka, čèstitke, G pl čèstitākā/čèstitkā, DL čèstitki/čèstitci
+    // (Školski rječnik and Rečnik Matice srpske; HJP čȅstitka); the rule for
+    // a long last stem syllable had čestítka
+    u8"č/estitk*", u8"č/estitaka", u8"č/estitci",
+    // gòdišnjāk, gòdišnjāka (HJP, Školski rječnik, Rečnik Matice srpske);
+    // its compounds (petogòdišnjāk) and the other compounds of -godišnji,
+    // -mjesečni, -dnevni, -tjedni and -ljetan are a rule
+    // (StressRules::time_compound)
+    u8"g/odišnjak*", u8"g/odišnjac|i|ima", u8"g/odišnjače",
+
     // ---- Places ----
-    u8"Z'a:greb*", u8"Be'ograd*", u8"S/arajev*", u8"Ljublj'a:n*", u8"Eur'o:p*",
+    u8"Z'a:greb*", u8"Be'ograd*", u8"S/arajev*", u8"Eur'o:p*",
     u8"Evr'o:p*", u8"Am'erik*", u8"H'rva:tsk*", u8"H'rva:t*",
     u8"S'rbij*", u8"s'rpsk*", u8"B^osn*", u8"b^osa:nsk*", u8"H/ercegovin*",
     u8"'Austrij*", u8"Austr'a:lij*", u8"C'rn*",
+    // The adjectives of the counties and regions (Zagrebačka, Primorsko-
+    // goranska, Ličko-senjska, Šibensko-kninska, Splitsko-dalmatinska,
+    // Dubrovačko-neretvanska, Međimurska, Koprivničko-križevačka,
+    // Karlovačka županija), HJP: zágrebačkī, kȃrlovačkī, kòprīvničkī,
+    // kríževačkī, prímorskī, lȋčkī, knȋnskī, dalmàtīnskī, nerétvanskī,
+    // međìmurskī
+    u8"z/a:grebačk*", u8"k^a:rlovačk*", u8"k/oprivničk*", u8"kr/i:ževačk*", u8"pr/i:morsk*",
+    u8"l^i:čk*", u8"kn^i:nsk*", u8"dalm/atinsk*", u8"ner/e:tvansk*", u8"međ/imursk*",
     // àustrījskī, aùstrālījskī (HJP): the rule for -ijski would take the
     // forms the stems above do not reach (austrijskog)
     u8"/austrijsk*", u8"a/ustralijsk*",
@@ -341,10 +360,17 @@ const char* const COMMON[] = {
     u8"Kn/e:žević||a|u|em|i|e|ima", u8"Kn/e:ževićev*",
 
     // ---- More places ----
+    // Varàždin, Vukòvār and Kòprīvnica are the second forms of HJP (Vȁraždīn,
+    // Vȕkovār); Bjȅlovār, Virovìtica, Ȍgulīn, Ivánec, Slàvōnija and Dàlmācija
+    // as HJP has them. The place-name table (formant_proper_names.inc) has these
+    // and some four thousand more with their case forms; the entries here
+    // also serve lowercase text and the derived words their stems reach.
+    // (visok* is the adjective vìsok, visòka, visòko; the town Vìsokō is in
+    // the place-name table.)
     u8"Var'aždin*", u8"Kr'agujevac", u8"Kr'agujevc*", u8"Mak'edo:nij*", u8"At'e:n*",
-    u8"Kopenh'a:gen*", u8"Vuk'ova:r*", u8"Bjel'ova:r*", u8"Vir'ovitic*", u8"Crikv'enic*",
-    u8"Og'uli:n*", u8"Iv'anec", u8"Iv'anc*", u8"S'ubotic*", u8"P'odgoric*", u8"K'oprivnic*",
-    u8"Prij'e:dor*", u8"Vis'ok*", u8"Slav'o:nij*", u8"Dalm'a:cij*", u8"Mad'ri:d*",
+    u8"Kopenh'a:gen*", u8"Vuk'ova:r*", u8"Bj^elovar*", u8"Virov/itic*", u8"Crikv'enic*",
+    u8"^Ogulin*", u8"Iv/a:nec", u8"Iv/a:nc*", u8"S'ubotic*", u8"P'odgoric*", u8"K'oprivnic*",
+    u8"Prij'e:dor*", u8"Vis'ok*", u8"Sl/avonij*", u8"D/almacij*", u8"Mad'ri:d*",
     u8"Berl'i:n*", u8"Par'i:z*", u8"Lond'o:n*", u8"Ljublj'an*", u8"Beogr'a:đan*",
     u8"Zagrepč'an*", u8"Spl'ićan*", u8"Riječ'an*", u8"Sarajl'ij*",
 
@@ -637,6 +663,8 @@ const char* const CROATIAN[] = {
     // Bèla, the Croatian name of the kings Béla (Zlatna bula Bele IV.);
     // in Serbian "bela, bele" is the adjective
     u8"B/el|a|e|i|u|om",
+    // HJP: Bȅograd in Croatian (Serbian Beògrad, COMMON)
+    u8"B^eograd*",
 
     // Listener's second October 2026 list. Školski rječnik hrvatskoga
     // jezika, cross-checked with HJP; sources and homographs in
@@ -732,6 +760,8 @@ const char* const SERBIAN[] = {
     u8"z/ainteresuj|e:m|e:š|e:|e:mo|e:te|u:", u8"z/ainteresova:n*", u8"nez/ainteresova:n*",
     // The fourth list (see COMMON): vòdīč, poluvòdīč, Ègipćānka
     u8"v/odi:č", u8"poluv'odi:č", u8"/egipća:nk*",
+    // gòdišnjāk (see COMMON)
+    u8"g/odišnja:k*", u8"g/odišnja:c|i|ima", u8"g/odišnja:če",
 };
 
 const char* const BOSNIAN[] = {
@@ -783,6 +813,8 @@ const char* const BOSNIAN[] = {
     u8"z/ainteresuj|e:m|e:š|e:|e:mo|e:te|u:", u8"z/ainteresova:n*", u8"nez/ainteresova:n*",
     // The fourth list (see COMMON): vòdīč, poluvòdīč, Ègipćānka
     u8"v/odi:č", u8"poluv'odi:č", u8"/egipća:nk*",
+    // gòdišnjāk (see COMMON)
+    u8"g/odišnja:k*", u8"g/odišnja:c|i|ima", u8"g/odišnja:če",
 };
 
 // Verbs whose root has the long "ije" (podijéliti, promijéniti, zalijévati).
@@ -976,6 +1008,10 @@ const char* const VERBS[] = {
     u8"inspir'i:r=a<p!", u8"insp'iris=t", u8"insp'iriš=e",
     // ŠR and HJP: pròslaviti/pròslavīm/pròslavljen; vesèliti/vesèlīm.
     u8"pr/oslav=i", u8"ves'el=i",
+    // Školski rječnik, HJP and Rečnik Matice srpske: čestítati, čèstītām,
+    // čestítajū, čèstītāj, čestítao, čèstītān, in every voice (the noun
+    // čèstitka is in the lexicon)
+    u8"čest'i:t=a<p!",
     // ŠR and HJP: sprijatèljiti, sprijàteljīm, sprijàteljen (Rečnik Matice
     // srpske also sprijatèljīm)
     u8"sprijat'elj=i<p",
@@ -984,6 +1020,13 @@ const char* const VERBS[] = {
     // noun's in the lexicon); proizvèdēm, proizvèdi, proizvèden
     u8"nap'ominj=te", u8"proizv'od=i<p", u8"proizv'ed=e",
 };
+
+// Towns, villages and regions (PLACES_*) and personal names and surnames
+// (PERSONS_*) of Croatia, Bosnia and Herzegovina, Serbia, Montenegro, North
+// Macedonia and Slovenia, generated by tools/formant/proper_names.py from
+// tools/formant/places.tsv and tools/formant/persons.tsv (the accented forms
+// and their sources).
+#include "formant_proper_names.inc"
 
 template <size_t N>
 const char* const* table(const char* const (&entries)[N], size_t& count) {
@@ -997,6 +1040,14 @@ const char* const* lexicon_common(size_t& count) { return table(COMMON, count); 
 const char* const* lexicon_croatian(size_t& count) { return table(CROATIAN, count); }
 const char* const* lexicon_serbian(size_t& count) { return table(SERBIAN, count); }
 const char* const* lexicon_bosnian(size_t& count) { return table(BOSNIAN, count); }
+const char* const* lexicon_places_common(size_t& count) { return table(PLACES_COMMON, count); }
+const char* const* lexicon_places_croatian(size_t& count) { return table(PLACES_CROATIAN, count); }
+const char* const* lexicon_places_serbian(size_t& count) { return table(PLACES_SERBIAN, count); }
+const char* const* lexicon_places_bosnian(size_t& count) { return table(PLACES_BOSNIAN, count); }
+const char* const* lexicon_persons_common(size_t& count) { return table(PERSONS_COMMON, count); }
+const char* const* lexicon_persons_croatian(size_t& count) { return table(PERSONS_CROATIAN, count); }
+const char* const* lexicon_persons_serbian(size_t& count) { return table(PERSONS_SERBIAN, count); }
+const char* const* lexicon_persons_bosnian(size_t& count) { return table(PERSONS_BOSNIAN, count); }
 const char* const* lexicon_ije_verbs(size_t& count) { return table(IJE_VERBS, count); }
 const char* const* lexicon_verbs(size_t& count) { return table(VERBS, count); }
 

@@ -1570,6 +1570,194 @@ participles (*gledala, razvijala*); only the nouns in *-ijal* are lexicon
 entries now. The *-irati* verbs keep their accent in the present
 (*simulíram, interesíram*), as decided earlier.
 
+**Age words and čestitka (9 October 2026).** The listener asked for
+*čestitka* and for *petogodišnji, šestogodišnji, sedmogodišnji,
+osmogodišnji, desetogodišnji, stogodišnji* "and similar words concerning
+age". HJP, Školski rječnik and Rečnik Matice srpske (page images) agree:
+
+| Words | Accent | Before |
+|---|---|---|
+| *-godišnji, -godišnjak, -godišnjica, -godište* after any first part | on *go*, as in *gòdišnjī*: *petogòdišnjī, stogòdišnjī, dvadesetogòdišnjī, dvadesetpetogòdišnjī, novogòdišnjī, dugogòdišnjī, desetogòdišnjāk, stogòdišnjica, polugòdīšte*; *petogodišnjàkinja* (Školski rječnik) | the first syllable (*pȅtogodišnjī*) |
+| *-mjesečni, -dnevni, -tjedni* after a number or *više-, jedno-* | on the linking vowel: *šestòmjesečnī, devetòmjesečnī, višèmjesečnī, tròmjesečnī, petòdnēvnī, jednòdnēvnī, tròtjednī*. Rečnik Matice srpske has *šestomèsečnī, devetomèsečnī* after two syllables (but *dvòmesečno, tròmesečno*) and *dvonèdēljnī*, which Stojan and Mirsad follow | the first syllable |
+| *maloljetan, punoljetan* and their nouns | *malòljetan, malòljetnīk, malòljetnica, punòljetnōst*, Serbian *malòletan, punòletan* (Školski rječnik, Rečnik Matice srpske; HJP has *mȁloljetan*) | *maloljètan* |
+| *godišnjak* | *gòdišnjāk, gòdišnjāka* | *godìšnjak* |
+| *čestitka* | *čèstitka, čèstitke, čèstitākā* (Školski rječnik *čèstītka*, Rečnik Matice srpske *чѐститка и чѐстӣтка*; HJP *čȅstitka*) | *čestítka* (the rule for a long last stem syllable) |
+| *čestitati* | *čestítati, čèstītām, čestítajū, čèstītāj, čestítao, čèstītān* in every voice (`VERBS`, `<p!`) | *čestìtati*, *čestìtaš* |
+
+The compounds are a rule (`StressRules::time_compound()`), not lexicon
+entries, because they are built freely from any number. The first part
+must be a number or *jedno-, više-, malo-, puno-, polu-, sto-* for the
+month, day, week and *-ljetan* compounds, so *pȍlētan* (*po-* + *let*)
+is not taken; *-godišnji* takes any first part (*novogòdišnjī*).
+
+### Place names
+
+The listener also asked to check the accents of the towns, villages and
+regions of Croatia, Bosnia and Herzegovina, Serbia, Montenegro, North
+Macedonia and Slovenia. The lists of places came from the GeoNames country
+files (every populated place with a population: 6,633 in Croatia, a few
+hundred towns in each other country; for Kosovo the Serbian names), from
+Wiktionary's categories of places in the six countries, and from a list of
+regions, islands, mountains, rivers and counties. Their accents came from:
+
+- **HJP**, which has some 1,100 Croatian settlements, down to villages of a
+  few hundred people (*Kȕmrovec*, *Lòvinac*), with the genitive where the
+  accent moves (*Knȋn, Knína*; *Trògīr, Trogíra*; *Hvȃr, Hvára*), and the
+  larger towns of the other countries;
+- **Wiktionary** (the Serbo-Croatian entries of some 800 places, often from
+  HJP or from Raskovnik);
+- **Vuk's Srpski rječnik** through Raskovnik, for Serbian, Bosnian and
+  Montenegrin towns (only entries whose definition names a place; Vuk writes
+  the length after the accent with the same mark as the long falling accent,
+  *Mòstȃr* for *Mòstār*).
+
+The Croatian voice takes HJP first, then Wiktionary, then Vuk; the Serbian
+and Bosnian voices take Wiktionary first for places in Serbia, Montenegro,
+Bosnia and Herzegovina, Kosovo and North Macedonia, and HJP first for
+Croatia and Slovenia. Where HJP gives two accents (*Vȁraždīn* and
+*Varàždin*, *Vȕkovār* and *Vukòvār*) and the engine already says the second,
+it was left alone.
+
+Every place was declined (nominative, genitive, dative/locative,
+accusative, instrumental; plurals such as *Vȋnkōvci, Vȋnkovācā*;
+adjectival names such as *Mȁkarskā, Mȁkarskōj*) and each form was run
+through the front end twice, once plain and once with the dictionary's
+accent written on it; a place whose plain forms came out with the stress on
+another syllable, another length of the stressed vowel or another tone went
+into the table. Of the 1,477 places with a dictionary accent (1,133 in
+Croatia, 94 in Bosnia and Herzegovina, 104 in Serbia, 61 in Montenegro, 25
+in North Macedonia, 46 in Slovenia, 14 Serbian names in Kosovo) the front
+end had 624 wrong in at least one form for the Croatian voice (501, 37, 42,
+22, 3, 18 and 1), mostly the length of the stressed vowel (*Sìsak* for
+*Sísak*, *Pùla* for *Púla*), the accent of the oblique cases (*Knìna* for
+*Knína*, *Sòlina* for *Solína*), the long-stem rule (*Slavónija* for
+*Slàvōnija*) and the default first syllable (*Ìlidža* for *Ilìdža*). After
+the exclusions below, 580 places with some 2,500 spellings are in the
+table. The other 5,100 Croatian settlements and most villages of the other
+countries are in none of the three sources and keep the rules; going by the
+places that are, about four in ten of them have a wrong accent in at least
+one form.
+
+The forms are in `src/formant/formant_proper_names.inc`, generated by
+`tools/formant/proper_names.py` from `tools/formant/places.tsv` (one row per
+place with its accented nominative and genitive, gender, the voices it is
+for and the source). To add or correct a place, edit the TSV and run the
+script.
+The table is used only for **words written with a capital letter**, so a
+village does not change the common word it is named after (*Púla* /
+*pȕla*, *Bȃr* / *bȁr*), and not in text written all in capitals (a
+heading or a button, "ZATVORI PROZOR", is not the town *Prózor*). The
+user's own accent entries, stems included, come before it. A place spelled
+like a frequent word (among the 50,000 commonest forms of the Croatian,
+Serbian and Bosnian subtitle frequency lists, or any word of HJP when the
+place is small) is marked `=` and is not used for the first word of a
+clause, where its capital says nothing: "Bar ću doći" keeps *bȁr*, "u
+Baru" has *Báru*. (The front end sees one clause at a time, so after a
+comma such a place keeps the common reading too; that errs on the safe
+side.) Since a capital does not tell a place from a person,
+forms that are also personal names of another accent are left out (*Lúka*
+of Banja Luka and Vela Luka against the name *Lȗka*, the genitives *Bora*
+of Bor and *Nína* of Nin against the names Bora and Nina), and so is every form of a word of a place
+under 10,000 people one of whose forms is among the 30,000 commonest words
+(*Sèlo, Sèlom* of Bicko Selo), and villages under 1,000 people named like
+one of the 10,000 commonest words; the noun *Tùrčin*, *Tùrčina* keeps its
+accent against the village *Tùrčīn, Turčína*. Where two places give one
+spelling two accents, the bigger place keeps it (*Kȃrlovca* of Karlovac,
+not *Karlovca* of Karlovec Ludbreški), and `proper_names.py` refuses to
+write such a pair. A one-syllable name with a long falling accent whose genitive
+no source gives keeps only its nominative, since the accent of these often
+moves (*Knȋn, Knína*; *Nȋš, Níša*). In a name of several words the head noun
+and the adjectives are declined (*Slàvōnskī Brȏd, u Slàvōnskōm Brȏdu*;
+*Bȁbina Gréda*); generic adjectives (*Nova, Veliki, Donji, Sveti*) and
+personal names inside a name (*Marija Bistrica*) keep their own accents.
+
+The adjectives of the county names are common words and went into the
+lexicon itself: *zágrebačkī, kȃrlovačkī, kòprīvničkī, kríževačkī,
+prímorskī, lȋčkī, knȋnskī, dalmàtīnskī, nerétvanskī, međìmurskī* (HJP; the
+other county and canton adjectives were already right). Older lexicon
+entries that disagreed with HJP were corrected for lowercase text and
+derived words as well: *Bjȅlovār* (was *Bjelòvār*), *Virovìtica*
+(*Viròvitica*), *Ȍgulīn* (*Ogùlīn*), *Ivánec* (*Ivànec*), *Slàvōnija*
+(*Slavónija*), *Dàlmācija* (*Dalmácija*), and *Bȅograd* for the Croatian
+voice (Serbian *Beògrad*). *Osijek* stays two syllables with the diphthong,
+*Ȍsjēk*, as HJP and Wiktionary write it (*Ȍsijēk*, /ôsjeːk/), although many
+speakers say three.
+
+### Personal names
+
+The listener then asked for the given names and surnames of the
+ex-Yugoslav countries, "as many as you can". The same method as for places:
+
+- **Lists**: the given names and family names of every person in Wikidata
+  with the citizenship of Croatia, Serbia, Bosnia and Herzegovina,
+  Montenegro, North Macedonia, Slovenia, Kosovo or one of the Yugoslavias
+  (14,800 names, with the number of people bearing each), and Wiktionary's
+  1,500 Serbo-Croatian given names and surnames. All of them were looked up
+  in HJP, the 2,500 commonest Serbian, Bosnian and Montenegrin ones also in
+  Vuk's dictionary.
+- **Accents**: HJP, whose answer for a given name lists every notable person
+  of that name with the surname accented (*Ìvan*: *Arȁlica, Bérčić, Búnić,
+  Belosténec, Cànkar* ...), and which writes given names either bare
+  (*Tòmislav*, *Jòsip (Jósef)*) or with gender and genitive (*Máte m 〈G
+  Mátē〉*); Wiktionary; Vuk's Srpski rječnik through Raskovnik (*Mȉlōš*,
+  *Jòvan*, *Đȏrđe*), whose accents are those of the 19th century and come
+  last. The Croatian voice takes HJP first, the Serbian and Bosnian voices
+  Wiktionary first. Where the engine already says one of the sources'
+  accents (HJP *Jovánović*, Wiktionary *Jòvanović*), the name is left alone.
+
+2,052 names and surnames had an accent in one of the sources (1,681 from
+HJP, 301 from Vuk, the rest from Wiktionary). The front end had 736 of them
+wrong in at least one case form for the Croatian voice, three in five of
+them by the length or tone of the first syllable (*Dàrko* for *Dárko*,
+*Màrko* for *Mȃrko*, *Jùrić* for *Júrić*, *Stàrčević* for *Stárčević*),
+the rest by the place of the accent (*Tamára* for *Tàmara*, *radòmir* for
+*Rȁdomīr*). 636 are in the table. Left out: 281 names the lexicon already
+had, 136 that the engine already reads as one of the sources has them, and
+99 rare names (fewer than ten people in Wikidata) one of whose forms is a
+common word (in the 50,000 commonest forms, or a word of HJP: *Kolega*,
+*Era*, *Lasta*, *Suton*, *Gala*, *Mirne* of *Mirna*), since a capital
+letter would then turn that word into the name in a title or at the start
+of a sentence. Most surnames of private people are in none of the sources;
+for them the rules stay, which for the commonest shapes (*-ić*, *-ović*,
+*-ević*) give the right syllable and often the wrong length.
+
+Names and surnames keep the nominative's accent in every case (*Ìvan,
+Ìvana*; *Màrija, Màrije*; *Kováčević, Kováčevića*; *Kránjec, Kránjca*);
+names in *-a* decline like *Màrija* (*Nìkola, Nìkole*; *Kȑleža, Kȑleže*),
+in *-ije* like *Ìgnācije, Ìgnācija, Ìgnācijem*, those in *-ko* like *Mȃrko,
+Mȃrka*, and men's names in *-e* borne mostly in Croatia like *Ánte, Ánti,
+Ántu*. The other names in *-e* (*Pȃvle, Pȃvla*; *Đȏrđe*), in *-o* (*Ìvo,
+Ìve* or *Mȃrko, Mȃrka*) and those that may lose a vowel (*Pètar, Pètra*,
+but *Nòvāk, Nòvāka*) get only their nominative unless a dictionary gives
+the genitive; Pètar's possible cases still count when another name has the
+same spelling (*Pétra*, the woman's name, gives way to *Pètra*).
+
+The table of names is used like the table of places, only for words
+written with a capital letter, and a name wins over a place of the same
+spelling. A name spelled like a frequent common word of another
+accent is not used for the first word of a clause: every case form that is
+among the 50,000 commonest words (*Ìde, Ìdi* of *Ìda* against *ide, idi*;
+*Lȗke, Lȗku*; *Máti* of *Máte*), and the nominative when it is among the
+10,000 commonest (*Lȗka, Véra, Náda* against *luka, vera, nada*) or a word
+of HJP with another accent (*Áli*, *ali*). Names the lexicon already had
+from the listener's corrections (*Zvónko*, *Vládo*, *Ìsaković*,
+*Spàsojević*, *Enída* ...) are not touched.
+
+Two-part Slavic names in *-mir*, *-dar* and *-zar* (*Rȁdomīr, Vlàdimir,
+Krȅšimir, Tȉhomir, Bȍžidār, Svȅtozār*) are a rule of their own
+(`StressRules::slavic_compound_name()`), so that names outside the
+dictionaries are right too: the rule for loans with a long last stem
+syllable had *radòmir, radomíra, krešìmir, božìdar*. It applies only to
+words written with a capital letter, since *gospòdār*, *deprimíra* and
+*uznemíri* have the same shape, and not to a form in *-a* at the head of a
+clause ("Deprimira me").
+
+An independent review of the names found the faults fixed above (the
+country *Mȃli* in *Mali Lošinj*, *Kolega* in "Dragi Kolega", *Pétru* for
+*Pètru*, rare names that are common words, the *-mir* rule on *Deprimira*,
+*-ec* surnames without their fleeting vowel, *-ije* names declined like
+*Ante*, and *Vera* or *Nada* at the start of a sentence).
+
 ## 5. Timing and melody (`formant_synthesizer.cpp`)
 
 **Durations** start from the inherent value and are scaled by context:

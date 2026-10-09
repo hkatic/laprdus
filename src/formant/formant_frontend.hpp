@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace laprdus {
 namespace formant {
@@ -167,10 +168,14 @@ public:
 private:
     void add_entries(const char* const* entries, size_t count);
     void add_entry(const std::u32string& marked);
+    void add_proper_entries(const char* const* entries, size_t count);
+    bool user_stem_matches(const std::u32string& w) const;
 
     VoiceLanguage m_language;
     std::unordered_map<std::u32string, LexEntry> m_exact;
     std::unordered_map<std::u32string, LexEntry> m_stems;
+    std::unordered_map<std::u32string, LexEntry> m_proper;  // places and persons: capitalized words only
+    std::unordered_set<std::u32string> m_proper_mid;        // ... and not first in a clause
     std::unordered_map<std::u32string, LexEntry> m_user_exact;
     std::unordered_map<std::u32string, LexEntry> m_user_stems;
     std::shared_ptr<const std::vector<VerbRoot>> m_user_verbs;
@@ -184,6 +189,19 @@ const char* const* lexicon_common(size_t& count);
 const char* const* lexicon_croatian(size_t& count);
 const char* const* lexicon_serbian(size_t& count);
 const char* const* lexicon_bosnian(size_t& count);
+
+// Place names and personal names (formant_proper_names.inc): exact forms in
+// the same notation, used only for words written with a capital letter. The
+// common table, then the forms of one language where its dictionaries
+// differ; a personal name overrides a place of the same spelling.
+const char* const* lexicon_places_common(size_t& count);
+const char* const* lexicon_places_croatian(size_t& count);
+const char* const* lexicon_places_serbian(size_t& count);
+const char* const* lexicon_places_bosnian(size_t& count);
+const char* const* lexicon_persons_common(size_t& count);
+const char* const* lexicon_persons_croatian(size_t& count);
+const char* const* lexicon_persons_serbian(size_t& count);
+const char* const* lexicon_persons_bosnian(size_t& count);
 
 // Roots of verbs with the long "ije", as "root:classes[:prefixes]" (see the
 // table in formant_lexicon.cpp).
