@@ -4,6 +4,7 @@
 #include "formant_frontend.hpp"
 #include "../core/phoneme_mapper.hpp"
 #include <algorithm>
+#include <cstring>
 #include <initializer_list>
 #include <unordered_set>
 
@@ -144,6 +145,11 @@ struct Word {
     bool before_hyphen = false;     // a hyphen follows directly ("s-klasa")
     bool after_opening = false;     // after an opening quote or bracket ("„S tobom")
     bool foreign = false;           // spelled with x, q, w or y ("Wi" in Wi-Fi)
+    bool camel = false;             // part of a word with inner capitals ("ElevenLabs")
+    bool camel_join = false;        // ... written together with the part before it
+    bool english = false;           // read as an English word (see "English words")
+    std::u32string spelled;         // the letters as written, before x, q, w, y are rewritten
+    std::vector<int> origin;        // letter of `spelled` each letter of `w` comes from
 
     Word() = default;
     explicit Word(const std::u32string& text) : w(text), marks(text.size(), 0) {}
@@ -414,6 +420,30 @@ std::vector<Word> tokenize(const std::u32string& text, bool eastern) {
         after_abbreviation_dot = false;
     };
 
+    auto letter_at = [&](size_t pos, bool want_upper) {
+        if (pos >= text.size()) return false;
+        const char32_t lower = to_lower(text[pos]);
+        return is_base_letter(lower) && (lower != text[pos]) == want_upper;
+    };
+    auto letters_from = [&](size_t pos) {
+        size_t end = pos;
+        while (end < text.size() && is_base_letter(to_lower(text[end]))) ++end;
+        return end - pos;
+    };
+    // Names written with a capital inside, after small letters, are made
+    // of words, and each part is read as a word of its own: Eleven Labs,
+    // Chat GPT, Power Point. Only after two small letters, so not after a
+    // single one (iPhone, eUprava, BiH, PhD, McDonald, and the Lj, Nj, Dž
+    // of Serbian Cyrillic capitals: ЉУБАВЉУ is LjUBAVLjU), and not before a
+    // single capital at the end. Capitals followed by small letters stay
+    // one word (PDFom, SMSati, KONZUMklik). join_camel() puts back together
+    // the words the lexicons know and those made of one-syllable parts
+    // (TikTok, TalkBack).
+    auto camel_break = [&](size_t pos) {
+        return current.w.size() >= 2 && letter_at(pos - 1, false) &&
+               letter_at(pos - 2, false) && letters_from(pos) >= 2;
+    };
+
     for (size_t pos = 0; pos < text.size(); ++pos) {
         char32_t raw = text[pos];
         char32_t c = to_lower(raw);
@@ -424,6 +454,11 @@ std::vector<Word> tokenize(const std::u32string& text, bool eastern) {
         if (current.w.size() >= MAX_WORD_LETTERS) flush();
 
         if (is_base_letter(c)) {
+            if (upper && camel_break(pos)) {
+                current.camel = true;
+                flush();
+                current.camel = current.camel_join = true;
+            }
             if (upper && current.w.empty()) current.capitalized = true;
             current.w.push_back(c);
             current.marks.push_back(0);
@@ -654,37 +689,48 @@ Ph vowel_phone(char32_t c) {
 void rewrite_foreign(Word& word) {
     std::u32string w;
     std::vector<uint8_t> marks;
+    std::vector<int> origin;
     const std::u32string& in = word.w;
     for (size_t i = 0; i < in.size(); ++i) {
         char32_t c = in[i];
         uint8_t m = word.marks[i];
         char32_t prev = i > 0 ? in[i - 1] : 0;
         char32_t next = i + 1 < in.size() ? in[i + 1] : 0;
+        const int from = static_cast<int>(i);
         if (c == U'x') {
             w += U"ks";
             marks.push_back(0);
             marks.push_back(0);
+            origin.push_back(from);
+            origin.push_back(from);
         } else if (c == U'q') {
             w.push_back(U'k');
             marks.push_back(0);
+            origin.push_back(from);
             if (next == U'u' && i + 2 < in.size() && is_vowel_letter(in[i + 2])) {
                 w.push_back(U'v');
                 marks.push_back(0);
+                origin.push_back(from + 1);
                 ++i;
             }
         } else if (c == U'w') {
             w.push_back(U'v');
             marks.push_back(0);
+            origin.push_back(from);
         } else if (c == U'y') {
             bool glide = is_vowel_letter(prev) || is_vowel_letter(next);
             w.push_back(glide ? U'j' : U'i');
             marks.push_back(glide ? 0 : m);
+            origin.push_back(from);
         } else {
             w.push_back(c);
             marks.push_back(m);
+            origin.push_back(from);
         }
     }
     word.foreign = w != in;
+    word.spelled = in;
+    word.origin = std::move(origin);
     word.w = std::move(w);
     word.marks = std::move(marks);
 }
@@ -1189,16 +1235,7 @@ public:
             }
         }
 
-        // -irati verbs: telefonírati, kombinírām, kopíran
-        static const char32_t* const IR_ENDINGS[] = {
-            U"ati", U"am", U"aš", U"a", U"amo", U"ate", U"aju", U"ao", U"ala",
-            U"alo", U"ali", U"ale", U"an", U"ana", U"ano", U"ani", U"ane", U"anu",
-            U"anje", U"anja", U"anju", U"anjem", U"ajući", U"aj", U"ajte",
-        };
-        if (n >= 3 && at_suffix(U"ir", IR_ENDINGS, 0, r)) {
-            r.is_long = true;
-            return r;
-        }
+        if (irati_verb(r)) return r;
 
         // -ivati / -avati verbs: pokazívati, održávanje
         static const char32_t* const VA_ENDINGS[] = {
@@ -1232,11 +1269,7 @@ public:
         static const char32_t* const NOUN_ENDINGS[] = {
             U"", U"a", U"u", U"om", U"e", U"i", U"ima",
         };
-        // -izam: realìzam, turìzma
-        static const char32_t* const IZAM[] = {
-            U"am", U"ma", U"mu", U"mom", U"me", U"mi", U"mima",
-        };
-        if (n >= 3 && at_suffix(U"iz", IZAM, 0, r)) return r;
+        if (izam_noun(r)) return r;
 
         // -itet: the case forms have a long rising e (kapacitéta,
         // identitétu, kvalitéta). In the nominative the dictionaries move
@@ -1882,6 +1915,18 @@ public:
 
     // Long infinitives are most often stressed on the antepenult
     // (govòriti, zabòraviti, razùmjeti).
+    // A word spelled the English way that is a native word made from an
+    // English stem keeps the native suffix's accent (chatírati,
+    // photoshopírati, thatcherìzam), and a verb of the user's accent
+    // dictionary its accent; see "English words".
+    StressResult derivation() const {
+        StressResult r;
+        if (m_user_verbs && verb_form_in(*m_user_verbs, r)) return r;
+        r = StressResult{};
+        if (irati_verb(r) || izam_noun(r)) return r;
+        return StressResult{};
+    }
+
     StressResult weak() const {
         StressResult r;
         int n = count();
@@ -1894,6 +1939,26 @@ public:
 
 private:
     int count() const { return static_cast<int>(m_letters.size()); }
+
+    // -irati verbs: telefonírati, kombinírām, kopíran
+    bool irati_verb(StressResult& r) const {
+        static const char32_t* const IR_ENDINGS[] = {
+            U"ati", U"am", U"aš", U"a", U"amo", U"ate", U"aju", U"ao", U"ala",
+            U"alo", U"ali", U"ale", U"an", U"ana", U"ano", U"ani", U"ane", U"anu",
+            U"anje", U"anja", U"anju", U"anjem", U"ajući", U"aj", U"ajte",
+        };
+        if (count() < 3 || !at_suffix(U"ir", IR_ENDINGS, 0, r)) return false;
+        r.is_long = true;
+        return true;
+    }
+
+    // -izam: realìzam, turìzma
+    bool izam_noun(StressResult& r) const {
+        static const char32_t* const IZAM[] = {
+            U"am", U"ma", U"mu", U"mom", U"me", U"mi", U"mima",
+        };
+        return count() >= 3 && at_suffix(U"iz", IZAM, 0, r);
+    }
 
     // Is the word, from `start` on, a form of the verb with this root? With
     // `negated` the word is "ne" + that form, and only the passive
@@ -2138,6 +2203,303 @@ private:
     bool m_capitalized;
     std::vector<int> m_letters;
 };
+
+// =============================================================================
+// English words
+// =============================================================================
+//
+// English words and names in Croatian, Serbian or Bosnian text are read with
+// the letters' own sounds, as the voices read everything, but stressed where
+// English stresses them: Croàtian, Ábleton, Elèven Labs, compùter. The rules
+// for native words would put a loan's accent there (Ablèton like telèfon,
+// Croatìan like Kristìjan) or leave it on the first syllable (Èleven). The
+// accent is a plain stress with the pitch peak inside the stressed vowel:
+// a rising accent, whose high pitch reaches into the next syllable, moved
+// the stress one syllable on to the ear (ChatGPT heard as "chatg-PT").
+
+// Only the letters a to z: no č, ć, đ, š, ž.
+bool english_spelling_letters(const std::u32string& s) {
+    return std::all_of(s.begin(), s.end(), [](char32_t c) { return c >= U'a' && c <= U'z'; });
+}
+
+// Spellings no Croatian, Serbian or Bosnian word has: the letters q, w, x
+// and y; th, ch, gh, ph and ck (not before a vowel); sh at the end, -tion
+// and -sion; i before a, e or u (the languages write ija, ije, iju); a
+// doubled consonant. (Not cl: clanak, clanarina are članak, članarina typed
+// without the háček.) A native word has some of them where
+// a prefix meets its root, and those places do not count: prethodni,
+// pothvat, othraniti, neophodan, najneophodniji, preothraniti (pret-,
+// pot-, ot-, op- before h, after ne-, naj- or pre-), iako,
+// priupitati, antialergijski, poliester, arhiepiskop (i-, pri-, anti-,
+// poli-, arhi- before a vowel), izvannastavni, posttraumatski,
+// transseksualan (a prefix before its own last consonant); the longer
+// prefixes also inside a compound (aerotriangulacija). dd, jj and zz are
+// native (oddaljiti, najjači, bezzvučan).
+bool english_spelling(const std::u32string& s) {
+    if (!english_spelling_letters(s)) return false;
+    const size_t npos = std::u32string::npos;
+    // Is s[0, end) one of the prefixes, alone or after ne- or naj-?
+    auto prefix = [&](size_t end, std::initializer_list<const char32_t*> prefixes) {
+        const std::u32string head = s.substr(0, end);
+        for (const char32_t* p : prefixes) {
+            for (const char32_t* neg : {U"", U"ne", U"naj", U"najne", U"pre", U"nepre"}) {
+                if (head == std::u32string(neg) + p) return true;
+            }
+        }
+        return false;
+    };
+    // ... or does it end with one of them?
+    auto prefix_end = [&](size_t end, std::initializer_list<const char32_t*> prefixes) {
+        const std::u32string head = s.substr(0, end);
+        for (const char32_t* p : prefixes) {
+            if (ends_with(head, p)) return true;
+        }
+        return false;
+    };
+    if (s.find_first_of(U"qwxy") != npos) return true;
+    if (s.find(U"ch") != npos || s.find(U"gh") != npos) return true;
+    for (size_t i = s.find(U"th"); i != npos; i = s.find(U"th", i + 1)) {
+        if (!prefix(i + 1, {U"pret", U"pot", U"ot", U"nat", U"post"})) return true;
+    }
+    for (size_t i = s.find(U"ph"); i != npos; i = s.find(U"ph", i + 1)) {
+        if (!prefix(i + 1, {U"op"})) return true;
+    }
+    for (size_t i = s.find(U"ck"); i != npos; i = s.find(U"ck", i + 1)) {
+        if (i + 2 == s.size() || !is_vowel_letter(s[i + 2])) return true;
+    }
+    if (ends_with_any(s, {U"sh", U"tion", U"tions", U"sion", U"sions"})) return true;
+    for (size_t i = 0; i + 1 < s.size(); ++i) {
+        const char32_t next = s[i + 1];
+        if (s[i] == U'i' && (next == U'a' || next == U'e' || next == U'u') &&
+            !prefix(i + 1, {U"i", U"bi"}) &&
+            !prefix_end(i + 1, {U"pri", U"tri", U"anti", U"poli", U"multi", U"semi", U"arhi"})) {
+            return true;
+        }
+        if (s[i] == next && is_consonant_letter(next) && next != U'd' && next != U'j' &&
+            next != U'z' &&
+            !prefix_end(i + 1, {U"van", U"hiper", U"super", U"post", U"trans", U"inter"})) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Compares a word with the letters of an entry of the English table (its
+// stress mark skipped): negative when the word comes first.
+int compare_english(const std::u32string& key, const char* entry, size_t length) {
+    size_t k = 0;
+    for (size_t i = 0; i < length; ++i) {
+        const char32_t c = static_cast<unsigned char>(entry[i]);
+        if (c == U'\'') continue;
+        if (k == key.size()) return -1;
+        if (key[k] != c) return key[k] < c ? -1 : 1;
+        ++k;
+    }
+    return k == key.size() ? 0 : 1;
+}
+
+// The English table (formant_english.inc): lines of entries in alphabetical
+// order, each entry the word with ' before its stressed vowel. Returns the
+// letter the mark precedes, or -1 for an entry without a mark: a native
+// word that is an English word of the table with a case ending (reforma,
+// republici, nadala: reform, republic, Nadal), or a native name spelled
+// without its j (Emilia, Julia: Emilija, Julija).
+bool english_entry(const std::u32string& key, int& stress_letter) {
+    size_t lines = 0;
+    const char* const* table = lexicon_english(lines);
+    auto first_length = [](const char* line) { return std::strcspn(line, " "); };
+    size_t lo = 0;
+    size_t hi = lines;
+    while (lo < hi) {
+        const size_t mid = (lo + hi) / 2;
+        if (compare_english(key, table[mid], first_length(table[mid])) < 0) {
+            hi = mid;
+        } else {
+            lo = mid + 1;
+        }
+    }
+    if (lo == 0) return false;
+    for (const char* p = table[lo - 1]; *p;) {
+        const size_t length = std::strcspn(p, " ");
+        const int order = compare_english(key, p, length);
+        if (order == 0) {
+            const char* mark = std::find(p, p + length, '\'');
+            stress_letter = mark == p + length ? -1 : static_cast<int>(mark - p);
+            return true;
+        }
+        if (order < 0) return false;
+        p += length;
+        if (*p == ' ') ++p;
+    }
+    return false;
+}
+
+// A word of the English table, also with the endings that leave the English
+// stress where it is (darkness, basically, companies; for a word spelled
+// the English way also settings, created, stopping, players), and with a
+// Croatian case ending (managera, Jacksona, Chicagu, iPhonea). Native words
+// end in -s, -ed, -er, -ing and -ment too, and with those taken off some
+// are English words (operater, distributer: operate, distribute), so a word
+// spelled the native way loses only an ending no native word has, and a
+// case ending only down to a word of the table itself; the native words
+// that would then be taken for one (reforma, republici) are in the table
+// as such. tools/formant/english_words.py leaves out of the table every
+// word this finds through another one, so the two must agree: change both
+// together.
+bool english_word(const std::u32string& s, bool english_shape, int& stress_letter, int depth = 0) {
+    if (english_entry(s, stress_letter)) return stress_letter >= 0;
+    if (depth >= 2) return false;
+    struct Ending { const char32_t* ending; const char32_t* restore; bool native; };
+    static const Ending ENDINGS[] = {
+        {U"ies", U"y", false}, {U"ied", U"y", false}, {U"ily", U"y", false},
+        {U"iness", U"y", false}, {U"ier", U"y", false}, {U"ments", U"", false},
+        {U"ment", U"", true}, {U"ness", U"", false}, {U"less", U"", false},
+        {U"ful", U"", false}, {U"ally", U"", false}, {U"ly", U"", false},
+        {U"ing", U"", true}, {U"ing", U"e", true}, {U"ed", U"", true}, {U"ed", U"e", true},
+        {U"ers", U"", true}, {U"ers", U"e", true}, {U"er", U"", true}, {U"er", U"e", true},
+        {U"est", U"", true}, {U"est", U"e", true}, {U"es", U"", true}, {U"s", U"", true},
+    };
+    for (const Ending& e : ENDINGS) {
+        const std::u32string ending(e.ending);
+        if (e.native && !english_shape) continue;
+        if (s.size() < ending.size() + 3 || !ends_with(s, ending)) continue;
+        std::u32string base = s.substr(0, s.size() - ending.size());
+        if (ending == U"s" && (ends_with(base, U"s") || ends_with(base, U"u"))) continue;
+        const std::u32string stem = base;
+        base += e.restore;
+        if (english_word(base, english_shape, stress_letter, depth + 1)) return true;
+        // stopped, getting: the consonant doubled before the ending
+        if (*e.restore == 0 && stem.size() >= 3 && stem.back() == stem[stem.size() - 2] &&
+            is_consonant_letter(stem.back()) &&
+            english_word(stem.substr(0, stem.size() - 1), english_shape, stress_letter, depth + 1)) {
+            return true;
+        }
+    }
+    if (depth == 0) {
+        static const char32_t* const CASES[] = {
+            U"ovima", U"ovom", U"ovoj", U"ovih", U"ovim", U"ova", U"ove", U"ovi", U"ovu",
+            U"ima", U"om", U"em", U"a", U"u", U"e", U"i",
+        };
+        for (const char32_t* ending : CASES) {
+            const size_t length = std::char_traits<char32_t>::length(ending);
+            if (s.size() < length + 3 || !ends_with(s, ending)) continue;
+            const std::u32string base = s.substr(0, s.size() - length);
+            // Chicago, Chicagu; Seattle, Seattlea
+            for (const char32_t* restore : {U"", U"o", U"e", U"a"}) {
+                const std::u32string word = base + restore;
+                const bool found = english_shape
+                    ? english_word(word, true, stress_letter, depth + 1)
+                    : english_entry(word, stress_letter) && stress_letter >= 0;
+                if (found && stress_letter < static_cast<int>(base.size())) return true;
+            }
+        }
+    }
+    return false;
+}
+
+// Stress of an English word that is not in the table: on the syllable
+// before the endings that put it there (Croàtian, musìcian, Austràlia,
+// elèctronic, univèrsity, delìcious), on the ending for the few that carry
+// it (engineèr, Chinèse, cassètte, ballòon, uníque, biòlogy, photògraphy,
+// thermòmeter, astrònomy), and otherwise on the first syllable, where most
+// English words of two and three syllables and most names have it
+// (Ábleton, Sámsung, Hílton). A plural -s and a Croatian case ending do
+// not count (musicians, Sebastianu). `nucleus_letters` holds the letter of
+// the spelling each nucleus comes from.
+int english_rule(const std::u32string& s, const std::vector<int>& nucleus_letters) {
+    static const char32_t* const BEFORE[] = {
+        U"tion", U"sion", U"cian", U"tian", U"sian", U"cial", U"tial", U"cious", U"tious",
+        U"gious", U"geous", U"ious", U"ian", U"ial", U"ium", U"ia", U"ically", U"ical",
+        U"ics", U"ic", U"ity", U"ety", U"ify",
+    };
+    static const char32_t* const ON[] = {
+        U"ography", U"ology", U"ometer", U"onomy", U"eer", U"ese", U"ette", U"esque",
+        U"oon", U"ique",
+    };
+    static const char32_t* const CASES[] = {
+        U"", U"s", U"a", U"u", U"e", U"i", U"om", U"em", U"ima", U"ama", U"ov", U"ova",
+    };
+    const int n = static_cast<int>(nucleus_letters.size());
+    for (const char32_t* ending : CASES) {
+        const size_t cut = std::char_traits<char32_t>::length(ending);
+        if (!ends_with(s, ending) || s.size() < cut + 4) continue;
+        const std::u32string w = s.substr(0, s.size() - cut);
+        if (*ending == U's' && ends_with(w, U"s")) continue;
+        auto suffix_at = [&](const char32_t* suffix) -> int {
+            const size_t length = std::char_traits<char32_t>::length(suffix);
+            if (w.size() <= length || !ends_with(w, suffix)) return -1;
+            return static_cast<int>(w.size() - length);
+        };
+        for (const char32_t* suffix : BEFORE) {
+            const int at = suffix_at(suffix);
+            if (at < 0) continue;
+            for (int k = n - 1; k >= 0; --k) {
+                if (nucleus_letters[static_cast<size_t>(k)] < at) return k;
+            }
+            return 0;
+        }
+        for (const char32_t* suffix : ON) {
+            const int at = suffix_at(suffix);
+            if (at < 0) continue;
+            for (int k = 1; k < n; ++k) {
+                if (nucleus_letters[static_cast<size_t>(k)] >= at) return k;
+            }
+            return 0;
+        }
+    }
+    return 0;
+}
+
+// Joins the parts of a word with inner capitals back into one word where
+// `known` knows the whole (see Frontend::process), or where every part is
+// one syllable, the last perhaps with a case ending: TalkBack, TalkBacku,
+// GitHub, PayPal are compounds stressed on their first part, not two words.
+template <typename Known>
+void join_camel(std::vector<Word>& tokens, Known known) {
+    auto syllables = [](const std::u32string& w) {
+        Word probe(w);
+        phonemize(probe);
+        return probe.nuclei.size();
+    };
+    auto one_syllable = [&](const Word& part, bool last) {
+        if (syllables(part.w) == 1) return true;
+        if (!last) return false;
+        for (const char32_t* ending : {U"a", U"u", U"e", U"i", U"om", U"em", U"ov", U"ova"}) {
+            const size_t length = std::char_traits<char32_t>::length(ending);
+            if (part.w.size() > length + 1 && ends_with(part.w, ending) &&
+                syllables(part.w.substr(0, part.w.size() - length)) == 1) {
+                return true;
+            }
+        }
+        return false;
+    };
+    std::vector<Word> out;
+    for (size_t t = 0; t < tokens.size();) {
+        size_t end = t + 1;
+        while (end < tokens.size() && tokens[end].camel_join) ++end;
+        std::u32string joined;
+        bool short_parts = true;
+        for (size_t i = t; i < end && end - t > 1; ++i) {
+            joined += tokens[i].w;
+            short_parts = short_parts && one_syllable(tokens[i], i + 1 == end);
+        }
+        if (end - t > 1 && (short_parts || known(joined))) {
+            Word word = std::move(tokens[t]);
+            for (size_t i = t + 1; i < end; ++i) {
+                word.w += tokens[i].w;
+                word.marks.insert(word.marks.end(), tokens[i].marks.begin(), tokens[i].marks.end());
+                word.all_caps = word.all_caps && tokens[i].all_caps;
+                word.before_hyphen = tokens[i].before_hyphen;
+            }
+            word.camel = false;
+            out.push_back(std::move(word));
+            t = end;
+            continue;
+        }
+        for (; t < end; ++t) out.push_back(std::move(tokens[t]));
+    }
+    tokens = std::move(out);
+}
 
 // =============================================================================
 // Lexicon entries
@@ -2658,9 +3020,19 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
     Utterance utt;
     const bool eastern = m_language != VoiceLanguage::Croatian;
 
-    std::vector<Word> words =
-        expand_words(tokenize(cyrillic::to_latin(text), eastern),
-                     m_language == VoiceLanguage::Serbian);
+    std::vector<Word> tokens = tokenize(cyrillic::to_latin(text), eastern);
+    // A name with inner capitals that a lexicon knows as one word stays one
+    // word: TikTok and TikToka (the built-in lexicon's Tȉktok), PowerPoint
+    // and JavaScript (the English table), or the user's own entry.
+    join_camel(tokens, [&](const std::u32string& spelled) {
+        Word probe(spelled);
+        rewrite_foreign(probe);
+        const std::u32string& w = probe.w;
+        if (m_user_exact.count(w) || m_exact.count(w) || user_stem_matches(w)) return true;
+        int letter = -1;
+        return english_word(spelled, english_spelling(spelled), letter);
+    });
+    std::vector<Word> words = expand_words(std::move(tokens), m_language == VoiceLanguage::Serbian);
     if (words.empty()) {
         return utt;
     }
@@ -2695,6 +3067,21 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
         auto set_long = [&](int k) {
             word.phones[static_cast<size_t>(word.nuclei[static_cast<size_t>(k)])].is_long = true;
         };
+        // The nucleus of a letter of the spelling as written (x, q, w and y
+        // rewritten after it) and the letter each nucleus comes from.
+        auto nucleus_from_spelled = [&](int letter) {
+            int i = 0;
+            while (i < static_cast<int>(word.origin.size()) &&
+                   word.origin[static_cast<size_t>(i)] < letter) {
+                ++i;
+            }
+            return nucleus_from_letter(i);
+        };
+        // A word spelled the English way, unless the English table has it
+        // as a native word (Emilia, Julia: the names Emilija, Julija)
+        int stop_letter = 0;
+        const bool english_shape = !word.letter_name && english_spelling(word.spelled) &&
+            !(english_entry(word.spelled, stop_letter) && stop_letter < 0);
 
         // 1. Accent marks written in the text
         for (size_t i = 0; i < word.marks.size(); ++i) {
@@ -2752,7 +3139,16 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
                 }
             }
             if (!entry && !command_at_head) entry = find_in(m_exact, word.w);
-            if (!entry) {
+            // English words (see "English words"): after the native
+            // lexicon, before its stems, which would take English words
+            // for native ones with an ending; a stem of the user's wins.
+            int english_letter = -1;
+            if (!entry && !word.letter_name && !user_stem_matches(word.w) &&
+                english_word(word.spelled, english_shape, english_letter)) {
+                word.stress = nucleus_from_spelled(english_letter);
+                word.english = true;
+            }
+            if (!entry && !word.english) {
                 size_t min_len = word.w.size() > 3 ? word.w.size() - 3 : 1;
                 for (size_t len = word.w.size(); len >= min_len && len >= 2; --len) {
                     std::u32string prefix = word.w.substr(0, len);
@@ -2774,7 +3170,26 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
             }
         }
 
-        // 3. Suffix rules, 4. default: first syllable
+        // 3. Suffix rules, 4. default: first syllable; an English word by
+        // the English rules
+        if (word.stress < 0 && english_shape) {
+            const StressResult native =
+                StressRules(word, m_language, at_head, m_user_verbs.get()).derivation();
+            if (native.nucleus >= 0) {
+                word.stress = native.nucleus;
+                word.accent = native.accent;
+                if (native.is_long) set_long(native.nucleus);
+                if (native.long_after >= 0) set_long(native.long_after);
+            } else {
+                std::vector<int> nucleus_letters;
+                for (int k = 0; k < n; ++k) {
+                    const int letter = word.letter[static_cast<size_t>(word.nuclei[static_cast<size_t>(k)])];
+                    nucleus_letters.push_back(word.origin[static_cast<size_t>(letter)]);
+                }
+                word.stress = english_rule(word.spelled, nucleus_letters);
+                word.english = true;
+            }
+        }
         if (word.stress < 0) {
             StressRules rules(word, m_language, at_head, m_user_verbs.get());
             StressResult r = rules.strong();
@@ -2790,9 +3205,12 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
         }
 
         // Tone: only falling accents on monosyllables, only rising accents
-        // on non-initial syllables.
+        // on non-initial syllables. An English word has a plain stress,
+        // its pitch peak inside the stressed vowel, wherever it is.
         if (n == 1) {
             word.accent = Accent::Falling;
+        } else if (word.english) {
+            word.accent = Accent::Neutral;
         } else if (word.stress > 0) {
             word.accent = Accent::Rising;
         } else if (word.accent == Accent::None) {

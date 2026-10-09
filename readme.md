@@ -516,6 +516,11 @@ scons -c --platform=windows --arch=x64      # Clean specific config
 
 GNU General Public License v3.0 - see [LICENSE](LICENSE) for details.
 
+The stress of English words (`src/formant/formant_english.inc`) is derived from the
+[CMU Pronouncing Dictionary](https://github.com/cmusphinx/cmudict), Copyright (C) 1993-2015
+Carnegie Mellon University, under a BSD-style licence; its full notice is in that file and in
+section 8.4 of the [user guide](docs/laprdus.md).
+
 ## Author
 
 **Hrvoje Katić**

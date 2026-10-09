@@ -759,8 +759,10 @@ Stress is lexical in these languages and cannot be derived from spelling.
 The front end tries, in this order:
 
 1. accent marks in the text itself (`telèfon`, `gláva`, `kȕća`, `grȃd`, `ā`),
-2. the built-in lexicon (exact form, then stems),
-3. suffix rules for loans and derived words (*-irati*, *-acija*, *-izam*,
+2. the built-in lexicon (exact form, then stems; between the two, the table
+   of English words, see "English words" below),
+3. for a word spelled the English way, the English rules (same section);
+   for the others, suffix rules for loans and derived words (*-irati*, *-acija*, *-izam*,
    *-ura*, *-tika*, *-ator*, *-itet*, penultimate stress for *-ent*, *-ist*,
    *-fon* ...),
    for surnames in *-ović/-ević* of four or more syllables (stress on the
@@ -787,7 +789,8 @@ predictable part: the Croatian name dictionary gives *Ìvana* and *Ivȁna*,
 first syllable.
 
 The standard's restrictions are applied afterwards: monosyllables are
-falling, non-initial stress is rising.
+falling, non-initial stress is rising (except in English words, whose
+stress is plain wherever it is).
 
 **Clitics** (prepositions, conjunctions, short pronoun and verb forms) are
 unstressed and lean on a neighbour. An enclitic cannot open a clause, so
@@ -1827,6 +1830,142 @@ country *Mȃli* in *Mali Lošinj*, *Kolega* in "Dragi Kolega", *Pétru* for
 *-ec* surnames without their fleeting vowel, *-ije* names declined like
 *Ante*, and *Vera* or *Nada* at the start of a sentence).
 
+### English words
+
+English words and names turn up in Croatian, Serbian and Bosnian text all
+the time (app names, labels, quotes), and in October 2026 the listener
+heard them stressed "strangely": *croatian* as croa-TI-an, *Ableton* as
+a-BLE-ton, *ElevenLabs* as E-leven-labs, *ChatGPT* as chat-g-PT. Two
+things were wrong. The rules for native words took the English words for
+loans: *Ableton* got the accent of *telèfon* (the loans in *-on*),
+*Croatian* that of *Kristìjan*, and a word no rule knew, *eleven*, the
+first syllable. And a stress off the first syllable is always rising in a
+native word, whose following syllable starts as high as the peak (section
+5, the melody): in *ČetDžipiti*, the pronunciation dictionary's spelling of
+ChatGPT, the stressed *dži* rose to +4.5 semitones and *pi* after it
+stayed at +4.6, so *pi* was heard as the stressed syllable.
+
+The voices still read an English word with the sounds of their own
+letters (*croatian* is *kro-a-ti-an*); what changed is where it is
+stressed and how:
+
+- **Where English stresses it.** The table `formant_english.inc` holds the
+  stressed vowel letter of 5,600 English words (*cro'atian, e'leven,
+  comp'uter, notific'ation, techn'ology*). The voices read every vowel letter
+  as a syllable, so the letter is all they need: the English stress of
+  *croatian* is on the *a* of *kro-a-ti-an*. A word spelled the English way
+  that is not in the table gets the English rules (`english_rule()`): the
+  syllable before *-tion, -sion, -cian, -tian, -ian, -ial, -ious, -ium,
+  -ia, -ic, -ical, -ity, -ify, -ogy, -ography* (*Croàtian, musìcian,
+  Austràlia, elèctronic, univèrsity*), the ending itself for *-eer, -ese,
+  -ette, -esque, -oon, -ique* (*engineèr, Chinèse*), and otherwise the
+  first syllable, where most English words of two and three syllables and
+  most names have it (*Ábleton, Sámsung, Hílton*); *-ography, -ology,
+  -ometer, -onomy* carry it on their own *o* (*biòlogy, photògraphy*). A
+  native word made from an English stem keeps the accent of its native
+  suffix (*chatírati, photoshopírati, thatcherìzam*), and a verb of the
+  user's accent dictionary its own accent.
+- **A plain stress.** An English word gets the neutral accent wherever its
+  stress is, with the pitch peak inside the stressed vowel and falling
+  after it, not the rising accent of a native word; monosyllables keep the
+  falling accent. In *Croatian* the stressed *a* now peaks at +3.5
+  semitones and *ti* after it lies at -1.2; in *ChatGPT*, *dži* peaks at
+  +2.1 and *pi* lies at -2.2.
+- **Words with a capital after small letters** are read as their parts:
+  *ElevenLabs* as *Eleven Labs* (*e-LE-ven LABS*), *ChatGPT* as *Chat GPT*,
+  and the dictionary's *ČetDžipiti* as *Čet Džipiti*. Only after two small
+  letters: a single one is a prefix or part of a letter (*iPhone, eUprava,
+  BiH, PhD, McDonald*, and *Lj, Nj, Dž*, which is how Serbian Cyrillic
+  capitals *Љ, Њ, Џ* come out of the transliteration: *ЉУБАВЉУ* is
+  *LjUBAVLjU*), and capitals followed by small letters stay one word too
+  (*PDFom, SMSati, KONZUMklik*: a case ending or a word written onto an
+  abbreviation). A word a
+  lexicon knows as a whole stays one word (*TikTok, TikToka*: the
+  lexicon's *Tȉktok*; *JavaScript* if the English table has it, or a word
+  of the user's accent dictionary), as does one whose parts are all one
+  syllable (*TalkBack, GitHub, PayPal*, the dictionary's *SnepČet*), a
+  compound stressed on its first part as before; so does a word with a single
+  letter before the capital (*iPhone, eUprava*), *Mc* (*McDonald*), a
+  single capital at the end (*BiH, PhD*), or a case ending written onto an
+  abbreviation (*PDFom, USBovi, SMSima*).
+- **Inflected forms.** The table needs only the base form where an ending
+  leaves the English stress where it was: *darkness, basically,
+  companies* find *dark, basic, company*. A word spelled the English way
+  also loses *-s, -es, -ed, -er, -ing, -ment, -est* (*settings, created,
+  stopping*); a word spelled the native way does not, since native words
+  end that way too and some are English words without the ending
+  (*operater, distributer*, which would have become *òperater* and
+  *distrìbuter*). Any word loses a Croatian case ending (*managera,
+  computeru, Jacksona, Chicagu*), down to a word of the table itself when
+  it is spelled the native way. Native words that would then be taken for
+  English ones (*reforma, republici, dominanta, nadala*: *reform,
+  republic, dominant, Nadal*) are in the table without a stress mark,
+  which keeps them native; the generator finds them by asking the Hunspell
+  dictionaries about every such form of every word of the table.
+  `english_word()` and `lookup()` in the generator have to agree on all
+  of this.
+
+**Spelled the English way** (`english_spelling()`) means a spelling no
+native word has: the letters *q, w, x, y*; *th, ch, gh, ph*; *ck* not
+before a vowel; *-sh*, *-tion*, *-sion* at the end; *i* before *a, e, u*
+(the languages write *ija, ije, iju*); a doubled consonant. A native word
+has some of these where a prefix meets its root, and those places do not
+count: *prethodni, pothvat, othraniti, neophodan, najneophodniji,
+preothraniti* (*pret-, pot-, ot-, op-* before *h*, also after *ne-, naj-,
+pre-*), *iako, priupitati, antialergijski, poliester, arhiepiskop*, also
+inside a compound (*aerotriangulacija*), *izvannastavni, posttraumatski,
+transseksualan*; *dd, jj, zz* are native (*oddaljiti, najjači,
+bezzvučan*). *cl* at the start is not a sign, since *clanak, clanarina*
+are *članak, članarina* typed without the háček. Checked against 182,000 native word forms (the
+Hunspell dictionaries' stems, the 50,000 commonest words of Croatian,
+Serbian and Bosnian subtitles, a Serbian frequency list): the rules flag
+English names and words in the subtitles, and of native words only rare
+compounds (*gumielastika, ovariektomija*), which then get the first
+syllable, and loans in *-sion* (*pansion, losion, bastion*), which the
+dictionaries stress on the first syllable anyway (*pȁnsion*).
+
+**The table** is made by `tools/formant/english_words.py` from the Carnegie
+Mellon University Pronouncing Dictionary (BSD licence; the notice is in
+`formant_english.inc`):
+
+1. The 30,000 commonest English words of the `wordfreq` package that are
+   written with *a-z*, are in the pronouncing dictionary, and are words of
+   none of the three languages: the LibreOffice Hunspell dictionaries
+   `hr_HR`, `sr-Latn` and `bs_BA` reject them, so *general, hotel, time,
+   more, banana* keep their native accent (3,040 words left out this way).
+   Words read letter by letter there (*usa, fbi*) are left out too, and so
+   are the spellings of the place and personal names of the native tables,
+   also without the *j* of *-ija, -ije, -iju* (*Sofia, Emilia, Maria*). The
+   rows of `tools/formant/english_extra.tsv` are added: *Ableton*, which the
+   pronouncing dictionary does not have, and *Wikipedia, WhatsApp, cafe,
+   email*, which it stresses otherwise than they are said here.
+2. The dictionary's vowels are matched with the vowel letters of the
+   spelling, which gives the letter of the main stress: one run of vowel
+   letters per vowel where the numbers agree (*cer-tain, es-pe-cial-ly*),
+   otherwise an alignment in which each vowel takes one to three adjacent
+   vowel letters or none and letters may be silent, with costs from the
+   usual spellings of each vowel (*cro-a-tian*). Where a noun and a verb of two
+   syllables differ (*record, update, present, import*), the noun's, which a
+   label or a heading usually is; a vowel spelled with two letters is
+   stressed on the first (*heart*, not *he-ART*).
+3. The front end, built with an empty table (`english_stress.cpp`), says
+   where it stresses each word. A word goes into the table when that is
+   another syllable, or the right one with a rising accent, and the front
+   end does not already find it through a shorter word of the table and an
+   ending. Of 24,400 words, 5,600 needed an entry; the rest the rules or
+   the native default already stress as English does.
+4. Every spelling that reaches a word of the table through a case ending
+   is put to the Hunspell dictionaries, and the 400 that are native words
+   (*reforma, republici, nadala, Alfreda*) go in without a mark, with the
+   48 names of the native tables spelled without their *j* (*Emilia,
+   Julia, Mia*). The table is 71 KB of source.
+
+The script ends by building the helper with the new table and checking
+every word again; only *Antonia*, a name of the native lexicon, is left to
+that lexicon. The test "English words are stressed where English stresses
+them" checks the pitch peak of *Croatian, Ableton, Eleven* and the reading
+of words with inner capitals.
+
 ## 5. Timing and melody (`formant_synthesizer.cpp`)
 
 **Durations** start from the inherent value and are scaled by context:
@@ -2205,7 +2344,9 @@ Croatian speaker 11.1%; eSpeak NG Croatian 23.2%; Josip 33.1%.
 - Stress and vowel length are guessed for words outside the lexicon and the
   suffix rules. The four-accent system is fully realized only where the
   lexicon or the text marks it.
-- Foreign words are read by Croatian letter-to-sound rules.
+- Foreign words are read by Croatian letter-to-sound rules (*croatian* is
+  *kro-a-ti-an*); English words get only their English stress (see
+  "English words"). Other languages' words get the native rules.
 - The spelling dictionary (`data/dictionary/spelling.json`) names digits,
   punctuation and symbols in Croatian for all voices (*točka*, not *tačka*).
   Letters are named by the front end in the language of the voice

@@ -56,6 +56,7 @@ Inačica 1.0
    - [8.1 Česti problemi](#81-česti-problemi)
    - [8.2 Dijagnostički zapisnici](#82-dijagnostički-zapisnici)
    - [8.3 Kontakt i podrška](#83-kontakt-i-podrška)
+   - [8.4 Podaci drugih autora](#84-podaci-drugih-autora)
 
 ---
 
@@ -1238,7 +1239,7 @@ Primjer problema: Unos za "TV" zamjenjuje i "aktivator" jer sadrži "TV".
 
 ### 5.11 Naglasni rječnik (accents.json)
 
-Formantni glasovi (Zvonko, Stojan, Mirsad i pjevački glasovi) sami određuju mjesto naglaska, dužinu i ton svake riječi: prvo iz naglasnih znakova u tekstu, zatim iz ugrađenog leksikona, pa po pravilima za nastavke i vrste riječi (posuđenice i izvedenice s dugim zadnjim slogom osnove, glagoli s prefiksom, glagoli na -ovati), a ako ništa ne pogodi, naglasak ide na prvi slog. Riječ koja tako ispadne krivo može se ispraviti u naglasnom rječniku, i to ne samo jedan njezin oblik: unos može pokriti cijelu osnovu, popis oblika ili cijeli glagol sa svim licima i vremenima. Snimljeni glasovi (Josip, Vlado i izvedeni) naglasak određuju na isti način i koriste isti rječnik.
+Formantni glasovi (Zvonko, Stojan, Mirsad i pjevački glasovi) sami određuju mjesto naglaska, dužinu i ton svake riječi: prvo iz naglasnih znakova u tekstu, zatim iz ugrađenog leksikona, pa po pravilima za nastavke i vrste riječi (posuđenice i izvedenice s dugim zadnjim slogom osnove, glagoli s prefiksom, glagoli na -ovati), a ako ništa ne pogodi, naglasak ide na prvi slog. Engleske riječi i imena čitaju se glasovima našeg jezika (*Croatian* kao *kro-a-ti-an*), ali s naglaskom na slogu na kojem ga ima engleski (*Croàtian*, *Ábleton*, *compùter*) i bez uzlaznog tona naših riječi; riječ pisana s velikim slovom u sredini čita se kao njezini dijelovi (*ElevenLabs* kao *Eleven Labs*). Riječ koja tako ispadne krivo može se ispraviti u naglasnom rječniku, i to ne samo jedan njezin oblik: unos može pokriti cijelu osnovu, popis oblika ili cijeli glagol sa svim licima i vremenima. Snimljeni glasovi (Josip, Vlado i izvedeni) naglasak određuju na isti način i koriste isti rječnik.
 
 Datoteka `accents.json` stoji uz ostale rječnike (`%APPDATA%\Laprdus` na Windowsu, `~/.config/Laprdus` na Linuxu) i učitava se zajedno s njima kad su korisnički rječnici uključeni. Učitava se jednom, pri pokretanju i pri promjeni datoteke; govor zbog nje nije ništa sporiji.
 
@@ -1664,6 +1665,21 @@ Pri prijavi problema, molimo navedite:
 - Korišteni čitač ekrana (ako je primjenjivo)
 - Opis problema
 - Korake za reprodukciju problema
+
+### 8.4 Podaci drugih autora
+
+Laprdus je slobodan program pod licencom GNU GPL v3. Naglasak engleskih riječi formantni i snimljeni glasovi uzimaju iz tablice izrađene iz izgovornog rječnika Sveučilišta Carnegie Mellon (CMU Pronouncing Dictionary), čija licenca traži da se uz program navede ova obavijest:
+
+> Copyright (C) 1993-2015 Carnegie Mellon University. All rights reserved.
+>
+> Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+>
+> 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. The contents of this file are deemed to be source code.
+> 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+>
+> This work was supported in part by funding from the Defense Advanced Research Projects Agency, the Office of Naval Research and the National Science Foundation of the United States of America, and by member companies of the Carnegie Mellon Sphinx Speech Consortium. We acknowledge the contributions of many volunteers to the expansion and improvement of this dictionary.
+>
+> THIS SOFTWARE IS PROVIDED BY CARNEGIE MELLON UNIVERSITY "AS IS" AND ANY EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL CARNEGIE MELLON UNIVERSITY NOR ITS EMPLOYEES BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ---
 

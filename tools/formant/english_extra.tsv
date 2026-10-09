@@ -1,0 +1,11 @@
+# English words and names for tools/formant/english_words.py: names the
+# Carnegie Mellon University Pronouncing Dictionary does not have, and words
+# whose stress it gives otherwise than they are said. One word per row, with
+# ' before the stressed vowel, then a tab and why.
+#
+# word	why
+'ableton	not in the pronouncing dictionary; the first syllable, as the user asked (October 2026)
+'cafe	the pronouncing dictionary has ca-FE; Croatian cafe bars (Cafe bar ...) are said with the first syllable, as British English has it
+wiki'pedia	the pronouncing dictionary has the first syllable; wi-ki-PE-di-a, /ˌwɪkɪˈpiːdiə/
+'whatsapp	the pronouncing dictionary has the last syllable; a compound of what's and app, stressed on its first part like other English compounds
+'email	the pronouncing dictionary has e-MAIL; EE-mail, as English dictionaries have it

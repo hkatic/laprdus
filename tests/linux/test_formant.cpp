@@ -166,6 +166,40 @@ double pitch_hz(const std::vector<int16_t>& audio, double from = 0.0, double to 
     return pitch_at(audio, best_start, window);
 }
 
+// Where the pitch is highest, in ms from the start: the highest of the
+// 40 ms windows (10 ms apart) loud and periodic enough to be a vowel.
+double pitch_peak_ms(const std::vector<int16_t>& audio) {
+    const size_t window = 882;
+    const size_t hop = 220;
+    std::vector<double> energy;
+    double loudest = 0.0;
+    for (size_t start = 0; start + window <= audio.size(); start += hop) {
+        energy.push_back(energy_at(audio, start, window));
+        loudest = std::max(loudest, energy.back());
+    }
+    double highest = 0.0;
+    double at = -1.0;
+    for (size_t k = 0; k < energy.size(); ++k) {
+        if (energy[k] < 0.2 * loudest) continue;
+        const double f0 = pitch_at(audio, k * hop, window);
+        if (f0 <= 0.0) continue;
+        // A consonant's noise has no period to repeat.
+        const size_t lag = static_cast<size_t>(22050.0 / f0 + 0.5);
+        double sum = 0.0, left = 0.0, right = 0.0;
+        for (size_t i = k * hop; i + lag < k * hop + window; ++i) {
+            sum += static_cast<double>(audio[i]) * audio[i + lag];
+            left += static_cast<double>(audio[i]) * audio[i];
+            right += static_cast<double>(audio[i + lag]) * audio[i + lag];
+        }
+        if (sum < 0.5 * std::sqrt(left * right)) continue;
+        if (f0 > highest) {
+            highest = f0;
+            at = static_cast<double>(k * hop + window / 2) * 1000.0 / 22050.0;
+        }
+    }
+    return at;
+}
+
 // Fundamental frequency where the voice ends: the last ~35 ms that are
 // clearly periodic and not yet faded out. Takes the shortest period that
 // correlates nearly as well as the best one, so a moving pitch is not
@@ -2189,6 +2223,93 @@ TEST_CASE("Foreign app names keep their pronunciation and stress in case forms",
             REQUIRE(laprdus_set_voice(bare.handle, voice, NO_DATA) == LAPRDUS_OK);
             REQUIRE(speak(engine.handle, text) == speak(bare.handle, text));
         }
+    }
+}
+
+TEST_CASE("English words are stressed where English stresses them", "[formant][text][english]") {
+    struct Case { const char* a; const char* b; };
+    // A word with a capital after small letters is read as its parts,
+    // unless a lexicon knows the whole word (TikTok) or every part is one
+    // syllable (TalkBack); a single small letter before the capital (also
+    // the Lj, Nj, Dž of Serbian Cyrillic capitals), a single capital at
+    // the end, and capitals followed by small letters keep the word whole.
+    const Case same[] = {
+        {"ElevenLabs", "Eleven Labs"},
+        {"TalkBack", "talkback"},
+        {"TalkBacku", "talkbacku"},
+        {"ChatGPT", "Chat GPT"},
+        {"iPhone", "iphone"},
+        {"BiH", "bih"},
+        {"PDFom", "pdfom"},
+        {"SMSati", "smsati"},
+        {"KONZUMklik", "konzumklik"},
+        {"McDonald", "Mcdonald"},
+        {"TikTok", "tiktok"},
+        {"TikToka", "tiktoka"},
+        {u8"ЉУБАВЉУ", u8"љубављу"},
+        {u8"КЊИГА", u8"књига"},
+        {u8"ПРИЈАТЕЉИМА", u8"пријатељима"},
+        // A native word made from an English stem keeps its native suffix
+        {"chatirati", u8"chatírati"},
+        // Case does not matter, and neither does a Croatian case ending on
+        // a word spelled the English way
+        {"Croatian", "croatian"},
+        {"CROATIAN", "croatian"},
+    };
+    // Native words keep their native accents, also those spelled like an
+    // English word with an ending (operate, distribute); the Serbian and
+    // Bosnian voices keep the length after the accent.
+    const Case native[] = {
+        {"telefon", u8"telèfon"},
+        {"telefona", u8"telefóna"},
+    };
+    const Case native_hr[] = {
+        {"operater", u8"operàter"},
+        {"distributer", u8"distribùter"},
+    };
+    const Case native_sr[] = {
+        {"operater", u8"operàtēr"},
+        {"distributer", u8"distribùtēr"},
+    };
+    for (const char* voice : FORMANT_VOICES) {
+        INFO(voice);
+        Engine engine;
+        REQUIRE(laprdus_set_voice(engine.handle, voice, NO_DATA) == LAPRDUS_OK);
+        for (const auto& c : same) {
+            INFO(c.a);
+            const auto a = speak(engine.handle, c.a);
+            REQUIRE(!a.empty());
+            REQUIRE(a == speak(engine.handle, c.b));
+        }
+        for (const auto& c : native) {
+            INFO(c.a);
+            REQUIRE(speak(engine.handle, c.a) == speak(engine.handle, c.b));
+        }
+        for (const auto& c : std::strcmp(voice, "zvonko") == 0 ? native_hr : native_sr) {
+            INFO(c.a);
+            REQUIRE(speak(engine.handle, c.a) == speak(engine.handle, c.b));
+        }
+
+        // The stress is where English has it: Croàtian peaks long before
+        // the native rules' Croatìan, Ábleton on its first syllable, not on
+        // the loan rule's Ablèton, Elèven not on the first. It is a plain
+        // stress, not the rising accent a native word would have there.
+        const auto croatian_audio = speak(engine.handle, "Croatian");
+        const double croatian = pitch_peak_ms(croatian_audio);
+        REQUIRE(croatian > 0.0);
+        REQUIRE(croatian + 80.0 < pitch_peak_ms(speak(engine.handle, u8"Croatìan")));
+        REQUIRE(croatian_audio != speak(engine.handle, u8"Croàtian"));
+        REQUIRE(pitch_peak_ms(speak(engine.handle, "Ableton")) + 80.0 <
+                pitch_peak_ms(speak(engine.handle, u8"Ablèton")));
+        REQUIRE(pitch_peak_ms(speak(engine.handle, "Eleven")) >
+                pitch_peak_ms(speak(engine.handle, u8"Èleven")) + 50.0);
+        // The English first syllable is the plain stress of an unknown word
+        // stressed there by the user's accent lexicon.
+        Engine marked;
+        REQUIRE(laprdus_set_voice(marked.handle, voice, NO_DATA) == LAPRDUS_OK);
+        REQUIRE(laprdus_load_accent_lexicon_from_memory(marked.handle,
+            "{ \"entries\": [ { \"word\": \"'ableton\" } ] }", 0) == LAPRDUS_OK);
+        REQUIRE(speak(engine.handle, "Ableton") == speak(marked.handle, "Ableton"));
     }
 }
 

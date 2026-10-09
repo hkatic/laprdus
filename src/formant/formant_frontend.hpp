@@ -208,6 +208,10 @@ const char* const* lexicon_persons_bosnian(size_t& count);
 const char* const* lexicon_ije_verbs(size_t& count);
 // Whole stems of other verbs, as "st'e:m=classes" (same file).
 const char* const* lexicon_verbs(size_t& count);
+// English words and the stress English gives them (formant_english.inc):
+// lines of entries in alphabetical order, separated by spaces, each the
+// word with ' before its stressed vowel ("cro'atian e'leven").
+const char* const* lexicon_english(size_t& count);
 
 } // namespace formant
 } // namespace laprdus
