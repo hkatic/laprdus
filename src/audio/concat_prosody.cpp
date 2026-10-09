@@ -157,9 +157,12 @@ ClausePlan plan_clause(const formant::Utterance& utt, const UnitBank& bank,
         } else if (p.nucleus) {
             float factor;
             if (p.stressed) {
+                // As in the formant voices: a function word's long vowel
+                // keeps most of its length (tȋ), and only a long vowel is
+                // lengthened in a word of one syllable (sȁd stays short).
                 factor = p.is_long ? 1.90f : 1.35f;
-                if (p.prominence < 2) factor = p.is_long ? 1.50f : 1.15f;
-                if (p.word_syllables == 1 && p.prominence == 2) factor *= 1.12f;
+                if (p.prominence < 2) factor = p.is_long ? 1.70f : 1.15f;
+                if (p.word_syllables == 1 && p.is_long) factor *= 1.12f;
             } else if (p.vowel_word) {
                 factor = VOWEL_WORD_LENGTH;
             } else {
@@ -186,11 +189,11 @@ ClausePlan plan_clause(const formant::Utterance& utt, const UnitBank& bank,
                 factor *= 0.93f;    // closed syllable
             }
             if (final_syl) {
-                // Half the final lengthening for a short stressed vowel in
-                // a statement, as in the formant voices: sȁd stays short
-                // next to sȃd.
-                const bool statement = utt.kind == ClauseKind::Statement ||
-                                       utt.kind == ClauseKind::Exclamation;
+                // Half the final lengthening for a short stressed vowel
+                // except in a question, as in the formant voices: sȁd stays
+                // short next to sȃd.
+                const bool statement = utt.kind != ClauseKind::YesNoQuestion &&
+                                       utt.kind != ClauseKind::WhQuestion;
                 factor *= p.stressed && !p.is_long && statement && p.prominence == 2
                               ? 1.0f + (final_stretch - 1.0f) * 0.5f
                               : final_stretch;

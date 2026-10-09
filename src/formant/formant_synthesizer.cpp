@@ -377,9 +377,15 @@ private:
             } else if (p.nucleus) {
                 float factor;
                 if (p.stressed) {
+                    // A function word is weaker than a content word, but
+                    // its long vowel keeps most of its length: at 1.50 the
+                    // tȋ of "Ti si dobar" (99 ms) was shorter than the short
+                    // o of dobȁr and heard as short. A word of one syllable
+                    // is longer only if its vowel is: the short vowel of
+                    // sȁd, brȁt with the same 12% was heard as long.
                     factor = p.is_long ? 1.90f : 1.35f;
-                    if (p.prominence < 2) factor = p.is_long ? 1.50f : 1.15f;
-                    if (p.word_syllables == 1 && p.prominence == 2) factor *= 1.12f;
+                    if (p.prominence < 2) factor = p.is_long ? WEAK_LONG_VOWEL : 1.15f;
+                    if (p.word_syllables == 1 && p.is_long) factor *= 1.12f;
                 } else if (p.vowel_word) {
                     factor = VOWEL_WORD_LENGTH;
                 } else {
@@ -406,16 +412,17 @@ private:
                     factor *= 0.93f;    // closed syllable
                 }
                 if (final_syl) {
-                    // In a statement a short stressed vowel takes only half
-                    // of the final lengthening, so that a clause-final
-                    // monosyllable keeps the short/long contrast (sȁd : sȃd,
-                    // brȁt : grȃd); with the full stretch the short one was
-                    // 70% of the long one and heard as long. A question
-                    // keeps the full stretch (its rise needs the time), and
-                    // so does a final function word (tȍ, tȉ), whose fall
-                    // would otherwise not reach its target.
-                    const bool statement = m_utt.kind == ClauseKind::Statement ||
-                                           m_utt.kind == ClauseKind::Exclamation;
+                    // Before a period, exclamation mark or comma a short
+                    // stressed vowel takes only half of the final
+                    // lengthening, so that a clause-final monosyllable keeps
+                    // the short/long contrast (sȁd : sȃd, brȁt : grȃd); with
+                    // the full stretch the short one was 70% of the long one
+                    // and heard as long ("Dobro, sad,"). A question keeps
+                    // the full stretch (its rise needs the time), and so
+                    // does a final function word (tȍ, tȉ), whose fall would
+                    // otherwise not reach its target.
+                    const bool statement = m_utt.kind != ClauseKind::YesNoQuestion &&
+                                           m_utt.kind != ClauseKind::WhQuestion;
                     factor *= p.stressed && !p.is_long && statement && p.prominence == 2
                                   ? 1.0f + (final_stretch - 1.0f) * 0.5f
                                   : final_stretch;
@@ -485,6 +492,10 @@ private:
     // the sounds around it: shrinking only like the transitions, it was
     // relatively longer at 1.7x and cost the recognizer words there.
     static constexpr float VOWEL_WORD_LENGTH = 1.30f;
+
+    // The stressed long vowel of a function word (tȋ, mȋ, vȋ, jȃ, ȏn, svȋ,
+    // vȇć), relative to the inherent duration; a content word's has 1.90.
+    static constexpr float WEAK_LONG_VOWEL = 1.70f;
     static constexpr float VOWEL_WORD_DIP = 0.15f;      // voicing at the join
     static constexpr float VOWEL_WORD_DIP_MS = 18.0f;   // at rate 1
     static constexpr float VOWEL_WORD_DIP_MIN_MS = 8.0f;

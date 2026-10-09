@@ -573,6 +573,46 @@ bool needs_spelling(const Word& word) {
     return true;                                                // VCC, VVC
 }
 
+// "ti" and "mi" are the dative clitics (Kažem ti, Daj mi) or the stressed
+// pronouns tȋ, mȋ. A clitic cannot follow a lone conjunction (A ti?, I ti i
+// ja, Ni mi ne znamo), and a verb of the second person singular does not
+// take the dative ti (that is sebi, si), so next to one the word is its
+// subject: Kako si ti?, Jesi li ti to rekao?, Što ti radiš?; mi the same
+// next to the first person plural (Što mi radimo?, Jesmo li mi?).
+bool stressed_pronoun(const std::vector<Word>& words, size_t i) {
+    const std::u32string& w = words[i].w;
+    if (w != U"ti" && w != U"mi") return false;
+    static const WordSet conjunctions = {U"a", U"i", U"ni"};
+    if (i > 0 && conjunctions.count(words[i - 1].w)) return true;
+
+    auto vowels = [](const std::u32string& s) {
+        return std::count_if(s.begin(), s.end(), is_vowel_letter);
+    };
+    auto agrees = [&](const std::u32string& v) {
+        if (w == U"ti") {
+            static const WordSet forms = {U"si", U"jesi", U"nisi", U"ćeš", U"nećeš",
+                                          U"hoćeš", U"znaš", U"daš"};
+            // radiš, kažeš, imaš; not naš, vaš, baš (one syllable)
+            return forms.count(v) != 0 ||
+                   (vowels(v) >= 2 && ends_with_any(v, {U"aš", U"eš", U"iš"}));
+        }
+        static const WordSet forms = {U"smo", U"jesmo", U"nismo", U"ćemo", U"nećemo",
+                                      U"hoćemo", U"bismo"};
+        // radimo, idemo, znamo; not the adverbs samo, tamo, mimo
+        static const WordSet adverbs = {U"samo", U"tamo", U"ovamo", U"onamo", U"kamo",
+                                        U"nekamo", U"nikamo", U"svakamo", U"mimo"};
+        return forms.count(v) != 0 ||
+               (vowels(v) >= 2 && ends_with_any(v, {U"amo", U"emo", U"imo"}) &&
+                !adverbs.count(v));
+    };
+    if (i > 0) {
+        size_t before = i - 1;
+        if (words[before].w == U"li" && before > 0) --before;     // Jesi li ti
+        if (agrees(words[before].w)) return true;
+    }
+    return i + 1 < words.size() && agrees(words[i + 1].w);
+}
+
 // The prepositions "s" and "k" are single consonants that lean on the next
 // word ("s njom", "k meni"); alone they are just letters. A capital says
 // nothing at the head of a sentence ("S tobom sam htio sve", "K meni") or in
@@ -3260,7 +3300,7 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
 
         if (proclitic && i + 1 < count) {
             word.clitic = true;
-        } else if (enclitic && i > 0) {
+        } else if (enclitic && i > 0 && !stressed_pronoun(words, i)) {
             // Enclitics cannot open a clause; there the same form is a full
             // word ("Ti si...", "Je li..."). They have no length either: the
             // long vowel of the pronouns tȋ, mȋ is not that of the dative

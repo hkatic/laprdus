@@ -3304,6 +3304,36 @@ TEST_CASE("Short questions and exclamations are audible", "[formant][prosody]") 
     }
 }
 
+TEST_CASE("Short sad and the long pronoun ti keep their lengths", "[formant][prosody]") {
+    // The adverb sȁd was heard as long before a comma and in a question
+    // (the 12% of a one-syllable word and the full final lengthening), and
+    // the pronoun tȋ as short: read as the dative clitic after "a", "i" and
+    // next to a verb of the second person, and at the head of a clause cut
+    // to 99 ms as a function word, shorter than the short o of dobȁr.
+    // Checked 2026-10-10.
+    auto ms = [](const std::vector<int16_t>& audio) {
+        return static_cast<double>(audio.size()) * 1000.0 / 22050.0;
+    };
+    for (const char* voice : FORMANT_VOICES) {
+        Engine engine;
+        REQUIRE(laprdus_set_voice(engine.handle, voice, NO_DATA) == LAPRDUS_OK);
+        INFO(voice);
+        auto longer = [&](const char* a, const char* b) {
+            return ms(speak(engine.handle, a)) - ms(speak(engine.handle, b));
+        };
+        REQUIRE(longer(u8"Dobro, sȃd,", u8"Dobro, sad,") >= 70.0);
+        REQUIRE(longer(u8"Što sȃd?", u8"Što sad?") >= 60.0);
+        // tȋ against the clitic mu in the same place; the clitic ti stays
+        // as short as mu
+        REQUIRE(longer(u8"Kako si ti?", u8"Kako si mu?") >= 75.0);
+        REQUIRE(longer(u8"Što ti radiš?", u8"Što mu radiš?") >= 70.0);
+        REQUIRE(longer(u8"Kažem ti.", u8"Kažem mu.") <= 45.0);
+        REQUIRE(longer(u8"Ti si dobar.", u8"Tȉ si dobar.") >= 25.0);
+        REQUIRE(speak(engine.handle, u8"A ti?") == speak(engine.handle, u8"A tȋ?"));
+        REQUIRE(speak(engine.handle, u8"I mi?") == speak(engine.handle, u8"I mȋ?"));
+    }
+}
+
 TEST_CASE("A word of one vowel is a syllable of its own", "[formant][prosody]") {
     // The conjunctions i and a and the prepositions u and o used to be
     // shortened as clitics and once more next to a vowel, and were lost

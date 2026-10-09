@@ -949,7 +949,12 @@ stress is plain wherever it is).
 
 **Clitics** (prepositions, conjunctions, short pronoun and verb forms) are
 unstressed and lean on a neighbour. An enclitic cannot open a clause, so
-*ti*, *je*, *mi* are full words there. *Ne* takes over the accent of a
+*ti*, *je*, *mi* are full words there. *Ti* and *mi* are also the stressed
+pronouns *tȋ, mȋ* after a lone *a, i, ni*, which no clitic can follow (*A
+ti?, I ti i ja*), and next to a verb of their own person, which does not
+take the dative (*Kako si ti?, Jesi li ti to rekao?, Što ti radiš?, Što mi
+radimo?*); elsewhere they are the dative clitics (*Kažem ti, Daj mi, Što ti
+je?, Samo mi reci*). *Ne* takes over the accent of a
 following monosyllable (*nè znam, nè dam*) and of every present form of
 *znati* (*nè znamo, nè znate, nè znaju*), in Serbian and Bosnian also of
 common two-syllable verb forms (*nè mogu*). The two words are then one word
@@ -2311,10 +2316,17 @@ stressed and long vowels are longer, vowels before voiceless consonants and
 in closed syllables shorter, consonants in clusters shorter, the last
 syllable of a clause longer. In a statement or exclamation a short stressed
 vowel of a full word takes only half of that final lengthening (since
-October 2026): with
+October 2026), and so it does before a comma: with
 the full stretch a clause-final *sȁd* came out at 70% of *sȃd* and was heard
-as long; now it is about 60%, the ratio of the measured short and long
-accented vowels. Questions keep the full stretch, because the final rise of a
+as long; now it is about 55%, near the ratio of the measured short and long
+accented vowels. A word of one syllable is 12% longer only if its vowel is
+long: with the same 12% the short vowel of *sȁd, brȁt* was heard as long
+(*sad* is now 120 ms at the end of a statement, 116 before a comma, 93 at
+the head of a clause, against 222 for *Novi Sȃd*). The long vowel of a
+function word (*tȋ, mȋ, vȋ, jȃ, svȋ, vȇć*) keeps most of its length (1.70
+of the inherent duration against 1.90 in a content word; it was 1.50, and
+the *tȋ* of *Ti si dobar* at 99 ms was shorter than the short *o* of
+*dobar* and heard as short; now 126 ms). Questions keep the full stretch, because the final rise of a
 short question ("Tko je to?") needs the time, above all at high rates, and
 so do final function words (*tȍ, tȉ*), whose fall needs it in the statement. The
 same factor is in the recorded voices' planner. The rate setting scales durations directly, with
