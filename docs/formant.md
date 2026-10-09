@@ -865,10 +865,11 @@ are lexicon entries.
   (*telefon, restoran, kapetan, rezultat, aparat, programer, inženjer,
   kabinet, piramida, analiza, čokolada, motiv, Francuz*) and the derived
   nouns in *-ač, -ar, -aš, -njak, -ljak, -enik, -anac, -inac* (*prodavač,
-  čuvar, novinar, košarkaš, stručnjak, zemljak, učenik, zarobljenik,
+  čuvar, novinar, košarkaš, stručnjak, zemljak, zaposlenik, zarobljenik,
   Amerikanac, Dalmatinac*). In every case form the long vowel carries a
   rising accent, in all three voices: *telefóna, restorána, rezultáta,
-  programéra, prodaváča, čuvára, zemljáka, učeníka, učeníci, Amerikánca*;
+  programéra, prodaváča, čuvára, zemljáka, zaposleníka, zaposleníci,
+  Amerikánca*;
   so do the possessives (*čuvárov, zemljákova*). In the nominative, where
   that syllable is the last one and cannot carry a rising accent, the
   dictionaries move the accent one syllable back and leave the length
@@ -876,8 +877,11 @@ are lexicon entries.
   Stojan and Mirsad say exactly that; Zvonko leaves the unstressed length
   out (*restòran, prodàvač, čaròbnjak*), as with *sìgnal* and *kòntrolni*
   above. The nouns in *-enik/-anik* keep the accent of their participle in
-  the nominative, the syllable before the suffix (*ùčenīk, pòslanīk,
-  zaròbljenīk, zapòslenīk, osigùranīk*). The nouns in
+  the nominative, the syllable before the suffix (*zaròbljenīk,
+  zapòslenīk, osigùranīk*; HJP and Školski rječnik have *zarobljènīk,
+  zaposlènīk*, one syllable back like the other nouns). Those of three
+  syllables keep the first syllable in every case form (*ȕčenīk, ȕčenīka,
+  pòznanīk, pòdanīk, ùstanīk*; see the fifth list below). The nouns in
   *-anac, -inac, -unac* keep the long vowel in the nominative too, because
   the fleeting *a* makes it the second-to-last syllable (*Amerikánac,
   Dalmatínac, bjegúnac*).
@@ -1589,6 +1593,71 @@ entries, because they are built freely from any number. The first part
 must be a number or *jedno-, više-, malo-, puno-, polu-, sto-* for the
 month, day, week and *-ljetan* compounds, so *pȍlētan* (*po-* + *let*)
 is not taken; *-godišnji* takes any first part (*novogòdišnjī*).
+
+**The fifth list (9 October 2026).** 24 words the listener collected:
+*odabir, odabrano, asistenta, asistenata, učenici, izgleda, komentar,
+prekini, živote, spava, nema, lica, kredita, stavka, krećete, kreni,
+prikvači, dokumentarac, vlasti, novcem, sustav, radnje, dar, važi*. They
+were looked up with their paradigms in Školski rječnik, HJP, Hrvatski
+mrežni rječnik (where it has them), Wiktionary and Rečnik Matice srpske
+(page images); the sources agree on all of them. Alić's handbook has only
+*život* (*žìvot, živòta, živòte*, as the others). Stojan and Mirsad have
+the lengths after the accent where the dictionaries write them; Zvonko
+leaves them out, as everywhere.
+
+| Word | Accent now | Before |
+|---|---|---|
+| odabir | *ȍdabīr, ȍdabīra, ȍdabīru* in every case | *odàbir, odabíra* (the rule for *-ir*) |
+| odabrati | *odàbrati, odàberēm* in every voice (`!`), *odabèri, odàbrah*, but *ȍdabrao, ȍdabrān, ȍdabrāno*; *odàbirati, odàbirēm* and *izàbirati* | Zvonko *odabèrem*, *odàbrao*, *odabírati* |
+| asistent | *asìstent, asìstenta* (unchanged), G pl *asìstenātā*, *asìstentica* (HJP also *asistȅnt*) | *asistenáta*, *asistèntica* |
+| učenik | *ȕčenīk, ȕčenīka, ȕčenīci*, *ȕčenica, ȕčeničkī* | *učeníka, učeníci* |
+| izgled, izgledati | *ȉzglēd, ȉzglēda* in every case; *ìzglēdām, ìzglēdāj*; *izglédati, izglédao, izglédajū* (unchanged) | *izgléda, izglédam* |
+| komentar | *komèntār, komentára* (unchanged: already right) | |
+| prekinuti | *prèkinuti, prèkinēm, prèkini, prèkinuo, prèkinūt* in every form; *prekídati, prèkīdām* (Zvonko *prekídam*, his verb policy) | *prekíni, prekínuo*: two wrong lexicon stems |
+| život | *žìvot*, but *živòta, živòtu, živòte, živòti*; *žìvotnī*; *živòtinja* | *žìvota, žìvote*, *žȉvotinja* |
+| spavati | *spávati, spávao, spávajū*, but *spȃvām, spȃvā, spȃvāj* | short *spȁva* |
+| nemati | *némati, némao, némajū*, but *nȇmām, nȇmā, nȇmāj* | short *nȅmā* |
+| lice | *líce, líca, lícem* in every case | short *lȉca* |
+| kredit | *krèdīt*, but *kredíta, kredíte*; *krèdītnī* | *krȅdita* |
+| stavka | *stȃvka, stȃvci, stȁvākā* | short |
+| kretati, krenuti | *krétati, kréći, krétao, krétānje*, but *krȇćēm, krȇćēte, krȇćē*; *krénuti, kréni, krénuo*, but *krȇnēm, krȇnē* | short |
+| prikvačiti | *prìkvačiti, prìkvačīm, prìkvači, prìkvačen*; *zàkvačiti, òtkvačiti*, and *prìkačiti, zàkačiti, òtkačiti* | *prikváči, zakváči, otkáči* (the rule for *-ač*) |
+| dokumentarac | *dokumentárac, dokumentárca*, G pl *dokumèntārācā* (*dȍkumentārnī* unchanged) | *dȍkumentarac* |
+| vlast | *vlȃst, vlȃsti, vlȃšću, vlástima*; locative *vlásti* after *u, na, o, po, pri* (Zvonko) | short |
+| novac | *nòvac, nóvca, nóvcu, nóvcem*; *nȏvci, nȏvce, nȍvācā* | short |
+| sustav | *sústav, sústava, sústāvan, sústavno*, but *sustàvnijī* | short |
+| radnja | *rádnja, rádnje, rádnji* in every case | short |
+| dar | *dȃr, dȃra, dȃru*; locative *dáru* after a preposition (Zvonko); *dȁrovi, dȁrōvā* | short |
+| važiti | *vážiti, vážio, vážēćī*, but *vȃžīm, vȃžī, vȃžē* | short |
+
+Most of the short ones were not wrong in place but in length and tone:
+the default puts a short accent of no particular tone on the first
+syllable, and these words have a long one there. The present of
+*spavati, nemati, kretati, krenuti, važiti* is falling and the rest of
+the verb rising, so the verb is in `VERBS` with the rising accent and its
+present persons are lexicon entries with the falling one.
+
+*Izgleda* is both the noun's genitive (*ȉzglēda*) and the verb's third
+person (*ìzglēdā*); the noun has it, as for *obavijesti*, although the verb
+is far more frequent (both stress the first syllable). *Odabire* and
+*odabiru* are both the noun's (*ȍdabīre, ȍdabīru*) and *odàbirati*'s
+(*odàbirē, odàbirū*); the noun has them too.
+
+Two rules were at fault. The nouns in *-nik* after a vowel in a prefixed
+word moved the accent to the long *i* in every case but the nominative
+(*učeníka*). That is right for the longer ones (*zaposleníka,
+zarobljeníka, povjereníka, sudioníka, zatvoreníka*), but those of three
+syllables keep the first syllable throughout in HJP and Školski rječnik:
+*ȕčenīk, ȕčenīka; pòznanīk, pòznanīka; pòdanīk; ùstanīk; ìzgnanīk;
+prògnanīk*; also *pòslanīk* (HJP, Rečnik Matice srpske; Školski rječnik
+has *poslànīk, poslaníka* for the envoy). `StressRules::long_stem()` now
+leaves them on the first syllable, which also fixed *spȍmenīci,
+zàmjenīci, zàmenīka*; *ugljènīk, ugljeníka* (Rečnik Matice srpske) is a
+lexicon entry. The rule for *-ač* took the prefixed verbs in *-kvačiti*,
+*-kačiti* (*prikváči*); they are in `VERBS` now. The verbal noun
+*némānje* (HJP) made *nemanja* *némānja*; the name *Nèmanja* (Wikipedia
+[němaɲa]) went into `tools/formant/persons.tsv` so that it keeps its own
+accent.
 
 ### Place names
 

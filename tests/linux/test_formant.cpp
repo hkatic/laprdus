@@ -793,6 +793,73 @@ TEST_CASE("Lexicon accents cover the whole paradigm", "[formant][text]") {
         {"najva\xC5\xBEniji", "najv\xC3\xA0\xC5\xBEniji"},   // najvàžniji
         {"najstariji", "najst\xC3\xA0riji"},   // najstàriji
         {"najjednostavniji", "najjednost\xC3\xA0vniji"},   // najjednostàvniji
+        {"odabir", "\xC8\x8D" "dabir"},   // ȍdabir
+        {"odabiru", "\xC8\x8D" "dabiru"},   // ȍdabiru
+        {"odabrano", "\xC8\x8D" "dabrano"},   // ȍdabrano
+        {"odabrao", "\xC8\x8D" "dabrao"},   // ȍdabrao
+        {"odaberem", "od\xC3\xA0" "berem"},   // odàberem
+        {"odaberi", "odab\xC3\xA8ri"},   // odabèri
+        {"odabirati", "od\xC3\xA0" "birati"},   // odàbirati
+        {"odabirem", "od\xC3\xA0" "birem"},   // odàbirem
+        {"asistenta", "as\xC3\xACstenta"},   // asìstenta
+        {"asistenata", "as\xC3\xACstenata"},   // asìstenata
+        {"u\xC4\x8D" "enik", "\xC8\x95\xC4\x8D" "enik"},   // ȕčenik
+        {"u\xC4\x8D" "enika", "\xC8\x95\xC4\x8D" "enika"},   // ȕčenika
+        {"u\xC4\x8D" "enici", "\xC8\x95\xC4\x8D" "enici"},   // ȕčenici
+        {"izgled", "\xC8\x89zgled"},   // ȉzgled
+        {"izgleda", "\xC8\x89zgleda"},   // ȉzgleda
+        {"izgledam", "\xC3\xACzgledam"},   // ìzgledam
+        {"izgledaju", "izgl\xC3\xA9" "daju"},   // izglédaju
+        {"komentar", "kom\xC3\xA8ntar"},   // komèntar
+        {"komentara", "koment\xC3\xA1ra"},   // komentára
+        {"prekini", "pr\xC3\xA8kini"},   // prèkini
+        {"prekinuo", "pr\xC3\xA8kinuo"},   // prèkinuo
+        {"prekinut", "pr\xC3\xA8kinut"},   // prèkinut
+        {"prekinem", "pr\xC3\xA8kinem"},   // prèkinem
+        {"\xC5\xBEivot", "\xC5\xBE\xC3\xACvot"},   // žìvot
+        {"\xC5\xBEivota", "\xC5\xBEiv\xC3\xB2ta"},   // živòta
+        {"\xC5\xBEivote", "\xC5\xBEiv\xC3\xB2te"},   // živòte
+        {"\xC5\xBEivotinja", "\xC5\xBEiv\xC3\xB2tinja"},   // živòtinja
+        {"spava", "sp\xC8\x83va"},   // spȃva
+        {"spavati", "sp\xC3\xA1vati"},   // spávati
+        {"spavao", "sp\xC3\xA1vao"},   // spávao
+        {"nema", "n\xC8\x87ma"},   // nȇma
+        {"nemam", "n\xC8\x87mam"},   // nȇmam
+        {"nemaju", "n\xC3\xA9maju"},   // némaju
+        {"lice", "l\xC3\xAD" "ce"},   // líce
+        {"lica", "l\xC3\xAD" "ca"},   // líca
+        {"kredit", "kr\xC3\xA8" "dit"},   // krèdit
+        {"kredita", "kred\xC3\xADta"},   // kredíta
+        {"stavka", "st\xC8\x83vka"},   // stȃvka
+        {"stavke", "st\xC8\x83vke"},   // stȃvke
+        {"kre\xC4\x87" "ete", "kr\xC8\x87\xC4\x87" "ete"},   // krȇćete
+        {"kre\xC4\x87" "e", "kr\xC8\x87\xC4\x87" "e"},   // krȇće
+        {"kre\xC4\x87i", "kr\xC3\xA9\xC4\x87i"},   // kréći
+        {"kretanje", "kr\xC3\xA9tanje"},   // krétanje
+        {"kreni", "kr\xC3\xA9ni"},   // kréni
+        {"krenem", "kr\xC8\x87nem"},   // krȇnem
+        {"krenuo", "kr\xC3\xA9nuo"},   // krénuo
+        {"prikva\xC4\x8Di", "pr\xC3\xACkva\xC4\x8Di"},   // prìkvači
+        {"prikva\xC4\x8D" "en", "pr\xC3\xACkva\xC4\x8D" "en"},   // prìkvačen
+        {"otkva\xC4\x8Di", "\xC3\xB2tkva\xC4\x8Di"},   // òtkvači
+        {"dokumentarac", "dokument\xC3\xA1rac"},   // dokumentárac
+        {"dokumentarca", "dokument\xC3\xA1rca"},   // dokumentárca
+        {"vlast", "vl\xC8\x83st"},   // vlȃst
+        {"vlasti", "vl\xC8\x83sti"},   // vlȃsti
+        {"na vlasti", "na vl\xC3\xA1sti"},   // na vlásti
+        {"novac", "n\xC3\xB2vac"},   // nòvac
+        {"novcem", "n\xC3\xB3vcem"},   // nóvcem
+        {"novci", "n\xC8\x8Fvci"},   // nȏvci
+        {"sustav", "s\xC3\xBAstav"},   // sústav
+        {"sustava", "s\xC3\xBAstava"},   // sústava
+        {"radnja", "r\xC3\xA1" "dnja"},   // rádnja
+        {"radnje", "r\xC3\xA1" "dnje"},   // rádnje
+        {"dar", "d\xC8\x83r"},   // dȃr
+        {"darovi", "d\xC8\x81rovi"},   // dȁrovi
+        {"o daru", "o d\xC3\xA1ru"},   // o dáru
+        {"va\xC5\xBEi", "v\xC8\x83\xC5\xBEi"},   // vȃži
+        {"va\xC5\xBEiti", "v\xC3\xA1\xC5\xBEiti"},   // vážiti
+        {"va\xC5\xBE" "e\xC4\x87i", "v\xC3\xA1\xC5\xBE" "e\xC4\x87i"},   // vážeći
     };
     Engine engine;
     REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
@@ -2156,8 +2223,8 @@ TEST_CASE("Word-class rules place the accent of loans, derived nouns and prefixe
         {"materijalu", "materij\xC3\xA1lu"},   // materijálu
         {"motiva", "mot\xC3\xADva"},   // motíva
         {"Francuza", "Franc\xC3\xBAza"},   // Francúza
-        {"u\xC4\x8D" "enika", "u\xC4\x8D" "en\xC3\xADka"},   // učeníka
-        {"u\xC4\x8D" "enici", "u\xC4\x8D" "en\xC3\xAD" "ci"},   // učeníci
+        {"zaposlenika", "zaposlen\xC3\xADka"},   // zaposleníka
+        {"povjerenici", "povjeren\xC3\xAD" "ci"},   // povjereníci
         {"zarobljenika", "zarobljen\xC3\xADka"},   // zarobljeníka
         {"dobitka", "dob\xC3\xADtka"},   // dobítka
         {"Amerikanca", "Amerik\xC3\xA1nca"},   // Amerikánca
@@ -2241,7 +2308,9 @@ TEST_CASE("Word-class rules place the accent of loans, derived nouns and prefixe
         {"nagrada", "nagr\xC3\xA1" "da"},   // nagráda
         {"svijeta", "svij\xC3\xA9ta"},   // svijéta
         {"doga\xC4\x91" "aju", "dog\xC3\xA0\xC4\x91" "aju"},   // dogàđaju
-        {"u\xC4\x8D" "enik", "u\xC4\x8D\xC3\xA8nik"},   // učènik (ùčenik)
+        {"u\xC4\x8D" "enik", "u\xC4\x8D\xC3\xA8nik"},   // učènik (ȕčenīk)
+        {"u\xC4\x8D" "enika", "u\xC4\x8D" "en\xC3\xADka"},   // učeníka (ȕčenīka)
+        {"poznanici", "poznan\xC3\xAD" "ci"},   // poznaníci (pòznanīci)
         {"udara", "ud\xC3\xA1ra"},   // udára (ùdara, a verb in VERBS)
         {"ispune", "isp\xC3\xBAne"},   // ispúne (ìspune)
         {"umire", "um\xC3\xADre"},   // umíre (ùmire)

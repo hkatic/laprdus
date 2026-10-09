@@ -85,9 +85,9 @@ const char* const COMMON[] = {
     u8"r/u:k*", u8"n/og*", u8"s/estr*", u8"z/emlj*", u8"gr^a:d", u8"s^i:n",
     u8"m^a:jk*", u8"^otac", u8"br^at", u8"lj^u:di", u8"d/ije:te", u8"sv^ije:t",
     u8"r^ije:č", u8"vr/ije:me", u8"l/ije:p*", u8"ml/ije:k*", u8"r/ije:k*",
-    u8"b/ije:l*", u8"mj^esto", u8"p^osao", u8"ž/ivot*", u8"r/a:di*", u8"r^a:d",
+    u8"b/ije:l*", u8"mj^esto", u8"p^osao", u8"r/a:di*", u8"r^a:d",
     u8"zn^a:m", u8"zn^a:š", u8"zn^a:", u8"zn^a:mo", u8"zn^a:te",
-    u8"^ima:m", u8"^ima:š", u8"^ima:", u8"n^ema:", u8"n^ema:m",
+    u8"^ima:m", u8"^ima:š", u8"^ima:",
     u8"s^ada", u8"s^ad", u8"t^ada", u8"k^ada", u8"/o:vdje", u8"/o:vde",
     u8"t/a:mo", u8"/ovamo", u8"d^anas", u8"s^utra", u8"j^uče:r", u8"j^uče:",
 
@@ -117,7 +117,7 @@ const char* const COMMON[] = {
     u8"sl^obodan", u8"sl^obodn*", u8"sl^obodnij*", u8"sl^obodn|oga|ome|ima",
     // snága, snázi, snážan, snážno
     u8"sn/a:g*", u8"sn/a:zi", u8"sn/a:žan", u8"sn/a:žn*", u8"sn/a:žnij*",
-    u8"prek'i:ni*", u8"prek'i:nu*", u8"intelig'ent*",
+    u8"intelig'ent*",
 
     // ---- Abstract nouns in -ina ----
     u8"brz'in*", u8"vis'in*", u8"duž'in*", u8"šir'in*", u8"dub'in*", u8"dalj'in*",
@@ -381,8 +381,8 @@ const char* const COMMON[] = {
 
     // ---- Words shaped like the loans with a long last stem syllable
     // (StressRules::long_stem) that keep their native accent ----
-    // zákon, nágrada; spȍmenīk, zàmjenīk, ùdžbenīk, zlòčin next to učeník,
-    // zločínac; vòjnīk but vojníka; mȅnadžer, hȁmburger
+    // zákon, nágrada; spȍmenīk, zàmjenīk, ùdžbenīk, zlòčin next to zločínac;
+    // vòjnīk but vojníka; mȅnadžer, hȁmburger
     u8"z/a:kon*", u8"n/a:grad*", u8"sp^omenik*", u8"z/amjenik*", u8"'udžbenik*",
     u8"zl/očin*", u8"zloč'inc*", u8"zloč'inac", u8"v/ojnik", u8"v/ojniče",
     u8"vojn'i:|ka|ku|kom|ci|cima|ke", u8"m^enadžer*", u8"h^amburger*",
@@ -599,6 +599,65 @@ const char* const COMMON[] = {
     // spelled like forms of napoménuti (VERBS): the noun has them, except
     // the imperative at the head of a clause (Napoméni mu ...)
     u8"n^apomen|a|e|i|u|o|om|ama",
+
+    // ---- The fifth October 2026 list (Školski rječnik, HJP, Hrvatski
+    // mrežni rječnik, Wiktionary, Rečnik Matice srpske; all agree). The
+    // verbs' other forms are in VERBS ----
+    // ȍdabīr in every case (an exact paradigm: a stem would take
+    // odàbirati); "odabire" and "odabiru" are also forms of odàbirati, the
+    // noun has them. odàbrati, odàberēm, odabèri (VERBS), but ȍdabrao,
+    // ȍdabrān on the first syllable and the aorist odàbrah
+    u8"^odabir||a|u|om|i|e|ima",
+    u8"^odabra|o|la|lo|li|le", u8"^odabran||a|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    u8"od/abr|a|ah|asmo|aste|aše|avši",
+    // asìstent, asìstenta in every case, the genitive plural asìstenātā
+    // against the rule for -at; asìstentica (HJP also asistȅnt, asistȅntica)
+    u8"as/istenata", u8"as/istentic|a|e|i|u|o|om|ama",
+    // ȕčenīk, ȕčenīka, ȕčenīci: the nouns in -nik of three syllables keep
+    // the first syllable (StressRules::long_stem), these set its falling
+    // tone; ȕčenica, ȕčeničkī
+    u8"^učeni|k|ka|ku|kom|ke|ci|cima|če", u8"^učenic|a|e|u|om|ama", u8"^učeničk*",
+    // ...but ugljènīk, ugljeníka (Rečnik Matice srpske) moves like the
+    // longer ones
+    u8"uglj/enik", u8"ugljen'i:|ka|ku|kom|ke|ci|cima",
+    // ȉzglēd, ȉzglēda in every case. "izgleda" is also the third person of
+    // izglédati (ìzglēdā): the noun has it. The other persons and the
+    // imperative are ìzglēdām, ìzglēdāj; the rest of the verb keeps
+    // izgléd- (above)
+    u8"^izgled||a|u|om|i|e|ima", u8"/izgled|am|aš|amo|ate|aj|ajmo|ajte",
+    u8"izgl'e:dajući",
+    // žìvot, but živòta, živòte in the other cases; žìvotnī; živòtinja
+    u8"ž/ivot", u8"živ/ot|a|u|om|i|e|ima", u8"ž/ivotan", u8"ž/ivotn*",
+    u8"ž/ivotn|oga|ome|omu|ima", u8"živ/otinj*", u8"živ/otinjama", u8"živ/otinjsk*",
+    // spávati, némati (VERBS), but the present and the imperative spȃvām,
+    // spȃvā, spȃvāj, nȇmām, nȇmā, nȇmāj have the falling accent
+    u8"sp^a:v|am|aš|a|amo|ate|aj|ajmo|ajte", u8"n^e:m|am|aš|a|amo|ate|aj|ajmo|ajte",
+    // líce in every case
+    u8"l/i:c|e|a|u|em|ima",
+    // krèdīt, but kredíta in the other cases; krèdītnī
+    u8"kr/edit", u8"kred'i:t|a|u|om|i|e|ima", u8"kr/editn*",
+    // stȃvka, stȃvci, stȁvākā
+    u8"st^a:vk|a|e|i|u|o|om|ama", u8"st^a:vci", u8"st^avaka",
+    // krétati, kréći, krénuti, kréni (VERBS), but the present krȇćēm,
+    // krȇćēte, krȇnēm, krȇnē
+    u8"kr^e:ć|em|eš|e|emo|ete|u", u8"kr^e:n|em|eš|e|emo|ete|u",
+    // dokumentárac, dokumentárca, dokumèntārācā (dȍkumentārnī keeps the
+    // first syllable)
+    u8"dokument'a:r|ac|ca|cu|cem|ci|ce|cima", u8"dokum/entaraca",
+    // vlȃst, vlȃsti, vlȃšću, vlástima; the locative vlásti after a
+    // preposition is a rule of the front end
+    u8"vl^a:st||i", u8"vl^a:šću", u8"vl/a:stima",
+    // nòvac, nóvca, nóvcem; nȏvci, nȍvācā
+    u8"n/ovac", u8"n/o:vc|a|u|em", u8"n^o:vc|i|e|ima", u8"n^ovaca",
+    // sústav, sústāvan, sústavno, but sustàvnijī
+    u8"s/u:stav*", u8"s/u:stavn*", u8"sust/avnij*",
+    // rádnja in every case
+    u8"r/a:dnj|a|e|i|u|o|om|ama",
+    // dȃr, dȃra, dȁrovi, dȁrōvā; the locative dáru after a preposition is a
+    // rule of the front end
+    u8"d^a:r||a|u|om|em|e", u8"d^arov|i|a|e|ima",
+    // vážiti, vážio (VERBS), but the present vȃžīm, vȃžī, vȃžē; vážēćī
+    u8"v^a:ž|im|iš|i|imo|ite|e", u8"v/a:žeć*",
 };
 
 const char* const CROATIAN[] = {
@@ -762,6 +821,21 @@ const char* const SERBIAN[] = {
     u8"v/odi:č", u8"poluv'odi:č", u8"/egipća:nk*",
     // gòdišnjāk (see COMMON)
     u8"g/odišnja:k*", u8"g/odišnja:c|i|ima", u8"g/odišnja:če",
+    // The fifth October 2026 list (see COMMON) with the length after the
+    // accent: ȍdabīr, ȍdabrāno, asìstenātā, ȕčenīk, ȉzglēd, ìzglēdām,
+    // spȃvām, nȇmām, krèdīt, stȁvākā, krȇćēm, krȇnēm, dokumèntārācā,
+    // nȍvācā, sústāvan, dȁrōvā, vȃžīm
+    u8"^odabi:r||a|u|om|i|e|ima", u8"^odabra:|la|lo|li|le",
+    u8"^odabra:n||a|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima", u8"as/istena:ta:",
+    u8"^učeni:|k|ka|ku|kom|ke|ci|cima|če",
+    u8"uglj/eni:k",
+    u8"^izgle:d||a|u|om|i|e|ima", u8"/izgle:d|a:m|a:š|a:mo|a:te|a:j|a:jmo|a:jte",
+    u8"izgl'e:daju:", u8"izgl'e:daju:ći", u8"sp^a:v|a:m|a:š|a:|a:mo|a:te|a:j|a:jmo|a:jte", u8"sp/a:vaju:",
+    u8"n^e:m|a:m|a:š|a:|a:mo|a:te|a:j|a:jmo|a:jte", u8"n/e:maju:",
+    u8"kr/edi:t", u8"kr/edi:tn*", u8"st^ava:ka:",
+    u8"kr^e:ć|e:m|e:š|e:|e:mo|e:te|u:", u8"kr^e:n|e:m|e:š|e:|e:mo|e:te|u:",
+    u8"dokum/enta:ra:ca:", u8"n^ova:ca:", u8"s/u:sta:van", u8"d^aro:va:",
+    u8"v^a:ž|i:m|i:š|i:|i:mo|i:te|e:", u8"v/a:že:ć*",
 };
 
 const char* const BOSNIAN[] = {
@@ -815,6 +889,21 @@ const char* const BOSNIAN[] = {
     u8"v/odi:č", u8"poluv'odi:č", u8"/egipća:nk*",
     // gòdišnjāk (see COMMON)
     u8"g/odišnja:k*", u8"g/odišnja:c|i|ima", u8"g/odišnja:če",
+    // The fifth October 2026 list (see COMMON) with the length after the
+    // accent: ȍdabīr, ȍdabrāno, asìstenātā, ȕčenīk, ȉzglēd, ìzglēdām,
+    // spȃvām, nȇmām, krèdīt, stȁvākā, krȇćēm, krȇnēm, dokumèntārācā,
+    // nȍvācā, sústāvan, dȁrōvā, vȃžīm
+    u8"^odabi:r||a|u|om|i|e|ima", u8"^odabra:|la|lo|li|le",
+    u8"^odabra:n||a|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima", u8"as/istena:ta:",
+    u8"^učeni:|k|ka|ku|kom|ke|ci|cima|če",
+    u8"uglj/eni:k",
+    u8"^izgle:d||a|u|om|i|e|ima", u8"/izgle:d|a:m|a:š|a:mo|a:te|a:j|a:jmo|a:jte",
+    u8"izgl'e:daju:", u8"izgl'e:daju:ći", u8"sp^a:v|a:m|a:š|a:|a:mo|a:te|a:j|a:jmo|a:jte", u8"sp/a:vaju:",
+    u8"n^e:m|a:m|a:š|a:|a:mo|a:te|a:j|a:jmo|a:jte", u8"n/e:maju:",
+    u8"kr/edi:t", u8"kr/edi:tn*", u8"st^ava:ka:",
+    u8"kr^e:ć|e:m|e:š|e:|e:mo|e:te|u:", u8"kr^e:n|e:m|e:š|e:|e:mo|e:te|u:",
+    u8"dokum/enta:ra:ca:", u8"n^ova:ca:", u8"s/u:sta:van", u8"d^aro:va:",
+    u8"v^a:ž|i:m|i:š|i:|i:mo|i:te|e:", u8"v/a:že:ć*",
 };
 
 // Verbs whose root has the long "ije" (podijéliti, promijéniti, zalijévati).
@@ -948,7 +1037,7 @@ const char* const VERBS[] = {
     u8"odst'u:p=i<pn", u8"post'u:p=i<", u8"zast'u:p=i<p", u8"ust'u:p=i<pn", u8"st'u:p=i",
     u8"ut'op=i<p", u8"rast'op=i<p", u8"pot'op=i<pn", u8"polj'u:b=i<p", u8"lj'u:b=i",
     u8"prel'om=i<p", u8"p'a:mt=i", u8"skr'a:t=i", u8"poč'ast=i<pn", u8"opr'ost=i<pn",
-    u8"uv'r:st=i<p", u8"razv'rst=ap", u8"prem'ost=i<p", u8"izab'er=e", u8"odab'er=e<",
+    u8"uv'r:st=i<p", u8"razv'rst=ap", u8"prem'ost=i<p", u8"izab'er=e", u8"odab'er=e<!",
     u8"od'ust=t", u8"od'ustan=e", u8"poš'alj=e<", u8"poz'ov=e", u8"naz'ov=e",
     u8"sač'u:v=a<p", u8"č'u:v=a", u8"oč'u:v=a<", u8"udr'u:ž=i<p", u8"pridr'u:ž=i<p",
     u8"zdr'u:ž=i", u8"dr'u:ž=i", u8"zatr'a:ž=i<p", u8"razm'otr=i<p", u8"prom'otr=i<p",
@@ -1019,6 +1108,19 @@ const char* const VERBS[] = {
     // proizvòditi, proìzvodīm, proizvòdio, proìzvođen (proìzvodi is the
     // noun's in the lexicon); proizvèdēm, proizvèdi, proizvèden
     u8"nap'ominj=te", u8"proizv'od=i<p", u8"proizv'ed=e",
+    // The fifth October 2026 list (Školski rječnik, HJP, Hrvatski mrežni
+    // rječnik; Rečnik Matice srpske): prèkinuti, prèkinēm, prèkini,
+    // prèkinūt; prekídati, prèkīdām, prèkīdān (the present and the passive
+    // participle move in the Serbian and Bosnian voices); odàbirati,
+    // odàbirēm, izàbirati; prìkvačiti, zàkvačiti, òtkvačiti and prìkačiti,
+    // zàkačiti, òtkačiti, against the rule for -ač; the rising accent of
+    // spávati, némati, krétati, kréći, krénuti, kréni, vážiti (their
+    // falling present is in the lexicon). odàbrati moves its present in
+    // every voice (odàberēm, odabèri)
+    u8"pr/eki=u", u8"prek'i:d=a<pn", u8"od'abir=t", u8"od'abir=e", u8"iz'abir=t",
+    u8"iz'abir=e", u8"pr/ikvač=i", u8"z/akvač=i", u8"/otkvač=i", u8"pr/ikač=i",
+    u8"z/akač=i", u8"/otkač=i", u8"sp/a:v=a", u8"n/e:m=a", u8"kr/e:t=t", u8"kr/e:ć=e",
+    u8"kr/e:=u", u8"v/a:ž=i",
 };
 
 // Towns, villages and regions (PLACES_*) and personal names and surnames

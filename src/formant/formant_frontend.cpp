@@ -1683,14 +1683,14 @@ public:
     // Nouns whose last stem syllable is long: loans (telefon, restoran,
     // kapetan, rezultat, programer, piramida, analiza) and the derived
     // nouns in -ač, -ar, -aš, -njak, -ljak, -enik (prodavač, čuvar,
-    // košarkaš, stručnjak, zemljak, učenik). Every case form has a long
+    // košarkaš, stručnjak, zemljak, zaposlenik). Every case form has a long
     // rising accent on that syllable (telefóna, restorána, rezultáta,
-    // programéra, prodaváča, čuvára, zemljáka, učeníka), and so do the
+    // programéra, prodaváča, čuvára, zemljáka, zaposleníka), and so do the
     // possessives (čuvárov, zemljákova) and the genitive plural. In the
     // nominative, where the syllable is the last one and cannot carry a
     // rising accent, the dictionaries move the accent one syllable back
     // and leave the length behind it (telèfōn, restòrān, prodàvāč,
-    // čaròbnjāk, učènīk); Stojan and Mirsad say exactly that, the
+    // čaròbnjāk); Stojan and Mirsad say exactly that, the
     // Croatian voice leaves the unstressed length out (restòran,
     // prodàvač), as Croatian is commonly spoken.
     //
@@ -1734,12 +1734,21 @@ public:
             const int k = nucleus_at(p);
             if (k < 1) continue;                    // not the first syllable
             if (!long_rhyme(stem, p, k, ending)) continue;
+            const bool nik = stem.compare(p, 2, U"ik") == 0 || stem.compare(p, 2, U"ic") == 0;
+            if (nik && k < 3) {
+                // The nouns in -nik of three syllables keep the first
+                // syllable in every form, with the length of -nīk behind
+                // it (ȕčenīk, ȕčenīka, ȕčenīci; pòznanīk, pòdanīk,
+                // ùstanīk, ìzgnanīk, prògnanīk in Školski rječnik and HJP)
+                r.nucleus = 0;
+                if (m_language != VoiceLanguage::Croatian) r.long_after = k;
+                return true;
+            }
             if (ending.empty()) {
-                // The nouns in -enik, -anik keep the accent of the
+                // The longer nouns in -enik, -anik keep the accent of the
                 // participle they come from, the syllable before the
-                // suffix (ùčenīk, pòslanīk, zaròbljenīk, zapòslenīk,
-                // osigùranīk); the rest move it one syllable back.
-                const bool nik = stem.compare(p, 2, U"ik") == 0;
+                // suffix (zaròbljenīk, zapòslenīk, osigùranīk); the rest
+                // move it one syllable back.
                 r.nucleus = nik ? std::max(0, k - 2) : k - 1;
                 if (m_language != VoiceLanguage::Croatian) r.long_after = k;
             } else {
@@ -1814,9 +1823,10 @@ public:
             return preceded_by({U"nj", U"lj"});
         }
         // -nik after a vowel in a prefixed word, with its plural in -nici:
-        // učenik, učeníci, zarobljenik, zaposlenik, osiguranik, poznanik;
-        // not rȁdnīk, pȕtnīk, kȍrisnīk (consonant before the n) and not
-        // spȍmenīk, zàmjenīk (lexicon).
+        // zarobljenik, zaposlenik, zaposleníci, osiguranik, povjerenik;
+        // not rȁdnīk, pȕtnīk, kȍrisnīk (consonant before the n). Those of
+        // three syllables (ȕčenīk, pòznanīk) keep the first syllable, see
+        // long_stem().
         if (rhyme == U"ik" || (rhyme == U"ic" && is_one_of(ending, {U"i", U"ima"}))) {
             return p >= 2 && stem[p - 1] == U'n' && is_vowel_letter(stem[p - 2]) && prefixed_word();
         }
@@ -2859,10 +2869,12 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
         }
     }
 
-    // Croatian sȃt/rȃd keep falling accents in D sg, but have rising L sg
-    // sátu/rádu. Recognize a governing locative preposition, allowing up
-    // to two adjacent modifiers ("o svom novom radu"). This is a local
-    // cue, not a general case parser; other contexts keep the exact entry.
+    // Croatian sȃt/rȃd/dȃr keep falling accents in D sg, but have rising L
+    // sg sátu/rádu/dáru, and vlȃst has vlásti (Školski rječnik, Mrežnik).
+    // Recognize a governing locative preposition, allowing up to two
+    // adjacent modifiers ("o svom novom radu", "na državnoj vlasti"). This
+    // is a local cue, not a general case parser; other contexts keep the
+    // exact entry.
     // N/V pl sȃti likewise differs from G pl sátī ("pet sati"). Croatian
     // omits the unstressed final length, as in the rest of its lexicon.
     if (m_language == VoiceLanguage::Croatian) {
@@ -2878,10 +2890,12 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
             if (word.explicit_stress || word.user_accent || word.letter_name ||
                 word.nuclei.empty()) continue;
             bool rising = false;
-            if (word.w == U"satu" || word.w == U"radu") {
+            if (word.w == U"satu" || word.w == U"radu" || word.w == U"daru" ||
+                word.w == U"vlasti") {
                 size_t cue = i;
                 for (int modifiers = 0; cue > 0 && modifiers < 2 &&
-                     ends_with_any(words[cue - 1].w, {U"om", U"ome", U"omu", U"em", U"emu"});
+                     ends_with_any(words[cue - 1].w,
+                                   {U"om", U"ome", U"omu", U"em", U"emu", U"oj"});
                      ++modifiers) {
                     --cue;
                 }
