@@ -8,6 +8,7 @@
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
 #include <string>
+#include <cstdint>
 #include <memory>
 #include <mutex>
 
@@ -20,17 +21,39 @@
 
 namespace {
 
-// Global engine instance with mutex for thread safety
-std::unique_ptr<laprdus::TTSEngine> g_engine;
-std::mutex g_engine_mutex;
+// The engine of one LaprdusTTS object. The app's screens and the speech
+// service each have their own, so a voice, rate or dictionary set by one
+// never reaches the other. The Kotlin object keeps the handle for the life
+// of the process; nativeShutdown() releases the engine, never this struct.
+struct NativeEngine {
+    std::mutex mutex;
+    std::unique_ptr<laprdus::TTSEngine> engine;
+    // The current voice's base_pitch, kept across parameter changes so the
+    // derived voices (detence=1.5, baba=1.2, djed=0.75) keep their character
+    // pitch when Android TTS requests pitch changes
+    float voice_base_pitch = 1.0f;
+};
 
-// Current voice data directory
-std::string g_data_directory;
+// One JNI call's hold on a native engine: locked for the whole call.
+class LockedEngine {
+public:
+    explicit LockedEngine(jlong handle)
+        : m_native(reinterpret_cast<NativeEngine*>(static_cast<intptr_t>(handle))) {
+        if (m_native) m_lock = std::unique_lock<std::mutex>(m_native->mutex);
+    }
 
-// Store the current voice's base_pitch to preserve it across parameter changes
-// This ensures derived voices (detence=1.5, baba=1.2, djed=0.75) maintain their
-// character pitch even when Android TTS requests pitch changes
-float g_voice_base_pitch = 1.0f;
+    /** The native engine of the handle (null for a bad handle). */
+    NativeEngine* native() const { return m_native; }
+    /** Whether there is an engine (it may not have a voice yet). */
+    explicit operator bool() const { return m_native && m_native->engine; }
+    /** Whether there is an engine with a voice loaded. */
+    bool initialized() const { return *this && m_native->engine->is_initialized(); }
+    laprdus::TTSEngine* operator->() const { return m_native->engine.get(); }
+
+private:
+    NativeEngine* m_native;
+    std::unique_lock<std::mutex> m_lock;
+};
 
 // Convert Java string to std::string
 std::string jstringToString(JNIEnv* env, jstring jstr) {
@@ -96,39 +119,59 @@ extern "C" {
 // Native Methods - Package: com.hrvojekatic.laprdus.tts
 // =============================================================================
 
-JNIEXPORT void JNICALL
-Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeShutdown(
+JNIEXPORT jlong JNICALL
+Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeCreate(
     JNIEnv* env,
     jobject thiz) {
 
     (void)env;
     (void)thiz;
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
+    // Lives as long as the process: the Kotlin object never gives it back.
+    // The engine exists before its first voice, so settings applied before
+    // the voice is loaded are kept (loading a voice keeps them).
+    auto* native = new NativeEngine();
+    native->engine = std::make_unique<laprdus::TTSEngine>();
+    return static_cast<jlong>(reinterpret_cast<intptr_t>(native));
+}
+
+JNIEXPORT void JNICALL
+Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeShutdown(
+    JNIEnv* env,
+    jobject thiz,
+    jlong handle) {
+
+    (void)env;
+    (void)thiz;
+    LockedEngine engine(handle);
     LOGI("Shutting down LaprdusTTS native engine");
-    g_engine.reset();
+    // Releases the voice and every setting; a fresh engine without a voice
+    // takes its place, so the object stays usable for the next voice.
+    if (engine.native()) engine.native()->engine = std::make_unique<laprdus::TTSEngine>();
 }
 
 JNIEXPORT jboolean JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeIsInitialized(
     JNIEnv* env,
-    jobject thiz) {
+    jobject thiz,
+    jlong handle) {
 
     (void)env;
     (void)thiz;
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    return (g_engine && g_engine->is_initialized()) ? JNI_TRUE : JNI_FALSE;
+    LockedEngine engine(handle);
+    return engine.initialized() ? JNI_TRUE : JNI_FALSE;
 }
 
 JNIEXPORT jshortArray JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSynthesize(
     JNIEnv* env,
     jobject thiz,
+    jlong handle,
     jstring text) {
 
     (void)thiz;
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
+    LockedEngine engine(handle);
 
-    if (!g_engine || !g_engine->is_initialized()) {
+    if (!engine.initialized()) {
         throwException(env, "java/lang/IllegalStateException", "Engine not initialized");
         return nullptr;
     }
@@ -140,7 +183,7 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSynthesize(
     }
 
     try {
-        laprdus::SynthesisResult result = g_engine->synthesize(utf8Text);
+        laprdus::SynthesisResult result = engine->synthesize(utf8Text);
 
         if (!result.success) {
             LOGE("Synthesis failed: %s", result.error_message.c_str());
@@ -176,112 +219,119 @@ JNIEXPORT void JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetSpeed(
     JNIEnv* env,
     jobject thiz,
+    jlong handle,
     jfloat speed) {
 
     (void)env;
     (void)thiz;
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    if (!g_engine) return;
+    LockedEngine engine(handle);
+    if (!engine) return;
 
-    laprdus::VoiceParams params = g_engine->voice_params();
+    laprdus::VoiceParams params = engine->voice_params();
     params.speed = speed;
-    g_engine->set_voice_params(params);
+    engine->set_voice_params(params);
 }
 
 JNIEXPORT void JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetPitch(
     JNIEnv* env,
     jobject thiz,
+    jlong handle,
     jfloat pitch) {
 
     (void)env;
     (void)thiz;
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    if (!g_engine) return;
+    LockedEngine engine(handle);
+    if (!engine) return;
 
-    laprdus::VoiceParams params = g_engine->voice_params();
+    laprdus::VoiceParams params = engine->voice_params();
     params.pitch = pitch;
-    g_engine->set_voice_params(params);
+    engine->set_voice_params(params);
 }
 
 JNIEXPORT void JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetUserPitch(
     JNIEnv* env,
     jobject thiz,
+    jlong handle,
     jfloat pitch) {
 
     (void)env;
     (void)thiz;
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    if (!g_engine) return;
+    LockedEngine engine(handle);
+    if (!engine) return;
 
-    laprdus::VoiceParams params = g_engine->voice_params();
+    laprdus::VoiceParams params = engine->voice_params();
     params.user_pitch = pitch;
-    g_engine->set_voice_params(params);
+    engine->set_voice_params(params);
 }
 
 JNIEXPORT void JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetVolume(
     JNIEnv* env,
     jobject thiz,
+    jlong handle,
     jfloat volume) {
 
     (void)env;
     (void)thiz;
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    if (!g_engine) return;
+    LockedEngine engine(handle);
+    if (!engine) return;
 
-    laprdus::VoiceParams params = g_engine->voice_params();
+    laprdus::VoiceParams params = engine->voice_params();
     params.volume = volume;
-    g_engine->set_voice_params(params);
+    engine->set_voice_params(params);
 }
 
 JNIEXPORT void JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetInflectionEnabled(
     JNIEnv* env,
     jobject thiz,
+    jlong handle,
     jboolean enabled) {
 
     (void)env;
     (void)thiz;
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    if (!g_engine) return;
+    LockedEngine engine(handle);
+    if (!engine) return;
 
-    laprdus::VoiceParams params = g_engine->voice_params();
+    laprdus::VoiceParams params = engine->voice_params();
     params.inflection_enabled = enabled;
-    g_engine->set_voice_params(params);
+    engine->set_voice_params(params);
 }
 
 JNIEXPORT void JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetInflectionLevel(
     JNIEnv* env,
     jobject thiz,
+    jlong handle,
     jfloat level) {
 
     (void)env;
     (void)thiz;
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    if (!g_engine) return;
+    LockedEngine engine(handle);
+    if (!engine) return;
 
-    laprdus::VoiceParams params = g_engine->voice_params();
+    laprdus::VoiceParams params = engine->voice_params();
     params.inflection_level = level;
-    g_engine->set_voice_params(params);
+    engine->set_voice_params(params);
 }
 
 JNIEXPORT void JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetAcceleration(
     JNIEnv* env,
     jobject thiz,
+    jlong handle,
     jfloat acceleration) {
 
     (void)env;
     (void)thiz;
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    if (!g_engine) return;
+    LockedEngine engine(handle);
+    if (!engine) return;
 
-    laprdus::VoiceParams params = g_engine->voice_params();
+    laprdus::VoiceParams params = engine->voice_params();
     params.acceleration = acceleration;
-    g_engine->set_voice_params(params);
+    engine->set_voice_params(params);
 }
 
 JNIEXPORT jfloat JNICALL
@@ -302,13 +352,14 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeGetNominalWpm(
 JNIEXPORT jint JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeGetSampleRate(
     JNIEnv* env,
-    jobject thiz) {
+    jobject thiz,
+    jlong handle) {
 
     (void)env;
     (void)thiz;
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    if (!g_engine) return 0;
-    return static_cast<jint>(g_engine->sample_rate());
+    LockedEngine engine(handle);
+    if (!engine) return 0;
+    return static_cast<jint>(engine->sample_rate());
 }
 
 JNIEXPORT jstring JNICALL
@@ -364,11 +415,14 @@ JNIEXPORT jboolean JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetVoice(
     JNIEnv* env,
     jobject thiz,
+    jlong handle,
     jstring voiceId,
     jobject assetManager) {
 
     (void)thiz;
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
+    LockedEngine engine(handle);
+    NativeEngine* native = engine.native();
+    if (!native) return JNI_FALSE;
 
     std::string id = jstringToString(env, voiceId);
     if (id.empty()) {
@@ -385,18 +439,18 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetVoice(
 
     // Formant voices are synthesized by rule: there is no asset to load
     if (laprdus::VoiceRegistry::is_formant_voice(voice)) {
-        if (!g_engine) {
-            g_engine = std::make_unique<laprdus::TTSEngine>();
+        if (!native->engine) {
+            native->engine = std::make_unique<laprdus::TTSEngine>();
         }
-        if (!g_engine->initialize_formant(voice->id)) {
+        if (!native->engine->initialize_formant(voice->id)) {
             LOGE("Failed to initialize formant voice: %s", id.c_str());
             return JNI_FALSE;
         }
 
-        g_voice_base_pitch = voice->base_pitch;
-        laprdus::VoiceParams params = g_engine->voice_params();
-        params.pitch = g_voice_base_pitch;
-        g_engine->set_voice_params(params);
+        native->voice_base_pitch = voice->base_pitch;
+        laprdus::VoiceParams params = native->engine->voice_params();
+        params.pitch = native->voice_base_pitch;
+        native->engine->set_voice_params(params);
 
         LOGI("Formant voice set successfully: %s", id.c_str());
         return JNI_TRUE;
@@ -444,27 +498,27 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetVoice(
     }
 
     // Initialize or reinitialize engine with new voice data
-    if (!g_engine) {
-        g_engine = std::make_unique<laprdus::TTSEngine>();
+    if (!native->engine) {
+        native->engine = std::make_unique<laprdus::TTSEngine>();
     }
 
-    bool success = g_engine->initialize_from_memory(data, size, {});
+    bool success = native->engine->initialize_from_memory(data, size, {});
     AAsset_close(asset);
 
     if (!success) {
         LOGE("Failed to load voice data: %s", dataFilename);
         return JNI_FALSE;
     }
-    g_engine->set_language(voice->language);
+    native->engine->set_language(voice->language);
 
     // Store and apply voice's base pitch for derived voices
     // This base_pitch defines the voice character (e.g., detence=1.5 for child voice)
     // and must be preserved even when Android TTS changes other pitch settings
-    g_voice_base_pitch = voice->base_pitch;
+    native->voice_base_pitch = voice->base_pitch;
 
-    laprdus::VoiceParams params = g_engine->voice_params();
-    params.pitch = g_voice_base_pitch;
-    g_engine->set_voice_params(params);
+    laprdus::VoiceParams params = native->engine->voice_params();
+    params.pitch = native->voice_base_pitch;
+    native->engine->set_voice_params(params);
 
     if (voice->base_pitch != 1.0f) {
         LOGI("Applied base pitch %.2f for derived voice: %s", voice->base_pitch, id.c_str());
@@ -482,13 +536,14 @@ JNIEXPORT jboolean JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeLoadDictionaryFromAssets(
     JNIEnv* env,
     jobject thiz,
+    jlong handle,
     jobject assetManager,
     jstring assetPath) {
 
     (void)thiz;
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
+    LockedEngine engine(handle);
 
-    if (!g_engine || !g_engine->is_initialized()) {
+    if (!engine.initialized()) {
         LOGE("Cannot load dictionary - engine not initialized");
         return JNI_FALSE;
     }
@@ -524,7 +579,7 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeLoadDictionaryFromAssets(
     }
 
     // Load dictionary
-    bool success = g_engine->load_dictionary_from_memory(data, size);
+    bool success = engine->load_dictionary_from_memory(data, size);
     AAsset_close(asset);
 
     if (success) {
@@ -540,15 +595,16 @@ JNIEXPORT void JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeAddPronunciation(
     JNIEnv* env,
     jobject thiz,
+    jlong handle,
     jstring grapheme,
     jstring phoneme,
     jboolean caseSensitive,
     jboolean wholeWord) {
 
     (void)thiz;
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
+    LockedEngine engine(handle);
 
-    if (!g_engine || !g_engine->is_initialized()) {
+    if (!engine.initialized()) {
         LOGE("Cannot add pronunciation - engine not initialized");
         return;
     }
@@ -560,20 +616,21 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeAddPronunciation(
         return;
     }
 
-    g_engine->add_pronunciation(g, p, caseSensitive, wholeWord);
+    engine->add_pronunciation(g, p, caseSensitive, wholeWord);
 }
 
 JNIEXPORT void JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeAddSpellingEntry(
     JNIEnv* env,
     jobject thiz,
+    jlong handle,
     jstring character,
     jstring pronunciation) {
 
     (void)thiz;
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
+    LockedEngine engine(handle);
 
-    if (!g_engine || !g_engine->is_initialized()) {
+    if (!engine.initialized()) {
         LOGE("Cannot add spelling entry - engine not initialized");
         return;
     }
@@ -585,20 +642,21 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeAddSpellingEntry(
         return;
     }
 
-    g_engine->add_spelling_entry(c, p);
+    engine->add_spelling_entry(c, p);
 }
 
 JNIEXPORT void JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeAddEmojiEntry(
     JNIEnv* env,
     jobject thiz,
+    jlong handle,
     jstring emoji,
     jstring text) {
 
     (void)thiz;
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
+    LockedEngine engine(handle);
 
-    if (!g_engine || !g_engine->is_initialized()) {
+    if (!engine.initialized()) {
         LOGE("Cannot add emoji entry - engine not initialized");
         return;
     }
@@ -610,7 +668,7 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeAddEmojiEntry(
         return;
     }
 
-    g_engine->add_emoji_entry(e, t);
+    engine->add_emoji_entry(e, t);
 }
 
 // =============================================================================
@@ -621,33 +679,35 @@ JNIEXPORT jboolean JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeLoadAccentLexicon(
     JNIEnv* env,
     jobject thiz,
+    jlong handle,
     jstring json) {
 
     (void)thiz;
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
+    LockedEngine engine(handle);
 
-    if (!g_engine || !g_engine->is_initialized()) {
+    if (!engine.initialized()) {
         LOGE("Cannot load accent lexicon - engine not initialized");
         return JNI_FALSE;
     }
 
     std::string content = jstringToString(env, json);
-    bool ok = g_engine->load_accent_lexicon_from_memory(content.data(), content.size());
-    LOGI("Accent lexicon: %s", g_engine->accent_lexicon_report().c_str());
+    bool ok = engine->load_accent_lexicon_from_memory(content.data(), content.size());
+    LOGI("Accent lexicon: %s", engine->accent_lexicon_report().c_str());
     return ok ? JNI_TRUE : JNI_FALSE;
 }
 
 JNIEXPORT void JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeClearAccentLexicon(
     JNIEnv* env,
-    jobject thiz) {
+    jobject thiz,
+    jlong handle) {
 
     (void)env;
     (void)thiz;
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
+    LockedEngine engine(handle);
 
-    if (g_engine) {
-        g_engine->clear_accent_lexicon();
+    if (engine) {
+        engine->clear_accent_lexicon();
     }
 }
 
@@ -659,13 +719,14 @@ JNIEXPORT jboolean JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeLoadSpellingDictionaryFromAssets(
     JNIEnv* env,
     jobject thiz,
+    jlong handle,
     jobject assetManager,
     jstring assetPath) {
 
     (void)thiz;
 
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    if (!g_engine || !g_engine->is_initialized()) {
+    LockedEngine engine(handle);
+    if (!engine.initialized()) {
         LOGE("Engine not initialized - cannot load spelling dictionary");
         return JNI_FALSE;
     }
@@ -704,7 +765,7 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeLoadSpellingDictionaryFromAsse
     }
 
     // Load spelling dictionary
-    bool success = g_engine->load_spelling_dictionary_from_memory(data, size);
+    bool success = engine->load_spelling_dictionary_from_memory(data, size);
     AAsset_close(asset);
 
     if (success) {
@@ -720,12 +781,13 @@ JNIEXPORT jshortArray JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSynthesizeSpelled(
     JNIEnv* env,
     jobject thiz,
+    jlong handle,
     jstring text) {
 
     (void)thiz;
 
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    if (!g_engine || !g_engine->is_initialized()) {
+    LockedEngine engine(handle);
+    if (!engine.initialized()) {
         LOGE("Engine not initialized for spelled synthesis");
         return nullptr;
     }
@@ -744,7 +806,7 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSynthesizeSpelled(
     }
 
     // Synthesize in spelled mode
-    laprdus::SynthesisResult result = g_engine->synthesize_spelled(utf8_text);
+    laprdus::SynthesisResult result = engine->synthesize_spelled(utf8_text);
     if (!result.success) {
         LOGE("Spelled synthesis failed: %s", result.error_message.c_str());
         return nullptr;
@@ -776,13 +838,14 @@ JNIEXPORT jboolean JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeLoadEmojiDictionaryFromAssets(
     JNIEnv* env,
     jobject thiz,
+    jlong handle,
     jobject assetManager,
     jstring assetPath) {
 
     (void)thiz;
 
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    if (!g_engine || !g_engine->is_initialized()) {
+    LockedEngine engine(handle);
+    if (!engine.initialized()) {
         LOGE("Engine not initialized - cannot load emoji dictionary");
         return JNI_FALSE;
     }
@@ -819,7 +882,7 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeLoadEmojiDictionaryFromAssets(
     }
 
     // Load emoji dictionary
-    bool success = g_engine->load_emoji_dictionary_from_memory(data, size);
+    bool success = engine->load_emoji_dictionary_from_memory(data, size);
     AAsset_close(asset);
 
     if (success) {
@@ -835,29 +898,31 @@ JNIEXPORT void JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetEmojiEnabled(
     JNIEnv* env,
     jobject thiz,
+    jlong handle,
     jboolean enabled) {
 
     (void)env;
     (void)thiz;
 
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    if (!g_engine) return;
+    LockedEngine engine(handle);
+    if (!engine) return;
 
-    g_engine->set_emoji_enabled(enabled);
+    engine->set_emoji_enabled(enabled);
 }
 
 JNIEXPORT jboolean JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeIsEmojiEnabled(
     JNIEnv* env,
-    jobject thiz) {
+    jobject thiz,
+    jlong handle) {
 
     (void)env;
     (void)thiz;
 
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    if (!g_engine) return JNI_FALSE;
+    LockedEngine engine(handle);
+    if (!engine) return JNI_FALSE;
 
-    return g_engine->is_emoji_enabled() ? JNI_TRUE : JNI_FALSE;
+    return engine->is_emoji_enabled() ? JNI_TRUE : JNI_FALSE;
 }
 
 // =============================================================================
@@ -868,116 +933,124 @@ JNIEXPORT void JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetSentencePause(
     JNIEnv* env,
     jobject thiz,
+    jlong handle,
     jint pauseMs) {
 
     (void)env;
     (void)thiz;
 
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    if (!g_engine) return;
+    LockedEngine engine(handle);
+    if (!engine) return;
 
-    g_engine->set_sentence_pause(static_cast<uint32_t>(pauseMs));
+    engine->set_sentence_pause(static_cast<uint32_t>(pauseMs));
 }
 
 JNIEXPORT void JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetCommaPause(
     JNIEnv* env,
     jobject thiz,
+    jlong handle,
     jint pauseMs) {
 
     (void)env;
     (void)thiz;
 
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    if (!g_engine) return;
+    LockedEngine engine(handle);
+    if (!engine) return;
 
-    g_engine->set_comma_pause(static_cast<uint32_t>(pauseMs));
+    engine->set_comma_pause(static_cast<uint32_t>(pauseMs));
 }
 
 JNIEXPORT void JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetNewlinePause(
     JNIEnv* env,
     jobject thiz,
+    jlong handle,
     jint pauseMs) {
 
     (void)env;
     (void)thiz;
 
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    if (!g_engine) return;
+    LockedEngine engine(handle);
+    if (!engine) return;
 
-    g_engine->set_newline_pause(static_cast<uint32_t>(pauseMs));
+    engine->set_newline_pause(static_cast<uint32_t>(pauseMs));
 }
 
 JNIEXPORT jint JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeGetSentencePause(
     JNIEnv* env,
-    jobject thiz) {
+    jobject thiz,
+    jlong handle) {
 
     (void)env;
     (void)thiz;
 
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    if (!g_engine) return 100;
+    LockedEngine engine(handle);
+    if (!engine) return 100;
 
-    return static_cast<jint>(g_engine->pause_settings().sentence_pause_ms);
+    return static_cast<jint>(engine->pause_settings().sentence_pause_ms);
 }
 
 JNIEXPORT jint JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeGetCommaPause(
     JNIEnv* env,
-    jobject thiz) {
+    jobject thiz,
+    jlong handle) {
 
     (void)env;
     (void)thiz;
 
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    if (!g_engine) return 100;
+    LockedEngine engine(handle);
+    if (!engine) return 100;
 
-    return static_cast<jint>(g_engine->pause_settings().comma_pause_ms);
+    return static_cast<jint>(engine->pause_settings().comma_pause_ms);
 }
 
 JNIEXPORT jint JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeGetNewlinePause(
     JNIEnv* env,
-    jobject thiz) {
+    jobject thiz,
+    jlong handle) {
 
     (void)env;
     (void)thiz;
 
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    if (!g_engine) return 100;
+    LockedEngine engine(handle);
+    if (!engine) return 100;
 
-    return static_cast<jint>(g_engine->pause_settings().newline_pause_ms);
+    return static_cast<jint>(engine->pause_settings().newline_pause_ms);
 }
 
 JNIEXPORT void JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetSpellingPause(
     JNIEnv* env,
     jobject thiz,
+    jlong handle,
     jint pauseMs) {
 
     (void)env;
     (void)thiz;
 
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    if (!g_engine) return;
+    LockedEngine engine(handle);
+    if (!engine) return;
 
-    g_engine->set_spelling_pause(static_cast<uint32_t>(pauseMs));
+    engine->set_spelling_pause(static_cast<uint32_t>(pauseMs));
 }
 
 JNIEXPORT jint JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeGetSpellingPause(
     JNIEnv* env,
-    jobject thiz) {
+    jobject thiz,
+    jlong handle) {
 
     (void)env;
     (void)thiz;
 
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    if (!g_engine) return 200;
+    LockedEngine engine(handle);
+    if (!engine) return 200;
 
-    return static_cast<jint>(g_engine->spelling_pause());
+    return static_cast<jint>(engine->spelling_pause());
 }
 
 // =============================================================================
@@ -988,59 +1061,63 @@ JNIEXPORT void JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetSpellingSpeed(
     JNIEnv* env,
     jobject thiz,
+    jlong handle,
     jint percent) {
 
     (void)env;
     (void)thiz;
 
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    if (!g_engine) return;
+    LockedEngine engine(handle);
+    if (!engine) return;
 
-    g_engine->set_spelling_speed(static_cast<int>(percent));
+    engine->set_spelling_speed(static_cast<int>(percent));
 }
 
 JNIEXPORT jint JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeGetSpellingSpeed(
     JNIEnv* env,
-    jobject thiz) {
+    jobject thiz,
+    jlong handle) {
 
     (void)env;
     (void)thiz;
 
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    if (!g_engine) return laprdus::SPELLING_SPEED_DEFAULT;
+    LockedEngine engine(handle);
+    if (!engine) return laprdus::SPELLING_SPEED_DEFAULT;
 
-    return static_cast<jint>(g_engine->spelling_speed());
+    return static_cast<jint>(engine->spelling_speed());
 }
 
 JNIEXPORT void JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetLetterSounds(
     JNIEnv* env,
     jobject thiz,
+    jlong handle,
     jboolean enabled) {
 
     (void)env;
     (void)thiz;
 
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    if (!g_engine) return;
+    LockedEngine engine(handle);
+    if (!engine) return;
 
-    g_engine->set_spelling_mode(enabled ? laprdus::SpellingMode::LetterSounds
+    engine->set_spelling_mode(enabled ? laprdus::SpellingMode::LetterSounds
                                         : laprdus::SpellingMode::LetterNames);
 }
 
 JNIEXPORT jboolean JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeGetLetterSounds(
     JNIEnv* env,
-    jobject thiz) {
+    jobject thiz,
+    jlong handle) {
 
     (void)env;
     (void)thiz;
 
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    if (!g_engine) return JNI_FALSE;
+    LockedEngine engine(handle);
+    if (!engine) return JNI_FALSE;
 
-    return g_engine->spelling_mode() == laprdus::SpellingMode::LetterSounds ? JNI_TRUE : JNI_FALSE;
+    return engine->spelling_mode() == laprdus::SpellingMode::LetterSounds ? JNI_TRUE : JNI_FALSE;
 }
 
 // =============================================================================
@@ -1051,13 +1128,14 @@ JNIEXPORT void JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetNumberMode(
     JNIEnv* env,
     jobject thiz,
+    jlong handle,
     jint mode) {
 
     (void)env;
     (void)thiz;
 
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    if (!g_engine) return;
+    LockedEngine engine(handle);
+    if (!engine) return;
 
     laprdus::NumberMode numberMode;
     switch (mode) {
@@ -1069,21 +1147,22 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetNumberMode(
             numberMode = laprdus::NumberMode::WholeNumbers;
             break;
     }
-    g_engine->set_number_mode(numberMode);
+    engine->set_number_mode(numberMode);
 }
 
 JNIEXPORT jint JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeGetNumberMode(
     JNIEnv* env,
-    jobject thiz) {
+    jobject thiz,
+    jlong handle) {
 
     (void)env;
     (void)thiz;
 
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    if (!g_engine) return 0;
+    LockedEngine engine(handle);
+    if (!engine) return 0;
 
-    laprdus::NumberMode mode = g_engine->number_mode();
+    laprdus::NumberMode mode = engine->number_mode();
     switch (mode) {
         case laprdus::NumberMode::DigitByDigit:
             return 1;
@@ -1106,8 +1185,6 @@ JNIEXPORT void JNI_OnUnload(JavaVM* vm, void* reserved) {
     (void)vm;
     (void)reserved;
     LOGI("LaprdusTTS native library unloading");
-    std::lock_guard<std::mutex> lock(g_engine_mutex);
-    g_engine.reset();
 }
 
 } // extern "C"

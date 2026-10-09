@@ -14,8 +14,7 @@ import android.speech.tts.Voice
 import android.util.Log
 import androidx.core.content.ContextCompat
 import com.hrvojekatic.laprdus.BuildConfig
-import com.hrvojekatic.laprdus.data.DictionaryJson
-import com.hrvojekatic.laprdus.data.DictionaryType
+import com.hrvojekatic.laprdus.data.DictionaryRepository
 import com.hrvojekatic.laprdus.data.SettingsRepository
 import com.hrvojekatic.laprdus.data.migration.DictionaryMigrator
 import com.hrvojekatic.laprdus.data.migration.MigrationResult
@@ -30,6 +29,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -93,14 +93,9 @@ class LaprdusTTSService : TextToSpeechService() {
     @Volatile
     private var cachedSettings: SettingsRepository.TTSSettings? = null
     @Volatile
-    private var userDictionariesPendingReload = false
-    @Volatile
     private var unlockHandled = false
     private var unlockReceiver: BroadcastReceiver? = null
     private val settingsScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-
-    /** Serializes voice + dictionary (re)loading across the main, binder, IO and synthesis threads. */
-    private val engineLock = Any()
 
     override fun onCreate() {
         // Order matters: super.onCreate() synchronously calls onLoadLanguage(),
@@ -108,7 +103,9 @@ class LaprdusTTSService : TextToSpeechService() {
         // load depends on (settings, storage objects, pending migrations) must
         // be in place first. System.loadLibrary() runs in the LaprdusTTS
         // companion object init (class loading) and needs no Context.
-        tts = LaprdusTTS.getInstance()
+        // The service has an engine of its own; the app's screens use another.
+        val engine = LaprdusTTS.service
+        tts = engine
 
         val app = applicationContext
         settingsRepo = SettingsRepository.getInstance(app)
@@ -122,8 +119,12 @@ class LaprdusTTSService : TextToSpeechService() {
 
         // Register first, then check: a broadcast between the two cannot be missed.
         registerUnlockReceiver()
-        cachedSettings = readSettingsBlocking()
-        currentVoiceId = cachedSettings?.defaultVoice ?: FALLBACK_VOICE
+        val startupSettings = readSettingsBlocking()
+        cachedSettings = startupSettings
+        currentVoiceId = startupSettings.defaultVoice
+        // Every voice the engine loads gets the user dictionaries from here.
+        engine.userDictionaryDir = dictionaryDir
+        applyEngineSettings(startupSettings)
 
         val unlocked = LaprdusStorage.isUserUnlocked(app)
         Log.i(TAG, "Service created (userUnlocked=$unlocked)")
@@ -142,9 +143,19 @@ class LaprdusTTSService : TextToSpeechService() {
                     }
                 }
                 .collect { settings ->
+                    val previous = cachedSettings
                     cachedSettings = settings
                     applyEngineSettings(settings)
+                    followSettingsChanges(previous, settings)
                 }
+        }
+
+        // A dictionary edited in the app is heard on the next utterance.
+        settingsScope.launch {
+            DictionaryRepository.changes.drop(1).collect {
+                logDebug { "User dictionaries changed; reloading them" }
+                tts?.reloadDictionaries(assets)
+            }
         }
 
         super.onCreate()
@@ -205,7 +216,7 @@ class LaprdusTTSService : TextToSpeechService() {
      */
     private fun initializeEngine() {
         if (tts == null) {
-            tts = LaprdusTTS.getInstance()
+            tts = LaprdusTTS.service
         }
 
         val settings = cachedSettings ?: readSettingsBlocking().also { cachedSettings = it }
@@ -229,18 +240,37 @@ class LaprdusTTSService : TextToSpeechService() {
     private fun applyEngineSettings(settings: SettingsRepository.TTSSettings) {
         val engine = tts ?: return
         try {
-            engine.emojiEnabled = settings.emojiEnabled
-            engine.inflectionEnabled = settings.inflectionEnabled
-            engine.inflectionLevel = settings.inflectionLevel
-            engine.acceleration = settings.acceleration
-            engine.sentencePause = settings.sentencePause
-            engine.commaPause = settings.commaPause
-            engine.newlinePause = settings.newlinePause
-            engine.numberMode = settings.numberMode
-            engine.spellingSpeed = settings.spellingSpeed
-            engine.letterSounds = settings.spellingMode == SettingsRepository.SPELLING_MODE_SOUNDS
+            engine.applySettings(settings)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to apply engine settings", e)
+        }
+    }
+
+    /**
+     * The app has an engine of its own, so what the user changes there
+     * reaches the service through the saved settings: a newly chosen voice
+     * is loaded at once (TalkBack speaks with it from the next utterance, as
+     * the user expects after picking it), and switching the user
+     * dictionaries on or off reloads the dictionaries.
+     */
+    private fun followSettingsChanges(
+        previous: SettingsRepository.TTSSettings?,
+        settings: SettingsRepository.TTSSettings
+    ) {
+        if (previous == null) return
+        try {
+            if (settings.defaultVoice != previous.defaultVoice) {
+                logDebug { "Saved voice changed to ${settings.defaultVoice}; loading it" }
+                if (setVoiceAndLoadUserDictionaries(settings.defaultVoice)) {
+                    currentVoiceId = settings.defaultVoice
+                } else {
+                    Log.e(TAG, "Failed to load the newly chosen voice ${settings.defaultVoice}")
+                }
+            } else if (settings.userDictionariesEnabled != previous.userDictionariesEnabled) {
+                tts?.reloadDictionaries(assets)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to follow a settings change", e)
         }
     }
 
@@ -320,8 +350,7 @@ class LaprdusTTSService : TextToSpeechService() {
         val dictionariesChanged =
             dictionaryResult is MigrationResult.Migrated && dictionaryResult.itemCount > 0
         val voiceChanged = reloadVoiceId != currentVoiceId
-        if (dictionariesChanged || voiceChanged || userDictionariesPendingReload) {
-            userDictionariesPendingReload = false
+        if (dictionariesChanged || voiceChanged) {
             if (setVoiceAndLoadUserDictionaries(reloadVoiceId)) {
                 currentVoiceId = reloadVoiceId
             } else {
@@ -358,96 +387,19 @@ class LaprdusTTSService : TextToSpeechService() {
 
     /**
      * Set voice and reload user dictionaries.
-     * Use this instead of calling tts.setVoice() directly to ensure
-     * user dictionary entries are always loaded after the bundled dictionary.
+     * The engine loads the bundled dictionaries and then the user's entries
+     * (from [LaprdusTTS.userDictionaryDir], set in onCreate) as one step.
      */
     private fun setVoiceAndLoadUserDictionaries(voiceId: String): Boolean {
         val engine = tts ?: return false
-        // setVoice replaces the native engine and reloads the bundled dictionaries
-        // before the user entries are appended; that sequence must not interleave
-        // with the same sequence on another thread.
-        synchronized(engineLock) {
-            val success = engine.setVoice(voiceId, assets)
-            if (success) {
-                loadUserDictionaries()
-            }
-            return success
-        }
-    }
-
-    /**
-     * Load the user's dictionary entries from the device-protected user.json,
-     * spelling.json and emoji.json into the native engine. Entries are added
-     * to the already-loaded bundled dictionaries one by one, which does NOT
-     * clear existing entries; a spelling or emoji entry replaces the bundled
-     * one for the same character or emoji.
-     * Respects the userDictionariesEnabled setting; fails closed (defers the
-     * load) while the settings are not known yet.
-     */
-    private fun loadUserDictionaries() {
-        val settings = cachedSettings
-        if (settings == null || !::dictionaryDir.isInitialized) {
-            userDictionariesPendingReload = true
-            logDebug { "Settings not loaded yet; deferring user dictionaries" }
-            return
-        }
-        if (!settings.userDictionariesEnabled) {
-            logDebug { "User dictionaries disabled, skipping" }
-            tts?.clearAccentLexicon()
-            return
-        }
-
-        val engine = tts ?: return
-
-        // The accent lexicon of the formant voices is one file the engine
-        // parses itself (it replaces the previous one; a missing file clears it).
-        val accents = File(dictionaryDir, LaprdusStorage.ACCENT_LEXICON_FILE_NAME)
-        if (accents.isFile) {
-            try {
-                val accepted = engine.loadAccentLexicon(accents.readText(Charsets.UTF_8))
-                Log.i(TAG, "Loaded user ${accents.name}: accepted=$accepted")
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to load user ${accents.name}: ${e.message}")
-                engine.clearAccentLexicon()
-            }
-        } else {
-            engine.clearAccentLexicon()
-        }
-
-        // Every dictionary type is saved in the same entry format.
-        for (type in DictionaryType.entries) {
-            val file = File(dictionaryDir, type.fileName)
-            if (!file.isFile) {
-                logDebug { "No user ${type.fileName} found" }
-                continue
-            }
-
-            try {
-                val entries = DictionaryJson.parse(file.readText(Charsets.UTF_8))
-                var count = 0
-                for (entry in entries) {
-                    if (entry.grapheme.isEmpty() || entry.phoneme.isEmpty()) continue
-                    when (type) {
-                        DictionaryType.MAIN -> engine.addPronunciation(
-                            entry.grapheme, entry.phoneme, entry.caseSensitive, entry.wholeWord
-                        )
-                        DictionaryType.SPELLING -> engine.addSpellingEntry(entry.grapheme, entry.phoneme)
-                        DictionaryType.EMOJI -> engine.addEmojiEntry(entry.grapheme, entry.phoneme)
-                    }
-                    count++
-                }
-                Log.i(TAG, "Loaded $count user entries from ${type.fileName}")
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to load user ${type.fileName}: ${e.message}")
-            }
-        }
+        return engine.setVoice(voiceId, assets)
     }
 
     /** Adapter that lets [EngineRuntime] drive the native engine. */
     private inner class ServiceSpeechEngine : SpeechEngine {
         override fun setVoice(voiceId: String): Boolean {
             if (tts == null) {
-                tts = LaprdusTTS.getInstance()
+                tts = LaprdusTTS.service
             }
             return try {
                 setVoiceAndLoadUserDictionaries(voiceId)
@@ -462,10 +414,8 @@ class LaprdusTTSService : TextToSpeechService() {
         logDebug { "Service destroyed" }
         unregisterUnlockReceiver()
         settingsScope.cancel()
-        // Do NOT call tts?.shutdown() — LaprdusTTS is a shared singleton.
-        // shutdown() destroys the native engine (g_engine.reset()), which breaks
-        // TTSViewModel and any other consumer sharing the same instance.
-        // Same pattern as TTSViewModel.onCleared() (commit 827f0a1).
+        // The service's engine stays loaded for the next start of the service
+        // in this process; the app's screens have an engine of their own.
         tts = null
         super.onDestroy()
     }
@@ -765,60 +715,48 @@ class LaprdusTTSService : TextToSpeechService() {
 
         try {
             // Use cached settings (non-blocking) - falls back to defaults if not yet loaded
-            val settings = cachedSettings
+            val settings = cachedSettings ?: SettingsRepository.TTSSettings()
 
-            // The recorded voices take 0.5 - 2.0, the formant voices 0.25 - 4.0
-            // (and multiply the rate by the acceleration setting).
-            val range = VoiceInfo.rangeFor(currentVoiceId)
-
-            // Apply speech rate - use Laprdus settings if force is enabled
-            val speechRate = if (settings?.forceSpeed == true) {
-                logDebug { "Using forced Laprdus speed: ${settings.speed}" }
-                settings.speed
-            } else {
-                // Android uses 100 as normal = 1.0
-                (request.speechRate / 100f).coerceIn(range)
-            }
-            engine.speed = speechRate
-
-            // Apply pitch - use Laprdus settings if force is enabled
-            val pitch = if (settings?.forcePitch == true) {
-                logDebug { "Using forced Laprdus pitch: ${settings.pitch}" }
-                settings.pitch
-            } else {
-                // Android uses 100 as normal = 1.0
-                (request.pitch / 100f).coerceIn(range)
-            }
-            engine.pitch = pitch
-
-            // Apply volume - use Laprdus settings if force is enabled, reset to 1.0 if not
-            if (settings?.forceVolume == true) {
-                logDebug { "Using forced Laprdus volume: ${settings.volume}" }
-                engine.volume = settings.volume
-            } else {
-                engine.volume = 1.0f
-            }
-
-            // Apply force language - use saved voice regardless of request
-            if (settings?.forceLanguage == true) {
-                val savedVoice = settings.defaultVoice
-                if (savedVoice != currentVoiceId) {
-                    logDebug { "Using forced language voice: $savedVoice" }
-                    if (setVoiceAndLoadUserDictionaries(savedVoice)) {
-                        currentVoiceId = savedVoice
-                    } else {
-                        Log.e(TAG, "Failed to switch to forced voice: $savedVoice")
+            // Nothing may change the voice, rate or pitch between setting them
+            // and synthesizing (a voice chosen in the app or a dictionary
+            // edited there is loaded from another thread).
+            val useSpelledMode = isSingleGrapheme(text)
+            val samples = engine.exclusive {
+                // Apply force language - use saved voice regardless of request
+                if (settings.forceLanguage) {
+                    val savedVoice = settings.defaultVoice
+                    if (savedVoice != currentVoiceId) {
+                        logDebug { "Using forced language voice: $savedVoice" }
+                        if (setVoiceAndLoadUserDictionaries(savedVoice)) {
+                            currentVoiceId = savedVoice
+                        } else {
+                            Log.e(TAG, "Failed to switch to forced voice: $savedVoice")
+                        }
                     }
                 }
-            }
 
-            // Synthesize - use spelled mode for single characters (TalkBack accessibility)
-            val useSpelledMode = isSingleGrapheme(text)
-            val samples = if (useSpelledMode) {
-                logDebug { "Using spelled synthesis for single character: '$text'" }
-                engine.synthesizeSpelled(text)
-            } else {
-                engine.synthesize(text)
+                // Rate and pitch: Android asks relative to normal (100 = 1.0),
+                // and the Laprdus settings are the normal, so TalkBack's rate
+                // scales the Laprdus rate; a forced setting ignores the app.
+                // The acceleration multiplies the rate on top of that.
+                engine.speed = VoiceInfo.requestValue(
+                    settings.speed, request.speechRate / 100f, settings.forceSpeed, currentVoiceId
+                )
+                engine.pitch = VoiceInfo.requestValue(
+                    settings.pitch, request.pitch / 100f, settings.forcePitch, currentVoiceId
+                )
+                logDebug { "Rate ${engine.speed}, pitch ${engine.pitch} (forced: ${settings.forceSpeed}, ${settings.forcePitch})" }
+
+                // Apply volume - use Laprdus settings if force is enabled, reset to 1.0 if not
+                engine.volume = if (settings.forceVolume) settings.volume else 1.0f
+
+                // Synthesize - use spelled mode for single characters (TalkBack accessibility)
+                if (useSpelledMode) {
+                    logDebug { "Using spelled synthesis for single character: '$text'" }
+                    engine.synthesizeSpelled(text)
+                } else {
+                    engine.synthesize(text)
+                }
             }
 
             if (samples == null || samples.isEmpty()) {

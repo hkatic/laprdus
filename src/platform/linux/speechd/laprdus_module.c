@@ -78,6 +78,8 @@ static int current_rate = 0;      /* -100 to +100, default 0 */
 static int current_pitch = 0;     /* -100 to +100, default 0 */
 static int current_pitch_range = 0; /* -100 to +100, default 0 (SSIP PITCH_RANGE) */
 static float configured_inflection = 0.5f; /* inflection level from settings.json */
+static float configured_speed = 1.0f;      /* rate from settings.json, scaled by SSIP rate */
+static float configured_pitch = 1.0f;      /* pitch from settings.json, scaled by SSIP pitch */
 static int current_volume = 0;    /* -100 to +100, default 0 */
 static int spelling_mode = 0;
 static int punctuation_mode = 0;  /* 0=none, 1=some, 2=most, 3=all */
@@ -180,8 +182,10 @@ static void apply_parameters(void)
 {
     if (!engine) return;
 
-    float speed = map_rate_to_speed(current_rate);
-    float user_pitch = map_pitch_to_user_pitch(current_pitch);
+    /* SSIP rate and pitch are relative (0 = normal): they scale the rate
+     * and pitch from settings.json, the voice's normal. */
+    float speed = configured_speed * map_rate_to_speed(current_rate);
+    float user_pitch = configured_pitch * map_pitch_to_user_pitch(current_pitch);
     float vol = map_volume(current_volume);
 
     laprdus_set_speed(engine, speed);
@@ -401,6 +405,8 @@ int module_init(char **msg)
      * the inflection level and acceleration of the formant voices, ...) */
     laprdus_load_user_config(engine);
     configured_inflection = laprdus_get_inflection_level(engine);
+    configured_speed = laprdus_get_speed(engine);
+    configured_pitch = laprdus_get_user_pitch(engine);
 
     /* Build voice list for module_list_voices */
     build_voice_list();

@@ -224,6 +224,13 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_speed(
     return LAPRDUS_OK;
 }
 
+LAPRDUS_API float LAPRDUS_CALL laprdus_get_speed(LaprdusHandle handle) {
+    if (!handle) {
+        return 1.0f;
+    }
+    return handle->engine.voice_params().speed;
+}
+
 // Effective voice-character pitch: the base pitch of the current voice
 // (derived voices: child, grandma, grandpa) times the caller's own setting.
 // On concatenative voices this shifts formants too.
@@ -263,6 +270,13 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_user_pitch(
     vp.user_pitch = pitch;
     handle->engine.set_voice_params(vp);
     return LAPRDUS_OK;
+}
+
+LAPRDUS_API float LAPRDUS_CALL laprdus_get_user_pitch(LaprdusHandle handle) {
+    if (!handle) {
+        return 1.0f;
+    }
+    return handle->engine.voice_params().user_pitch;
 }
 
 LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_volume(

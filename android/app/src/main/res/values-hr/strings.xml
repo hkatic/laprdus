@@ -38,9 +38,9 @@
 
     <!-- Force settings -->
     <string name="setting_force_speed_title">Prisilno koristi Laprdus brzinu</string>
-    <string name="setting_force_speed_subtitle">Koristi Laprdus postavke brzine umjesto postavki aplikacije</string>
+    <string name="setting_force_speed_subtitle">Zanemari brzinu koju traži aplikacija. Inače brzina aplikacije ubrzava ili usporava Laprdus brzinu</string>
     <string name="setting_force_pitch_title">Prisilno koristi Laprdus visinu</string>
-    <string name="setting_force_pitch_subtitle">Koristi Laprdus postavke visine umjesto postavki aplikacije</string>
+    <string name="setting_force_pitch_subtitle">Zanemari visinu koju traži aplikacija. Inače visina aplikacije podiže ili spušta Laprdus visinu</string>
     <string name="setting_force_volume_title">Prisilno koristi Laprdus glasnoću</string>
     <string name="setting_force_volume_subtitle">Koristi Laprdus postavke glasnoće umjesto postavki aplikacije</string>
     <string name="setting_force_language_title">Prisilno koristi jezik</string>

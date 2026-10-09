@@ -2972,6 +2972,33 @@ TEST_CASE("Acceleration multiplies the speech rate", "[formant][params]") {
     REQUIRE(laprdus_get_acceleration(engine.handle) == Catch::Approx(3.0f));
 }
 
+TEST_CASE("The speech rate still changes the rate under an acceleration", "[formant][params]") {
+    // Hosts scale the user's own rate and pitch, which they read back with
+    // the getters after laprdus_load_user_config(); the acceleration
+    // multiplies the rate without taking its place.
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(laprdus_get_speed(engine.handle) == Catch::Approx(1.0f));
+    REQUIRE(laprdus_get_user_pitch(engine.handle) == Catch::Approx(1.0f));
+    REQUIRE(laprdus_set_acceleration(engine.handle, 1.5f) == LAPRDUS_OK);
+
+    const char* text = "Mama ima malu nanu.";
+    std::vector<int16_t> normal = speak(engine.handle, text);
+    REQUIRE(laprdus_set_speed(engine.handle, 2.0f) == LAPRDUS_OK);
+    REQUIRE(laprdus_get_speed(engine.handle) == Catch::Approx(2.0f));
+    std::vector<int16_t> fast = speak(engine.handle, text);
+    REQUIRE(fast.size() < normal.size() * 0.75);
+
+    REQUIRE(laprdus_set_user_pitch(engine.handle, 1.25f) == LAPRDUS_OK);
+    REQUIRE(laprdus_get_user_pitch(engine.handle) == Catch::Approx(1.25f));
+
+    // Out-of-range values are clamped; no handle reads as the normal rate.
+    REQUIRE(laprdus_set_speed(engine.handle, 9.0f) == LAPRDUS_OK);
+    REQUIRE(laprdus_get_speed(engine.handle) == Catch::Approx(4.0f));
+    REQUIRE(laprdus_get_speed(nullptr) == Catch::Approx(1.0f));
+    REQUIRE(laprdus_get_user_pitch(nullptr) == Catch::Approx(1.0f));
+}
+
 TEST_CASE("Formant voices accept the wider rate and pitch ranges", "[formant][params]") {
     Engine engine;
     REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);

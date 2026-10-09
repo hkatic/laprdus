@@ -97,20 +97,16 @@ STDMETHODIMP LaprdusSAPIDriver::Speak(
     // Force flags can override SAPI5 values with user settings from settings.json
     laprdus::VoiceParams params = m_engine->voice_params();
 
-    // Get rate - use Laprdus setting if forced, otherwise SAPI5
-    if (m_forceSpeed) {
-        params.speed = m_userSpeed;
-    } else {
+    // Get rate - the Laprdus rate is the voice's normal, and SAPI5's rate
+    // (relative, 0 = normal) scales it; a forced rate ignores SAPI5. The
+    // acceleration setting multiplies the result.
+    params.speed = m_userSpeed;
+    if (!m_forceSpeed) {
         long sapiRate = 0;
         if (SUCCEEDED(pOutputSite->GetRate(&sapiRate)) && sapiRate != 0) {
             // Map -10..+10 to 0.5..2.0 exponentially
-            // Only apply if rate is not default (0)
-            // The formant voices multiply this by the acceleration setting,
-            // so +10 reaches 2.0 times the acceleration.
-            float rateMultiplier = std::pow(2.0f, sapiRate / 10.0f);
-            params.speed = std::clamp(rateMultiplier, 0.5f, 2.0f);
-        } else {
-            params.speed = 1.0f;  // Default: no speed adjustment
+            float rateMultiplier = std::clamp(std::pow(2.0f, sapiRate / 10.0f), 0.5f, 2.0f);
+            params.speed = m_userSpeed * rateMultiplier;
         }
     }
 
@@ -128,18 +124,18 @@ STDMETHODIMP LaprdusSAPIDriver::Speak(
     // Set voice character pitch (shifts formants - for derived voices)
     params.pitch = m_basePitch;
 
-    // Get user pitch preference - use Laprdus setting if forced, otherwise SAPI5
-    if (m_forcePitch) {
-        params.user_pitch = m_userPitch;
-    } else if (pTextFragList) {
+    // Get user pitch preference - the Laprdus pitch scaled by SAPI5's
+    // (relative, 0 = normal), or the Laprdus pitch alone if forced
+    params.user_pitch = m_userPitch;
+    if (!m_forcePitch && pTextFragList) {
         // Get user pitch preference from text fragment state (XML markup or app-specific)
         // This uses formant-preserving pitch shift - no chipmunk effect
         // SAPI5 PitchAdj.MiddleAdj range is -24 to +24
         // Map to full user_pitch range: -24 → 0.5x, 0 → 1.0x, +24 → 2.0x
         const SPVSTATE& state = pTextFragList->State;
         float pitchOffset = static_cast<float>(state.PitchAdj.MiddleAdj);
-        float pitchMultiplier = std::pow(2.0f, pitchOffset / 24.0f);
-        params.user_pitch = std::clamp(pitchMultiplier, 0.5f, 2.0f);
+        float pitchMultiplier = std::clamp(std::pow(2.0f, pitchOffset / 24.0f), 0.5f, 2.0f);
+        params.user_pitch = m_userPitch * pitchMultiplier;
     }
 
     m_engine->set_voice_params(params);

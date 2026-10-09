@@ -387,14 +387,29 @@ void laprdus_free_buffer(samples);
 
 // Configuration
 LaprdusError laprdus_set_speed(handle, speed);
+float laprdus_get_speed(handle);
 LaprdusError laprdus_set_pitch(handle, pitch);
 LaprdusError laprdus_set_user_pitch(handle, pitch);
+float laprdus_get_user_pitch(handle);
 LaprdusError laprdus_set_volume(handle, volume);
-// Formant voices only (recorded voices ignore them)
+// Every voice
 LaprdusError laprdus_set_inflection_level(handle, level);   // 0.0 monotone .. 1.0, default 0.5
 LaprdusError laprdus_set_acceleration(handle, factor);      // 0.5 .. 3.0, multiplies the speed
 float laprdus_get_nominal_wpm(voice_id);                    // words/min at speed 1.0 (Zvonko: 175)
 ```
+
+**Host rate and pitch.** The user's own rate and pitch (`speech.speed`,
+`speech.pitch` in `settings.json`, `speed`/`pitch` on Android and Apple) are
+the voice's normal. A host asks for its rate and pitch relative to its own
+normal (Android `speechRate` 100, SSML prosody 1.0, SAPI5 rate 0, NVDA
+slider 50, SSIP 0), so every platform passes `setting × host` to
+`laprdus_set_speed()` / `laprdus_set_user_pitch()`, clamped to the voice's
+range; with the force flag on (`force.speed`, `force_speed`, ...) it passes
+the setting alone. The acceleration then multiplies the rate inside the
+engine. Speech Dispatcher has no force flags and reads the setting back
+with `laprdus_get_speed()` / `laprdus_get_user_pitch()` after
+`laprdus_load_user_config()`. Volume is not scaled: without force the host's
+volume is used (Android and Apple: 1.0, the system volume governs).
 
 **Thread Safety:**
 - Error messages use thread-local storage with mutex protection
@@ -429,7 +444,7 @@ Python-based synthesizer driver for NVDA screen reader.
 - `addon/globalPlugins/laprdus/__init__.py` - NVDA menu integration
 
 **Features:**
-- Rate boost (extends max rate from 2x to 4x); the formant voices also multiply the rate by the acceleration from settings.json
+- Rate boost (extends max rate from 2x to 4x); NVDA's rate and pitch sliders scale `speech.speed` and `speech.pitch` from settings.json (unless forced), and every voice multiplies the rate by the acceleration from settings.json
 - Inflection level and acceleration of the formant voices read from settings.json (speech.inflection_level, speech.acceleration), set in the Laprdus Configurator
 - Character mode for spelling
 - Shared settings with SAPI5 via settings.json
@@ -461,9 +476,20 @@ LanguageDefaultModule "sr" "laprdus"
 Native library + Kotlin TTS Service.
 
 **JNI Bridge (`src/platform/android/jni_bridge.cpp`):**
-- Thread-safe global engine with mutex
+- One native engine per `LaprdusTTS` object, each with its own mutex: `nativeCreate()` returns a handle that every other call takes as its first argument (a handle, not a field read from `thiz`, so R8 renaming cannot break it). The engine exists from creation, so settings applied before the first voice are kept
+- Two engines in one process: `LaprdusTTS.service` (the TTS service: TalkBack and other apps) and `LaprdusTTS.app` (the app's preview and settings, provided by Hilt), so a voice, rate or dictionary set by one never reaches the other
 - Asset manager integration for voice data
 - Proper JNI type conversions
+
+**Keeping the two engines in step:** the service follows the app through the
+saved settings and the dictionary files, not through the engine: a newly
+saved default voice is loaded at once, the user dictionaries switch and every
+dictionary write (`DictionaryRepository.changes`, bumped in the process on each
+save, delete or migration) reload the dictionaries.
+`LaprdusTTS.setVoice()` and `reloadDictionaries()` load the bundled
+dictionaries and then the user's from `userDictionaryDir`
+(`UserDictionaries.load()`), inside `exclusive { }`, which is also where the
+service sets a request's rate and pitch and synthesizes.
 
 **TTS Service (`android/app/.../LaprdusTTSService.kt`):**
 - Implements `TextToSpeechService`

@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -69,6 +70,16 @@ class DictionaryRepository internal constructor(
     private val logger: StorageLogger = StorageLogger.None,
 ) {
     companion object {
+        private val _changes = MutableStateFlow(0L)
+
+        /**
+         * Counts the writes of user dictionary files in this process. The
+         * speech service and the app's preview have their own engines and
+         * reload the user dictionaries when it changes, so an edited entry
+         * is heard right away.
+         */
+        val changes: StateFlow<Long> = _changes.asStateFlow()
+
         /** Production repository over device-protected storage with the shared migrator. */
         fun create(context: Context): DictionaryRepository = DictionaryRepository(
             dictionaryDir = LaprdusStorage.dictionaryDir(context),
@@ -111,6 +122,7 @@ class DictionaryRepository internal constructor(
         return try {
             val result = migrator.migrateIfNeeded()
             if (result is MigrationResult.Migrated) _storageError.value = null
+            if (result is MigrationResult.Migrated && result.itemCount > 0) _changes.update { it + 1 }
             lastMigrationResult = result
             result
         } catch (e: SimulatedMigrationCrashException) {
@@ -220,5 +232,6 @@ class DictionaryRepository internal constructor(
      */
     private fun saveDictionary(type: DictionaryType, entries: List<DictionaryEntry>) {
         AtomicFiles.writeTextAtomically(getDictionaryFile(type), DictionaryJson.generate(entries))
+        _changes.update { it + 1 }
     }
 }

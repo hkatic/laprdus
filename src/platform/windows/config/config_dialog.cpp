@@ -334,6 +334,7 @@ void ConfigDialog::UpdateVoiceRanges(HWND hDlg) {
         SendMessageW(hSpeed, TBM_SETRANGE, TRUE, MAKELPARAM(speedMin, speedMax));
         SendMessageW(hSpeed, TBM_SETPOS, TRUE, std::clamp(pos, speedMin, speedMax));
         UpdateSliderValue(hDlg, IDC_SPEED_SLIDER, IDC_SPEED_VALUE, true);
+        UpdateAccelerationValue(hDlg);
     }
 
     HWND hPitch = GetDlgItem(hDlg, IDC_PITCH_SLIDER);
@@ -376,7 +377,6 @@ void ConfigDialog::LoadSettingsToControls(HWND hDlg) {
 
     int accelerationValue = static_cast<int>(std::lround(m_settings.acceleration * 100.0f));
     SendDlgItemMessageW(hDlg, IDC_ACCELERATION_SLIDER, TBM_SETPOS, TRUE, accelerationValue);
-    UpdateAccelerationValue(hDlg);
 
     // Volume slider
     int volumeValue = static_cast<int>(m_settings.volume * 100.0f);
@@ -387,6 +387,9 @@ void ConfigDialog::LoadSettingsToControls(HWND hDlg) {
     CheckDlgButton(hDlg, IDC_FORCE_SPEED, m_settings.force_speed ? BST_CHECKED : BST_UNCHECKED);
     CheckDlgButton(hDlg, IDC_FORCE_PITCH, m_settings.force_pitch ? BST_CHECKED : BST_UNCHECKED);
     CheckDlgButton(hDlg, IDC_FORCE_VOLUME, m_settings.force_volume ? BST_CHECKED : BST_UNCHECKED);
+
+    // The top rate shown with the acceleration needs the rate and its force
+    UpdateAccelerationValue(hDlg);
 
     // Pause sliders
     SendDlgItemMessageW(hDlg, IDC_COMMA_SLIDER, TBM_SETPOS, TRUE, m_settings.comma_pause_ms);
@@ -432,13 +435,20 @@ void ConfigDialog::UpdateSliderValue(HWND hDlg, int sliderId, int valueId, bool 
     SetDlgItemTextW(hDlg, valueId, text);
 }
 
-// "1.5x (up to 525 WPM)": the multiplier and the rate the top of a rate
-// slider then reaches with the reference formant voice (the slider's 2.0x
-// times the nominal words per minute times the acceleration).
+// "1.5x (up to 525 WPM)": the multiplier and the rate the top of a screen
+// reader's rate slider then reaches with the reference formant voice. The
+// slider's 2.0x scales the Laprdus rate (the Laprdus rate alone when it is
+// forced), the acceleration multiplies that, up to the fastest rate.
 void ConfigDialog::UpdateAccelerationValue(HWND hDlg) {
     int pos = static_cast<int>(SendDlgItemMessageW(hDlg, IDC_ACCELERATION_SLIDER, TBM_GETPOS, 0, 0));
     float acceleration = pos / 100.0f;
-    int topWpm = static_cast<int>(std::lround(FORMANT_NOMINAL_WPM * 2.0f * acceleration));
+    int speedPos = static_cast<int>(SendDlgItemMessageW(hDlg, IDC_SPEED_SLIDER, TBM_GETPOS, 0, 0));
+    float speed = speedPos / 100.0f;
+    float rate = IsDlgButtonChecked(hDlg, IDC_FORCE_SPEED) == BST_CHECKED
+        ? speed
+        : std::min(2.0f * speed, FORMANT_SPEED_MAX);
+    float top = std::min(rate * acceleration, FORMANT_EFFECTIVE_SPEED_MAX);
+    int topWpm = static_cast<int>(std::lround(FORMANT_NOMINAL_WPM * top));
     std::wstring format = LoadLocalizedString(IDS_VALUE_WPM);
     if (format.empty()) format = L"%.1fx (up to %d WPM)";
     wchar_t text[64];
@@ -521,8 +531,15 @@ INT_PTR ConfigDialog::OnCommand(HWND hDlg, WPARAM wParam, LPARAM lParam) {
         OnDictionaries(hDlg);
         return TRUE;
 
-    // Mark settings as changed for checkboxes and combo
+    // The top rate shown with the acceleration depends on the forced rate
     case IDC_FORCE_SPEED:
+        if (HIWORD(wParam) == BN_CLICKED) {
+            UpdateAccelerationValue(hDlg);
+            m_settingsChanged = true;
+        }
+        return TRUE;
+
+    // Mark settings as changed for checkboxes and combo
     case IDC_FORCE_PITCH:
     case IDC_FORCE_VOLUME:
     case IDC_EMOJI_CHECK:
@@ -555,6 +572,7 @@ INT_PTR ConfigDialog::OnHScroll(HWND hDlg, WPARAM wParam, LPARAM lParam) {
     switch (sliderId) {
     case IDC_SPEED_SLIDER:
         UpdateSliderValue(hDlg, IDC_SPEED_SLIDER, IDC_SPEED_VALUE, true);
+        UpdateAccelerationValue(hDlg);
         m_settingsChanged = true;
         break;
 

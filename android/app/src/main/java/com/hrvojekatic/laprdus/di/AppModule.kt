@@ -4,6 +4,7 @@ import android.content.Context
 import com.hrvojekatic.laprdus.audio.AudioPlayer
 import com.hrvojekatic.laprdus.data.DictionaryRepository
 import com.hrvojekatic.laprdus.data.SettingsRepository
+import com.hrvojekatic.laprdus.data.storage.LaprdusStorage
 import com.hrvojekatic.laprdus.tts.LaprdusTTS
 import dagger.Module
 import dagger.Provides
@@ -20,12 +21,19 @@ import javax.inject.Singleton
 object AppModule {
 
     /**
-     * Provides the singleton LaprdusTTS instance.
+     * Provides the engine of the app's own screens. The speech service has
+     * another ([LaprdusTTS.service]), so the preview never takes TalkBack's
+     * voice, rate or dictionaries, and TalkBack never takes the preview's.
+     * Its voices get the user dictionaries from device-protected storage.
      */
     @Provides
     @Singleton
-    fun provideLaprdusTTS(): LaprdusTTS {
-        return LaprdusTTS.getInstance()
+    fun provideLaprdusTTS(
+        @ApplicationContext context: Context
+    ): LaprdusTTS {
+        return LaprdusTTS.app.also {
+            it.userDictionaryDir = LaprdusStorage.dictionaryDir(context)
+        }
     }
 
     /**

@@ -117,6 +117,17 @@ enum VoiceCatalog {
         isFormantVoice(id) ? formantSpeedPitchRange : recordedSpeedPitchRange
     }
 
+    /// Rate or pitch of a request from the system (VoiceOver, Spoken
+    /// Content): the host asks relative to its normal (1.0), and the user's
+    /// own Laprdus setting is that normal, so the two multiply. A forced
+    /// setting ignores the host. The result stays in the voice's range.
+    static func requestValue(setting: Float, requested: Float, forced: Bool, voice id: String) -> Float {
+        let value = forced ? setting : setting * requested
+        guard value.isFinite else { return 1.0 }
+        let range = speedPitchRange(forVoice: id)
+        return min(max(value, range.lowerBound), range.upperBound)
+    }
+
     /// Default voice for a BCP-47 language tag: the formant voice of that
     /// language, Croatian for anything else.
     static func defaultVoiceID(forLanguage tag: String) -> String {

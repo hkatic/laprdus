@@ -2,10 +2,16 @@ package com.hrvojekatic.laprdus.tts
 
 import android.content.res.AssetManager
 import android.util.Log
+import com.hrvojekatic.laprdus.data.SettingsRepository
+import java.io.File
 
 /**
  * JNI wrapper for the native LaprdusTTS engine.
- * Thread-safe singleton with lazy initialization.
+ *
+ * There are two engines, one per client: [service] for the speech service
+ * (TalkBack and every other app) and [app] for the app's own screens. Each
+ * has its own voice, rate, pitch, volume and dictionaries, so nothing one
+ * of them sets ever reaches the other. Both are thread-safe.
  *
  * Audio output format: 16-bit PCM, 22050 Hz, mono
  */
@@ -41,17 +47,15 @@ class LaprdusTTS private constructor() {
         const val DEFAULT_ACCELERATION = 1.0f
         val ACCELERATION_RANGE = 0.5f..3.0f
 
-        @Volatile
-        private var instance: LaprdusTTS? = null
+        /** The engine of the speech service: TalkBack and every other app. */
+        val service: LaprdusTTS by lazy { LaprdusTTS() }
 
         /**
-         * Get the singleton instance of the TTS engine
+         * The engine of the app's own screens (the preview and the settings).
+         * What the app sets here never changes what TalkBack says, and
+         * TalkBack's requests never change the preview.
          */
-        fun getInstance(): LaprdusTTS {
-            return instance ?: synchronized(this) {
-                instance ?: LaprdusTTS().also { instance = it }
-            }
-        }
+        val app: LaprdusTTS by lazy { LaprdusTTS() }
 
         /**
          * Get the library version
@@ -63,72 +67,107 @@ class LaprdusTTS private constructor() {
     // Native method declarations
     // ==========================================================================
 
-    private external fun nativeShutdown()
-    private external fun nativeIsInitialized(): Boolean
-    private external fun nativeSynthesize(text: String): ShortArray?
-    private external fun nativeSetSpeed(speed: Float)
-    private external fun nativeSetPitch(pitch: Float)
-    private external fun nativeSetUserPitch(pitch: Float)
-    private external fun nativeSetVolume(volume: Float)
-    private external fun nativeSetInflectionEnabled(enabled: Boolean)
-    private external fun nativeSetInflectionLevel(level: Float)
-    private external fun nativeSetAcceleration(acceleration: Float)
+    private external fun nativeCreate(): Long
+    private external fun nativeShutdown(handle: Long)
+    private external fun nativeIsInitialized(handle: Long): Boolean
+    private external fun nativeSynthesize(handle: Long, text: String): ShortArray?
+    private external fun nativeSetSpeed(handle: Long, speed: Float)
+    private external fun nativeSetPitch(handle: Long, pitch: Float)
+    private external fun nativeSetUserPitch(handle: Long, pitch: Float)
+    private external fun nativeSetVolume(handle: Long, volume: Float)
+    private external fun nativeSetInflectionEnabled(handle: Long, enabled: Boolean)
+    private external fun nativeSetInflectionLevel(handle: Long, level: Float)
+    private external fun nativeSetAcceleration(handle: Long, acceleration: Float)
     private external fun nativeGetNominalWpm(voiceId: String): Float
-    private external fun nativeGetSampleRate(): Int
+    private external fun nativeGetSampleRate(handle: Long): Int
     private external fun nativeCancel()
     private external fun nativeGetVoiceCount(): Int
     private external fun nativeGetVoiceInfo(index: Int): VoiceInfo?
-    private external fun nativeSetVoice(voiceId: String, assetManager: AssetManager): Boolean
-    private external fun nativeLoadDictionaryFromAssets(assetManager: AssetManager, assetPath: String): Boolean
-    private external fun nativeAddPronunciation(grapheme: String, phoneme: String, caseSensitive: Boolean, wholeWord: Boolean)
-    private external fun nativeAddSpellingEntry(character: String, pronunciation: String)
-    private external fun nativeAddEmojiEntry(emoji: String, text: String)
-    private external fun nativeLoadAccentLexicon(json: String): Boolean
-    private external fun nativeClearAccentLexicon()
-    private external fun nativeLoadSpellingDictionaryFromAssets(assetManager: AssetManager, assetPath: String): Boolean
-    private external fun nativeSynthesizeSpelled(text: String): ShortArray?
+    private external fun nativeSetVoice(handle: Long, voiceId: String, assetManager: AssetManager): Boolean
+    private external fun nativeLoadDictionaryFromAssets(handle: Long, assetManager: AssetManager, assetPath: String): Boolean
+    private external fun nativeAddPronunciation(handle: Long, grapheme: String, phoneme: String, caseSensitive: Boolean, wholeWord: Boolean)
+    private external fun nativeAddSpellingEntry(handle: Long, character: String, pronunciation: String)
+    private external fun nativeAddEmojiEntry(handle: Long, emoji: String, text: String)
+    private external fun nativeLoadAccentLexicon(handle: Long, json: String): Boolean
+    private external fun nativeClearAccentLexicon(handle: Long)
+    private external fun nativeLoadSpellingDictionaryFromAssets(handle: Long, assetManager: AssetManager, assetPath: String): Boolean
+    private external fun nativeSynthesizeSpelled(handle: Long, text: String): ShortArray?
 
     // Emoji dictionary methods
-    private external fun nativeLoadEmojiDictionaryFromAssets(assetManager: AssetManager, assetPath: String): Boolean
-    private external fun nativeSetEmojiEnabled(enabled: Boolean)
-    private external fun nativeIsEmojiEnabled(): Boolean
+    private external fun nativeLoadEmojiDictionaryFromAssets(handle: Long, assetManager: AssetManager, assetPath: String): Boolean
+    private external fun nativeSetEmojiEnabled(handle: Long, enabled: Boolean)
+    private external fun nativeIsEmojiEnabled(handle: Long): Boolean
 
     // Pause settings methods
-    private external fun nativeSetSentencePause(pauseMs: Int)
-    private external fun nativeSetCommaPause(pauseMs: Int)
-    private external fun nativeSetNewlinePause(pauseMs: Int)
-    private external fun nativeSetSpellingPause(pauseMs: Int)
-    private external fun nativeGetSentencePause(): Int
-    private external fun nativeGetCommaPause(): Int
-    private external fun nativeGetNewlinePause(): Int
-    private external fun nativeGetSpellingPause(): Int
+    private external fun nativeSetSentencePause(handle: Long, pauseMs: Int)
+    private external fun nativeSetCommaPause(handle: Long, pauseMs: Int)
+    private external fun nativeSetNewlinePause(handle: Long, pauseMs: Int)
+    private external fun nativeSetSpellingPause(handle: Long, pauseMs: Int)
+    private external fun nativeGetSentencePause(handle: Long): Int
+    private external fun nativeGetCommaPause(handle: Long): Int
+    private external fun nativeGetNewlinePause(handle: Long): Int
+    private external fun nativeGetSpellingPause(handle: Long): Int
 
     // Spelling speed and mode methods
-    private external fun nativeSetSpellingSpeed(percent: Int)
-    private external fun nativeGetSpellingSpeed(): Int
-    private external fun nativeSetLetterSounds(enabled: Boolean)
-    private external fun nativeGetLetterSounds(): Boolean
+    private external fun nativeSetSpellingSpeed(handle: Long, percent: Int)
+    private external fun nativeGetSpellingSpeed(handle: Long): Int
+    private external fun nativeSetLetterSounds(handle: Long, enabled: Boolean)
+    private external fun nativeGetLetterSounds(handle: Long): Boolean
 
     // Number mode methods
-    private external fun nativeSetNumberMode(mode: Int)
-    private external fun nativeGetNumberMode(): Int
+    private external fun nativeSetNumberMode(handle: Long, mode: Int)
+    private external fun nativeGetNumberMode(handle: Long): Int
 
     // ==========================================================================
     // Public Kotlin API
     // ==========================================================================
+
+    /** This object's native engine; it lives as long as the process. */
+    private val handle: Long = nativeCreate()
+
+    private val clientLock = Any()
+
+    /**
+     * Runs [block] with this engine to itself: no other thread can change
+     * its voice, rate, pitch, volume or dictionaries in between, so "set the
+     * request's rate and pitch, then synthesize" happens as one step.
+     * [setVoice] and [reloadDictionaries] take it too. [cancel] does not wait
+     * for it.
+     */
+    fun <T> exclusive(block: () -> T): T = synchronized(clientLock) { block() }
+
+    /**
+     * The folder with the user's own dictionaries, set by this engine's
+     * client. [setVoice] and [reloadDictionaries] load them on top of the
+     * bundled dictionaries; null loads none.
+     */
+    @Volatile
+    var userDictionaryDir: File? = null
+
+    /** Whether the user's own dictionaries are used (the settings switch). */
+    @Volatile
+    var userDictionariesEnabled: Boolean = true
+
+    /** The voice this engine has loaded, or null before the first [setVoice]. */
+    @Volatile
+    var currentVoiceId: String? = null
+        private set
 
     /**
      * Shutdown the TTS engine and release resources
      */
     fun shutdown() {
         Log.d(TAG, "Shutting down")
-        nativeShutdown()
+        exclusive {
+            nativeShutdown(handle)
+            currentVoiceId = null
+        }
     }
 
     /**
      * Check if the engine is initialized and ready for synthesis
      */
-    fun isInitialized(): Boolean = nativeIsInitialized()
+    fun isInitialized(): Boolean = nativeIsInitialized(handle)
 
     /**
      * Synthesize text to audio samples
@@ -139,7 +178,7 @@ class LaprdusTTS private constructor() {
         if (text.isBlank()) {
             return ShortArray(0)
         }
-        return nativeSynthesize(text)
+        return nativeSynthesize(handle, text)
     }
 
     /**
@@ -151,7 +190,7 @@ class LaprdusTTS private constructor() {
     var speed: Float = 1.0f
         set(value) {
             field = value.coerceIn(VoiceInfo.FORMANT_RANGE)
-            nativeSetSpeed(field)
+            nativeSetSpeed(handle, field)
         }
 
     /**
@@ -162,7 +201,7 @@ class LaprdusTTS private constructor() {
     var pitch: Float = 1.0f
         set(value) {
             field = value.coerceIn(VoiceInfo.FORMANT_RANGE)
-            nativeSetUserPitch(field)
+            nativeSetUserPitch(handle, field)
         }
 
     /**
@@ -171,7 +210,7 @@ class LaprdusTTS private constructor() {
     var volume: Float = 1.0f
         set(value) {
             field = value.coerceIn(0.0f, 1.0f)
-            nativeSetVolume(field)
+            nativeSetVolume(handle, field)
         }
 
     /**
@@ -181,7 +220,7 @@ class LaprdusTTS private constructor() {
     var inflectionEnabled: Boolean = true
         set(value) {
             field = value
-            nativeSetInflectionEnabled(value)
+            nativeSetInflectionEnabled(handle, value)
         }
 
     /**
@@ -192,7 +231,7 @@ class LaprdusTTS private constructor() {
     var inflectionLevel: Float = DEFAULT_INFLECTION_LEVEL
         set(value) {
             field = value.coerceIn(0.0f, 1.0f)
-            nativeSetInflectionLevel(field)
+            nativeSetInflectionLevel(handle, field)
         }
 
     /**
@@ -203,7 +242,7 @@ class LaprdusTTS private constructor() {
     var acceleration: Float = DEFAULT_ACCELERATION
         set(value) {
             field = value.coerceIn(ACCELERATION_RANGE)
-            nativeSetAcceleration(field)
+            nativeSetAcceleration(handle, field)
         }
 
     /**
@@ -216,7 +255,7 @@ class LaprdusTTS private constructor() {
      * Get the audio sample rate (always 22050 Hz)
      */
     val sampleRate: Int
-        get() = if (isInitialized()) nativeGetSampleRate() else 22050
+        get() = if (isInitialized()) nativeGetSampleRate(handle) else 22050
 
     /**
      * Cancel any ongoing synthesis operation
@@ -252,18 +291,67 @@ class LaprdusTTS private constructor() {
      * @param assetManager Asset manager to load voice data
      * @return true if voice was set successfully
      */
-    fun setVoice(voiceId: String, assetManager: AssetManager): Boolean {
+    fun setVoice(voiceId: String, assetManager: AssetManager): Boolean = exclusive {
         Log.d(TAG, "Setting voice: $voiceId")
-        val success = nativeSetVoice(voiceId, assetManager)
+        val success = nativeSetVoice(handle, voiceId, assetManager)
         if (success) {
-            // Load pronunciation dictionary after voice is set
-            loadDictionary(assetManager)
-            // Load spelling dictionary for character-by-character pronunciation
-            loadSpellingDictionary(assetManager)
-            // Load emoji dictionary (will be used only when emojiEnabled is true)
-            loadEmojiDictionary(assetManager)
+            currentVoiceId = voiceId
+            loadAllDictionaries(assetManager)
         }
-        return success
+        success
+    }
+
+    /**
+     * Reload the bundled dictionaries and the user's on top of them, so an
+     * edited user dictionary, or switching the user dictionaries on or off,
+     * takes effect without reloading the voice.
+     *
+     * @return false when no voice is loaded yet (the next [setVoice] loads them)
+     */
+    fun reloadDictionaries(assetManager: AssetManager): Boolean = exclusive {
+        if (!isInitialized()) return@exclusive false
+        loadAllDictionaries(assetManager)
+        true
+    }
+
+    /**
+     * The bundled dictionaries, which replace every entry the engine had,
+     * then the user's entries on top of them.
+     */
+    private fun loadAllDictionaries(assetManager: AssetManager) {
+        // Pronunciation dictionary
+        loadDictionary(assetManager)
+        // Spelling dictionary for character-by-character pronunciation
+        loadSpellingDictionary(assetManager)
+        // Emoji dictionary (used only when emojiEnabled is true)
+        loadEmojiDictionary(assetManager)
+
+        val dir = userDictionaryDir ?: return
+        if (userDictionariesEnabled) {
+            UserDictionaries.load(this, dir)
+        } else {
+            clearAccentLexicon()
+        }
+    }
+
+    /**
+     * Applies the saved settings that every utterance shares: everything but
+     * the voice, the rate, the pitch and the volume, which each client sets
+     * itself. The user dictionaries switch takes effect on the next
+     * [setVoice] or [reloadDictionaries].
+     */
+    fun applySettings(settings: SettingsRepository.TTSSettings) {
+        emojiEnabled = settings.emojiEnabled
+        inflectionEnabled = settings.inflectionEnabled
+        inflectionLevel = settings.inflectionLevel
+        acceleration = settings.acceleration
+        sentencePause = settings.sentencePause
+        commaPause = settings.commaPause
+        newlinePause = settings.newlinePause
+        numberMode = settings.numberMode
+        spellingSpeed = settings.spellingSpeed
+        letterSounds = settings.spellingMode == SettingsRepository.SPELLING_MODE_SOUNDS
+        userDictionariesEnabled = settings.userDictionariesEnabled
     }
 
     /**
@@ -275,7 +363,7 @@ class LaprdusTTS private constructor() {
      */
     fun loadDictionary(assetManager: AssetManager): Boolean {
         Log.d(TAG, "Loading pronunciation dictionary from: $DICTIONARY_ASSET_PATH")
-        val result = nativeLoadDictionaryFromAssets(assetManager, DICTIONARY_ASSET_PATH)
+        val result = nativeLoadDictionaryFromAssets(handle, assetManager, DICTIONARY_ASSET_PATH)
         if (result) {
             Log.i(TAG, "Pronunciation dictionary loaded successfully")
         } else {
@@ -296,7 +384,7 @@ class LaprdusTTS private constructor() {
      * @param wholeWord Whether to match whole words only
      */
     fun addPronunciation(grapheme: String, phoneme: String, caseSensitive: Boolean = false, wholeWord: Boolean = true) {
-        nativeAddPronunciation(grapheme, phoneme, caseSensitive, wholeWord)
+        nativeAddPronunciation(handle, grapheme, phoneme, caseSensitive, wholeWord)
     }
 
     /**
@@ -307,7 +395,7 @@ class LaprdusTTS private constructor() {
      * @param pronunciation How the character is named when spelling
      */
     fun addSpellingEntry(character: String, pronunciation: String) {
-        nativeAddSpellingEntry(character, pronunciation)
+        nativeAddSpellingEntry(handle, character, pronunciation)
     }
 
     /**
@@ -318,7 +406,7 @@ class LaprdusTTS private constructor() {
      * @param text The text spoken for it
      */
     fun addEmojiEntry(emoji: String, text: String) {
-        nativeAddEmojiEntry(emoji, text)
+        nativeAddEmojiEntry(handle, emoji, text)
     }
 
     /**
@@ -329,11 +417,11 @@ class LaprdusTTS private constructor() {
      * @param json The lexicon file's content
      * @return true if at least one entry was accepted
      */
-    fun loadAccentLexicon(json: String): Boolean = nativeLoadAccentLexicon(json)
+    fun loadAccentLexicon(json: String): Boolean = nativeLoadAccentLexicon(handle, json)
 
     /** Remove the user's accent lexicon. */
     fun clearAccentLexicon() {
-        nativeClearAccentLexicon()
+        nativeClearAccentLexicon(handle)
     }
 
     /**
@@ -347,7 +435,7 @@ class LaprdusTTS private constructor() {
      */
     fun loadSpellingDictionary(assetManager: AssetManager): Boolean {
         Log.d(TAG, "Loading spelling dictionary from: $SPELLING_DICTIONARY_ASSET_PATH")
-        val result = nativeLoadSpellingDictionaryFromAssets(assetManager, SPELLING_DICTIONARY_ASSET_PATH)
+        val result = nativeLoadSpellingDictionaryFromAssets(handle, assetManager, SPELLING_DICTIONARY_ASSET_PATH)
         if (result) {
             Log.i(TAG, "Spelling dictionary loaded successfully")
         } else {
@@ -368,7 +456,7 @@ class LaprdusTTS private constructor() {
         if (text.isEmpty()) {
             return ShortArray(0)
         }
-        return nativeSynthesizeSpelled(text)
+        return nativeSynthesizeSpelled(handle, text)
     }
 
     // ==========================================================================
@@ -384,7 +472,7 @@ class LaprdusTTS private constructor() {
      */
     fun loadEmojiDictionary(assetManager: AssetManager): Boolean {
         Log.d(TAG, "Loading emoji dictionary from: $EMOJI_DICTIONARY_ASSET_PATH")
-        val result = nativeLoadEmojiDictionaryFromAssets(assetManager, EMOJI_DICTIONARY_ASSET_PATH)
+        val result = nativeLoadEmojiDictionaryFromAssets(handle, assetManager, EMOJI_DICTIONARY_ASSET_PATH)
         if (result) {
             Log.i(TAG, "Emoji dictionary loaded successfully")
         } else {
@@ -400,9 +488,9 @@ class LaprdusTTS private constructor() {
      */
     var emojiEnabled: Boolean
         set(value) {
-            nativeSetEmojiEnabled(value)
+            nativeSetEmojiEnabled(handle, value)
         }
-        get() = nativeIsEmojiEnabled()
+        get() = nativeIsEmojiEnabled(handle)
 
     // ==========================================================================
     // Pause Settings
@@ -413,9 +501,9 @@ class LaprdusTTS private constructor() {
      * Range: 0-2000, default 100
      */
     var sentencePause: Int
-        get() = nativeGetSentencePause()
+        get() = nativeGetSentencePause(handle)
         set(value) {
-            nativeSetSentencePause(value.coerceIn(0, 2000))
+            nativeSetSentencePause(handle, value.coerceIn(0, 2000))
         }
 
     /**
@@ -423,9 +511,9 @@ class LaprdusTTS private constructor() {
      * Range: 0-2000, default 100
      */
     var commaPause: Int
-        get() = nativeGetCommaPause()
+        get() = nativeGetCommaPause(handle)
         set(value) {
-            nativeSetCommaPause(value.coerceIn(0, 2000))
+            nativeSetCommaPause(handle, value.coerceIn(0, 2000))
         }
 
     /**
@@ -433,9 +521,9 @@ class LaprdusTTS private constructor() {
      * Range: 0-2000, default 100
      */
     var newlinePause: Int
-        get() = nativeGetNewlinePause()
+        get() = nativeGetNewlinePause(handle)
         set(value) {
-            nativeSetNewlinePause(value.coerceIn(0, 2000))
+            nativeSetNewlinePause(handle, value.coerceIn(0, 2000))
         }
 
     /**
@@ -443,9 +531,9 @@ class LaprdusTTS private constructor() {
      * Range: 0-2000, default 200
      */
     var spellingPause: Int
-        get() = nativeGetSpellingPause()
+        get() = nativeGetSpellingPause(handle)
         set(value) {
-            nativeSetSpellingPause(value.coerceIn(0, 2000))
+            nativeSetSpellingPause(handle, value.coerceIn(0, 2000))
         }
 
     /**
@@ -455,9 +543,9 @@ class LaprdusTTS private constructor() {
      * Range: 0-100, default 50
      */
     var spellingSpeed: Int
-        get() = nativeGetSpellingSpeed()
+        get() = nativeGetSpellingSpeed(handle)
         set(value) {
-            nativeSetSpellingSpeed(value.coerceIn(0, 100))
+            nativeSetSpellingSpeed(handle, value.coerceIn(0, 100))
         }
 
     /**
@@ -465,9 +553,9 @@ class LaprdusTTS private constructor() {
      * ("be", "ce", "de"; the default), true the sound of each letter.
      */
     var letterSounds: Boolean
-        get() = nativeGetLetterSounds()
+        get() = nativeGetLetterSounds(handle)
         set(value) {
-            nativeSetLetterSounds(value)
+            nativeSetLetterSounds(handle, value)
         }
 
     // ==========================================================================
@@ -480,8 +568,8 @@ class LaprdusTTS private constructor() {
      * - NUMBER_MODE_DIGIT (1): "123" -> "jedan dva tri"
      */
     var numberMode: Int
-        get() = nativeGetNumberMode()
+        get() = nativeGetNumberMode(handle)
         set(value) {
-            nativeSetNumberMode(value.coerceIn(NUMBER_MODE_WHOLE, NUMBER_MODE_DIGIT))
+            nativeSetNumberMode(handle, value.coerceIn(NUMBER_MODE_WHOLE, NUMBER_MODE_DIGIT))
         }
 }

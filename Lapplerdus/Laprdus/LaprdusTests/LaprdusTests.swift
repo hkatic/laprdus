@@ -461,6 +461,30 @@ struct SSMLParserTests {
     }
 }
 
+// MARK: - Rate and pitch of a request
+
+/// VoiceOver's rate and pitch scale the Laprdus settings, which are the
+/// voice's normal, unless the settings are forced.
+struct RequestValueTests {
+
+    @Test func hostRateScalesTheLaprdusRate() {
+        #expect(VoiceCatalog.requestValue(setting: 1.5, requested: 1.0, forced: false, voice: "zvonko") == 1.5)
+        #expect(VoiceCatalog.requestValue(setting: 1.5, requested: 2.0, forced: false, voice: "zvonko") == 3.0)
+        #expect(VoiceCatalog.requestValue(setting: 1.0, requested: 0.75, forced: false, voice: "zvonko") == 0.75)
+    }
+
+    @Test func forcedSettingIgnoresTheHost() {
+        #expect(VoiceCatalog.requestValue(setting: 1.5, requested: 2.0, forced: true, voice: "zvonko") == 1.5)
+        #expect(VoiceCatalog.requestValue(setting: 0.5, requested: 3.0, forced: true, voice: "josip") == 0.5)
+    }
+
+    @Test func resultStaysInTheVoiceRange() {
+        #expect(VoiceCatalog.requestValue(setting: 3.0, requested: 2.0, forced: false, voice: "zvonko") == 4.0)
+        #expect(VoiceCatalog.requestValue(setting: 1.5, requested: 2.0, forced: false, voice: "josip") == 2.0)
+        #expect(VoiceCatalog.requestValue(setting: 1.0, requested: .nan, forced: false, voice: "zvonko") == 1.0)
+    }
+}
+
 // MARK: - Settings
 
 struct SettingsTests {

@@ -152,11 +152,17 @@ struct SettingsView: View {
         return String(format: hundredths % 10 == 0 ? "%.1fx" : "%.2fx", value)
     }
 
-    /// "1.5x (up to 525 WPM)": the multiplier and the rate the top of the
-    /// rate range (2.0x) then reaches with the selected voice.
+    /// "1.5x (up to 525 WPM)": the multiplier and the rate the top of an
+    /// app's rate range (2.0x, which scales the Laprdus rate; the Laprdus
+    /// rate alone when it is forced) then reaches with the selected voice,
+    /// up to the fastest rate the voice renders.
     private func formatAcceleration(_ value: Float) -> String {
         let nominal = VoiceCatalog.voice(withID: settings.defaultVoice)?.nominalWordsPerMinute ?? 0
-        let top = Int((nominal * 2.0 * value).rounded())
+        let rate = settings.forceSpeed
+            ? settings.speed
+            : min(max(2.0 * settings.speed, speedPitchRange.lowerBound), speedPitchRange.upperBound)
+        let fastest: Float = isFormantVoice ? 8.0 : 4.0
+        let top = Int((nominal * min(rate * value, fastest)).rounded())
         return String(localized: "\(String(format: "%.1fx", value)) (up to \(top) WPM)")
     }
 
@@ -166,12 +172,12 @@ struct SettingsView: View {
         Section("Application Overrides") {
             ToggleRow(
                 title: String(localized: "Force Laprdus speech rate"),
-                subtitle: String(localized: "Use Laprdus rate settings instead of application settings"),
+                subtitle: String(localized: "Ignore the rate the application asks for. Otherwise the application's rate speeds up or slows down the Laprdus rate"),
                 isOn: $settings.forceSpeed
             )
             ToggleRow(
                 title: String(localized: "Force Laprdus speech pitch"),
-                subtitle: String(localized: "Use Laprdus pitch settings instead of application settings"),
+                subtitle: String(localized: "Ignore the pitch the application asks for. Otherwise the application's pitch raises or lowers the Laprdus pitch"),
                 isOn: $settings.forcePitch
             )
             ToggleRow(

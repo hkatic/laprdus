@@ -8,12 +8,14 @@ import com.hrvojekatic.laprdus.tts.LaprdusTTS
 import com.hrvojekatic.laprdus.tts.VoiceInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.hrvojekatic.laprdus.R
 import javax.inject.Inject
 
@@ -157,8 +159,11 @@ class SettingsViewModel @Inject constructor(
     fun selectVoice(voiceId: String) {
         viewModelScope.launch {
             try {
-                // Set the voice in the TTS engine
-                val success = tts.setVoice(voiceId, context.assets)
+                // Set the voice in the app's engine (the speech service loads
+                // it into its own when it sees the saved choice)
+                val success = withContext(Dispatchers.Default) {
+                    tts.setVoice(voiceId, context.assets)
+                }
                 if (success) {
                     // Persist the selection
                     settings.setDefaultVoice(voiceId)

@@ -38,9 +38,9 @@
 
     <!-- Force settings -->
     <string name="setting_force_speed_title">Force Laprdus speech rate</string>
-    <string name="setting_force_speed_subtitle">Use Laprdus rate settings instead of application settings</string>
+    <string name="setting_force_speed_subtitle">Ignore the rate the application asks for. Otherwise the application\'s rate speeds up or slows down the Laprdus rate</string>
     <string name="setting_force_pitch_title">Force Laprdus speech pitch</string>
-    <string name="setting_force_pitch_subtitle">Use Laprdus pitch settings instead of application settings</string>
+    <string name="setting_force_pitch_subtitle">Ignore the pitch the application asks for. Otherwise the application\'s pitch raises or lowers the Laprdus pitch</string>
     <string name="setting_force_volume_title">Force Laprdus speech volume</string>
     <string name="setting_force_volume_subtitle">Use Laprdus volume settings instead of application settings</string>
     <string name="setting_force_language_title">Force language</string>

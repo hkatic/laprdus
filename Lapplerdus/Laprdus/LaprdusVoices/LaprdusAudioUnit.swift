@@ -113,12 +113,18 @@ public class LaprdusAudioUnit: AVSpeechSynthesisProviderAudioUnit {
                 guard renderState.isCurrent(request) else { return }
                 switch part {
                 case .speech(let speech):
-                    // Rate/pitch/volume: honor the host request unless forced.
+                    // Rate/pitch: the host's value scales the Laprdus setting
+                    // (its normal) unless the setting is forced; the
+                    // acceleration multiplies the rate on top of that.
                     // Without force, volume is pinned to 1.0 and the system
                     // output volume governs.
                     engine.setTransientParameters(
-                        speed: settings.forceSpeed ? settings.speed : speech.rate,
-                        userPitch: settings.forcePitch ? settings.pitch : speech.pitch,
+                        speed: VoiceCatalog.requestValue(
+                            setting: settings.speed, requested: speech.rate,
+                            forced: settings.forceSpeed, voice: voiceID),
+                        userPitch: VoiceCatalog.requestValue(
+                            setting: settings.pitch, requested: speech.pitch,
+                            forced: settings.forcePitch, voice: voiceID),
                         volume: settings.forceVolume ? settings.volume : 1.0
                     )
                     // A part the engine has nothing to say for (a lone

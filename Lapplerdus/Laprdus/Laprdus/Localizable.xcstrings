@@ -1476,34 +1476,34 @@
         }
       }
     },
-    "Use Laprdus pitch settings instead of application settings" : {
+    "Ignore the pitch the application asks for. Otherwise the application's pitch raises or lowers the Laprdus pitch" : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Koristi Laprdus postavke visine umjesto postavki aplikacije"
+            "value" : "Zanemari visinu koju traži aplikacija. Inače visina aplikacije podiže ili spušta Laprdus visinu"
           }
         },
         "sr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Koristi Laprdus podešavanja visine umesto podešavanja aplikacije"
+            "value" : "Zanemari visinu koju traži aplikacija. Inače visina aplikacije podiže ili spušta Laprdus visinu"
           }
         }
       }
     },
-    "Use Laprdus rate settings instead of application settings" : {
+    "Ignore the rate the application asks for. Otherwise the application's rate speeds up or slows down the Laprdus rate" : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Koristi Laprdus postavke brzine umjesto postavki aplikacije"
+            "value" : "Zanemari brzinu koju traži aplikacija. Inače brzina aplikacije ubrzava ili usporava Laprdus brzinu"
           }
         },
         "sr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Koristi Laprdus podešavanja brzine umesto podešavanja aplikacije"
+            "value" : "Zanemari brzinu koju traži aplikacija. Inače brzina aplikacije ubrzava ili usporava Laprdus brzinu"
           }
         }
       }

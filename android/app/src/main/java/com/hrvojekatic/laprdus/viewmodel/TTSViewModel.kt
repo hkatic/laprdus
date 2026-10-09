@@ -7,18 +7,22 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hrvojekatic.laprdus.BuildConfig
 import com.hrvojekatic.laprdus.audio.AudioPlayer
+import com.hrvojekatic.laprdus.data.DictionaryRepository
 import com.hrvojekatic.laprdus.data.SettingsRepository
 import com.hrvojekatic.laprdus.tts.LaprdusTTS
 import com.hrvojekatic.laprdus.tts.VoiceInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.hrvojekatic.laprdus.R
 import javax.inject.Inject
 
@@ -82,6 +86,12 @@ class TTSViewModel @Inject constructor(
         viewModelScope.launch {
             observeSettingsChanges()
         }
+        // A dictionary entry edited in the app is heard in the next preview
+        viewModelScope.launch {
+            DictionaryRepository.changes.drop(1).collect {
+                withContext(Dispatchers.Default) { tts.reloadDictionaries(context.assets) }
+            }
+        }
     }
 
     /**
@@ -89,6 +99,7 @@ class TTSViewModel @Inject constructor(
      * This ensures the main screen reflects changes made in settings.
      */
     private suspend fun observeSettingsChanges() {
+        var previous: SettingsRepository.TTSSettings? = null
         settings.allSettings.collect { savedSettings ->
             // Update TTS engine with new settings
             tts.speed = savedSettings.speed
@@ -96,24 +107,22 @@ class TTSViewModel @Inject constructor(
             tts.volume = savedSettings.volume
 
             // Apply advanced settings
-            tts.emojiEnabled = savedSettings.emojiEnabled
-            tts.inflectionEnabled = savedSettings.inflectionEnabled
-            tts.inflectionLevel = savedSettings.inflectionLevel
-            tts.acceleration = savedSettings.acceleration
-            tts.sentencePause = savedSettings.sentencePause
-            tts.commaPause = savedSettings.commaPause
-            tts.newlinePause = savedSettings.newlinePause
-            tts.numberMode = savedSettings.numberMode
+            tts.applySettings(savedSettings)
 
-            // If voice changed, reload it
-            if (_uiState.value.selectedVoiceId != savedSettings.defaultVoice &&
-                _uiState.value.isInitialized) {
-                val success = tts.setVoice(savedSettings.defaultVoice, context.assets)
+            // If voice changed, reload it (unless the settings screen already
+            // loaded it into this engine)
+            if (_uiState.value.isInitialized && tts.currentVoiceId != savedSettings.defaultVoice) {
+                val success = withContext(Dispatchers.Default) {
+                    tts.setVoice(savedSettings.defaultVoice, context.assets)
+                }
                 if (!success) {
                     Log.e(TAG, "Failed to switch voice in settings observer")
                     _uiState.update { it.copy(isInitialized = false, error = context.getString(R.string.error_voice_failed)) }
                 }
+            } else if (previous?.let { it.userDictionariesEnabled != savedSettings.userDictionariesEnabled } == true) {
+                withContext(Dispatchers.Default) { tts.reloadDictionaries(context.assets) }
             }
+            previous = savedSettings
 
             // Update UI state
             _uiState.update {
@@ -151,26 +160,22 @@ class TTSViewModel @Inject constructor(
             // Initialize audio player
             audioPlayer.initialize()
 
+            // The advanced settings first: the user dictionaries switch
+            // decides what setVoice() loads on top of the bundled dictionaries.
+            tts.applySettings(savedSettings)
+
             // Initialize TTS with default voice using setVoice()
             // This ensures proper loading of voice data AND dictionaries
             Log.d(TAG, "Initializing with voice: $defaultVoiceId")
-            val success = tts.setVoice(defaultVoiceId, context.assets)
+            val success = withContext(Dispatchers.Default) {
+                tts.setVoice(defaultVoiceId, context.assets)
+            }
 
             if (success) {
                 // Apply saved settings
                 tts.speed = savedSettings.speed
                 tts.pitch = savedSettings.pitch
                 tts.volume = savedSettings.volume
-
-                // Apply advanced settings
-                tts.emojiEnabled = savedSettings.emojiEnabled
-                tts.inflectionEnabled = savedSettings.inflectionEnabled
-                tts.inflectionLevel = savedSettings.inflectionLevel
-                tts.acceleration = savedSettings.acceleration
-                tts.sentencePause = savedSettings.sentencePause
-                tts.commaPause = savedSettings.commaPause
-                tts.newlinePause = savedSettings.newlinePause
-                tts.numberMode = savedSettings.numberMode
 
                 _uiState.update {
                     it.copy(
@@ -312,11 +317,13 @@ class TTSViewModel @Inject constructor(
             _uiState.update { it.copy(isPlaying = true, error = null) }
 
             try {
-                // Check if native engine is still alive (may have been destroyed
-                // by service lifecycle). Re-initialize if needed.
+                // The engine has no voice when loading it failed before: try again.
                 if (!tts.isInitialized()) {
-                    Log.w(TAG, "Engine was destroyed, reinitializing...")
-                    val success = tts.setVoice(_uiState.value.selectedVoiceId, context.assets)
+                    Log.w(TAG, "Engine has no voice, reinitializing...")
+                    val voiceId = _uiState.value.selectedVoiceId
+                    val success = withContext(Dispatchers.Default) {
+                        tts.setVoice(voiceId, context.assets)
+                    }
                     if (!success) {
                         _uiState.update { it.copy(error = context.getString(R.string.error_init_failed)) }
                         return@launch
@@ -324,7 +331,17 @@ class TTSViewModel @Inject constructor(
                 }
 
                 logDebug { "Synthesizing: $text" }
-                val samples = tts.synthesize(text)
+                // The app's screens share this engine (the settings sliders set
+                // it as they move): the preview speaks with the saved settings.
+                val state = _uiState.value
+                val samples = withContext(Dispatchers.Default) {
+                    tts.exclusive {
+                        tts.speed = state.speed
+                        tts.pitch = state.pitch
+                        tts.volume = state.volume
+                        tts.synthesize(text)
+                    }
+                }
 
                 if (samples != null && samples.isNotEmpty()) {
                     Log.d(TAG, "Playing ${samples.size} samples")
@@ -453,8 +470,8 @@ class TTSViewModel @Inject constructor(
         tts.cancel()
         audioPlayer.stop()
         audioPlayer.release()
-        // Do NOT call tts.shutdown() here - LaprdusTTS is a singleton shared with
-        // LaprdusTTSService. The service manages its own lifecycle independently.
-        // Shutting down here would break the system TTS service for other apps.
+        // Do NOT call tts.shutdown() here: the app's engine outlives this
+        // ViewModel and the settings screen uses it too. The speech service
+        // has an engine of its own.
     }
 }

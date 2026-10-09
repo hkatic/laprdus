@@ -85,9 +85,10 @@ CHANNELS = 1
 RATE_MIN = 0.5          # Minimum rate (same for both modes)
 RATE_NORMAL_MAX = 2.0   # Maximum rate without boost
 RATE_BOOST_MAX = 4.0    # Maximum rate with boost enabled
-# The formant voices (Zvonko, Stojan, Mirsad) multiply the rate by the
-# "acceleration" from settings.json on top of this, so their top rate is
-# RATE_NORMAL_MAX (or RATE_BOOST_MAX) times the acceleration.
+# The rate from NVDA's slider scales the Laprdus rate from settings.json (the
+# voice's normal), and every voice multiplies the result by the
+# "acceleration" from settings.json, so the top rate is RATE_NORMAL_MAX (or
+# RATE_BOOST_MAX) times the Laprdus rate times the acceleration.
 
 
 def _nvda_to_rate_factor(nvda_rate, rate_boost=False):
@@ -213,6 +214,11 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         self._pitch = 50
         self._volume = 100
         self._rateBoost = False
+
+        # Laprdus rate and pitch from settings.json: the voice's normal,
+        # which NVDA's sliders scale
+        self._laprdusSpeed = 1.0
+        self._laprdusPitch = 1.0
 
         # Force flags - when True, Laprdus config values override NVDA sliders
         self._forceSpeed = False
@@ -617,15 +623,36 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             # Apply volume (unless forced by Laprdus config)
             if not self._forceVolume:
                 self._engine.set_volume(_nvda_to_laprdus_volume(self._volume))
-            # Apply user pitch preference - formant-preserving (no chipmunk effect)
-            # This is the NVDA pitch slider, separate from voice character pitch
-            if not self._forcePitch:
-                self._engine.set_user_pitch(_nvda_to_laprdus_pitch(self._pitch))
-            # Apply speed/rate to engine (segment durations)
-            # This changes speed WITHOUT affecting pitch
-            # Rate boost expands max rate from 2.0x to 4.0x
-            if not self._forceSpeed:
-                self._engine.set_speed(_nvda_to_rate_factor(self._rate, self._rateBoost))
+            self._applyPitch()
+            self._applyRate()
+
+    def _applyRate(self):
+        """Apply the speech rate (segment durations, the pitch stays).
+
+        The Laprdus rate from settings.json is the voice's normal and NVDA's
+        rate slider (50 = 1.0x, rate boost reaching 4.0x) scales it; a forced
+        Laprdus rate ignores the slider. The acceleration multiplies the result.
+        """
+        if not self._engine:
+            return
+        speed = self._laprdusSpeed
+        if not self._forceSpeed:
+            speed *= _nvda_to_rate_factor(self._rate, self._rateBoost)
+        self._engine.set_speed(speed)
+
+    def _applyPitch(self):
+        """Apply the user pitch (formant-preserving, no chipmunk effect).
+
+        The Laprdus pitch from settings.json scaled by NVDA's pitch slider
+        (50 = 1.0x), or the Laprdus pitch alone when forced. The voice
+        character pitch of the derived voices is separate (set_pitch).
+        """
+        if not self._engine:
+            return
+        pitch = self._laprdusPitch
+        if not self._forcePitch:
+            pitch *= _nvda_to_laprdus_pitch(self._pitch)
+        self._engine.set_user_pitch(pitch)
 
     def _loadSharedSettings(self):
         """Load settings from shared settings.json (written by laprdgui.exe).
@@ -683,15 +710,14 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             _debug_log("_loadSharedSettings: force speed=%s pitch=%s volume=%s" % (
                 self._forceSpeed, self._forcePitch, self._forceVolume))
 
-            if self._forceSpeed:
-                laprdus_speed = speech.get('speed', 1.0)
-                self._engine.set_speed(laprdus_speed)
-                _debug_log("_loadSharedSettings: forced speed=%.2f" % laprdus_speed)
-
-            if self._forcePitch:
-                laprdus_pitch = speech.get('pitch', 1.0)
-                self._engine.set_user_pitch(laprdus_pitch)
-                _debug_log("_loadSharedSettings: forced pitch=%.2f" % laprdus_pitch)
+            # The Laprdus rate and pitch: NVDA's sliders scale them, or
+            # with force on they are used as they are
+            self._laprdusSpeed = float(speech.get('speed', 1.0))
+            self._laprdusPitch = float(speech.get('pitch', 1.0))
+            self._applyRate()
+            self._applyPitch()
+            _debug_log("_loadSharedSettings: speed=%.2f pitch=%.2f" % (
+                self._laprdusSpeed, self._laprdusPitch))
 
             if self._forceVolume:
                 laprdus_volume = speech.get('volume', 1.0)
@@ -874,14 +900,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
 
     def _set_rate(self, value):
         self._rate = value
-        # If force speed is enabled, ignore NVDA slider - keep Laprdus config value
-        if self._forceSpeed:
-            return
-        # Apply rate to engine (segment durations)
-        # This changes speed WITHOUT affecting pitch
-        # Rate boost expands max rate from 2.0x to 4.0x
-        if self._engine:
-            self._engine.set_speed(_nvda_to_rate_factor(value, self._rateBoost))
+        self._applyRate()
 
     # =========================================================================
     # Rate Boost property
@@ -895,11 +914,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             return
         # Toggle boost and re-apply rate to use new range
         self._rateBoost = enable
-        # If force speed is enabled, ignore NVDA slider - keep Laprdus config value
-        if self._forceSpeed:
-            return
-        if self._engine:
-            self._engine.set_speed(_nvda_to_rate_factor(self._rate, self._rateBoost))
+        self._applyRate()
 
     # =========================================================================
     # Pitch property
@@ -910,14 +925,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
 
     def _set_pitch(self, value):
         self._pitch = value
-        # If force pitch is enabled, ignore NVDA slider - keep Laprdus config value
-        if self._forcePitch:
-            return
-        # Apply user pitch preference - formant-preserving
-        # This changes pitch WITHOUT chipmunk effect (voice character stays the same)
-        # Voice character pitch is handled via base_pitch when voice is selected
-        if self._engine:
-            self._engine.set_user_pitch(_nvda_to_laprdus_pitch(value))
+        self._applyPitch()
 
     # =========================================================================
     # Volume property
@@ -958,7 +966,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                 # Re-append user dictionaries on top
                 self._loadUserDictionaries()
                 # Reapply user pitch preference (formant-preserving)
-                self._engine.set_user_pitch(_nvda_to_laprdus_pitch(self._pitch))
+                self._applyPitch()
 
     @property
     def availableVoices(self):

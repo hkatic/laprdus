@@ -417,9 +417,11 @@ Brzina govora određuje koliko brzo Laprdus izgovara tekst. Raspon je od 0.5 (up
 
 Napomena: U NVDA dodatku, opcija "Dodatna brzina" ili "Rate Boost" proširuje maksimalnu brzinu do 4.0.
 
+**Brzina u Laprdusu i brzina čitača ekrana.** Brzina iz postavki Laprdusa normalna je brzina glasa, a čitač ekrana ili aplikacija (TalkBack, VoiceOver, NVDA, programi koji koriste SAPI5, Speech Dispatcher) svoju brzinu zadaje u odnosu na nju. Dok čitač ekrana govori svojom normalnom brzinom, Laprdus govori upravo brzinom iz svojih postavki; dvostruko brži čitač ekrana daje dvostruko tu brzinu. Zato govor ubrzavaju i usporavaju i klizač brzine u Laprdusu i klizač u čitaču ekrana. Prekidač „Prisilno koristi Laprdus brzinu” (u Windows Konfiguratoru „Prisili Laprdusovu brzinu govora za sve aplikacije”) zanemaruje brzinu koju traži čitač ekrana ili aplikacija, pa Laprdus govori samo brzinom iz svojih postavki. [Ubrzanje](#46-infleksija) na kraju množi tu brzinu.
+
 ### 4.2 Visina glasa
 
-Visina glasa omogućuje podešavanje osnovne frekvencije glasa. Raspon je od 0.5 (niži glas) do 2.0 (viši glas), pri čemu je 1.0 prirodna visina glasa.
+Visina glasa omogućuje podešavanje osnovne frekvencije glasa. Raspon je od 0.5 (niži glas) do 2.0 (viši glas), pri čemu je 1.0 prirodna visina glasa. Kao i brzina (vidi [4.1](#41-brzina-govora)), visina iz postavki Laprdusa normalna je visina glasa koju čitač ekrana podiže ili spušta, osim kad je uključen prekidač „Prisilno koristi Laprdus visinu”.
 
 - **0.5** - Niži glas
 - **1.0** - Prirodna visina
@@ -498,7 +500,7 @@ Na Windows sustavu, dodatne postavke možete podesiti putem Laprdus Konfigurator
 2. Ili ako vam je Laprdus instaliran kao NVDA dodatak, otvorite NVDA izbornik > Laprdus podizbornik > Laprdus Konfigurator
 
 Konfigurator omogućuje podešavanje:
-- Brzine, visine i glasnoće govora
+- Brzine, visine i glasnoće govora (brzinu i visinu NVDA klizači ubrzavaju, usporavaju, podižu i spuštaju, osim kad je uključeno prisilno korištenje Laprdusovih vrijednosti; vidi [4.1](#41-brzina-govora))
 - Intonacije i ubrzanja, za sve glasove: intonacija od 0% (monotono) preko 50% (zadano, prirodni pokreti) do 100% (dvostruko veći pokreti); ubrzanje množi brzinu govora (0.5x-3.0x, zadano 1.0x), pa vrh NVDA klizača brzine doseže veću ili manju brzinu, a uz klizač je ispisano koliko riječi u minuti tada doseže. Klizači brzine i visine za formantne glasove idu od 0.25x do 4.0x.
 - Načina čitanja brojeva
 - Trajanja pauza i brzine slovkanja

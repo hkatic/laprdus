@@ -91,7 +91,7 @@ class LaprdusTTSServiceInstrumentedTest {
 
     @Test
     fun ttsEngineCanBeInitialized() {
-        val tts = com.hrvojekatic.laprdus.tts.LaprdusTTS.getInstance()
+        val tts = com.hrvojekatic.laprdus.tts.LaprdusTTS.app
         val success = tts.setVoice("josip", context.assets)
         assertTrue("TTS engine should initialize successfully with josip voice", success)
         assertTrue("TTS engine should report as initialized", tts.isInitialized())
@@ -99,7 +99,7 @@ class LaprdusTTSServiceInstrumentedTest {
 
     @Test
     fun allVoicesAreAvailable() {
-        val tts = com.hrvojekatic.laprdus.tts.LaprdusTTS.getInstance()
+        val tts = com.hrvojekatic.laprdus.tts.LaprdusTTS.app
         val voices = tts.getAllVoices()
 
         // Should have 5 voices: josip, vlado, detence, baba, djed
@@ -115,7 +115,7 @@ class LaprdusTTSServiceInstrumentedTest {
 
     @Test
     fun derivedVoicesHaveCorrectBasePitch() {
-        val tts = com.hrvojekatic.laprdus.tts.LaprdusTTS.getInstance()
+        val tts = com.hrvojekatic.laprdus.tts.LaprdusTTS.app
         val voices = tts.getAllVoices()
 
         val detence = voices.find { it.id == "detence" }
@@ -129,7 +129,7 @@ class LaprdusTTSServiceInstrumentedTest {
 
     @Test
     fun synthesisProducesSamples() {
-        val tts = com.hrvojekatic.laprdus.tts.LaprdusTTS.getInstance()
+        val tts = com.hrvojekatic.laprdus.tts.LaprdusTTS.app
         tts.setVoice("josip", context.assets)
 
         val samples = tts.synthesize("Dobar dan")
@@ -143,7 +143,7 @@ class LaprdusTTSServiceInstrumentedTest {
 
     @Test
     fun spelledSynthesisProducesSamplesForSingleLetter() {
-        val tts = com.hrvojekatic.laprdus.tts.LaprdusTTS.getInstance()
+        val tts = com.hrvojekatic.laprdus.tts.LaprdusTTS.app
         tts.setVoice("josip", context.assets)
 
         // Single letter should be spelled (pronounced as letter name)
@@ -154,7 +154,7 @@ class LaprdusTTSServiceInstrumentedTest {
 
     @Test
     fun spelledSynthesisProducesSamplesForCroatianLetter() {
-        val tts = com.hrvojekatic.laprdus.tts.LaprdusTTS.getInstance()
+        val tts = com.hrvojekatic.laprdus.tts.LaprdusTTS.app
         tts.setVoice("josip", context.assets)
 
         // Croatian letter with diacritic
@@ -165,7 +165,7 @@ class LaprdusTTSServiceInstrumentedTest {
 
     @Test
     fun spelledSynthesisProducesSamplesForDigit() {
-        val tts = com.hrvojekatic.laprdus.tts.LaprdusTTS.getInstance()
+        val tts = com.hrvojekatic.laprdus.tts.LaprdusTTS.app
         tts.setVoice("josip", context.assets)
 
         // Digit should be spelled (pronounced as number word)
@@ -176,7 +176,7 @@ class LaprdusTTSServiceInstrumentedTest {
 
     @Test
     fun spelledSynthesisProducesSamplesForPunctuation() {
-        val tts = com.hrvojekatic.laprdus.tts.LaprdusTTS.getInstance()
+        val tts = com.hrvojekatic.laprdus.tts.LaprdusTTS.app
         tts.setVoice("josip", context.assets)
 
         // Punctuation should be spelled (pronounced as punctuation name)
@@ -187,7 +187,7 @@ class LaprdusTTSServiceInstrumentedTest {
 
     @Test
     fun spelledSynthesisDifferentFromNormalSynthesis() {
-        val tts = com.hrvojekatic.laprdus.tts.LaprdusTTS.getInstance()
+        val tts = com.hrvojekatic.laprdus.tts.LaprdusTTS.app
         tts.setVoice("josip", context.assets)
 
         // Normal synthesis of "B" should produce short audio (just the sound "b")
@@ -206,7 +206,7 @@ class LaprdusTTSServiceInstrumentedTest {
 
     @Test
     fun spelledSynthesisWithSpaceProducesSamples() {
-        val tts = com.hrvojekatic.laprdus.tts.LaprdusTTS.getInstance()
+        val tts = com.hrvojekatic.laprdus.tts.LaprdusTTS.app
         tts.setVoice("josip", context.assets)
 
         // Space should be spelled as "razmak"

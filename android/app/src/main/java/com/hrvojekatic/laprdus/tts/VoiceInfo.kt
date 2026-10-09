@@ -60,6 +60,17 @@ data class VoiceInfo(
         /** Speed and pitch range of a voice. */
         fun rangeFor(id: String?): ClosedFloatingPointRange<Float> =
             if (isFormantVoice(id)) FORMANT_RANGE else RECORDED_RANGE
+
+        /**
+         * Rate or pitch of a request from another app (TalkBack, a reader):
+         * the app asks relative to its normal (1.0), and the user's own
+         * Laprdus setting is that normal, so the two multiply. A forced
+         * setting ignores the app. The result stays in the voice's range.
+         */
+        fun requestValue(setting: Float, requested: Float, forced: Boolean, id: String?): Float {
+            val value = if (forced) setting else setting * requested
+            return if (value.isFinite()) value.coerceIn(rangeFor(id)) else 1.0f
+        }
     }
 
     /**

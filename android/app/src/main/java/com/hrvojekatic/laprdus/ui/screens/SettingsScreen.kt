@@ -221,9 +221,7 @@ fun SettingsScreen(
                 }
 
                 item {
-                    // The rate the top of the rate range (2.0x) reaches
-                    // with this acceleration, in words per minute.
-                    val topWpm = (uiState.nominalWpm * 2.0f * uiState.acceleration).roundToInt()
+                    val topWpm = topWordsPerMinute(uiState)
                     SliderSettingItem(
                         title = stringResource(R.string.setting_acceleration),
                         value = uiState.acceleration,
@@ -486,15 +484,30 @@ fun SettingsScreen(
 }
 
 /**
- * Category header for settings sections.
- * Marked as heading for TalkBack navigation with swipe up/down to headings.
+ * Words per minute at the top of an app's rate range (2.0x, which scales the
+ * Laprdus rate; the Laprdus rate alone when it is forced) with the
+ * acceleration, up to the fastest rate the voice renders.
  */
+private fun topWordsPerMinute(uiState: SettingsUiState): Int {
+    val rate = if (uiState.forceSpeed) {
+        uiState.speed
+    } else {
+        (2.0f * uiState.speed).coerceIn(uiState.speedPitchRange)
+    }
+    val fastest = if (uiState.isFormantVoice) 8.0f else 4.0f
+    return (uiState.nominalWpm * (rate * uiState.acceleration).coerceAtMost(fastest)).roundToInt()
+}
+
 /** "1.5x", or "0.25x" where one decimal would round the value away. */
 private fun formatMultiplier(value: Float): String {
     val hundredths = (value * 100).roundToInt()
     return if (hundredths % 10 == 0) "%.1fx".format(value) else "%.2fx".format(value)
 }
 
+/**
+ * Category header for settings sections.
+ * Marked as heading for TalkBack navigation with swipe up/down to headings.
+ */
 @Composable
 fun SettingsCategoryHeader(title: String) {
     Text(

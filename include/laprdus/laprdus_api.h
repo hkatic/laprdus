@@ -196,6 +196,15 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_speed(
 );
 
 /**
+ * Get the speech speed (see laprdus_set_speed). After
+ * laprdus_load_user_config() it is the user's own rate, which a host scales
+ * by the rate it asks for (the host's normal rate keeps it as it is).
+ * @param handle Engine handle.
+ * @return Speed factor (1.0 for an invalid handle).
+ */
+LAPRDUS_API float LAPRDUS_CALL laprdus_get_speed(LaprdusHandle handle);
+
+/**
  * Set voice character pitch (shifts formants).
  * Use this for derived voices (child, grandma, grandpa).
  * Note: This causes chipmunk effect - changes voice character.
@@ -223,6 +232,15 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_user_pitch(
     LaprdusHandle handle,
     float pitch
 );
+
+/**
+ * Get the user pitch preference (see laprdus_set_user_pitch). After
+ * laprdus_load_user_config() it is the user's own pitch, which a host
+ * scales by the pitch it asks for.
+ * @param handle Engine handle.
+ * @return Pitch factor (1.0 for an invalid handle).
+ */
+LAPRDUS_API float LAPRDUS_CALL laprdus_get_user_pitch(LaprdusHandle handle);
 
 /**
  * Set volume.
