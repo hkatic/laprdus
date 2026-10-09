@@ -719,7 +719,12 @@ python3 tools/formant/sibilants.py assa.wav asha.wav
 - **ije** as the long reflex of jat is one syllable, [i̯eː] (*lijep*,
   *mlijeko*). It stays two syllables at the end of a word (*nije*, *prije*),
   in verb and comparative endings (*pijem*, *starijeg*) and in loans
-  (*klijent*).
+  (*klijent*), among them every word with *ije* before r: the French *-ier*
+  (*ka-ri-jé-ra, pre-mì-jēr, ba-ri-jé-ra, ho-te-lì-jēr, in-te-rì-jēr*) and
+  the Greek *hiero-* (*hi-je-ràr-hi-ja*). Of some 180,000 word forms only
+  *zvijer*, the Bosnian *pomijerati* and the prefixes *prije-, poslije-*
+  (*prijeratni*) have jat there. Until October 2026 *karijera* was read
+  *karjera*, and *premijer* *premjer*.
 - **Syllabic r**: r with no vowel next to it (*prst*, *Hrvatska*, *žanr*),
   but never before j: *rj* is the short jat after r (*rječnik*, *rješenje*,
   *pogrješka*). Until October 2026 these words got a syllable on the r,
@@ -1661,6 +1666,136 @@ lexicon entry. The rule for *-ač* took the prefixed verbs in *-kvačiti*,
 *némānje* (HJP) made *nemanja* *némānja*; the name *Nèmanja* (Wikipedia
 [němaɲa]) went into `tools/formant/persons.tsv` so that it keeps its own
 accent.
+
+**The sixth list (9 October 2026).** The words the listener collected:
+*karijera, umjetnik, umjetnost, umjetnički, album, jedinstven,
+beskompromisan, kompromisan, kompromis, zanima, plačenik, povijest,
+ostavština, odjelo, obilježila, gubitak, gubici, gubicima, debitantski,
+neukrotiv, ljubav, debil, izdanje, nezaobilazan, boja, teško, odmori, bol,
+bolno, neprekosnoven, krhotine, tuga, tužno, tužan, tužna, tužni, tužne,
+duga, šalata, važno, lažno, laž, ruža*. Sources: Školski rječnik, HJP,
+Hrvatski mrežni rječnik (*karijera, album, ljubav, izdanje, duga*),
+Wiktionary, Rečnik Matice srpske (page images) and Alić's handbook
+(*ùmjetnīk, ljúbav, gubítak, bȏlan, zanímānje*).
+
+| Word | Accent now | Before |
+|---|---|---|
+| karijera | *karijéra* in every case; the same rule gives *premìjer, premijéra, barijéra, rivijéra, hotelìjer, interìjer, financìjer, atelìjer* (oblique *-ijéra*), and *prȅmijērnī, hotelìjērskī, hijèrātskī, hijeròglīf, arhijèrej* are entries | *kàrjera*: the *ije* was taken for jat |
+| umjetnik | *ùmjetnīk, ùmjetnīci, ùmjetnica, ùmjetnōst, ùmjetničkī*; ekavian *ùmetnīk, ùmetnōst* | first syllable, no tone; *umjètnički* |
+| album | *àlbūm*, but *albúma, albúmi, albúmima* | *àlbuma* |
+| jedinstven | *jedìnstven, jedìnstvenōst*, but *jedínstvo* | first syllable |
+| kompromis | *kompròmis, kompròmisan* (HJP, RMS, Wiktionary; Školski rječnik *kȍmpromis*); *bèskompromisan* (Školski rječnik, Wiktionary), Stojan and Mirsad *bȅskompromisan* (HJP, RMS) | *kȍmpromis*, *beskompromìsan* |
+| zanimati | *zanímati, zanímao, zanímajū, zanímānje*, but *zànīmām, zànīmā, zànīmāj, zànīmān* in every voice (`!`) | *zaníma* (a lexicon stem) |
+| plaćenik | *plȃćenīk, plȃćenica, plȃćeničkī*, also as written *plačenik* | short |
+| povijest | *pȍvijēst, pȍvijesnī* | no tone, so the long *ije* after it was heard as the stress |
+| ostavština | *ostávština* (HJP, RMS; Školski rječnik *òstāvština*) | short *ostàvština* |
+| odijelo | *odijélo* in every case, *odélo*, and *odjelo* as written; *odjela, odjelu* stay *òdjel*'s | *òdijelo* |
+| obilježiti | *obìlježila* (unchanged: already right); ekavian *obèležiti, obèležen* in `VERBS`, also *zabèležiti* | *òbeležen* |
+| gubitak | *gubítak, gubítka, gubíci, gubícima*, G pl *gùbītākā*; Mirsad *gubítākā* (Alić: the type keeps the accent in every case). The same for *dobítak, užítak, primítak, odbítak, razvítak, boljítak, zgodítak, probítak, imútak, osnútak* (HJP) | *gùbitak, gùbici* (the rule covers only *-itk-*) |
+| debitant | *debìtant, debìtantica, debìtantskī* | *dèbitantskī, debitàntica* |
+| neukrotiv | *neukròtiv* | *nȅukrotiv* |
+| ljubav | *ljúbav, ljúbavlju, ljúbāvnī, ljúbāvnīk* | short |
+| debil | *dèbīl*, but *debíla, debíli* | first syllable |
+| izdanje | *izdánje* in every case | *ìzdanje* |
+| nezaobilazan | *nezaobìlazan, zaobìlazan*; Stojan and Mirsad *nȅzaobilāzan* (RMS) | *nȅzaobilazan* |
+| boja | *bòja, bòje, bòjōm* (the noun has *boji, boje* over *bòjiti, bȍjati se*) | no tone |
+| težak | *tȇško, tȇškī*, but *téžak, téška* (HJP, RMS, Wiktionary; Školski rječnik *tȇžak*); *tȅžē, tȅžī* | short |
+| odmor | *òdmor, òdmori*; *odmòriti, òdmorīm, òdmoren* in every voice; "odmori" is the imperative *odmòri* at the head of a clause | no tone |
+| bol | *bȏl, bȏla, bȏli, bólima, bȍlovi* (Školski rječnik; HJP *bólovi*); locative *bólu, bóli* after a preposition (Zvonko); *bȏlan, bȏlno, bólna, bòlnijī* | short *bȍl* |
+| neprikosnoven | *neprikosnòven*, also as misspelled *neprekosnoven* | first syllable |
+| krhotina | *kr̀hotina* (HJP, Wiktionary; Školski rječnik *kȑhotina*) | *krhotína* (the rule for *-ina*) |
+| tuga, tužan | *túga, túzi, túgōm; túžan, túžna*, but *tȗžno, tȗžnī* and *tùžnijī*; Stojan and Mirsad *tȗžan, tȗžna* (RMS's first form) | short |
+| duga | *dùga*, the adjective (*duga noć*), far commoner than the rainbow *dúga* and the debt's genitive *dȗga* | no tone |
+| važan | *vážan, vážna, vážnōst*, but *vȃžno, vȃžnī* and *vàžnijī* | short |
+| lažan, laž | *lȁžan, lȁžno, làžna, làžnijī; lȃž, lȁži, làžima* | short *lȁž* |
+| ruža | *rúža* in every case | short |
+
+*Boli* is both *bȏl*'s case and *bòljeti*'s *bòlī* (it hurts). The noun has
+it, but where the words around make the verb plain it is the verb: a
+pronoun clitic right after it or before it with at most two adverbs
+between (*Bòli me glava, Bòli li te, Što te bòli, Glava me i dalje bòli*),
+*je* after it at the head of the clause (*Bòli je glava*), and before it
+negation, an adverb, a conjunction, a stressed pronoun or a part of the
+body (*Ne bòli, To jako bòli, Gdje bòli, ako bòli, Mene bòli glava, Srce
+bòli*). Within two words after a preposition it stays the noun (*bez bȏli,
+zbog jake bȏli ga je…*), and so it does with the demonstrative *te* (*Te
+bȏli su prošle*); *na bȏli* is the accusative, not the locative *u bóli*.
+*Šalata*
+(the Zagreb park, or a regional word for salad) is in no dictionary and
+was left as it was (*šaláta*, like *saláta*).
+
+*Obilježila* was already right (*obìlježila*). Inside a sentence its
+stressed *bi* peaks only 0.7 semitones above the *lje* after it (the
+rising accent's "55.53", see "The melody of read Croatian"), which may be
+what is heard as *obiljéžila*; the model was not changed in this round.
+
+**The seventh list (9 October 2026).** *nikad, nikada, poboljšanja,
+reproducirano* (HJP, Školski rječnik, Rečnik Matice srpske):
+
+- *nȉkad, nȉkada*: *nikada* was *nikáda*, taken by the rule for loans in
+  *-ad* (*komád, limunáda*), and so were *ikada, nekada, katkada,
+  kadikada*. The adverbs are exact entries (*ȉkad(a), nȅkad(a),
+  kȁtkad(a), òtkad(a), dòkad(a), dòsad, pònekad(a), kadìkad(a),
+  svȁgda*); the rule is unchanged, because the loans in *-kada* need it
+  (*blokáda, barikáda, kaskáda*). *Dosada* is also the noun *dȍsada* and
+  was left alone.
+- *poboljšánje*: the verbal nouns of the prefixed perfectives in *-ati*
+  with a short accent and the passive one syllable back (`ap` in `VERBS`:
+  *pobòljšati, pȍboljšān*) have a long rising *-ánje* in HJP, Školski
+  rječnik and Rečnik Matice srpske: *poboljšánje, povećánje, uvećánje,
+  pojačánje, ojačánje, pogoršánje, obećánje, olakšánje*. They had the
+  verb's accent (*pobòljšanje, obèćanje*); `StressRules::form_of` now
+  gives every voice *-ánje* for that class.
+- *reproducírati, reprodùcīrām, reprodùcīrano, reproducírānje* (HJP) in
+  every voice, as *inspirírati* already was; the other verbs in *-irati*
+  keep Zvonko's *-írano* (*aktivírano*). *rȅproduktīvan* (HJP).
+
+**The eighth list (9 October 2026).** *karte, zdravlje* (HJP, Školski
+rječnik, Wiktionary, Rečnik Matice srpske; all agree): *kȃrta, kȃrte* in
+every case and the genitive plural *kȁrātā* (it was *karáta*, the rule for
+loans in *-at*), *kàrtica*; *zdrȃvlje* in every case, *zdràvstvo,
+zdràvstvenī*. They had been short, with no tone. *privitak, privici*: *privítak, privíci, privícima*, G pl *prìvītākā* (HJP,
+Školski rječnik, Wiktionary), with the other nouns in *-itak* of the sixth
+list (Mirsad *privítākā*, as Alić has the type); they had *prìvitak,
+prìvici*. *prìvijen* (of *priviti*) is no longer read with the jat
+diphthong: *pri-* joins the prefixes of *viti* in `is_ije_diphthong`.
+
+**The ninth list (9 October 2026).** *dokumenti, različit, strana, strane,
+stranama, Danijela* (HJP, Školski rječnik, Wiktionary, Rečnik Matice
+srpske):
+
+- *rázličit, rázličitōst* in every form, but *različìtijī*; it was
+  *razlìčit* or a short first syllable.
+- *strána, stránē, stránama*, G pl *stránā*; A *strȃnu*, N pl *strȃne*, D
+  *strȃni* and the locative *stráni* after a preposition (Zvonko). They
+  had been short. *Strane* is read as the genitive (*s druge stráne, od
+  stráne, dvije stráne*), far commoner than the plural *strȃne*;
+  *strani, stranu, strano, stranom* have the falling accent of the
+  adjective *strȃn* (*strȃnī jezik*), which is also that of the noun's
+  dative, accusative and plural.
+- *dokùment, dokùmenti* and *Dànijela* (Wiktionary, like *Dàniel* in HJP)
+  were already right; only the genitive plural *dokùmenātā* was on the
+  first syllable. Inside a sentence the syllable after their rising accent
+  stays as high as the stressed one (*Dànijela*: +3.2 and +3.4
+  semitones), as the rising accent of standard Croatian has it; the
+  listener chose that over a lower post-tonic syllable.
+- *vijest* (Školski rječnik, HJP, Wiktionary): *vijȇst, vijȇsti, vijȇšću*
+  with the long falling accent, but *vijéstima* and the locative *vijésti*
+  after *o, po, pri* (not after *u, na*, where it is the accusative plural:
+  *reagirati na vijȇsti*); ekavian *vȇst, vȇsti, véstima*. Only *vijest*
+  itself had a tone before; the other forms had none, and *vest* was short.
+- *rázmak, rázmaci*, G pl *rázmākā*, and *rázmaknica* (HJP, Školski
+  rječnik); they had been short. *razmàknuti, razmàkni, razmàknuo*, but
+  *ràzmaknēm, ràzmaknūt* in every voice (`!`; Zvonko had *razmàknem*), and
+  *ràzmicati, ràzmičēm* (was *razmìcati*).
+- The name of Y is *ȉpsilōn* (HJP), in running text and when spelled; the
+  rule for loans in *-on* had made it *ipsìlon*. *èpsilōn* the same.
+- *cȃrstvo, cȃrskī* and *králjevstvo* in every case, G pl *cȃrstāvā,
+  králjevstāvā* (HJP, Školski rječnik, Wiktionary): they had been short,
+  and *kraljevstava* was *kraljevstáva*. On the open question of
+the rising accent (*obilježila*, see the sixth list) the listener asked for
+what is most accepted for Croatian; the model keeps the post-tonic syllable
+high, as the phonetic descriptions of standard Croatian have it.
 
 ### Place names
 

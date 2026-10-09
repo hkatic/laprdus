@@ -783,15 +783,24 @@ bool is_ije_diphthong(const std::u32string& w, size_t i) {
         if (has_vowel(w.substr(0, i))) return false;
     }
     if (starts_with(rest, U"nt")) return false;
+    // The loans in -ier (ka-ri-jé-ra, pre-mì-jer, ba-ri-jé-ra, ho-te-lì-jer,
+    // in-te-rì-jer, ho-te-li-jer-ski) and the Greek hiero- (hi-je-ràr-hi-ja):
+    // "ije" before r is jat only in zvijer, pomijerati and after the
+    // prefixes prije-, poslije- (prijeratni)
+    if (rest[0] == U'r' && w.find(U"zvijer") == std::u32string::npos &&
+        !starts_with(w, U"pomijer") &&
+        !starts_with(w, U"prije") && !starts_with(w, U"poslije")) {
+        return false;
+    }
     if (starts_with(w, U"higijen") || starts_with(w, U"hijen")) return false;
     // The Hebrew names in -el (Dà-ni-jel, Gà-bri-jel), not jat
     if (starts_with(w, U"danijel") || starts_with(w, U"gabrijel")) return false;
     // The passive participles of viti with a prefix (razvìjen, sàvijen,
-    // zàvijen, ùvijen): vi-jen, not jat
+    // zàvijen, ùvijen, prìvijen): vi-jen, not jat
     if (w[i - 1] == U'v' && starts_with(rest, U"n")) {
         const std::u32string prefix = w.substr(0, i - 1);
         for (const char32_t* p : {U"raz", U"sa", U"za", U"u", U"pre", U"iz", U"po", U"od",
-                                  U"oba", U"pod", U"nad"}) {
+                                  U"oba", U"pod", U"nad", U"pri"}) {
             if (prefix == p) return false;
         }
     }
@@ -1797,8 +1806,12 @@ public:
     // one of the long shapes? `ending` is the inflection after the stem.
     bool long_rhyme(const std::u32string& stem, size_t p, int k, const std::u32string& ending) const {
         const std::u32string rhyme = stem.substr(p);
-        if (p >= 2 && stem[p] == U'e' && stem[p - 1] == U'j' && stem[p - 2] == U'i') {
-            return false;                           // the e of "ije" (svijeta, cvijeta)
+        // The e of "ije" (svijeta, cvijeta), but not that of the loans in
+        // -ier, whose "ije" is two syllables (premìjēr, premijéra,
+        // karijéra, hotelijéra; see is_ije_diphthong)
+        if (p >= 2 && stem[p] == U'e' && stem[p - 1] == U'j' && stem[p - 2] == U'i' &&
+            !(rhyme == U"er" && nucleus_at(p - 2) >= 0)) {
+            return false;
         }
         auto preceded_by = [&](std::initializer_list<const char32_t*> list) {
             return ends_with_any(stem.substr(0, p), list);
@@ -2053,6 +2066,22 @@ private:
         }
         if (form == Form::None) return false;
         if (negated && form != Form::Passive) return false;
+
+        // The verbal nouns of the prefixed perfectives in -ati with a short
+        // accent and the passive one syllable back (pobòljšati, pȍboljšān)
+        // have a long rising accent on -ánje, in every voice:
+        // poboljšánje, povećánje, pojačánje, pogoršánje, obećánje,
+        // olakšánje (HJP, Školski rječnik)
+        if (form == Form::Plain && root.whole_stem && root.ati_present && !root.is_long &&
+            root.passive == 1 && m_w.compare(start + root.root.size(), 3, U"anj") == 0) {
+            const int a = nucleus_at(start + root.root.size());
+            if (a >= 0) {
+                r.nucleus = a;
+                r.is_long = true;
+                r.accent = Accent::Rising;
+                return true;
+            }
+        }
 
         int k = nucleus_at(start + root.vowel);
         if (k < 0) return false;
@@ -3263,6 +3292,67 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
         next.accent = next.nuclei.size() == 1 ? Accent::Falling : Accent::Rising;
     }
 
+    // "boli", "bole" are the cases of bȏl (the lexicon), and the present of
+    // bòljeti (it hurts: bòlī, bòlē) where the words around make the verb
+    // plain: a pronoun clitic right after it or before it, with at most
+    // two adverbs between ("Boli me glava", "Boli li te?", "Što te boli?",
+    // "Glava me jako boli"), "je" after it at the head of the clause ("Boli
+    // je glava"), and before it negation, an adverb, a conjunction, a
+    // stressed pronoun or a part of the body ("Ne boli", "To jako boli",
+    // "Gdje boli?", "ako boli", "Mene boli glava", "Srce boli"). Never
+    // within two words after a preposition ("bez boli", "zbog jake boli ga
+    // je ...", "protiv te boli").
+    for (size_t i = 0; i < count; ++i) {
+        static const WordSet clitics = {U"me", U"te", U"ga", U"ju", U"nas", U"vas",
+                                        U"ih", U"mi", U"ti", U"mu", U"joj", U"nam",
+                                        U"vam", U"im"};
+        static const WordSet adverbs = {U"ne", U"jako", U"tako", U"još", U"stvarno",
+                                        U"užasno", U"strašno", U"baš", U"uvijek", U"uvek",
+                                        U"opet", U"stalno", U"isto", U"sad", U"sada",
+                                        U"često", U"i", U"dalje", U"nimalo", U"uopće",
+                                        U"uopšte"};
+        static const WordSet cues = {
+            U"gdje", U"gde", U"kako", U"što", U"šta", U"ako", U"kad", U"kada", U"dok",
+            U"jer", U"čim", U"mene", U"tebe", U"njega", U"nju", U"njih", U"glava",
+            U"srce", U"noga", U"ruka", U"zub", U"grlo", U"trbuh", U"želudac", U"stomak",
+            U"uho", U"duša", U"koljeno", U"rame", U"vrat", U"leđa", U"noge", U"ruke",
+            U"zubi", U"oči", U"uši", U"koljena", U"ramena", U"prsa", U"prst", U"prsti",
+            U"kičma", U"kralježnica", U"bubreg", U"bubrezi", U"mišići", U"zglobovi"};
+        static const WordSet prepositions = {U"u", U"na", U"o", U"po", U"pri", U"bez",
+                                             U"od", U"do", U"zbog", U"iz", U"s", U"sa",
+                                             U"za", U"nakon", U"protiv", U"kroz", U"pod",
+                                             U"nad", U"pred", U"među", U"između", U"uz",
+                                             U"prema", U"usprkos", U"unatoč", U"poput"};
+        Word& word = words[i];
+        if ((word.w != U"boli" && word.w != U"bole") || word.explicit_stress ||
+            word.user_accent || word.nuclei.size() != 2) {
+            continue;
+        }
+        bool after_preposition = false;
+        for (size_t back = 1; back <= 2 && back <= i; ++back) {
+            if (prepositions.count(words[i - back].w)) after_preposition = true;
+        }
+        if (after_preposition) continue;
+        size_t after = i + 1;
+        if (after < count && words[after].w == U"li") ++after;
+        bool verb = (after < count && clitics.count(words[after].w)) ||
+                    (i == 0 && count > 1 && words[1].w == U"je");
+        for (size_t back = 1; back <= 3 && back <= i && !verb; ++back) {
+            const Word& previous = words[i - back];
+            // A clitic cannot open its clause: "Te boli" is the demonstrative
+            if (back < i && clitics.count(previous.w)) verb = true;
+            if (!adverbs.count(previous.w)) break;
+        }
+        if (!verb && i > 0) {
+            const std::u32string& previous = words[i - 1].w;
+            verb = cues.count(previous) || (adverbs.count(previous) && previous != U"i");
+        }
+        if (!verb) continue;
+        word.phones[static_cast<size_t>(word.nuclei[0])].is_long = false;
+        word.stress = 0;
+        word.accent = Accent::Rising;
+    }
+
     // After a number the thousand words stand in the genitive plural, whose
     // accent is not the dictionary form's: pet tȉsūćā, sto hȉljādā (tìsuća,
     // hȉljada), pet milijúnā, pet milijárdī. On their own and after one to
@@ -3287,8 +3377,9 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
         }
     }
 
-    // Croatian sȃt/rȃd/dȃr keep falling accents in D sg, but have rising L
-    // sg sátu/rádu/dáru, and vlȃst has vlásti (Školski rječnik, Mrežnik).
+    // Croatian sȃt/rȃd/dȃr/bȏl keep falling accents in D sg, but have rising
+    // L sg sátu/rádu/dáru/bólu, and vlȃst, bȏl (f.), strána, vijȇst have
+    // vlásti, bóli, stráni, vijésti (Školski rječnik, Mrežnik).
     // Recognize a governing locative preposition, allowing up to two
     // adjacent modifiers ("o svom novom radu", "na državnoj vlasti"). This
     // is a local cue, not a general case parser; other contexts keep the
@@ -3309,7 +3400,8 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
                 word.nuclei.empty()) continue;
             bool rising = false;
             if (word.w == U"satu" || word.w == U"radu" || word.w == U"daru" ||
-                word.w == U"vlasti") {
+                word.w == U"vlasti" || word.w == U"bolu" || word.w == U"boli" ||
+                word.w == U"strani" || word.w == U"vijesti") {
                 size_t cue = i;
                 for (int modifiers = 0; cue > 0 && modifiers < 2 &&
                      ends_with_any(words[cue - 1].w,
@@ -3317,7 +3409,12 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
                      ++modifiers) {
                     --cue;
                 }
-                rising = cue > 0 && locative.count(words[cue - 1].w);
+                // "na boli", "na vijesti", "u vijesti" are the accusative
+                // (žaliti se na bȏli, reagirati na vijȇsti, ući u vijȇsti)
+                const std::u32string& preposition = words[cue > 0 ? cue - 1 : 0].w;
+                rising = cue > 0 && locative.count(preposition) &&
+                         !(word.w == U"boli" && preposition == U"na") &&
+                         !(word.w == U"vijesti" && (preposition == U"na" || preposition == U"u"));
             } else if (word.w == U"sati") {
                 const auto& previous = words[i - 1].w;
                 rising = counting_numbers().count(previous) || genitive_hours.count(previous) ||

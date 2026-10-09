@@ -929,7 +929,6 @@ TEST_CASE("Lexicon accents cover the whole paradigm", "[formant][text]") {
         {"povijesti", "povij\xC3\xA9sti"},   // povijésti
         {"prelijepi", "prelij\xC3\xA9pi"},   // prelijépi
         {"donijeli", "donij\xC3\xA9li"},   // donijéli
-        {"odijela", "odij\xC3\xA9la"},   // odijéla
         {"zapovijedi", "zapovij\xC3\xA9" "di"},   // zapovijédi
     };
     for (const auto& c : not_these) {
@@ -1966,6 +1965,309 @@ TEST_CASE("The fourth listener list follows the dictionaries in every voice", "[
     REQUIRE(speak(engine.handle, u8"napomene") != speak(engine.handle, u8"napoméne"));
 }
 
+TEST_CASE("The sixth listener list follows the dictionaries in every voice", "[formant][text]") {
+    // karijera ... ruža with their families (Školski rječnik, HJP, Hrvatski
+    // mrežni rječnik, Wiktionary, Rečnik Matice srpske, Alić), checked
+    // 2026-10-09; see docs/formant.md. Croatian omits unstressed length.
+    struct Case { const char* voice; const char* plain; const char* accented; };
+    const Case cases[] = {
+        // The loans in -ijer: four syllables, not the jat of rijeka
+        {"zvonko", u8"karijera", u8"karijéra"},
+        {"zvonko", u8"karijerom", u8"karijérom"},
+        {"zvonko", u8"premijer", u8"premìjer"},
+        {"zvonko", u8"premijera", u8"premijéra"},
+        {"zvonko", u8"premijeri", u8"premijéri"},
+        {"zvonko", u8"barijera", u8"barijéra"},
+        {"zvonko", u8"hotelijer", u8"hotelìjer"},
+        {"zvonko", u8"interijer", u8"interìjer"},
+        {"zvonko", u8"hijerarhija", u8"hijeràrhija"},
+        {"zvonko", u8"umjetnik", u8"ùmjetnik"},
+        {"zvonko", u8"umjetnici", u8"ùmjetnici"},
+        {"zvonko", u8"umjetnost", u8"ùmjetnost"},
+        {"zvonko", u8"umjetnošću", u8"ùmjetnošću"},
+        {"zvonko", u8"umjetnički", u8"ùmjetnički"},
+        {"zvonko", u8"umjetničkoga", u8"ùmjetničkoga"},
+        {"zvonko", u8"album", u8"àlbum"},
+        {"zvonko", u8"albuma", u8"albúma"},
+        {"zvonko", u8"albumima", u8"albúmima"},
+        {"zvonko", u8"jedinstven", u8"jedìnstven"},
+        {"zvonko", u8"jedinstvenoga", u8"jedìnstvenoga"},
+        {"zvonko", u8"jedinstvo", u8"jedínstvo"},
+        {"zvonko", u8"jedinstveniji", u8"jedinstvèniji"},
+        {"zvonko", u8"kompromis", u8"kompròmis"},
+        {"zvonko", u8"kompromisima", u8"kompròmisima"},
+        {"zvonko", u8"kompromisan", u8"kompròmisan"},
+        {"zvonko", u8"kompromisnoga", u8"kompròmisnoga"},
+        {"zvonko", u8"beskompromisan", u8"bèskompromisan"},
+        {"zvonko", u8"beskompromisna", u8"bèskompromisna"},
+        {"zvonko", u8"zanima", u8"zànima"},
+        {"zvonko", u8"zanimam", u8"zànimam"},
+        {"zvonko", u8"zanimaju", u8"zanímaju"},
+        {"zvonko", u8"zanimati", u8"zanímati"},
+        {"zvonko", u8"zanimalo", u8"zanímalo"},
+        {"zvonko", u8"zanimanje", u8"zanímanje"},
+        {"zvonko", u8"plaćenik", u8"plȃćenik"},
+        {"zvonko", u8"plaćenici", u8"plȃćenici"},
+        {"zvonko", u8"plačenik", u8"plȃčenik"},
+        {"zvonko", u8"povijest", u8"pȍvijest"},
+        {"zvonko", u8"povijesni", u8"pȍvijesni"},
+        {"zvonko", u8"ostavština", u8"ostávština"},
+        {"zvonko", u8"ostavštinom", u8"ostávštinom"},
+        {"zvonko", u8"odijelo", u8"odijélo"},
+        {"zvonko", u8"odijelima", u8"odijélima"},
+        {"zvonko", u8"odjelo", u8"odjélo"},
+        {"zvonko", u8"obilježila", u8"obìlježila"},
+        {"zvonko", u8"gubitak", u8"gubítak"},
+        {"zvonko", u8"gubitka", u8"gubítka"},
+        {"zvonko", u8"gubici", u8"gubíci"},
+        {"zvonko", u8"gubicima", u8"gubícima"},
+        {"zvonko", u8"gubitaka", u8"gùbitaka"},
+        {"zvonko", u8"dobitak", u8"dobítak"},
+        {"zvonko", u8"užitak", u8"užítak"},
+        {"zvonko", u8"imutak", u8"imútak"},
+        {"zvonko", u8"razvitak", u8"razvítak"},
+        {"zvonko", u8"debitant", u8"debìtant"},
+        {"zvonko", u8"debitantica", u8"debìtantica"},
+        {"zvonko", u8"debitantski", u8"debìtantski"},
+        {"zvonko", u8"debitantskoga", u8"debìtantskoga"},
+        {"zvonko", u8"neukrotiv", u8"neukròtiv"},
+        {"zvonko", u8"neukrotivoga", u8"neukròtivoga"},
+        {"zvonko", u8"ljubav", u8"ljúbav"},
+        {"zvonko", u8"ljubavlju", u8"ljúbavlju"},
+        {"zvonko", u8"ljubavni", u8"ljúbavni"},
+        {"zvonko", u8"debil", u8"dèbil"},
+        {"zvonko", u8"debila", u8"debíla"},
+        {"zvonko", u8"izdanje", u8"izdánje"},
+        {"zvonko", u8"izdanjima", u8"izdánjima"},
+        {"zvonko", u8"nezaobilazan", u8"nezaobìlazan"},
+        {"zvonko", u8"nezaobilaznoga", u8"nezaobìlaznoga"},
+        {"zvonko", u8"zaobilaznica", u8"zaobìlaznica"},
+        {"zvonko", u8"boja", u8"bòja"},
+        {"zvonko", u8"bojama", u8"bòjama"},
+        {"zvonko", u8"teško", u8"tȇško"},
+        {"zvonko", u8"teški", u8"tȇški"},
+        {"zvonko", u8"teška", u8"téška"},
+        {"zvonko", u8"težak", u8"téžak"},
+        {"zvonko", u8"teže", u8"tȅže"},
+        {"zvonko", u8"Ljetni odmori", u8"Ljetni òdmori"},
+        {"zvonko", u8"Odmori se", u8"Odmòri se"},
+        {"zvonko", u8"odmor", u8"òdmor"},
+        {"zvonko", u8"odmoriti", u8"odmòriti"},
+        {"zvonko", u8"odmorim", u8"òdmorim"},
+        {"zvonko", u8"odmoren", u8"òdmoren"},
+        {"zvonko", u8"bol", u8"bȏl"},
+        {"zvonko", u8"bola", u8"bȏla"},
+        {"zvonko", u8"Bez boli", u8"Bez bȏli"},
+        {"zvonko", u8"u boli", u8"u bóli"},
+        {"zvonko", u8"o bolu", u8"o bólu"},
+        {"zvonko", u8"bolovi", u8"bȍlovi"},
+        {"zvonko", u8"Boli me glava", u8"Bòli me glava"},
+        {"zvonko", u8"Glava me jako boli", u8"Glava me jako bòli"},
+        {"zvonko", u8"Ne boli", u8"Ne bòli"},
+        {"zvonko", u8"Gdje boli", u8"Gdje bòli"},
+        {"zvonko", u8"Mene boli glava", u8"Mene bòli glava"},
+        {"zvonko", u8"Glava me i dalje boli", u8"Glava me i dalje bòli"},
+        {"zvonko", u8"Zbog jake boli ga je odvezla", u8"Zbog jake bȏli ga je odvezla"},
+        {"zvonko", u8"Lijek mu ublažava boli", u8"Lijek mu ublažava bȏli"},
+        {"zvonko", u8"Te boli su prošle", u8"Te bȏli su prošle"},
+        {"zvonko", u8"Žali se na boli", u8"Žali se na bȏli"},
+        {"zvonko", u8"hijeroglif", u8"hijeròglif"},
+        {"zvonko", u8"arhijerej", u8"arhijèrej"},
+        {"zvonko", u8"zaobilaznicom", u8"zaobìlaznicom"},
+        {"zvonko", u8"bolno", u8"bȏlno"},
+        {"zvonko", u8"bolna", u8"bólna"},
+        {"zvonko", u8"neprikosnoven", u8"neprikosnòven"},
+        {"zvonko", u8"neprekosnoven", u8"neprekosnòven"},
+        {"zvonko", u8"krhotina", "kr\xCC\x80hotina"},
+        {"zvonko", u8"krhotinama", "kr\xCC\x80hotinama"},
+        {"zvonko", u8"tuga", u8"túga"},
+        {"zvonko", u8"tuzi", u8"túzi"},
+        {"zvonko", u8"tužno", u8"tȗžno"},
+        {"zvonko", u8"tužan", u8"túžan"},
+        {"zvonko", u8"tužna", u8"túžna"},
+        {"zvonko", u8"tužni", u8"tȗžni"},
+        {"zvonko", u8"tužne", u8"tȗžne"},
+        {"zvonko", u8"tužniji", u8"tùžniji"},
+        {"zvonko", u8"Bila je duga noć", u8"Bila je dùga noć"},
+        {"zvonko", u8"važno", u8"vȃžno"},
+        {"zvonko", u8"važan", u8"vážan"},
+        {"zvonko", u8"važnost", u8"vážnost"},
+        {"zvonko", u8"važniji", u8"vàžniji"},
+        {"zvonko", u8"lažno", u8"lȁžno"},
+        {"zvonko", u8"lažna", u8"làžna"},
+        {"zvonko", u8"laž", u8"lȃž"},
+        {"zvonko", u8"laži", u8"lȁži"},
+        {"zvonko", u8"lažima", u8"làžima"},
+        {"zvonko", u8"ruža", u8"rúža"},
+        {"zvonko", u8"ružama", u8"rúžama"},
+        {"stojan", u8"karijera", u8"karijéra"},
+        {"stojan", u8"premijer", u8"premìjēr"},
+        {"stojan", u8"umetnik", u8"ùmetnīk"},
+        {"stojan", u8"umetnost", u8"ùmetnōst"},
+        {"stojan", u8"album", u8"àlbūm"},
+        {"stojan", u8"beskompromisan", u8"bȅskompromisan"},
+        {"stojan", u8"zanima", u8"zànīma"},
+        {"stojan", u8"plaćenik", u8"plȃćenīk"},
+        {"stojan", u8"odelo", u8"odélo"},
+        {"stojan", u8"obeležen", u8"obèležen"},
+        {"stojan", u8"gubitaka", u8"gùbītākā"},
+        {"stojan", u8"debil", u8"dèbīl"},
+        {"stojan", u8"ljubavnik", u8"ljúbāvnīk"},
+        {"stojan", u8"nezaobilazan", u8"nȅzaobilāzan"},
+        {"stojan", u8"tugom", u8"túgōm"},
+        {"stojan", u8"tužan", u8"tȗžan"},
+        {"zvonko", u8"zvijer", u8"zvȋjer"},
+        {"mirsad", u8"umjetnik", u8"ùmjetnīk"},
+        {"mirsad", u8"gubitaka", u8"gubítākā"},
+        {"mirsad", u8"ljubav", u8"ljúbav"},
+        {"mirsad", u8"izdanje", u8"izdánje"},
+        {"mirsad", u8"bojom", u8"bòjōm"},
+    };
+    Engine engine;
+    for (const auto& c : cases) {
+        INFO(c.voice << " " << c.plain);
+        REQUIRE(laprdus_set_voice(engine.handle, c.voice, NO_DATA) == LAPRDUS_OK);
+        const auto plain = speak(engine.handle, c.plain);
+        REQUIRE(!plain.empty());
+        REQUIRE(plain == speak(engine.handle, c.accented));
+    }
+    // The old readings are gone
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(speak(engine.handle, u8"zanima") != speak(engine.handle, u8"zaníma"));
+    REQUIRE(speak(engine.handle, u8"krhotina") != speak(engine.handle, u8"krhotína"));
+    REQUIRE(speak(engine.handle, u8"bolnica") != speak(engine.handle, u8"bȏlnica"));
+    // odjela, odjelu are the cases of òdjel, not of odijelo
+    REQUIRE(speak(engine.handle, u8"odjela") != speak(engine.handle, u8"odjéla"));
+    // Jat before r stays one syllable: zvijer, prijeratni
+    REQUIRE(speak(engine.handle, u8"zvijer") == speak(engine.handle, u8"zvȋjer"));
+}
+
+TEST_CASE("The seventh and eighth listener lists follow the dictionaries in every voice", "[formant][text]") {
+    // nikad, nikada, poboljšanja, reproducirano with their families (HJP,
+    // Školski rječnik, Rečnik Matice srpske), checked 2026-10-09
+    struct Case { const char* voice; const char* plain; const char* accented; };
+    const Case cases[] = {
+        {"zvonko", u8"nikad", u8"nȉkad"},
+        {"zvonko", u8"nikada", u8"nȉkada"},
+        {"zvonko", u8"ikada", u8"ȉkada"},
+        {"zvonko", u8"nekada", u8"nȅkada"},
+        {"zvonko", u8"katkada", u8"kȁtkada"},
+        {"zvonko", u8"otkada", u8"òtkada"},
+        {"zvonko", u8"ponekad", u8"pònekad"},
+        {"zvonko", u8"kadikada", u8"kadìkada"},
+        {"zvonko", u8"poboljšanje", u8"poboljšánje"},
+        {"zvonko", u8"poboljšanja", u8"poboljšánja"},
+        {"zvonko", u8"poboljšanjima", u8"poboljšánjima"},
+        {"zvonko", u8"poboljšati", u8"pobòljšati"},
+        {"zvonko", u8"obećanje", u8"obećánje"},
+        {"zvonko", u8"povećanje", u8"povećánje"},
+        {"zvonko", u8"pojačanje", u8"pojačánje"},
+        {"zvonko", u8"pogoršanje", u8"pogoršánje"},
+        {"zvonko", u8"olakšanje", u8"olakšánje"},
+        {"zvonko", u8"reproducirano", u8"reprodùcirano"},
+        {"zvonko", u8"reproducira", u8"reprodùcira"},
+        {"zvonko", u8"reproduciram", u8"reprodùciram"},
+        {"zvonko", u8"reproducirati", u8"reproducírati"},
+        {"zvonko", u8"reproduciraju", u8"reproducíraju"},
+        {"zvonko", u8"reproducirao", u8"reproducírao"},
+        {"zvonko", u8"reproduciranje", u8"reproducíranje"},
+        {"zvonko", u8"reproduktivan", u8"rȅproduktivan"},
+        {"stojan", u8"nikada", u8"nȉkada"},
+        {"stojan", u8"poboljšanje", u8"poboljšánje"},
+        {"stojan", u8"reproducirano", u8"reprodùcīrano"},
+        {"mirsad", u8"nikad", u8"nȉkad"},
+        {"mirsad", u8"obećanja", u8"obećánja"},
+        // The eighth list (2026-10-09)
+        {"zvonko", u8"karta", u8"kȃrta"},
+        {"zvonko", u8"karte", u8"kȃrte"},
+        {"zvonko", u8"kartama", u8"kȃrtama"},
+        {"zvonko", u8"karata", u8"kȁrata"},
+        {"zvonko", u8"kartica", u8"kàrtica"},
+        {"zvonko", u8"zdravlje", u8"zdrȃvlje"},
+        {"zvonko", u8"zdravljem", u8"zdrȃvljem"},
+        {"zvonko", u8"zdravstvo", u8"zdràvstvo"},
+        {"zvonko", u8"zdravstvenoga", u8"zdràvstvenoga"},
+        {"stojan", u8"karata", u8"kȁrātā"},
+        {"mirsad", u8"zdravlje", u8"zdrȃvlje"},
+        {"zvonko", u8"privitak", u8"privítak"},
+        {"zvonko", u8"privitku", u8"privítku"},
+        {"zvonko", u8"privici", u8"privíci"},
+        {"zvonko", u8"privicima", u8"privícima"},
+        {"zvonko", u8"privitci", u8"privítci"},
+        {"zvonko", u8"privitaka", u8"prìvitaka"},
+        {"zvonko", u8"privijen", u8"prìvijen"},
+        {"stojan", u8"privitaka", u8"prìvītākā"},
+        {"mirsad", u8"privitaka", u8"privítākā"},
+        // The ninth list (2026-10-09)
+        {"zvonko", u8"različit", u8"rázličit"},
+        {"zvonko", u8"različitoga", u8"rázličitoga"},
+        {"zvonko", u8"različitost", u8"rázličitost"},
+        {"zvonko", u8"različitosti", u8"rázličitosti"},
+        {"zvonko", u8"različitiji", u8"različìtiji"},
+        {"zvonko", u8"strana", u8"strána"},
+        {"zvonko", u8"S druge strane", u8"S druge stráne"},
+        {"zvonko", u8"stranama", u8"stránama"},
+        {"zvonko", u8"stranu", u8"strȃnu"},
+        {"zvonko", u8"Na lijevoj strani", u8"Na lijevoj stráni"},
+        {"zvonko", u8"Strani jezik", u8"Strȃni jezik"},
+        {"zvonko", u8"dokumenti", u8"dokùmenti"},
+        {"zvonko", u8"dokumenata", u8"dokùmenata"},
+        {"zvonko", u8"Danijela", u8"Dànijela"},
+        {"stojan", u8"različitost", u8"rázličitōst"},
+        {"stojan", u8"dokumenata", u8"dokùmenātā"},
+        // vijest (2026-10-09)
+        {"zvonko", u8"vijest", u8"vijȇst"},
+        {"zvonko", u8"vijesti", u8"vijȇsti"},
+        {"zvonko", u8"vijestima", u8"vijéstima"},
+        {"zvonko", u8"viješću", u8"vijȇšću"},
+        {"zvonko", u8"o toj vijesti", u8"o toj vijésti"},
+        {"zvonko", u8"na vijesti", u8"na vijȇsti"},
+        {"stojan", u8"vesti", u8"vȇsti"},
+        {"stojan", u8"vestima", u8"véstima"},
+        // razmak, razmaknica, razmaknuti; ipsilon (2026-10-09)
+        {"zvonko", u8"razmak", u8"rázmak"},
+        {"zvonko", u8"razmaka", u8"rázmaka"},
+        {"zvonko", u8"razmaci", u8"rázmaci"},
+        {"zvonko", u8"razmacima", u8"rázmacima"},
+        {"zvonko", u8"razmaknica", u8"rázmaknica"},
+        {"zvonko", u8"Pritisni razmaknicu", u8"Pritisni rázmaknicu"},
+        {"zvonko", u8"razmaknuti", u8"razmàknuti"},
+        {"zvonko", u8"razmaknem", u8"ràzmaknem"},
+        {"zvonko", u8"Razmakni stolove", u8"Razmàkni stolove"},
+        {"zvonko", u8"razmaknuo", u8"razmàknuo"},
+        {"zvonko", u8"razmaknut", u8"ràzmaknut"},
+        {"zvonko", u8"razmicati", u8"ràzmicati"},
+        {"zvonko", u8"razmičem", u8"ràzmičem"},
+        {"zvonko", u8"ipsilon", u8"ȉpsilon"},
+        {"zvonko", u8"epsilon", u8"èpsilon"},
+        {"stojan", u8"razmaka", u8"rázmākā"},
+        {"stojan", u8"ipsilon", u8"ȉpsilōn"},
+        // carstvo, kraljevstvo (2026-10-09)
+        {"zvonko", u8"carstvo", u8"cȃrstvo"},
+        {"zvonko", u8"carstvima", u8"cȃrstvima"},
+        {"zvonko", u8"carstava", u8"cȃrstava"},
+        {"zvonko", u8"carski", u8"cȃrski"},
+        {"zvonko", u8"kraljevstvo", u8"králjevstvo"},
+        {"zvonko", u8"kraljevstvom", u8"králjevstvom"},
+        {"zvonko", u8"kraljevstava", u8"králjevstava"},
+        {"stojan", u8"carstava", u8"cȃrstāvā"},
+        {"mirsad", u8"kraljevstava", u8"králjevstāvā"},
+    };
+    Engine engine;
+    for (const auto& c : cases) {
+        INFO(c.voice << " " << c.plain);
+        REQUIRE(laprdus_set_voice(engine.handle, c.voice, NO_DATA) == LAPRDUS_OK);
+        const auto plain = speak(engine.handle, c.plain);
+        REQUIRE(!plain.empty());
+        REQUIRE(plain == speak(engine.handle, c.accented));
+    }
+    // The old readings are gone, and the loans in -ada keep theirs
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(speak(engine.handle, u8"nikada") != speak(engine.handle, u8"nikáda"));
+    REQUIRE(speak(engine.handle, u8"blokada") == speak(engine.handle, u8"blokáda"));
+    REQUIRE(speak(engine.handle, u8"barikada") == speak(engine.handle, u8"barikáda"));
+}
+
 TEST_CASE("Age and time compounds and čestitka follow the dictionaries", "[formant][text]") {
     // The compounds of -godišnji, -godišnjak, -godišnjica, -godište,
     // -mjesečni, -dnevni, -tjedni, -nedeljni and -ljetan
@@ -2996,6 +3298,9 @@ TEST_CASE("Letters are spelled by their names in the language of the voice", "[f
     REQUIRE(spell(engine.handle, "h") == speak(engine.handle, "ha"));
     REQUIRE(spell(engine.handle, "B") == spell(engine.handle, "b"));
     REQUIRE(spell(engine.handle, "\xC5\xA1") == speak(engine.handle, "e\xC5\xA1"));     // š: eš
+    // Y is ȉpsilōn (HJP), not ipsìlon as the rule for loans in -on had it
+    REQUIRE(spell(engine.handle, "Y") == speak(engine.handle, u8"ȉpsilon"));
+    REQUIRE(spell(engine.handle, "y") != speak(engine.handle, u8"ipsìlon"));
 
     // Serbian: lje, nje, ša; Cyrillic letters the same as Latin ones
     REQUIRE(laprdus_set_voice(engine.handle, "stojan", NO_DATA) == LAPRDUS_OK);
@@ -3003,6 +3308,7 @@ TEST_CASE("Letters are spelled by their names in the language of the voice", "[f
     REQUIRE(spell(engine.handle, "\xD1\x99") == speak(engine.handle, "lje"));          // љ
     REQUIRE(spell(engine.handle, "\xD0\xB1") == spell(engine.handle, "b"));             // б
     REQUIRE(spell(engine.handle, "\xD0\x88") == speak(engine.handle, "je"));           // Ј
+    REQUIRE(spell(engine.handle, "y") == speak(engine.handle, u8"ȉpsilōn"));
 
     // Bosnian follows the Croatian names
     REQUIRE(laprdus_set_voice(engine.handle, "mirsad", NO_DATA) == LAPRDUS_OK);
