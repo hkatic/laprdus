@@ -390,7 +390,7 @@ Kada koristite Laprdus s NVDA čitačem ekrana, postavke glasa možete promijeni
    - Brzinu govora
    - Visinu glasa
    - Glasnoću
-   - Dodatnu brzinu ili Rate Boost (proširuje maksimalnu brzinu s 2x na 4x)
+   - Dodatnu brzinu ili Rate Boost (svaki položaj klizača brzine čini tri puta bržim)
 
 ### 3.4 Android aplikacija
 
@@ -424,7 +424,7 @@ Brzina govora određuje koliko brzo Laprdus izgovara tekst. Raspon je od 0.5 (up
 - **1.5** - Umjereno brzo, za iskusne korisnike
 - **2.0** - Brzo, za napredne korisnike
 
-Napomena: U NVDA dodatku, opcija "Dodatna brzina" ili "Rate Boost" proširuje maksimalnu brzinu do 4.0.
+Napomena: U NVDA dodatku, opcija "Dodatna brzina" ili "Rate Boost" svaki položaj klizača brzine čini tri puta bržim, kao kod eSpeaka i OneCorea; Josip, Vlado i glasovi izvedeni iz njih zaustavljaju se na četverostrukoj brzini.
 
 **Brzina u Laprdusu i brzina čitača ekrana.** Brzina iz postavki Laprdusa normalna je brzina glasa, a čitač ekrana ili aplikacija (TalkBack, VoiceOver, NVDA, programi koji koriste SAPI5, Speech Dispatcher) svoju brzinu zadaje u odnosu na nju. Dok čitač ekrana govori svojom normalnom brzinom, Laprdus govori upravo brzinom iz svojih postavki; dvostruko brži čitač ekrana daje dvostruko tu brzinu. Zato govor ubrzavaju i usporavaju i klizač brzine u Laprdusu i klizač u čitaču ekrana. Prekidač „Prisilno koristi Laprdus brzinu” (u Windows Konfiguratoru „Prisili Laprdusovu brzinu govora za sve aplikacije”) zanemaruje brzinu koju traži čitač ekrana ili aplikacija, pa Laprdus govori samo brzinom iz svojih postavki. [Ubrzanje](#46-infleksija) na kraju množi tu brzinu.
 
@@ -503,6 +503,8 @@ Veličinu infleksije određuje klizač, a prekidača za uključivanje i isključ
 
 - **Razina infleksije** (0-100%) određuje veličinu svih pomaka visine: 0% je monoton govor, 50% prirodna melodija, 100% udvostručuje svaki pomak.
 - **Ubrzanje** (0,5-3) množi brzinu govora, pa klizač brzine u čitaču ekrana ili sustavu dosegne veću (ili manju) najveću brzinu. Josip, Vlado i glasovi izvedeni iz njih zaustavljaju se na četverostrukoj brzini; Zvonko, Stojan i Mirsad idu do osmerostruke.
+
+U NVDA-u razinu infleksije određuje NVDA-ov klizač Infleksija u postavkama glasa: 50 je prirodna melodija, 0 monoton govor, a na 100 svaki je pomak dvostruk. Infleksija iz Konfiguratora tada se ne koristi. Ubrzanje se u NVDA-u ne koristi; veće brzine dosežu se NVDA-ovim pojačanjem brzine (Rate boost).
 
 ### 4.7 Slovkanje
 

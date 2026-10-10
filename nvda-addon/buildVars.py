@@ -33,7 +33,7 @@ with word stress and natural sentence melody."""),
 - Three new voices synthesized by rule, clear at any rate: Zvonko (Croatian), Stojan (Serbian) and Mirsad (Bosnian), the default voice of each language; Bosnian is now supported
 - Word stress and natural sentence melody for every voice; Josip and Vlado have a new engine without clicks, with a natural tempo and rate and pitch that no longer affect each other
 - Ten singing voices
-- New Inflection level and Acceleration settings for the new voices, and an accent dictionary (accents.json) to correct the stress of a word
+- NVDA's Inflection slider controls the sentence melody of every voice, and an accent dictionary (accents.json) to correct the stress of a word
 - Fixed: user spelling and emoji dictionary entries had no effect
 """),
     # Author(s)

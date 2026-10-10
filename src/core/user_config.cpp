@@ -370,6 +370,21 @@ bool parse_settings_json(const std::string& json, UserSettings& settings) {
         }
     }
 
+    // A file of version 1.0 (written before the inflection level existed)
+    // means something else in two places. Its inflection switch is gone from
+    // every settings screen, so "off" becomes the level 0, the monotone the
+    // user can raise again. Its speed and pitch were ignored unless forced,
+    // while now they scale the host's rate and pitch, so unforced ones go
+    // back to normal instead of changing the rate after the upgrade.
+    if (json.find("\"inflection_level\"") == std::string::npos) {
+        if (!settings.inflection_enabled) {
+            settings.inflection_enabled = true;
+            settings.inflection_level = 0.0f;
+        }
+        if (!settings.force_speed) settings.speed = 1.0f;
+        if (!settings.force_pitch) settings.user_pitch = 1.0f;
+    }
+
     return true;
 }
 

@@ -444,8 +444,8 @@ Python-based synthesizer driver for NVDA screen reader.
 - `addon/globalPlugins/laprdus/__init__.py` - NVDA menu integration
 
 **Features:**
-- Rate boost (extends max rate from 2x to 4x); NVDA's rate and pitch sliders scale `speech.speed` and `speech.pitch` from settings.json (unless forced), and every voice multiplies the rate by the acceleration from settings.json
-- Inflection level and acceleration of the formant voices read from settings.json (speech.inflection_level, speech.acceleration), set in the Laprdus Configurator
+- NVDA's rate and pitch sliders scale `speech.speed` and `speech.pitch` from settings.json (unless forced); rate boost multiplies every slider position by 3 through the engine's acceleration (`speech.acceleration` is not used), as eSpeak's and OneCore's boost does
+- NVDA's inflection slider sets the inflection level (0-100 → 0.0-1.0) and keeps inflection enabled; `speech.inflection` and `speech.inflection_level` from settings.json are not used under NVDA
 - Character mode for spelling
 - Shared settings with SAPI5 via settings.json
 - Croatian/Serbian translations

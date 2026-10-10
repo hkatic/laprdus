@@ -34,6 +34,7 @@ This file lists what changed for users between released versions of Laprdus, on 
 - The new voices, the singing voices, the Inflection level and Acceleration settings and the accent dictionary are available in SAPI5 applications, in the Laprdus Configurator and in the NVDA add-on. The NVDA add-on picks the new voice of NVDA's language by default and reloads the accent dictionary when the file changes.
 - The Laprdus Configurator has the Spelling speed slider in its pause settings and the Spelling choice (letter names or letter sounds) among the options; both apply to SAPI5 and to the NVDA add-on. The command-line tool has the new options `-s` (spell the text), `-S` (spelling speed) and `-m` (spelling mode).
 - Fixed: when a program asked SAPI5 to spell only part of a text, Laprdus spelled all of it, and a requested silence was spoken as a space.
+- Settings saved by version 1.0 keep their meaning: an unforced speech rate or pitch, which version 1.0 ignored, stays normal instead of changing the rate the screen reader asks for, and intonation switched off becomes an Inflection level of 0%, which the Configurator can raise again. Under NVDA, NVDA's Inflection slider sets the intonation, and NVDA's rate boost, not the Acceleration setting, extends the rate range.
 
 ### Linux
 

@@ -81,29 +81,22 @@ SAMPLE_RATE = 22050
 BITS_PER_SAMPLE = 16
 CHANNELS = 1
 
-# Rate boost configuration
-RATE_MIN = 0.5          # Minimum rate (same for both modes)
-RATE_NORMAL_MAX = 2.0   # Maximum rate without boost
-RATE_BOOST_MAX = 4.0    # Maximum rate with boost enabled
+# Rate configuration
+RATE_MIN = 0.5          # Rate at the bottom of NVDA's slider
+RATE_MAX = 2.0          # Rate at the top of NVDA's slider
+RATE_BOOST = 3.0        # Rate boost multiplies every slider position
 # The rate from NVDA's slider scales the Laprdus rate from settings.json (the
-# voice's normal), and every voice multiplies the result by the
-# "acceleration" from settings.json, so the top rate is RATE_NORMAL_MAX (or
-# RATE_BOOST_MAX) times the Laprdus rate times the acceleration.
+# voice's normal). Rate boost, as in eSpeak and OneCore, makes every position
+# of the slider about three times faster: it is the engine's acceleration
+# (the "acceleration" from settings.json is not used under NVDA), so the
+# formant voices reach 6x and the recorded voices stop at their 4x.
 
 
-def _nvda_to_rate_factor(nvda_rate, rate_boost=False):
-    """Convert NVDA rate (0-100) to rate factor with 50=1.0x.
-
-    Without boost: 0 → 0.5x, 50 → 1.0x, 100 → 2.0x
-    With boost:    0 → 0.5x, 50 → 1.0x, 100 → 4.0x
-    """
-    max_rate = RATE_BOOST_MAX if rate_boost else RATE_NORMAL_MAX
+def _nvda_to_rate_factor(nvda_rate):
+    """Convert NVDA rate (0-100) to rate factor: 0 → 0.5x, 50 → 1.0x, 100 → 2.0x."""
     if nvda_rate <= 50:
-        # 0-50 maps to 0.5-1.0
         return RATE_MIN + (nvda_rate / 50.0) * (1.0 - RATE_MIN)
-    else:
-        # 50-100 maps to 1.0-max_rate
-        return 1.0 + ((nvda_rate - 50) / 50.0) * (max_rate - 1.0)
+    return 1.0 + ((nvda_rate - 50) / 50.0) * (RATE_MAX - 1.0)
 
 
 def _nvda_to_laprdus_pitch(nvda_pitch):
@@ -123,6 +116,14 @@ def _nvda_to_laprdus_pitch(nvda_pitch):
 def _nvda_to_laprdus_volume(nvda_volume):
     """Convert NVDA volume (0-100) to Laprdus volume (0.0-1.0)."""
     return nvda_volume / 100.0
+
+
+def _nvda_to_inflection_level(nvda_inflection):
+    """Convert NVDA inflection (0-100) to the Laprdus inflection level (0.0-1.0).
+
+    0 → monotone, 50 → the measured pitch movements, 100 → twice them.
+    """
+    return nvda_inflection / 100.0
 
 
 
@@ -159,6 +160,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         synthDriverHandler.SynthDriver.RateSetting(),
         synthDriverHandler.SynthDriver.RateBoostSetting(),
         synthDriverHandler.SynthDriver.PitchSetting(),
+        synthDriverHandler.SynthDriver.InflectionSetting(),
         synthDriverHandler.SynthDriver.VolumeSetting(),
     ]
     # Add custom settings if autoSettingsUtils is available
@@ -213,6 +215,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         self._rate = 50
         self._pitch = 50
         self._volume = 100
+        self._inflection = 50
         self._rateBoost = False
 
         # Laprdus rate and pitch from settings.json: the voice's normal,
@@ -625,20 +628,25 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                 self._engine.set_volume(_nvda_to_laprdus_volume(self._volume))
             self._applyPitch()
             self._applyRate()
+            self._applyInflection()
 
     def _applyRate(self):
         """Apply the speech rate (segment durations, the pitch stays).
 
         The Laprdus rate from settings.json is the voice's normal and NVDA's
-        rate slider (50 = 1.0x, rate boost reaching 4.0x) scales it; a forced
-        Laprdus rate ignores the slider. The acceleration multiplies the result.
+        rate slider (50 = 1.0x) scales it, and rate boost multiplies the
+        result by RATE_BOOST; a forced Laprdus rate ignores both.
         """
         if not self._engine:
             return
         speed = self._laprdusSpeed
+        boost = 1.0
         if not self._forceSpeed:
-            speed *= _nvda_to_rate_factor(self._rate, self._rateBoost)
+            speed *= _nvda_to_rate_factor(self._rate)
+            if self._rateBoost:
+                boost = RATE_BOOST
         self._engine.set_speed(speed)
+        self._engine.set_acceleration(boost)
 
     def _applyPitch(self):
         """Apply the user pitch (formant-preserving, no chipmunk effect).
@@ -654,6 +662,18 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             pitch *= _nvda_to_laprdus_pitch(self._pitch)
         self._engine.set_user_pitch(pitch)
 
+    def _applyInflection(self):
+        """Apply the inflection level (size of the pitch movements).
+
+        NVDA's inflection slider alone sets it (50 = the measured movements,
+        0 = monotone); speech.inflection and speech.inflection_level from
+        settings.json are not used under NVDA.
+        """
+        if not self._engine:
+            return
+        self._engine.set_inflection(True)
+        self._engine.set_inflection_level(_nvda_to_inflection_level(self._inflection))
+
     def _loadSharedSettings(self):
         """Load settings from shared settings.json (written by laprdgui.exe).
 
@@ -662,9 +682,6 @@ class SynthDriver(synthDriverHandler.SynthDriver):
 
         Settings loaded from settings.json structure:
         - speech.speed, speech.pitch, speech.volume (with force flags)
-        - speech.inflection: whether to use pitch variation
-        - speech.inflection_level: size of the pitch movements (0.0-1.0)
-        - speech.acceleration: rate multiplier (0.5-3.0)
         - speech.emoji: whether to convert emoji to text
         - numbers.mode: 'words' or 'digits'
         - pauses.sentence, pauses.comma, pauses.newline, pauses.spelling
@@ -714,6 +731,15 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             # with force on they are used as they are
             self._laprdusSpeed = float(speech.get('speed', 1.0))
             self._laprdusPitch = float(speech.get('pitch', 1.0))
+            # A settings.json of version 1.0 (no inflection_level yet): its
+            # speed and pitch were ignored unless forced, so unforced ones
+            # stay normal instead of changing the rate after the upgrade
+            # (the same rule as UserConfig in the engine)
+            if 'inflection_level' not in speech:
+                if not self._forceSpeed:
+                    self._laprdusSpeed = 1.0
+                if not self._forcePitch:
+                    self._laprdusPitch = 1.0
             self._applyRate()
             self._applyPitch()
             _debug_log("_loadSharedSettings: speed=%.2f pitch=%.2f" % (
@@ -724,20 +750,10 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                 self._engine.set_volume(laprdus_volume)
                 _debug_log("_loadSharedSettings: forced volume=%.2f" % laprdus_volume)
 
-            # Apply inflection setting
-            inflection = speech.get('inflection', True)
-            self._engine.set_inflection(inflection)
-            _debug_log("_loadSharedSettings: inflection=%s" % inflection)
-
-            # Inflection level and acceleration of every voice. The
-            # acceleration multiplies the speed set from the rate slider,
-            # so the slider's top reaches 2.0 (4.0 with rate boost) times it.
-            inflection_level = float(speech.get('inflection_level', 0.5))
-            self._engine.set_inflection_level(inflection_level)
-            acceleration = float(speech.get('acceleration', 1.0))
-            self._engine.set_acceleration(acceleration)
-            _debug_log("_loadSharedSettings: inflection_level=%.2f acceleration=%.2f" % (
-                inflection_level, acceleration))
+            # NVDA's inflection slider sets the intonation (speech.inflection
+            # of an old settings.json would otherwise switch it off with no
+            # control left to switch it on)
+            self._applyInflection()
 
             # Apply emoji setting
             emoji_enabled = speech.get('emoji', False)
@@ -928,6 +944,17 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         self._applyPitch()
 
     # =========================================================================
+    # Inflection property
+    # =========================================================================
+
+    def _get_inflection(self):
+        return self._inflection
+
+    def _set_inflection(self, value):
+        self._inflection = value
+        self._applyInflection()
+
+    # =========================================================================
     # Volume property
     # =========================================================================
 
@@ -967,6 +994,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                 self._loadUserDictionaries()
                 # Reapply user pitch preference (formant-preserving)
                 self._applyPitch()
+                self._applyInflection()
 
     @property
     def availableVoices(self):

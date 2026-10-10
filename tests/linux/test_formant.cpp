@@ -22,6 +22,10 @@
 #include <string>
 #include <vector>
 
+#ifndef _WIN32
+#include <unistd.h>
+#endif
+
 #include <laprdus/laprdus_api.h>
 
 namespace {
@@ -3023,6 +3027,56 @@ TEST_CASE("Formant voices accept the wider rate and pitch ranges", "[formant][pa
     REQUIRE(lowest.size() == normal.size());
     REQUIRE(rms(lowest) > rms(normal) * 0.3);
 }
+
+#ifndef _WIN32
+TEST_CASE("A settings.json of version 1.0 keeps its meaning", "[formant][params]") {
+    // Version 1.0 ignored an unforced speed and pitch and had an inflection
+    // switch that no settings screen shows any more; reading such a file
+    // must not change the rate or leave the voice monotone for good.
+    std::string dir = "/tmp/laprdus_test_settings_" + std::to_string(getpid());
+    std::string laprdus_dir = dir + "/Laprdus";
+    REQUIRE(std::system(("mkdir -p " + laprdus_dir).c_str()) == 0);
+    const char* old_home = std::getenv("XDG_CONFIG_HOME");
+    std::string saved_home = old_home ? old_home : "";
+    setenv("XDG_CONFIG_HOME", dir.c_str(), 1);
+
+    auto load = [&](const char* json) {
+        std::ofstream(laprdus_dir + "/settings.json") << json;
+        Engine engine;
+        REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+        REQUIRE(laprdus_load_user_config(engine.handle) == LAPRDUS_OK);
+        return std::vector<float>{laprdus_get_speed(engine.handle),
+                                  laprdus_get_user_pitch(engine.handle),
+                                  laprdus_get_inflection_level(engine.handle)};
+    };
+
+    std::vector<float> v1 = load(R"({ "version": "1.0",
+        "speech": { "speed": 1.6, "pitch": 1.3, "volume": 1, "inflection": false },
+        "force": { "speed": false, "pitch": false, "volume": false } })");
+    REQUIRE(v1[0] == Catch::Approx(1.0f));
+    REQUIRE(v1[1] == Catch::Approx(1.0f));
+    REQUIRE(v1[2] == Catch::Approx(0.0f));
+
+    std::vector<float> forced = load(R"({ "version": "1.0",
+        "speech": { "speed": 1.6, "pitch": 1.3, "volume": 1, "inflection": true },
+        "force": { "speed": true, "pitch": true, "volume": false } })");
+    REQUIRE(forced[0] == Catch::Approx(1.6f));
+    REQUIRE(forced[1] == Catch::Approx(1.3f));
+    REQUIRE(forced[2] == Catch::Approx(0.5f));
+
+    std::vector<float> v2 = load(R"({ "version": "1.0",
+        "speech": { "speed": 1.6, "pitch": 1.3, "volume": 1, "inflection": true,
+                    "inflection_level": 0.7, "acceleration": 1 },
+        "force": { "speed": false, "pitch": false, "volume": false } })");
+    REQUIRE(v2[0] == Catch::Approx(1.6f));
+    REQUIRE(v2[1] == Catch::Approx(1.3f));
+    REQUIRE(v2[2] == Catch::Approx(0.7f));
+
+    if (old_home) setenv("XDG_CONFIG_HOME", saved_home.c_str(), 1);
+    else unsetenv("XDG_CONFIG_HOME");
+    std::system(("rm -rf " + dir).c_str());
+}
+#endif
 
 TEST_CASE("Nominal words per minute are known for every voice", "[formant][params]") {
     REQUIRE(laprdus_get_nominal_wpm("zvonko") == Catch::Approx(175.0f));

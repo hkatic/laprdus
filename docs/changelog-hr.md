@@ -34,6 +34,7 @@ Ova datoteka navodi što se za korisnike promijenilo između objavljenih inačic
 - Novi glasovi, pjevajući glasovi, postavke Razina infleksije i Ubrzanje te naglasni rječnik dostupni su u SAPI5 programima, u Laprdus Konfiguratoru i u NVDA dodatku. NVDA dodatak kao zadani uzima novi glas NVDA-ova jezika i ponovno učitava naglasni rječnik kad se datoteka promijeni.
 - Laprdus Konfigurator ima klizač Brzina slovkanja među postavkama pauza i izbor Slovkanje (nazivi ili glasovi slova) među opcijama; oboje vrijedi za SAPI5 i za NVDA dodatak. Alat naredbene linije ima nove opcije `-s` (slovkaj tekst), `-S` (brzina slovkanja) i `-m` (način slovkanja).
 - Ispravljeno: kad je program od SAPI5 zatražio slovkanje samo dijela teksta, Laprdus je slovkao cijeli tekst, a zatražena tišina izgovarala se kao razmak.
+- Postavke spremljene u inačici 1.0 zadržavaju svoje značenje: brzina i visina govora koje nisu bile prisilne, a inačica 1.0 ih je zanemarivala, ostaju normalne umjesto da promijene brzinu koju traži čitač ekrana, a isključena intonacija postaje Razina infleksije 0%, koju Konfigurator može ponovno podići. U NVDA-u intonaciju određuje NVDA-ov klizač Infleksija, a veće brzine daje NVDA-ovo pojačanje brzine, ne postavka Ubrzanje.
 
 ### Linux
 
