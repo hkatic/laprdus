@@ -365,6 +365,65 @@ TEST_CASE("Case context selects Croatian accent homographs", "[frontend][accents
     REQUIRE(!giraffes[2].is_long);
 }
 
+TEST_CASE("Croatian siguran and direktno keep their selected adjective accents", "[frontend][accents]") {
+    // ŠR/HJP: sȉgūran and its positive forms, but sigùrnijī and sigúrnōst.
+    // Croatian's lexicon omits post-accent length; stressed length is
+    // checked independently so a broad sigur- stem cannot hide the contrast.
+    struct Case { const char32_t* text; int stress; Accent tone; bool long_vowel; };
+    const auto F = Accent::Falling;
+    const auto R = Accent::Rising;
+    const Case cases[] = {
+        {U"siguran", 0, F, false}, {U"Siguran", 0, F, false},
+        {U"SIGURAN", 0, F, false}, {U"sigurna", 0, F, false},
+        {U"sigurno", 0, F, false}, {U"sigurni", 0, F, false},
+        {U"sigurne", 0, F, false}, {U"sigurnu", 0, F, false},
+        {U"sigurnog", 0, F, false}, {U"sigurnoga", 0, F, false},
+        {U"sigurnome", 0, F, false}, {U"sigurnomu", 0, F, false},
+        {U"sigurnoj", 0, F, false}, {U"sigurnih", 0, F, false},
+        {U"sigurnim", 0, F, false}, {U"sigurnima", 0, F, false},
+        {U"sigurniji", 1, R, false}, {U"sigurnije", 1, R, false},
+        {U"sigurnijima", 1, R, false},
+        {U"sigurnost", 1, R, true}, {U"sigurnošću", 1, R, true},
+        {U"sigurnostima", 1, R, true},
+        // User's HJP-listed dirèktno variant, including positive adjective
+        // forms; the comparative already has the same short rising e.
+        {U"direktno", 1, R, false}, {U"Direktno", 1, R, false},
+        {U"DIREKTNO", 1, R, false}, {U"direktan", 1, R, false},
+        {U"direktna", 1, R, false}, {U"direktni", 1, R, false},
+        {U"direktne", 1, R, false}, {U"direktnu", 1, R, false},
+        {U"direktnog", 1, R, false}, {U"direktnoga", 1, R, false},
+        {U"direktnom", 1, R, false}, {U"direktnome", 1, R, false},
+        {U"direktnomu", 1, R, false}, {U"direktnoj", 1, R, false},
+        {U"direktnih", 1, R, false}, {U"direktnim", 1, R, false},
+        {U"direktnima", 1, R, false}, {U"direktniji", 1, R, false},
+        {U"direktnije", 1, R, false},
+    };
+    Frontend frontend(VoiceLanguage::Croatian);
+    for (size_t i = 0; i < std::size(cases); ++i) {
+        CAPTURE(i);
+        const auto& c = cases[i];
+        const auto utterance = read(frontend, c.text);
+        REQUIRE((stressed_syllables(utterance) == std::vector<int>{c.stress}));
+        const auto vowel = nuclei(utterance)[c.stress];
+        REQUIRE(vowel.accent == c.tone);
+        REQUIRE(vowel.is_long == c.long_vowel);
+    }
+    REQUIRE(nuclei(read(frontend, U"síguran"))[0].accent == R);
+    REQUIRE(nuclei(read(frontend, U"síguran"))[0].is_long);
+    REQUIRE((stressed_syllables(read(frontend, U"dìrektno")) == std::vector<int>{0}));
+    frontend.set_user_lexicon(UserLexicon::parse(R"({"entries":[{"word":"sig/u:ran"}]})"));
+    const auto custom = nuclei(read(frontend, U"siguran"));
+    REQUIRE(custom[1].stressed);
+    REQUIRE(custom[1].accent == R);
+    REQUIRE(custom[1].is_long);
+    frontend.set_user_lexicon(UserLexicon::parse(R"({"entries":[{"word":"d/irektno"}]})"));
+    REQUIRE((stressed_syllables(read(frontend, U"direktno")) == std::vector<int>{0}));
+    for (const auto language : {VoiceLanguage::Serbian, VoiceLanguage::Bosnian}) {
+        const Frontend other(language);
+        REQUIRE((stressed_syllables(read(other, U"direktno")) == std::vector<int>{0}));
+    }
+}
+
 TEST_CASE("Biti participles keep hiatus without breaking the jat reflex", "[frontend][accents][collected]") {
     for (const auto language : {VoiceLanguage::Croatian, VoiceLanguage::Serbian, VoiceLanguage::Bosnian}) {
         const Frontend frontend(language);

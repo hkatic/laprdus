@@ -1201,6 +1201,29 @@ reading. Written accents and user dictionaries still win. Frontend tests
 cover every supplied word, principal inflection contrasts, name case,
 capitalization, case cues and override precedence.
 
+**Siguran and direktno (11 October 2026).**
+[ŠR](https://rjecnik.hr/search/?q=siguran&strict=yes) and
+[HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=d19kXhc%3D)
+give *sȉgūran*: short falling initial *i*, retained in the positive
+adjective forms and adverb *sȉgūrno*. Exact Croatian entries supply that
+accent without changing comparative *sigùrnijī* or the separate noun
+[*sigúrnōst*](https://hjp.znanje.hr/index.php?show=search_by_id&id=d19kURA%3D).
+As elsewhere in the Croatian lexicon, unstressed lengths are omitted.
+
+For *direktno*, the user selected the second-syllable short rising variant
+*dirèktno*, listed alongside *dìrektno* in
+[HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=f1djWhU%3D).
+HJP likewise lists
+[*dirèktan*](https://hjp.znanje.hr/index.php?show=search_by_id&id=f1djWhI%3D)
+alongside *dìrektan*. Croatian exact entries apply the selected accent
+throughout the positive adjective paradigm; the comparative *dirèktnijī*
+already has it. This is an explicit listener choice among attested variants:
+[ŠR](https://rjecnik.hr/search/?q=direktan&strict=yes) gives *dìrektan/dìrektno*.
+Serbian and Bosnian retain their existing shared entries. Frontend tests
+cover the paradigms, related accent contrasts, capitalization and explicit
+and user-dictionary overrides; synthesis tests compare the unmarked words
+with explicitly accented text.
+
 **Word classes** (`StressRules::strong()`, after the suffix rules). The
 single suffixes above cover a few hundred words each; the rules below cover
 whole classes of words by their shape. Each covers an accent pattern that

@@ -734,7 +734,12 @@ TEST_CASE("Lexicon accents cover the whole paradigm", "[formant][text]") {
         {"uklju\xC4\x8Di", "uklj\xC3\xBA\xC4\x8Di"},   // ukljúči
         {"\xC5\xBE" "eljezni\xC4\x8D" "ar", "\xC5\xBE\xC3\xA8ljezni\xC4\x8D" "ar"},   // žèljezničar
         {"strelja\xC5\xA1tvo", "strelj\xC3\xA1\xC5\xA1tvo"},   // streljáštvo
-        {"direktno", "d\xC3\xACrektno"},   // dìrektno
+        {u8"direktno", u8"dirèktno"},   // listener-selected HJP variant
+        {u8"direktan", u8"dirèktan"},
+        {u8"direktnima", u8"dirèktnima"},
+        {u8"siguran", u8"sȉguran"},     // Croatian omits unstressed length
+        {u8"sigurno", u8"sȉgurno"},
+        {u8"sigurnima", u8"sȉgurnima"},
         {"najdra\xC5\xBEi", "n\xC8\x83jdra\xC5\xBEi"},   // nȃjdraži
         {"me\xC4\x91unarodni", "me\xC4\x91un\xC3\xA1rodni"},   // međunárodni
         {"odr\xC5\xBEivi", "odr\xCC\x80\xC5\xBEivi"},   // odr̀živi

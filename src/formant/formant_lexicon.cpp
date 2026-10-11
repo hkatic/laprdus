@@ -859,6 +859,14 @@ const char* const COMMON[] = {
 };
 
 const char* const CROATIAN[] = {
+    // ŠR/HJP sȉgūran: short falling i, also in the positive adjective
+    // forms and sȉgūrno. Exact forms leave sigúrnōst and sigùrnijī alone.
+    // Croatian continues to omit unstressed vowel lengths.
+    u8"s^iguran", u8"s^igurn|a|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    // Listener-selected HJP variant dirèktan / dirèktno (11 October 2026),
+    // short rising e. ŠR and COMMON use dìrektan / dìrektno instead.
+    u8"dir/ektan", u8"dir/ektn|a|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+
     // Collected nouns and names, 11 October 2026 (Školski rječnik / HJP).
     // Sources, dictionary variants and name capitalization: docs/formant.md.
     // Exact forms keep the noun accents out of verbs and derivatives.
