@@ -3469,7 +3469,7 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
         }
     }
 
-    // Croatian sȃt/rȃd/dȃr/bȏl/glȃs/rȇp keep falling accents in D sg, but have rising
+    // Croatian sȃt/rȃd/dȃr/bȏl/glȃs/rȇp/zvȗk keep falling accents in D sg, but have rising
     // L sg sátu/rádu/dáru/bólu, and vlȃst, bȏl (f.), strána, vijȇst, čȃr have
     // vlásti, bóli, stráni, vijésti, čári (Školski rječnik, Mrežnik).
     // Recognize a governing locative preposition, allowing up to two
@@ -3500,7 +3500,8 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
             if (word.w == U"satu" || word.w == U"radu" || word.w == U"daru" ||
                 word.w == U"vlasti" || word.w == U"bolu" || word.w == U"boli" ||
                 word.w == U"strani" || word.w == U"vijesti" || word.w == U"čari" ||
-                word.w == U"glasu" || word.w == U"repu" || word.w == U"stvari") {
+                word.w == U"glasu" || word.w == U"repu" || word.w == U"zvuku" ||
+                word.w == U"stvari") {
                 size_t cue = i;
                 for (int modifiers = 0; cue > 0 && modifiers < 2 &&
                      ends_with_any(words[cue - 1].w,
@@ -3521,12 +3522,13 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
                     rising = rising || plural_genitive_cue(words[i - 1].w);
                 }
             } else if (is_one_of(word.w, {U"žirafa", U"pažnja", U"nabava", U"društva",
-                                         U"vuka", U"komponenta"}) &&
+                                         U"vuka", U"komponenta", U"zvuka", U"snimka"}) &&
                        plural_genitive_cue(words[i - 1].w)) {
                 // Homographic G plurals: žiráfā, pážnjā, nȁbāvā,
-                // drúštvā, vúkā and kompònēntā (Školski rječnik).
+                // drúštvā, vúkā, kompònēntā, zvúkā and snȋmkā (Školski rječnik).
                 word.stress = (word.w == U"žirafa" || word.w == U"komponenta") ? 1 : 0;
-                word.accent = word.w == U"nabava" ? Accent::Falling : Accent::Rising;
+                word.accent = (word.w == U"nabava" || word.w == U"snimka")
+                    ? Accent::Falling : Accent::Rising;
                 word.phones[static_cast<size_t>(word.nuclei[word.stress])].is_long =
                     word.w != U"nabava" && word.w != U"komponenta";
             } else if (word.w == U"komponenti") {

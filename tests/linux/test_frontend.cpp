@@ -255,6 +255,68 @@ TEST_CASE("Collected Croatian words follow checked dictionary accents", "[fronte
     REQUIRE(std::none_of(events.begin(), events.end(), [](const Phone& p) { return p.is_long; }));
 }
 
+TEST_CASE("Collected nouns preserve dictionary tone length and inflection", "[frontend][accents][collected]") {
+    // Linguistic expectations from ŠR/HJP, including contrasts the generic
+    // suffix rules cannot predict. Source disagreements: docs/formant.md.
+    struct Case { const char32_t* text; int syllables; int stress; Accent tone; bool long_vowel; };
+    const auto R = Accent::Rising;
+    const auto F = Accent::Falling;
+    const Case cases[] = {
+        {U"komarac", 3, 1, R, true}, {U"komarca", 3, 1, R, true},
+        {U"komarcima", 4, 1, R, true}, {U"komaraca", 4, 0, R, false},
+        {U"komarče", 3, 0, F, false},
+        {U"žalac", 2, 0, F, false}, {U"žalca", 2, 0, R, true},
+        {U"žalcima", 3, 0, R, true}, {U"žalaca", 3, 0, F, false},
+        {U"samac", 2, 0, R, true}, {U"samcem", 2, 0, R, true},
+        {U"samci", 2, 0, R, true}, {U"samaca", 3, 0, F, true},
+        {U"šarac", 2, 0, R, true}, {U"šarca", 2, 0, R, true},
+        {U"šarcima", 3, 0, R, true}, {U"šaraca", 3, 0, F, true},
+        {U"sokak", 2, 0, R, false}, {U"sokaka", 3, 1, R, true},
+        {U"sokaci", 3, 1, R, true}, {U"sokacima", 4, 1, R, true},
+        {U"planinarenje", 5, 2, R, true}, {U"planinarenjima", 6, 2, R, true},
+        {U"rimac", 2, 0, R, true}, {U"Rimac", 2, 0, R, true},
+        {U"rimca", 2, 0, R, true}, {U"Rimcem", 2, 0, R, true},
+        {U"Bare", 2, 0, R, true},
+        {U"općenito", 4, 1, R, false}, {U"općenitima", 5, 1, R, false},
+        {U"medijateka", 5, 3, R, true}, {U"medijateci", 5, 3, R, true},
+        {U"medijatekama", 6, 3, R, true},
+        {U"rotor", 2, 0, F, true}, {U"rotorima", 4, 0, F, true},
+        {U"aktivnost", 3, 1, R, true}, {U"aktivnošću", 4, 1, R, true},
+        {U"aktivnostima", 5, 1, R, true},
+        {U"element", 3, 1, R, false}, {U"elemenata", 5, 1, R, false},
+        {U"snimka", 2, 0, F, false}, {U"snimci", 2, 0, F, false},
+        {U"snimkama", 3, 0, F, false}, {U"snimaka", 3, 0, F, false},
+        {U"dodira", 3, 0, F, false}, {U"dodirima", 4, 0, F, false},
+        {U"naredba", 3, 0, R, true}, {U"naredaba", 4, 0, R, true},
+        {U"zvuk", 1, 0, F, true}, {U"zvuka", 2, 0, F, true},
+        {U"zvukovi", 3, 0, F, false}, {U"zvuci", 2, 0, F, true},
+        {U"glavni", 2, 0, R, false}, {U"glavnoga", 3, 0, R, false},
+    };
+    const Frontend frontend(VoiceLanguage::Croatian);
+    for (size_t i = 0; i < std::size(cases); ++i) {
+        CAPTURE(i);
+        const auto& c = cases[i];
+        const auto utterance = read(frontend, c.text);
+        REQUIRE(utterance.syllable_count == c.syllables);
+        REQUIRE((stressed_syllables(utterance) == std::vector<int>{c.stress}));
+        const auto vowels = nuclei(utterance);
+        REQUIRE(vowels[c.stress].accent == c.tone);
+        REQUIRE(vowels[c.stress].is_long == c.long_vowel);
+        require_one_word(utterance);
+    }
+    // Capitalization selects the name. Keep the ordinary lowercase and
+    // all-capitals analyses separate, and do not capture related verbs.
+    const auto name = nuclei(read(frontend, U"Goran Bare"));
+    REQUIRE(name[2].stressed);
+    REQUIRE(name[2].accent == R);
+    REQUIRE(name[2].is_long);
+    REQUIRE(!nuclei(read(frontend, U"bare"))[0].is_long);
+    REQUIRE(!nuclei(read(frontend, U"BARE"))[0].is_long);
+    REQUIRE((stressed_syllables(read(frontend, U"dodirati")) == std::vector<int>{1}));
+    REQUIRE((stressed_syllables(read(frontend, U"narediti")) == std::vector<int>{1}));
+    REQUIRE((stressed_syllables(read(frontend, U"elementaran")) == std::vector<int>{3}));
+}
+
 TEST_CASE("Case context selects Croatian accent homographs", "[frontend][accents][collected]") {
     struct Case { const char32_t* text; int stress; Accent tone; bool long_vowel; };
     const auto R = Accent::Rising;
@@ -271,9 +333,13 @@ TEST_CASE("Case context selects Croatian accent homographs", "[frontend][accents
         {U"pet žirafa", 1, R, true}, {U"nekoliko pažnja", 0, R, true},
         {U"nekoliko nabava", 0, F, false}, {U"pet društva", 0, R, true},
         {U"pet vuka", 0, R, true}, {U"pet komponenta", 1, R, false},
+        {U"o zvuku", 0, R, true}, {U"o novom zvuku", 0, R, true},
+        {U"prema zvuku", 0, F, true}, {U"pet zvuka", 0, R, true},
+        {U"dvije snimke", 0, F, false}, {U"pet snimka", 0, F, true},
         // Explicit accents win over case cues.
         {U"o glȃsu", 0, F, true}, {U"pet stvȃri", 0, F, true},
         {U"o kompònenti", 1, R, false}, {U"pet žiràfa", 1, R, false},
+        {U"o zvȗku", 0, F, true}, {U"pet snȉmka", 0, F, false},
     };
     Frontend frontend(VoiceLanguage::Croatian);
     for (size_t i = 0; i < std::size(cases); ++i) {

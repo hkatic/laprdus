@@ -859,6 +859,38 @@ const char* const COMMON[] = {
 };
 
 const char* const CROATIAN[] = {
+    // Collected nouns and names, 11 October 2026 (Školski rječnik / HJP).
+    // Sources, dictionary variants and name capitalization: docs/formant.md.
+    // Exact forms keep the noun accents out of verbs and derivatives.
+    u8"kom/a:rac", u8"kom/a:rc|a|u|em|i|e|ima",
+    u8"k^omarče", u8"k/omaraca",
+    // Prefer ŠR žȁlac / žȁlācā (HJP žálac / žȃlācā); both have žálca.
+    u8"ž^alac", u8"ž/a:lc|a|u|em|i|e|ima", u8"ž^alaca",
+    u8"s/a:mac", u8"s/a:mc|a|u|em|i|e|ima", u8"s^a:maca",
+    u8"š/a:rac", u8"š/a:rc|a|u|em|i|e|ima", u8"š^a:raca",
+    u8"s/okak", u8"sok/a:k|a|u|om|e", u8"sok/a:c|i|ima",
+    // planinárēnje, not the generic -énje; leave planináriti / planìnārīm
+    // to the verb system. Croatian continues to omit unstressed lengths.
+    u8"planin/a:renj|e|a|u|em|ima",
+    // Rímac is already in the proper-name table. Also accept the supplied
+    // lowercase spelling; no common Croatian noun shares these forms.
+    u8"r/i:mac", u8"r/i:mc|a|u|em",
+    u8"opć/enit||a|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    u8"medijat/e:k|a|e|i|u|o|om|ama", u8"medijat/e:ci",
+    u8"r^o:tor||a|u|e|om|i|ima",
+    u8"akt/i:vnost||i|ima", u8"akt/i:vnošću",
+    u8"el/ement||a|u|e|om|i|ima", u8"el/emenata",
+    // Prefer ŠR snȉmka (HJP snȋmka); G pl snȉmākā / snȋmkā / snȉmkī.
+    // The homographic snȋmkā is selected by the existing case-cue pass.
+    u8"sn^imk|a|e|i|u|o|om|ama", u8"sn^imci", u8"sn^imaka",
+    // dȍdīra, not the loanword rule's dodíra; do not capture dodírati.
+    u8"d^odir||a|u|e|om|i|ima",
+    u8"n/a:redb|a|e|i|u|o|om|ama", u8"n/a:redaba",
+    // zvȗk, L zvúku, but short falling zvȕkovi; G plural zvúkā.
+    u8"zv^u:k||a|u|om", u8"zv^u:če", u8"zv^u:c|i|ima",
+    u8"zv^ukov|i|a|e|ima",
+    u8"gl/avn|i|a|o|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+
     // Collected-word audit, 11 October 2026: Školski rječnik and HJP.
     // Full citations, disagreements and ambiguous cases: docs/formant.md.
     // Exact paradigms keep these accents out of unrelated derivatives.

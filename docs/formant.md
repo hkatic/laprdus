@@ -1161,6 +1161,46 @@ Written accents and user entries always override these choices. Regression
 checks cover the supplied forms, inflection contrasts, hiatus, case cues,
 and both override mechanisms in `tests/linux/test_frontend.cpp`.
 
+**Komarac–glavni list (11 October 2026).** Checked against the Institute's
+*Školski rječnik hrvatskoga jezika* (ŠR) and HJP. As in the preceding audit,
+prefer ŠR where the dictionaries disagree, record stress position, tone and
+vowel length separately, and retain Croatian's existing omission of unstressed lengths.
+The table gives the **dictionary notation**, including those lengths; it is
+not a claim that the Croatian synthesizer realizes every printed macron.
+The Institute's [accent rules](https://gramatika.hr/pravilo/naglasak-i-naglasne-cjeline/3/)
+explain the four tones/lengths and the possibility of accent alternation.
+
+| Requested spelling | Dictionary accent | Evidence and paradigm |
+|---|---|---|
+| komarac | *komárac* | [ŠR](https://rjecnik.hr/search/?q=komarac&strict=yes): G *komárca*, N plural *komárci*, G plural *kòmārācā*. [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eltjXhg%3D) also specifies V *kȍmārče*. |
+| žalac | *žȁlac* | [ŠR](https://rjecnik.hr/search/?q=%C5%BEalac&strict=yes): G *žálca*, N plural *žálci*, G plural *žȁlācā*. [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=f15iXhl%2B) instead has *žálac*, G plural *žȃlācā*. The disagreement is preserved here, not treated as a universal -ac rule. |
+| samac | *sámac* | [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=dldkUBQ%3D): G *sámca*, N plural *sámci*, G plural *sȃmācā*. |
+| šarac | *šárac* | [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=d1hnXRc%3D): G *šárca*, N plural *šárci*, G plural *šȃrācā*. [Onomastics under šara](https://hjp.znanje.hr/index.php?show=search_by_id&id=d1hnXRU%3D) independently confirms surname *Šárac*. |
+| sokak | *sòkāk* | [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=d11hURM%3D): G *sokáka*, N plural *sokáci*. The nominative and oblique stem have different stress and length. |
+| planinarenje | *planinárēnje* | [ŠR](https://rjecnik.hr/search/?q=planinarenje&strict=yes), G *planinárēnja*. Override the generic -enje rule, which previously stressed *-re-*. The noun entry does not match *planinariti*. |
+| rimac | *Rímac* | [HJP Rim, onomastics](https://hjp.znanje.hr/index.php?show=search_by_id&id=dllgUBk%3D). Capitalized *Rimac* was already correct; add exact lowercase aliases and contracted case forms *rimca/rimcu/rimcem*. |
+| bare | *Báre* (name) | The user confirmed the name/nickname. [HJP Bartolomej](https://hjp.znanje.hr/index.php?show=search_by_id&id=eFduWA%3D%3D) gives both the hypocoristic and surname *Báre*. Use the capitalization-sensitive personal-name table, with the regular e-declension (*Bárē/Bári/Báru/Bárom*); these cases are paradigm-derived. No claim is made for regional *Bareta* forms. Lowercase *bare* and all-capitals text retain their previous analysis; [ŠR bara](https://rjecnik.hr/search/?q=bara&strict=yes) is a different word, *bȁra/bȁre*. |
+| općenito | *općènito* | [ŠR](https://rjecnik.hr/search/?q=op%C4%87enito&strict=yes) and [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eFliWBM%3D). The adjective *općènit* has the same accent; its positive forms are listed exactly. |
+| medijateka | *medijatéka* | [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=e1tiXBk%3D), D/L *medijatéci*. Include the k/c alternation. |
+| rotor | *rȏtor* | [ŠR](https://rjecnik.hr/search/?q=rotor&strict=yes) and [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=dlhlXRE%3D): long falling first syllable in the cases too. |
+| aktivnost | *aktívnōst* | [ŠR](https://rjecnik.hr/search/?q=aktivnost&strict=yes) and [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=f1lhUA%3D%3D), including *aktívnosti/aktívnošću*. |
+| element | *elèment* | [ŠR](https://rjecnik.hr/search/?q=element&strict=yes): G *elèmenta*, N plural *elèmenti*, G plural *elèmenātā*. The nominative was already correct; protect the full paradigm without taking *elementaran*. |
+| snimka | *snȉmka* | [ŠR](https://rjecnik.hr/search/?q=snimka&strict=yes): G *snȉmkē*, D/L *snȉmci*, G plural *snȉmākā/snȋmkā/snȉmkī*. [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=d11gWRI%3D) instead has nominative *snȋmka*. Prefer ŠR's short falling accent. |
+| dodira | *dȍdīra* | [ŠR dodir](https://rjecnik.hr/search/?q=dodir&strict=yes) explicitly gives G singular *dȍdīra*, G plural *dȍdīrā*. Both have the same initial short falling accent; override the -ir loan rule without capturing *dodirati*. |
+| naredba | *náredba* | [ŠR](https://rjecnik.hr/search/?q=naredba&strict=yes) and [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=e1ZhWRU%3D): long rising initial *a*, including G plural *náredābā*. |
+| zvuk | *zvȗk* | [ŠR](https://rjecnik.hr/search/?q=zvuk&strict=yes): G *zvȗka*, L *zvúku*, plural *zvȕkovi/zvȗci*, G plural *zvȕkōvā/zvúkā*. |
+| glavni | *glàvnī* | [ŠR](https://rjecnik.hr/search/?q=glavni&strict=yes) and [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=fFdhURM%3D): short rising *a* in *glàvnōg(a)/glàvnā/glàvnō* too. |
+
+The entries are Croatian-only; the established shared *Rimac* name entry
+gets an additional primary-source citation. Exact noun paradigms keep
+*dodirati, narediti* and unrelated derivations independent. The existing local
+case-cue pass also selects locative *o zvúku* (including modifiers) versus
+dative *prema zvȗku*, G plural *zvúkā* and the alternative G plural *snȋmkā*
+after plural quantifiers. Ambiguous isolated forms keep their singular
+reading. Written accents and user dictionaries still win. Frontend tests
+cover every supplied word, principal inflection contrasts, name case,
+capitalization, case cues and override precedence.
+
 **Word classes** (`StressRules::strong()`, after the suffix rules). The
 single suffixes above cover a few hundred words each; the rules below cover
 whole classes of words by their shape. Each covers an accent pattern that
