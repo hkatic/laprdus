@@ -424,6 +424,217 @@ TEST_CASE("Croatian siguran and direktno keep their selected adjective accents",
     }
 }
 
+TEST_CASE("Collected household words retain dictionary accents across forms", "[frontend][accents][household]") {
+    // Školski rječnik principal forms, with HJP for bȃjan/bȃjno.
+    // See docs/formant.md for source disagreements and ambiguous spellings.
+    struct Case { const char32_t* text; int stress; Accent tone; bool long_vowel; };
+    const auto R = Accent::Rising;
+    const auto F = Accent::Falling;
+    const Case cases[] = {
+        {U"kontejnera", 1, R, false}, {U"kontejner", 1, R, false},
+        {U"kontejneru", 1, R, false}, {U"kontejnerom", 1, R, false},
+        {U"kontejneri", 1, R, false}, {U"kontejnere", 1, R, false},
+        {U"kontejnerima", 1, R, false},
+        {U"komoda", 1, R, false}, {U"komode", 1, R, false},
+        {U"komodi", 1, R, false}, {U"komodu", 1, R, false},
+        {U"komodom", 1, R, false}, {U"komodama", 1, R, false},
+        {U"stan", 0, F, true}, {U"stana", 0, F, true},
+        {U"stanu", 0, F, true}, {U"stanom", 0, F, true},
+        {U"stanovi", 0, F, false}, {U"stanova", 0, F, false},
+        {U"stanove", 0, F, false}, {U"stanovima", 0, F, false},
+        {U"ispuste", 0, R, false}, {U"ispust", 0, R, false},
+        {U"ispusta", 0, R, false}, {U"ispustom", 0, R, false},
+        {U"ispustima", 0, R, false}, {U"ispustim", 0, R, false},
+        {U"ispustiš", 0, R, false}, {U"ispustimo", 0, R, false},
+        {U"ispustiti", 1, R, false}, {U"ispustio", 1, R, false},
+        {U"ispustila", 1, R, false}, {U"ispusti", 1, R, false},
+        {U"ispušten", 0, R, false}, {U"ispuštena", 0, R, false},
+        {U"sastav", 0, R, true}, {U"sastava", 0, R, true},
+        {U"sastavu", 0, R, true}, {U"sastavom", 0, R, true},
+        {U"sastave", 0, R, true}, {U"sastavima", 0, R, true},
+        {U"rastava", 0, R, false}, {U"rastave", 0, R, false},
+        {U"rastavi", 0, R, false}, {U"rastavom", 0, R, false},
+        {U"rastavama", 0, R, false},
+        {U"tajna", 0, F, true}, {U"tajnama", 0, F, true},
+        {U"tajnoga", 0, F, true}, {U"tajnomu", 0, F, true},
+        {U"sjajna", 0, R, true}, {U"sjajan", 0, R, true},
+        {U"sjajno", 0, R, true}, {U"sjajni", 0, F, true},
+        {U"sjajnoga", 0, F, true}, {U"sjajnome", 0, F, true},
+        {U"sjajniji", 0, R, false}, {U"sjajnijima", 0, R, false},
+        {U"bajna", 0, F, true}, {U"bajan", 0, F, true},
+        {U"bajno", 0, F, true}, {U"bajnoga", 0, F, true},
+        {U"bajnima", 0, F, true},
+        {U"trajna", 0, R, true}, {U"trajan", 0, F, true},
+        {U"trajno", 0, F, true}, {U"trajni", 0, F, true},
+        {U"trajnoga", 0, F, true}, {U"trajnome", 0, F, true},
+        {U"trajniji", 0, R, false}, {U"trajnijima", 0, R, false},
+        {U"jajna", 0, F, true}, {U"jajni", 0, F, true},
+        {U"jajnoga", 0, F, true}, {U"jajnima", 0, F, true},
+        {U"jaje", 0, R, true}, {U"jaja", 0, R, true},
+        {U"jaju", 0, R, true}, {U"jajem", 0, R, true},
+        {U"jajima", 0, R, true}, {U"jajeta", 0, R, false},
+        {U"jajetu", 0, R, false}, {U"jajetom", 0, R, false},
+        {U"Kontejnera", 1, R, false}, {U"KOMODA", 1, R, false},
+        {U"Sastav", 0, R, true}, {U"TRAJNA", 0, R, true},
+    };
+    const Frontend frontend(VoiceLanguage::Croatian);
+    for (size_t i = 0; i < std::size(cases); ++i) {
+        CAPTURE(i);
+        const auto& c = cases[i];
+        const auto utterance = read(frontend, c.text);
+        REQUIRE((stressed_syllables(utterance) == std::vector<int>{c.stress}));
+        const auto vowel = nuclei(utterance)[c.stress];
+        REQUIRE(vowel.accent == c.tone);
+        REQUIRE(vowel.is_long == c.long_vowel);
+        require_one_word(utterance);
+    }
+}
+
+TEST_CASE("Household noun and adjective homographs keep context and overrides", "[frontend][accents][household]") {
+    struct Case { const char32_t* text; int stress; Accent tone; bool long_vowel; };
+    const auto R = Accent::Rising;
+    const auto F = Accent::Falling;
+    const Case cases[] = {
+        {U"u stanu", 0, R, true}, {U"u novom stanu", 0, R, true},
+        {U"prema stanu", 0, F, true},
+        {U"pet komoda", 1, R, true}, {U"mnogo komoda", 1, R, true},
+        {U"nova komoda", 1, R, false}, {U"pet rastava", 0, F, false},
+        {U"jedna rastava", 0, R, false}, {U"glazbeni sastavi", 0, R, true},
+        {U"Sastavi", 0, R, false}, {U"sastaviti", 0, R, false},
+        {U"sastavio", 0, R, false},
+        {U"oni ispuste", 0, R, false}, {U"kroz ispuste", 0, R, false},
+        {U"u stȃnu", 0, F, true}, {U"pet komòda", 1, R, false},
+        {U"pet ràstava", 0, R, false},
+        {U"sjȃjna", 0, F, true}, {U"trȃjna", 0, F, true},
+        {U"komóda", 1, R, true}, {U"rȃstava", 0, F, true},
+    };
+    Frontend frontend(VoiceLanguage::Croatian);
+    for (size_t i = 0; i < std::size(cases); ++i) {
+        CAPTURE(i);
+        const auto& c = cases[i];
+        const auto utterance = read(frontend, c.text);
+        const int last_word = utterance.phones.back().word;
+        std::vector<Phone> vowels;
+        for (const auto& phone : utterance.phones)
+            if (phone.word == last_word && phone.nucleus) vowels.push_back(phone);
+        REQUIRE(vowels[c.stress].stressed);
+        REQUIRE(vowels[c.stress].accent == c.tone);
+        REQUIRE(vowels[c.stress].is_long == c.long_vowel);
+    }
+    // The noun's rare vocative stȃne must not lengthen the verb stȁne.
+    REQUIRE(!nuclei(read(frontend, U"stane"))[0].is_long);
+    frontend.set_user_lexicon(UserLexicon::parse(
+        R"({"entries":[{"word":"st^a:nu"},{"word":"kom/oda"},{"word":"r/a:stava"}]})"));
+    REQUIRE(nuclei(read(frontend, U"u stanu"))[1].accent == F);
+    REQUIRE(!nuclei(read(frontend, U"pet komoda"))[2].is_long);
+    REQUIRE(nuclei(read(frontend, U"pet rastava"))[1].is_long);
+}
+
+TEST_CASE("Presvlacenje keeps the root accent across noun cases", "[frontend][accents]") {
+    // ŠR presvláčēnje, G presvláčēnja: long rising a, not generic -énje.
+    // Croatian output omits post-accent length, so the following e stays short.
+    const Frontend frontend(VoiceLanguage::Croatian);
+    for (const auto* text : {U"presvlačenje", U"presvlačenja", U"presvlačenju",
+                            U"presvlačenjem", U"presvlačenjima",
+                            U"Presvlačenje", U"PRESVLAČENJE"}) {
+        const auto utterance = read(frontend, text);
+        REQUIRE((stressed_syllables(utterance) == std::vector<int>{1}));
+        const auto vowels = nuclei(utterance);
+        REQUIRE(vowels[1].accent == Accent::Rising);
+        REQUIRE(vowels[1].is_long);
+        REQUIRE(!vowels[2].is_long);
+    }
+}
+
+TEST_CASE("Croatian ivac nouns keep their dictionary paradigms", "[frontend][accents][ivac]") {
+    // ŠR where available, HJP otherwise. The genitive plural is not
+    // uniformly stressed like the lemma; -ljivac/-njivac are separate.
+    struct Family {
+        const char32_t* stem;
+        int stress;
+        bool long_vowel;
+        int plural_stress;
+        Accent plural_tone;
+        bool plural_long;
+    };
+    const auto R = Accent::Rising;
+    const auto F = Accent::Falling;
+    const Family families[] = {
+        {U"pozitiv", 2, true, 1, R, false},
+        {U"negativ", 2, true, 1, R, false},
+        {U"depresiv", 2, true, 1, R, false},
+        {U"emotiv", 2, true, 1, R, false},
+        {U"agresiv", 2, true, 1, R, false},
+        {U"kreativ", 2, true, 1, R, false},
+        {U"primitiv", 2, true, 1, R, false},
+        {U"operativ", 3, true, 2, R, false},
+        {U"konzervativ", 3, true, 2, R, false},
+        {U"rekreativ", 3, true, 2, R, false},
+        {U"naiv", 1, true, 0, R, false},
+        {U"kriv", 0, true, 0, F, true},
+        {U"siv", 0, true, 0, F, true},
+        {U"živ", 0, true, 0, F, true},
+        {U"sumnjiv", 0, false, 0, R, false},
+        {U"plašljiv", 0, false, 0, R, false},
+        {U"šutljiv", 0, false, 0, R, false},
+        {U"stidljiv", 0, false, 0, R, false},
+        {U"sramežljiv", 1, false, 1, R, false},
+        {U"zavidljiv", 1, false, 1, R, false},
+    };
+    const Frontend frontend(VoiceLanguage::Croatian);
+    for (const auto& family : families) {
+        for (const auto* ending : {U"ac", U"ca", U"cu", U"cem", U"ci", U"ce", U"cima", U"aca"}) {
+            const auto text = std::u32string(family.stem) + ending;
+            const bool genitive_plural = std::u32string(ending) == U"aca";
+            const int stress = genitive_plural ? family.plural_stress : family.stress;
+            const auto utterance = read(frontend, text);
+            REQUIRE((stressed_syllables(utterance) == std::vector<int>{stress}));
+            const auto vowel = nuclei(utterance)[stress];
+            REQUIRE(vowel.accent == (genitive_plural ? family.plural_tone : R));
+            REQUIRE(vowel.is_long == (genitive_plural ? family.plural_long : family.long_vowel));
+            require_one_word(utterance);
+        }
+    }
+    // Only vocatives explicitly accented by ŠR/HJP are prescribed here.
+    struct Case { const char32_t* text; int stress; Accent tone; bool long_vowel; };
+    const Case cases[] = {
+        {U"pozitivče", 2, R, true}, {U"depresivče", 0, F, false},
+        {U"kreativče", 1, R, false}, {U"primitivče", 0, F, false},
+        {U"konzervativče", 0, F, false}, {U"naivče", 0, F, false},
+        {U"krivče", 0, F, true}, {U"sivče", 0, R, true},
+        {U"sumnjivče", 0, R, false}, {U"plašljivče", 0, R, false},
+        {U"šutljivče", 0, R, false}, {U"stidljivče", 0, R, false},
+        {U"sramežljivče", 1, R, false},
+        {U"Pozitivac", 2, R, true}, {U"NEGATIVAC", 2, R, true},
+        {U"Depresivaca", 1, R, false}, {U"EMOTIVACA", 1, R, false},
+    };
+    for (const auto& c : cases) {
+        const auto utterance = read(frontend, c.text);
+        REQUIRE((stressed_syllables(utterance) == std::vector<int>{c.stress}));
+        const auto vowel = nuclei(utterance)[c.stress];
+        REQUIRE(vowel.accent == c.tone);
+        REQUIRE(vowel.is_long == c.long_vowel);
+    }
+}
+
+TEST_CASE("Ivac noun accents respect written and user overrides", "[frontend][accents][ivac]") {
+    Frontend frontend(VoiceLanguage::Croatian);
+    auto vowels = nuclei(read(frontend, U"pȍzitivac"));
+    REQUIRE(vowels[0].stressed);
+    REQUIRE(vowels[0].accent == Accent::Falling);
+    REQUIRE(!vowels[0].is_long);
+    vowels = nuclei(read(frontend, U"žìvac"));
+    REQUIRE(vowels[0].accent == Accent::Rising);
+    REQUIRE(!vowels[0].is_long);
+    frontend.set_user_lexicon(UserLexicon::parse(
+        R"({"entries":[{"word":"poz/itivac"},{"word":"emot/i:vaca"}]})"));
+    REQUIRE((stressed_syllables(read(frontend, U"pozitivac")) == std::vector<int>{1}));
+    vowels = nuclei(read(frontend, U"emotivaca"));
+    REQUIRE(vowels[2].stressed);
+    REQUIRE(vowels[2].accent == Accent::Rising);
+    REQUIRE(vowels[2].is_long);
+}
+
 TEST_CASE("Biti participles keep hiatus without breaking the jat reflex", "[frontend][accents][collected]") {
     for (const auto language : {VoiceLanguage::Croatian, VoiceLanguage::Serbian, VoiceLanguage::Bosnian}) {
         const Frontend frontend(language);

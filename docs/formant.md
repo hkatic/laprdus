@@ -1086,6 +1086,126 @@ The prefix's short falling *i* is the listener's choice; the component
 Written accent marks and the user's whole-compound exact, stem and verb
 entries take precedence over the split. The rule applies only to Croatian.
 
+**Presvlačenje: accent audit, 11 October 2026.**
+[Školski rječnik](https://rjecnik.hr/search/?q=presvla%C4%8Denje&strict=yes)
+explicitly gives *presvláčēnje*, G *presvláčēnja*: long rising *a* in the
+second syllable, followed by unstressed long *e*. The generic *-enje*
+rule incorrectly stresses the following *e*. An exact Croatian noun
+paradigm covers *presvlačenje, presvlačenja, presvlačenju, presvlačenjem*
+and *presvlačenjima*, with the other cases derived from the cited
+principal forms. Following Laprdus's existing Croatian policy, output
+omits the post-accent length: *presvláčenje*. HJP corroborates the noun
+under [presvláčiti](https://hjp.znanje.hr/index.php?show=search_by_id&id=eVdjWRc%3D&keyword=presvla%C4%8Diti)
+with verbal-noun ending *-čēnje*, though it has no separate noun entry.
+The correction does not capture the related verb or
+change the general rule for other nouns in *-enje*. The front-end
+regression test checks position, tone, stressed length, the absence of
+post-accent length and capitalization.
+
+**Nouns in -ivac: accent audit, 11 October 2026.**
+The four requested nouns have long rising *í*: *pozitívac, negatívac,
+depresívac, emotívac*. Their singular oblique forms and ordinary plural
+forms keep it (*pozitívca, pozitívcu, pozitívcem, pozitívci, pozitívce,
+pozitívcima*), but the genitive plural shifts to the preceding vowel,
+which is short rising. This is a lexical pattern, not a safe rule for
+every spelling ending in *-ivac*. The checked dictionary paradigms below
+are exact entries in the Croatian lexicon, so they do not also match
+adjectives, derivatives, *-ivač* nouns or unverified compounds.
+
+The primary sources are the Institute's *Školski rječnik hrvatskoga
+jezika* (ŠR) and *Hrvatski jezični portal* (HJP). ŠR has no entries for
+the four requested words; HJP supplies their accented principal forms.
+The table retains dictionary post-accent lengths for reference; Laprdus
+continues to omit those lengths in Croatian output. Ordinary case forms
+are derived from the cited principal forms. HJP's unaccented automatic
+declension expansion is not treated as independent accent evidence.
+
+| Nominative | Genitive plural | Explicitly attested vocative | Source |
+|---|---|---|---|
+| pozitívac | pozìtīvācā | pozitívče | [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eVluXRg%3D&keyword=pozitivac) |
+| negatívac | negàtīvācā | — | [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eF9gURc%3D&keyword=negativac) |
+| depresívac | deprèsīvācā | dȅpresīvče | [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=f1hlXhA%3D&keyword=depresivac) |
+| emotívac | emòtīvācā | — | [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=fFxlXhY%3D&keyword=emotivac) |
+| agresívac | agrèsīvācā | — | [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=f15iUA%3D%3D&keyword=agresivac) |
+| kreatívac | kreàtīvācā | kreàtīvče | [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=elhnXxI%3D&keyword=kreativac) |
+| primitívac | primìtīvācā | prȉmitīvče | [ŠR](https://rjecnik.hr/search/?q=primitivac&strict=yes); [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eVZjWRM%3D&keyword=primitivac) instead retains the lemma accent in V *-vče*. Prefer ŠR. |
+| operatívac | operàtīvācā | — | [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eFliXBU%3D&keyword=operativac) |
+| konzervatívac | konzervàtīvācā | kȍnzervatīvče | [ŠR](https://rjecnik.hr/search/?q=konzervativac&strict=yes), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=elphXxg%3D&keyword=konzervativac) |
+| rekreatívac | rekreàtīvācā | — | [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=dlpgWxg%3D&keyword=rekreativac) |
+| naívac | nàīvācā | nȁīvče | [ŠR](https://rjecnik.hr/search/?q=naivac&strict=yes), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=e1dvXRg%3D&keyword=naivac) |
+
+A dash means the consulted entry does not explicitly accent its vocative;
+this patch leaves that form to the existing fallback instead of assigning
+it a guessed dictionary accent. The vocatives actually documented above
+are exact entries, including the different shifts in *dȅpresīvče* and
+*kreàtīvče*.
+
+The audit also covers nine words that must not inherit a blanket suffix
+rule. [ŠR krívac](https://rjecnik.hr/search/?q=krivac&strict=yes) has
+V *krȋvče* and G plural *krȋvācā*;
+[HJP sívac](https://hjp.znanje.hr/index.php?id=d19vXBQ%3D&show=search_by_id)
+retains rising *sívče* but has G plural *sȋvācā*.
+[ŠR žívac](https://rjecnik.hr/search/?q=%C5%BEivac&strict=yes) has long
+rising *žívca/žívci* and G plural *žȋvācā*. This differs from
+[HJP žìvac](https://hjp.znanje.hr/index.php?id=f15jWxR%2F&show=search_by_id),
+whose singular/ordinary plural vowel is short; prefer ŠR, with written
+*žìvac* still available as an explicit override.
+
+The root accent stays short rising in
+[sùmnjivac](https://rjecnik.hr/search/?q=sumnjivac&strict=yes),
+[plàšljivac](https://rjecnik.hr/search/?q=pla%C5%A1ljivac&strict=yes),
+[šùtljivac](https://rjecnik.hr/search/?q=%C5%A1utljivac&strict=yes),
+[stìdljivac](https://hjp.znanje.hr/index.php?show=search_by_id&id=d1tjXRU%3D&keyword=stidljivac),
+[sramèžljivac](https://hjp.znanje.hr/index.php?show=search_by_id&id=d1xhWRg%3D&keyword=srame%C5%BEljivac)
+and [zavìdljivac](https://hjp.znanje.hr/index.php?show=search_by_id&id=f15lWRh6&keyword=zavidljivac).
+Their ordinary case forms and genitive plurals keep that accent; vocatives
+are prescribed where the source explicitly gives them. Front-end tests
+cover all twenty noun families, the attested vocative exceptions,
+capitalization, and written/user accent overrides.
+
+**Household words and adjectives: accent audit, 11 October 2026.**
+The primary reference is the Institute's *Školski rječnik hrvatskoga jezika*
+(ŠR), cross-checked with *Hrvatski jezični portal* (HJP, Znanje/Srce).
+The Institute's [accent rules](https://gramatika.hr/pravilo/naglasak-i-naglasne-cjeline/3/)
+distinguish position, length and tone: first-syllable stress alone does not
+determine which of the four accents a word has. Its
+[orthography](https://pravopis.hr/pravilo/znakovi-za-naglaske-i-duzinu/80/)
+also distinguishes stressed length from post-accent length. The output
+column follows Laprdus's existing Croatian policy of omitting the latter.
+
+| Supplied word | Croatian output | Evidence and paradigm |
+|---|---|---|
+| kontejnera | *kontèjnera* | [ŠR kontejner](https://rjecnik.hr/search/?q=kontejner&strict=yes) explicitly gives singular G, plural N and G with short rising *e*; [HJP](https://hjp.znanje.hr/index.php?id=elpjWBE%3D&show=search_by_id) agrees on the lemma. |
+| komoda | *komòda* | [ŠR](https://rjecnik.hr/search/?q=komoda&strict=yes) has short rising singular/plural forms, but G plural *komódā*. [HJP](https://hjp.znanje.hr/index.php?id=elthXRg%3D&show=search_by_id) instead has long rising *komóda*: a real source disagreement. Prefer ŠR. |
+| stan | *stȃn* | [ŠR](https://rjecnik.hr/search/?q=stan&strict=yes) gives long falling singular, L *stánu*, short falling *stȁnovi/stȁnōvā*. [HJP](https://hjp.znanje.hr/index.php?id=d1tmUBk%3D&show=search_by_id) agrees on singular/plural contrast. |
+| ispuste | *ìspuste* | [ŠR ispustiti](https://rjecnik.hr/search/?q=ispustiti&strict=yes) explicitly gives 3pl *ìspustē*, present *ìspustīm*, passive *ìspušten*, but infinitive/active/imperative *ispùstiti/ispùstio/ispùsti*. The [noun ìspust](https://hjp.znanje.hr/index.php?id=fVlvURQ%3D&show=search_by_id) shares the initial short rising accent in its accusative plural. |
+| sastav | *sástav* | [ŠR](https://rjecnik.hr/search/?q=sastav&strict=yes) gives the same long rising accent in G singular and N/G plural; [HJP](https://hjp.znanje.hr/index.php?id=dldvWRQ%3D&show=search_by_id) agrees. The [verb sàstaviti](https://rjecnik.hr/search/?q=sastaviti&strict=yes) has a short rising vowel. |
+| rastava | *ràstava* | [ŠR](https://rjecnik.hr/search/?q=rastava&strict=yes) has short rising singular and N plural, short falling G plural *rȁstāvā*. [HJP](https://hjp.znanje.hr/index.php?id=dltmWBU%3D&show=search_by_id) instead has long falling *rȃstava*. Prefer ŠR. |
+| tajna | *tȃjna* | Both the [noun](https://rjecnik.hr/search/?q=tajna&strict=yes) and [adjective tajni](https://rjecnik.hr/search/?q=tajni&strict=yes) have long falling *a*. |
+| sjajna | *sjájna* | [ŠR sjajan](https://rjecnik.hr/search/?q=sjajan&strict=yes) explicitly gives indefinite feminine *sjájna*, definite *sjȃjnī*, comparative *sjàjnijī*. [HJP](https://hjp.znanje.hr/index.php?id=d19vUBA%3D&show=search_by_id) additionally records falling *sjȃjan* in the figurative sense. |
+| bajna | *bȃjna* | [HJP bajan](https://hjp.znanje.hr/index.php?id=eF9jWw%3D%3D&show=search_by_id) gives *bȃjan*, definite ending *-jnī*; [bajno](https://hjp.znanje.hr/index.php?id=eF9hUQ%3D%3D&show=search_by_id) confirms the contracted stem. Feminine is derived from that paradigm. ŠR has no entry. HJP's automatic expansion incorrectly keeps the movable *a* ("bajani"); the accented principal forms take precedence. |
+| trajna | *trájna* | [ŠR trajan](https://rjecnik.hr/search/?q=trajan&strict=yes) explicitly contrasts feminine/G singular *trájna* with masculine *trȃjan*, neuter *trȃjno*, definite *trȃjnī* and comparative *tràjnijī*. |
+| jajna | *jȃjna* | [ŠR jajni](https://rjecnik.hr/search/?q=jajni&strict=yes) explicitly gives feminine *jȃjnā*: long falling. |
+| jaje | *jáje* | [ŠR](https://rjecnik.hr/search/?q=jaje&strict=yes) gives long rising *jáje/jája*, but short rising alternative G singular *jàjeta*. Both singular stems are covered. [HJP](https://hjp.znanje.hr/index.php?id=fVdhWhY%3D&show=search_by_id) agrees on the lemma. |
+
+Exact Croatian noun/adjective paradigms prevent broad stems from changing
+verbs or derivatives. The existing case-context rules also recognize
+*u stánu*, *pet komódā* and *pet rȁstāvā*. The verb table enables Croatian's
+dictionary shift for *ispustiti* and distinguishes clause-initial command
+*Sàstavi* from the noun in *glazbeni sástavi*. The noun's rare vocative
+*stȃne* is deliberately not assigned to plain *stane*, which is normally
+the verb. Written accents and user lexicon entries retain priority.
+
+Unmarked text cannot always distinguish grammatical or semantic readings.
+Isolated *sjajna/trajna* default to the cited indefinite feminine forms;
+definite *sjȃjnā/trȃjnā* and the figurative *sjȃjan* can be selected with
+written accents. Unambiguous definite endings get falling accents, and
+comparatives remain short rising. The existing verb heuristic still cannot
+fully distinguish present, imperative and noun readings of *ispusti*, or
+present/imperative *ispustimo/ispustite*. These are not claims of full
+syntactic analysis. Tests cover all twelve supplied spellings, related
+forms, case cues, competing commands and explicit/user overrides.
+
 **Collected words: accent audit, 11 October 2026.** The primary reference is
 Institut za hrvatski jezik's *Školski rječnik hrvatskoga jezika*, cross-checked
 against *Hrvatski jezični portal* (HJP, Znanje/Srce). The Institute's

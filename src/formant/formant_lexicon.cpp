@@ -859,6 +859,71 @@ const char* const COMMON[] = {
 };
 
 const char* const CROATIAN[] = {
+    // ŠR presvláčēnje / presvláčēnja: root á, not the generic -énje.
+    // Exact noun forms leave the related verb to its own accent rules.
+    u8"presvl/a:čenj|e|a|u|em|ima",
+
+    // -ivac audit, 11 October 2026 (ŠR/HJP; sources in docs/formant.md).
+    // Exact noun paradigms: long rising í in these loans, but short
+    // rising on the previous vowel in G pl. No blanket *ivac rule:
+    // -ljivac/-njivac, short native words and vocatives differ.
+    u8"pozit/i:vac", u8"pozit/i:vc|a|u|em|i|e|ima", u8"poz/itivaca",
+    u8"negat/i:vac", u8"negat/i:vc|a|u|em|i|e|ima", u8"neg/ativaca",
+    u8"depres/i:vac", u8"depres/i:vc|a|u|em|i|e|ima", u8"depr/esivaca",
+    u8"emot/i:vac", u8"emot/i:vc|a|u|em|i|e|ima", u8"em/otivaca",
+    u8"agres/i:vac", u8"agres/i:vc|a|u|em|i|e|ima", u8"agr/esivaca",
+    u8"kreat/i:vac", u8"kreat/i:vc|a|u|em|i|e|ima", u8"kre/ativaca",
+    u8"primit/i:vac", u8"primit/i:vc|a|u|em|i|e|ima", u8"prim/itivaca",
+    u8"operat/i:vac", u8"operat/i:vc|a|u|em|i|e|ima", u8"oper/ativaca",
+    u8"konzervat/i:vac", u8"konzervat/i:vc|a|u|em|i|e|ima", u8"konzerv/ativaca",
+    u8"rekreat/i:vac", u8"rekreat/i:vc|a|u|em|i|e|ima", u8"rekre/ativaca",
+    u8"na/i:vac", u8"na/i:vc|a|u|em|i|e|ima", u8"n/aivaca",
+    // Prescribe only vocatives explicitly accented in the references.
+    // ŠR prȉmitīvče takes precedence over HJP's unshifted -vče.
+    u8"pozit/i:vče", u8"d^epresivče", u8"kre/ativče",
+    u8"pr^imitivče", u8"k^onzervativče", u8"n^aivče",
+    // Native two-syllable nouns have long falling G pl. Prefer ŠR
+    // žívac/žívca over HJP žìvac/žìvca; both have G pl žȋvācā.
+    u8"kr/i:vac", u8"kr/i:vc|a|u|em|i|e|ima", u8"kr^i:vaca", u8"kr^i:vče",
+    u8"s/i:vac", u8"s/i:vc|a|u|em|i|e|ima", u8"s^i:vaca", u8"s/i:vče",
+    u8"ž/i:vac", u8"ž/i:vc|a|u|em|i|e|ima", u8"ž^i:vaca",
+    // Short rising root accents persist in these -ljivac/-njivac nouns.
+    u8"s/umnjiv|ac|ca|cu|cem|ci|ce|cima|aca|če",
+    u8"pl/ašljiv|ac|ca|cu|cem|ci|ce|cima|aca|če",
+    u8"š/utljiv|ac|ca|cu|cem|ci|ce|cima|aca|če",
+    u8"st/idljiv|ac|ca|cu|cem|ci|ce|cima|aca|če",
+    u8"sram/ežljiv|ac|ca|cu|cem|ci|ce|cima|aca|če",
+    u8"zav/idljiv|ac|ca|cu|cem|ci|ce|cima|aca",
+
+    // Household words, 11 October 2026: Školski rječnik principal forms;
+    // HJP for bȃjan/bȃjno. Sources and homographs: docs/formant.md.
+    // Explicit paradigms keep noun accents out of verbs and derivatives.
+    u8"kont/ejner||a|u|om|i|e|ima",
+    // ŠR komòda, G pl komódā (context); HJP instead has komóda throughout.
+    u8"kom/od|a|e|i|u|o|om|ama",
+    // L stánu is contextual; stane stays the common verb, not V stȃne.
+    u8"st^a:n||a|u|om", u8"st^anov|i|a|e|ima",
+    // ìspust and ìspustē share the accent. The singular command ispùsti
+    // still wins at clause head; the verb's shifting forms use VERBS.
+    u8"/ispust||a|u|om|i|e|ima",
+    u8"s/a:stav||a|u|om|i|e|ima",
+    // ŠR ràstava, G pl rȁstāvā (context); HJP instead has rȃstava.
+    u8"r/astav|a|e|i|u|o|om|ama",
+    u8"t^a:jn|a|e|i|u|o|om|ama|og|oga|ome|omu|oj|ih|im|ima",
+    // Indefinite sjájan/sjájna/sjájno and trȃjan/trájna/trȃjno differ
+    // from definite sjȃjnī/trȃjnī. Ambiguous short endings default to
+    // the indefinite; explicitly written accents can select the other.
+    u8"sj/a:jan", u8"sj/a:jn|a|e|u|o|oj",
+    u8"sj^a:jn|i|og|oga|om|ome|omu|ih|im|ima",
+    u8"sj/ajnij|i|a|e|u|eg|ega|em|emu|oj|om|ih|im|ima",
+    u8"tr^a:jan", u8"tr/a:jn|a|e|u|oj",
+    u8"tr^a:jn|o|i|og|oga|om|ome|omu|ih|im|ima",
+    u8"tr/ajnij|i|a|e|u|eg|ega|em|emu|oj|om|ih|im|ima",
+    u8"b^a:jan", u8"b^a:jn|a|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    u8"j^a:jn|a|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    // jáje/jája but the expanded singular stem is short: jàjeta.
+    u8"j/a:j|e|a|u|em|ima", u8"j/ajet|a|u|om",
+
     // ŠR/HJP sȉgūran: short falling i, also in the positive adjective
     // forms and sȉgūrno. Exact forms leave sigúrnōst and sigùrnijī alone.
     // Croatian continues to omit unstressed vowel lengths.
@@ -1404,7 +1469,10 @@ const char* const VERBS[] = {
     u8"k'u:p=i", u8"otk'u:p=i<pn", u8"proš'i:r=i<p", u8"raš'i:r=i<p",
     u8"sm'a:nj=i", u8"um'a:nj=i<p", u8"pov'eć=ap", u8"uv'eć=ap", u8"poj'ač=ap",
     u8"oj'ač=ap", u8"ut'iš=ap", u8"pribl'i:ž=i<p", u8"ud'a:lj=i<p", u8"dop'ust=i<pn",
-    u8"isp'ust=i<pn", u8"prop'ust=i<pn", u8"nap'ust=i<p", u8"otp'ust=i<pn",
+    // ŠR/HJP ìspustīm, ìspušten in Croatian too; ispùsti/ispùstio stay.
+    u8"isp'ust=i<pn!", u8"prop'ust=i<pn", u8"nap'ust=i<p", u8"otp'ust=i<pn",
+    // sàstavi at clause head versus the noun plural sástavi.
+    u8"s/astav=in",
     u8"zabr'a:n=i<pn", u8"obr'a:n=i<pn", u8"br'a:n=i", u8"od'obr=i<p", u8"izb'a:c=i<p",
     u8"ub'a:c=i<p", u8"preb'a:c=i<p", u8"odb'a:c=i<p", u8"nab'a:c=i<p", u8"zab'a:c=i<p",
     u8"b'a:c=i", u8"izv'r:š=i<p", u8"zav'r:š=i<p", u8"dov'r:š=i<p", u8"izr'a:d=i<pn",
