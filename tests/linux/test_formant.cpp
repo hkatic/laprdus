@@ -2902,7 +2902,7 @@ TEST_CASE("Word-class rules place the accent of loans, derived nouns and prefixe
         {"zatra\xC5\xBEismo", "zatr\xC3\xA1\xC5\xBEismo"},   // zatrážismo
         {"pohvalismo", "pohv\xC3\xA1lismo"},   // pohválismo
         {"ispitasmo", "isp\xC3\xACtasmo"},   // ispìtasmo
-        {"poku\xC5\xA1" "av\xC5\xA1i", "pok\xC3\xB9\xC5\xA1" "av\xC5\xA1i"},   // pokùšavši
+        {"poku\xC5\xA1" "av\xC5\xA1i", "p\xC3\xB2ku\xC5\xA1" "av\xC5\xA1i"},   // pòkušavši (ŠR/HJP pòkušati)
         {"po\xC5\xBE" "eljeti", "po\xC5\xBE\xC3\xA8ljeti"},   // požèljeti
         // verbs in -ovati
         {"putovao", "put\xC3\xB2vao"},   // putòvao

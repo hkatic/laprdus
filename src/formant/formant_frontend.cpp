@@ -3501,7 +3501,7 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
                 word.w == U"vlasti" || word.w == U"bolu" || word.w == U"boli" ||
                 word.w == U"strani" || word.w == U"vijesti" || word.w == U"čari" ||
                 word.w == U"glasu" || word.w == U"repu" || word.w == U"zvuku" || word.w == U"stanu" ||
-                word.w == U"stvari") {
+                word.w == U"stvari" || word.w == U"padu") {
                 size_t cue = i;
                 for (int modifiers = 0; cue > 0 && modifiers < 2 &&
                      ends_with_any(words[cue - 1].w,
@@ -3521,13 +3521,58 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
                 if (word.w == U"stvari") {
                     rising = rising || plural_genitive_cue(words[i - 1].w);
                 }
+            } else if (word.w == U"događaju" || word.w == U"osjećaju") {
+                // Present dogáđajū / òsjećajū versus D/L of the nouns
+                // dȍgađāj / ȍsjećāj. A governing preposition, optionally
+                // separated by two agreeing modifiers, selects the noun:
+                // "o novom događaju se govori", but "događaju se stvari".
+                size_t cue = i;
+                for (int modifiers = 0; cue > 0 && modifiers < 2 &&
+                     ends_with_any(words[cue - 1].w,
+                                   {U"om", U"ome", U"omu", U"em", U"emu"});
+                     ++modifiers) --cue;
+                const auto& previous = words[cue > 0 ? cue - 1 : 0].w;
+                // An -om ending alone is not enough: adverbs such as
+                // "potom" and "uglavnom" also occur before these verbs.
+                const bool noun = is_one_of(words[i - 1].w,
+                    {U"tom", U"tome", U"tomu", U"ovom", U"ovome", U"onom", U"onome",
+                     U"nekom", U"svakom", U"takvom"}) || (cue > 0 &&
+                    (locative.count(previous) ||
+                     is_one_of(previous, {U"k", U"ka", U"prema", U"unatoč", U"usprkos"})));
+                if (noun) {
+                    for (int nucleus : word.nuclei)
+                        word.phones[static_cast<size_t>(nucleus)].is_long = false;
+                    word.stress = 0;
+                    word.accent = Accent::Falling;
+                }
+            } else if (word.w == U"pada" || word.w == U"nebesa") {
+                // G pȃda / nebésā after a genitive preposition, versus
+                // the verb pȁdā and N/A nebèsa. Skip agreeing modifiers.
+                static const WordSet genitive = {
+                    U"bez", U"do", U"od", U"iz", U"s", U"sa", U"zbog", U"nakon",
+                    U"prije", U"poslije", U"uslijed", U"protiv", U"tijekom",
+                };
+                size_t cue = i;
+                for (int modifiers = 0; cue > 0 && modifiers < 2 &&
+                     !genitive.count(words[cue - 1].w) &&
+                     ends_with_any(words[cue - 1].w, {U"og", U"oga", U"eg", U"ega", U"ih"});
+                     ++modifiers) --cue;
+                if (cue > 0 && genitive.count(words[cue - 1].w)) {
+                    word.phones[static_cast<size_t>(word.nuclei[word.stress])].is_long = true;
+                }
+            } else if (word.w == U"ministarstva" && plural_genitive_cue(words[i - 1].w)) {
+                // ŠR G pl minìstārstvā, versus G sg / N/A pl ministárstva.
+                for (int nucleus : word.nuclei)
+                    word.phones[static_cast<size_t>(nucleus)].is_long = false;
+                word.stress = 1;
+                word.accent = Accent::Rising;
             } else if (is_one_of(word.w, {U"žirafa", U"pažnja", U"nabava", U"društva",
                                          U"vuka", U"komponenta", U"zvuka", U"snimka",
-                                         U"komoda", U"rastava"}) &&
+                                         U"komoda", U"rastava", U"stabla"}) &&
                        plural_genitive_cue(words[i - 1].w)) {
                 // Homographic G plurals: žiráfā, pážnjā, nȁbāvā,
                 // drúštvā, vúkā, kompònēntā, zvúkā, snȋmkā, komódā and
-                // rȁstāvā (Školski rječnik).
+                // rȁstāvā, stáblā (Školski rječnik).
                 word.stress = is_one_of(word.w, {U"žirafa", U"komponenta", U"komoda"}) ? 1 : 0;
                 word.accent = is_one_of(word.w, {U"nabava", U"snimka", U"rastava"})
                     ? Accent::Falling : Accent::Rising;

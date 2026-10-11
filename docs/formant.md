@@ -1086,6 +1086,65 @@ The prefix's short falling *i* is the listener's choice; the component
 Written accent marks and the user's whole-compound exact, stem and verb
 entries take precedence over the split. The rule applies only to Croatian.
 
+**Stablo, zelenilo, tobogan: follow-up audit, 11 October 2026.**
+Cross-checked the Institute's *Školski rječnik hrvatskoga jezika* (ŠR)
+against HJP. Prefer ŠR where they disagree, as in the preceding audits.
+These are exact Croatian noun paradigms; unrelated derivatives retain
+their own rules. Printed macrons below are dictionary post-accent lengths,
+which the Croatian voice continues to omit.
+
+| Word | Dictionary accent | Evidence and inflection |
+|---|---|---|
+| stablo | *stàblo* | [ŠR](https://rjecnik.hr/search/?q=stablo&strict=yes) has short rising *a*, G singular/N plural *stàbla*, but G plural *stabálā/stáblā*. [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=d1xvURg%3D) instead gives long rising *stáblo*, with the same *stabálā* alternative. Follow ŠR: default *stàbla*, with the short spelling of G plural read *stábla* after existing number/quantifier/plural-modifier cues. *Stabala* always has long rising second *a*. |
+| zelenilo | *zelènilo* | [ŠR](https://rjecnik.hr/search/?q=zelenilo&strict=yes) and [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=f15lXBV%2F) agree: short rising second *e*. ŠR explicitly gives G singular/N plural *zelènila* and G plural *zelènīlā*. |
+| tobogan | *tȍbogān* | [ŠR](https://rjecnik.hr/search/?q=tobogan&strict=yes) and [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=f19nXhd%2F) agree: short falling first *o*. ŠR gives G *tȍbogāna*, N plural *tȍbogāni*, G plural *tȍbogānā*. The generic loanword rules had incorrectly produced *tobògan/tobogána*. |
+
+The frontend tests check tone and quantity across noun cases, distinguish
+*dva stàbla* from G plural *stáblā/stabálā*, and retain written accents
+(including HJP's *stáblo*) and user entries as overrides.
+
+**Stanovnik–godišnjakinja: accent audit, 11 October 2026.**
+The primary reference is the Institute's *Školski rječnik hrvatskoga jezika*
+(ŠR), cross-checked directly against HJP. The Institute's
+[accent rules](https://gramatika.hr/pravilo/naglasak-i-naglasne-cjeline/3/)
+distinguish stress position, falling/rising tone, stressed quantity and
+post-accent length. The table records **dictionary notation**; the Croatian
+voice continues to omit unstressed lengths. Inflections not printed as
+principal forms are derived from the cited paradigms, not represented as
+separately attested accented headwords.
+
+| Requested form | Checked accent | Evidence and inflection |
+|---|---|---|
+| stanovnik | *stanòvnīk* | [ŠR](https://rjecnik.hr/search/?q=stanovnik&strict=yes), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=d1tnXBM%3D): G *stanovníka*, N pl *stanovníci*; ŠR V *stȁnovnīče*. The old broad stem incorrectly gave long rising *o* everywhere. Related [*stanòvnica*](https://rjecnik.hr/search/?q=stanovnica&strict=yes) and [*stanovníštvo*](https://rjecnik.hr/search/?q=stanovni%C5%A1tvo&strict=yes) need different accents. |
+| stanar | *stànār* | [ŠR](https://rjecnik.hr/search/?q=stanar&strict=yes), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=d1tnWRE%3D): G *stanára*, N pl *stanári*. ŠR V *stȁnāru/stȁnāre* conflicts with the more frequent D/L singular and A plural spellings, which remain the defaults. |
+| pretpostave | *pretpòstavē* | [ŠR pretpostaviti](https://rjecnik.hr/search/?q=pretpostaviti&strict=yes) explicitly prints 3pl, present *pretpòstavīm*, active *pretpòstavio* and passive *pretpòstavljen*; [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eVdgWBg%3D) agrees. This is the verb, not *prȅtpostāvke*. |
+| tu | *tȗ* | [ŠR](https://rjecnik.hr/search/?q=tu&strict=yes): long falling *u*, as requested. HJP's HTML uses a legacy glyph for this mark; ŠR resolves it. |
+| često | *čȇsto* | [ŠR](https://rjecnik.hr/search/?q=%C4%8Desto&strict=yes), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=f1tvWhc%3D): long falling *e*, but comparative *čȅšćē*. |
+| magazin | *mȁgazīn* | [ŠR](https://rjecnik.hr/search/?q=magazin&strict=yes), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=e11gXRA%3D): initial short falling accent throughout the common noun's paradigm. HJP separately records surname *Magàzīn*; this correction does not establish a pronunciation for every proper name spelled Magazin. |
+| nebesa | N/A *nebèsa*, G *nebésā* | [ŠR nebo](https://rjecnik.hr/search/?q=nebo&strict=yes), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eF9iXhE%3D) explicitly distinguish the plural forms. Default short *e*; a genitive preposition selects long *e* (*s nebésa*, versus *u nebèsa*). |
+| događaju | verb *dogáđajū*, noun D/L *dȍgađāju* | [ŠR događati se](https://rjecnik.hr/search/?q=doga%C4%91ati%20se&strict=yes) explicitly gives 3pl *dogáđajū*, but singular *dògāđā*; [ŠR događaj](https://rjecnik.hr/search/?q=doga%C4%91aj&strict=yes) gives *dȍgađāj/dȍgađāja*. Default to the verb; a D/L preposition or agreeing modifier selects the noun (*o tom događaju*). |
+| pad | *pȃd* | [ŠR](https://rjecnik.hr/search/?q=pad&strict=yes): G *pȃda*, L *pádu*, N pl *pȁdovi*. HJP instead has *pádovi*; prefer ŠR. [Verb padati](https://rjecnik.hr/search/?q=padati&strict=yes) has *pȁdām*: bare *pada* defaults to this short vowel, with long noun G after a genitive preposition (*nakon pȃda*). |
+| osjećam | *òsjećām* | [ŠR osjećati](https://rjecnik.hr/search/?q=osje%C4%87ati&strict=yes), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eFhjWhg%3D): short rising initial *o*, including active *òsjećao*. The [noun ȍsjećāj](https://rjecnik.hr/search/?q=osje%C4%87aj&strict=yes) is falling; *osjećaju* follows the same local noun/verb distinction as *događaju*. |
+| ostavio | *òstavio* | Explicit active form in [ŠR ostaviti](https://rjecnik.hr/search/?q=ostaviti&strict=yes); [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eFhhXxc%3D) agrees on initial accent. |
+| mnom | output *mnȍm*; dictionary *mnȏm* | [ŠR ja](https://rjecnik.hr/search/?q=ja&strict=yes) explicitly gives I *mnȏm/mnóme*. Short *o* is the user's requested Croatian voice preference, not a dictionary correction. Written *mnȏm* and user entries still select long *o*; Serbian/Bosnian retain their existing long default. |
+| radnik / radnica | *rȃdnīk / rȃdnica* | [ŠR radnik](https://rjecnik.hr/search/?q=radnik&strict=yes), [radnica](https://rjecnik.hr/search/?q=radnica&strict=yes); HJP agrees. Long falling *a* remains in case forms and plurals, including *rȃdnīci* and *rȃdnice*. |
+| dokument | *dokùment* | [ŠR](https://rjecnik.hr/search/?q=dokument&strict=yes), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=f1ZjURE%3D): G *dokùmenta*, N pl *dokùmenti*, G pl *dokùmenātā*. Already correct; explicit noun entries and regression coverage preserve it without catching *dokumentárac*. |
+| pokušala | *pòkušala* | Derived feminine of explicit *pòkušao* in [ŠR pokušati](https://rjecnik.hr/search/?q=poku%C5%A1ati&strict=yes), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eVtlURE%3D). The verb family keeps initial short rising *o*. |
+| zavod | *závod* | [ŠR](https://rjecnik.hr/search/?q=zavod&strict=yes), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=f15lWBZ6): long rising *a*, also in G and plural. |
+| imovina | *imòvina* | [ŠR](https://rjecnik.hr/search/?q=imovina&strict=yes), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=fVtvWBY%3D): short rising *o*, retained in inflection. |
+| susretao | *sùsretao* | Explicit active in [ŠR susretati](https://rjecnik.hr/search/?q=susretati&strict=yes); [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=d1lkWBE%3D) agrees. Present *sùsrećēm* uses its separate stem. |
+| mirovina | *miròvina* | [ŠR](https://rjecnik.hr/search/?q=mirovina&strict=yes), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=e1lnXBA%3D): short rising *o*, retained in inflection. |
+| ministarstvo | *ministárstvo* | [ŠR](https://rjecnik.hr/search/?q=ministarstvo&strict=yes): G *ministárstva*, G pl *minìstārstāvā/minìstārstvā*. [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=e1pvUBI%3D) instead has short *ministàrstvo*. Prefer ŠR, with G plural selected by number/quantifier cues for ambiguous *ministarstva*. |
+| navod | *návod* | [ŠR](https://rjecnik.hr/search/?q=navod&strict=yes), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eF9lWBY%3D): long rising *a* in G and plural. The existing clause-initial command handling for *navodi* remains. |
+| godišnjak / godišnjakinja | *gòdišnjāk*; feminine component *-godišnjàkinja* | [ŠR godišnjak](https://rjecnik.hr/search/?q=godi%C5%A1njak&strict=yes) gives the yearbook with unchanged initial short rising accent. [Petogòdišnjāk](https://rjecnik.hr/search/?q=petogodi%C5%A1njak&strict=yes) and [petogodišnjàkinja](https://rjecnik.hr/search/?q=petogodi%C5%A1njakinja&strict=yes) attest the contrasting age compounds. Neither dictionary returned standalone *godišnjakinja*: its new component entry is explicitly an analogy, not a claimed headword citation. The existing compound rule was already correct. |
+
+Exact noun paradigms avoid broad stem collisions, while `VERBS` supplies
+regular verb forms. The local case cues are not a complete syntax parser:
+unmarked ambiguous forms retain the documented defaults outside recognized
+contexts. Written accents and user accent entries override every new cue.
+Regression checks cover all supplied spellings, inflection contrasts,
+context, quantity and override precedence in `tests/linux/test_frontend.cpp`.
+
 **Presvlačenje: accent audit, 11 October 2026.**
 [Školski rječnik](https://rjecnik.hr/search/?q=presvla%C4%8Denje&strict=yes)
 explicitly gives *presvláčēnje*, G *presvláčēnja*: long rising *a* in the

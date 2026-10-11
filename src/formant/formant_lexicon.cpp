@@ -859,6 +859,43 @@ const char* const COMMON[] = {
 };
 
 const char* const CROATIAN[] = {
+    // Stablo / zelenilo / tobogan, 11 October 2026 (ŠR/HJP).
+    // Prefer ŠR stàblo over HJP stáblo; G pl stabálā / stáblā differs.
+    // The shorter G plural is selected by the phrase-level case cues.
+    u8"st/abl|o|a|u|om|ima", u8"stab/a:la",
+    u8"zel/enil|o|a|u|om|ima", u8"t^obogan||a|u|e|om|i|ima",
+
+    // Stanovnik–godišnjakinja audit, 11 October 2026. Školski rječnik
+    // principal forms, cross-checked with HJP; citations in docs/formant.md.
+    // Croatian retains its existing omission of post-accent lengths.
+    u8"stan/ovnik", u8"stanovn/i:k|a|u|om|e", u8"stanovn/i:c|i|ima",
+    // stanovnici defaults to masculine N pl, not feminine D/L sg.
+    u8"st^anovniče", u8"stan/ovnic|a|e|u|o|om|ama",
+    u8"stanovn/i:štv|o|a|u|om|ima",
+    u8"st/anar", u8"stan/a:r|a|u|om|i|e|ima",
+    // stanaru/stanare default to D/L sg and A pl, not their vocatives.
+    u8"t^u:", u8"č^e:sto", u8"č^ešće",
+    u8"m^agazin||a|u|e|om|i|ima",
+    u8"n^eb|o|a|u|om", u8"neb/es|a|ima",
+    // događaju defaults to the verb dogáđajū; D/L dȍgađāju is contextual.
+    u8"d^ogađaj||a|em|i|e|ima",
+    // pada defaults to the frequent verb pȁdā; G pȃda is contextual.
+    u8"p^a:d||u|om|e", u8"p^adov|i|a|e|ima",
+    // User preference: short mnȍm, although ŠR gives dictionary mnȏm.
+    u8"mn^om",
+    u8"r^a:dnik||a|u|om|e", u8"r^a:dniče",
+    u8"r^a:dnic|a|e|i|u|o|om|ama|ima",
+    u8"dok/ument||a|u|e|om|i|ima", u8"dok/umenata",
+    u8"z/a:vod||a|u|e|om|i|ima", u8"n/a:vod||a|u|e|om|i|ima",
+    u8"im/ovin|a|e|i|u|o|om|ama", u8"mir/ovin|a|e|i|u|o|om|ama",
+    // Prefer ŠR ministárstvo over HJP ministàrstvo. G plural shifts.
+    u8"minist/a:rstv|o|a|u|om|ima", u8"min/istarstava",
+    // The bare feminine component follows attested petogodišnjàkinja
+    // by analogy; compounds already use StressRules::time_compound().
+    u8"godišnj/akinj|a|e|i|u|o|om|ama",
+    // Keep the noun ȍsjećāj separate from the verb òsjećati.
+    u8"^osjećaj||a|em|i|e|ima",
+
     // ŠR presvláčēnje / presvláčēnja: root á, not the generic -énje.
     // Exact noun forms leave the related verb to its own accent rules.
     u8"presvl/a:čenj|e|a|u|em|ima",
@@ -1447,6 +1484,12 @@ const char* const IJE_VERBS[] = {
 // for the imperative forms. A verb that is not here is right only in the
 // infinitive or if the first syllable carries its accent anyway.
 const char* const VERBS[] = {
+    // ŠR/HJP: explicit short rising accents also matter on the first
+    // syllable; generic suffix rules had moved these active forms.
+    u8"pretp/ostav=i", u8"/osjeć=a", u8"/ostav=i", u8"p/okuš=a",
+    u8"s/usret=t", u8"s/usreć=e", u8"p^ad=a",
+    // dogáđati / dogáđajū, but dògāđām, in Croatian too.
+    u8"dog/a:đ=a<!",
     // ŠR/HJP nàmignuti, nàmignēm, nàmigni, nàmignuo.
     u8"n/amig=u",
     u8"ur'e:d=i<pn", u8"odr'e:d=i<pn", u8"nar'e:d=i<p", u8"sr'e:d=i", u8"preur'e:d=i<p",

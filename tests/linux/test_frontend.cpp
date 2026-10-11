@@ -654,3 +654,160 @@ TEST_CASE("Biti participles keep hiatus without breaking the jat reflex", "[fron
     REQUIRE(!vowels[1].is_long);
     REQUIRE(!vowels[2].is_long);
 }
+
+TEST_CASE("Collected Croatian accents preserve stress tone and vowel quantity", "[frontend][accents][collected-oct11]") {
+    // Independently checked against Školski rječnik/HJP principal forms.
+    // mnom is the user's short-vowel preference; godišnjakinja is the
+    // bare age component, by analogy with attested petogodišnjakinja.
+    struct Case { const char32_t* text; int stress; Accent tone; bool long_vowel; };
+    const auto F = Accent::Falling;
+    const auto R = Accent::Rising;
+    const Case cases[] = {
+        {U"stanovnik", 1, R, false}, {U"stanovnika", 2, R, true},
+        {U"stanovniku", 2, R, true}, {U"stanovnici", 2, R, true},
+        {U"stanovnicima", 2, R, true}, {U"stanovniče", 0, F, false},
+        {U"stanovnica", 1, R, false}, {U"stanovnicama", 1, R, false},
+        {U"stanovništvo", 2, R, true},
+        {U"stanar", 0, R, false}, {U"stanara", 1, R, true},
+        {U"stanaru", 1, R, true}, {U"stanare", 1, R, true},
+        {U"stanarima", 1, R, true},
+        {U"pretpostave", 1, R, false}, {U"pretpostaviti", 1, R, false},
+        {U"pretpostavim", 1, R, false}, {U"pretpostavio", 1, R, false},
+        {U"pretpostavljena", 1, R, false},
+        {U"tu", 0, F, true}, {U"često", 0, F, true}, {U"češće", 0, F, false},
+        {U"magazin", 0, F, false}, {U"magazini", 0, F, false},
+        {U"magazinima", 0, F, false}, {U"Magazin", 0, F, false},
+        {U"nebesa", 1, R, false}, {U"nebesima", 1, R, false},
+        {U"događaju", 1, R, true}, {U"događati", 1, R, true},
+        {U"događao", 1, R, true}, {U"događa", 0, R, false},
+        {U"događaj", 0, F, false}, {U"događaji", 0, F, false},
+        {U"pad", 0, F, true}, {U"padu", 0, F, true},
+        {U"padovi", 0, F, false}, {U"padovima", 0, F, false},
+        {U"pada", 0, F, false}, {U"padala", 0, F, false},
+        {U"osjećam", 0, R, false}, {U"osjećaju", 0, R, false},
+        {U"osjećala", 0, R, false}, {U"osjećaj", 0, F, false},
+        {U"ostavio", 0, R, false}, {U"ostaviti", 0, R, false},
+        {U"ostavila", 0, R, false}, {U"ostavljen", 0, R, false},
+        {U"mnom", 0, F, false},
+        {U"radnik", 0, F, true}, {U"radnika", 0, F, true},
+        {U"radnici", 0, F, true}, {U"radnicima", 0, F, true},
+        {U"radniče", 0, F, true}, {U"radnica", 0, F, true},
+        {U"radnicama", 0, F, true},
+        {U"dokument", 1, R, false}, {U"dokumenti", 1, R, false},
+        {U"dokumentima", 1, R, false}, {U"dokumenata", 1, R, false},
+        {U"dokumentarac", 3, R, true},
+        {U"pokušala", 0, R, false}, {U"pokušati", 0, R, false},
+        {U"pokušao", 0, R, false}, {U"pokušaju", 0, R, false},
+        {U"zavod", 0, R, true}, {U"zavodima", 0, R, true},
+        {U"imovina", 1, R, false}, {U"imovinom", 1, R, false},
+        {U"imovinama", 1, R, false},
+        {U"susretao", 0, R, false}, {U"susretati", 0, R, false},
+        {U"susretala", 0, R, false}, {U"susrećem", 0, R, false},
+        {U"mirovina", 1, R, false}, {U"mirovini", 1, R, false},
+        {U"mirovinama", 1, R, false},
+        {U"ministarstvo", 2, R, true}, {U"ministarstva", 2, R, true},
+        {U"ministarstvima", 2, R, true}, {U"ministarstava", 1, R, false},
+        {U"navod", 0, R, true}, {U"navoda", 0, R, true},
+        {U"navodima", 0, R, true},
+        {U"godišnjak", 0, R, false}, {U"godišnjaka", 0, R, false},
+        {U"godišnjacima", 0, R, false}, {U"godišnjakinja", 2, R, false},
+        {U"godišnjakinjama", 2, R, false},
+        {U"petogodišnjak", 2, R, false}, {U"petogodišnjakinja", 4, R, false},
+        {U"dvadesetogodišnjakinjama", 6, R, false},
+        {U"stablo", 0, R, false}, {U"stabla", 0, R, false},
+        {U"stablu", 0, R, false}, {U"stablom", 0, R, false},
+        {U"stablima", 0, R, false}, {U"stabala", 1, R, true},
+        {U"zelenilo", 1, R, false}, {U"zelenila", 1, R, false},
+        {U"zelenilu", 1, R, false}, {U"zelenilom", 1, R, false},
+        {U"zelenilima", 1, R, false},
+        {U"tobogan", 0, F, false}, {U"tobogana", 0, F, false},
+        {U"toboganu", 0, F, false}, {U"toboganom", 0, F, false},
+        {U"tobogani", 0, F, false}, {U"tobogane", 0, F, false},
+        {U"toboganima", 0, F, false}, {U"Tobogan", 0, F, false},
+    };
+    const Frontend frontend(VoiceLanguage::Croatian);
+    for (size_t i = 0; i < std::size(cases); ++i) {
+        CAPTURE(i);
+        const auto& c = cases[i];
+        const auto vowels = nuclei(read(frontend, c.text));
+        REQUIRE(std::count_if(vowels.begin(), vowels.end(), [](const Phone& p) { return p.stressed; }) == 1);
+        REQUIRE(vowels.at(c.stress).stressed);
+        REQUIRE(vowels.at(c.stress).accent == c.tone);
+        REQUIRE(vowels.at(c.stress).is_long == c.long_vowel);
+        for (const auto& p : vowels) if (!p.stressed) REQUIRE(!p.is_long);
+    }
+}
+
+TEST_CASE("Collected homographs use nearby grammatical cues", "[frontend][accents][collected-oct11]") {
+    struct Case { const char32_t* text; int word; int stress; Accent tone; bool long_vowel; };
+    const auto F = Accent::Falling;
+    const auto R = Accent::Rising;
+    const Case cases[] = {
+        {U"Tu sam", 0, 0, F, true}, {U"sa mnom", 1, 0, F, false},
+        {U"Događaju se promjene", 0, 1, R, true},
+        {U"Promjene se često događaju", 3, 1, R, true},
+        {U"Promjene se uglavnom događaju", 3, 1, R, true},
+        {U"o događaju", 1, 0, F, false},
+        {U"o tom novom događaju se govori", 3, 0, F, false},
+        {U"prema događaju", 1, 0, F, false},
+        {U"tom događaju", 1, 0, F, false},
+        {U"Oni osjećaju bol", 1, 0, R, false},
+        {U"Potom osjećaju bol", 1, 0, R, false},
+        {U"o neobičnom osjećaju", 2, 0, F, false},
+        {U"Kiša pada", 1, 0, F, false},
+        {U"nakon pada", 1, 0, F, true},
+        {U"zbog naglog pada", 2, 0, F, true},
+        {U"o padu", 1, 0, R, true},
+        {U"o naglom padu", 2, 0, R, true},
+        {U"u nebesa", 1, 1, R, false},
+        {U"s nebesa", 1, 1, R, true},
+        {U"iz visokih nebesa", 2, 1, R, true},
+        {U"zgrada ministarstva", 1, 2, R, true},
+        {U"dva ministarstva", 1, 2, R, true},
+        {U"pet ministarstva", 1, 1, R, false},
+        {U"nekoliko ministarstava", 1, 1, R, false},
+        {U"drugih ministarstva", 1, 1, R, false},
+        {U"citirani navodi", 1, 0, R, true},
+        {U"grana stabla", 1, 0, R, false},
+        {U"dva stabla", 1, 0, R, false},
+        {U"pet stabla", 1, 0, R, true},
+        {U"nekoliko stabala", 1, 1, R, true},
+        {U"visokih stabla", 1, 0, R, true},
+        {U"pet stàbla", 1, 0, R, false},
+        {U"Stáblo", 0, 0, R, true},
+    };
+    const Frontend frontend(VoiceLanguage::Croatian);
+    for (size_t i = 0; i < std::size(cases); ++i) {
+        CAPTURE(i);
+        const auto& c = cases[i];
+        std::vector<Phone> vowels;
+        for (const auto& p : read(frontend, c.text).phones)
+            if (p.word == c.word && p.nucleus) vowels.push_back(p);
+        REQUIRE(std::count_if(vowels.begin(), vowels.end(), [](const Phone& p) { return p.stressed; }) == 1);
+        REQUIRE(vowels.at(c.stress).stressed);
+        REQUIRE(vowels.at(c.stress).accent == c.tone);
+        REQUIRE(vowels.at(c.stress).is_long == c.long_vowel);
+    }
+}
+
+TEST_CASE("Collected accent corrections respect explicit and user choices", "[frontend][accents][collected-oct11]") {
+    Frontend frontend(VoiceLanguage::Croatian);
+    REQUIRE(nuclei(read(frontend, U"mnȏm"))[0].is_long);
+    REQUIRE(!nuclei(read(frontend, U"tȕ"))[0].is_long);
+    REQUIRE(nuclei(read(frontend, U"o dogáđaju"))[2].is_long);
+    REQUIRE(!nuclei(read(frontend, U"s nebèsa"))[1].is_long);
+    REQUIRE(nuclei(read(frontend, U"pet ministárstva"))[3].is_long);
+    REQUIRE(nuclei(read(frontend, U"nakon pȁda"))[2].is_long == false);
+    REQUIRE(nuclei(read(frontend, U"o pȃdu"))[1].accent == Accent::Falling);
+    frontend.set_user_lexicon(UserLexicon::parse(
+        R"({"entries":[{"word":"mn^o:m"},{"word":"dog/a:đaju"},{"word":"neb/esa"},{"word":"minist/a:rstva"},{"word":"p^ada"},{"word":"st/abla"}]})"));
+    REQUIRE(nuclei(read(frontend, U"sa mnom"))[1].is_long);
+    REQUIRE(nuclei(read(frontend, U"o događaju"))[2].is_long);
+    REQUIRE(!nuclei(read(frontend, U"s nebesa"))[1].is_long);
+    REQUIRE(nuclei(read(frontend, U"pet ministarstva"))[3].is_long);
+    REQUIRE(!nuclei(read(frontend, U"nakon pada"))[2].is_long);
+    REQUIRE(!nuclei(read(frontend, U"pet stabla"))[1].is_long);
+    // The requested short mnom applies only to Croatian.
+    REQUIRE(nuclei(read(Frontend(VoiceLanguage::Serbian), U"mnom"))[0].is_long);
+    REQUIRE(nuclei(read(Frontend(VoiceLanguage::Bosnian), U"mnom"))[0].is_long);
+}
