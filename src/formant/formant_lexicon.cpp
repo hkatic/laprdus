@@ -859,6 +859,34 @@ const char* const COMMON[] = {
 };
 
 const char* const CROATIAN[] = {
+    // Testament–nogomet audit, 11 October 2026. Školski rječnik,
+    // cross-checked with HJP; HJP supplies pediker and pedikerski.
+    // Sources, dictionary disagreements and homographs: docs/formant.md.
+    // Exact paradigms avoid imposing noun accents on related adjectives.
+    u8"test/ament||a|u|om|i|e|ima", u8"test/amenata",
+    // ŠR bògatstvo (HJP bogàtstvo), including both G plural spellings.
+    u8"b/ogatstv|o|a|u|om|ima", u8"b/ogatstava",
+    // sažétak, sažétka, sažéci/sažétci, but G plural sàžētākā.
+    u8"saž/e:t|ak|ka|ku|kom|ke|ci|cima", u8"saž/e:c|i|ima", u8"s/ažetaka",
+    u8"s/alon", u8"sal/o:n|a|u|om|i|e|ima",
+    u8"s/alonsk|i|a|o|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    // pedìkēr -> pedikéra, but adjective pedìkērskī. The spelling
+    // pedikeru defaults to D/L pedikéru rather than V pȅdikēru.
+    u8"ped/iker", u8"pedik/e:r|a|u|om|i|e|ima",
+    u8"ped/ikersk|i|a|o|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    u8"^obzir||a|u|om|i|e|ima",
+    // ŠR medìcīnskī/medìcīnskā (HJP mȅdicīnskī). The noun medicína
+    // retains its existing long rising accent on the second i.
+    u8"med/icinsk|i|a|o|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    u8"n^ogomet||a|u|om|i|e|ima",
+    u8"n^ogometn|i|a|o|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    // The player nouns differ from the sport: nogomètāš -> nogometáša,
+    // nogometàšica, but nogomètāškī. D/L nogometášu is the default
+    // for the spelling shared with V nȍgomētāšu.
+    u8"nogom/etaš", u8"nogomet/a:š|a|u|em|i|e|ima",
+    u8"nogomet/ašic|a|e|i|u|o|om|ama",
+    u8"nogom/etašk|i|a|o|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+
     // Stablo / zelenilo / tobogan, 11 October 2026 (ŠR/HJP).
     // Prefer ŠR stàblo over HJP stáblo; G pl stabálā / stáblā differs.
     // The shorter G plural is selected by the phrase-level case cues.
@@ -1484,6 +1512,9 @@ const char* const IJE_VERBS[] = {
 // for the imperative forms. A verb that is not here is right only in the
 // infinitive or if the first syllable carries its accent anyway.
 const char* const VERBS[] = {
+    // ŠR/HJP pòklanjati, pòklanjām, pòklanjajū, pòklanjāj,
+    // pòklanjao, pòklanjān, pòklanjānje: one regular -ati paradigm.
+    u8"p/oklanj=a",
     // ŠR/HJP: explicit short rising accents also matter on the first
     // syllable; generic suffix rules had moved these active forms.
     u8"pretp/ostav=i", u8"/osjeć=a", u8"/ostav=i", u8"p/okuš=a",

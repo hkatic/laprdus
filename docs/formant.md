@@ -1086,6 +1086,45 @@ The prefix's short falling *i* is the listener's choice; the component
 Written accent marks and the user's whole-compound exact, stem and verb
 entries take precedence over the split. The rule applies only to Croatian.
 
+**Testament–nogomet: accent audit, 11 October 2026.**
+Checked the Institute's *Školski rječnik hrvatskoga jezika* (ŠR) against
+HJP's accented headwords and principal forms. As in the other audits,
+prefer ŠR when the dictionaries disagree. The Institute's
+[accent guidance](https://gramatika.hr/pravilo/naglasak-i-naglasne-cjeline/3/)
+distinguishes stress position, tone, stressed quantity and post-accent
+length; general distribution rules alone do not determine a word's accent.
+The table uses **dictionary notation**. The Croatian voice continues to
+omit unstressed lengths, so *pòklanjām* is rendered *pòklanjam*, while
+stressed long vowels in *sažétak, salóna, pedikéra* remain long.
+
+| Requested family | Selected accent and inflection | Evidence |
+|---|---|---|
+| testament | *testàment, testàmenta, testàmenti, testàmenātā* | [ŠR](https://rjecnik.hr/search/?q=testament&strict=yes) explicitly accents these principal forms. [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=f19nWRZ8) also lists the alternative final falling *testamȅnt*; the default follows ŠR. |
+| bogatstvo | *bògatstvo, bògatstva, bògatstāvā/bògātstvā* | [ŠR](https://rjecnik.hr/search/?q=bogatstvo&strict=yes) has initial short rising *o* throughout. [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=d1dhXw%3D%3D) instead gives *bogàtstvo*, with G plural *bogàtstāvā/bogátstvā*. This is a documented source choice, not agreement between dictionaries. |
+| sažetak / sažeci | *sažétak, sažétka, sažéci/sažétci*, but G plural *sàžētākā* | [ŠR](https://rjecnik.hr/search/?q=sa%C5%BEetak&strict=yes) prints *sažétci*; [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=dlZnWhg%3D) prints *sažéci*. Both agree on the moving accent in G plural. Support both plural spellings and their D/L/I forms. |
+| salon / salona | *sàlōn → salóna, salóni, salónā*; adjective *sàlōnskī* | [ŠR salon](https://rjecnik.hr/search/?q=salon&strict=yes), [salonski](https://rjecnik.hr/search/?q=salonski&strict=yes), and [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=dldkWhk%3D). The noun's inflected long rising *o* must not spread to the adjective. |
+| pediker / pedikerski | *pedìkēr → pedikéra*; adjective *pedìkērskī* | [HJP pediker](https://hjp.znanje.hr/index.php?show=search_by_id&id=eV9gWBk%3D) explicitly accents G and V *pȅdikēru*. [HJP pedikerski](https://hjp.znanje.hr/index.php?show=search_by_id&id=eV9gWxE%3D) retains short rising *i*. ŠR returned no entries for these headwords. Other noun cases follow the oblique stem, adjective cases its fixed accent. |
+| poklanjam | *pòklanjām*, also *pòklanjati, pòklanjajū, pòklanjāj, pòklanjao, pòklanjān* | [ŠR](https://rjecnik.hr/search/?q=poklanjati&strict=yes) explicitly prints these forms; [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eVtkWxk%3D) agrees and gives *pòklanjānje*. A single regular verb entry generates the forms. |
+| obzirom | *ȍbzīrom*, like *ȍbzīr, ȍbzīra, ȍbzīri* | [ŠR](https://rjecnik.hr/search/?q=obzir&strict=yes) explicitly accents the instrumental. [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eFtkXBg%3D) agrees on the headword. Initial short falling *o* remains in *s obzirom na*. |
+| medicinska | *medìcīnskā*, like *medìcīnskī, medìcīnskō* | [ŠR](https://rjecnik.hr/search/?q=medicinski&strict=yes) explicitly gives these gender forms. [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=e1tiWhI%3D) instead has initial falling *mȅdicīnskī*. Prefer ŠR's first *i*; keep the noun [*medicína*](https://rjecnik.hr/search/?q=medicina&strict=yes) separate. |
+| nogomet / nogometna | *nȍgomēt, nȍgomēta*; *nȍgometnī, nȍgometnā* | [ŠR nogomet](https://rjecnik.hr/search/?q=nogomet&strict=yes) and [nogometni](https://rjecnik.hr/search/?q=nogometni&strict=yes) agree with [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eF1vWhM%3D) on initial short falling *o*. HJP retains an additional unstressed length in the adjective, *nȍgomētnī*, which the Croatian voice omits. |
+| Related football words | *nogomètāš → nogometáša, nogometáši*; *nogometàšica*; *nogomètāškī* | [ŠR nogometaš](https://rjecnik.hr/search/?q=nogometa%C5%A1&strict=yes), [nogometašica](https://rjecnik.hr/search/?q=nogometa%C5%A1ica&strict=yes), and [HJP nogometaški](https://hjp.znanje.hr/index.php?show=search_by_id&id=eF1vWhY%3D). Each has its own paradigm, independent of *nȍgomet*. |
+
+Forms not explicitly accented in the sources are regular inflections of
+these principal forms, not separate accented attestations. Exact noun and
+adjective entries cover cases, genders and both spellings of the *sažetak*
+plural without extending to unrelated derivatives. The spellings
+*pedikeru* and *nogometašu* default to D/L *pedikéru, nogometášu*, rather
+than the less frequent vocatives *pȅdikēru, nȍgomētāšu*. Likewise *salone*
+uses the accusative plural. No new syntactic vocative detection is added.
+Written accents or exact user entries can select another reading. The
+existing exact-before-stem lookup priority is unchanged.
+
+Frontend regression checks cover stress, tone and vowel quantity across
+the paradigms, phrase contexts, capitalization, the distinct noun
+*medicína*, and written/user overrides. This audit changes lexical data,
+not general stress or acoustic rules.
+
 **Stablo, zelenilo, tobogan: follow-up audit, 11 October 2026.**
 Cross-checked the Institute's *Školski rječnik hrvatskoga jezika* (ŠR)
 against HJP. Prefer ŠR where they disagree, as in the preceding audits.

@@ -655,6 +655,111 @@ TEST_CASE("Biti participles keep hiatus without breaking the jat reflex", "[fron
     REQUIRE(!vowels[2].is_long);
 }
 
+TEST_CASE("Testament to nogomet families follow the checked Croatian paradigms", "[frontend][accents][testament-nogomet]") {
+    // Školski rječnik principal forms; HJP for pediker/pedikerski and
+    // nogometaški. ŠR is preferred for bògatstvo and medìcīnskī.
+    // The Croatian voice omits unstressed lengths, including G plural.
+    struct Family {
+        std::vector<const char32_t*> words;
+        int stress;
+        Accent tone;
+        bool long_vowel;
+    };
+    const auto F = Accent::Falling;
+    const auto R = Accent::Rising;
+    const Family families[] = {
+        {{U"testament", U"testamenta", U"testamentu", U"testamentom",
+          U"testamenti", U"testamente", U"testamentima", U"testamenata"}, 1, R, false},
+        {{U"bogatstvo", U"bogatstva", U"bogatstvu", U"bogatstvom",
+          U"bogatstvima", U"bogatstava"}, 0, R, false},
+        {{U"sažetak", U"sažetka", U"sažetku", U"sažetkom", U"sažetke",
+          U"sažeci", U"sažecima", U"sažetci", U"sažetcima"}, 1, R, true},
+        {{U"sažetaka"}, 0, R, false},
+        {{U"salon"}, 0, R, false},
+        {{U"salona", U"salonu", U"salonom", U"saloni", U"salone", U"salonima"}, 1, R, true},
+        {{U"salonski", U"salonska", U"salonskoj", U"salonskima"}, 0, R, false},
+        {{U"pediker"}, 1, R, false},
+        {{U"pedikera", U"pedikeru", U"pedikerom", U"pedikeri", U"pedikere", U"pedikerima"}, 2, R, true},
+        {{U"pedikerski", U"pedikerska", U"pedikersko", U"pedikerske",
+          U"pedikersku", U"pedikerskog", U"pedikerskoga", U"pedikerskom",
+          U"pedikerskome", U"pedikerskomu", U"pedikerskoj", U"pedikerskih",
+          U"pedikerskim", U"pedikerskima"}, 1, R, false},
+        {{U"poklanjati", U"poklanjam", U"poklanjaš", U"poklanja", U"poklanjamo",
+          U"poklanjate", U"poklanjaju", U"poklanjaj", U"poklanjajte",
+          U"poklanjao", U"poklanjala", U"poklanjali", U"poklanjan",
+          U"poklanjana", U"poklanjanje", U"poklanjanja", U"poklanjajući"}, 0, R, false},
+        {{U"obzir", U"obzira", U"obziru", U"obzirom", U"obziri", U"obzire", U"obzirima"}, 0, F, false},
+        {{U"medicinski", U"medicinska", U"medicinsko", U"medicinske", U"medicinsku",
+          U"medicinskog", U"medicinskoga", U"medicinskom", U"medicinskome",
+          U"medicinskomu", U"medicinskoj", U"medicinskih", U"medicinskim", U"medicinskima"}, 1, R, false},
+        // The adjective must not change the noun medicína.
+        {{U"medicina", U"medicine", U"medicinu", U"medicinom"}, 2, R, true},
+        {{U"nogomet", U"nogometa", U"nogometu", U"nogometom", U"nogomete",
+          U"nogometi", U"nogometima", U"Nogomet", U"NOGOMET"}, 0, F, false},
+        {{U"nogometni", U"nogometna", U"nogometno", U"nogometne", U"nogometnu",
+          U"nogometnog", U"nogometnoga", U"nogometnom", U"nogometnome",
+          U"nogometnomu", U"nogometnoj", U"nogometnih", U"nogometnim", U"nogometnima"}, 0, F, false},
+        // Related player nouns and their adjective have different accents.
+        {{U"nogometaš"}, 2, R, false},
+        {{U"nogometaša", U"nogometašu", U"nogometašem", U"nogometaši",
+          U"nogometaše", U"nogometašima"}, 3, R, true},
+        {{U"nogometaški", U"nogometaška", U"nogometaškoj", U"nogometaškima"}, 2, R, false},
+        {{U"nogometašica", U"nogometašice", U"nogometašici", U"nogometašicu",
+          U"nogometašicom", U"nogometašicama"}, 3, R, false},
+    };
+    const Frontend frontend(VoiceLanguage::Croatian);
+    for (size_t i = 0; i < std::size(families); ++i) {
+        const auto& family = families[i];
+        for (size_t j = 0; j < family.words.size(); ++j) {
+            CAPTURE(i);
+            CAPTURE(j);
+            const auto vowels = nuclei(read(frontend, family.words[j]));
+            CHECK(std::count_if(vowels.begin(), vowels.end(), [](const Phone& p) { return p.stressed; }) == 1);
+            CHECK(vowels.at(family.stress).stressed);
+            CHECK(vowels.at(family.stress).accent == family.tone);
+            CHECK(vowels.at(family.stress).is_long == family.long_vowel);
+            for (const auto& p : vowels) if (!p.stressed) CHECK(!p.is_long);
+        }
+    }
+}
+
+TEST_CASE("Testament to nogomet accents survive context and allow overrides", "[frontend][accents][testament-nogomet]") {
+    Frontend frontend(VoiceLanguage::Croatian);
+    // In ordinary phrases, compare each target's nuclei with its isolated form.
+    struct Case { const char32_t* phrase; const char32_t* word; int index; };
+    const Case cases[] = {
+        {U"s obzirom na", U"obzirom", 1},
+        {U"ja poklanjam knjigu", U"poklanjam", 1},
+        {U"medicinska sestra", U"medicinska", 0},
+        {U"nogometna lopta", U"nogometna", 0},
+        {U"iz salona", U"salona", 1},
+        {U"nekoliko sažetaka", U"sažetaka", 1},
+    };
+    for (const auto& c : cases) {
+        auto in_phrase = nuclei(read(frontend, c.phrase));
+        in_phrase.erase(std::remove_if(in_phrase.begin(), in_phrase.end(),
+                        [&](const Phone& p) { return p.word != c.index; }), in_phrase.end());
+        const auto alone = nuclei(read(frontend, c.word));
+        REQUIRE(in_phrase.size() == alone.size());
+        for (size_t i = 0; i < alone.size(); ++i) {
+            CHECK(in_phrase[i].stressed == alone[i].stressed);
+            CHECK(in_phrase[i].accent == alone[i].accent);
+            CHECK(in_phrase[i].is_long == alone[i].is_long);
+        }
+    }
+    // HJP's alternatives and the vocatives can still be requested explicitly.
+    CHECK(nuclei(read(frontend, U"bogàtstvo"))[1].stressed);
+    CHECK(nuclei(read(frontend, U"mȅdicinska"))[0].accent == Accent::Falling);
+    CHECK(nuclei(read(frontend, U"pȅdikeru"))[0].accent == Accent::Falling);
+    CHECK(nuclei(read(frontend, U"nȍgometašu"))[0].accent == Accent::Falling);
+    frontend.set_user_lexicon(UserLexicon::parse(
+        R"({"entries":[{"word":"bog/atstvo"},{"word":"m^edicinska"},{"verb":"pokl/a:nj=a"}]})"));
+    CHECK(nuclei(read(frontend, U"bogatstvo"))[1].stressed);
+    CHECK(nuclei(read(frontend, U"medicinska"))[0].accent == Accent::Falling);
+    CHECK(nuclei(read(frontend, U"poklanjam"))[1].is_long);
+    CHECK(nuclei(read(frontend, U"pòklanjam"))[0].stressed);
+}
+
 TEST_CASE("Collected Croatian accents preserve stress tone and vowel quantity", "[frontend][accents][collected-oct11]") {
     // Independently checked against Školski rječnik/HJP principal forms.
     // mnom is the user's short-vowel preference; godišnjakinja is the
