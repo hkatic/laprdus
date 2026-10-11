@@ -1086,6 +1086,81 @@ The prefix's short falling *i* is the listener's choice; the component
 Written accent marks and the user's whole-compound exact, stem and verb
 entries take precedence over the split. The rule applies only to Croatian.
 
+**Collected words: accent audit, 11 October 2026.** The primary reference is
+Institut za hrvatski jezik's *Školski rječnik hrvatskoga jezika*, cross-checked
+against *Hrvatski jezični portal* (HJP, Znanje/Srce). The Institute's
+[grammar](https://gramatika.hr/pravilo/naglasak-i-naglasne-cjeline/3/) describes
+the four accents and their movement in inflection; its
+[orthography](https://pravopis.hr/pravilo/znakovi-za-naglaske-i-duzinu/80/)
+distinguishes accent marks from post-accent length. Stress position, tone and
+stressed-vowel length are checked independently. The output below follows
+Croatian's existing omission of explicit post-accent lengths; the phonetic
+long *ije* reflex remains a diphthong even when unstressed.
+
+A listed inflection need not be printed as an accented headword: where the
+source gives only the lemma and principal forms, the remaining inflections
+are derived from that paradigm. HJP's expandable forms are often **unaccented**
+and are not treated as independent accent evidence. Exact paradigms prevent
+a noun's accent from spilling into its verb or another derivative. Regular
+*nàmignuti* uses `VERBS`; the irregular *-vesti* active participles and
+*ukràden/obìjen/ubìjen/razbìjen/rèčen* use exact entries.
+
+| Supplied word(s) | Croatian output | Evidence and qualifications |
+|---|---|---|
+| slavlje | *slȃvlje* | [ŠR](https://rjecnik.hr/search/?q=slavlje&strict=yes), G *slȃvlja*. |
+| evenata | *evènata* | The user's latest listening preference on 11 October 2026 puts a short rising accent on the second *e*, with short *a* vowels. Implemented as an exact Croatian entry. [HJP event](https://hjp.znanje.hr/index.php?show=search_by_id&id=f15jXhR0) gives foreign pronunciation *ivȅnt*, but no accented genitive plural; this is a listener preference, not claimed as a dictionary citation. |
+| festivala | *festivála* | [ŠR festival](https://rjecnik.hr/search/?q=festival&strict=yes): headword *festìvāl*, G singular/plural with long rising *a*. |
+| razloga | *rázloga* | [ŠR razlog](https://rjecnik.hr/search/?q=razlog&strict=yes): same stem accent in singular and plural, including *rázlozi*. |
+| zahvalnost | *zahválnost* | [ŠR](https://rjecnik.hr/search/?q=zahvalnost&strict=yes), also G *zahválnosti*, I *zahválnošću*. |
+| nasmiješeno | *nàsmiješeno* | [ŠR nasmiješen](https://rjecnik.hr/search/?q=nasmije%C5%A1en&strict=yes) explicitly prints the neuter *nàsmijēšeno*. |
+| putovanja | *putovánja* | [ŠR putovanje](https://rjecnik.hr/search/?q=putovanje&strict=yes) and [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=dl1hXxE%3D). ŠR also has *putòvānje* for movement of something between destinations; the travel sense is the default here. |
+| krafna | *kráfna* | [ŠR](https://rjecnik.hr/search/?q=krafna&strict=yes). [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=elluXhI%3D) instead gives *kràfna*: an actual source disagreement. |
+| glas | *glȃs* | [ŠR](https://rjecnik.hr/search/?q=glas&strict=yes): long falling singular, L *glásu*, short falling plural *glȁsovi*. |
+| izvela, odvela, zavela, dovela | *ìzvela, òdvela, zàvela, dòvela* | [ŠR izvesti](https://rjecnik.hr/search/?q=izvesti&strict=yes), [odvesti](https://rjecnik.hr/search/?q=odvesti&strict=yes), [zavesti](https://rjecnik.hr/search/?q=zavesti&strict=yes), [dovesti](https://rjecnik.hr/search/?q=dovesti&strict=yes) give active *ìzveo/òdveo/zàveo/dòveo*. HJP *izvesti* explicitly includes feminine *ìzvela*. The active paradigm retains the prefix accent; present/passive *izvèdem/izvèden* and their parallels differ. |
+| strpljenje | *strpljénje* | [ŠR](https://rjecnik.hr/search/?q=strpljenje&strict=yes), also G *strpljénja*. Syllabic *r* precedes the stressed syllable. |
+| pažnja | *pàžnja* | [ŠR](https://rjecnik.hr/search/?q=pa%C5%BEnja&strict=yes); G plural *pážnjā* differs, with alternative *pàžnjī*. |
+| hrabrost | *hrábrost* | [ŠR](https://rjecnik.hr/search/?q=hrabrost&strict=yes), G *hrábrosti*, I *hrábrošću*. |
+| samopouzdanje | *samopouzdánje* | [ŠR](https://rjecnik.hr/search/?q=samopouzdanje&strict=yes); both *o* and *u* are nuclei before stressed *a*. |
+| samodopadan, samodopadnost | *samodòpadan, samodòpadnost* | HJP [adjective](https://hjp.znanje.hr/index.php?show=search_by_id&id=dldlXxE%3D) and [noun](https://hjp.znanje.hr/index.php?show=search_by_id&id=dldlXxM%3D). |
+| nabava | *nàbava* | [ŠR](https://rjecnik.hr/search/?q=nabava&strict=yes); G plural *nȁbāvā*. [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=e1dkWxc%3D) has *nȃbava*. Prefer ŠR. |
+| konobar | *kònobar* | [ŠR](https://rjecnik.hr/search/?q=konobar&strict=yes) *kònobār*, cases keep initial accent except V *kȍnobāru/kȍnobāre*. [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=elplXRA%3D) has *kȍnobār*. Prefer ŠR. |
+| namigne | *nàmigne* | [ŠR namignuti](https://rjecnik.hr/search/?q=namignuti&strict=yes) *nàmignēm/nàmignū/nàmigni/nàmignuo*. |
+| ukraden | *ukràden* | Passive explicitly given by [ŠR ukrasti](https://rjecnik.hr/search/?q=ukrasti&strict=yes) and [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=f19jWRJ7). |
+| obijene, ubijene | *obìjene, ubìjene* | [ŠR obiti](https://rjecnik.hr/search/?q=obiti&strict=yes), [ubiti](https://rjecnik.hr/search/?q=ubiti&strict=yes) give *obìjen, ubìjen*. The stressed *i* is separate from the following *e*: four syllables in each supplied form, not the three produced by the old jat heuristic. |
+| razbijene (added subsequently) | *razbìjene* | [ŠR razbiti](https://rjecnik.hr/search/?q=razbiti&strict=yes) and [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=dltlURU%3D) both give passive *razbìjen*. Short rising *i*, separate from *e*, remains in *razbìjena/razbìjeno/razbìjeni/razbìjene/razbìjenima*. Four syllables in *razbijene*. |
+| počinitelji | *počìnitelji* | [ŠR počinitelj](https://rjecnik.hr/search/?q=po%C4%8Dinitelj&strict=yes) explicitly gives the plural. |
+| špansko | *Špánsko* | [HJP špan, onomastics](https://hjp.znanje.hr/index.php?show=search_by_id&id=d1diXRQ%3D) explicitly identifies *Špánsko (dio Zagreba)*. The list is interpreted as this neighbourhood; its lowercase spelling receives a matching alias. This differs from adjective *špȃnskī*. Place-case endings are adjectival (*Španskoga, Španskom*). |
+| društvo | *drùštvo* | [ŠR](https://rjecnik.hr/search/?q=dru%C5%A1tvo&strict=yes), G plural *drȗštāvā/drúštvā*. [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=fF9hXxE%3D) instead has long rising *drúštvo*. Prefer ŠR. |
+| rečeno (listed twice) | *rèčeno* | Passive *rèčen* in [ŠR reći](https://rjecnik.hr/search/?q=re%C4%87i&strict=yes) and [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=dlpkWhA%3D). |
+| problema | *probléma* | [ŠR problem](https://rjecnik.hr/search/?q=problem&strict=yes): headword *pròblēm*, cases *probléma/problémi*. |
+| travnjaku | *trȃvnjaku* | [ŠR travnjak](https://rjecnik.hr/search/?q=travnjak&strict=yes): *trȃvnjāk/trȃvnjāka/trȃvnjāci*. |
+| terenu | *terénu* | [ŠR teren](https://rjecnik.hr/search/?q=teren&strict=yes): *tèrēn/teréna/teréni*. D/L continues the oblique stem accent. |
+| trener | *tréner* | [ŠR](https://rjecnik.hr/search/?q=trener&strict=yes), same accent in G/V and plural. |
+| smisao | *smȋsao* | [ŠR](https://rjecnik.hr/search/?q=smisao&strict=yes), G *smȋsla*; [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=d11lXBk%3D) also gives plural *smìslovi*. |
+| stanka | *stȃnka* | [ŠR](https://rjecnik.hr/search/?q=stanka&strict=yes), including D/L *stȃnci*. |
+| ctvari | interpreted as *stvari*: *stvȃri* by default | [ŠR stvar](https://rjecnik.hr/search/?q=stvar&strict=yes): G singular/N plural *stvȃri*, L singular/G plural *stvári*, DLI plural *stvárima*. The spelling *ctvari* itself is not a dictionary word and is not silently rewritten by the engine. |
+| neću | *néću* | [HJP neću](https://hjp.znanje.hr/index.php?show=search_by_id&id=eF9jWhQ%3D) gives *néću* but *nȇćeš/nȇćē/nȇćemo/nȇćete*, with rising *néćē* in 3pl. Unmarked *neće* defaults to 3sg. |
+| prilika | *prílika* | [ŠR](https://rjecnik.hr/search/?q=prilika&strict=yes), including D/L *prílici*. |
+| komponenti | G plural *kompònenti*; D/L singular *komponènti* | [ŠR komponenta](https://rjecnik.hr/search/?q=komponenta&strict=yes): *komponènta*, G plural *kompònenātā/kompònēntā/kompònentī*. [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eltuURM%3D) instead gives *kompònenta*. Follow ŠR; isolated *komponenti* retains the G plural default. |
+| kolačić, kolačići | *kolàčić, kolàčići* | [HJP kolačić](https://hjp.znanje.hr/index.php?show=search_by_id&id=eltkWxY%3D); plural follows the headword's stem accent. |
+| rep | *rȇp* | [ŠR](https://rjecnik.hr/search/?q=rep&strict=yes), L *répu*, plural *rȅpovi*. The animal's tail is intended; HJP also has short *rȅp* for unrelated loans. |
+| krokodil | *krokòdil* | [ŠR](https://rjecnik.hr/search/?q=krokodil&strict=yes) keeps this accent in *krokòdila/krokòdili*. [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=elhhXBk%3D) instead gives G *krokodíla*. Prefer ŠR. |
+| zec | *zȇc* | [ŠR](https://rjecnik.hr/search/?q=zec&strict=yes); plural *zȅčevi*. |
+| vuk | *vȗk* | [ŠR](https://rjecnik.hr/search/?q=vuk&strict=yes); plural *vȕkovi/vȗci*, G plural *vȕkōvā/vúkā*. |
+| žirafa | *žiràfa* | [ŠR](https://rjecnik.hr/search/?q=%C5%BEirafa&strict=yes); G plural *žiráfā* differs in vowel length. |
+| pantera | *pantéra* | [ŠR](https://rjecnik.hr/search/?q=pantera&strict=yes); singular and plural keep the long rising accent. |
+
+Context handling remains deliberately local, not a complete morphological
+parser. Existing locative cues now also cover *o glásu, po répu, o stvári*;
+*u/na stvari* remains ambiguous with accusative plural and keeps the default.
+Counts/quantifiers and immediately preceding *-ih* modifiers select the
+marked genitive plural for *stvari, žirafa, pažnja, nabava, društva, vuka,
+komponenta*. The definite singular cue in *o novoj komponènti* selects D/L
+singular. *Bez stvari* can be singular or plural and keeps the default.
+Written accents and user entries always override these choices. Regression
+checks cover the supplied forms, inflection contrasts, hiatus, case cues,
+and both override mechanisms in `tests/linux/test_frontend.cpp`.
+
 **Word classes** (`StressRules::strong()`, after the suffix rules). The
 single suffixes above cover a few hundred words each; the rules below cover
 whole classes of words by their shape. Each covers an accent pattern that

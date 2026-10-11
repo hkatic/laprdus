@@ -835,6 +835,17 @@ bool is_ije_diphthong(const std::u32string& w, size_t i) {
     if (starts_with(w, U"higijen") || starts_with(w, U"hijen")) return false;
     // The Hebrew names in -el (Dà-ni-jel, Gà-bri-jel), not jat
     if (starts_with(w, U"danijel") || starts_with(w, U"gabrijel")) return false;
+    // Passive -bi-jen belongs to biti 'hit', not to the long reflex of
+    // jat: obìjen/ubìjen and their inflections have separate i and e.
+    // Restrict this to verbal prefixes; bijel/bijedan retain their jat.
+    if (w[i - 1] == U'b' && starts_with(rest, U"n")) {
+        std::u32string prefix = w.substr(0, i - 1);
+        if (starts_with(prefix, U"ne")) prefix.erase(0, 2);
+        for (const char32_t* p : {U"", U"o", U"u", U"do", U"iz", U"na", U"od",
+                                  U"po", U"pre", U"pri", U"pro", U"raz", U"s", U"za"}) {
+            if (prefix == p) return false;
+        }
+    }
     // The passive participles of viti with a prefix (razvìjen, sàvijen,
     // zàvijen, ùvijen, prìvijen): vi-jen, not jat
     if (w[i - 1] == U'v' && starts_with(rest, U"n")) {
@@ -3458,7 +3469,7 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
         }
     }
 
-    // Croatian sȃt/rȃd/dȃr/bȏl keep falling accents in D sg, but have rising
+    // Croatian sȃt/rȃd/dȃr/bȏl/glȃs/rȇp keep falling accents in D sg, but have rising
     // L sg sátu/rádu/dáru/bólu, and vlȃst, bȏl (f.), strána, vijȇst, čȃr have
     // vlásti, bóli, stráni, vijésti, čári (Školski rječnik, Mrežnik).
     // Recognize a governing locative preposition, allowing up to two
@@ -3475,6 +3486,12 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
             U"od", U"između", U"poslije", U"prije", U"nakon", U"oko",
             U"usred", U"tijekom", U"broj", U"raspored",
         };
+        auto plural_genitive_cue = [](const std::u32string& previous) {
+            return counting_numbers().count(previous) ||
+                is_one_of(previous, {U"koliko", U"nekoliko", U"toliko", U"puno",
+                                     U"mnogo", U"malo", U"više", U"manje", U"dosta"}) ||
+                (previous.size() > 2 && ends_with(previous, U"ih"));
+        };
         for (size_t i = 1; i < count; ++i) {
             Word& word = words[i];
             if (word.explicit_stress || word.user_accent || word.letter_name ||
@@ -3482,7 +3499,8 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
             bool rising = false;
             if (word.w == U"satu" || word.w == U"radu" || word.w == U"daru" ||
                 word.w == U"vlasti" || word.w == U"bolu" || word.w == U"boli" ||
-                word.w == U"strani" || word.w == U"vijesti" || word.w == U"čari") {
+                word.w == U"strani" || word.w == U"vijesti" || word.w == U"čari" ||
+                word.w == U"glasu" || word.w == U"repu" || word.w == U"stvari") {
                 size_t cue = i;
                 for (int modifiers = 0; cue > 0 && modifiers < 2 &&
                      ends_with_any(words[cue - 1].w,
@@ -3495,7 +3513,36 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
                 const std::u32string& preposition = words[cue > 0 ? cue - 1 : 0].w;
                 rising = cue > 0 && locative.count(preposition) &&
                          !(word.w == U"boli" && preposition == U"na") &&
-                         !(word.w == U"vijesti" && (preposition == U"na" || preposition == U"u"));
+                         !((word.w == U"vijesti" || word.w == U"stvari") &&
+                           (preposition == U"na" || preposition == U"u"));
+                // pet/mnogo stvari is G plural stvárī; bez stvari alone
+                // is ambiguous with G singular, so do not infer from it.
+                if (word.w == U"stvari") {
+                    rising = rising || plural_genitive_cue(words[i - 1].w);
+                }
+            } else if (is_one_of(word.w, {U"žirafa", U"pažnja", U"nabava", U"društva",
+                                         U"vuka", U"komponenta"}) &&
+                       plural_genitive_cue(words[i - 1].w)) {
+                // Homographic G plurals: žiráfā, pážnjā, nȁbāvā,
+                // drúštvā, vúkā and kompònēntā (Školski rječnik).
+                word.stress = (word.w == U"žirafa" || word.w == U"komponenta") ? 1 : 0;
+                word.accent = word.w == U"nabava" ? Accent::Falling : Accent::Rising;
+                word.phones[static_cast<size_t>(word.nuclei[word.stress])].is_long =
+                    word.w != U"nabava" && word.w != U"komponenta";
+            } else if (word.w == U"komponenti") {
+                // The isolated/G plural kompònentī contrasts with singular
+                // DL komponènti. A singular modifier or a nearby governing
+                // preposition identifies the latter without a global parser.
+                size_t cue = i;
+                for (int modifiers = 0; cue > 0 && modifiers < 2 &&
+                     ends_with(words[cue - 1].w, U"oj"); ++modifiers) --cue;
+                const auto& previous = words[cue > 0 ? cue - 1 : 0].w;
+                if ((cue > 0 && (locative.count(previous) || previous == U"k" ||
+                                previous == U"ka" || previous == U"prema")) ||
+                    ends_with(words[i - 1].w, U"oj")) {
+                    word.stress = 2;
+                    word.accent = Accent::Rising;
+                }
             } else if (word.w == U"sati") {
                 const auto& previous = words[i - 1].w;
                 rising = counting_numbers().count(previous) || genitive_hours.count(previous) ||

@@ -859,6 +859,72 @@ const char* const COMMON[] = {
 };
 
 const char* const CROATIAN[] = {
+    // Collected-word audit, 11 October 2026: Školski rječnik and HJP.
+    // Full citations, disagreements and ambiguous cases: docs/formant.md.
+    // Exact paradigms keep these accents out of unrelated derivatives.
+    u8"sl^a:vlj|e|a|u|em|ima",
+    // Listener-preferred evènata: short second e, no long a. The checked
+    // dictionaries do not accent this inflection, so keep it exact.
+    u8"ev/enata",
+    u8"fest/ival", u8"festiv/a:l|a|u|e|om|i|ima",
+    u8"r/a:zlog||a|u|om|e", u8"r/a:zlo|zi|zima|že",
+    u8"zahv/a:lnost||i|ima", u8"zahv/a:lnošću",
+    u8"n/asmiješen||a|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    u8"putov/a:nj|e|a|u|em|ima",
+    // Prefer ŠR kráfna, nàbava, kònobār, drùštvo where HJP differs.
+    u8"kr/a:fn|a|e|i|u|o|om|ama",
+    u8"n/abav|a|e|i|u|o|om|ama",
+    u8"k/onobar||a|u|om|i|ima", u8"k^onobare",
+    u8"dr/uštv|o|a|u|om|ima", u8"dr^u:štava",
+    u8"gl^a:s||a|u|e|om|i", u8"gl^asov|i|a|e|ima",
+    u8"strplj/e:nj|e|a|u|em|ima",
+    u8"p/ažnj|a|e|i|u|o|om|ama",
+    u8"hr/a:brost||i|ima", u8"hr/a:brošću",
+    u8"samopouzd/a:nj|e|a|u|em|ima",
+    u8"samod/opadan", u8"samod/opadn|a|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    u8"samod/opadnost||i|ima", u8"samod/opadnošću",
+    // Irregular -vesti participles differ from the present and passive:
+    // ìzvela but izvèdē/izvèden, and likewise od-/za-/do-.
+    u8"/izvesti", u8"/izv|eo|ela|elo|eli|ele",
+    u8"/odvesti", u8"/odv|eo|ela|elo|eli|ele",
+    u8"z/avesti", u8"z/av|eo|ela|elo|eli|ele",
+    u8"d/ovesti", u8"d/ov|eo|ela|elo|eli|ele",
+    // Irregular passives: ukràden, obìjen, ubìjen, razbìjen, rèčen. The
+    // i-je in the -biti participles is hiatus, handled by letter-to-sound.
+    u8"ukr/aden||a|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    u8"ob/ijen||a|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    u8"ub/ijen||a|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    u8"razb/ijen||a|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    u8"r/ečen||a|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    u8"poč/initelj||a|u|e|em|i|ima",
+    // Lowercase alias for the requested Zagreb neighbourhood; the proper
+    // name and its cases also live in places.tsv. HJP onomastics: Špánsko.
+    u8"šp/a:nsk|o|og|oga|om|ome|omu|im",
+    u8"pr/oblem", u8"probl/e:m|a|u|e|om|i|ima",
+    u8"tr^a:vnj|ak|aka|aku|akom|ače|aci|acima|ake",
+    u8"t/eren", u8"ter/e:n|a|u|e|om|i|ima",
+    u8"tr/e:ner||a|u|e|om|i|ima",
+    u8"sm^i:sao", u8"sm^i:sl|a|u|om|e", u8"sm/islov|i|a|e|ima",
+    u8"st^a:nk|a|e|i|u|o|om|ama", u8"st^a:nci",
+    // stvȃri defaults to N/A plural or G/D singular. Clear G plural and
+    // L singular contexts are resolved in Frontend; DLI plural is stvárima.
+    u8"stv^a:r||i|ju", u8"stv/a:rima",
+    // HJP néću, but nȇćeš/nȇće/nȇćemo/nȇćete; néće (3pl) is
+    // homographic with 3sg, which is the unmarked default.
+    u8"n/e:ću", u8"n^e:ć|eš|e|emo|ete",
+    u8"pr/i:lik|a|e|u|o|om|ama", u8"pr/i:lici",
+    // ŠR komponènta, DL komponènti, but G plural kompònentī.
+    // An isolated komponenti keeps the G plural reading.
+    u8"kompon/ent|a|e|u|o|om|ama",
+    u8"komp/onenti", u8"komp/onenata",
+    u8"kol/ačić||a|u|e|em|i|ima",
+    u8"r^e:p||a|u|e|om", u8"r^epov|i|a|e|ima",
+    // ŠR keeps krokòdil's accent in the cases (HJP G krokodíla).
+    u8"krok/odil||a|u|e|om|i|ima",
+    u8"z^e:c||a|u|om", u8"z^e:če", u8"z^ečev|i|a|e|ima",
+    u8"z^ecov|i|a|e|ima",
+    u8"v^u:k||a|u|om", u8"v^u:če", u8"v^u:ci", u8"v^ukov|i|a|e|ima",
+    u8"žir/af|a|e|i|u|o|om|ama", u8"pant/e:r|a|e|i|u|o|om|ama",
     // Listener's tiflo- compounds keep two component accents (Frontend),
     // including loans whose dictionary accent would be on -flo-.
     // The short initial accent of tiflo is a requested pronunciation;
@@ -1276,6 +1342,8 @@ const char* const IJE_VERBS[] = {
 // for the imperative forms. A verb that is not here is right only in the
 // infinitive or if the first syllable carries its accent anyway.
 const char* const VERBS[] = {
+    // ŠR/HJP nàmignuti, nàmignēm, nàmigni, nàmignuo.
+    u8"n/amig=u",
     u8"ur'e:d=i<pn", u8"odr'e:d=i<pn", u8"nar'e:d=i<p", u8"sr'e:d=i", u8"preur'e:d=i<p",
     u8"uklj'u:č=i<p!", u8"isklj'u:č=i<p!", u8"zaklj'u:č=i<p!", u8"priklj'u:č=i<p!",
     u8"odl'u:č=i<p", u8"na'uč=i<p", u8"pro'uč=i<p", u8"po'uč=i<p", u8"ur'u:č=i<p",

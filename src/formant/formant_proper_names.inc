@@ -210,6 +210,7 @@ const char* const PLACES_CROATIAN[] = {
     u8"K^a:rlov|ec|eca|ecu|ecem|ca|cu|cem", u8"L/udbrešk|i|og|oga|om|ome|im",
     u8"Plj^e:v|lja|alja|ljima", u8"S/emberij|a|e|u|om|i", u8"Z/emun||a|u|om",
     u8"Zr^i:nsk|i|og|oga|om|ome|im", u8"Top/o:lov|ac|aca|acu|acem|ca|cu|cem",
+    u8"Šp/a:nsk|o|og|oga|om|ome|im",
 };
 
 const char* const PLACES_SERBIAN[] = {
