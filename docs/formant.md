@@ -1016,6 +1016,76 @@ explicit accent or user entry. The noun's vocative *rȃde* also matches the
 stressed vowel of present *rȃdē* ‘they work’; the rest of *raditi* is a
 separate verb paradigm.
 
+The collected Croatian words reviewed on 11 October 2026 use the following
+accents. The output column follows the Croatian voice's existing omission
+of unstressed lengths; a dictionary's *strȕčnjācima*, for example, becomes
+*strȕčnjacima*, while a stressed long vowel remains long. Inflected forms
+derived from a dictionary's paradigm are identified separately from forms
+that the source actually prints with accents.
+
+| Requested forms | Croatian output | Dictionary evidence |
+|---|---|---|
+| pomagalima | *pomágalima* | [Školski rječnik](https://rjecnik.hr/search/?q=pomagalo&strict=yes) gives *pomágalo*, G singular and N plural *pomágala*; D/L/I plural retains this stem accent. |
+| nastradalim, nastradaloj, nastradalima | *nastrádalim, nastrádaloj, nastrádalima* | [Školski rječnik](https://rjecnik.hr/search/?q=nastradati&strict=yes) gives *nastrádati, nastrádao*. These adjectival forms retain the participle's accent; their endings follow [Institut's adjective paradigm](https://gramatika.hr/pravilo/opisni-pridjevi/21/). They are inflections, not separately accented dictionary citations. |
+| kontakata | *kòntakata* | [Školski rječnik](https://rjecnik.hr/search/?q=kontakt&strict=yes) explicitly gives G plural *kòntakātā*, alongside *kȍntāktā*; singular *kòntakt, kòntakta* and N plural *kòntakti* retain the short rising accent. |
+| Riječanka, Riječanin | *Rijéčanka, Rijéčanin* | [HJP](https://hjp.znanje.hr/index.php?id=dllgXBc%3D&show=search_by_id) explicitly gives *Rijéčanin, Rijéčānka*, N plural *Rijéčani*. Other cases retain this stem accent. The supplied lowercase spellings receive the same pronunciation. |
+| prostire | *pròstire* | [Školski rječnik](https://rjecnik.hr/search/?q=prostirati&strict=yes) gives *pròstirati, pròstirēm, pròstirū*; regular present inflection yields third-person singular *pròstirē*. |
+| pronađe, pronaći | *prònađe, prònaći* | [Školski rječnik](https://rjecnik.hr/search/?q=prona%C4%87i&strict=yes) gives *prònāći, prònāđēm*; third-person singular *prònāđē* follows the present paradigm. Its imperative *pronáđi* has a different accent. |
+| pribadača | *pribàdača* | [Školski rječnik](https://rjecnik.hr/search/?q=pribada%C4%8Da&strict=yes) directly gives *pribàdača*, G singular *pribàdačē*, N plural *pribàdače* and G plural *pribàdāčā*. |
+| odgovornostima | *odgovórnostima* | [Školski rječnik](https://rjecnik.hr/search/?q=odgovornost&strict=yes) gives *odgovórnōst, odgovórnosti, odgovórnošću*; D/L/I plural retains the long rising stem accent and short *-ost-*. |
+| logopedi | *logopédi* | [Školski rječnik](https://rjecnik.hr/search/?q=logoped&strict=yes) directly gives *logòpēd*, G *logopéda*, N plural *logopédi*, and the distinct vocative *lȍgopēde*. |
+| nas, vas | short *a* | The user's explicit preference sets short *a* by default. [Školski rječnik: mi](https://rjecnik.hr/search/?q=mi&strict=yes) and [vi](https://rjecnik.hr/search/?q=vi&strict=yes) distinguish stressed *nȃs, vȃs* from unstressed clitics *nas, vas*; the short default is a voice preference, not a claim that isolated dictionary forms have short accents. |
+| tumačenje | *tumáčenje* | [Školski rječnik](https://rjecnik.hr/search/?q=tuma%C4%8Denje&strict=yes) directly gives *tumáčēnje*, G *tumáčēnja*; the noun keeps long rising *a*. |
+| pedijatri | *pedìjatri* | [Školski rječnik](https://rjecnik.hr/search/?q=pedijatar&strict=yes) directly gives *pedìjātar*, G *pedìjātra*, N plural *pedìjātri*. [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eV9gWBI%3D) also lists the alternative *pedijȃtar*; this cycle follows Školski rječnik's short rising *i*. |
+| svijetloplavo | *svijetloplávo* | [Školski rječnik](https://rjecnik.hr/search/?q=svijetloplav&strict=yes) explicitly distinguishes masculine *svijétloplāv*, feminine *svijetlopláva*, neuter *svijetloplávo* and definite *svijétloplāvī*. The headword's accent therefore cannot be applied to the entire adjective stem. |
+| stručnjacima | *strȕčnjacima* | [Školski rječnik](https://rjecnik.hr/search/?q=stru%C4%8Dnjak&strict=yes) gives *strȕčnjāk, strȕčnjāka, strȕčnjāci*; D/L/I plural retains short falling *u*. [HJP](https://hjp.znanje.hr/index.php?id=d1pkWRg%3D&show=search_by_id) agrees on the stem accent and unstressed length. |
+
+For this cycle, Školski rječnik supplies the Croatian default where the two
+dictionaries differ: it has *pomágalo* against [HJP's *pomàgalo*](https://hjp.znanje.hr/index.php?id=eVtvWRY%3D&show=search_by_id),
+and G plural *kòntakātā* against [HJP's *kȍntakātā*](https://hjp.znanje.hr/index.php?id=elpiUBk%3D&show=search_by_id).
+These are documented choices between sources, not unanimous attestations.
+The noun paradigms prevent the generic long-stem rules from producing
+*pomagálima, kontakáta* or *stručnjácima*. In particular, *stručnjak* is a
+lexical exception to the moving accent of words such as *čarobnjak*.
+
+The same cycle also corrects the positive adjective *komplìciran* through
+its gender and case forms (*komplìcirana, komplìcirano, komplìciranoj,
+komplìciranima*). [Školski rječnik](https://rjecnik.hr/search/?q=kompliciran&strict=yes)
+prints *komplìcīrān*, its inflected stem and the comparative *komplicirànijī*;
+[HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eltuXhM%3D)
+agrees on the short rising first *i*, although its unstressed lengths
+differ. HJP also directly gives the adverb
+[*komplìcīrano*](https://hjp.znanje.hr/index.php?show=search_by_id&id=eltuXhQ%3D)
+and noun [*komplìcīranōst*](https://hjp.znanje.hr/index.php?show=search_by_id&id=eltuXhU%3D).
+Exact positive adjective and noun paradigms keep that accent without
+catching the verb *komplicírati* or comparative *kompliciràniji*. As above,
+Croatian omits the dictionaries' unstressed lengths.
+
+The Croatian *tiflo-* rule is the listener's explicitly chosen pronunciation
+for **every compound beginning with this element**, including established
+dictionary words. Each component receives its own accent: *tȉflo* plus the
+ordinary pronunciation of the remaining word. This is a pronunciation
+preference, not the accentuation recorded for the complete compounds in
+HJP: [*tiflòlog*](https://hjp.znanje.hr/index.php?show=search_by_id&id=f19nWxd5),
+[*tiflològija*](https://hjp.znanje.hr/index.php?show=search_by_id&id=f19nWxd6)
+and [*tiflòloškī*](https://hjp.znanje.hr/index.php?show=search_by_id&id=f19nWxd7)
+have one dictionary accent. [Tiflonova's own website](https://tiflonova.hr/)
+explains its name as TIFLO plus NOVA, but does not mark pronunciation;
+it supports that division of the name, not a prescribed accent.
+
+`Frontend::process()` normalizes lowercase, uppercase and inner capitals
+(*tiflonova, TIFLONOVA, TifloNova*) before splitting after *tiflo*. The tail
+must be nonempty and contain a vowel or syllabic *r*. Both parts then pass
+through the ordinary pronunciation and accent rules. The tail's
+`joined = true` keeps both components under one word number, with no new
+word boundary, pause or word-initial lengthening between them. Thus this
+is two accents within one prosodic word, not two space-separated words.
+The prefix's short falling *i* is the listener's choice; the component
+*tèhnika*, including D/L *tèhnici*, is attested by
+[Školski rječnik](https://rjecnik.hr/search/?q=tehnika&strict=yes).
+Written accent marks and the user's whole-compound exact, stem and verb
+entries take precedence over the split. The rule applies only to Croatian.
+
 **Word classes** (`StressRules::strong()`, after the suffix rules). The
 single suffixes above cover a few hundred words each; the rules below cover
 whole classes of words by their shape. Each covers an accent pattern that
@@ -1028,7 +1098,7 @@ are lexicon entries.
   (*telefon, restoran, kapetan, rezultat, aparat, programer, inženjer,
   kabinet, piramida, analiza, čokolada, motiv, Francuz*) and the derived
   nouns in *-ač, -ar, -aš, -njak, -ljak, -enik, -anac, -inac* (*prodavač,
-  čuvar, novinar, košarkaš, stručnjak, zemljak, zaposlenik, zarobljenik,
+  čuvar, novinar, košarkaš, čarobnjak, zemljak, zaposlenik, zarobljenik,
   Amerikanac, Dalmatinac*). In every case form the long vowel carries a
   rising accent, in all three voices: *telefóna, restorána, rezultáta,
   programéra, prodaváča, čuvára, zemljáka, zaposleníka, zaposleníci,
@@ -2352,7 +2422,7 @@ their tempo (`VoiceRegistry::nominal_wpm()`), so the top of a 2.0 slider is
   0.6 semitones per second, 1.3 to 2 semitones in all,
 - at the head of a sentence, a raised start: the stretch before the first
   accent is 1.5 semitones up and comes down into that accent's peak,
-- one movement per accented word: falling accents peak early in the stressed
+- one movement per accented component (two in a joined *tiflo-* compound): falling accents peak early in the stressed
   vowel and fall within it; rising accents are high and nearly level through
   the stressed vowel up to a peak at its end, and the following syllable
   starts as high and comes down
@@ -2666,7 +2736,20 @@ scons --platform=macos --build-config=release macos-all
 clang++ -std=c++17 -I include -I tests/linux tests/linux/test_formant.cpp \
     -o $B/test_formant -L $B -llaprdus -Wl,-rpath,@loader_path
 LAPRDUS_DATA=$B $B/test_formant
+
+# Inspect frontend accents and joined word boundaries directly.
+clang++ -std=c++17 -I include -I src -I tests/linux \
+    tests/linux/test_frontend.cpp src/formant/formant_frontend.cpp \
+    src/formant/formant_lexicon.cpp src/formant/formant_phonemes.cpp \
+    src/core/phoneme_mapper.cpp -o $B/test_frontend
+$B/test_frontend
 ```
+
+`test_frontend` checks the number and position of accents, component
+boundaries and override precedence without synthesizing audio. It compiles
+the four implementation files directly because these internal C++ types
+are not exported by the shared library. On Linux, use `g++` and the Linux
+build directory for this command; it needs no voice data or library link.
 
 The tests cover behaviour (registry, parameters, intonation direction,
 determinism, edge cases), not sound quality. For sound quality:

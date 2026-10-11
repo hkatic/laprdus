@@ -1477,6 +1477,133 @@ TEST_CASE("Collected Croatian accents retain tone and inflection", "[formant][te
     }
 }
 
+TEST_CASE("Kompliciran keeps its adjective accent throughout declension", "[formant][text][kompliciran]") {
+    // Školski rječnik: komplìcīrān, feminine/neuter komplìcīrāna/o,
+    // but comparative komplicirànijī. HJP confirms the adverb and noun
+    // komplìcīrano, komplìcīranōst. Croatian omits unstressed lengths.
+    struct Case { const char* plain; const char* accented; };
+    const Case cases[] = {
+        {u8"kompliciran", u8"komplìciran"},
+        {u8"komplicirana", u8"komplìcirana"},
+        {u8"komplicirano", u8"komplìcirano"},
+        {u8"komplicirani", u8"komplìcirani"},
+        {u8"komplicirane", u8"komplìcirane"},
+        {u8"kompliciranu", u8"komplìciranu"},
+        {u8"kompliciranog", u8"komplìciranog"},
+        {u8"kompliciranoga", u8"komplìciranoga"},
+        {u8"kompliciranom", u8"komplìciranom"},
+        {u8"kompliciranome", u8"komplìciranome"},
+        {u8"kompliciranomu", u8"komplìciranomu"},
+        {u8"kompliciranoj", u8"komplìciranoj"},
+        {u8"kompliciranih", u8"komplìciranih"},
+        {u8"kompliciranim", u8"komplìciranim"},
+        {u8"kompliciranima", u8"komplìciranima"},
+        {u8"kompliciranost", u8"komplìciranost"},
+        {u8"kompliciranosti", u8"komplìciranosti"},
+        {u8"kompliciranostima", u8"komplìciranostima"},
+        {u8"kompliciranošću", u8"komplìciranošću"},
+        // The comparative and infinitive must retain their later accents.
+        {u8"kompliciraniji", u8"kompliciràniji"},
+        {u8"kompliciranija", u8"komplicirànija"},
+        {u8"kompliciranije", u8"komplicirànije"},
+        {u8"kompliciranijima", u8"komplicirànijima"},
+        {u8"najkompliciraniji", u8"najkompliciràniji"},
+        {u8"komplicirati", u8"komplicírati"},
+        {u8"komplicirao", u8"komplicírao"},
+        {u8"kompliciranje", u8"komplicíranje"},
+    };
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    for (const auto& c : cases) {
+        INFO(c.plain);
+        const auto plain = speak(engine.handle, c.plain);
+        REQUIRE(!plain.empty());
+        REQUIRE(plain == speak(engine.handle, c.accented));
+    }
+    REQUIRE(speak(engine.handle, u8"kompliciran") != speak(engine.handle, u8"komplicíran"));
+    REQUIRE(speak(engine.handle, u8"komplicirano") != speak(engine.handle, u8"komplícirano"));
+}
+
+TEST_CASE("October 11 collected Croatian words keep their verified accents", "[formant][text][october11]") {
+    // Školski rječnik and HJP, checked 2026-10-11; source differences and
+    // inflectional evidence are documented in docs/formant.md. As elsewhere,
+    // Croatian omits unstressed lengths while preserving stressed quantity.
+    struct Case { const char* plain; const char* accented; };
+    const Case cases[] = {
+        {u8"pomagalima", u8"pomágalima"},
+        {u8"pomagalo", u8"pomágalo"},
+        {u8"nastradalim", u8"nastrádalim"},
+        {u8"nastradaloj", u8"nastrádaloj"},
+        {u8"nastradalima", u8"nastrádalima"},
+        {u8"nastradala", u8"nastrádala"},
+        {u8"nastradamo", u8"nàstradamo"},
+        {u8"nastradaju", u8"nastrádaju"},
+        {u8"nastradaj", u8"nàstradaj"},
+        {u8"kontakata", u8"kòntakata"},
+        {u8"kontakt", u8"kòntakt"},
+        {u8"kontaktima", u8"kòntaktima"},
+        {u8"riječanka", u8"rijéčanka"},
+        {u8"Riječanka", u8"Rijéčanka"},
+        {u8"riječanin", u8"rijéčanin"},
+        {u8"Riječanin", u8"Rijéčanin"},
+        // Inflections longer than the old three-letter stem allowance.
+        {u8"Riječanina", u8"Rijéčanina"},
+        {u8"Riječanima", u8"Rijéčanima"},
+        {u8"Riječankama", u8"Rijéčankama"},
+        {u8"prostire", u8"pròstire"},
+        {u8"prostirati", u8"pròstirati"},
+        {u8"prostiremo", u8"pròstiremo"},
+        {u8"pronađe", u8"prònađe"},
+        {u8"pronaći", u8"prònaći"},
+        {u8"pronađem", u8"prònađem"},
+        {u8"pronašli", u8"prònašli"},
+        {u8"pronađi", u8"pronáđi"},
+        {u8"pribadača", u8"pribàdača"},
+        {u8"pribadače", u8"pribàdače"},
+        {u8"odgovornostima", u8"odgovórnostima"},
+        {u8"odgovornost", u8"odgovórnost"},
+        {u8"odgovornošću", u8"odgovórnošću"},
+        {u8"logopedi", u8"logopédi"},
+        {u8"logoped", u8"logòped"},
+        {u8"logopeda", u8"logopéda"},
+        {u8"logopedima", u8"logopédima"},
+        {u8"logopede", u8"logopéde"},
+        {u8"logopedija", u8"logopèdija"},
+        {u8"nas", u8"nȁs"},
+        {u8"vas", u8"vȁs"},
+        {u8"tumačenje", u8"tumáčenje"},
+        {u8"tumačenja", u8"tumáčenja"},
+        {u8"pedijatri", u8"pedìjatri"},
+        {u8"pedijatar", u8"pedìjatar"},
+        {u8"pedijatrima", u8"pedìjatrima"},
+        {u8"pedijatara", u8"pedìjatara"},
+        {u8"pedijatrija", u8"pedijàtrija"},
+        {u8"svijetloplavo", u8"svijetloplávo"},
+        {u8"svijetloplava", u8"svijetlopláva"},
+        {u8"svijetloplav", u8"svijétloplav"},
+        {u8"svijetloplavi", u8"svijétloplavi"},
+        {u8"stručnjacima", u8"strȕčnjacima"},
+        {u8"stručnjak", u8"strȕčnjak"},
+        {u8"stručnjaka", u8"strȕčnjaka"},
+    };
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    for (const auto& c : cases) {
+        INFO(c.plain);
+        const auto plain = speak(engine.handle, c.plain);
+        REQUIRE(!plain.empty());
+        REQUIRE(plain == speak(engine.handle, c.accented));
+    }
+    // Written long pronouns remain available despite the requested short
+    // default; their difference must survive synthesis, not just lookup.
+    REQUIRE(speak(engine.handle, u8"nas").size() < speak(engine.handle, u8"nȃs").size());
+    REQUIRE(speak(engine.handle, u8"vas").size() < speak(engine.handle, u8"vȃs").size());
+    REQUIRE(speak(engine.handle, u8"Riječanka") != speak(engine.handle, u8"Riječànka"));
+    REQUIRE(speak(engine.handle, u8"logopedi") != speak(engine.handle, u8"logòpedi"));
+    // A plural object and the less common singular vocative share spelling.
+    REQUIRE(speak(engine.handle, u8"logopede") != speak(engine.handle, u8"lȍgopede"));
+}
+
 TEST_CASE("Personal names preserve verified stress and length", "[formant][text]") {
     // Listener corrections: Enída, Ìsaković, Greblìčki and Spàsojević.
     // HJP confirms long initial e: Knȇzović (falling), Knéžević (rising).

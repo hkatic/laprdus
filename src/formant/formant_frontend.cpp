@@ -140,7 +140,7 @@ struct Word {
     bool explicit_stress = false;
     bool user_accent = false;       // do not reinterpret a user's lexical accent
     bool letter_name = false;       // part of a spelled-out abbreviation
-    bool joined = false;            // one word with the previous ("ne znam")
+    bool joined = false;            // one word with the previous ("ne znam", tiflo-)
     bool spell = false;             // a letter of a dotted abbreviation ("s.a.r.s.")
     bool before_hyphen = false;     // a hyphen follows directly ("s-klasa")
     bool after_opening = false;     // after an opening quote or bracket ("„S tobom")
@@ -1765,7 +1765,7 @@ public:
     // Nouns whose last stem syllable is long: loans (telefon, restoran,
     // kapetan, rezultat, programer, piramida, analiza) and the derived
     // nouns in -ač, -ar, -aš, -njak, -ljak, -enik (prodavač, čuvar,
-    // košarkaš, stručnjak, zemljak, zaposlenik). Every case form has a long
+    // košarkaš, čarobnjak, zemljak, zaposlenik). Every case form has a long
     // rising accent on that syllable (telefóna, restorána, rezultáta,
     // programéra, prodaváča, čuvára, zemljáka, zaposleníka), and so do the
     // possessives (čuvárov, zemljákova) and the genitive plural. In the
@@ -1902,7 +1902,7 @@ public:
             }
             return true;
         }
-        // -njak, -ljak, with the plural in -njaci: stručnjak, zemljak,
+        // -njak, -ljak, with the plural in -njaci: čarobnjak, zemljak,
         // seljak, bezveznjak, duhovnjak, čarobnjácima; the other nouns in
         // -ak go both ways (jùnāk, čàrdak, pȅtak).
         if (rhyme == U"ak" || (rhyme == U"ac" && is_one_of(ending, {U"i", U"ima"}))) {
@@ -3098,10 +3098,50 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
         rewrite_foreign(probe);
         const std::u32string& w = probe.w;
         if (m_user_exact.count(w) || m_exact.count(w) || user_stem_matches(w)) return true;
+        // TifloNova and tiflonova share the component boundary below.
+        if (m_language == VoiceLanguage::Croatian && starts_with(w, U"tiflo")) return true;
         int letter = -1;
         return english_word(spelled, english_spelling(spelled), letter);
     });
     std::vector<Word> words = expand_words(std::move(tokens), m_language == VoiceLanguage::Serbian);
+    // Listener preference: every Croatian tiflo- compound has an accent on
+    // tiflo and one on its second component, including established loans.
+    // Analyze the components independently, but join their phones into one
+    // word so there is no pause or word-initial lengthening at the boundary.
+    // Written accents and the user's whole-word/stem/verb entries still win.
+    if (m_language == VoiceLanguage::Croatian) {
+        std::vector<Word> compounds;
+        for (Word& word : words) {
+            const bool marked = std::any_of(word.marks.begin(), word.marks.end(),
+                                            [](uint8_t m) { return m != 0; });
+            const std::u32string tail_text = starts_with(word.w, U"tiflo")
+                ? word.w.substr(5) : std::u32string();
+            bool split = !tail_text.empty() &&
+                         (has_vowel(tail_text) || has_inner_syllabic_r(tail_text)) &&
+                         !word.letter_name && !marked &&
+                         !m_user_exact.count(word.w) && !user_stem_matches(word.w);
+            if (split && m_user_verbs && !m_user_verbs->empty()) {
+                Word probe(word.w);
+                phonemize(probe);
+                StressResult stress;
+                if (StressRules(probe, m_language, true, m_user_verbs.get())
+                        .verb_form_in(*m_user_verbs, stress)) split = false;
+            }
+            if (split) {
+                Word tail(tail_text);
+                tail.joined = true;
+                tail.before_hyphen = word.before_hyphen;
+                word.w.resize(5);
+                word.marks.resize(5);
+                word.before_hyphen = false;
+                compounds.push_back(std::move(word));
+                compounds.push_back(std::move(tail));
+            } else {
+                compounds.push_back(std::move(word));
+            }
+        }
+        words = std::move(compounds);
+    }
     if (words.empty()) {
         return utt;
     }
@@ -3292,8 +3332,9 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
     for (size_t i = 0; i < count; ++i) {
         Word& word = words[i];
         // Letter names are always full words ("u" in USB is not the
-        // preposition, "te" in TV is not the pronoun).
-        if (word.nuclei.empty() || word.explicit_stress || word.letter_name) continue;
+        // preposition, "te" in TV is not the pronoun). A joined compound
+        // component likewise retains its independent accent.
+        if (word.nuclei.empty() || word.explicit_stress || word.letter_name || word.joined) continue;
 
         bool proclitic = proclitics().count(word.w) != 0;
         bool enclitic = enclitics().count(word.w) != 0;

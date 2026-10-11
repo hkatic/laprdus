@@ -859,6 +859,54 @@ const char* const COMMON[] = {
 };
 
 const char* const CROATIAN[] = {
+    // Listener's tiflo- compounds keep two component accents (Frontend),
+    // including loans whose dictionary accent would be on -flo-.
+    // The short initial accent of tiflo is a requested pronunciation;
+    // tèhnika/tèhnici are confirmed by Školski rječnik and HJP.
+    u8"t^iflo", u8"t/ehnik|a|e|i|u|o|om|ama", u8"t/ehnici",
+    // Listener's 11 October 2026 cycle, checked against Školski rječnik
+    // and HJP; sources, variants and homographs are in docs/formant.md.
+    // Exact paradigms avoid extending a noun's accent to other derivatives.
+    // Prefer ŠR pomágalo and kòntakātā (HJP pomàgalo and kȍntakātā).
+    // As elsewhere in Croatian, omit unstressed lengths.
+    u8"pom/a:gal|o|a|u|om|ima",
+    u8"k/ontakt||a|u|e|om|i|ima", u8"k/ontakata",
+    u8"odgov/o:rnost||i|ima", u8"odgov/o:rnošću",
+    u8"str^učnj|ak|aka|aku|akom|ače|aci|acima|ake",
+    // HJP Rijéčanin, Rijéčānka: the first (ije) nucleus, not -čan-.
+    // Exact entries also cover lowercase input and the longer case forms.
+    u8"r/ije:čanin||a|u|e|om", u8"r/ije:čan|i|a|ima|e",
+    u8"r/ije:čank|a|e|i|u|o|om|ama", u8"r/ije:čanaka",
+    // ŠR logòpēd / logopédi and pedìjātar / pedìjātri. The spelling
+    // logopede defaults to A plural; rare V singular lȍgopēde can be marked.
+    u8"log/oped", u8"logop/e:d|a|u|om|i|ima|e",
+    u8"ped/ijatar", u8"ped/ijatr|a|u|e|om|i|ima", u8"ped/ijatara",
+    u8"prib/ad|ača|ače|ači|aču|ačo|ačom|ačama",
+    u8"tum/a:čenj|e|a|u|em|ima",
+    // Adjectival cases of nastrádao; the regular verb is in VERBS.
+    u8"nastr/a:dal|i|a|o|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    // Irregular prònāći / prònāđē; keep COMMON's imperative pronáđi.
+    u8"pr/onaći", u8"pr/onađ|em|eš|e|emo|ete|u",
+    u8"pr/onaš|ao|la|lo|li|le|avši",
+    // ŠR's indefinite svijetlopláva/svijetloplávo versus masculine
+    // svijétloplāv and definite svijétloplāvī. Ambiguous a/o/e/u forms
+    // default to the indefinite reading; written accents can select either.
+    u8"svijetlopl/a:v|a|o|e|u|om",
+    u8"sv/ije:tloplav||i|og|oga|ome|omu|oj|ih|im|ima",
+    // Listener requests short A in unmarked nas/vas, including isolated
+    // words. Dictionaries distinguish emphatic nȃs/vȃs from clitic nas/vas;
+    // explicit accent marks still select the long emphatic pronunciation.
+    u8"n^as", u8"v^as",
+    // ŠR komplìcīrān / komplìcīrāna / komplìcīrāno; HJP also has the
+    // adverb komplìcīrano and noun komplìcīranōst. Croatian omits unstressed
+    // length. Exact positive forms leave komplicírati and komplicirànijī
+    // to their separate verb and comparative rules.
+    // https://rjecnik.hr/search/?q=kompliciran&strict=yes
+    // https://hjp.znanje.hr/index.php?show=search_by_id&id=eltuXhM%3D
+    // https://hjp.znanje.hr/index.php?show=search_by_id&id=eltuXhQ%3D
+    // https://hjp.znanje.hr/index.php?show=search_by_id&id=eltuXhU%3D
+    u8"kompl/iciran||a|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    u8"kompl/icirano|st|sti|stima|šću",
     // HJP: pòbjednīk, pòbjedničkī (feminine pòbjedničkā); keep initial
     // short rising o in every case, including -nici/-nicima/-niče.
     // Croatian omits unstressed lengths. Exact paradigms avoid derivatives.
@@ -1404,6 +1452,12 @@ const char* const VERBS[] = {
     // (so nezàpažen), and òpaziti the same; zapážati, zapážao, zapážānje,
     // but zàpāžām, zàpāžān in every voice, and opážati, òpāžām the same
     u8"z/apaz=i", u8"/opaz=i", u8"zap'a:ž=a<p!", u8"op'a:ž=a<p!",
+    // HJP / Školski rječnik: nastrádati, nastrádao, nastrádajū, but
+    // nàstrādām and imperative nàstrādāj; pròstirati, pròstirēm,
+    // pròstiri. The adjectival cases of nastrádao are in CROATIAN.
+    // https://rjecnik.hr/search/?q=nastradati&strict=yes
+    // https://rjecnik.hr/search/?q=prostirati&strict=yes
+    u8"nastr/a:d=a<!", u8"pr/ostir=te",
 };
 
 // Towns, villages and regions (PLACES_*) and personal names and surnames
