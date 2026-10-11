@@ -606,8 +606,9 @@ const char* const PERSONS_COMMON[] = {
 };
 
 const char* const PERSONS_CROATIAN[] = {
-    u8"=B/a:r|u|om", u8"B/a:r|e|i", u8"B/ožidar", u8"Ljep/osav|a|e|i|u|om",
-    u8"V^elimir|a|e|i|u|om", u8"=Vl/adimire", u8"Vl/adimir|a|i|u|om", u8"Š/a:r|ac|ca|cu|cem",
+    u8"=B/a:r|u|om", u8"B/a:r|e|i", u8"B/ožidar", u8"Džen/an|a|e|i|u|om",
+    u8"Ljep/osav|a|e|i|u|om", u8"V^elimir|a|e|i|u|om", u8"=Vl/adimire", u8"Vl/adimir|a|i|u|om",
+    u8"Š/a:r|ac|ca|cu|cem",
 };
 
 const char* const PERSONS_SERBIAN[] = {

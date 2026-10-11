@@ -859,6 +859,41 @@ const char* const COMMON[] = {
 };
 
 const char* const CROATIAN[] = {
+    // Pacijentima–duša audit, 11 October 2026. Školski rječnik and
+    // Mrežnik, cross-checked with HJP; evidence in docs/formant.md.
+    // Keep exact paradigms and Croatian's omission of unstressed length.
+    u8"pac/ijent||a|u|e|om|i|ima", u8"pac/ijenata",
+    // The requested adjective vȅseli differs from vesèli (veseliti).
+    // Nearby verbal cues restore the verb in the frontend's phrase pass.
+    u8"v^eseo", u8"v^esel|a|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    // ŠR zàštita (HJP zȃštita); G plural zȁštītā is contextual.
+    u8"z/aštit|a|e|i|u|o|om|ama",
+    u8"posjek/otin|a|e|i|u|o|om|ama",
+    u8"neprav/i:lnost||i|ima", u8"neprav/i:lnošću",
+    u8"nj^ežan", u8"nj/ežna",
+    u8"nj^ežn|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    u8"nj/ežnij*",
+    u8"polikl/inik|a|e|u|o|om|ama", u8"polikl/inici",
+    // HRVATSKI! 1/2023, p. 56 marks short stressed i; its notation omits
+    // tone. Rising tone here follows the standard internal-syllable rule.
+    u8"cedev'it|a|e|i|u|o|om|ama",
+    u8"dostoj/anstv|o|a|u|om|ima",
+    // ŠR glȃdan (HJP gládan), but gládna, glȃdno and glȃdnī.
+    u8"gl^a:dan", u8"gl/a:dna",
+    u8"gl^a:dn|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    u8"gl/adnij*",
+    u8"gl^a:d", u8"gl^a:di", u8"gl^a:đu",
+    // Isolated dana defaults to G singular dȃna; counts select G plural
+    // dánā and locative prepositions select dánu in the phrase pass.
+    u8"d^a:n||a|u|om|i|e|ima",
+    u8"b/i:ć|e|a|u|em|ima",
+    // di-jé-ta is not jat. Do not take dijete away from the child noun:
+    // its spelling is ambiguous with the diet noun's G sg / N/A pl.
+    u8"dij/e:t|a|i|u|o|om|ama",
+    // Mrežnik: dúša, dúšē, dȗši, dȗšu, dȗšo, dúšōm; N/A/V pl dȗše,
+    // G pl dúšā, D/L/I pl dúšama. Isolated duše defaults to N/A plural.
+    u8"d/u:š|a|om|ama", u8"d^u:š|i|u|o|e",
+
     // Testament–nogomet audit, 11 October 2026. Školski rječnik,
     // cross-checked with HJP; HJP supplies pediker and pedikerski.
     // Sources, dictionary disagreements and homographs: docs/formant.md.

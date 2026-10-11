@@ -48,6 +48,119 @@ void require_one_word(const Utterance& utterance) {
 
 } // namespace
 
+TEST_CASE("Pacijentima through dusa retain sourced accents and inflections", "[frontend][accents][health-oct11]") {
+    struct Case { const char32_t* text; int syllables; int stress; Accent tone; bool long_vowel; };
+    const auto F = Accent::Falling;
+    const auto R = Accent::Rising;
+    const Case cases[] = {
+        {U"pacijentima", 5, 1, R, false}, {U"pacijent", 3, 1, R, false},
+        {U"pacijenta", 4, 1, R, false}, {U"pacijenata", 5, 1, R, false},
+        {U"veseli", 3, 0, F, false}, {U"veseo", 3, 0, F, false},
+        {U"vesela", 3, 0, F, false}, {U"veseloga", 4, 0, F, false},
+        {U"veselima", 4, 0, F, false}, {U"veseliji", 4, 1, R, false},
+        {U"veseliti", 4, 1, R, false}, {U"veselimo", 4, 1, R, false},
+        {U"zaštita", 3, 0, R, false}, {U"zaštite", 3, 0, R, false},
+        {U"zaštitom", 3, 0, R, false}, {U"zaštitama", 4, 0, R, false},
+        {U"posjekotina", 5, 2, R, false}, {U"posjekotine", 5, 2, R, false},
+        {U"posjekotinom", 5, 2, R, false}, {U"posjekotinama", 6, 2, R, false},
+        {U"nepravilnosti", 5, 2, R, true}, {U"nepravilnost", 4, 2, R, true},
+        {U"nepravilnošću", 5, 2, R, true}, {U"nepravilnostima", 6, 2, R, true},
+        {U"nježno", 2, 0, F, false}, {U"nježan", 2, 0, F, false},
+        {U"nježna", 2, 0, R, false}, {U"nježni", 2, 0, F, false},
+        {U"nježniji", 3, 0, R, false},
+        {U"poliklinika", 5, 2, R, false}, {U"poliklinike", 5, 2, R, false},
+        {U"poliklinici", 5, 2, R, false}, {U"poliklinikama", 6, 2, R, false},
+        {U"cedevita", 4, 2, R, false}, {U"Cedevita", 4, 2, R, false},
+        {U"Cedevite", 4, 2, R, false}, {U"Cedevitom", 4, 2, R, false},
+        {U"dostojanstvo", 4, 2, R, false}, {U"dostojanstva", 4, 2, R, false},
+        {U"dostojanstvom", 4, 2, R, false}, {U"dostojanstvima", 5, 2, R, false},
+        {U"gladan", 2, 0, F, true}, {U"gladna", 2, 0, R, true},
+        {U"gladno", 2, 0, F, true}, {U"gladni", 2, 0, F, true},
+        {U"gladnijima", 4, 0, R, false},
+        {U"glad", 1, 0, F, true}, {U"gladi", 2, 0, F, true},
+        {U"glađu", 2, 0, F, true},
+        {U"dana", 2, 0, F, true}, {U"dan", 1, 0, F, true},
+        {U"danu", 2, 0, F, true}, {U"danima", 3, 0, F, true},
+        {U"biće", 2, 0, R, true}, {U"bića", 2, 0, R, true},
+        {U"bićima", 3, 0, R, true},
+        {U"dijeta", 3, 1, R, true}, {U"dijeti", 3, 1, R, true},
+        {U"dijetom", 3, 1, R, true}, {U"dijetama", 4, 1, R, true},
+        {U"dijete", 2, 0, R, true}, // preserve the default child reading
+        {U"duša", 2, 0, R, true}, {U"duši", 2, 0, F, true},
+        {U"dušu", 2, 0, F, true}, {U"dušo", 2, 0, F, true},
+        {U"duše", 2, 0, F, true}, {U"dušom", 2, 0, R, true},
+        {U"dušama", 3, 0, R, true},
+        // User-confirmed female name and middle syllable; length remains
+        // provisional. The short rising rendering is an explicit policy.
+        {U"Dženana", 3, 1, R, false}, {U"Dženane", 3, 1, R, false},
+        {U"Dženani", 3, 1, R, false}, {U"Dženanu", 3, 1, R, false},
+        {U"Dženanom", 3, 1, R, false},
+    };
+    const Frontend frontend(VoiceLanguage::Croatian);
+    for (size_t i = 0; i < std::size(cases); ++i) {
+        CAPTURE(i);
+        const auto& c = cases[i];
+        const auto utterance = read(frontend, c.text);
+        REQUIRE(utterance.syllable_count == c.syllables);
+        const auto vowels = nuclei(utterance);
+        REQUIRE(std::count_if(vowels.begin(), vowels.end(), [](const Phone& p) { return p.stressed; }) == 1);
+        REQUIRE(vowels.at(c.stress).stressed);
+        REQUIRE(vowels.at(c.stress).accent == c.tone);
+        REQUIRE(vowels.at(c.stress).is_long == c.long_vowel);
+        for (const auto& p : vowels) if (!p.stressed) REQUIRE(!p.is_long);
+    }
+}
+
+TEST_CASE("Health list homographs use bounded cues and preserve overrides", "[frontend][accents][health-oct11]") {
+    struct Case { const char32_t* text; int word; int stress; Accent tone; bool long_vowel; };
+    const auto F = Accent::Falling;
+    const auto R = Accent::Rising;
+    const Case cases[] = {
+        {U"veseli ljudi", 0, 0, F, false}, {U"Oni su veseli", 2, 0, F, false},
+        {U"te vesele žene", 1, 0, F, false}, {U"s veselim ljudima", 1, 0, F, false},
+        {U"to me veseli", 2, 1, R, false}, {U"Veseli me", 0, 1, R, false},
+        {U"veselim se", 0, 1, R, false}, {U"vesele se", 0, 1, R, false},
+        {U"svakog dana", 1, 0, F, true}, {U"dva dana", 1, 0, F, true},
+        {U"tri dana", 1, 0, F, true}, {U"pet dana", 1, 0, R, true},
+        {U"nekoliko dana", 1, 0, R, true}, {U"tjedan dana", 1, 0, R, true},
+        {U"pet dugih dana", 2, 0, R, true}, {U"od dana", 1, 0, F, true},
+        {U"o danu", 1, 0, R, true}, {U"o tom danu", 2, 0, R, true},
+        {U"prema danu", 1, 0, F, true},
+        {U"bez duše", 1, 0, R, true}, {U"iz dubine duše", 2, 0, R, true},
+        {U"mirne duše", 1, 0, R, true}, {U"dvije duše", 1, 0, F, true},
+        {U"mrtve duše", 1, 0, F, true}, {U"na duši", 1, 0, F, true},
+        {U"više zaštita", 1, 0, F, false}, {U"ta zaštita", 1, 0, R, false},
+        {U"pet dȃna", 1, 0, F, true}, {U"o dȃnu", 1, 0, F, true},
+        {U"to me vȅseli", 2, 0, F, false}, {U"vesèli ljudi", 0, 1, R, false},
+        {U"bez dȗše", 1, 0, F, true}, {U"više zàštita", 1, 0, R, false},
+        {U"Dženána", 0, 1, R, true},
+    };
+    const Frontend frontend(VoiceLanguage::Croatian);
+    for (size_t i = 0; i < std::size(cases); ++i) {
+        CAPTURE(i);
+        const auto& c = cases[i];
+        std::vector<Phone> vowels;
+        for (const auto& p : read(frontend, c.text).phones)
+            if (p.word == c.word && p.nucleus) vowels.push_back(p);
+        REQUIRE(vowels.at(c.stress).stressed);
+        REQUIRE(vowels.at(c.stress).accent == c.tone);
+        REQUIRE(vowels.at(c.stress).is_long == c.long_vowel);
+    }
+    Frontend custom(VoiceLanguage::Croatian);
+    custom.set_user_lexicon(UserLexicon::parse(
+        R"({"entries":[{"word":"v^eseli"},{"word":"d^a:na"},{"word":"d^a:nu"},{"word":"d^u:še"},{"word":"z/aštita"},{"word":"džen/a:na"}]})"));
+    REQUIRE(nuclei(read(custom, U"veseli se"))[0].stressed);
+    REQUIRE(nuclei(read(custom, U"pet dana"))[1].accent == F);
+    REQUIRE(nuclei(read(custom, U"o danu"))[1].accent == F);
+    REQUIRE(nuclei(read(custom, U"bez duše"))[1].accent == F);
+    REQUIRE(nuclei(read(custom, U"više zaštita"))[2].accent == R);
+    REQUIRE(nuclei(read(custom, U"Dženana"))[1].is_long);
+    // The name table remains capitalization-sensitive and Croatian-only.
+    REQUIRE(nuclei(read(frontend, U"dženana"))[0].stressed);
+    REQUIRE(nuclei(read(frontend, U"DŽENANA"))[0].stressed);
+    REQUIRE(nuclei(read(Frontend(VoiceLanguage::Bosnian), U"Dženana"))[0].stressed);
+}
+
 TEST_CASE("Croatian tiflo compounds have two stresses within one word", "[frontend][tiflo]") {
     // The user explicitly requested independent accents for both components,
     // including established compounds that dictionaries accent as one unit.

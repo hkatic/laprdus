@@ -823,6 +823,9 @@ bool is_ije_diphthong(const std::u32string& w, size_t i) {
         if (has_vowel(w.substr(0, i))) return false;
     }
     if (starts_with(rest, U"nt")) return false;
+    // The inserted a of G plural pacìjenātā removes the -nt- cue above,
+    // but i-je remains two syllables just as in pacijent and pacijentima.
+    if (w == U"pacijenata") return false;
     // The loans in -ier (ka-ri-jé-ra, pre-mì-jer, ba-ri-jé-ra, ho-te-lì-jer,
     // in-te-rì-jer, ho-te-li-jer-ski) and the Greek hiero- (hi-je-ràr-hi-ja):
     // "ije" before r is jat only in zvijer, pomijerati and after the
@@ -3480,6 +3483,24 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
     // omits the unstressed final length, as in the rest of its lexicon.
     if (m_language == VoiceLanguage::Croatian) {
         static const WordSet locative = {U"u", U"na", U"o", U"po", U"pri"};
+        // vȅseli/vȅsele/vȅselim can also be forms of vesèliti. Keep the
+        // adjective default, but recognize an adjacent reflexive/object
+        // clitic ("veseli ljudi", "to me veseli", "veselim se").
+        for (size_t i = 0; i < count; ++i) {
+            Word& word = words[i];
+            if (word.explicit_stress || word.user_accent || word.letter_name ||
+                !is_one_of(word.w, {U"veseli", U"vesele", U"veselim"})) continue;
+            auto verbal_clitic = [](const std::u32string& w) {
+                return is_one_of(w, {U"se", U"me", U"te", U"ga", U"nas", U"vas", U"ih"});
+            };
+            // "te vesele žene" has demonstrative te, not an object clitic.
+            if ((i > 0 && verbal_clitic(words[i - 1].w) &&
+                 !(words[i - 1].w == U"te" && word.w == U"vesele")) ||
+                (i + 1 < count && verbal_clitic(words[i + 1].w))) {
+                word.stress = 1;
+                word.accent = Accent::Rising;
+            }
+        }
         static const WordSet genitive_hours = {
             U"nula", U"koliko", U"nekoliko", U"toliko", U"puno", U"mnogo",
             U"malo", U"više", U"manje", U"dosta", U"par", U"bez", U"do",
@@ -3501,7 +3522,7 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
                 word.w == U"vlasti" || word.w == U"bolu" || word.w == U"boli" ||
                 word.w == U"strani" || word.w == U"vijesti" || word.w == U"čari" ||
                 word.w == U"glasu" || word.w == U"repu" || word.w == U"zvuku" || word.w == U"stanu" ||
-                word.w == U"stvari" || word.w == U"padu") {
+                word.w == U"stvari" || word.w == U"padu" || word.w == U"danu") {
                 size_t cue = i;
                 for (int modifiers = 0; cue > 0 && modifiers < 2 &&
                      ends_with_any(words[cue - 1].w,
@@ -3521,6 +3542,28 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
                 if (word.w == U"stvari") {
                     rising = rising || plural_genitive_cue(words[i - 1].w);
                 }
+            } else if (word.w == U"dana") {
+                // dȃna (one day) versus dánā (several days). Prepositions
+                // alone do not disambiguate: "od dana" stays singular.
+                rising = plural_genitive_cue(words[i - 1].w) ||
+                    is_one_of(words[i - 1].w,
+                              {U"nula", U"tjedan", U"mjesec", U"godinu"});
+            } else if (word.w == U"duše") {
+                // G singular dúšē versus N/A/V plural dȗše (Mrežnik).
+                // Only use a governing genitive preposition, optionally
+                // across two modifiers, or the fixed phrase mirne duše.
+                static const WordSet genitive_soul = {
+                    U"bez", U"do", U"od", U"iz", U"s", U"sa", U"zbog", U"radi",
+                    U"poput", U"unutar", U"izvan",
+                };
+                size_t cue = i;
+                for (int modifiers = 0; cue > 0 && modifiers < 2 &&
+                     !genitive_soul.count(words[cue - 1].w) &&
+                     ends_with(words[cue - 1].w, U"e"); ++modifiers) --cue;
+                rising = (cue > 0 && genitive_soul.count(words[cue - 1].w)) ||
+                         words[i - 1].w == U"mirne";
+            } else if (word.w == U"zaštita" && plural_genitive_cue(words[i - 1].w)) {
+                word.accent = Accent::Falling; // ŠR G plural zȁštītā
             } else if (word.w == U"događaju" || word.w == U"osjećaju") {
                 // Present dogáđajū / òsjećajū versus D/L of the nouns
                 // dȍgađāj / ȍsjećāj. A governing preposition, optionally

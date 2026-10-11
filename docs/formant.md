@@ -1442,6 +1442,43 @@ cover the paradigms, related accent contrasts, capitalization and explicit
 and user-dictionary overrides; synthesis tests compare the unmarked words
 with explicitly accented text.
 
+**Pacijentima–duša and Dženana (11 October 2026).** The primary reference
+is the Institute of Croatian Language's *Školski rječnik* (ŠR), checked
+against HJP; *Mrežnik* supplies the complete *duša* paradigm. The
+[Institute's accent rules](https://gramatika.hr/pravilo/naglasak-i-naglasne-cjeline/3/)
+distinguish position, tone and length. As in the preceding audits, prefer
+ŠR where the dictionaries differ and retain the Croatian voice's omission
+of unstressed lengths. Macron-bearing forms below are dictionary notation,
+not a change to that synthesis policy. Accent entries are Croatian-only;
+the syllabification fix for *pacijenata* applies to the shared frontend.
+
+| Requested form | Checked accent and related forms | Evidence / implementation decision |
+|---|---|---|
+| pacijentima | *pacìjentima*, *pacìjent/pacìjenta/pacìjenti/pacìjenātā* | [ŠR](https://rjecnik.hr/search/?q=pacijent&strict=yes), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eFdhURc%3D). D/L/I plural follows the accented stem. Already correct by rule; exact noun forms now protect it. |
+| veseli | Adjective *vȅselī*, *vȅseo/vȅsela/vȅselo*, comparative *vesèlijī*; verb *vesèlī* | User confirmed “veseli ljudi.” [ŠR veseo](https://rjecnik.hr/search/?q=veseo&strict=yes), [veseliti](https://rjecnik.hr/search/?q=veseliti&strict=yes), [HJP adjective](https://hjp.znanje.hr/index.php?show=search_by_id&id=f19uWhl7) and [verb](https://hjp.znanje.hr/index.php?show=search_by_id&id=f19uWhh5). The existing verb paradigm remains; nearby clitics select it in “to me veseli,” “veseli se,” and “veselim se.” |
+| zaštita | *zàštita*, G plural *zȁštītā* | [ŠR](https://rjecnik.hr/search/?q=za%C5%A1tita&strict=yes); [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=f15kURN8) has *zȃštita*. This is a source disagreement; follow ŠR. Plural counting cues select the short falling G plural. |
+| posjekotina | *posjekòtina/posjekòtine*, G plural *posjekòtīnā* | [ŠR](https://rjecnik.hr/search/?q=posjekotina&strict=yes), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eVphXBE%3D). Short rising *o* in *-ko-*, not *-ti-*. |
+| nepravilnosti | *nepravílnosti*, *nepravílnōst/nepravílnošću* | [ŠR](https://rjecnik.hr/search/?q=nepravilnost&strict=yes), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eF5jXhg%3D). Long rising *i* in the noun's cases. |
+| nježno | *njȅžno*; *njȅžan*, feminine *njèžna*, definite *njȅžnī* | [ŠR adverb](https://rjecnik.hr/search/?q=nje%C5%BEno&strict=yes), [adjective](https://rjecnik.hr/search/?q=nje%C5%BEan&strict=yes), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eFxjWBg%3D). The previous fallback had neutral tone; explicitly encode short falling. |
+| poliklinika | *poliklìnika/poliklìnike/poliklìnici*, G plural *poliklìnīkā* | [ŠR](https://rjecnik.hr/search/?q=poliklinika&strict=yes), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eVtjXBk%3D). Short rising *i* in *-kli-*, including k/c alternation. |
+| cedevita | Short stressed *vi*: *Cedevịta* in the source; implemented *cedevìta* | Neither ŠR nor HJP returned a headword. Marija Flüchter-Krstulja, [*HRVATSKI!* 1/2023](https://d-nb.info/1279527307/34), p. 56, explicitly marks a short stressed *i*. Its notation key on pp. 3 and 5 omits tone. **Rising tone is inferred** from the standard internal-syllable rule, not directly attested by this source. Case forms keep the stem's stress by regular inflection. |
+| dostojanstvo | *dostojànstvo/dostojànstva* | [ŠR](https://rjecnik.hr/search/?q=dostojanstvo&strict=yes), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=fF9nWBc%3D). Exact regular forms; no broad stem that could take *dostojanstven*. |
+| gladan | *glȃdan*, *gládna*, *glȃdno*, definite *glȃdnī*, comparative *glàdnijī* | [ŠR](https://rjecnik.hr/search/?q=gladan&strict=yes). [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=fFdgXRQ%3D) has nominative *gládan*: follow ŠR's long falling masculine, preserve the rising feminine. |
+| glad | *glȃd/glȃdi/glȃđu* | [ŠR](https://rjecnik.hr/search/?q=glad&strict=yes), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=fFdgWhk%3D). Long falling *a*. |
+| dana | G singular *dȃna*, G plural *dánā*; L singular *dánu* | [ŠR dan](https://rjecnik.hr/search/?q=dan&strict=yes). Isolated *dana*, “svakog dana,” and “dva dana” use falling; “pet dana,” “nekoliko dana,” and “tjedan dana” use rising. “O danu” selects locative rising. The participle *dana* is a separate homograph, not inferred here. |
+| biće | *bíće/bíća/bíćima* | [ŠR](https://rjecnik.hr/search/?q=bi%C4%87e&strict=yes), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=dltjWA%3D%3D). Long rising noun. |
+| dijeta | *dijéta/dijéti/dijétom/dijétama* | [ŠR](https://rjecnik.hr/search/?q=dijeta&strict=yes), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=f1dkWxg%3D). Three syllables in *di-je-ta*, long stressed *e*. The ambiguous spelling *dijete* keeps the existing child reading; diet G singular / N/A plural requires further disambiguation and is not claimed fixed. |
+| duša | *dúša*, G *dúšē*, D/L *dȗši*, A *dȗšu*, V *dȗšo*, I *dúšōm*; plural NAV *dȗše*, G *dúšā*, DLI *dúšama* | [Mrežnik](https://rjecnik.hr/mreznik/dusa/) supplies all these accents; [ŠR](https://rjecnik.hr/search/?q=du%C5%A1a&strict=yes) agrees. Default *duše* is plural falling; a nearby genitive preposition or fixed “mirne duše” selects rising. |
+| Dženana | Female name, middle *NA*, per the user's confirmation | No reliable fully accented entry was found in the consulted dictionaries. Add it to the capitalization-sensitive personal-name table with regular feminine cases. **Short rising *Dženàna* is provisional**: only the stress location was confirmed; short length is the fallback and rising tone follows the engine's internal-syllable policy. This is not presented as dictionary evidence. |
+
+Local grammatical cues are deliberately bounded, not full parsing. Forms
+such as *duše* without a decisive cue and indefinite/definite adjective
+homographs retain the documented default; written accents and user accent
+entries override it. The generated Dženana entry applies only to title-case
+names in Croatian, leaving lowercase, all-capitals, Serbian and Bosnian
+analysis unchanged. Regression tests cover every requested spelling,
+principal forms, hiatus, context contrasts, and override precedence.
+
 **Word classes** (`StressRules::strong()`, after the suffix rules). The
 single suffixes above cover a few hundred words each; the rules below cover
 whole classes of words by their shape. Each covers an accent pattern that

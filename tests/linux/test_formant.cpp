@@ -740,6 +740,27 @@ TEST_CASE("Lexicon accents cover the whole paradigm", "[formant][text]") {
         {u8"siguran", u8"sȉguran"},     // Croatian omits unstressed length
         {u8"sigurno", u8"sȉgurno"},
         {u8"sigurnima", u8"sȉgurnima"},
+        // Pacijentima–duša: verify the accents survive synthesis too.
+        {u8"pacijentima", u8"pacìjentima"},
+        {u8"pacijenata", u8"pacìjenata"},
+        {u8"veseli ljudi", u8"vȅseli ljudi"},
+        {u8"to me veseli", u8"to me vesèli"},
+        {u8"zaštita", u8"zàštita"},
+        {u8"posjekotina", u8"posjekòtina"},
+        {u8"nepravilnosti", u8"nepravílnosti"},
+        {u8"nježno", u8"njȅžno"},
+        {u8"poliklinika", u8"poliklìnika"},
+        {u8"cedevita", u8"cedevìta"}, // tone inferred; source marks short i
+        {u8"dostojanstvo", u8"dostojànstvo"},
+        {u8"gladan", u8"glȃdan"},
+        {u8"glad", u8"glȃd"},
+        {u8"dana", u8"dȃna"},
+        {u8"pet dana", u8"pet dána"},
+        {u8"biće", u8"bíće"},
+        {u8"dijeta", u8"dijéta"},
+        {u8"duša", u8"dúša"},
+        {u8"bez duše", u8"bez dúše"},
+        {u8"Dženana", u8"Dženàna"}, // user stress; provisional short vowel
         {"najdra\xC5\xBEi", "n\xC8\x83jdra\xC5\xBEi"},   // nȃjdraži
         {"me\xC4\x91unarodni", "me\xC4\x91un\xC3\xA1rodni"},   // međunárodni
         {"odr\xC5\xBEivi", "odr\xCC\x80\xC5\xBEivi"},   // odr̀živi
@@ -1398,8 +1419,10 @@ TEST_CASE("Collected Croatian accents retain tone and inflection", "[formant][te
         {u8"osiguranjima", u8"osiguránjima"},
         {u8"veselimo", u8"vesèlimo"},
         {u8"veseliti", u8"vesèliti"},
-        {u8"veseli", u8"vesèli"},
-        {u8"veselim", u8"vesèlim"},
+        // Bare veseli now defaults to the user-confirmed adjective; make
+        // the older verb checks unambiguous with the reflexive clitic.
+        {u8"veseli se", u8"vesèli se"},
+        {u8"veselim se", u8"vesèlim se"},
         {u8"veselio", u8"vesèlio"},
         {u8"veselje", u8"vesélje"},
         {u8"automobil", u8"automòbil"},
