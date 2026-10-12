@@ -77,6 +77,108 @@ TEST_CASE("Vowels at word boundaries get a separation cue", "[frontend][prosody]
     REQUIRE(boundaries(U"krv ulazi") == 0);     // syllabic r is not vowel hiatus
 }
 
+TEST_CASE("Svetac and hope verbs retain sourced accents across their paradigms", "[frontend][accents][svetac-nadati]") {
+    struct Case { const char32_t* text; int stress; Accent tone; bool long_vowel; };
+    const auto R = Accent::Rising;
+    const auto F = Accent::Falling;
+    const Case cases[] = {
+        {U"svetac", 0, R, true}, {U"Svetac", 0, R, true}, {U"SVETAC", 0, R, true},
+        {U"sveci", 0, R, true}, {U"sveca", 0, R, true}, {U"svecu", 0, R, true},
+        {U"svecem", 0, R, true}, {U"svece", 0, R, true}, {U"svecima", 0, R, true},
+        {U"svetci", 0, R, true}, {U"svetca", 0, R, true}, {U"svetcu", 0, R, true},
+        {U"svetcem", 0, R, true}, {U"svetce", 0, R, true}, {U"svetcima", 0, R, true},
+        {U"sveče", 0, F, true}, {U"svetče", 0, F, true}, {U"svetaca", 0, F, true},
+        {U"nadati", 0, R, true}, {U"Nadati", 0, R, true}, {U"NADATI", 0, R, true},
+        {U"nadat", 0, R, true}, {U"nadao", 0, R, true}, {U"nadala", 0, R, true},
+        {U"nadalo", 0, R, true}, {U"nadali", 0, R, true}, {U"nadale", 0, R, true},
+        {U"nadaju", 0, R, true}, {U"nadajući", 0, R, true}, {U"nadah", 0, R, true},
+        {U"nadam", 0, F, true}, {U"nadaš", 0, F, true}, {U"nadamo", 0, F, true},
+        {U"nadate", 0, F, true}, {U"nadaj", 0, F, true}, {U"nadajmo", 0, F, true},
+        {U"nadajte", 0, F, true}, {U"nada", 0, R, true}, {U"nade", 0, R, true},
+        {U"nadi", 0, R, true}, {U"nadu", 0, R, true}, {U"nadom", 0, R, true},
+        {U"nadama", 0, R, true},
+        {U"ponadati", 1, R, true}, {U"Ponadati", 1, R, true},
+        {U"ponadat", 1, R, true}, {U"ponadao", 1, R, true}, {U"ponadala", 1, R, true},
+        {U"ponadalo", 1, R, true}, {U"ponadali", 1, R, true}, {U"ponadale", 1, R, true},
+        {U"PONADALI", 1, R, true}, {U"ponadaju", 1, R, true}, {U"ponadavši", 1, R, true},
+        {U"ponadah", 1, R, true}, {U"ponadasmo", 1, R, true}, {U"ponadaste", 1, R, true},
+        {U"ponadam", 0, R, false}, {U"ponadaš", 0, R, false}, {U"ponada", 0, R, false},
+        {U"ponadamo", 0, R, false}, {U"ponadate", 0, R, false},
+        {U"ponadaj", 0, R, false}, {U"ponadajmo", 0, R, false}, {U"ponadajte", 0, R, false},
+        {U"svȅtac", 0, F, false}, {U"nàdati", 0, R, false}, {U"pònadali", 0, R, false},
+    };
+    Frontend frontend(VoiceLanguage::Croatian);
+    for (size_t i = 0; i < std::size(cases); ++i) {
+        CAPTURE(i);
+        const auto& c = cases[i];
+        const auto utterance = read(frontend, c.text);
+        require_one_word(utterance);
+        REQUIRE(stressed_syllables(utterance) == std::vector<int>{c.stress});
+        const auto vowels = nuclei(utterance);
+        REQUIRE(vowels.at(c.stress).accent == c.tone);
+        REQUIRE(vowels.at(c.stress).is_long == c.long_vowel);
+        for (const auto& p : vowels) if (!p.stressed) REQUIRE_FALSE(p.is_long);
+    }
+}
+
+TEST_CASE("Nada distinguishes the noun from the reflexive verb and respects overrides", "[frontend][accents][svetac-nadati]") {
+    Frontend frontend(VoiceLanguage::Croatian);
+    auto word_accent = [](const Frontend& reader, const char32_t* text, int word) {
+        for (const auto& p : read(reader, text).phones)
+            if (p.word == word && p.stressed) return p.accent;
+        return Accent::None;
+    };
+    REQUIRE(word_accent(frontend, U"nada se", 0) == Accent::Falling);
+    REQUIRE(word_accent(frontend, U"Nada se uspjehu", 0) == Accent::Falling);
+    REQUIRE(word_accent(frontend, U"on se nada", 2) == Accent::Falling);
+    REQUIRE(word_accent(frontend, U"moja nada", 1) == Accent::Rising);
+    REQUIRE(word_accent(frontend, U"Nada se nadala", 0) == Accent::Rising);
+    REQUIRE(word_accent(frontend, U"nada se pojavila", 0) == Accent::Rising);
+    REQUIRE(word_accent(frontend, U"náda se", 0) == Accent::Rising);
+    frontend.set_user_lexicon(UserLexicon::parse(
+        R"({"entries":[{"word":"n/a:da"},{"word":"sv^etac"},{"verb":"p^onad=a"}]})"));
+    REQUIRE(word_accent(frontend, U"nada se", 0) == Accent::Rising);
+    REQUIRE_FALSE(nuclei(read(frontend, U"svetac"))[0].is_long);
+    REQUIRE(stressed_syllables(read(frontend, U"ponadali")) == std::vector<int>{0});
+}
+
+TEST_CASE("Ostarjeti forms keep initial rising stress and a short a", "[frontend][accents][ostarjeti]") {
+    Frontend frontend(VoiceLanguage::Croatian);
+    // ŠR explicitly lists òstarīm, òstarē, òstari, òstarjeh, òstario,
+    // òstarjela/òstarjelo/òstarjeli. Check the remaining regular forms too.
+    const char32_t* const forms[] = {
+             U"ostare", U"Ostare", U"OSTARE", U"ostarim", U"ostariš", U"ostari",
+             U"ostarimo", U"ostarite", U"ostarjeti", U"ostarjet", U"ostariti",
+             U"ostarit", U"ostario", U"ostarjela", U"ostarjelo", U"ostarjeli",
+             U"ostarjele", U"ostarila", U"ostarilo", U"ostarili", U"ostarile",
+             U"ostarjeh", U"ostarje", U"ostarjesmo", U"ostarjeste", U"ostarješe",
+             U"ostarjevši", U"ostarih", U"ostarismo", U"ostariste", U"ostariše",
+             U"ostarivši"};
+    for (size_t i = 0; i < std::size(forms); ++i) {
+        const auto utterance = read(frontend, forms[i]);
+        CAPTURE(i);
+        require_one_word(utterance);
+        REQUIRE(stressed_syllables(utterance) == std::vector<int>{0});
+        const auto vowels = nuclei(utterance);
+        REQUIRE(vowels.size() >= 3);
+        REQUIRE(vowels[0].accent == Accent::Rising);
+        REQUIRE_FALSE(vowels[0].is_long);
+        REQUIRE(vowels[1].ph == Ph::A);
+        REQUIRE_FALSE(vowels[1].stressed);
+        REQUIRE_FALSE(vowels[1].is_long);
+    }
+    // The correction also applies away from clause head and keeps explicit
+    // user-supplied accents authoritative.
+    const auto phrase = nuclei(read(frontend, U"oni ostare"));
+    REQUIRE(phrase[2].stressed);
+    REQUIRE(phrase[2].accent == Accent::Rising);
+    REQUIRE_FALSE(phrase[3].stressed);
+    REQUIRE_FALSE(phrase[3].is_long);
+    const auto explicit_accent = nuclei(read(frontend, U"ostáre"));
+    REQUIRE(explicit_accent[1].stressed);
+    REQUIRE(explicit_accent[1].is_long);
+}
+
 TEST_CASE("Collected Croatian accents retain quantity tone and inflection", "[frontend][accents][collected-oct12]") {
     // Školski rječnik principal forms; source choices and inferred
     // inflections are documented in docs/formant.md (12 October 2026).
@@ -114,12 +216,14 @@ TEST_CASE("Collected Croatian accents retain quantity tone and inflection", "[fr
         {U"sposobnosti", 4, 1, R, true}, {U"Sposobnosti", 4, 1, R, true},
         {U"sposobnost", 3, 1, R, true}, {U"sposobnošću", 4, 1, R, true},
         {U"sposobnostima", 5, 1, R, true},
-        {U"pojedine", 4, 1, R, false}, {U"Pojedine", 4, 1, R, false},
-        {U"pojedini", 4, 1, R, false}, {U"pojedina", 4, 1, R, false},
-        {U"pojedino", 4, 1, R, false}, {U"pojedinu", 4, 1, R, false},
-        {U"pojedinoga", 5, 1, R, false}, {U"pojedinomu", 5, 1, R, false},
-        {U"pojedinoj", 4, 1, R, false}, {U"pojedinih", 4, 1, R, false},
-        {U"pojedinima", 5, 1, R, false},
+        // Listener's initial stress; written accents retain the ŠR/HJP form.
+        {U"pojedine", 4, 0, F, false}, {U"Pojedine", 4, 0, F, false},
+        {U"pojedini", 4, 0, F, false}, {U"pojedina", 4, 0, F, false},
+        {U"pojedino", 4, 0, F, false}, {U"pojedinu", 4, 0, F, false},
+        {U"pojedinoga", 5, 0, F, false}, {U"pojedinomu", 5, 0, F, false},
+        {U"pojedinoj", 4, 0, F, false}, {U"pojedinih", 4, 0, F, false},
+        {U"pojedinima", 5, 0, F, false}, {U"POJEDINI", 4, 0, F, false},
+        {U"pojèdini", 4, 1, R, false},
         {U"pojedinac", 4, 2, R, false}, {U"pojedinca", 4, 2, R, false},
         {U"vještinu", 3, 1, R, false}, {U"Vještinu", 3, 1, R, false},
         {U"vještina", 3, 1, R, false}, {U"vještine", 3, 1, R, false},

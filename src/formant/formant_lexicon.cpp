@@ -859,6 +859,16 @@ const char* const COMMON[] = {
 };
 
 const char* const CROATIAN[] = {
+    // ŠR/HJP svétac, svéci/svétci; V sg svȇče/svȇtče, G pl svȇtācā.
+    // Exact cases keep the noun separate from svet, svetica, svečan, etc.
+    u8"sv/e:tac", u8"sv/e:c|a|u|em|i|e|ima", u8"sv/e:tc|a|u|em|i|e|ima",
+    u8"sv^e:če", u8"sv^e:tče", u8"sv^e:taca",
+    // ŠR/Mrežnik nádati se, but nȃdām/nȃdāj. The regular rising
+    // infinitive, active forms and third-person plural are in VERBS.
+    u8"n^a:d|am|aš|amo|ate|aj|ajmo|ajte",
+    // The noun náda keeps rising tone; adjacent se selects verbal nȃda
+    // in the phrase pass. Do not use a stem that would capture nadati.
+    u8"n/a:d|a|e|i|u|o|om|ama",
     // Listener-confirmed vȉšednevni (one short falling accent on VI).
     // ŠR has višèdnēvnī; Martinović/Pudić (2013) records both variants.
     // Exact forms override the time-compound rule only for this adjective.
@@ -870,11 +880,17 @@ const char* const CROATIAN[] = {
     // ŠR/HJP àpsurdnī; exact positives leave apsùrdnijī to its rule.
     u8"/apsurdan", u8"/apsurdn|i|a|o|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
 
-    // ŠR/HJP: sposóbnōst, sposóbnosti; pojèdīnī (not pojedìnī).
-    // Exact adjective forms leave the separate noun pojedìnac alone.
+    // ŠR/HJP: sposóbnōst, sposóbnosti.
     // Croatian keeps stressed quantity but omits post-accent lengths.
     u8"spos/o:bnost||i|ima", u8"spos/o:bnošću",
-    u8"poj/edin|i|a|o|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    // Listener-requested initial stress (12 October 2026): pȍjedini.
+    // ŠR/HJP instead give pojèdīnī; this is a pronunciation preference.
+    // Exact adjective forms leave the separate noun pojedìnac alone.
+    u8"p^ojedin|i|a|o|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    // ŠR/HJP òstarjeti, òstarjela, òstarjeh. The bounded -je- stem
+    // supplements /ostar=i in VERBS for the -jeti forms; it does not
+    // capture longer derivatives such as ostarjelost.
+    u8"/ostarje*",
     // vještìna / vještìnu, but G plural vještínā (phrase pass).
     u8"vješt/in|a|e|i|u|o|om|ama",
     u8"prv/enstveno",
@@ -1646,6 +1662,12 @@ const char* const IJE_VERBS[] = {
 // for the imperative forms. A verb that is not here is right only in the
 // infinitive or if the first syllable carries its accent anyway.
 const char* const VERBS[] = {
+    // ŠR/Mrežnik nádati/nádao/nádajū. Croatian falling present and
+    // imperative forms are exact entries; náda (noun) wins over nada.
+    u8"n/a:d=an",
+    // ŠR/HJP ponádati/ponádao, but pònādām/pònādāj in Croatian too;
+    // third-person plural ponádajū keeps the infinitive's long rising a.
+    u8"pon/a:d=a<!",
     // ŠR/HJP rázlikovati / rázlikovao; ŠR rázlikovān.
     // -ov- + the existing -ati class; Croatian -uj- forms are above.
     u8"r/a:zlikov=t",
@@ -1656,6 +1678,9 @@ const char* const VERBS[] = {
     // ŠR/HJP: ìspraviti / ìspravio / ìspravljen, pòmisliti / pòmislio,
     // víriti / vírīm / víri / vírio. Whole stems avoid other derivatives.
     u8"/isprav=i", u8"p/omisl=i", u8"v/i:r=i",
+    // ŠR/HJP òstarīm, òstarē, òstari, òstario: short rising o, short a.
+    // Also covers òstariti; Croatian -jeti forms are in CROATIAN above.
+    u8"/ostar=i",
     // ŠR/HJP pòklanjati, pòklanjām, pòklanjajū, pòklanjāj,
     // pòklanjao, pòklanjān, pòklanjānje: one regular -ati paradigm.
     u8"p/oklanj=a",

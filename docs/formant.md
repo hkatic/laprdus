@@ -1018,7 +1018,7 @@ principal forms; HJP independently confirms the overlapping entries:
 | --- | --- |
 | višednevnog | [ŠR višednevni](https://rjecnik.hr/search/?q=vi%C5%A1ednevni&strict=yes): *višèdnēvnī*, G *višèdnēvnōg(a)*. The existing time-compound rule matched this entry. The later listener clarification above selects *vȉšednevnog* instead. |
 | sposobnosti | [ŠR sposobnost](https://rjecnik.hr/search/?q=sposobnost&strict=yes): *sposóbnōst*, G singular/N plural *sposóbnosti*, I *sposóbnošću/sposóbnosti*, G plural *sposóbnostī*. [HJP](https://hjp.znanje.hr/index.php?id=d1xjXxk%3D&show=search_by_id) agrees. Preserve long rising stress on the second *o*. |
-| pojedine | [ŠR pojedini](https://rjecnik.hr/search/?q=pojedini&strict=yes) and [HJP](https://hjp.znanje.hr/index.php?id=eVtnXxA%3D&show=search_by_id): *pojèdīnī*, G *pojèdīnōg(a)*, feminine *pojèdīnā*. The regular forms keep short rising *e*. Exact adjective forms override the old *pojedìn-* stem without changing *pojedìnac/pojedìnca*. |
+| pojedine | [ŠR pojedini](https://rjecnik.hr/search/?q=pojedini&strict=yes) and [HJP](https://hjp.znanje.hr/index.php?id=eVtnXxA%3D&show=search_by_id): *pojèdīnī*, G *pojèdīnōg(a)*, feminine *pojèdīnā*. The subsequent listener request below selects initial stress instead. Exact adjective forms leave *pojedìnac/pojedìnca* unchanged. |
 | vještinu | [ŠR vještina](https://rjecnik.hr/search/?q=vje%C5%A1tina&strict=yes) and [HJP](https://hjp.znanje.hr/index.php?id=f19vWhV1&show=search_by_id): *vještìna*, G singular *vještìnē*, N plural *vještìne*, but G plural *vještínā*. Accusative *vještìnu* and the regular oblique forms keep short rising *i*. The existing plural-genitive cue selects long *i* in *pet vještina / mnogo novih vještina*. |
 | prvenstveno | [ŠR prvenstveno](https://rjecnik.hr/search/?q=prvenstveno&strict=yes) and [HJP](https://hjp.znanje.hr/index.php?id=dl1mWhk%3D&show=search_by_id): *prvènstveno*, short rising *e*, after the initial syllabic *r*. |
 | jugoslavija | [HJP Jugoslavija](https://hjp.znanje.hr/index.php?id=el9kXhA%3D&show=search_by_id): *Jugòslāvija*, short rising *o*. The regular singular cases retain it. Added to the Croatian place-name source table, with exact lowercase/all-capital fallback forms because the requested spelling has no common-word homograph. |
@@ -1027,13 +1027,79 @@ The original engine already gave *višèdnevnog*, but produced initial
 short stress for *sposobnosti, vještinu, prvenstveno*, stressed the *i* in
 *pojedine*, and stressed the *a* in *Jugoslavija*. The corrections are
 Croatian-specific. As elsewhere in this voice, dictionary post-accent
-lengths are omitted, so it renders *pojèdine, Jugòslavija*; stressed length
+lengths are omitted; that correction initially rendered *pojèdine*, and
+*Jugòslavija* still follows the dictionary. Stressed length
 is retained in *sposóbnosti* and genitive plural *vještína*. The isolated
 spelling *vještina* defaults to singular. This is a bounded context cue,
 not a full case parser; written accents and user lexicon entries override
 it. Tests cover all six requested forms, their regular inflections,
 capitalization, the distinct noun *pojedinac*, and the genitive-plural
 quantity and override behavior.
+
+**Svetac, sveci and nadati/ponadati, 12 October 2026 follow-up.**
+
+The requested forms were checked against the Institute's dictionaries
+and HJP, including the principal inflected forms:
+
+| Forms | Evidence and selected accent |
+| --- | --- |
+| svetac, sveci | [ŠR svetac](https://rjecnik.hr/search/?q=svetac&strict=yes): *svétac*, G *svétca*, V *svȇtče*, N plural *svétci*, G plural *svȇtācā*. [HJP](https://hjp.znanje.hr/index.php?id=d1ljXBA%3D&show=search_by_id) also gives *svétac*, G *svéca*, N plural *svéci*, and lists both spellings of the inflections. Keep long rising *e* in the regular cases, long falling *e* in the singular vocative and plural genitive. |
+| nadati | [ŠR nadati se](https://rjecnik.hr/search/?q=nadati%20se&strict=yes), [Mrežnik](https://rjecnik.hr/mreznik/nadati-se/) and [HJP](https://hjp.znanje.hr/index.php?id=e1diWxY%3D&show=search_by_id): *nádati*, *nádao/nádala*, but present *nȃdām* and imperative *nȃdāj*. ŠR/Mrežnik explicitly retain rising tone in *nádajū* and *nádajūći*. |
+| ponadati, ponadali | [ŠR ponadati se](https://rjecnik.hr/search/?q=ponadati%20se&strict=yes): *ponádati*, *ponádao*, present *pònādām*, third-person plural *ponádajū*, imperative *pònādāj*. [HJP](https://hjp.znanje.hr/index.php?id=eVpmURE%3D&show=search_by_id) agrees on the infinitive, present and active participle. The regular active plural *ponádali* retains long rising stress on *na-*. |
+
+Previously the engine shortened every requested stressed vowel, defaulted
+to neutral tone in *svetac/sveci/nadati*, and misplaced stress in
+*ponadaju*. Exact noun cases and whole verb stems now supply the accents;
+the Croatian present/imperative of *nadati* has exact falling-tone
+exceptions. As elsewhere, Croatian omits unstressed lengths (*svȇtaca*,
+*nȃdam*, *pònadam*) while preserving stressed length.
+
+The noun [náda](https://rjecnik.hr/search/?q=nada&strict=yes) must remain
+rising. An adjacent *se* selects verbal *nȃda*, except when the following
+word is a recognized verb (*Nada se nadala*, *nada se pojavila*).
+Capitalized names inside a clause and user-supplied accents are preserved.
+This is a bounded context cue, not full syntactic analysis. Unmarked
+*nadati* defaults to “hope”; HJP's separate short-rising
+[nàdati se](https://hjp.znanje.hr/index.php?id=e1diWxU%3D&show=search_by_id)
+(“set off”, “present itself”) can still be requested with written accents.
+Likewise, ambiguous *nadah* defaults to aorist *nádah*; written *nȃdah*
+selects the imperfect. Tests cover the requested words, noun spelling
+variants, verb inflections, the noun/verb contrast, explicit and user
+overrides, and synthesis equivalence with accented text.
+
+**Pojedini and ostare, 12 October 2026 follow-up.**
+
+The listener explicitly requested stress on *po-* in *pojedini*. Both
+[ŠR](https://rjecnik.hr/search/?q=pojedini&strict=yes) and
+[HJP](https://hjp.znanje.hr/index.php?id=eVtnXxA%3D&show=search_by_id)
+were checked again and give *pojèdīnī*, on *je-*. The Croatian adjective
+paradigm now implements the requested initial stress as short falling
+*pȍjedini, pȍjedine, pȍjedinima*. This is a listener preference, not a
+dictionary-confirmed standard accent; the listener specified position,
+and short falling tone is the implementation choice. Exact forms preserve
+the separate noun *pojedìnac*. Written *pojèdini* still selects the
+dictionary stress.
+
+For *ostare*, [ŠR ostarjeti](https://rjecnik.hr/search/?q=ostarjeti&strict=yes)
+explicitly lists *òstarīm, òstarē, òstari, òstarjeh, òstario,
+òstarjela/òstarjelo/òstarjeli*.
+[HJP ostarjeti](https://hjp.znanje.hr/index.php?id=eFhhXBc%3D&show=search_by_id)
+agrees on the headword, present and active participle; its
+[ostariti](https://hjp.znanje.hr/index.php?id=eFhhXBU%3D&show=search_by_id)
+entry has the same initial short rising accent. Thus the *a* is short and
+unstressed. The former engine output *ostáre* is corrected with the whole
+verb stem `/ostar=i`, covering the shared present, imperative and *-iti*
+forms. A bounded Croatian `/ostarje*` entry supplies the *-jeti* infinitive,
+future stem, active participles, aorist and past adverb without extending
+the correction to longer derivatives such as *ostarjelost*.
+
+Croatian still omits unstressed lengths, hence the rendered *òstare*
+rather than dictionary *òstarē*. This does not change stressed quantity.
+The Institute's [accent notation](https://pravopis.hr/pravilo/znakovi-za-naglaske-i-duzinu/80/)
+distinguishes the grave sign (short rising) from the macron (post-accent
+length). Frontend tests cover verb forms, short *a*, capitalization and
+explicit accents; synthesis tests compare both words and representative
+inflections with their explicitly accented equivalents.
 
 **Žal and ulaganje, 12 October 2026 follow-up.**
 

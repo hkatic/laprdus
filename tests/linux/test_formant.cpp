@@ -432,10 +432,28 @@ TEST_CASE("Lexicon accents cover the whole paradigm", "[formant][text]") {
     struct Case { const char* plain; const char* accented; };
     const Case cases[] = {
         {u8"razlikujemo", u8"rázlikujemo"},
+        {u8"svetac", u8"svétac"},
+        {u8"sveci", u8"svéci"},
+        {u8"svetaca", u8"svȇtaca"},
+        {u8"nadati", u8"nádati"},
+        {u8"nadam se", u8"nȃdam se"},
+        {u8"nadaju se", u8"nádaju se"},
+        {u8"nadali", u8"nádali"},
+        {u8"ponadati", u8"ponádati"},
+        {u8"ponadali", u8"ponádali"},
+        {u8"ponadam se", u8"pònadam se"},
+        {u8"ponadaju se", u8"ponádaju se"},
         {u8"apsurdni", u8"àpsurdni"},
         {u8"društvo", u8"drúštvo"},
         {u8"višednevni", u8"vȉšednevni"},
         {u8"višednevnog", u8"vȉšednevnog"},
+        {u8"pojedini", u8"pȍjedini"},
+        {u8"pojedinima", u8"pȍjedinima"},
+        {u8"ostare", u8"òstare"},
+        {u8"ostarim", u8"òstarim"},
+        {u8"ostarjeti", u8"òstarjeti"},
+        {u8"ostario", u8"òstario"},
+        {u8"ostarjela", u8"òstarjela"},
         {"obavijest", "\xC8\x8D" "bavijest"},   // ȍbavijest
         {"obavijesti", "\xC8\x8D" "bavijesti"},   // ȍbavijesti
         {"obavijestima", "\xC8\x8D" "bavijestima"},   // ȍbavijestima

@@ -3504,6 +3504,23 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
     // omits the unstressed final length, as in the rest of its lexicon.
     if (m_language == VoiceLanguage::Croatian) {
         static const WordSet locative = {U"u", U"na", U"o", U"po", U"pri"};
+        // náda (hope) versus nȃda se (hopes). A nearby reflexive selects
+        // the verb, unless it introduces another verb ("Nada se nadala",
+        // "nada se pojavila"). Capitalized names within a clause stay names.
+        for (size_t i = 0; i < count; ++i) {
+            Word& word = words[i];
+            if (word.w != U"nada" || word.explicit_stress || word.user_accent ||
+                word.letter_name || word.nuclei.size() != 2 ||
+                (i > 0 && word.capitalized && !word.all_caps)) continue;
+            const bool se_before = i > 0 && words[i - 1].w == U"se";
+            const bool se_after = i + 1 < count && words[i + 1].w == U"se";
+            const bool another_verb = se_after && i + 2 < count &&
+                StressRules(words[i + 2], m_language, false, m_user_verbs.get())
+                    .verb_form().nucleus >= 0;
+            if (se_before || (se_after && !another_verb)) {
+                word.accent = Accent::Falling;
+            }
+        }
         // vȅseli/vȅsele/vȅselim can also be forms of vesèliti. Keep the
         // adjective default, but recognize an adjacent reflexive/object
         // clitic ("veseli ljudi", "to me veseli", "veselim se").
