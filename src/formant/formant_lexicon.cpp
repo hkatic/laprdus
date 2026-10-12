@@ -28,6 +28,9 @@ namespace formant {
 namespace {
 
 const char* const COMMON[] = {
+    // Preserve verbal readings outside Croatian's exact ispuna paradigm.
+    // The noun-twin verb below handles clause-initial imperative ìspuni.
+    u8"/ispun|i|e:",
     // ---- Numbers (Hrvatski jezični portal; Wiktionary and the Serbian
     // dictionaries for the Serbian forms) ----
     u8"n^ul*", u8"j/edan", u8"j/edna", u8"j/edno", u8"d^va:", u8"dv^ije", u8"dv^e:",
@@ -859,6 +862,31 @@ const char* const COMMON[] = {
 };
 
 const char* const CROATIAN[] = {
+    // Listener's ispuna / Hrvata / -ac plurals audit, 12 October 2026.
+    // Školski rječnik and HJP; sources and homographs in docs/formant.md.
+    // Exact forms keep these accents out of unrelated derivatives.
+    // ȉspuna is falling; the imperative ìspuni uses the noun-twin verb
+    // rule at the head of a clause, while u ȉspuni keeps the noun.
+    u8"^ispun|a|e|i|u|o|om|ama",
+    // Hr̀vāt has short rising syllabic r (HJP's legacy-font ẕ glyph),
+    // but its obliques and plural have long rising a: Hrváta, Hrváti.
+    // Hrvate defaults to A plural, not the singular vocative.
+    u8"h/rvat", u8"hrv/a:t|a|u|om|i|e|ima",
+    // Fleeting a disappears in the regular cases; G plural retracts
+    // and shortens the accent, V singular has initial short falling.
+    u8"vatrog/a:s|ac|ca|cu|cem|ci|ce|cima",
+    u8"vatr/ogasaca", u8"v^atrogašče",
+    u8"mušk/a:r|ac|ca|cu|cem|ci|ce|cima",
+    u8"m/uškaraca", u8"m^uškarče",
+    u8"polic/a:j|ac|ca|cu|cem|ci|ce|cima",
+    u8"pol/icajaca", u8"p^olicajče",
+    // HJP explicitly lists all six negative presents with long rising i.
+    u8"n/i:|sam|si|je|smo|ste|su",
+    // Listener-requested long stressed i; neither ŠR nor HJP has these
+    // headwords. Rising tone follows the native non-initial convention;
+    // case forms extend that preference, not a verified dictionary rule.
+    u8"kafan/i:c|a|e|i|u|o|om|ama", u8"lagan/i:c|a|e|i|u|o|om|ama",
+
     // Drinks / ćevap audit, 12 October 2026 (ŠR/HJP, docs/formant.md).
     // Exact paradigms keep these accents out of longer derivatives.
     u8"p^i:v|o|a|u|om|ima",
@@ -1823,7 +1851,8 @@ const char* const VERBS[] = {
     // udára, ìspune not račúne, ìskače not koláče, spȁda not čokoláda;
     // odmárati, zamárati follow their accent. (The present of umrijeti,
     // ùmire, is in the lexicon: as a stem it would take umíri, umíriti.)
-    u8"'udar=a", u8"'ispun=i", u8"n'apun=i", u8"d'opun=i", u8"p'opun=i",
+    // HJP ìspuniti; ìspuni is also the D/L of Croatian ȉspuna.
+    u8"'udar=a", u8"/ispun=in", u8"n'apun=i", u8"d'opun=i", u8"p'opun=i",
     u8"'iskak=t", u8"'iskač=e", u8"'uskak=t", u8"'uskač=e",
     u8"z'aplak=t", u8"z'aplač=e", u8"sp'ad=a", u8"odm'a:r=a<", u8"zam'a:r=a<",
     u8"um'a:r=a<", u8"raz'a:r=a<",

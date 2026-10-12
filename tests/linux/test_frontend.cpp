@@ -48,6 +48,107 @@ void require_one_word(const Utterance& utterance) {
 
 } // namespace
 
+TEST_CASE("Collected Croatian words retain sourced accents through inflection", "[frontend][accents][collected-words]") {
+    struct Paradigm {
+        std::vector<const char32_t*> forms;
+        int stress;
+        Accent tone;
+        bool long_vowel;
+    };
+    const auto R = Accent::Rising;
+    const auto F = Accent::Falling;
+    const Paradigm paradigms[] = {
+        {{U"ispuna", U"ispune", U"ispunu", U"ispuno", U"ispunom", U"ispunama",
+          U"Ispuna", U"ISPUNA"}, 0, F, false},
+        {{U"hrvat", U"Hrvat", U"HRVAT"}, 0, R, false},
+        {{U"hrvata", U"Hrvata", U"HRVATA", U"Hrvatu", U"Hrvatom", U"Hrvati",
+          U"Hrvate", U"Hrvatima"}, 1, R, true},
+        {{U"vatrogasac", U"vatrogasca", U"vatrogascu", U"vatrogascem", U"vatrogasci",
+          U"vatrogasce", U"vatrogascima", U"Vatrogasci", U"VATROGASCI"}, 2, R, true},
+        {{U"vatrogasaca"}, 1, R, false},
+        {{U"vatrogašče"}, 0, F, false},
+        {{U"muškarac", U"muškarca", U"muškarcu", U"muškarcem", U"muškarci",
+          U"muškarce", U"muškarcima", U"Muškarci", U"MUŠKARCI"}, 1, R, true},
+        {{U"muškaraca"}, 0, R, false},
+        {{U"muškarče"}, 0, F, false},
+        {{U"policajac", U"policajca", U"policajcu", U"policajcem", U"policajci",
+          U"policajce", U"policajcima", U"Policajci", U"POLICAJCI"}, 2, R, true},
+        {{U"policajaca"}, 1, R, false},
+        {{U"policajče"}, 0, F, false},
+        {{U"nisam", U"nisi", U"nije", U"nismo", U"niste", U"nisu", U"Nisi", U"NISI"}, 0, R, true},
+        // Listener's long i; case forms are an extension of that preference.
+        {{U"kafanica", U"kafanice", U"kafanici", U"kafanicu", U"kafanico",
+          U"kafanicom", U"kafanicama", U"Kafanica", U"KAFANICA"}, 2, R, true},
+        {{U"laganica", U"laganice", U"laganici", U"laganicu", U"laganico",
+          U"laganicom", U"laganicama", U"Laganica", U"LAGANICA"}, 2, R, true},
+        // The noun must not swallow its verb's imperative or longer forms.
+        {{U"ispuni", U"ispuniti", U"ispunim", U"ispunio", U"ispunila"}, 0, R, false},
+        // Written accents still override dictionary and preferred readings.
+        {{U"ispúna"}, 1, R, true},
+        {{U"nȉsi"}, 0, F, false},
+        {{U"kȁfanica", U"lȁganica"}, 0, F, false},
+    };
+    Frontend frontend(VoiceLanguage::Croatian);
+    for (size_t i = 0; i < std::size(paradigms); ++i) {
+        const auto& p = paradigms[i];
+        for (size_t j = 0; j < p.forms.size(); ++j) {
+            CAPTURE(i);
+            CAPTURE(j);
+            const auto utterance = read(frontend, p.forms[j]);
+            require_one_word(utterance);
+            REQUIRE(stressed_syllables(utterance) == std::vector<int>{p.stress});
+            const auto vowels = nuclei(utterance);
+            REQUIRE(vowels.at(p.stress).accent == p.tone);
+            REQUIRE(vowels.at(p.stress).is_long == p.long_vowel);
+            for (const auto& v : vowels) if (!v.stressed) REQUIRE_FALSE(v.is_long);
+        }
+    }
+}
+
+TEST_CASE("Collected accents survive phrases, homographs and user overrides", "[frontend][accents][collected-words]") {
+    struct Case { const char32_t* text; int word; int stress; Accent tone; bool long_vowel; };
+    const auto R = Accent::Rising;
+    const auto F = Accent::Falling;
+    const Case cases[] = {
+        {U"zubna ispuna", 1, 0, F, false}, {U"u ispuni", 1, 0, F, false},
+        {U"nema ispune", 1, 0, F, false}, {U"pet ispuna", 1, 0, F, false},
+        {U"Ispuni obrazac", 0, 0, R, false}, {U"Molim ispuni obrazac", 1, 0, R, false},
+        {U"jednog Hrvata", 1, 1, R, true}, {U"pet Hrvata", 1, 1, R, true},
+        {U"hrabri vatrogasci", 1, 2, R, true}, {U"pet vatrogasaca", 1, 1, R, false},
+        {U"ovi muškarci", 1, 1, R, true}, {U"pet muškaraca", 1, 0, R, false},
+        {U"ovi policajci", 1, 2, R, true}, {U"pet policajaca", 1, 1, R, false},
+        {U"ti nisi sam", 1, 0, R, true}, {U"zašto nisi došao", 1, 0, R, true},
+        {U"kafanica laganica", 0, 2, R, true}, {U"kafanica laganica", 1, 2, R, true},
+        {U"u kafanici", 1, 2, R, true}, {U"s laganicom", 1, 2, R, true},
+    };
+    Frontend frontend(VoiceLanguage::Croatian);
+    for (size_t i = 0; i < std::size(cases); ++i) {
+        CAPTURE(i);
+        const auto& c = cases[i];
+        std::vector<Phone> vowels;
+        for (const auto& p : read(frontend, c.text).phones)
+            if (p.nucleus && p.word == c.word) vowels.push_back(p);
+        REQUIRE(std::count_if(vowels.begin(), vowels.end(),
+                             [](const Phone& p) { return p.stressed; }) == 1);
+        REQUIRE(vowels.at(c.stress).stressed);
+        REQUIRE(vowels.at(c.stress).accent == c.tone);
+        REQUIRE(vowels.at(c.stress).is_long == c.long_vowel);
+    }
+    // These shared verb forms must not fall through to the long -un rule
+    // when the Croatian noun adds an imperative homograph.
+    for (auto language : {VoiceLanguage::Serbian, VoiceLanguage::Bosnian}) {
+        Frontend other(language);
+        REQUIRE(stressed_syllables(read(other, U"oni ispune obrazac"))[1] == 2);
+        REQUIRE(nuclei(read(other, U"ispuni"))[0].accent == R);
+    }
+    frontend.set_user_lexicon(UserLexicon::parse(
+        R"({"entries":[{"word":"k^afanic*"},{"word":"n^isi"},{"word":"/ispuni"}]})"));
+    REQUIRE(stressed_syllables(read(frontend, U"kafanica")) == std::vector<int>{0});
+    REQUIRE_FALSE(nuclei(read(frontend, U"nisi"))[0].is_long);
+    REQUIRE(nuclei(read(frontend, U"u ispuni"))[1].accent == R);
+    REQUIRE(stressed_syllables(read(frontend, U"kafaníca")) == std::vector<int>{2});
+}
+
 TEST_CASE("Drinks and cevap keep sourced Croatian accents through inflection", "[frontend][accents][drinks-cevap]") {
     struct Paradigm {
         std::vector<const char32_t*> forms;

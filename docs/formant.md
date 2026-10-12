@@ -967,6 +967,40 @@ To correct a word, add an entry to `formant_lexicon.cpp` (notation at the top
 of the file). Language-specific tables override the common one (*pròfesor* in
 Croatian, *profèsor* in Serbian and Bosnian).
 
+**Ispuna, Hrvata, vatrogasci, kafanica, laganica, muškarci, policajci and nisi,
+12 October 2026.**
+
+Checked against the Institute of Croatian Language's *Školski rječnik*
+(ŠR) and *Hrvatski jezični portal* (HJP). Where the web reader failed,
+the public dictionary HTML was read directly. HJP's legacy `ẕ` in
+*Hr̀vāt* was checked by rendering its official Libersina font: it is
+short rising syllabic *r*, not a literal *z* or a falling accent.
+
+| Word | Selected accent and inflection | Evidence and limits |
+|------|-------------------------------|---------------------|
+| ispuna | *ȉspuna, ȉspunē, ȉspune, ȉspūnā* | [ŠR](https://rjecnik.hr/search/?q=ispuna&strict=yes) explicitly marks the headword, G singular, N plural and G plural; [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=fVlvXhI%3D) agrees on the headword. Initial short falling *i* extends through the noun cases. |
+| Hrvata | *Hrváta*, from *Hr̀vāt*, N plural *Hrváti* | [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=fVtmXxU%3D) explicitly marks G singular and N plural. The regular oblique/plural forms use long rising *a*; the old broad stem incorrectly kept stress on *r*. *Hrvate* defaults to accusative plural; singular vocative is not disambiguated. The capitalized, lowercase and all-capital spellings share the correction. |
+| vatrogasci | *vatrogásac, vatrogásca, vatrogásci*; G plural *vatrògāsācā*, V singular *vȁtrogāšče* | [ŠR](https://rjecnik.hr/search/?q=vatrogasac&strict=yes) explicitly supplies these forms; [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=f19hURh8) agrees on nominative, regular obliques and plural genitive. The lost medial *a* must not erase the long rising root accent. |
+| muškarci | *muškárac, muškárca, muškárci*; G plural *mùškārācā*, V singular *mȕškārče* | [ŠR](https://rjecnik.hr/search/?q=mu%C5%A1karac&strict=yes) and [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=e1dmXRc%3D) agree, including the retracted short rising genitive plural and initial short falling vocative. |
+| policajci | *policájac, policájca, policájci*; G plural *polìcājācā*, V singular *pȍlicājče* | [ŠR](https://rjecnik.hr/search/?q=policajac&strict=yes) explicitly marks these forms. [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eVtiUBA%3D) agrees on the regular forms and plural genitive, but abbreviates the vocative ending; follow ŠR's explicit vocative accent. |
+| nisi | *nísi*; also *nísam, níje, nísmo, níste, nísu* | [HJP nisam](https://hjp.znanje.hr/index.php?show=search_by_id&id=eF1hXxY%3D) explicitly lists all six forms with long rising initial *i*. They retain an accent inside sentences. |
+| kafanica, laganica | *kafaníca, laganíca* | Neither exact headword was found in ŠR or HJP. Long stressed *i* is the listener's explicit request, not an independently confirmed standard-dictionary accent. Rising tone follows the engine's native non-initial convention; case forms retain the requested root accent by analogy. The repeated *laganica* is one entry. |
+
+Croatian continues to omit unstressed lengths: the rendered genitives are
+*vatrògasaca, mùškaraca, polìcajaca*, while stressed long vowels remain long.
+Exact noun paradigms leave longer derivatives alone. The noun *ȉspuni*
+and the imperative *ìspuni* ([HJP ispuniti](https://hjp.znanje.hr/index.php?show=search_by_id&id=fVlvXhM%3D))
+use the existing clause-head noun/verb rule: *Ispuni obrazac* is verbal,
+*u ispuni* nominal. Unmarked *ispune* defaults to the noun, as other exact
+noun homographs do; an explicitly accented verbal reading remains possible.
+The shared verb now records rising tone, and shared exact forms preserve
+the verbal readings of *ispuni/ispune* outside Croatian's noun table.
+This is a bounded homograph heuristic, not general syntactic parsing.
+
+Frontend regressions cover the requested words, their case/person forms,
+capitalization, phrases, noun/verb ambiguity and written/user-lexicon
+overrides. Both recorded and formant voices use this frontend.
+
 **Pivo, vino, sok, pelinkovac, medica and ćevap, 12 October 2026.**
 
 This audit uses the Institute of Croatian Language's *Školski rječnik*
