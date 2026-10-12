@@ -967,6 +967,204 @@ To correct a word, add an entry to `formant_lexicon.cpp` (notation at the top
 of the file). Language-specific tables override the common one (*pròfesor* in
 Croatian, *profèsor* in Serbian and Bosnian).
 
+**Žal and ulaganje, 12 October 2026 follow-up.**
+
+[ŠR žal](https://rjecnik.hr/search/?q=%C5%BEal&strict=yes) distinguishes
+two nouns with the same long falling nominative *žȃl*: shore (G *žála*,
+N plural *žálovi/žáli*, G plural *žálōvā/žálā*) and regret (G *žȃla*).
+HJP confirms the two long falling headwords for
+[regret](https://hjp.znanje.hr/index.php?id=f15iXhl8&show=search_by_id) and
+[shore](https://hjp.znanje.hr/index.php?id=f15iXhl9&show=search_by_id), but
+marks the shore's short plural *žȃli*, unlike ŠR's *žáli*.
+
+The engine now lengthens *žal*. Ambiguous masculine singular obliques
+*žala/žalu/žalom* default to the regret noun's falling accent, extending
+its cited genitive by the regular paradigm. Long plural forms use the
+shore reading's rising *žálov-*. No semantic classifier is introduced:
+shore readings of the ambiguous singulars can be supplied with written
+accents or user entries. Neither *žali* nor *žale* is added as an exact
+noun form, because these spellings commonly belong to the short-vowel
+verb *žaliti*. Feminine declension of the regret noun is likewise not
+forced onto those homographs. Exact entries do not reach *žalac*.
+
+[ŠR ulaganje](https://rjecnik.hr/search/?q=ulaganje&strict=yes) explicitly
+gives *ulágānje*, G singular and N plural *ulágānja*, G plural *ulágānjā*.
+The corrected noun and its regular cases have long rising stress on the
+first *a*. Croatian continues to omit the following unstressed length,
+rendering *uláganje*. Exact noun forms do not change the distinct
+present/passive accents of *ulagati*. Regression tests cover quantity,
+tone, case forms, capitalization, written shore accents and the absence
+of noun-induced length in *žali/žale*.
+
+**Vrag, mrak and zrak, 12 October 2026 follow-up.**
+
+[ŠR vrag](https://rjecnik.hr/search/?q=vrag&strict=yes),
+[mrak](https://rjecnik.hr/search/?q=mrak&strict=yes) and
+[zrak](https://rjecnik.hr/search/?q=zrak&strict=yes) all specify long falling
+*a*: *vrȃg, mrȃk, zrȃk*, with G singular *vrȃga, mrȃka, zrȃka* but
+L singular *vrágu, mráku, zráku*. Exact noun entries fix the previously
+short vowel. The existing locative-preposition cue, allowing up to two
+agreeing modifiers, now handles these three nouns too; dative uses such
+as *k vragu* and *prema mraku* retain the falling accent. ŠR explicitly
+gives *vrȃže*, plural *vrȁgovi/vrȃzi* and G plural *vrȁgōvā/vrágā*;
+the existing plural-genitive cue selects *vrágā* in *pet vraga*.
+
+HJP confirms the three headwords:
+[vrag](https://hjp.znanje.hr/index.php?id=f19vUBB%2F&show=search_by_id),
+[mrak](https://hjp.znanje.hr/index.php?id=e1hjWRE%3D&show=search_by_id),
+[zrak](https://hjp.znanje.hr/index.php?id=f15iXRJ%2F&show=search_by_id).
+It also explicitly supplies plural *mrȁkovi* and literary *mrȃci*.
+The long plural's other cases follow its regular stem; no accents are
+guessed for the rare short-plural oblique forms. The mass nouns' rare
+vocatives *mrače/zrače* are not added as exact entries because those
+spellings also occur as verbs.
+
+The noun [ŠR zraka](https://rjecnik.hr/search/?q=zraka&strict=yes), meaning
+a ray, differs: *zrȁka*, G *zrȁkē*, DL *zrȁci*, N plural *zrȁke*,
+G plural *zrȃkā*. The spellings *zraka/zraku/zrakom* default to air;
+a small explicit set of adjacent feminine determiners and optical
+adjectives selects the short falling ray reading (*jedna zraka*,
+*sunčeva zraka*, *na lasersku zraku*, *tom zrakom*). This is a bounded
+cue, not general grammatical or semantic analysis; unsupported contexts
+retain the default and can be specified with written/user accents.
+Unambiguous ray forms are short; *pet sunčevih zraka* retains long *a*.
+The older masculine ray sense of *zrak* is not independently parsed.
+
+Regression tests check stressed quantity, tone, the recorded plural
+contrasts, locative versus dative, the air/ray distinction and explicit
+and user-entry precedence. Croatian continues to omit unstressed length.
+
+**Rastegnuti, protegnuti and pošiljatelj, 12 October 2026 follow-up.**
+
+[ŠR rastegnuti](https://rjecnik.hr/search/?q=rastegnuti&strict=yes) and
+[ŠR protegnuti](https://rjecnik.hr/search/?q=protegnuti&strict=yes) explicitly
+give *rastégnuti/protégnuti*, imperative *rastégni/protégni*, active
+*rastégnuo/protégnuo* and aorist *rastégnuh/protégnuh*. Their presents are
+*ràstēgnēm/pròtēgnēm* (third plural *ràstēgnū/pròtēgnū*) and passives
+*ràstēgnūt/pròtēgnūt*. HJP confirms the infinitives, presents and passives
+for [rastegnuti](https://hjp.znanje.hr/index.php?id=dltmWhE%3D&show=search_by_id)
+and [protegnuti](https://hjp.znanje.hr/index.php?id=dl5iUBM%3D&show=search_by_id).
+Two whole-stem `VERBS` entries use the existing `-nuti` conjugation and
+present/passive retraction, including Croatian, just like *zategnuti*.
+No generic rule is widened to other prefixed verbs or derivatives.
+The existing homograph defaults described below for *zategnuti* also
+apply here; contracted active variants are not assigned guessed accents.
+
+[ŠR pošiljatelj](https://rjecnik.hr/search/?q=po%C5%A1iljatelj&strict=yes)
+gives *pošìljatelj*, G *pošìljatelja*, N plural *pošìljatelji* and
+G plural *pošìljatēljā*. Exact noun forms keep short rising *i*, with
+the remaining cases following the regular paradigm. This does not
+extend to related adjectives or the feminine noun.
+
+As elsewhere in Croatian, unstressed lengths are omitted while stressed
+quantity and tone are retained. Regression coverage checks the supplied
+words, all present persons, imperative and participial forms, the noun's
+case forms and sentence-initial capitalization.
+
+**Zvučna, anketa, zategnuti, kriva and Drina, 12 October 2026 follow-up.**
+
+The primary source for the common words is the Institute's *Školski rječnik
+hrvatskoga jezika*. HJP confirms the adjective headwords, the verb's accent
+shift and the river name. The implementation preserves stressed quantity
+and tone but omits unstressed length in Croatian, as elsewhere in this voice.
+
+| Supplied word | Dictionary evidence and implementation |
+| --- | --- |
+| zvučna | [ŠR zvučan](https://rjecnik.hr/search/?q=zvu%C4%8Dan&strict=yes): *zvȗčan*, G and feminine *zvúčna*, neuter *zvȗčno*, definite *zvȗčnī*, comparative *zvùčnijī*. Use the indefinite feminine for isolated *zvučna*; keep the falling accent of the definite paradigm and the short rising comparative separately. |
+| anketa | [ŠR anketa](https://rjecnik.hr/search/?q=anketa&strict=yes): *ankèta*, G *ankètē*, N plural *ankète*, G plural *ankétā*. Exact forms retain short rising *e*, and the existing plural-genitive cue selects long rising *e* in *pet anketa*, *nekoliko anketa* and *pet novih anketa*. |
+| zategnuti | [ŠR zategnuti](https://rjecnik.hr/search/?q=zategnuti&strict=yes): *zatégnuti*, imperative *zatégni*, active *zatégnuo*, aorist *zatégnuh*, but present *zàtēgnēm*, third plural *zàtēgnū* and passive *zàtēgnūt*. One whole-stem `VERBS` entry generates the regular forms and retracts present/passive stress in Croatian too. [HJP](https://hjp.znanje.hr/index.php?id=f15kURh8&show=search_by_id) also gives contracted active *zàtēgao/zàtēgla*, encoded as exact exceptions. |
+| kriva | [ŠR kriv](https://rjecnik.hr/search/?q=kriv&strict=yes): *krȋv*, G and feminine *kríva*, neuter *krȋvo*, definite *krȋvī*, comparative *krȉvljī*. Separate exact forms preserve those contrasts without reaching *krivac* or *krivica*. |
+| Drina | [HJP Drina](https://hjp.znanje.hr/index.php?id=fF9jURA%3D&show=search_by_id) confirms *Drína*. The existing place-name entry already gives long rising *i*, including its generated case forms, and needs no correction. Regression tests now cover *Drina, Drine, Drini, Drinu, Drinom*. |
+
+Unaccented adjective spellings are ambiguous: indefinite feminine
+*zvúčna/kríva* and definite *zvȗčnā/krȋvā* cannot be distinguished in
+isolation. Other ambiguous positive forms default to the definite accent;
+the frontend does not infer adjective definiteness from arbitrary syntax.
+Written accents and user entries remain authoritative. Similarly,
+*zategnuti* defaults to the infinitive, *zategnu* to the present, and
+*zategnut* to the passive; the homographic plural/definite passive,
+second/third-person aorist and shortened future infinitive are not parsed
+contextually. The remaining noun cases and adjective endings extend the
+principal forms by their regular paradigms, rather than claiming that
+every surface form is separately accented in the sources.
+
+Proper names still require capitalization: lowercase *drina* does not
+activate the place-name table. No common-word entry is added to bypass
+that project-wide rule. Tests check the corrected forms' stress, tone and
+quantity, the genitive-plural cue, and written/user accent precedence.
+
+**Kriminalac and dosije, 12 October 2026 follow-up.**
+
+[Školski rječnik](https://rjecnik.hr/search/?q=kriminalac&strict=yes)
+and [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=elhiWRM%3D)
+agree on *kriminálac*, G *kriminálca*, N plural *kriminálci*,
+V *krȉminālče*, and G plural *krimìnālācā*. The remaining oblique
+forms follow *kriminálc-*; exact entries keep these three accent patterns
+separate and do not spread the noun's accent to *kriminalan*.
+
+The requested spelling *dosije* is not the headword in either Croatian
+dictionary consulted: [ŠR](https://rjecnik.hr/search/?q=dosje&strict=yes)
+and [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=fF9mWhg%3D)
+list *dòsjē*, G *dosjèa*, instead. For the exact spelling, the original
+page image of [Rečnik srpskoga jezika, Matica srpska (2011), printed p. 294](https://archive.org/details/recnik-srpskoga-jezika-2011/page/n295/mode/1up)
+was inspected: it prints *dosìjē*, G *dosijèa* (Cyrillic *досѝјē*,
+ending *-èа*). Do not infer its accent from the shorter Croatian form or
+read its *ije* as a jat diphthong: it has three syllables, *do-si-je*.
+The entry preserves the user's spelling. The Croatian voice renders
+*dosìje*, omitting only the unstressed final length under its existing
+policy. Other oblique forms (*dosijèu, dosijèom, dosijèi, dosijèe,
+dosijèima*) follow the printed oblique stem; they are paradigm-based
+inferences, not separately accented quotations. The homographic spelling
+*dosijea* defaults to the sourced G singular; no unverified G-plural
+accent is introduced here.
+
+Regression cases verify position, tone, quantity and syllable count in
+both requested words and these inflections, including the short vowels
+in *krimìnalaca* and *krȉminalče* under the Croatian length policy.
+
+**Collected words, 12 October 2026 (očajnički–povucite).**
+
+The Institute's [Školski rječnik](https://rjecnik.hr/) supplies the primary
+Croatian accents and principal forms, cross-checked against HJP. Its
+[school grammar](https://gramatika.hr/pravilo/naglasak-i-naglasne-cjeline/3/)
+distinguishes position, tone and quantity: a monosyllable has falling
+accent, but that alone does not tell us whether its vowel is long.
+The entries below preserve all three properties. Dictionary macrons are
+shown for reference; Croatian synthesis retains its existing omission of
+unstressed length. Thus dictionary *póstojī* is rendered *póstoji*, while
+its stressed first vowel remains long.
+
+| Requested form | Selected dictionary accent and paradigm | Evidence |
+|---|---|---|
+| očajnički | *ȍčājničkī*, also *ȍčājničkā, ȍčājničkō* | [ŠR](https://rjecnik.hr/search/?q=o%C4%8Dajni%C4%8Dki&strict=yes) and [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eFtlXRE%3D) agree. The adjective's exact case forms keep initial short falling *o*; the adverb has the same stress and is identical under the existing unstressed-length policy. |
+| ispraviti | *ìspraviti, ìspravīm, ìspravi, ìspravio, ìspravljen* | [ŠR](https://rjecnik.hr/search/?q=ispraviti&strict=yes) explicitly accents the principal forms; [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=fVluXxU%3D) agrees. One regular verb entry supplies the inflections. |
+| budućnost | *budúćnōst, budúćnosti, budúćnošću* | [ŠR](https://rjecnik.hr/search/?q=budu%C4%87nost&strict=yes) and [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=f15hUBk%3D); plural *budúćnostima* follows that stem. |
+| razočaranja | *razočaránja*, from *razočaránje*; G plural *razočaránjā* | [ŠR](https://rjecnik.hr/search/?q=razo%C4%8Daranje&strict=yes) explicitly accents the headword and these forms. [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=dltuWxU%3D) instead has *razočáranje*. Prefer ŠR for Croatian; do not describe the sources as agreeing. |
+| pomislio | *pòmislio*, from *pòmisliti*; *pòmislīm, pòmisli* | [ŠR](https://rjecnik.hr/search/?q=pomisliti&strict=yes) and [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eVtvXhc%3D) explicitly mark the participle. Feminine/plural participles retain the same accent through the regular verb rule. |
+| postoji | *póstojī*, from *póstojati, póstojīm, póstojē*; imperative *póstōj*, participle *póstojao* | [ŠR](https://rjecnik.hr/search/?q=postojati&strict=yes) and [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eVlmWxY%3D). The requested third person follows the present paradigm. [ŠR postojanje](https://rjecnik.hr/search/?q=postojanje&strict=yes) confirms *póstojānje*. Exact forms accommodate the mixed -ati/-im/-j paradigm without reaching the adjective *postojan*. |
+| viri | *vírī*, from *víriti, vírīm, vírē*; imperative *víri*, participle *vírio* | [ŠR](https://rjecnik.hr/search/?q=viriti&strict=yes) and [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=f19uUBJ1); the requested third person follows the present paradigm. This verb must not take the noun's falling tone. |
+| vir | *vȋr, vȋra, vȋrom*, but locative *víru* and plural *vȉrovi* | [ŠR](https://rjecnik.hr/search/?q=vir&strict=yes) explicitly supplies G/L/I and N/G plural. [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=f19uURl1) agrees on *vȋr* but gives plural *vírovi*; Croatian follows ŠR. Unmarked *viru* defaults to dative *vȋru*. |
+| sunce | *sȗnce, sȗnca*, G plural *sȕnācā/sȗncā* | [ŠR](https://rjecnik.hr/search/?q=sunce&strict=yes) confirms long falling *u* and both G plural spellings. [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=d1puXhQ%3D) agrees; its legacy font encodes the long accented *u* as `ẉ` in extracted text. Other cases follow the stem, including capitalized *Sunce*. |
+| noć | *nȏć*; G singular / N plural *nȍći*, I *nȍću/nȍći*, L singular *nòći*, G plural *nòćī*, D/L/I plural *nòćima* | [ŠR](https://rjecnik.hr/search/?q=no%C4%87&strict=yes) explicitly distinguishes these forms. The existing standalone *nȏć* was already correct; the inflections needed tone and case handling. |
+| trud | *trȗd, trúda, trúdovi/trúdi* | [ŠR](https://rjecnik.hr/search/?q=trud&strict=yes) supplies these principal forms; other oblique forms follow the rising stem. [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=f19lXBh4) agrees on the headword but gives alternative short plural *trȗdi*. Exact singular and expanded-plural entries avoid taking over *trudi/trude*, also finite forms of [truditi se](https://hjp.znanje.hr/index.php?show=search_by_id&id=f19lXBl%2B); those ambiguous spellings are not disambiguated by this audit. |
+| povucite | *povúcite*, plural of imperative *povúci*; *pòvūći, povúčem, povúkū, pòvūkao, povùčen* | [ŠR](https://rjecnik.hr/search/?q=povu%C4%87i&strict=yes) and [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eVlhUBU%3D). Both explicitly mark singular *povúci*; *povúcimo/povúcite* retain that imperative stem. Exact irregular forms keep infinitive/active, present/imperative, and passive accents separate. |
+
+Forms not individually printed with accents above are paradigm-based
+inflections, not additional direct quotations. Exact Croatian noun and
+adjective entries avoid spreading accents to derivatives. The existing
+regular verb machinery handles *ispraviti, pomisliti, viriti*.
+
+The existing Croatian locative cue also selects *víru* after a governing
+*u/na/o/po/pri*, across up to two agreeing modifiers. A separate branch
+selects short rising *nòći* in such locative contexts and after plural
+quantity cues (*pet noći, nekoliko noći, pet dugih noći*). It must not
+lengthen the vowel as the *víru* rule does. These remain local heuristics,
+not a full syntactic parser: *noći* defaults to short falling without a
+cue, and an ambiguous prepositional phrase can still need an explicit
+accent. Written accents and user exact/stem/verb entries retain priority.
+Tests in `tests/linux/test_frontend.cpp` cover the twelve requested forms,
+related inflections, context, stressed quantity and override precedence.
+
 The Croatian *pobjednik* and *pobjednički* paradigms were checked on
 8 October 2026 against [HJP's *pòbjednīk*](https://hjp.znanje.hr/index.php?show=search_by_id&id=eVxmXxU%3D)
 and [*pòbjedničkī*](https://hjp.znanje.hr/index.php?show=search_by_id&id=eVxmXxM%3D).

@@ -48,6 +48,220 @@ void require_one_word(const Utterance& utterance) {
 
 } // namespace
 
+TEST_CASE("Collected Croatian accents retain quantity tone and inflection", "[frontend][accents][collected-oct12]") {
+    // Školski rječnik principal forms; source choices and inferred
+    // inflections are documented in docs/formant.md (12 October 2026).
+    struct Case { const char32_t* text; int syllables; int stress; Accent tone; bool long_vowel; };
+    const auto F = Accent::Falling;
+    const auto R = Accent::Rising;
+    const Case cases[] = {
+        {U"žal", 1, 0, F, true}, {U"Žal", 1, 0, F, true},
+        {U"ŽAL", 1, 0, F, true},
+        {U"žala", 2, 0, F, true}, {U"žalu", 2, 0, F, true},
+        {U"žalom", 2, 0, F, true}, // default regret reading
+        {U"žála", 2, 0, R, true}, {U"žálu", 2, 0, R, true},
+        {U"žálom", 2, 0, R, true}, // explicitly supplied shore reading
+        {U"žalovi", 3, 0, R, true}, {U"žalova", 3, 0, R, true},
+        {U"žalove", 3, 0, R, true}, {U"žalovima", 4, 0, R, true},
+        {U"ulaganje", 4, 1, R, true}, {U"Ulaganje", 4, 1, R, true},
+        {U"ulaganja", 4, 1, R, true}, {U"ulaganju", 4, 1, R, true},
+        {U"ulaganjem", 4, 1, R, true}, {U"ulaganjima", 5, 1, R, true},
+        {U"vrag", 1, 0, F, true}, {U"Vrag", 1, 0, F, true},
+        {U"vraga", 2, 0, F, true}, {U"vragu", 2, 0, F, true},
+        {U"vraže", 2, 0, F, true}, {U"vragom", 2, 0, F, true},
+        {U"vragovi", 3, 0, F, false}, {U"vragova", 3, 0, F, false},
+        {U"vragove", 3, 0, F, false}, {U"vragovima", 4, 0, F, false},
+        {U"vrazi", 2, 0, F, true},
+        {U"mrak", 1, 0, F, true}, {U"Mrak", 1, 0, F, true},
+        {U"mraka", 2, 0, F, true}, {U"mraku", 2, 0, F, true},
+        {U"mrakom", 2, 0, F, true},
+        {U"mrakovi", 3, 0, F, false}, {U"mrakova", 3, 0, F, false},
+        {U"mrakove", 3, 0, F, false}, {U"mrakovima", 4, 0, F, false},
+        {U"mraci", 2, 0, F, true},
+        {U"zrak", 1, 0, F, true}, {U"Zrak", 1, 0, F, true},
+        {U"zraka", 2, 0, F, true}, {U"zraku", 2, 0, F, true},
+        {U"zrakom", 2, 0, F, true},
+        {U"zrake", 2, 0, F, false}, {U"zraci", 2, 0, F, false},
+        {U"zrako", 2, 0, F, false}, {U"zrakama", 3, 0, F, false},
+        {U"rastegnuti", 4, 1, R, true}, {U"rastegni", 3, 1, R, true},
+        {U"rastegnimo", 4, 1, R, true}, {U"rastegnite", 4, 1, R, true},
+        {U"rastegnuo", 4, 1, R, true}, {U"rastegnula", 4, 1, R, true},
+        {U"rastegnuli", 4, 1, R, true}, {U"rastegnuh", 3, 1, R, true},
+        {U"rastegnuvši", 4, 1, R, true},
+        {U"rastegnem", 3, 0, R, false}, {U"rastegneš", 3, 0, R, false},
+        {U"rastegne", 3, 0, R, false}, {U"rastegnemo", 4, 0, R, false},
+        {U"rastegnete", 4, 0, R, false}, {U"rastegnu", 3, 0, R, false},
+        {U"rastegnut", 3, 0, R, false}, {U"rastegnuta", 4, 0, R, false},
+        {U"rastegnutima", 5, 0, R, false},
+        {U"protegnuti", 4, 1, R, true}, {U"protegni", 3, 1, R, true},
+        {U"protegnimo", 4, 1, R, true}, {U"protegnite", 4, 1, R, true},
+        {U"protegnuo", 4, 1, R, true}, {U"protegnula", 4, 1, R, true},
+        {U"protegnuli", 4, 1, R, true}, {U"protegnuh", 3, 1, R, true},
+        {U"protegnuvši", 4, 1, R, true},
+        {U"protegnem", 3, 0, R, false}, {U"protegneš", 3, 0, R, false},
+        {U"protegne", 3, 0, R, false}, {U"protegnemo", 4, 0, R, false},
+        {U"protegnete", 4, 0, R, false}, {U"protegnu", 3, 0, R, false},
+        {U"protegnut", 3, 0, R, false}, {U"protegnuta", 4, 0, R, false},
+        {U"protegnutima", 5, 0, R, false},
+        {U"pošiljatelj", 4, 1, R, false}, {U"Pošiljatelj", 4, 1, R, false},
+        {U"pošiljatelja", 5, 1, R, false}, {U"pošiljatelju", 5, 1, R, false},
+        {U"pošiljateljem", 5, 1, R, false}, {U"pošiljatelji", 5, 1, R, false},
+        {U"pošiljatelje", 5, 1, R, false}, {U"pošiljateljima", 6, 1, R, false},
+        {U"zvučna", 2, 0, R, true}, {U"zvučan", 2, 0, F, true},
+        {U"zvučno", 2, 0, F, true}, {U"zvučni", 2, 0, F, true},
+        {U"zvučnoga", 3, 0, F, true}, {U"zvučnima", 3, 0, F, true},
+        {U"zvučniji", 3, 0, R, false}, {U"zvučnijima", 4, 0, R, false},
+        {U"zvȗčna", 2, 0, F, true}, // explicitly requested definite form
+        {U"anketa", 3, 1, R, false}, {U"Anketa", 3, 1, R, false},
+        {U"ankete", 3, 1, R, false}, {U"anketi", 3, 1, R, false},
+        {U"anketu", 3, 1, R, false}, {U"anketom", 3, 1, R, false},
+        {U"anketama", 4, 1, R, false},
+        {U"zategnuti", 4, 1, R, true}, {U"zategni", 3, 1, R, true},
+        {U"zategnite", 4, 1, R, true}, {U"zategnimo", 4, 1, R, true},
+        {U"zategnuo", 4, 1, R, true}, {U"zategnula", 4, 1, R, true},
+        {U"zategnuli", 4, 1, R, true}, {U"zategnuh", 3, 1, R, true},
+        {U"zategnuvši", 4, 1, R, true},
+        {U"zategnem", 3, 0, R, false}, {U"zategneš", 3, 0, R, false},
+        {U"zategne", 3, 0, R, false}, {U"zategnemo", 4, 0, R, false},
+        {U"zategnete", 4, 0, R, false}, {U"zategnu", 3, 0, R, false},
+        {U"zategnut", 3, 0, R, false}, {U"zategnuta", 4, 0, R, false},
+        {U"zategnutim", 4, 0, R, false}, {U"zategnutima", 5, 0, R, false},
+        {U"zategao", 4, 0, R, false}, {U"zategla", 3, 0, R, false},
+        {U"zategli", 3, 0, R, false},
+        {U"kriva", 2, 0, R, true}, {U"kriv", 1, 0, F, true},
+        {U"krivo", 2, 0, F, true}, {U"krivi", 2, 0, F, true},
+        {U"krivoga", 3, 0, F, true}, {U"krivima", 3, 0, F, true},
+        {U"krivlji", 2, 0, F, false}, {U"krivljima", 3, 0, F, false},
+        {U"krȋva", 2, 0, F, true},
+        {U"Drina", 2, 0, R, true}, {U"Drine", 2, 0, R, true},
+        {U"Drini", 2, 0, R, true}, {U"Drinu", 2, 0, R, true},
+        {U"Drinom", 2, 0, R, true},
+        {U"kriminalac", 4, 2, R, true}, {U"kriminalca", 4, 2, R, true},
+        {U"kriminalcu", 4, 2, R, true}, {U"kriminalcem", 4, 2, R, true},
+        {U"kriminalci", 4, 2, R, true}, {U"kriminalce", 4, 2, R, true},
+        {U"kriminalcima", 5, 2, R, true}, {U"kriminalče", 4, 0, F, false},
+        {U"kriminalaca", 5, 1, R, false},
+        {U"dosije", 3, 1, R, false}, {U"Dosije", 3, 1, R, false},
+        {U"dosijea", 4, 2, R, false}, {U"dosijeu", 4, 2, R, false},
+        {U"dosijeom", 4, 2, R, false}, {U"dosijei", 4, 2, R, false},
+        {U"dosijee", 4, 2, R, false}, {U"dosijeima", 5, 2, R, false},
+        {U"očajnički", 4, 0, F, false}, {U"očajnička", 4, 0, F, false},
+        {U"očajničkog", 4, 0, F, false}, {U"očajničkima", 5, 0, F, false},
+        {U"ispraviti", 4, 0, R, false}, {U"ispravim", 3, 0, R, false},
+        {U"isprave", 3, 0, R, false}, {U"ispravite", 4, 0, R, false},
+        {U"ispravio", 4, 0, R, false}, {U"ispravila", 4, 0, R, false},
+        {U"ispravljen", 3, 0, R, false}, {U"ispravljenima", 5, 0, R, false},
+        {U"budućnost", 3, 1, R, true}, {U"budućnosti", 4, 1, R, true},
+        {U"budućnošću", 4, 1, R, true}, {U"budućnostima", 5, 1, R, true},
+        {U"razočaranja", 5, 3, R, true}, {U"razočaranje", 5, 3, R, true},
+        {U"razočaranju", 5, 3, R, true}, {U"razočaranjem", 5, 3, R, true},
+        {U"razočaranjima", 6, 3, R, true},
+        {U"pomislio", 4, 0, R, false}, {U"pomislila", 4, 0, R, false},
+        {U"pomislili", 4, 0, R, false}, {U"pomisliti", 4, 0, R, false},
+        {U"pomislim", 3, 0, R, false}, {U"pomislite", 4, 0, R, false},
+        {U"postoji", 3, 0, R, true}, {U"postojati", 4, 0, R, true},
+        {U"postojim", 3, 0, R, true}, {U"postojimo", 4, 0, R, true},
+        {U"postojite", 4, 0, R, true}, {U"postoje", 3, 0, R, true},
+        {U"postoj", 2, 0, R, true}, {U"postojte", 3, 0, R, true},
+        {U"postojao", 4, 0, R, true}, {U"postojali", 4, 0, R, true},
+        {U"postojeći", 4, 0, R, true}, {U"postojanje", 4, 0, R, true},
+        {U"viri", 2, 0, R, true}, {U"viriti", 3, 0, R, true},
+        {U"virim", 2, 0, R, true}, {U"vire", 2, 0, R, true},
+        {U"virite", 3, 0, R, true}, {U"virio", 3, 0, R, true},
+        {U"vireći", 3, 0, R, true}, {U"virenje", 3, 0, R, true},
+        {U"vir", 1, 0, F, true}, {U"vira", 2, 0, F, true},
+        {U"viru", 2, 0, F, true}, {U"virom", 2, 0, F, true},
+        {U"virovi", 3, 0, F, false}, {U"virovima", 4, 0, F, false},
+        {U"sunce", 2, 0, F, true}, {U"Sunce", 2, 0, F, true},
+        {U"sunca", 2, 0, F, true}, {U"suncu", 2, 0, F, true},
+        {U"suncem", 2, 0, F, true}, {U"suncima", 3, 0, F, true},
+        {U"sunaca", 3, 0, F, false},
+        {U"noć", 1, 0, F, true}, {U"noći", 2, 0, F, false},
+        {U"noću", 2, 0, F, false}, {U"noćima", 3, 0, R, false},
+        {U"trud", 1, 0, F, true}, {U"truda", 2, 0, R, true},
+        {U"trudu", 2, 0, R, true}, {U"trudom", 2, 0, R, true},
+        {U"trudovi", 3, 0, R, true}, {U"trudova", 3, 0, R, true},
+        {U"trudovima", 4, 0, R, true}, {U"trudima", 3, 0, R, true},
+        {U"povucite", 4, 1, R, true}, {U"povuci", 3, 1, R, true},
+        {U"povucimo", 4, 1, R, true}, {U"povući", 3, 0, R, false},
+        {U"povukao", 4, 0, R, false}, {U"povukli", 3, 0, R, false},
+        {U"povukavši", 4, 0, R, false}, {U"povučem", 3, 1, R, true},
+        {U"povučete", 4, 1, R, true}, {U"povuku", 3, 1, R, true},
+        {U"povukoh", 3, 1, R, true}, {U"povučen", 3, 1, R, false},
+        {U"povučena", 4, 1, R, false}, {U"povučenima", 5, 1, R, false},
+    };
+    const Frontend frontend(VoiceLanguage::Croatian);
+    for (size_t i = 0; i < std::size(cases); ++i) {
+        DYNAMIC_SECTION("dictionary form " + std::to_string(i)) {
+            const auto& c = cases[i];
+            const auto utterance = read(frontend, c.text);
+            REQUIRE(utterance.syllable_count == c.syllables);
+            const auto vowels = nuclei(utterance);
+            REQUIRE(std::count_if(vowels.begin(), vowels.end(), [](const Phone& p) { return p.stressed; }) == 1);
+            REQUIRE(vowels.at(c.stress).stressed);
+            REQUIRE(vowels.at(c.stress).accent == c.tone);
+            REQUIRE(vowels.at(c.stress).is_long == c.long_vowel);
+            for (const auto& p : vowels) if (!p.stressed) REQUIRE(!p.is_long);
+        }
+    }
+    // Noun corrections must not lengthen homographic verbal forms.
+    REQUIRE_FALSE(nuclei(read(frontend, U"žali"))[0].is_long);
+    REQUIRE_FALSE(nuclei(read(frontend, U"žale"))[0].is_long);
+}
+
+TEST_CASE("Vir and noc case cues preserve length and user accents", "[frontend][accents][collected-oct12]") {
+    struct Case { const char32_t* text; int word; Accent tone; bool long_vowel; };
+    const auto F = Accent::Falling;
+    const auto R = Accent::Rising;
+    const Case cases[] = {
+        {U"u viru", 1, R, true}, {U"o dubokom viru", 2, R, true},
+        {U"prema viru", 1, F, true}, {U"iz vira", 1, F, true},
+        {U"dvije noći", 1, F, false}, {U"tijekom noći", 1, F, false},
+        {U"pet noći", 1, R, false}, {U"nekoliko noći", 1, R, false},
+        {U"pet dugih noći", 2, R, false}, {U"u noći", 1, R, false},
+        {U"o toj dugoj noći", 3, R, false}, {U"prema noći", 1, F, false},
+        {U"u vȋru", 1, F, true}, {U"pet nȍći", 1, F, false},
+        {U"o nȏći", 1, F, true},
+    };
+    const Frontend frontend(VoiceLanguage::Croatian);
+    for (size_t i = 0; i < std::size(cases); ++i) {
+        DYNAMIC_SECTION("phrase " + std::to_string(i)) {
+            const auto& c = cases[i];
+            std::vector<Phone> vowels;
+            for (const auto& p : read(frontend, c.text).phones)
+                if (p.word == c.word && p.nucleus) vowels.push_back(p);
+            REQUIRE(vowels.at(0).stressed);
+            REQUIRE(vowels.at(0).accent == c.tone);
+            REQUIRE(vowels.at(0).is_long == c.long_vowel);
+        }
+    }
+    Frontend custom(VoiceLanguage::Croatian);
+    custom.set_user_lexicon(UserLexicon::parse(
+        R"({"entries":[{"word":"v^i:ru"},{"word":"n^o:ći"},{"word":"p^ostoji"},{"verb":"pov/uc=e"}]})"));
+    REQUIRE(nuclei(read(custom, U"u viru"))[1].accent == F);
+    REQUIRE(nuclei(read(custom, U"pet noći"))[1].accent == F);
+    REQUIRE(nuclei(read(custom, U"pet noći"))[1].is_long);
+    REQUIRE(nuclei(read(custom, U"postoji"))[0].accent == F);
+    REQUIRE_FALSE(nuclei(read(custom, U"povucite"))[1].is_long);
+    REQUIRE(nuclei(read(frontend, U"pòvucite"))[0].stressed);
+    Frontend stem(VoiceLanguage::Croatian);
+    stem.set_user_lexicon(UserLexicon::parse(
+        R"({"entries":[{"word":"n^o:ć*"},{"word":"p^ovuc*"}]})"));
+    REQUIRE(nuclei(read(stem, U"pet noći"))[1].accent == F);
+    REQUIRE(nuclei(read(stem, U"pet noći"))[1].is_long);
+    REQUIRE(nuclei(read(stem, U"povucite"))[0].stressed);
+    REQUIRE(nuclei(read(stem, U"povúcite"))[1].stressed);
+    // Within user entries, exact words beat stems, which beat verbs.
+    stem.set_user_lexicon(UserLexicon::parse(
+        R"({"entries":[{"word":"pov/u:ci"},{"word":"p^ovuc*"},{"verb":"pov/uc=e"}]})"));
+    REQUIRE(nuclei(read(stem, U"povuci"))[1].is_long);
+    REQUIRE(nuclei(read(stem, U"povucite"))[0].accent == F);
+    // Existing shared nȏć remains long in the other voices as well.
+    for (auto language : {VoiceLanguage::Serbian, VoiceLanguage::Bosnian}) {
+        REQUIRE(nuclei(read(Frontend(language), U"noć"))[0].is_long);
+    }
+}
+
 TEST_CASE("Pacijentima through dusa retain sourced accents and inflections", "[frontend][accents][health-oct11]") {
     struct Case { const char32_t* text; int syllables; int stress; Accent tone; bool long_vowel; };
     const auto F = Accent::Falling;
@@ -435,6 +649,24 @@ TEST_CASE("Case context selects Croatian accent homographs", "[frontend][accents
     const auto R = Accent::Rising;
     const auto F = Accent::Falling;
     const Case cases[] = {
+        {U"o vragu", 0, R, true}, {U"o crnom vragu", 0, R, true},
+        {U"k vragu", 0, F, true}, {U"tri vraga", 0, F, true},
+        {U"pet vraga", 0, R, true}, {U"pet crnih vraga", 0, R, true},
+        {U"u mraku", 0, R, true}, {U"po potpunom mraku", 0, R, true},
+        {U"prema mraku", 0, F, true}, {U"iz mraka", 0, F, true},
+        {U"na zraku", 0, R, true}, {U"na svježem jutarnjem zraku", 0, R, true},
+        {U"prema zraku", 0, F, true}, {U"bez zraka", 0, F, true},
+        {U"nema zraka", 0, F, true}, {U"svježim zrakom", 0, F, true},
+        {U"jedna zraka", 0, F, false}, {U"sunčeva zraka", 0, F, false},
+        {U"ovu zraku", 0, F, false}, {U"na lasersku zraku", 0, F, false},
+        {U"tom zrakom", 0, F, false}, {U"laserskom zrakom", 0, F, false},
+        {U"u toj zraci", 0, F, false}, {U"pet sunčevih zraka", 0, F, true},
+        {U"o vrȃgu", 0, F, true}, {U"pet vrȃga", 0, F, true},
+        {U"u mrȁku", 0, F, false}, {U"na zrȃku", 0, F, true},
+        {U"jedna zrȃka", 0, F, true},
+        {U"nova anketa", 1, R, false}, {U"dvije ankete", 1, R, false},
+        {U"pet anketa", 1, R, true}, {U"nekoliko anketa", 1, R, true},
+        {U"pet novih anketa", 1, R, true}, {U"pet ankèta", 1, R, false},
         {U"o glasu", 0, R, true}, {U"na dobrom glasu", 0, R, true},
         {U"prema glasu", 0, F, true}, {U"po repu", 0, R, true},
         {U"prema repu", 0, F, true}, {U"pet stvari", 0, R, true},
@@ -469,7 +701,12 @@ TEST_CASE("Case context selects Croatian accent homographs", "[frontend][accents
         REQUIRE(vowels[c.stress].is_long == c.long_vowel);
     }
     frontend.set_user_lexicon(UserLexicon::parse(
-        R"({"entries":[{"word":"gl^a:su"},{"word":"komp/onenti"},{"word":"žir/afa"}]})"));
+        R"({"entries":[{"word":"gl^a:su"},{"word":"komp/onenti"},{"word":"žir/afa"},{"word":"ank/eta"},{"word":"vr^agu"},{"word":"zr^a:ka"},{"word":"zr^a:ku"}]})"));
+    REQUIRE(nuclei(read(frontend, U"o vragu"))[1].accent == F);
+    REQUIRE(!nuclei(read(frontend, U"o vragu"))[1].is_long);
+    REQUIRE(nuclei(read(frontend, U"jedna zraka"))[2].is_long);
+    REQUIRE(nuclei(read(frontend, U"na zraku"))[1].accent == F);
+    REQUIRE(!nuclei(read(frontend, U"pet anketa"))[2].is_long);
     const auto voice = nuclei(read(frontend, U"o glasu"));
     REQUIRE(voice[1].accent == F);
     const auto component = nuclei(read(frontend, U"o komponenti"));

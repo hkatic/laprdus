@@ -3243,7 +3243,28 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
                 return it == map.end() ? nullptr : &it->second;
             };
             if (!m_user_exact.empty()) entry = find_in(m_user_exact, word.w);
+            // User stems and verbs must also precede built-in exact forms:
+            // adding a dictionary correction must not disable an existing
+            // personal accent (for example a povucite verb override).
+            if (!entry && !m_user_stems.empty()) {
+                size_t min_len = word.w.size() > 3 ? word.w.size() - 3 : 1;
+                for (size_t len = word.w.size(); len >= min_len && len >= 2; --len) {
+                    entry = find_in(m_user_stems, word.w.substr(0, len));
+                    if (entry) break;
+                }
+            }
             if (entry) word.user_accent = true;
+            if (!entry && m_user_verbs) {
+                StressResult r;
+                if (StressRules(word, m_language, at_head, m_user_verbs.get())
+                        .verb_form_in(*m_user_verbs, r)) {
+                    word.stress = r.nucleus;
+                    word.accent = r.accent;
+                    if (r.is_long) set_long(r.nucleus);
+                    if (r.long_after >= 0) set_long(r.long_after);
+                    word.user_accent = true;
+                }
+            }
             // Place names and personal names (the tables of towns, villages,
             // regions, names and surnames) only for a word written with a
             // capital letter, so that a village or a name spelled like a
@@ -3253,7 +3274,7 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
             // its capital anyway: there a name spelled like a common word
             // (Bȃr, bar) and a word of the built-in lexicon keep the common
             // reading. A stem of the user's comes before the tables.
-            if (!entry && !command_at_head && word.capitalized && !word.all_caps &&
+            if (!entry && !word.user_accent && !command_at_head && word.capitalized && !word.all_caps &&
                 !user_stem_matches(word.w)) {
                 const bool clause_start = &word == &words.front() || word.after_opening;
                 if (!clause_start || !m_exact.count(word.w)) {
@@ -3261,17 +3282,17 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
                     if (entry && clause_start && m_proper_mid.count(word.w)) entry = nullptr;
                 }
             }
-            if (!entry && !command_at_head) entry = find_in(m_exact, word.w);
+            if (!entry && !word.user_accent && !command_at_head) entry = find_in(m_exact, word.w);
             // English words (see "English words"): after the native
             // lexicon, before its stems, which would take English words
             // for native ones with an ending; a stem of the user's wins.
             int english_letter = -1;
-            if (!entry && !word.letter_name && !user_stem_matches(word.w) &&
+            if (!entry && !word.user_accent && !word.letter_name && !user_stem_matches(word.w) &&
                 english_word(word.spelled, english_shape, english_letter)) {
                 word.stress = nucleus_from_spelled(english_letter);
                 word.english = true;
             }
-            if (!entry && !word.english) {
+            if (!entry && !word.user_accent && !word.english) {
                 size_t min_len = word.w.size() > 3 ? word.w.size() - 3 : 1;
                 for (size_t len = word.w.size(); len >= min_len && len >= 2; --len) {
                     std::u32string prefix = word.w.substr(0, len);
@@ -3517,12 +3538,34 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
             Word& word = words[i];
             if (word.explicit_stress || word.user_accent || word.letter_name ||
                 word.nuclei.empty()) continue;
+            // zrȃka (air, G) / zrȁka (ray, N), and their homographic
+            // -u/-om forms. Only clear feminine modifiers select ray;
+            // arbitrary -a endings would also catch verbs such as nema.
+            if (is_one_of(word.w, {U"zraka", U"zraku", U"zrakom"})) {
+                const auto ending = word.w.substr(4);
+                const auto& previous = words[i - 1].w;
+                bool ray = false;
+                for (const auto* stem : {U"jedn", U"jedin", U"ov", U"t", U"on",
+                        U"nek", U"svak", U"nijedn", U"moj", U"tvoj", U"svoj", U"naš", U"vaš",
+                        U"sunčev", U"svjetlosn", U"lasersk", U"rendgensk",
+                        U"infracrven", U"ultraljubičast"}) {
+                    if (previous == std::u32string(stem) + ending) { ray = true; break; }
+                }
+                if (ray) {
+                    word.stress = 0;
+                    word.accent = Accent::Falling;
+                    word.phones[static_cast<size_t>(word.nuclei[0])].is_long = false;
+                    continue;
+                }
+            }
             bool rising = false;
             if (word.w == U"satu" || word.w == U"radu" || word.w == U"daru" ||
                 word.w == U"vlasti" || word.w == U"bolu" || word.w == U"boli" ||
                 word.w == U"strani" || word.w == U"vijesti" || word.w == U"čari" ||
                 word.w == U"glasu" || word.w == U"repu" || word.w == U"zvuku" || word.w == U"stanu" ||
-                word.w == U"stvari" || word.w == U"padu" || word.w == U"danu") {
+                word.w == U"stvari" || word.w == U"padu" || word.w == U"danu" ||
+                word.w == U"viru" || word.w == U"vragu" || word.w == U"mraku" ||
+                word.w == U"zraku") {
                 size_t cue = i;
                 for (int modifiers = 0; cue > 0 && modifiers < 2 &&
                      ends_with_any(words[cue - 1].w,
@@ -3541,6 +3584,19 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
                 // is ambiguous with G singular, so do not infer from it.
                 if (word.w == U"stvari") {
                     rising = rising || plural_genitive_cue(words[i - 1].w);
+                }
+            } else if (word.w == U"noći") {
+                // ŠR: G sg / N/A pl nȍći, L sg and G pl nòći. Unlike
+                // sátu and víru, the rising vowel remains SHORT.
+                size_t cue = i;
+                for (int modifiers = 0; cue > 0 && modifiers < 2 &&
+                     ends_with(words[cue - 1].w, U"oj"); ++modifiers) --cue;
+                const auto& previous = words[cue > 0 ? cue - 1 : 0].w;
+                if ((cue > 0 && locative.count(previous)) ||
+                    plural_genitive_cue(words[i - 1].w)) {
+                    word.stress = 0;
+                    word.accent = Accent::Rising;
+                    word.phones[static_cast<size_t>(word.nuclei[0])].is_long = false;
                 }
             } else if (word.w == U"dana") {
                 // dȃna (one day) versus dánā (several days). Prepositions
@@ -3610,13 +3666,13 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
                 word.stress = 1;
                 word.accent = Accent::Rising;
             } else if (is_one_of(word.w, {U"žirafa", U"pažnja", U"nabava", U"društva",
-                                         U"vuka", U"komponenta", U"zvuka", U"snimka",
-                                         U"komoda", U"rastava", U"stabla"}) &&
+                                         U"vuka", U"vraga", U"komponenta", U"zvuka", U"snimka",
+                                         U"komoda", U"rastava", U"stabla", U"anketa"}) &&
                        plural_genitive_cue(words[i - 1].w)) {
                 // Homographic G plurals: žiráfā, pážnjā, nȁbāvā,
-                // drúštvā, vúkā, kompònēntā, zvúkā, snȋmkā, komódā and
-                // rȁstāvā, stáblā (Školski rječnik).
-                word.stress = is_one_of(word.w, {U"žirafa", U"komponenta", U"komoda"}) ? 1 : 0;
+                // drúštvā, vúkā, vrágā, kompònēntā, zvúkā, snȋmkā, komódā and
+                // rȁstāvā, stáblā, ankétā (Školski rječnik).
+                word.stress = is_one_of(word.w, {U"žirafa", U"komponenta", U"komoda", U"anketa"}) ? 1 : 0;
                 word.accent = is_one_of(word.w, {U"nabava", U"snimka", U"rastava"})
                     ? Accent::Falling : Accent::Rising;
                 word.phones[static_cast<size_t>(word.nuclei[word.stress])].is_long =

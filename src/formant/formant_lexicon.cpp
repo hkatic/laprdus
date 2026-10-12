@@ -859,6 +859,80 @@ const char* const COMMON[] = {
 };
 
 const char* const CROATIAN[] = {
+    // ŠR: both regret and shore are žȃl. Ambiguous singular obliques
+    // default to regret (G žȃla); the shore has G žála and plural žálovi.
+    // Do not take žali/žale away from the much more frequent verb žaliti.
+    u8"ž^a:l||a|u|om", u8"ž/a:lov|i|a|e|ima",
+    // ŠR ulágānje / ulágānja: preserve stressed length, omit unstressed
+    // length under the existing Croatian policy. Exact noun forms only.
+    u8"ul/a:ganj|e|a|u|em|ima",
+
+    // ŠR/HJP: vrȃg, mrȃk, zrȃk and their long falling singulars.
+    // ŠR L vrágu/mráku/zráku and G pl vrágā use the phrase pass.
+    u8"vr^a:g||a|u|om", u8"vr^a:že",
+    u8"vr^agov|i|a|e|ima", u8"vr^a:zi",
+    u8"mr^a:k||a|u|om",
+    // HJP explicitly records both mrȁkovi and literary mrȃci.
+    u8"mr^akov|i|a|e|ima", u8"mr^a:ci",
+    // Ambiguous zraka/zraku/zrakom default to air. Clear feminine
+    // modifiers select the short falling ray noun in the phrase pass.
+    u8"zr^a:k||a|u|om",
+    u8"zr^ak|e|o|ama", u8"zr^aci",
+
+    // ŠR: pošìljatelj, pošìljatelja, pošìljatelji, G pl pošìljatēljā.
+    // Exact noun forms preserve short rising i without reaching derivatives.
+    u8"poš/iljatelj||a|u|em|i|e|ima",
+
+    // ŠR: zvȗčan / zvúčna / zvȗčno, krȋv / kríva / krȋvo.
+    // Isolated -a defaults to the indefinite feminine (also masculine G);
+    // other ambiguous positive forms use the definite adjective accent.
+    u8"zv^u:čan", u8"zv/u:čna",
+    u8"zv^u:čn|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    u8"zv/učnij*",
+    u8"kr^i:v", u8"kr/i:va",
+    u8"kr^i:v|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    u8"kr^ivlj|i|a|e|u|eg|ega|em|emu|oj|om|ih|im|ima",
+    // ŠR ankèta, ankètē, ankète, but G plural ankétā (phrase pass).
+    u8"ank/et|a|e|i|u|o|om|ama",
+    // HJP also gives contracted active forms zàtēgao / zàtēgla.
+    // Regular zatégnuo / zatégnula and shifted presents/passives use VERBS.
+    u8"z/ateg|ao|la|lo|li|le",
+
+    // ŠR/HJP: kriminálac, kriminálca/kriminálci, but V krȉminālče
+    // and G plural krimìnālācā. Exact forms do not reach kriminalan.
+    u8"krimin/a:l|ac|ca|cu|cem|ci|ce|cima",
+    u8"kr^iminalče", u8"krim/inalaca",
+    // RMS (2011), p. 294: dosìjē, G dosijèa. The Croatian dictionaries
+    // list dosje instead; keep the requested spelling and three syllables.
+    // As elsewhere in Croatian, omit the unstressed nominative length.
+    u8"dos/ije", u8"dosij/e|a|u|om|i|e|ima",
+
+    // Očajnički–povucite audit, 12 October 2026. Školski rječnik,
+    // cross-checked with HJP; disagreements and sources: docs/formant.md.
+    // Keep Croatian's existing omission of unstressed vowel lengths.
+    u8"^očajničk|i|a|o|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    u8"bud/u:ćnost||i|ima", u8"bud/u:ćnošću",
+    // ŠR razočaránje / razočaránja; HJP instead has razočáranje.
+    u8"razočar/a:nj|e|a|u|em|ima",
+    // Mixed -ati / -im / -j paradigm: póstojati, póstojīm, póstōj.
+    // Exact forms override COMMON's post'oj* without reaching postojan.
+    u8"p/o:stoj|ati|at|im|iš|i|imo|ite|e|ao|ala|alo|ali|ale|ah|asmo|aste|aše",
+    u8"p/o:stoj||mo|te|eći|anje|anja|anju|anjem|anjima",
+    // The regular -iti class does not generate -eći or verbal nouns.
+    u8"v/i:reći", u8"v/i:renj|e|a|u|em|ima",
+    u8"v^i:r||a|u|om", u8"v^irov|i|a|e|ima",
+    // D vȋru / L víru, and G/N/A nȍći / L and G plural nòći:
+    // the phrase pass recognizes locative and plural-count cues.
+    u8"s^u:nc|e|a|u|em|ima", u8"s^unaca",
+    u8"n^o:ć", u8"n^oć|i|u", u8"n/oćima",
+    u8"tr^u:d", u8"tr/u:d|a|u|om", u8"tr/u:dov|i|a|e|ima", u8"tr/u:dima",
+    // Irregular povući: pòvūći / pòvūkao, but povúčem, povúci and
+    // short rising povùčen. Do not force these into a regular verb class.
+    u8"p/ovući", u8"p/ovuk|ao|la|lo|li|le|avši",
+    u8"pov/u:č|em|eš|e|emo|ete", u8"pov/u:ku",
+    u8"pov/u:c|i|imo|ite", u8"pov/u:k|oh|osmo|oste|oše",
+    u8"pov/učen||a|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+
     // Pacijentima–duša audit, 11 October 2026. Školski rječnik and
     // Mrežnik, cross-checked with HJP; evidence in docs/formant.md.
     // Keep exact paradigms and Croatian's omission of unstressed length.
@@ -1547,6 +1621,13 @@ const char* const IJE_VERBS[] = {
 // for the imperative forms. A verb that is not here is right only in the
 // infinitive or if the first syllable carries its accent anyway.
 const char* const VERBS[] = {
+    // ŠR/HJP: zatégnuti, rastégnuti, protégnuti; long rising e in
+    // infinitives/imperatives/active forms, but zàtēgnēm / zàtēgnūt,
+    // ràstēgnēm / ràstēgnūt, pròtēgnēm / pròtēgnūt in Croatian too.
+    u8"zat/e:g=u<p!", u8"rast/e:g=u<p!", u8"prot/e:g=u<p!",
+    // ŠR/HJP: ìspraviti / ìspravio / ìspravljen, pòmisliti / pòmislio,
+    // víriti / vírīm / víri / vírio. Whole stems avoid other derivatives.
+    u8"/isprav=i", u8"p/omisl=i", u8"v/i:r=i",
     // ŠR/HJP pòklanjati, pòklanjām, pòklanjajū, pòklanjāj,
     // pòklanjao, pòklanjān, pòklanjānje: one regular -ati paradigm.
     u8"p/oklanj=a",
