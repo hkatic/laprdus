@@ -48,6 +48,93 @@ void require_one_word(const Utterance& utterance) {
 
 } // namespace
 
+TEST_CASE("Drinks and cevap keep sourced Croatian accents through inflection", "[frontend][accents][drinks-cevap]") {
+    struct Paradigm {
+        std::vector<const char32_t*> forms;
+        int stress;
+        Accent tone;
+        bool long_vowel;
+    };
+    const auto R = Accent::Rising;
+    const auto F = Accent::Falling;
+    const Paradigm paradigms[] = {
+        {{U"pivo", U"piva", U"pivu", U"pivom", U"pivima", U"pive", U"pivi", U"pivama",
+          U"Pivo", U"PIVA"}, 0, F, true},
+        {{U"vino", U"vina", U"vinu", U"vinom", U"vinima", U"Vino", U"VINA"}, 0, R, true},
+        {{U"sok", U"Sok", U"SOK"}, 0, F, true},
+        {{U"soka", U"soku", U"sokom", U"soče", U"sokovi", U"sokova", U"sokove",
+          U"sokovima"}, 0, F, false},
+        {{U"pelinkovac", U"pelinkovca", U"pelinkovcu", U"pelinkovcem", U"pelinkovci",
+          U"pelinkovce", U"pelinkovcima", U"pelinkovaca", U"pelinkovče",
+          U"Pelinkovac", U"PELINKOVAC"}, 0, R, false},
+        {{U"medica", U"medice", U"medici", U"medicu", U"medico", U"medicom", U"medicama",
+          U"Medica", U"MEDICA"}, 0, R, false},
+        {{U"ćevap", U"Ćevap", U"ĆEVAP"}, 0, R, false},
+        {{U"ćevapa", U"ćevapu", U"ćevapom", U"ćevapi", U"ćevape", U"ćevapima",
+          U"Ćevapi", U"ĆEVAPI"}, 1, R, true},
+        {{U"ćevapčić", U"ćevapčića", U"ćevapčiću", U"ćevapčićem", U"ćevapčići",
+          U"ćevapčiće", U"ćevapčićima", U"Ćevapčići", U"ĆEVAPČIĆI"}, 1, R, false},
+        // Nearby words must not inherit these noun accents.
+        {{U"medicina", U"medicine"}, 2, R, true},
+        {{U"medicinska"}, 1, R, false},
+        {{U"sokak"}, 0, R, false},
+        {{U"sokaka", U"sokacima"}, 1, R, true},
+        // Explicit accents still take priority.
+        {{U"pìvo", U"vìno", U"sòkovi"}, 0, R, false},
+        {{U"ćȅvap"}, 0, F, false},
+    };
+    Frontend frontend(VoiceLanguage::Croatian);
+    for (size_t i = 0; i < std::size(paradigms); ++i) {
+        const auto& paradigm = paradigms[i];
+        for (size_t j = 0; j < paradigm.forms.size(); ++j) {
+            CAPTURE(i);
+            CAPTURE(j);
+            const auto utterance = read(frontend, paradigm.forms[j]);
+            require_one_word(utterance);
+            REQUIRE(stressed_syllables(utterance) == std::vector<int>{paradigm.stress});
+            const auto vowels = nuclei(utterance);
+            REQUIRE(vowels.at(paradigm.stress).accent == paradigm.tone);
+            REQUIRE(vowels.at(paradigm.stress).is_long == paradigm.long_vowel);
+            for (const auto& phone : vowels) if (!phone.stressed) REQUIRE_FALSE(phone.is_long);
+        }
+    }
+}
+
+TEST_CASE("Drink and food accents survive phrases and respect user overrides", "[frontend][accents][drinks-cevap]") {
+    struct Case { const char32_t* text; int word; int stress; Accent tone; bool long_vowel; };
+    const auto R = Accent::Rising;
+    const auto F = Accent::Falling;
+    const Case cases[] = {
+        {U"čaša piva", 1, 0, F, true}, {U"dvije pive", 1, 0, F, true},
+        {U"čaša vina", 1, 0, R, true}, {U"tri vina", 1, 0, R, true},
+        {U"pijem sok", 1, 0, F, true}, {U"čaša soka", 1, 0, F, false},
+        {U"pet sokova", 1, 0, F, false}, {U"o sokovima", 1, 0, F, false},
+        {U"čaša pelinkovca", 1, 0, R, false}, {U"s medicom", 1, 0, R, false},
+        {U"jedan ćevap", 1, 0, R, false}, {U"pet ćevapa", 1, 1, R, true},
+        {U"s ćevapima", 1, 1, R, true}, {U"pet ćevapčića", 1, 1, R, false},
+    };
+    Frontend frontend(VoiceLanguage::Croatian);
+    for (size_t i = 0; i < std::size(cases); ++i) {
+        CAPTURE(i);
+        const auto& c = cases[i];
+        std::vector<Phone> vowels;
+        for (const auto& p : read(frontend, c.text).phones)
+            if (p.nucleus && p.word == c.word) vowels.push_back(p);
+        REQUIRE(std::count_if(vowels.begin(), vowels.end(),
+                             [](const Phone& p) { return p.stressed; }) == 1);
+        REQUIRE(vowels.at(c.stress).stressed);
+        REQUIRE(vowels.at(c.stress).accent == c.tone);
+        REQUIRE(vowels.at(c.stress).is_long == c.long_vowel);
+    }
+    frontend.set_user_lexicon(UserLexicon::parse(
+        R"({"entries":[{"word":"p/iv*"},{"word":"ć^evap"}]})"));
+    REQUIRE(nuclei(read(frontend, U"piva"))[0].accent == R);
+    REQUIRE_FALSE(nuclei(read(frontend, U"piva"))[0].is_long);
+    REQUIRE(nuclei(read(frontend, U"ćevap"))[0].accent == F);
+    REQUIRE(nuclei(read(frontend, U"pȋva"))[0].accent == F);
+    REQUIRE(nuclei(read(frontend, U"pȋva"))[0].is_long);
+}
+
 TEST_CASE("Vowels at word boundaries get a separation cue", "[frontend][prosody]") {
     Frontend frontend(VoiceLanguage::Croatian);
     auto boundaries = [&](const std::u32string& text) {

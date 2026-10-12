@@ -967,6 +967,31 @@ To correct a word, add an entry to `formant_lexicon.cpp` (notation at the top
 of the file). Language-specific tables override the common one (*pròfesor* in
 Croatian, *profèsor* in Serbian and Bosnian).
 
+**Pivo, vino, sok, pelinkovac, medica and ćevap, 12 October 2026.**
+
+This audit uses the Institute of Croatian Language's *Školski rječnik*
+(ŠR) for accented principal forms, HJP for the less common drink/food
+words, and the Institute's *Mrežnik* for *ćevapčić*. Sources were checked
+on 12 October 2026; the ŠR pages were read directly because the web
+search reader could not retrieve them.
+
+| Word | Selected accent and inflection | Evidence and limits |
+|------|-------------------------------|---------------------|
+| pivo / piva | *pȋvo*, G singular and N plural *pȋva*, G plural *pȋvā* | [ŠR](https://rjecnik.hr/search/?q=pivo&strict=yes), [HJP](https://hjp.znanje.hr/index.php?id=eV1nXhI%3D&show=search_by_id). Long falling initial *i* throughout the neuter paradigm. The colloquial feminine forms *pive, pivi, pivama* receive the same root accent by analogy, not from a separate accented dictionary entry; [Sanda Ham's discussion](https://hkm.hr/ucimo-hrvatski/pijete-li-pivo-ili-pivu/) distinguishes regional feminine *piva* from standard neuter *pivo*. |
+| vino / vina | *víno, vína, vínā* | [ŠR](https://rjecnik.hr/search/?q=vino&strict=yes), [HJP](https://hjp.znanje.hr/index.php?id=f19uURN0&show=search_by_id). Long rising initial *i*, retained in the regular cases. |
+| sok | *sȏk*, G *sȍka*, N plural *sȍkovi*, G plural *sȍkōvā* | [ŠR](https://rjecnik.hr/search/?q=sok&strict=yes) explicitly gives the shortening and falling tone. [HJP](https://hjp.znanje.hr/index.php?id=d11hXhk%3D&show=search_by_id) instead has *sòkovi*. Follow ŠR; extend its short root to the remaining obliques and *soče*. |
+| pelinkovac | *pèlīnkovac*, G *pèlīnkōvca* | [HJP](https://hjp.znanje.hr/index.php?id=eV9hXxE%3D&show=search_by_id): short rising initial *e*. Retain the root accent through the listed case spellings, including *pelinkovcem, pelinkovcima, pelinkovaca, pelinkovče*. |
+| medica | *mèdica* | [HJP](https://hjp.znanje.hr/index.php?id=e1tiWxU%3D&show=search_by_id): short rising initial *e*, extended regularly to its case forms. HJP defines the regional honey-and-water drink (*gverc*); applying that accent to the modern honey liqueur uses the same word, not a separately verified liquor pronunciation. |
+| ćevap | *ćèvāp*, plural *ćevápi*; obliques *ćevápa, ćevápu, ćevápom, ćevápima* | [HJP](https://hjp.znanje.hr/index.php?id=f1phXxI%3D&show=search_by_id) explicitly marks the nominative/plural alternation. The obliques follow the regular long-final-stem pattern. Unmarked *ćevape* defaults to A plural rather than V singular. |
+| ćevapčić | *ćevàpčić, ćevàpčića, ćevàpčići* | [Mrežnik](https://rjecnik.hr/mreznik/cevapcic/) supplies the accented paradigm. Its short rising *a* must not inherit the long *á* of *ćevápi*. |
+
+The entries are exact Croatian paradigms, leaving longer derivatives and
+the Serbian/Bosnian tables untouched. As elsewhere in Croatian synthesis,
+post-accent lengths are omitted; stressed quantity and tone are preserved.
+Thus genitive plural *pȋvā/vínā* needs no separate contextual entry here.
+Tests check all distinct case spellings, menu-style capitalization, vowel
+length, tone, connected phrases and written/user override precedence.
+
 **Razlikujemo, apsurdni, društvo and višednevni, 12 October 2026 follow-up.**
 
 [ŠR razlikovati](https://rjecnik.hr/search/?q=razlikovati&strict=yes)

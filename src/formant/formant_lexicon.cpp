@@ -859,6 +859,23 @@ const char* const COMMON[] = {
 };
 
 const char* const CROATIAN[] = {
+    // Drinks / ćevap audit, 12 October 2026 (ŠR/HJP, docs/formant.md).
+    // Exact paradigms keep these accents out of longer derivatives.
+    u8"p^i:v|o|a|u|om|ima",
+    // Colloquial feminine piva follows the same long falling root.
+    u8"p^i:v|e|i|ama",
+    u8"v/i:n|o|a|u|om|ima",
+    // ŠR sȏk, but sȍka, sȍkovi (HJP instead gives sòkovi).
+    u8"s^o:k", u8"s^ok|a|u|om", u8"s^oče", u8"s^okov|i|a|e|ima",
+    // HJP pèlīnkovac, G pèlīnkōvca; Croatian omits unstressed length.
+    u8"p/elinkov|ac|ca|cu|cem|ci|ce|cima|aca|če",
+    u8"m/edic|a|e|i|u|o|om|ama",
+    // ćèvāp -> ćevápa / ćevápi. The shared stem incorrectly stresses
+    // the last syllable of the nominative and lengthens ćevàpčić.
+    // Ambiguous ćevape defaults to A plural rather than the vocative.
+    u8"ć/evap", u8"ćev/a:p|a|u|om|i|e|ima",
+    u8"ćev/apčić||a|u|em|i|e|ima",
+
     // ŠR/HJP svétac, svéci/svétci; V sg svȇče/svȇtče, G pl svȇtācā.
     // Exact cases keep the noun separate from svet, svetica, svečan, etc.
     u8"sv/e:tac", u8"sv/e:c|a|u|em|i|e|ima", u8"sv/e:tc|a|u|em|i|e|ima",
