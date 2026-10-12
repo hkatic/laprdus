@@ -48,6 +48,35 @@ void require_one_word(const Utterance& utterance) {
 
 } // namespace
 
+TEST_CASE("Vowels at word boundaries get a separation cue", "[frontend][prosody]") {
+    Frontend frontend(VoiceLanguage::Croatian);
+    auto boundaries = [&](const std::u32string& text) {
+        const auto utterance = read(frontend, text);
+        size_t count = 0;
+        for (size_t i = 1; i < utterance.phones.size(); ++i) {
+            if (needs_vowel_separation(utterance.phones[i - 1], utterance.phones[i])) ++count;
+        }
+        return count;
+    };
+    REQUIRE(boundaries(U"video uradak") == 1);
+    REQUIRE(boundaries(U"moju ulicu") == 1);
+    REQUIRE(boundaries(U"vidio ih") == 1);  // also before an unstressed clitic
+    REQUIRE(boundaries(U"ja i ona") == 2);
+    REQUIRE(boundaries(U"njoj i njenom") == 1);  // existing /j/ cue
+    for (char32_t left : std::u32string(U"aeiou")) {
+        for (char32_t right : std::u32string(U"aeiou")) {
+            REQUIRE(boundaries(std::u32string(U"man") + left + U" " + right + U"lana") == 1);
+            REQUIRE(boundaries(std::u32string(U"man") + left + right + U"lana") == 0);
+        }
+    }
+    REQUIRE(boundaries(U"video") == 0);
+    REQUIRE(boundaries(U"moju kuću") == 0);
+    REQUIRE(boundaries(U"dobar uradak") == 0);
+    REQUIRE(boundaries(U"moja jabuka") == 0);
+    REQUIRE(boundaries(U"tifloasistent") == 0);  // joined compound components
+    REQUIRE(boundaries(U"krv ulazi") == 0);     // syllabic r is not vowel hiatus
+}
+
 TEST_CASE("Collected Croatian accents retain quantity tone and inflection", "[frontend][accents][collected-oct12]") {
     // Školski rječnik principal forms; source choices and inferred
     // inflections are documented in docs/formant.md (12 October 2026).

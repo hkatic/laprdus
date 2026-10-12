@@ -3208,6 +3208,19 @@ without changing anything at 1.0x. With the final values at 1.0x Stojan
 went from 27 to 46 of the 88 words (CER 18.3% to 14.3%) and Josip, with the
 word gap, from 26 to 40 (29.3% to 26.8%).
 
+**Vowel-to-vowel word boundaries (12 October 2026).** The same brief dip
+now applies between full vowels of any two separate words, including
+*video | uradak*, *moju | ulicu* and *vidio | ih*. This extends the existing
+18 ms, 15% voicing cue at the user's request; it is not a new acoustic
+measurement. It uses the existing rate scaling and smoothing and adds no
+time to the utterance. Vowels within a word (the *eo* in *video*), joined
+compound components and sung legato keep their continuous voicing. The
+shared `needs_vowel_separation()` predicate also lets the recorded voices
+keep their word gap before vowel-initial clitics. Frontend tests cover all
+25 vowel pairs and the supplied examples; a PCM regression checks for the
+brief dip between identical vowels in all three speaking formant voices
+at 1.0x, 1.7x and 4.0x, with an uninterrupted single-word control.
+
 ## 6. The three speakers
 
 | | Zvonko | Stojan | Mirsad |

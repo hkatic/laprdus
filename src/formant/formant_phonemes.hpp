@@ -128,6 +128,17 @@ struct Phone {
     uint8_t word_syllables = 1; // syllable count of the containing word
 };
 
+/** A word boundary whose open sounds need a brief separation cue. */
+inline bool needs_vowel_separation(const Phone& left, const Phone& right) {
+    if (!right.word_start || left.word == right.word) return false;
+    auto full_vowel = [](Ph ph) { return is_vowel(ph) && ph != Ph::SCHWA; };
+    if (full_vowel(left.ph) && full_vowel(right.ph)) return true;
+    // Keep the cue next to /j/ for one-vowel words: "ja i ona", "njoj i".
+    return (left.vowel_word || right.vowel_word) &&
+           (full_vowel(left.ph) || left.ph == Ph::J) &&
+           (full_vowel(right.ph) || right.ph == Ph::J);
+}
+
 } // namespace formant
 } // namespace laprdus
 

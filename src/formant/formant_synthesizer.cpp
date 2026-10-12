@@ -496,9 +496,10 @@ private:
     // The stressed long vowel of a function word (tȋ, mȋ, vȋ, jȃ, ȏn, svȋ,
     // vȇć), relative to the inherent duration; a content word's has 1.90.
     static constexpr float WEAK_LONG_VOWEL = 1.70f;
-    static constexpr float VOWEL_WORD_DIP = 0.15f;      // voicing at the join
-    static constexpr float VOWEL_WORD_DIP_MS = 18.0f;   // at rate 1
-    static constexpr float VOWEL_WORD_DIP_MIN_MS = 8.0f;
+    // Reuse the one-vowel-word cue at every vowel-to-vowel word boundary.
+    static constexpr float VOWEL_BOUNDARY_DIP = 0.15f;      // voicing at the join
+    static constexpr float VOWEL_BOUNDARY_DIP_MS = 18.0f;   // at rate 1
+    static constexpr float VOWEL_BOUNDARY_DIP_MIN_MS = 8.0f;
 
     // The closure of a stop or affricate at the start of a clause: silence
     // kept short; a voice bar with F1 damped (the source is raised to keep
@@ -1460,25 +1461,23 @@ private:
             }
         }
 
-        // A word of one vowel next to a vowel or j of another word: the
-        // voice dips for a moment at the join, as at a soft glottal onset.
+        // Vowels across a word boundary ("video uradak", "moju ulicu"):
+        // the voice dips briefly at the join, as at a soft glottal onset.
+        // This also keeps one-vowel words distinct next to /j/. No extra
+        // time is added, and vowels within a word and sung legato stay joined.
         if (!m_singing) {
             for (int si = 0; si + 1 < nsegs; ++si) {
                 const Seg& x = m_segs[static_cast<size_t>(si)];
                 const Seg& y = m_segs[static_cast<size_t>(si) + 1];
-                if (!vowel_word_seg(x) && !vowel_word_seg(y)) continue;
+                if (x.kind != SegKind::Plain || y.kind != SegKind::Plain) continue;
                 const Phone* px = phone_at(x.phone);
                 const Phone* py = phone_at(y.phone);
-                if (!px || !py || px->word == py->word) continue;
-                auto open = [](const Seg& seg) {
-                    return seg.kind == SegKind::Plain && (is_vowel(seg.ph) || seg.ph == Ph::J);
-                };
-                if (!open(x) || !open(y)) continue;
-                const float half = 0.5f * rate(VOWEL_WORD_DIP_MS, VOWEL_WORD_DIP_MIN_MS);
+                if (!px || !py || !needs_vowel_separation(*px, *py)) continue;
+                const float half = 0.5f * rate(VOWEL_BOUNDARY_DIP_MS, VOWEL_BOUNDARY_DIP_MIN_MS);
                 int j0 = lead + static_cast<int>(std::lround((y.start - half) / FRAME_MS));
                 int j1 = lead + static_cast<int>(std::lround((y.start + half) / FRAME_MS));
                 for (int j = std::max(j0, 0); j < std::min(j1, total); ++j) {
-                    av[static_cast<size_t>(j)] *= VOWEL_WORD_DIP;
+                    av[static_cast<size_t>(j)] *= VOWEL_BOUNDARY_DIP;
                 }
             }
         }

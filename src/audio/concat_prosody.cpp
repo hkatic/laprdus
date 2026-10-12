@@ -271,14 +271,11 @@ ClausePlan plan_clause(const formant::Utterance& utt, const UnitBank& bank,
         const Phone& p = ph[static_cast<size_t>(i)];
         const float d_ms = dur[static_cast<size_t>(i)];
 
-        // A short gap before a word that is not a clitic, and between a
-        // word of one vowel and a vowel or j of the word next to it (ja i
-        // ona, njoj i njenom, i od toga), or the two run together into one
-        // syllable
+        // A short gap before a word that is not a clitic, and at every
+        // vowel-to-vowel word boundary, including clitics ("vidio ih").
+        // One-vowel words also keep their separation next to /j/.
         const Phone* before = phone_at(i - 1);
-        auto open = [](const Phone* q) { return formant::is_vowel(q->ph) || q->ph == Ph::J; };
-        const bool hiatus = before && before->word != p.word &&
-                            (p.vowel_word || before->vowel_word) && open(before) && open(&p);
+        const bool hiatus = before && formant::needs_vowel_separation(*before, p);
         if (i > 0 && p.word_start && (p.prominence >= 1 || hiatus) && prev_is_unit) {
             add_silence(rate(WORD_GAP_MS, WORD_GAP_MIN_MS) * samples_per_ms);
             prev_is_unit = false;

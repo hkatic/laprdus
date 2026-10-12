@@ -3588,6 +3588,42 @@ TEST_CASE("A word of one vowel is a syllable of its own", "[formant][prosody]") 
     }
 }
 
+TEST_CASE("Vowels across words have a brief dip in the rendered voice", "[formant][prosody]") {
+    // Sustained /a/ on both sides exposes a missing boundary even when
+    // the vowel colour does not change, as with the /u u/ in "moju ulicu".
+    // Compare each short window with its neighbours, away from the onset
+    // and final fade. This checks the PCM output, not just phone metadata.
+    auto dip = [](const std::vector<int16_t>& audio) {
+        const size_t window = 220;  // 10 ms, covering at least one pitch period
+        const size_t offset = 550;  // 25 ms to either side
+        size_t last = audio.size();
+        const int threshold = peak(audio) / 30;
+        while (last > 0 && std::abs(static_cast<int>(audio[last - 1])) <= threshold) --last;
+        REQUIRE(last > 2 * offset + window);
+        double lowest = 1.0;
+        for (size_t i = std::max(offset, last / 4);
+             i < std::min(last * 3 / 4, last - offset - window); i += 44) {
+            const double neighbours = std::min(energy_at(audio, i - offset, window),
+                                               energy_at(audio, i + offset, window));
+            if (neighbours > 0.0) {
+                lowest = std::min(lowest, std::sqrt(energy_at(audio, i, window) / neighbours));
+            }
+        }
+        return lowest;
+    };
+    for (const char* voice : FORMANT_VOICES) {
+        Engine engine;
+        REQUIRE(laprdus_set_voice(engine.handle, voice, NO_DATA) == LAPRDUS_OK);
+        for (float speed : {1.0f, 1.7f, 4.0f}) {
+            laprdus_set_speed(engine.handle, speed);
+            INFO(voice);
+            INFO(speed);
+            REQUIRE(dip(speak(engine.handle, u8"ȃa ȁa")) < (speed < 4.0f ? 0.65 : 0.72));
+            REQUIRE(dip(speak(engine.handle, u8"ȃaaa")) > 0.70);
+        }
+    }
+}
+
 // =============================================================================
 // Stops
 // =============================================================================
