@@ -431,6 +431,11 @@ TEST_CASE("Lexicon accents cover the whole paradigm", "[formant][text]") {
     // written out, in the oblique cases as well as in the dictionary form.
     struct Case { const char* plain; const char* accented; };
     const Case cases[] = {
+        {u8"razlikujemo", u8"rázlikujemo"},
+        {u8"apsurdni", u8"àpsurdni"},
+        {u8"društvo", u8"drúštvo"},
+        {u8"višednevni", u8"vȉšednevni"},
+        {u8"višednevnog", u8"vȉšednevnog"},
         {"obavijest", "\xC8\x8D" "bavijest"},   // ȍbavijest
         {"obavijesti", "\xC8\x8D" "bavijesti"},   // ȍbavijesti
         {"obavijestima", "\xC8\x8D" "bavijestima"},   // ȍbavijestima

@@ -859,6 +859,29 @@ const char* const COMMON[] = {
 };
 
 const char* const CROATIAN[] = {
+    // Listener-confirmed vȉšednevni (one short falling accent on VI).
+    // ŠR has višèdnēvnī; Martinović/Pudić (2013) records both variants.
+    // Exact forms override the time-compound rule only for this adjective.
+    u8"v^išednevn|i|a|o|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    // ŠR rázlikujēm / rázlikūj; HJP instead shortens the present's a.
+    // The bounded -uj- stem covers presents, imperatives and -ujući;
+    // the -ov- forms use the regular -ati class in VERBS below.
+    u8"r/a:zlikuj*",
+    // ŠR/HJP àpsurdnī; exact positives leave apsùrdnijī to its rule.
+    u8"/apsurdan", u8"/apsurdn|i|a|o|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+
+    // ŠR/HJP: sposóbnōst, sposóbnosti; pojèdīnī (not pojedìnī).
+    // Exact adjective forms leave the separate noun pojedìnac alone.
+    // Croatian keeps stressed quantity but omits post-accent lengths.
+    u8"spos/o:bnost||i|ima", u8"spos/o:bnošću",
+    u8"poj/edin|i|a|o|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    // vještìna / vještìnu, but G plural vještínā (phrase pass).
+    u8"vješt/in|a|e|i|u|o|om|ama",
+    u8"prv/enstveno",
+    // The capitalized name lives in places.tsv. Also accept the requested
+    // lowercase/all-capital spelling: it has no common-word homograph.
+    u8"jug/oslavij|a|e|i|u|o|om",
+
     // ŠR: both regret and shore are žȃl. Ambiguous singular obliques
     // default to regret (G žȃla); the shore has G žála and plural žálovi.
     // Do not take žali/žale away from the much more frequent verb žaliti.
@@ -1150,11 +1173,13 @@ const char* const CROATIAN[] = {
     u8"zahv/a:lnost||i|ima", u8"zahv/a:lnošću",
     u8"n/asmiješen||a|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
     u8"putov/a:nj|e|a|u|em|ima",
-    // Prefer ŠR kráfna, nàbava, kònobār, drùštvo where HJP differs.
+    // Prefer ŠR kráfna, nàbava, kònobār where HJP differs.
     u8"kr/a:fn|a|e|i|u|o|om|ama",
     u8"n/abav|a|e|i|u|o|om|ama",
     u8"k/onobar||a|u|om|i|ima", u8"k^onobare",
-    u8"dr/uštv|o|a|u|om|ima", u8"dr^u:štava",
+    // Listener chose HJP drúštvo (12 October), over ŠR/Mrežnik drùštvo.
+    // Keep the separately attested long falling G plural drȗštāvā.
+    u8"dr/u:štv|o|a|u|om|ima", u8"dr^u:štava",
     u8"gl^a:s||a|u|e|om|i", u8"gl^asov|i|a|e|ima",
     u8"strplj/e:nj|e|a|u|em|ima",
     u8"p/ažnj|a|e|i|u|o|om|ama",
@@ -1621,6 +1646,9 @@ const char* const IJE_VERBS[] = {
 // for the imperative forms. A verb that is not here is right only in the
 // infinitive or if the first syllable carries its accent anyway.
 const char* const VERBS[] = {
+    // ŠR/HJP rázlikovati / rázlikovao; ŠR rázlikovān.
+    // -ov- + the existing -ati class; Croatian -uj- forms are above.
+    u8"r/a:zlikov=t",
     // ŠR/HJP: zatégnuti, rastégnuti, protégnuti; long rising e in
     // infinitives/imperatives/active forms, but zàtēgnēm / zàtēgnūt,
     // ràstēgnēm / ràstēgnūt, pròtēgnēm / pròtēgnūt in Croatian too.

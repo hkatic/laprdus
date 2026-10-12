@@ -206,7 +206,7 @@ const char* const PLACES_COMMON[] = {
 };
 
 const char* const PLACES_CROATIAN[] = {
-    u8"Banjal/u:|ka|ke|ku|kom|ci", u8"K^a:rlov|ac|ca|cu|cem",
+    u8"Banjal/u:|ka|ke|ku|kom|ci", u8"Jug/oslavij|a|e|u|om|i", u8"K^a:rlov|ac|ca|cu|cem",
     u8"K^a:rlov|ec|eca|ecu|ecem|ca|cu|cem", u8"L/udbrešk|i|og|oga|om|ome|im",
     u8"Plj^e:v|lja|alja|ljima", u8"S/emberij|a|e|u|om|i", u8"Z/emun||a|u|om",
     u8"Zr^i:nsk|i|og|oga|om|ome|im", u8"Top/o:lov|ac|aca|acu|acem|ca|cu|cem",

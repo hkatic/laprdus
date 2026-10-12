@@ -84,6 +84,53 @@ TEST_CASE("Collected Croatian accents retain quantity tone and inflection", "[fr
     const auto F = Accent::Falling;
     const auto R = Accent::Rising;
     const Case cases[] = {
+        {U"razlikujemo", 5, 0, R, true}, {U"Razlikujemo", 5, 0, R, true},
+        {U"razlikujem", 4, 0, R, true}, {U"razlikuješ", 4, 0, R, true},
+        {U"razlikuje", 4, 0, R, true}, {U"razlikujete", 5, 0, R, true},
+        {U"razlikuju", 4, 0, R, true}, {U"razlikujući", 5, 0, R, true},
+        {U"razlikuj", 3, 0, R, true}, {U"razlikujmo", 4, 0, R, true},
+        {U"razlikujte", 4, 0, R, true}, {U"razlikovati", 5, 0, R, true},
+        {U"razlikovao", 5, 0, R, true}, {U"razlikovala", 5, 0, R, true},
+        {U"razlikovali", 5, 0, R, true}, {U"razlikovan", 4, 0, R, true},
+        {U"razlikovanima", 6, 0, R, true}, {U"razlikovanje", 5, 0, R, true},
+        {U"apsurdni", 3, 0, R, false}, {U"Apsurdni", 3, 0, R, false},
+        {U"apsurdan", 3, 0, R, false}, {U"apsurdna", 3, 0, R, false},
+        {U"apsurdno", 3, 0, R, false}, {U"apsurdne", 3, 0, R, false},
+        {U"apsurdnu", 3, 0, R, false}, {U"apsurdnog", 3, 0, R, false},
+        {U"apsurdnoga", 4, 0, R, false}, {U"apsurdnoj", 3, 0, R, false},
+        {U"apsurdnome", 4, 0, R, false}, {U"apsurdnima", 4, 0, R, false},
+        {U"apsurdniji", 4, 1, R, false}, {U"apsurdnijima", 5, 1, R, false},
+        {U"najapsurdniji", 5, 2, R, false},
+        {U"društvo", 2, 0, R, true}, {U"Društvo", 2, 0, R, true},
+        {U"društva", 2, 0, R, true}, {U"društvu", 2, 0, R, true},
+        {U"društvom", 2, 0, R, true}, {U"društvima", 3, 0, R, true},
+        {U"društava", 3, 0, F, true}, {U"drùštvo", 2, 0, R, false},
+        {U"VIŠEDNEVNI", 4, 0, F, false}, {U"višèdnevni", 4, 1, R, false},
+        {U"višemjesečni", 5, 1, R, false}, {U"petodnevni", 4, 1, R, false},
+        {U"višednevnog", 4, 0, F, false}, {U"Višednevnog", 4, 0, F, false},
+        {U"višednevni", 4, 0, F, false}, {U"višednevna", 4, 0, F, false},
+        {U"višednevno", 4, 0, F, false}, {U"višednevnoga", 5, 0, F, false},
+        {U"višednevnoj", 4, 0, F, false}, {U"višednevnima", 5, 0, F, false},
+        {U"sposobnosti", 4, 1, R, true}, {U"Sposobnosti", 4, 1, R, true},
+        {U"sposobnost", 3, 1, R, true}, {U"sposobnošću", 4, 1, R, true},
+        {U"sposobnostima", 5, 1, R, true},
+        {U"pojedine", 4, 1, R, false}, {U"Pojedine", 4, 1, R, false},
+        {U"pojedini", 4, 1, R, false}, {U"pojedina", 4, 1, R, false},
+        {U"pojedino", 4, 1, R, false}, {U"pojedinu", 4, 1, R, false},
+        {U"pojedinoga", 5, 1, R, false}, {U"pojedinomu", 5, 1, R, false},
+        {U"pojedinoj", 4, 1, R, false}, {U"pojedinih", 4, 1, R, false},
+        {U"pojedinima", 5, 1, R, false},
+        {U"pojedinac", 4, 2, R, false}, {U"pojedinca", 4, 2, R, false},
+        {U"vještinu", 3, 1, R, false}, {U"Vještinu", 3, 1, R, false},
+        {U"vještina", 3, 1, R, false}, {U"vještine", 3, 1, R, false},
+        {U"vještini", 3, 1, R, false}, {U"vještinom", 3, 1, R, false},
+        {U"vještinama", 4, 1, R, false},
+        {U"prvenstveno", 4, 1, R, false}, {U"Prvenstveno", 4, 1, R, false},
+        {U"jugoslavija", 5, 1, R, false}, {U"Jugoslavija", 5, 1, R, false},
+        {U"JUGOSLAVIJA", 5, 1, R, false}, {U"Jugoslavije", 5, 1, R, false},
+        {U"Jugoslaviji", 5, 1, R, false}, {U"Jugoslaviju", 5, 1, R, false},
+        {U"Jugoslavijo", 5, 1, R, false}, {U"Jugoslavijom", 5, 1, R, false},
+        {U"jugoslavijom", 5, 1, R, false},
         {U"žal", 1, 0, F, true}, {U"Žal", 1, 0, F, true},
         {U"ŽAL", 1, 0, F, true},
         {U"žala", 2, 0, F, true}, {U"žalu", 2, 0, F, true},
@@ -557,7 +604,7 @@ TEST_CASE("Collected Croatian words follow checked dictionary accents", "[fronte
         {U"obijene", 4, 1, R, false}, {U"ubijene", 4, 1, R, false},
         {U"razbijene", 4, 1, R, false},
         {U"počinitelji", 5, 1, R, false}, {U"Špansko", 2, 0, R, true},
-        {U"špansko", 2, 0, R, true}, {U"društvo", 2, 0, R, false},
+        {U"špansko", 2, 0, R, true}, {U"društvo", 2, 0, R, true},
         {U"rečeno", 3, 0, R, false}, {U"problema", 3, 1, R, true},
         {U"travnjaku", 3, 0, F, true}, {U"terenu", 3, 1, R, true},
         {U"trener", 2, 0, R, true}, {U"smisao", 3, 0, F, true},
@@ -696,6 +743,9 @@ TEST_CASE("Case context selects Croatian accent homographs", "[frontend][accents
         {U"nova anketa", 1, R, false}, {U"dvije ankete", 1, R, false},
         {U"pet anketa", 1, R, true}, {U"nekoliko anketa", 1, R, true},
         {U"pet novih anketa", 1, R, true}, {U"pet ankèta", 1, R, false},
+        {U"nova vještina", 1, R, false}, {U"dvije vještine", 1, R, false},
+        {U"pet vještina", 1, R, true}, {U"nekoliko vještina", 1, R, true},
+        {U"mnogo novih vještina", 1, R, true}, {U"pet vještìna", 1, R, false},
         {U"o glasu", 0, R, true}, {U"na dobrom glasu", 0, R, true},
         {U"prema glasu", 0, F, true}, {U"po repu", 0, R, true},
         {U"prema repu", 0, F, true}, {U"pet stvari", 0, R, true},
@@ -730,12 +780,13 @@ TEST_CASE("Case context selects Croatian accent homographs", "[frontend][accents
         REQUIRE(vowels[c.stress].is_long == c.long_vowel);
     }
     frontend.set_user_lexicon(UserLexicon::parse(
-        R"({"entries":[{"word":"gl^a:su"},{"word":"komp/onenti"},{"word":"žir/afa"},{"word":"ank/eta"},{"word":"vr^agu"},{"word":"zr^a:ka"},{"word":"zr^a:ku"}]})"));
+        R"({"entries":[{"word":"gl^a:su"},{"word":"komp/onenti"},{"word":"žir/afa"},{"word":"ank/eta"},{"word":"vješt/ina"},{"word":"vr^agu"},{"word":"zr^a:ka"},{"word":"zr^a:ku"}]})"));
     REQUIRE(nuclei(read(frontend, U"o vragu"))[1].accent == F);
     REQUIRE(!nuclei(read(frontend, U"o vragu"))[1].is_long);
     REQUIRE(nuclei(read(frontend, U"jedna zraka"))[2].is_long);
     REQUIRE(nuclei(read(frontend, U"na zraku"))[1].accent == F);
     REQUIRE(!nuclei(read(frontend, U"pet anketa"))[2].is_long);
+    REQUIRE(!nuclei(read(frontend, U"pet vještina"))[2].is_long);
     const auto voice = nuclei(read(frontend, U"o glasu"));
     REQUIRE(voice[1].accent == F);
     const auto component = nuclei(read(frontend, U"o komponenti"));

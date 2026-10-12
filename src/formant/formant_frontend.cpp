@@ -3667,12 +3667,12 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
                 word.accent = Accent::Rising;
             } else if (is_one_of(word.w, {U"žirafa", U"pažnja", U"nabava", U"društva",
                                          U"vuka", U"vraga", U"komponenta", U"zvuka", U"snimka",
-                                         U"komoda", U"rastava", U"stabla", U"anketa"}) &&
+                                         U"komoda", U"rastava", U"stabla", U"anketa", U"vještina"}) &&
                        plural_genitive_cue(words[i - 1].w)) {
                 // Homographic G plurals: žiráfā, pážnjā, nȁbāvā,
                 // drúštvā, vúkā, vrágā, kompònēntā, zvúkā, snȋmkā, komódā and
-                // rȁstāvā, stáblā, ankétā (Školski rječnik).
-                word.stress = is_one_of(word.w, {U"žirafa", U"komponenta", U"komoda", U"anketa"}) ? 1 : 0;
+                // rȁstāvā, stáblā, ankétā, vještínā (Školski rječnik).
+                word.stress = is_one_of(word.w, {U"žirafa", U"komponenta", U"komoda", U"anketa", U"vještina"}) ? 1 : 0;
                 word.accent = is_one_of(word.w, {U"nabava", U"snimka", U"rastava"})
                     ? Accent::Falling : Accent::Rising;
                 word.phones[static_cast<size_t>(word.nuclei[word.stress])].is_long =

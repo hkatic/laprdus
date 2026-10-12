@@ -967,6 +967,74 @@ To correct a word, add an entry to `formant_lexicon.cpp` (notation at the top
 of the file). Language-specific tables override the common one (*pròfesor* in
 Croatian, *profèsor* in Serbian and Bosnian).
 
+**Razlikujemo, apsurdni, društvo and višednevni, 12 October 2026 follow-up.**
+
+[ŠR razlikovati](https://rjecnik.hr/search/?q=razlikovati&strict=yes)
+gives *rázlikovati, rázlikujēm, rázlikujū, rázlikūj, rázlikovao,
+rázlikovān*: long rising initial *a* throughout. This selects
+*rázlikujemo*. [HJP](https://hjp.znanje.hr/index.php?id=dltgXRE%3D&show=search_by_id)
+agrees on the infinitive but has short *ràzlikujēm*; the Croatian
+present follows ŠR. The existing `VERBS` class `t` on `r/a:zlikov`
+handles the infinitive, active/passive forms and verbal nouns; the
+bounded Croatian `r/a:zlikuj*` stem handles the present, imperative and
+present participle without introducing a new conjugation class.
+
+[ŠR apsurdan](https://rjecnik.hr/search/?q=apsurdan&strict=yes) and
+[HJP](https://hjp.znanje.hr/index.php?id=el9hXg%3D%3D&show=search_by_id)
+agree on *àpsurdan, àpsurdnī*: short rising initial *a*, where the
+engine previously supplied neutral stress. Exact positive adjective
+forms leave the comparative *apsùrdnijī* and its superlative alone.
+
+For *društvo*, the listener explicitly selected HJP's long rising
+[*drúštvo*](https://hjp.znanje.hr/index.php?id=fF9hXxE%3D&show=search_by_id).
+This replaces the earlier short rising choice supported by
+[ŠR](https://rjecnik.hr/search/?q=dru%C5%A1tvo&strict=yes) and
+[Mrežnik](https://rjecnik.hr/mreznik/drustvo/), *drùštvo, drùštva,
+drùštvu, drùštvom, drùštvima*. Long *u* now continues through the
+regular cases. The distinct G plural *drȗštāvā* keeps its falling tone;
+the alternative *drúštvā* is also long rising. Written *drùštvo*
+continues to request the short variant.
+
+The listener clarified that *višednevni* must have one accent on **VI**.
+The Croatian adjective paradigm now has short falling *vȉšednevni*,
+including *vȉšednevnog*. ŠR records *višèdnēvnī*, while Martinović and
+Pudić, [“Naglasak pridjeva u govornoj praksi”, Tabula 11 (2013),
+p. 152](https://hrcak.srce.hr/file/172721), contrast *višèdnēvnī* and
+*vȉšednēvnī* in their questionnaire on accents used in speech.
+The explicit listener choice overrides the ordinary time-compound
+rule for this adjective only; *višemjesečni, petodnevni* and the
+Serbian/Bosnian rules are unchanged. Written *višèdnevni* still selects
+the other accent. Croatian still omits unstressed vowel lengths.
+Frontend tests check position, tone, quantity, case/verb forms and
+the contrasts above; synthesis tests compare the four requested words
+and *višednevnog* with their explicitly accented equivalents.
+
+**Višednevnog–Jugoslavija, 12 October 2026 follow-up.**
+
+The Institute of Croatian Language's *Školski rječnik* supplies the
+principal forms; HJP independently confirms the overlapping entries:
+
+| Requested form | Dictionary accent and paradigm evidence |
+| --- | --- |
+| višednevnog | [ŠR višednevni](https://rjecnik.hr/search/?q=vi%C5%A1ednevni&strict=yes): *višèdnēvnī*, G *višèdnēvnōg(a)*. The existing time-compound rule matched this entry. The later listener clarification above selects *vȉšednevnog* instead. |
+| sposobnosti | [ŠR sposobnost](https://rjecnik.hr/search/?q=sposobnost&strict=yes): *sposóbnōst*, G singular/N plural *sposóbnosti*, I *sposóbnošću/sposóbnosti*, G plural *sposóbnostī*. [HJP](https://hjp.znanje.hr/index.php?id=d1xjXxk%3D&show=search_by_id) agrees. Preserve long rising stress on the second *o*. |
+| pojedine | [ŠR pojedini](https://rjecnik.hr/search/?q=pojedini&strict=yes) and [HJP](https://hjp.znanje.hr/index.php?id=eVtnXxA%3D&show=search_by_id): *pojèdīnī*, G *pojèdīnōg(a)*, feminine *pojèdīnā*. The regular forms keep short rising *e*. Exact adjective forms override the old *pojedìn-* stem without changing *pojedìnac/pojedìnca*. |
+| vještinu | [ŠR vještina](https://rjecnik.hr/search/?q=vje%C5%A1tina&strict=yes) and [HJP](https://hjp.znanje.hr/index.php?id=f19vWhV1&show=search_by_id): *vještìna*, G singular *vještìnē*, N plural *vještìne*, but G plural *vještínā*. Accusative *vještìnu* and the regular oblique forms keep short rising *i*. The existing plural-genitive cue selects long *i* in *pet vještina / mnogo novih vještina*. |
+| prvenstveno | [ŠR prvenstveno](https://rjecnik.hr/search/?q=prvenstveno&strict=yes) and [HJP](https://hjp.znanje.hr/index.php?id=dl1mWhk%3D&show=search_by_id): *prvènstveno*, short rising *e*, after the initial syllabic *r*. |
+| jugoslavija | [HJP Jugoslavija](https://hjp.znanje.hr/index.php?id=el9kXhA%3D&show=search_by_id): *Jugòslāvija*, short rising *o*. The regular singular cases retain it. Added to the Croatian place-name source table, with exact lowercase/all-capital fallback forms because the requested spelling has no common-word homograph. |
+
+The original engine already gave *višèdnevnog*, but produced initial
+short stress for *sposobnosti, vještinu, prvenstveno*, stressed the *i* in
+*pojedine*, and stressed the *a* in *Jugoslavija*. The corrections are
+Croatian-specific. As elsewhere in this voice, dictionary post-accent
+lengths are omitted, so it renders *pojèdine, Jugòslavija*; stressed length
+is retained in *sposóbnosti* and genitive plural *vještína*. The isolated
+spelling *vještina* defaults to singular. This is a bounded context cue,
+not a full case parser; written accents and user lexicon entries override
+it. Tests cover all six requested forms, their regular inflections,
+capitalization, the distinct noun *pojedinac*, and the genitive-plural
+quantity and override behavior.
+
 **Žal and ulaganje, 12 October 2026 follow-up.**
 
 [ŠR žal](https://rjecnik.hr/search/?q=%C5%BEal&strict=yes) distinguishes
@@ -1546,7 +1614,7 @@ a noun's accent from spilling into its verb or another derivative. Regular
 | razbijene (added subsequently) | *razbìjene* | [ŠR razbiti](https://rjecnik.hr/search/?q=razbiti&strict=yes) and [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=dltlURU%3D) both give passive *razbìjen*. Short rising *i*, separate from *e*, remains in *razbìjena/razbìjeno/razbìjeni/razbìjene/razbìjenima*. Four syllables in *razbijene*. |
 | počinitelji | *počìnitelji* | [ŠR počinitelj](https://rjecnik.hr/search/?q=po%C4%8Dinitelj&strict=yes) explicitly gives the plural. |
 | špansko | *Špánsko* | [HJP špan, onomastics](https://hjp.znanje.hr/index.php?show=search_by_id&id=d1diXRQ%3D) explicitly identifies *Špánsko (dio Zagreba)*. The list is interpreted as this neighbourhood; its lowercase spelling receives a matching alias. This differs from adjective *špȃnskī*. Place-case endings are adjectival (*Španskoga, Španskom*). |
-| društvo | *drùštvo* | [ŠR](https://rjecnik.hr/search/?q=dru%C5%A1tvo&strict=yes), G plural *drȗštāvā/drúštvā*. [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=fF9hXxE%3D) instead has long rising *drúštvo*. Prefer ŠR. |
+| društvo | *drúštvo* | [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=fF9hXxE%3D), explicitly selected by the listener on 12 October. The earlier *drùštvo* followed [ŠR](https://rjecnik.hr/search/?q=dru%C5%A1tvo&strict=yes); its G plural *drȗštāvā/drúštvā* is preserved. |
 | rečeno (listed twice) | *rèčeno* | Passive *rèčen* in [ŠR reći](https://rjecnik.hr/search/?q=re%C4%87i&strict=yes) and [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=dlpkWhA%3D). |
 | problema | *probléma* | [ŠR problem](https://rjecnik.hr/search/?q=problem&strict=yes): headword *pròblēm*, cases *probléma/problémi*. |
 | travnjaku | *trȃvnjaku* | [ŠR travnjak](https://rjecnik.hr/search/?q=travnjak&strict=yes): *trȃvnjāk/trȃvnjāka/trȃvnjāci*. |
