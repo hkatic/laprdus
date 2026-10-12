@@ -410,7 +410,7 @@ fun SettingsScreen(
                     )
                 }
 
-                // Spelling Speed Slider (percent of the speech rate)
+                // Spelling Speed Slider (lower values add longer pauses)
                 item {
                     SliderSettingItem(
                         title = stringResource(R.string.setting_spelling_speed),

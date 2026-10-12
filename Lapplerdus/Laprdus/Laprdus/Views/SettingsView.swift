@@ -244,7 +244,7 @@ struct SettingsView: View {
                 range: 0.0...100.0,
                 step: 5,
                 format: { "\(Int($0.rounded()))%" },
-                subtitle: String(localized: "Speed of spelled characters: 100% is the speech rate, 50% a little over half of it, 0% a third"),
+                subtitle: String(localized: "Lower values add longer pauses after each character. Characters always use the normal speech rate. 100% adds no extra pause; default 50%."),
                 restoreLabel: String(localized: "Restore default spelling speed"),
                 restore: { settings.spellingSpeed = SettingsSnapshot.defaultSpellingSpeed }
             )

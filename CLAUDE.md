@@ -111,7 +111,7 @@ struct VoiceParams {
     float inflection_level = 0.5f;  // 0 monotone, 0.5 as measured, 1 twice the movements (every voice)
     float acceleration = 1.0f;      // rate multiplier 0.5 - 3.0 (every voice; VoiceParams::effective_speed())
     SpellingMode spelling_mode = SpellingMode::LetterNames;  // spelled letters: names (be, ce) or sounds ([b], [ts])
-    int spelling_speed = 50;        // rate of spelled characters, percent of the speech rate (100 = the rate itself)
+    int spelling_speed = 50;        // spelling cadence: lower values add silence; speech rate stays unchanged
 };
 ```
 
@@ -378,7 +378,7 @@ echo "Text" | laprdus.exe -o output.wav
 | `-V, --speech-volume` | Volume 0.0-1.0 (default: 1.0) |
 | `-d, --numbers-digits` | Speak numbers as digits |
 | `-s, --spell` | Spell the text character by character |
-| `-S, --spelling-speed` | Speed of spelled characters, percent of the speech rate 0-100 (default: 50) |
+| `-S, --spelling-speed` | Spelling cadence 0-100; lower adds longer pauses (default: 50) |
 | `-m, --spelling-mode` | `names` (be, ce, de; default) or `sounds` (b, c, d) |
 | `-c, --comma-pauses` | Comma pause duration in ms |
 | `-e, --period-pauses` | Period pause duration in ms |
@@ -651,7 +651,7 @@ laprdus -l
 | `-V` | `--speech-volume` | Volume (0.0-1.0, default 1.0) |
 | `-d` | `--numbers-digits` | Speak numbers as digits |
 | `-s` | `--spell` | Spell the text character by character |
-| `-S` | `--spelling-speed` | Speed of spelled characters, percent of the speech rate (0-100, default 50) |
+| `-S` | `--spelling-speed` | Spelling cadence 0-100; lower adds longer pauses (default: 50) |
 | `-m` | `--spelling-mode` | `names` (default) or `sounds` |
 | `-c` | `--comma-pauses` | Comma pause duration in ms |
 | `-e` | `--period-pauses` | Period pause duration in ms |
@@ -1152,13 +1152,13 @@ The dictionary uses JSON format at `data/dictionary/internal.json`:
 
 ## Spelling
 
-`TTSEngine::synthesize_spelled()` (C API `laprdus_synthesize_spelled()`) reads text character by character, with `pause_settings.spelling_pause_ms` between the characters (a lone character gets it after itself). It is what every platform calls for screen reader spelling, typed-character echo, SAPI5 `SPVA_SpellOut` and single-character requests. Per character (`spell_character()`):
+`TTSEngine::synthesize_spelled()` (C API `laprdus_synthesize_spelled()`) reads text character by character, at the normal speech rate, with a pause after every character, including the last. It is what every platform calls for screen reader spelling, typed-character echo, SAPI5 `SPVA_SpellOut` and single-character requests. Per character (`spell_character()`):
 
 - **A letter of the alphabet** (`formant::spelling_letter()`: Latin or Cyrillic, any case, the ligatures and љ/њ/џ as digraphs, ä-type letters folded) is read by its **name** in the language of the voice (`formant::letter_name()`: Croatian and Bosnian *a, be, ce, če, će, de, dže, đe, e, ef, ge, ha, i, je, ka, el, elj, em, en, enj, o, pe, er, es, eš, te, u, ve, ze, že*, foreign *ku, duplo ve, iks, ipsilon*; Serbian per decision 41 of the Odbor za standardizaciju srpskog jezika: *lje, nje, ša*, the same for Cyrillic and Latin) or, when `VoiceParams::spelling_mode` is `SpellingMode::LetterSounds`, by its **sound**: `Frontend::letter_sound()` builds an `Utterance` with `isolated_sound = true` (a vowel letter as a stressed syllable; a consonant letter as the consonant plus a stressed SCHWA release vowel, "bə", "sə", "mə", as eSpeak's Croatian voice sounds letters out: measured 70-90 ms of consonant and 110-130 ms of vowel at full level; the foreign letters *q, w, x, y* (`formant::is_foreign_letter()`) keep their names in sound mode too), and `FormantSynthesizer::synthesize_letter_sound()` / `AudioSynthesizer::synthesize_letter_sound()` render it with fixed durations. The same letter names are used for spelled-out abbreviations in running text ("USB", "HR").
 - **Everything else** (digits, punctuation, symbols) is read by its entry in the bundled spelling dictionary, or spoken as text when it has none.
 - **The user's spelling entries** (`add_spelling_entry()`, `append_spelling_dictionary()`, a second `SpellingDictionary` layer) win over all of that, with one exception: in sound mode a user entry that is merely a letter's name (`formant::is_letter_name()`: the built-in names of any language, plus the old *jot*) gives way to the sound; any other entry is spoken as written. `load_spelling_dictionary*()` replaces the bundled layer and clears the user layer, so every platform's "load bundled, then add the user's" sequence keeps working.
 - **Capital letters announced by a screen reader** arrive as text, not as a spelled character: NVDA "veliko N" (hr/sr/bs) and "cap N", TalkBack "veliko slovo N" (hr), "велико Н" (sr), "veliko N" (sr Latin, bs), VoiceOver "veliko početno slovo N" (hr). `TTSEngine::synthesize()` (and `synthesize_streaming()`) recognize a whole request of *veliko*/*cap*/*capital*, optionally *slovo*/*početno*/*letter*, and one letter, and render the words as text followed by `synthesize_spelled()` of the letter, so the spelling mode, spelling speed and user spelling entries apply on every platform. Anything else ("Plan B", "veliko N je slovo") is ordinary text.
-- **Spelling speed** (`VoiceParams::spelling_speed`, 0-100, default 50): the character is rendered at `speed × spelling_rate_factor()` (3^((s-100)/100): 1.0 at 100, 0.58 at 50, 0.33 at 0), the speed put back afterwards. C API `laprdus_set_spelling_mode()` / `laprdus_set_spelling_speed()`; `settings.json` section `"spelling": { "speed": 50, "mode": "names" | "sounds" }` (parsed within the section, so its `speed` is not confused with `speech.speed`); keys `spelling_speed` / `spelling_mode` on Android and Apple; CLI `-s` (spell the text), `-S`, `-m`. Every settings screen has the spelling speed in its pauses section and a "spell letters by their sounds" switch in its advanced/options section; NVDA takes both from `settings.json`. The voice settings are ordered speed, acceleration, pitch, inflection level, volume everywhere. `VoiceParams::inflection_enabled` and `speech.inflection` still exist for the API and `settings.json`, but no settings screen shows the on/off switch any more (the inflection level at 0 is the monotone).
+- **Spelling speed** (`VoiceParams::spelling_speed`, 0-100, default 50): characters keep the normal speech rate and acceleration. `spelling_rate_factor()` (3^((s-100)/100): 1.0 at 100, 0.58 at 50, 0.33 at 0) controls cadence only: after each character, append `pause_settings.spelling_pause_ms` plus its rendered duration × (1/factor − 1) of silence. Thus 100 adds no extra silence, 50 adds about 73% of the character duration, and 0 adds twice its duration. The last character gets the same pause, so whole-word and individual-character calls have identical spacing. C API `laprdus_set_spelling_mode()` / `laprdus_set_spelling_speed()`; `settings.json` section `"spelling": { "speed": 50, "mode": "names" | "sounds" }` (parsed within the section, so its `speed` is not confused with `speech.speed`); keys `spelling_speed` / `spelling_mode` on Android and Apple; CLI `-s` (spell the text), `-S`, `-m`. Every settings screen has the spelling speed in its pauses section and a "spell letters by their sounds" switch in its advanced/options section; NVDA takes both from `settings.json`. The voice settings are ordered speed, acceleration, pitch, inflection level, volume everywhere. `VoiceParams::inflection_enabled` and `speech.inflection` still exist for the API and `settings.json`, but no settings screen shows the on/off switch any more (the inflection level at 0 is the monotone).
 - Tests: `tests/linux/test_formant.cpp` and `test_concat.cpp` (`[spelling]`).
 
 ## Spelling Dictionary

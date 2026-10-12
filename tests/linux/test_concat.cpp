@@ -20,6 +20,7 @@
 #include <vector>
 
 #include <laprdus/laprdus_api.h>
+#include "spelling_checks.hpp"
 
 namespace {
 
@@ -327,7 +328,18 @@ TEST_CASE("Spelling works with a recorded voice", "[concat][spelling]") {
     REQUIRE(rms(audio) > 300.0);
 }
 
-TEST_CASE("Letter sounds and spelling speed work with a recorded voice", "[concat][spelling]") {
+TEST_CASE("Spelling speed adds silence without slowing recorded speech", "[concat][spelling]") {
+    const char* dir = data_dir();
+    if (!dir) SKIP("Set LAPRDUS_DATA to test recorded spelling pauses");
+    for (const char* voice : {"josip", "vlado"}) {
+        INFO(voice);
+        Engine engine;
+        REQUIRE(laprdus_set_voice(engine.handle, voice, dir) == LAPRDUS_OK);
+        check_spelling_pauses(engine.handle);
+    }
+}
+
+TEST_CASE("Letter sounds work with a recorded voice", "[concat][spelling]") {
     const char* dir = data_dir();
     if (!dir) return;
     Engine engine;
@@ -349,11 +361,6 @@ TEST_CASE("Letter sounds and spelling speed work with a recorded voice", "[conca
     std::vector<int16_t> name = spell("b");
     REQUIRE(name == speak(engine.handle, "be"));
     REQUIRE(spell("j") == speak(engine.handle, "je"));
-
-    // Slower when the spelling speed is lower
-    REQUIRE(laprdus_set_spelling_speed(engine.handle, 30) == LAPRDUS_OK);
-    REQUIRE(spell("b").size() > name.size() * 1.2);
-    REQUIRE(speak(engine.handle, "be") == name);   // the speech rate is untouched
 
     // Sounds: every letter gives audible sound, different from its name
     REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_SOUNDS) == LAPRDUS_OK);

@@ -1284,18 +1284,18 @@
         }
       }
     },
-    "Speed of spelled characters: 100% is the speech rate, 50% a little over half of it, 0% a third" : {
+    "Lower values add longer pauses after each character. Characters always use the normal speech rate. 100% adds no extra pause; default 50%." : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Brzina izgovora slovkanih znakova: 100% je brzina govora, 50% nešto više od polovice, 0% trećina"
+            "value" : "Niže vrijednosti produljuju pauze nakon svakog znaka. Znakovi se uvijek izgovaraju uobičajenom brzinom govora. 100% ne dodaje pauzu; zadano je 50%."
           }
         },
         "sr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Brzina izgovora znakova pri sricanju: 100% je brzina govora, 50% nešto više od polovine, 0% trećina"
+            "value" : "Niže vrednosti produžavaju pauze posle svakog znaka. Znakovi se uvek izgovaraju uobičajenom brzinom govora. 100% ne dodaje pauzu; podrazumevano je 50%."
           }
         }
       }

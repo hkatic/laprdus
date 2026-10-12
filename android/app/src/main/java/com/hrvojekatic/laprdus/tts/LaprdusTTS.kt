@@ -537,9 +537,8 @@ class LaprdusTTS private constructor() {
         }
 
     /**
-     * Speed of spelled characters as a percentage of the speech rate:
-     * 100 is the speech rate itself, 50 (the default) a little over half
-     * of it, 0 a third.
+     * Spelling cadence: lower values add longer pauses after each character.
+     * 100 adds no extra pause. Characters keep the normal speech rate.
      * Range: 0-100, default 50
      */
     var spellingSpeed: Int

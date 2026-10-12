@@ -356,7 +356,7 @@ echo "Tekst" | laprdus
 | `-V, --speech-volume` | Glasnoća (0.0-1.0, zadano: 1.0) |
 | `-d, --numbers-digits` | Čitaj brojeve znamenka po znamenka |
 | `-s, --spell` | Slovkaj tekst znak po znak |
-| `-S, --spelling-speed` | Brzina slovkanja u postocima brzine govora, 0-100 (zadano: 50) |
+| `-S, --spelling-speed` | Brzina slovkanja, 0-100; niže vrijednosti produljuju pauze (zadano: 50) |
 | `-m, --spelling-mode` | Slovkanje: `names` (nazivi slova: be, ce, de; zadano) ili `sounds` (glasovi slova: b, c, d) |
 | `-c, --comma-pauses` | Trajanje pauze za zarez u ms (zadano: 100) |
 | `-e, --period-pauses` | Trajanje pauze za točku u ms (zadano: 80) |
@@ -451,7 +451,7 @@ Vrijednosti se izražavaju u milisekundama (ms). Raspon je od 0 do 2000 ms.
 
 **Napomena:** Korisnički konfigurator (Windows/Android) koristi jedinstveno podešavanje od 100 ms za sve znakove kraja rečenice (točka, uskličnik, upitnik), dok naredbeni program omogućuje zasebno podešavanje svakog znaka.
 
-U istom odjeljku postavki nalazi se i **brzina slovkanja**: brzina kojom se izgovaraju znakovi pri slovkanju i pri tipkanju, u postocima brzine govora. 100% je brzina govora, 50% (zadano) nešto više od polovice, a 0% trećina. Nazivi i glasovi slova kratki su, pa se pri brzini tekućeg govora stapaju; polovica brzine zlatna je sredina. Pauza između slovkanih znakova (zadano 200 ms, `pauses.spelling` u `settings.json`) ne ovisi o toj brzini.
+U istom odjeljku postavki nalazi se i **brzina slovkanja** (0–100%, zadano 50%): niža vrijednost produljuje pauzu nakon svakog slovkanog ili tipkanog znaka, a sam se znak uvijek izgovara uobičajenom brzinom govora. Na 100% nema dodatne pauze; na 50% dodaje se oko 73% trajanja izgovora znaka, a na 0% dvostruko trajanje. Ta se tišina pribraja osnovnoj pauzi slovkanja (zadano 200 ms, `pauses.spelling` u `settings.json`). Pauza slijedi i nakon posljednjeg znaka, pa je razmak jednak šalje li čitač ekrana cijelu riječ ili znak po znak.
 
 ### 4.5 Način čitanja brojeva
 

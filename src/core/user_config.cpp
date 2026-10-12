@@ -222,7 +222,7 @@ std::string generate_settings_json(const UserSettings& settings) {
     json << "        \"pauses.comma\": \"Pause after commas in milliseconds, 0-2000\",\n";
     json << "        \"pauses.newline\": \"Pause at newlines in milliseconds, 0-2000\",\n";
     json << "        \"pauses.spelling\": \"Pause between spelled characters in milliseconds, 0-2000\",\n";
-    json << "        \"spelling.speed\": \"Speed of spelled characters in percent of the speech rate: 100 is the speech rate, 50 (default) a little over half of it, 0 a third\",\n";
+    json << "        \"spelling.speed\": \"Lower values add longer pauses after each character. Characters always use the normal speech rate. 100% adds no extra pause; default 50%.\",\n";
     json << "        \"spelling.mode\": \"How letters are spelled: 'names' (be, ce, de) or 'sounds' (the sound of each letter)\",\n";
     json << "        \"force.speed\": \"Use Laprdus speed setting instead of system/SAPI5 (true/false)\",\n";
     json << "        \"force.pitch\": \"Use Laprdus pitch setting instead of system/SAPI5 (true/false)\",\n";

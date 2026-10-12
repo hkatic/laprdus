@@ -45,7 +45,7 @@ struct SettingsSnapshot: Sendable {
     var commaPause = 100
     var newlinePause = 100
     var numberMode = 0
-    /// Rate of spelled characters as a percentage of the speech rate, 0 to 100.
+    /// Spelling cadence, 0 to 100; lower values add longer pauses after characters.
     var spellingSpeed = SettingsSnapshot.defaultSpellingSpeed
     /// How letters are spelled: "names" (be, ce, de) or "sounds" (b, c, d).
     var spellingMode = SettingsSnapshot.spellingModeNames

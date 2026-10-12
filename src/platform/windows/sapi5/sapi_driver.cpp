@@ -584,8 +584,8 @@ HRESULT LaprdusSAPIDriver::SynthesizeRuns(
             result.audio.samples.begin(),
             result.audio.samples.end());
 
-        // The engine ends a single spelled character with the spelling pause
-        separated = spell && isSingleChar;
+        // The engine ends every spelled run with the spelling pause.
+        separated = spell;
         previousSpelled = spell;
     }
 

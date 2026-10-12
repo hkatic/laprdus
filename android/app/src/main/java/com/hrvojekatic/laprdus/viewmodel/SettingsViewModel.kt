@@ -447,7 +447,7 @@ class SettingsViewModel @Inject constructor(
 
     /**
      * Set the spelling speed and persist it.
-     * @param percent Speed of spelled characters in percent of the speech rate (0-100)
+     * @param percent Spelling cadence (0-100); lower values add longer pauses
      */
     fun setSpellingSpeed(percent: Int) {
         val clamped = percent.coerceIn(SettingsRepository.SPELLING_SPEED_RANGE)

@@ -583,8 +583,8 @@ class SettingsRepository internal constructor(
     // ==========================================================================
 
     /**
-     * Flow of the spelling speed: the rate of spelled characters as a
-     * percentage of the speech rate (0-100, default 50).
+     * Flow of the spelling cadence (0-100, default 50): lower values add
+     * longer pauses after each character without changing the speech rate.
      */
     val spellingSpeed: Flow<Int> = prefs
         .map { preferences ->

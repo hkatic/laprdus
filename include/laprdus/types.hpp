@@ -298,14 +298,14 @@ enum class SpellingMode : uint8_t {
     LetterSounds = 1    // "b" -> the sound [b], "f" -> [f], "h" -> [x]; q, w, x, y by name
 };
 
-// Spelling speed in percent: 100 is the speech rate itself, 50 (the default)
-// a little over half of it, 0 a third of it. Letter names and sounds are
-// short, and at the rate of running speech they blur together.
+// Spelling speed controls silence after each character, never its speech rate.
+// 100 adds no extra silence; 50 (the default) adds about 0.73 times the
+// character's duration; 0 adds twice its duration, plus the spelling pause.
 constexpr int SPELLING_SPEED_MIN = 0;
 constexpr int SPELLING_SPEED_MAX = 100;
 constexpr int SPELLING_SPEED_DEFAULT = 50;
 
-/** Rate factor of a spelled character for a spelling speed in percent. */
+/** Spelling cadence factor, used for pauses only, never to scale speech. */
 inline float spelling_rate_factor(int spelling_speed) {
     const int s = std::clamp(spelling_speed, SPELLING_SPEED_MIN, SPELLING_SPEED_MAX);
     // 3^((s - 100) / 100): 1/3 at 0, 0.58 at 50, 1.0 at 100
@@ -327,7 +327,7 @@ struct VoiceParams {
     NumberMode number_mode = NumberMode::WholeNumbers;  // Number processing mode
     PauseSettings pause_settings;    // Pause duration settings
     SpellingMode spelling_mode = SpellingMode::LetterNames;  // Letter names or sounds when spelling
-    int spelling_speed = SPELLING_SPEED_DEFAULT;        // Rate of spelled characters, percent of the speech rate
+    int spelling_speed = SPELLING_SPEED_DEFAULT;        // Spelling cadence (0-100); lower adds more silence
 
     void clamp() {
         // std::clamp passes NaN through, and a NaN rate or pitch would reach

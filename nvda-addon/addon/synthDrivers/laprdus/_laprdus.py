@@ -1079,8 +1079,8 @@ class LaprdusEngine(object):
         """Set the speed of spelled characters.
 
         Args:
-            percent: 0-100; 100 is the speech rate itself, 50 (default) a
-                little over half of it, 0 a third
+            percent: 0-100, default 50; lower adds longer pauses after each
+                character, 100 adds no extra pause. Speech rate is unchanged.
 
         Returns:
             True on success, False on failure

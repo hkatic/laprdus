@@ -675,33 +675,6 @@ int TTSEngine::spelling_speed() const {
     return m_impl ? m_impl->voice_params.spelling_speed : SPELLING_SPEED_DEFAULT;
 }
 
-namespace {
-
-// Spelled characters are rendered at a fraction of the speech rate: the
-// speed is scaled for the duration of one character and put back after.
-class SpellingRate {
-public:
-    SpellingRate(VoiceParams& params, AudioSynthesizer* synthesizer)
-        : m_params(params), m_synthesizer(synthesizer), m_speed(params.speed) {
-        m_params.speed = std::max(m_speed * spelling_rate_factor(m_params.spelling_speed),
-                                  FORMANT_SPEED_MIN);
-        if (m_synthesizer) m_synthesizer->set_voice_params(m_params);
-    }
-    ~SpellingRate() {
-        m_params.speed = m_speed;
-        if (m_synthesizer) m_synthesizer->set_voice_params(m_params);
-    }
-    SpellingRate(const SpellingRate&) = delete;
-    SpellingRate& operator=(const SpellingRate&) = delete;
-
-private:
-    VoiceParams& m_params;
-    AudioSynthesizer* m_synthesizer;
-    float m_speed;
-};
-
-} // namespace
-
 VoiceLanguage TTSEngine::current_language() const {
     if (m_impl && m_impl->formant) return m_impl->formant->language();
     return m_impl ? m_impl->concat_language : VoiceLanguage::Croatian;
@@ -739,7 +712,6 @@ SynthesisResult TTSEngine::spell_character(const std::string& character) {
         text = character;
     }
 
-    SpellingRate rate(m_impl->voice_params, m_impl->synthesizer.get());
     if (!sound) {
         return synthesize(text);
     }
@@ -773,13 +745,16 @@ SynthesisResult TTSEngine::synthesize_spelled(const std::string& text) {
         return result;
     }
 
-    // The pause between the characters; a lone character gets it after
-    // itself, for the spacing between one spell call and the next.
+    // Keep each character at the normal speech rate. The spelling speed
+    // stretches its time slot by adding silence after it, on top of the
+    // configured spelling pause. Include the last character so a word
+    // spelled in one call has the same spacing as individual character calls.
     const uint32_t spelling_pause_ms = m_impl->voice_params.pause_settings.spelling_pause_ms;
     const size_t pause_samples = static_cast<size_t>(SAMPLE_RATE * spelling_pause_ms / 1000);
+    const double extra_pause_factor =
+        1.0 / spelling_rate_factor(m_impl->voice_params.spelling_speed) - 1.0;
 
     size_t pos = 0;
-    size_t count = 0;
     while (pos < text.size()) {
         unsigned char c = static_cast<unsigned char>(text[pos]);
         size_t char_len = 1;
@@ -794,16 +769,13 @@ SynthesisResult TTSEngine::synthesize_spelled(const std::string& text) {
         if (!char_result.success) {
             continue;   // skip a character that could not be synthesized
         }
-        if (count > 0) {
-            result.audio.samples.insert(result.audio.samples.end(), pause_samples, 0);
-        }
         result.audio.samples.insert(result.audio.samples.end(),
                                     char_result.audio.samples.begin(),
                                     char_result.audio.samples.end());
-        ++count;
-    }
-    if (count == 1) {
-        result.audio.samples.insert(result.audio.samples.end(), pause_samples, 0);
+        const size_t extra_pause_samples = static_cast<size_t>(
+            std::llround(char_result.audio.samples.size() * extra_pause_factor));
+        result.audio.samples.insert(result.audio.samples.end(),
+                                    pause_samples + extra_pause_samples, 0);
     }
 
     result.success = !result.audio.samples.empty();

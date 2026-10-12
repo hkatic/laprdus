@@ -606,7 +606,7 @@ MBROLA cr1 (a recorded Croatian speaker), Eloquence (`Reed`, Italian), eSpeak
 and the Klatt voice.
 
 **D and N.** The spelled d is clause-initial, and there the voice bar is
-heard on its own. At the default spelling speed (50%, durations ×1.7) it
+heard on its own. Under the old spelling algorithm (50%, durations ×1.7) it
 lasted 98 ms, 6 dB under the vowel, with F1 ringing at the vowel's 70 Hz
 bandwidth: a low resonant hum like the murmur of n, which in the spelled
 *nə* lasts 139 ms. On a phone speaker, which keeps little below 400 Hz, the

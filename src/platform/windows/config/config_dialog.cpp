@@ -66,7 +66,7 @@ static const int INFLECTION_MAX = 100;    // twice the measured movements
 static const int ACCELERATION_MIN_PCT = 50;    // 0.5x
 static const int ACCELERATION_MAX_PCT = 300;   // 3.0x
 
-// Spelling speed, percent of the speech rate
+// Spelling cadence, 0-100; lower adds silence after each character
 static const int SPELLING_SPEED_MIN_PCT = 0;
 static const int SPELLING_SPEED_MAX_PCT = 100;
 

@@ -65,7 +65,7 @@ struct Options {
     float acceleration = 1.0f;       /* rate multiplier 0.5 .. 3.0 */
     bool numbers_as_digits = false;
     bool spell = false;              /* spell the text character by character */
-    int spelling_speed = 50;         /* percent of the speech rate, 0 .. 100 */
+    int spelling_speed = 50;         /* spelling cadence, lower adds silence, 0 .. 100 */
     bool letter_sounds = false;      /* spell letters by their sounds, not names */
     uint32_t comma_pause = 40;
     uint32_t period_pause = 80;
@@ -137,8 +137,8 @@ void print_help(const char *program_name)
               << "  -d, --numbers-digits       Speak numbers as digits (jedan-dva-tri)\n"
               << "  -s, --spell                Spell the text character by character\n"
               << "  -S, --spelling-speed PERCENT\n"
-              << "                             Speed of spelled characters, percent of the\n"
-              << "                             speech rate 0-100 (default: 50)\n"
+              << "                             Spelling cadence 0-100 (default: 50); lower\n"
+              << "                             adds longer pauses, speech rate unchanged\n"
               << "  -m, --spelling-mode MODE   How letters are spelled: names (be, ce, de;\n"
               << "                             default) or sounds (b, c, d)\n"
               << "  -c, --comma-pauses MS      Pause duration for commas (default: 40)\n"

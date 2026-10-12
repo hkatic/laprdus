@@ -250,8 +250,8 @@ public:
     SpellingMode spelling_mode() const;
 
     /**
-     * Rate of spelled characters as a percentage (0-100, default 50): 100 is
-     * the speech rate itself, 50 a little over half of it, 0 a third. Also
+     * Spelling cadence (0-100, default 50): lower values add longer pauses
+     * after each character; 100 adds no extra pause. Speech rate is unchanged. Also
      * VoiceParams::spelling_speed.
      */
     void set_spelling_speed(int percent);
@@ -259,7 +259,8 @@ public:
 
     /**
      * Synthesize text in spelling mode (character by character), with the
-     * spelling pause between the characters and at the spelling speed.
+     * normal speech rate and pauses after every character, including the last.
+     * The spelling speed controls additional silence on top of the spelling pause.
      *
      * A letter of the alphabet (Latin or Cyrillic, any case) is read by its
      * name in the language of the voice, or by its sound when the spelling

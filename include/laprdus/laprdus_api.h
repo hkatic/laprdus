@@ -619,7 +619,7 @@ LAPRDUS_API void LAPRDUS_CALL laprdus_clear_spelling_dictionary(LaprdusHandle ha
  * Synthesize text in spelling mode (character by character): letters by
  * their names or sounds (laprdus_set_spelling_mode), other characters by
  * the spelling dictionary, at the spelling speed (laprdus_set_spelling_speed)
- * with the spelling pause between the characters.
+ * with a pause after each character, including the last. Speech rate is unchanged.
  * @param handle Engine handle.
  * @param text UTF-8 encoded text to spell.
  * @param out_samples Pointer to receive allocated audio sample buffer.
@@ -860,10 +860,11 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_spelling_mode(
 LAPRDUS_API LaprdusSpellingMode LAPRDUS_CALL laprdus_get_spelling_mode(LaprdusHandle handle);
 
 /**
- * Set the spelling speed: the rate of spelled characters as a percentage.
- * 100 is the speech rate itself, 50 (the default) a little over half of it,
- * 0 a third of it. The pause between the characters is separate
- * (laprdus_set_spelling_pause).
+ * Set the spelling cadence by adding silence after each character.
+ * Characters always use the normal speech rate. 100 adds no extra silence,
+ * 50 (the default) adds about 0.73 times the character duration, and 0 adds
+ * twice its duration. The configured spelling pause is added on top
+ * (laprdus_set_spelling_pause), including after the final character.
  * @param handle Engine handle.
  * @param percent Spelling speed (0-100, default 50).
  * @return LAPRDUS_OK on success, error code on failure.

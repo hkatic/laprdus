@@ -27,6 +27,7 @@
 #endif
 
 #include <laprdus/laprdus_api.h>
+#include "spelling_checks.hpp"
 
 namespace {
 
@@ -3788,26 +3789,20 @@ TEST_CASE("Letters are spelled by their sounds when asked", "[formant][spelling]
     REQUIRE(word.size() > spell(engine.handle, "s").size() + spell(engine.handle, "a").size());
 }
 
-TEST_CASE("Spelling speed slows the spelled characters", "[formant][spelling]") {
+TEST_CASE("Spelling speed adds silence without slowing formant speech", "[formant][spelling]") {
+    for (const char* voice : FORMANT_VOICES) {
+        INFO(voice);
+        Engine engine;
+        REQUIRE(laprdus_set_voice(engine.handle, voice, NO_DATA) == LAPRDUS_OK);
+        check_spelling_pauses(engine.handle);
+    }
+}
+
+TEST_CASE("Spelling speed defaults and limits", "[formant][spelling]") {
     Engine engine;
     REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
     REQUIRE(laprdus_set_spelling_pause(engine.handle, 0) == LAPRDUS_OK);
     REQUIRE(laprdus_get_spelling_speed(engine.handle) == 50);
-
-    // 100% is the speech rate itself
-    REQUIRE(laprdus_set_spelling_speed(engine.handle, 100) == LAPRDUS_OK);
-    std::vector<int16_t> full = spell(engine.handle, "b");
-    REQUIRE(full == speak(engine.handle, "be"));
-
-    REQUIRE(laprdus_set_spelling_speed(engine.handle, 50) == LAPRDUS_OK);
-    std::vector<int16_t> half = spell(engine.handle, "b");
-    REQUIRE(laprdus_set_spelling_speed(engine.handle, 0) == LAPRDUS_OK);
-    std::vector<int16_t> slow = spell(engine.handle, "b");
-    REQUIRE(half.size() > full.size() * 1.3);
-    REQUIRE(slow.size() > half.size() * 1.3);
-
-    // The speech rate is unchanged afterwards
-    REQUIRE(speak(engine.handle, "be") == full);
 
     // Out-of-range values are clamped
     REQUIRE(laprdus_set_spelling_speed(engine.handle, 250) == LAPRDUS_OK);

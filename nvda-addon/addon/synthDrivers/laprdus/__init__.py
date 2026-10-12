@@ -685,7 +685,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         - speech.emoji: whether to convert emoji to text
         - numbers.mode: 'words' or 'digits'
         - pauses.sentence, pauses.comma, pauses.newline, pauses.spelling
-        - spelling.speed: speed of spelled characters, percent of the speech rate
+        - spelling.speed: spelling cadence, 0-100; lower adds longer pauses
         - spelling.mode: 'names' (be, ce, de) or 'sounds' (b, c, d)
         - force.speed, force.pitch, force.volume: override NVDA slider values
         - dictionaries.user_enabled: whether to load user dictionaries

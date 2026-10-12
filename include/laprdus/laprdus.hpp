@@ -177,8 +177,8 @@ public:
     SpellingMode spellingMode() const;
 
     /**
-     * Set the speed of spelled characters, percent of the speech rate
-     * (0-100, default 50; 100 is the speech rate itself).
+     * Set spelling cadence (0-100, default 50). Lower values add longer
+     * pauses after each character; 100 adds no extra pause. Speech rate is unchanged.
      */
     void setSpellingSpeed(int percent);
     int spellingSpeed() const;
