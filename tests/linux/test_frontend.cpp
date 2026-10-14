@@ -6,6 +6,7 @@
 #include "catch2/catch.hpp"
 
 #include "formant/formant_frontend.hpp"
+#include "core/phoneme_mapper.hpp"
 #include <algorithm>
 #include <vector>
 
@@ -47,6 +48,74 @@ void require_one_word(const Utterance& utterance) {
 }
 
 } // namespace
+
+TEST_CASE("Kolica to Dragojevic keep sourced accents in their ordinary forms", "[frontend][accents][oct14]") {
+    struct Paradigm {
+        std::vector<const char32_t*> forms;
+        int stress;
+        Accent tone;
+        bool long_vowel;
+    };
+    const auto R = Accent::Rising;
+    const auto F = Accent::Falling;
+    const Paradigm paradigms[] = {
+        {{U"kolica", U"kolicima", U"Kolica", U"KOLICA"}, 1, R, true},
+        {{U"dubinsku", U"dubinski", U"dubinska", U"dubinsko", U"dubinskoga",
+          U"dubinskoj", U"dubinskih", U"dubinskima"}, 0, R, false},
+        {{U"pogledati", U"pogledat", U"pogledam", U"pogledamo", U"pogledaju",
+          U"pogledaj", U"pogledajte", U"pogledao", U"pogledala", U"pogledali",
+          U"pogledah", U"pogledavši", U"pogledan"}, 0, R, false},
+        {{U"doći", U"dođem", U"dođeš", U"dođe", U"dođemo", U"dođete", U"dođu"}, 0, F, true},
+        {{U"dođi", U"dođimo", U"dođite", U"dođoh", U"dođosmo", U"dođoste", U"dođoše"}, 0, R, true},
+        {{U"došao", U"došla", U"došlo", U"došli", U"došle", U"došavši"}, 0, R, false},
+        {{U"tiskara", U"tiskare", U"tiskari", U"tiskaru", U"tiskarom", U"tiskarama"}, 0, F, false},
+        {{U"podizanje", U"podizanja", U"podizanju", U"podizanjem", U"podizanjima",
+          U"podizati", U"podižem", U"podižu", U"podiži", U"podizao", U"podizan"}, 0, R, false},
+        {{U"element", U"elementa", U"elementu", U"elementom", U"elementi",
+          U"elemenata", U"elementima"}, 1, R, false},
+        {{U"stanje", U"stanja", U"stanju", U"stanjem", U"stanjima"}, 0, R, true},
+        {{U"raspoloživ", U"raspoloživa", U"raspoloživo", U"raspoloživu",
+          U"raspoloživi", U"raspoloživoga", U"raspoloživima"}, 2, R, false},
+        {{U"raspoloživiji", U"raspoloživijima"}, 3, R, false},
+        {{U"Oliver", U"Olivera", U"Oliveru", U"Oliverom"}, 0, R, false},
+        {{U"Dragojević", U"Dragojevića", U"Dragojeviću", U"Dragojevićem"}, 0, F, false},
+    };
+    Frontend frontend(VoiceLanguage::Croatian);
+    for (const auto& paradigm : paradigms) {
+        for (const auto* text : paradigm.forms) {
+            DYNAMIC_SECTION(PhonemeMapper::utf32_to_utf8(text)) {
+                const auto utterance = read(frontend, text);
+                REQUIRE((stressed_syllables(utterance) == std::vector<int>{paradigm.stress}));
+                const auto vowels = nuclei(utterance);
+                REQUIRE(vowels[paradigm.stress].accent == paradigm.tone);
+                REQUIRE(vowels[paradigm.stress].is_long == paradigm.long_vowel);
+                for (size_t i = 0; i < vowels.size(); ++i)
+                    if (static_cast<int>(i) != paradigm.stress) REQUIRE(!vowels[i].is_long);
+                require_one_word(utterance);
+            }
+        }
+    }
+    // A name must work both at clause head and after another word.
+    for (const auto* text : {U"Oliver Dragojević", U"Olivera Dragojevića"}) {
+        const auto utterance = read(frontend, text);
+        const auto vowels = nuclei(utterance);
+        const int surname = std::u32string(text) == U"Oliver Dragojević" ? 3 : 4;
+        REQUIRE((stressed_syllables(utterance) == std::vector<int>{0, surname}));
+        REQUIRE(vowels[0].accent == R);
+        REQUIRE(vowels[surname].accent == F);
+    }
+    // Exact noun/adjective forms leave derivatives to their own rules.
+    REQUIRE((stressed_syllables(read(frontend, U"elementaran")) == std::vector<int>{3}));
+    REQUIRE((stressed_syllables(read(frontend, U"raspoložiti")) == std::vector<int>{2}));
+    // Ambiguous aspects and surname variants remain explicitly selectable.
+    REQUIRE((stressed_syllables(read(frontend, U"poglédati")) == std::vector<int>{1}));
+    REQUIRE(nuclei(read(frontend, U"poglédati"))[1].is_long);
+    REQUIRE((stressed_syllables(read(frontend, U"Dragójević")) == std::vector<int>{1}));
+    frontend.set_user_lexicon(UserLexicon::parse(
+        R"({"entries":[{"word":"drag/o:jević"},{"verb":"pogl/e:d=a"}]})"));
+    REQUIRE((stressed_syllables(read(frontend, U"Dragojević")) == std::vector<int>{1}));
+    REQUIRE((stressed_syllables(read(frontend, U"pogledati")) == std::vector<int>{1}));
+}
 
 TEST_CASE("Collected Croatian words retain sourced accents through inflection", "[frontend][accents][collected-words]") {
     struct Paradigm {

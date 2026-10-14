@@ -862,6 +862,22 @@ const char* const COMMON[] = {
 };
 
 const char* const CROATIAN[] = {
+    // Collected words, 14 October 2026: Školski rječnik, checked against
+    // HJP (sources and variants in docs/formant.md). Exact paradigms keep
+    // the accents out of derivatives; omit Croatian unstressed lengths.
+    u8"kol/i:c|a|ima",
+    u8"d/ubinsk|i|a|o|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    // ŠR tȉskara; HJP instead has tìskara. Prefer the Institute's entry.
+    u8"t^iskar|a|e|i|u|o|om|ama",
+    u8"p/odizanj|e|a|u|em|ima",
+    u8"st/a:nj|e|a|u|em|ima",
+    u8"raspol/oživ||a|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    // Irregular doći: dȏći/dȏđēm, but dóđi/dóđoh and ŠR dòšao
+    // (HJP dȍšao). Ambiguous dođe defaults to the present.
+    u8"d^o:ći", u8"d^o:đ|em|eš|e|emo|ete|u",
+    u8"d/o:đ|i|imo|ite|oh|osmo|oste|oše",
+    u8"d/oš|ao|la|lo|li|le|avši",
+
     // Listener's ispuna / Hrvata / -ac plurals audit, 12 October 2026.
     // Školski rječnik and HJP; sources and homographs in docs/formant.md.
     // Exact forms keep these accents out of unrelated derivatives.
@@ -1707,6 +1723,12 @@ const char* const IJE_VERBS[] = {
 // for the imperative forms. A verb that is not here is right only in the
 // infinitive or if the first syllable carries its accent anyway.
 const char* const VERBS[] = {
+    // ŠR/HJP perfective pògledati, pògledām, pògledāj, pògledao.
+    // The less common imperfective poglédati needs a written accent or
+    // a user entry; the ordinary perfective is the unmarked default.
+    u8"p/ogled=a",
+    // pòdizati / pòdižēm / pòdiži / pòdizao / pòdizān.
+    u8"p/odiz=t", u8"p/odiž=e",
     // ŠR/Mrežnik nádati/nádao/nádajū. Croatian falling present and
     // imperative forms are exact entries; náda (noun) wins over nada.
     u8"n/a:d=an",

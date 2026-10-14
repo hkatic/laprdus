@@ -2757,6 +2757,25 @@ TEST_CASE("Personal names follow the dictionaries in their case forms", "[forman
     REQUIRE(speak(engine.handle, u8"Deprimira me.") == speak(engine.handle, u8"deprimira me."));
 }
 
+TEST_CASE("Bundled OK and NLO replacements are case insensitive whole words", "[formant][text][dictionary][oct14]") {
+    const char* dictionary = std::getenv("LAPRDUS_DICTIONARY");
+    Engine engine, bare;
+    REQUIRE(laprdus_load_dictionary(engine.handle,
+        dictionary ? dictionary : "data/dictionary/internal.json") == LAPRDUS_OK);
+    for (const char* voice : FORMANT_VOICES) {
+        INFO(voice);
+        REQUIRE(laprdus_set_voice(engine.handle, voice, NO_DATA) == LAPRDUS_OK);
+        REQUIRE(laprdus_set_voice(bare.handle, voice, NO_DATA) == LAPRDUS_OK);
+        for (const char* text : {"OK", "ok", "Ok"})
+            REQUIRE(speak(engine.handle, text) == speak(bare.handle, "Okej"));
+        for (const char* text : {"nlo", "NLO", "Nlo"})
+            REQUIRE(speak(engine.handle, text) == speak(bare.handle, "En El O"));
+        REQUIRE(speak(engine.handle, "OK, nlo!") == speak(bare.handle, "Okej, En El O!"));
+        for (const char* text : {"okolina", "sok", "poklon", "unload"})
+            REQUIRE(speak(engine.handle, text) == speak(bare.handle, text));
+    }
+}
+
 TEST_CASE("Foreign app names keep their pronunciation and stress in case forms", "[formant][text][dictionary]") {
     // Exercise the shipped replacements as well as the accent lexicon.
     // Run from the repository root, or set LAPRDUS_DICTIONARY to internal.json.
@@ -2940,8 +2959,8 @@ TEST_CASE("Word-class rules place the accent of loans, derived nouns and prefixe
         {"festival", "fest\xC3\xACval"},   // festìval
         {"zarobljenik", "zar\xC3\xB2" "bljenik"},   // zaròbljenik
         // prefixed verbs follow the infinitive
-        {"pogledala", "pogl\xC3\xA8" "dala"},   // poglèdala
-        {"pogledamo", "pogl\xC3\xA8" "damo"},   // poglèdamo
+        {"pogledala", u8"pògledala"},   // ŠR/HJP perfective, lexical exception
+        {"pogledamo", u8"pògledamo"},
         {"napravio", "napr\xC3\xA0vio"},   // napràvio
         {"do\xC4\x8D" "ekali", "do\xC4\x8D\xC3\xA8kali"},   // dočèkali
         {"iskusio", "isk\xC3\xB9sio"},   // iskùsio

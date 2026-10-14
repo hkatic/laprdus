@@ -3,6 +3,20 @@
     "description": "Built-in pronunciation dictionary for Laprdus TTS",
     "entries": [
         {
+            "grapheme": "OK",
+            "phoneme": "Okej",
+            "caseSensitive": false,
+            "wholeWord": true,
+            "comment": "Croatian pronunciation of OK"
+        },
+        {
+            "grapheme": "nlo",
+            "phoneme": "En El O",
+            "caseSensitive": false,
+            "wholeWord": true,
+            "comment": "Neidentificirani leteći objekt, read as letter names"
+        },
+        {
             "grapheme": "ZG",
             "phoneme": "Ze Ge",
             "caseSensitive": false,

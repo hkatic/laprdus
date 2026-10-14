@@ -1870,6 +1870,39 @@ names in Croatian, leaving lowercase, all-capitals, Serbian and Bosnian
 analysis unchanged. Regression tests cover every requested spelling,
 principal forms, hiatus, context contrasts, and override precedence.
 
+**Kolica–raspoloživ, Oliver and Dragojević (14 October 2026).** Checked
+against the Institute of Croatian Language's *Školski rječnik* (ŠR), with
+HJP as a second dictionary and its onomastics sections for the names.
+The [Institute's accent rules](https://gramatika.hr/pravilo/naglasak-i-naglasne-cjeline/3/)
+distinguish stress position, rising/falling tone and vowel quantity; the
+entries below encode all three. The output column omits unstressed vowel
+lengths, following the existing Croatian voice policy. Where the sources
+disagree, ŠR takes priority for common words.
+
+| Requested spelling | Croatian output | Evidence and paradigm |
+|---|---|---|
+| kolica | *kolíca* | [ŠR](https://rjecnik.hr/search/?q=kolica&strict=yes), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eltlXRU%3D). Long rising **i**, also *kolícima*; ŠR explicitly gives G plural *kolícā*. |
+| dubinsku | *dùbinsku* | [ŠR dubinski](https://rjecnik.hr/search/?q=dubinski&strict=yes), [HJP adjective](https://hjp.znanje.hr/index.php?show=search_by_id&id=fF9vWRU%3D). Dictionary *dùbīnskī/dùbīnskā/dùbīnskō*; accusative feminine *dùbīnskū* follows the adjective's fixed stem accent. The macrons are unstressed lengths, not long stress. |
+| pogledati | *pògledati* | [ŠR](https://rjecnik.hr/search/?q=pogledati&strict=yes), [HJP perfective](https://hjp.znanje.hr/index.php?show=search_by_id&id=eVxvWhU%3D). Ordinary perfective “take a look”: *pògledām/pògledāj/pògledao/pògledān*. A distinct imperfective [*poglédati*](https://hjp.znanje.hr/index.php?show=search_by_id&id=eVxvWhQ%3D), “look repeatedly,” also exists. Plain text defaults to the perfective; written accents or the user's verb entry can select the other paradigm. The old fallback *poglèdati* matched neither infinitive. |
+| doći | *dȏći* | [ŠR](https://rjecnik.hr/search/?q=do%C4%87i&strict=yes), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=f1ZkURk%3D): long falling infinitive/present, *dȏđēm/dȏđū*; long rising imperative *dóđi* and aorist *dóđoh*. ŠR has *dòšao/dòšāvši*, HJP *dȍšao*: follow ŠR. Related active forms retain that stem accent. Ambiguous *dođe* defaults to the present, not the second/third-person aorist. |
+| tiskara | *tȉskara* | [ŠR](https://rjecnik.hr/search/?q=tiskara&strict=yes) gives initial short falling through the paradigm (*tȉskarē/tȉskare/tȉskārā*). [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=f19nXBV%2F) instead has short rising *tìskara*. |
+| podizanje | *pòdizanje* | [ŠR noun](https://rjecnik.hr/search/?q=podizanje&strict=yes), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=eVxlURU%3D): *pòdizānje/pòdizānja*. The related [verb](https://rjecnik.hr/search/?q=podizati&strict=yes) has *pòdizati/pòdižēm/pòdiži/pòdizao/pòdizān*, handled by the existing two-stem conjugation classes. |
+| element | *elèment* | [ŠR](https://rjecnik.hr/search/?q=element&strict=yes), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=fFxnXhc%3D). Already correct: short rising second **e**, including *elèmenta/elèmenti/elèmenātā*. Retain the existing exact entries and verify more case forms. |
+| stanje | *stánje* | [ŠR](https://rjecnik.hr/search/?q=stanje&strict=yes), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=d1tnXBg%3D). Long rising **a** throughout the noun's cases; exact forms avoid the separate verb *stanjiti*. |
+| raspoloživ | *raspolòživ* | [ŠR](https://rjecnik.hr/search/?q=raspolo%C5%BEiv&strict=yes), [HJP](https://hjp.znanje.hr/index.php?show=search_by_id&id=dlxuUBI%3D). Short rising second **o** in positive forms; ŠR comparative *raspoložìvijī* keeps its separate suffix rule. |
+| Oliver | *Òliver* | [HJP oliva, onomastics](https://hjp.znanje.hr/index.php?show=search_by_id&id=eFpvXhA%3D). Confirms the old entry's initial short rising accent. The Croatian name entry now also applies at clause head, where its former `=` flag suppressed it. Regular *Òlivera/Òliveru/Òliverom* retain that accent; the existing masculine default for forms shared with the female name *Olìvera* remains. |
+| Dragojević | *Drȁgojević* | [HJP drag, onomastics](https://hjp.znanje.hr/index.php?show=search_by_id&id=fF9lWBU%3D) lists *Drȁgojević (Dragójević)*. Use its first-listed short falling variant as the default, with regular singular cases. This is a dictionary surname default, not evidence that every bearer uses it; the long rising variant remains selectable with accent marks or a user entry. |
+
+Common nouns, adjectives and irregular *doći* use exact Croatian forms;
+*pogledati/podizati* use the shared regular verb table. The new surname
+entry is Croatian-only; the clause-head correction for the existing shared
+*Oliver* entry applies to all three languages. Both use the
+capitalization-sensitive generated table.
+Tests inspect stress, tone, quantity, ordinary inflections, name placement
+and explicit overrides. The built-in pronunciation dictionary also adds
+case-insensitive whole-word `OK → Okej` and `nlo → En El O`; end-to-end
+synthesis tests verify their casing, punctuation and substring boundaries.
+
 **Word classes** (`StressRules::strong()`, after the suffix rules). The
 single suffixes above cover a few hundred words each; the rules below cover
 whole classes of words by their shape. Each covers an accent pattern that
