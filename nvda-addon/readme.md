@@ -451,7 +451,9 @@ Vrijednosti se izražavaju u milisekundama (ms). Raspon je od 0 do 2000 ms.
 
 **Napomena:** Korisnički konfigurator (Windows/Android) koristi jedinstveno podešavanje od 100 ms za sve znakove kraja rečenice (točka, uskličnik, upitnik), dok naredbeni program omogućuje zasebno podešavanje svakog znaka.
 
-U istom odjeljku postavki nalazi se i **brzina slovkanja** (0–100%, zadano 50%): niža vrijednost produljuje pauzu nakon svakog slovkanog ili tipkanog znaka, a sam se znak uvijek izgovara uobičajenom brzinom govora. Na 100% nema dodatne pauze; na 50% dodaje se oko 73% trajanja izgovora znaka, a na 0% dvostruko trajanje. Ta se tišina pribraja osnovnoj pauzi slovkanja (zadano 200 ms, `pauses.spelling` u `settings.json`). Pauza slijedi i nakon posljednjeg znaka, pa je razmak jednak šalje li čitač ekrana cijelu riječ ili znak po znak.
+U istom odjeljku postavki nalazi se i **brzina slovkanja** (0–100%, zadano 50%): niža vrijednost produljuje pauzu nakon svakog slovkanog ili tipkanog znaka, a sam se znak uvijek izgovara uobičajenom brzinom govora. Na 100% nema dodatne pauze; na 50% dodaje se oko 41% trajanja izgovora znaka, na 20% oko 74%, a na 0% cijelo trajanje. Ta se tišina pribraja osnovnoj pauzi slovkanja (zadano 200 ms, `pauses.spelling` u `settings.json`). Pauza slijedi i nakon posljednjeg znaka, pa je razmak jednak šalje li čitač ekrana cijelu riječ ili znak po znak.
+
+U NVDA-u ima prednost NVDA-ova opcija „Odgođeni opis znakova poslije pomicanja kursora” (postavke govora): kad je uključena, NVDA nakon slova na koje ste se pomaknuli čeka jednu sekundu i zatim izgovara njegov opis (npr. „Alan” za A). Laprdus tada pauzu brzine slovkanja nakon tog slova ne dodaje, pa opis dolazi točno nakon NVDA-ove sekunde, bez obzira na brzinu slovkanja. Slovkanje riječi i tipkanje zadržavaju ritam brzine slovkanja.
 
 ### 4.5 Način čitanja brojeva
 

@@ -208,6 +208,11 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         self._isSpeaking = False
         self._shouldStop = threading.Event()
         self._spellingDone = threading.Event()  # Signaled when spelling item completes
+        # The silence owed after the last spelled character (ms) and when
+        # its audio ended: see _feedPendingPause
+        self._pendingPauseMs = 0
+        self._pendingPauseAt = 0.0
+        self._cancelCount = 0  # Bumped by cancel(); playback that it cut owes no pause
         self._speakLock = threading.Lock()  # Protects _isSpeaking state
         self._playerLock = threading.Lock()  # Protects _player and _syncPlayer access
 
@@ -285,24 +290,76 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                 # Poison pill - exit thread
                 break
 
-            # Support tuple formats: (text, index), (text, index, spelled), (text, index, spelled, isSpelling)
-            if len(item) == 2:
-                text, index = item
-                useSpelledSynthesis = False
-                isSpellingItem = False
-            elif len(item) == 3:
-                text, index, useSpelledSynthesis = item
-                isSpellingItem = False
-            else:
-                text, index, useSpelledSynthesis, isSpellingItem = item
-            self._synthesizeAndPlay(text, index, useSpelledSynthesis, isSpellingItem)
+            text, index, useSpelledSynthesis, isSpellingItem, breakMs = item
+            self._synthesizeAndPlay(text, index, useSpelledSynthesis, isSpellingItem, breakMs)
 
-    def _synthesizeAndPlay(self, text, index, useSpelledSynthesis=False, isSpellingItem=False):
+    def _queueItem(self, text, index, spelled=False, isSpelling=False, breakMs=0):
+        """Queue one item for the speech thread: text to speak (spelled when
+        `spelled`), or, with breakMs > 0, silence of that length (NVDA's
+        BreakCommand)."""
+        self._speakQueue.put((text, index, spelled, isSpelling, breakMs))
+
+    def _getPlayer(self, sample_rate, bits_per_sample, channels):
+        """Return the audio player, recreated when the format changes.
+
+        Only the lock is held during creation, not during playback (which
+        blocks), so cancel() can interrupt.
+        """
+        with self._playerLock:
+            if self._player is None or self._currentSampleRate != sample_rate:
+                if self._player is not None:
+                    try:
+                        self._player.close()
+                    except Exception:
+                        pass
+                self._player = self._nvwave.WavePlayer(
+                    channels=channels,
+                    samplesPerSec=sample_rate,
+                    bitsPerSample=bits_per_sample,
+                )
+                self._currentSampleRate = sample_rate
+            return self._player
+
+    def _feedSilence(self, player, ms):
+        """Feed ms of silence (16-bit mono at the player's rate)."""
+        frames = int(self._currentSampleRate * ms / 1000)
+        if frames > 0:
+            player.feed(b"\x00" * (frames * 2 * CHANNELS))
+
+    def _feedPendingPause(self, player):
+        """Play what is left of the pause owed after the last spelled character.
+
+        The engine leaves the silence after a spelled character out
+        (synthesize_spelled with final_pause=False) and reports its length;
+        the driver owes it to whatever is spoken next, less the real time
+        that has already passed in silence, so spelling a word keeps its
+        cadence. A break from NVDA cancels the debt instead: see
+        _synthesizeAndPlay.
+        """
+        ms = self._pendingPauseMs
+        self._pendingPauseMs = 0
+        if ms <= 0:
+            return
+        remaining = int(ms - (time.monotonic() - self._pendingPauseAt) * 1000.0)
+        if remaining > 0:
+            _debug_log("pending spelling pause: %d ms of %d" % (remaining, ms))
+            self._feedSilence(player, remaining)
+
+    def _synthesizeAndPlay(self, text, index, useSpelledSynthesis=False, isSpellingItem=False,
+                           breakMs=0):
         """Synthesize and play audio in the background thread.
 
         IMPORTANT for Say All: The synthIndexReached notification must be sent
         BEFORE audio playback completes so NVDA can prepare the next segment.
         This allows continuous reading without gaps.
+
+        A spelled character is played without the silence the engine would
+        put after it; that silence is owed to the next item
+        (_feedPendingPause). A break item (NVDA's BreakCommand, breakMs > 0)
+        is silence of its own length and cancels the debt: NVDA's delayed
+        character descriptions send a one-second break between a character
+        and its description, and that delay alone must set the gap, whatever
+        the Laprdus spelling speed.
         """
         if self._shouldStop.is_set():
             if isSpellingItem:
@@ -316,6 +373,17 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             _debug_log("_synthesizeAndPlay: config check error: %s" % str(e))
 
         self._isSpeaking = True
+
+        if breakMs > 0:
+            self._pendingPauseMs = 0
+            try:
+                player = self._getPlayer(self._currentSampleRate, BITS_PER_SAMPLE, CHANNELS)
+                _debug_log("break: %d ms" % breakMs)
+                self._feedSilence(player, breakMs)
+                player.idle()
+            except Exception as e:
+                log.error("LaprdusTTS: Break playback error: %s" % str(e))
+            # Falls through to the index and done handling of an empty item
 
         # Handle empty/whitespace-only text (e.g., orphaned trailing IndexCommand)
         # Just report the index and done - no synthesis needed
@@ -344,11 +412,16 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             log.debug("LaprdusTTS: Synthesizing text='%s' spelled=%s single_char=%s" % (
                 text[:50], useSpelledSynthesis, is_single_char))
 
+            cancelCount = self._cancelCount
+            owedPauseMs = 0
             # Use spelled synthesis for single characters or when explicitly requested
             if is_single_char or useSpelledSynthesis:
                 # For single characters, use the stripped text
                 synth_text = stripped_text if is_single_char else text
-                result = self._engine.synthesize_spelled(synth_text)
+                result = self._engine.synthesize_spelled(synth_text, final_pause=False)
+                if result is not None:
+                    samples, sample_rate, bits_per_sample, channels, owedPauseMs = result
+                    result = (samples, sample_rate, bits_per_sample, channels)
             else:
                 result = self._engine.synthesize(text)
 
@@ -379,21 +452,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
 
             # Use actual sample rate from synthesis - rate control is handled by
             # the engine via set_speed() (durations), not by playback sample rate
-            # Only hold lock during player creation, not during playback (which blocks)
-            with self._playerLock:
-                if self._player is None or self._currentSampleRate != sample_rate:
-                    if self._player is not None:
-                        try:
-                            self._player.close()
-                        except Exception:
-                            pass
-                    self._player = self._nvwave.WavePlayer(
-                        channels=channels,
-                        samplesPerSec=sample_rate,
-                        bitsPerSample=bits_per_sample,
-                    )
-                    self._currentSampleRate = sample_rate
-                player = self._player
+            player = self._getPlayer(sample_rate, bits_per_sample, channels)
 
             # CRITICAL for Say All: Notify index BEFORE starting audio playback
             # This allows NVDA to prepare the next segment while current audio plays
@@ -401,10 +460,17 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                 _debug_log("synthIndexReached notified BEFORE playback, index=%s" % index)
                 synthDriverHandler.synthIndexReached.notify(synth=self, index=index)
 
-            # Play audio (outside lock so cancel() can interrupt)
+            # Play audio (outside lock so cancel() can interrupt), after the
+            # pause still owed from the last spelled character
             if player:
+                self._feedPendingPause(player)
                 player.feed(samples)
                 player.idle()
+                # The silence after a spelled character is owed to the next
+                # item, unless cancel() cut this one off
+                if owedPauseMs > 0 and cancelCount == self._cancelCount:
+                    self._pendingPauseMs = owedPauseMs
+                    self._pendingPauseAt = time.monotonic()
 
         except Exception as e:
             log.error("LaprdusTTS: Synthesis error: %s" % str(e))
@@ -445,7 +511,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             elif IndexCommand is not None and isinstance(item, IndexCommand):
                 _debug_log("  [%d] IndexCommand(index=%s)" % (i, item.index))
             elif BreakCommand is not None and isinstance(item, BreakCommand):
-                _debug_log("  [%d] BreakCommand" % i)
+                _debug_log("  [%d] BreakCommand(time=%s)" % (i, item.time))
             else:
                 _debug_log("  [%d] Unknown: %s" % (i, type(item).__name__))
 
@@ -461,7 +527,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                 if textParts:
                     text = " ".join(textParts)
                     if text.strip():
-                        self._speakQueue.put((text, pendingIndex, False, False))
+                        self._queueItem(text, pendingIndex)
                         pendingIndex = None
                     textParts = []
                 char_mode = item.state
@@ -474,10 +540,10 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                     if stripped:
                         if len(stripped) == 1:
                             _debug_log("Queue char-mode single char: '%s'" % stripped)
-                            self._speakQueue.put((stripped, pendingIndex, True, False))
+                            self._queueItem(stripped, pendingIndex, spelled=True)
                         else:
                             _debug_log("Queue char-mode multi-char: '%s'" % stripped[:50])
-                            self._speakQueue.put((stripped, pendingIndex, False, False))
+                            self._queueItem(stripped, pendingIndex)
                         pendingIndex = None
                 else:
                     textParts.append(item)
@@ -487,27 +553,36 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                 if textParts:
                     text = " ".join(textParts)
                     if text.strip():
-                        self._speakQueue.put((text, pendingIndex, False, False))
+                        self._queueItem(text, pendingIndex)
                         pendingIndex = None
                     textParts = []
                 # Report orphaned pending index (consecutive IndexCommands)
                 # NVDA tracks every index in _indexesSpeaking; unreported ones
                 # make _synthStillSpeaking() return True, blocking Say All
                 if pendingIndex is not None:
-                    self._speakQueue.put(("", pendingIndex, False, False))
+                    self._queueItem("", pendingIndex)
                 # Store this index for the NEXT text segment
                 pendingIndex = item.index
                 _debug_log("IndexCommand: pendingIndex=%s" % pendingIndex)
 
             elif BreakCommand is not None and isinstance(item, BreakCommand):
-                # Pause - add silence marker
-                textParts.append(" ")
+                # Silence of the given length after the text so far. NVDA's
+                # delayed character descriptions send one, of a second,
+                # before the description that follows a spelled character.
+                if textParts:
+                    text = " ".join(textParts)
+                    if text.strip():
+                        self._queueItem(text, pendingIndex)
+                        pendingIndex = None
+                    textParts = []
+                if item.time > 0:
+                    self._queueItem("", None, breakMs=int(item.time))
 
         # Flush remaining text with the last pending index
         if textParts:
             text = " ".join(textParts)
             if text.strip():
-                self._speakQueue.put((text, pendingIndex, False, False))
+                self._queueItem(text, pendingIndex)
                 pendingIndex = None
 
         # Handle orphaned trailing index - CRITICAL for Say All
@@ -516,7 +591,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         # If we don't report it, _synthStillSpeaking() stays True
         # and no new speech is ever pushed to the synth.
         if pendingIndex is not None:
-            self._speakQueue.put(("", pendingIndex, False, False))
+            self._queueItem("", pendingIndex)
 
     def cancel(self):
         """Cancel current speech."""
@@ -524,6 +599,10 @@ class SynthDriver(synthDriverHandler.SynthDriver):
 
         # Signal spelling completion to unblock any waiting speak() call
         self._spellingDone.set()
+
+        # Playback cut off here owes no pause to what comes next
+        self._cancelCount += 1
+        self._pendingPauseMs = 0
 
         # Clear the queue
         while not self._speakQueue.empty():
@@ -566,7 +645,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         self._spellingDone.clear()
 
         # Queue the character for spelled synthesis with isSpellingItem=True
-        self._speakQueue.put((character, None, True, True))
+        self._queueItem(character, None, spelled=True, isSpelling=True)
 
         # Wait for completion (blocks as required by NVDA contract)
         self._spellingDone.wait(timeout=2.0)

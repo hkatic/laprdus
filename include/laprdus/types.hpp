@@ -299,8 +299,9 @@ enum class SpellingMode : uint8_t {
 };
 
 // Spelling speed controls silence after each character, never its speech rate.
-// 100 adds no extra silence; 50 (the default) adds about 0.73 times the
-// character's duration; 0 adds twice its duration, plus the spelling pause.
+// 100 adds no extra silence; 50 (the default) adds about 0.41 times the
+// character's duration; 20 about 0.74 times; 0 adds its whole duration,
+// plus the spelling pause.
 constexpr int SPELLING_SPEED_MIN = 0;
 constexpr int SPELLING_SPEED_MAX = 100;
 constexpr int SPELLING_SPEED_DEFAULT = 50;
@@ -308,8 +309,10 @@ constexpr int SPELLING_SPEED_DEFAULT = 50;
 /** Spelling cadence factor, used for pauses only, never to scale speech. */
 inline float spelling_rate_factor(int spelling_speed) {
     const int s = std::clamp(spelling_speed, SPELLING_SPEED_MIN, SPELLING_SPEED_MAX);
-    // 3^((s - 100) / 100): 1/3 at 0, 0.58 at 50, 1.0 at 100
-    return std::pow(3.0f, (static_cast<float>(s) - 100.0f) / 100.0f);
+    // 2^((s - 100) / 100): 0.5 at 0, 0.57 at 20, 0.71 at 50, 1.0 at 100.
+    // The silence added is duration x (1/factor - 1): 20 today adds what
+    // 50 added when the base was 3 (0.74 of the character's duration).
+    return std::pow(2.0f, (static_cast<float>(s) - 100.0f) / 100.0f);
 }
 
 struct VoiceParams {

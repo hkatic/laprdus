@@ -1,6 +1,8 @@
 #pragma once
 
 #include <algorithm>
+#include <cmath>
+#include <utility>
 #include <vector>
 #include <laprdus/laprdus_api.h>
 
@@ -35,15 +37,37 @@ inline void check_spelling_pauses(LaprdusHandle engine) {
                 if (mode == LAPRDUS_SPELLING_LETTER_NAMES && character[0] == 'b') {
                     REQUIRE(full == render("be", false));
                 }
+                // The silence added is the character's duration times
+                // 2^((100 - speed) / 100) - 1: 0.41 at 50, 0.74 at 20, 1.0 at 0
                 size_t previous_size = full.size();
-                for (int speed : {50, 0}) {
+                for (auto [speed, share] : {std::pair{50, 0.4142}, {20, 0.7411}, {0, 1.0}}) {
                     REQUIRE(laprdus_set_spelling_speed(engine, speed) == LAPRDUS_OK);
                     const auto spaced = render(character, true);
                     REQUIRE(spaced.size() > previous_size);
                     REQUIRE(std::equal(full.begin(), full.end(), spaced.begin()));
                     REQUIRE(std::all_of(spaced.begin() + full.size(), spaced.end(),
                                         [](int16_t sample) { return sample == 0; }));
+                    const double added = static_cast<double>(spaced.size() - full.size());
+                    REQUIRE(std::fabs(added - full.size() * share) <= 2.0);
                     previous_size = spaced.size();
+
+                    // A host may leave the final silence out and get its length
+                    int16_t* samples = nullptr;
+                    LaprdusAudioFormat format;
+                    uint32_t final_pause_ms = 999;
+                    const int32_t count = laprdus_synthesize_spelled_ex(
+                        engine, character, 0, &final_pause_ms, &samples, &format);
+                    REQUIRE(count > 0);
+                    std::vector<int16_t> open(samples, samples + count);
+                    laprdus_free_buffer(samples);
+                    REQUIRE(open == full);
+                    REQUIRE(final_pause_ms == static_cast<uint32_t>(
+                        std::llround(added * 1000.0 / 22050.0)));
+                    uint32_t closed_pause_ms = 999;
+                    REQUIRE(laprdus_synthesize_spelled_ex(engine, character, 1, &closed_pause_ms,
+                                                          &samples, &format) == static_cast<int32_t>(spaced.size()));
+                    laprdus_free_buffer(samples);
+                    REQUIRE(closed_pause_ms == final_pause_ms);
                 }
             }
             // The configured pause adds to the speed-dependent silence after

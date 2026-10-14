@@ -727,9 +727,11 @@ SynthesisResult TTSEngine::spell_character(const std::string& character) {
     return result;
 }
 
-SynthesisResult TTSEngine::synthesize_spelled(const std::string& text) {
+SynthesisResult TTSEngine::synthesize_spelled(const std::string& text, bool final_pause,
+                                              uint32_t* final_pause_ms) {
     SynthesisResult result;
     result.success = false;
+    if (final_pause_ms) *final_pause_ms = 0;
     begin_utterance();
 
     if (!m_impl || !m_impl->initialized) {
@@ -748,7 +750,8 @@ SynthesisResult TTSEngine::synthesize_spelled(const std::string& text) {
     // Keep each character at the normal speech rate. The spelling speed
     // stretches its time slot by adding silence after it, on top of the
     // configured spelling pause. Include the last character so a word
-    // spelled in one call has the same spacing as individual character calls.
+    // spelled in one call has the same spacing as individual character
+    // calls, unless the caller asked to time that final gap itself.
     const uint32_t spelling_pause_ms = m_impl->voice_params.pause_settings.spelling_pause_ms;
     const size_t pause_samples = static_cast<size_t>(SAMPLE_RATE * spelling_pause_ms / 1000);
     const double extra_pause_factor =
@@ -774,8 +777,15 @@ SynthesisResult TTSEngine::synthesize_spelled(const std::string& text) {
                                     char_result.audio.samples.end());
         const size_t extra_pause_samples = static_cast<size_t>(
             std::llround(char_result.audio.samples.size() * extra_pause_factor));
-        result.audio.samples.insert(result.audio.samples.end(),
-                                    pause_samples + extra_pause_samples, 0);
+        const size_t total_pause_samples = pause_samples + extra_pause_samples;
+        const bool last = pos >= text.size();
+        if (!last || final_pause) {
+            result.audio.samples.insert(result.audio.samples.end(), total_pause_samples, 0);
+        }
+        if (last && final_pause_ms) {
+            *final_pause_ms = static_cast<uint32_t>(
+                (total_pause_samples * 1000 + SAMPLE_RATE / 2) / SAMPLE_RATE);
+        }
     }
 
     result.success = !result.audio.samples.empty();

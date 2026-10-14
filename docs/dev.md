@@ -121,8 +121,10 @@ bool initialize(const std::string& voice_id, const std::string& data_path);
 // Main synthesis function
 SynthesisResult synthesize(const std::string& text);
 
-// Spelling mode (character-by-character)
-SynthesisResult synthesize_spelled(const std::string& text);
+// Spelling mode (character-by-character); final_pause = false leaves the
+// silence after the last character out and reports its length
+SynthesisResult synthesize_spelled(const std::string& text, bool final_pause = true,
+                                   uint32_t* final_pause_ms = nullptr);
 
 // Text preprocessing
 std::string preprocess_text(const std::string& text);
@@ -383,6 +385,7 @@ LaprdusError laprdus_load_dictionary(handle, path);
 // Synthesis
 int32_t laprdus_synthesize(handle, text, &samples, &format);
 int32_t laprdus_synthesize_spelled(handle, text, &samples, &format);
+int32_t laprdus_synthesize_spelled_ex(handle, text, final_pause, &final_pause_ms, &samples, &format);
 void laprdus_free_buffer(samples);
 
 // Configuration

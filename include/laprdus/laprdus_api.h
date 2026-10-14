@@ -634,6 +634,36 @@ LAPRDUS_API int32_t LAPRDUS_CALL laprdus_synthesize_spelled(
     LaprdusAudioFormat* out_format
 );
 
+/**
+ * Spell text as laprdus_synthesize_spelled() does, with a choice about the
+ * silence after the last character. That silence (the spelling pause plus
+ * the spelling speed's share of the character's duration) is what keeps
+ * spelled characters apart; a host that times what follows a spelled
+ * character itself leaves it out and adds the reported length only when
+ * another character or ordinary speech follows. NVDA's delayed character
+ * descriptions put their own pause between a character and its description:
+ * with the Laprdus pause left out, that pause alone sets the delay.
+ * @param handle Engine handle.
+ * @param text UTF-8 encoded text to spell.
+ * @param final_pause Non-zero to append the silence after the last
+ *                    character (as laprdus_synthesize_spelled() does),
+ *                    zero to leave it out.
+ * @param out_final_pause_ms Receives the length of that silence in
+ *                    milliseconds, whether or not it was appended; may be NULL.
+ * @param out_samples Pointer to receive allocated audio sample buffer.
+ *                    Caller must free with laprdus_free_buffer().
+ * @param out_format Pointer to receive audio format information.
+ * @return Number of samples on success, negative error code on failure.
+ */
+LAPRDUS_API int32_t LAPRDUS_CALL laprdus_synthesize_spelled_ex(
+    LaprdusHandle handle,
+    const char* text,
+    int final_pause,
+    uint32_t* out_final_pause_ms,
+    int16_t** out_samples,
+    LaprdusAudioFormat* out_format
+);
+
 // =============================================================================
 // Emoji Dictionary Functions
 // =============================================================================
@@ -862,9 +892,10 @@ LAPRDUS_API LaprdusSpellingMode LAPRDUS_CALL laprdus_get_spelling_mode(LaprdusHa
 /**
  * Set the spelling cadence by adding silence after each character.
  * Characters always use the normal speech rate. 100 adds no extra silence,
- * 50 (the default) adds about 0.73 times the character duration, and 0 adds
- * twice its duration. The configured spelling pause is added on top
- * (laprdus_set_spelling_pause), including after the final character.
+ * 50 (the default) adds about 0.41 times the character duration, 20 about
+ * 0.74 times, and 0 adds its whole duration. The configured spelling pause
+ * is added on top (laprdus_set_spelling_pause), including after the final
+ * character (see laprdus_synthesize_spelled_ex() to leave that one out).
  * @param handle Engine handle.
  * @param percent Spelling speed (0-100, default 50).
  * @return LAPRDUS_OK on success, error code on failure.

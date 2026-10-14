@@ -990,7 +990,20 @@ LAPRDUS_API int32_t LAPRDUS_CALL laprdus_synthesize_spelled(
     const char* text,
     int16_t** out_samples,
     LaprdusAudioFormat* out_format) {
+    return laprdus_synthesize_spelled_ex(handle, text, 1, nullptr, out_samples, out_format);
+}
 
+LAPRDUS_API int32_t LAPRDUS_CALL laprdus_synthesize_spelled_ex(
+    LaprdusHandle handle,
+    const char* text,
+    int final_pause,
+    uint32_t* out_final_pause_ms,
+    int16_t** out_samples,
+    LaprdusAudioFormat* out_format) {
+
+    if (out_final_pause_ms) {
+        *out_final_pause_ms = 0;
+    }
     if (!handle) {
         return static_cast<int32_t>(LAPRDUS_ERROR_INVALID_HANDLE);
     }
@@ -1011,7 +1024,8 @@ LAPRDUS_API int32_t LAPRDUS_CALL laprdus_synthesize_spelled(
     }
 
     // Synthesize in spelling mode
-    laprdus::SynthesisResult result = handle->engine.synthesize_spelled(text);
+    laprdus::SynthesisResult result = handle->engine.synthesize_spelled(
+        text, final_pause != 0, out_final_pause_ms);
 
     if (!result.success) {
         set_error(handle, result.error_message);

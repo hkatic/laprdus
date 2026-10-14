@@ -275,9 +275,20 @@ public:
      * "lje") is a letter name too and gives way to the sound. An entry that
      * says anything else is spoken as written in both modes.
      * @param text UTF-8 text to spell.
+     * @param final_pause Whether the silence that follows every character
+     *        (the spelling pause plus the spelling speed's share of the
+     *        character's duration) is appended after the last one too. A
+     *        host that times what comes after a spelled character itself
+     *        (NVDA's delayed character descriptions put their own pause
+     *        between a character and its description) passes false and adds
+     *        the reported pause only when another character or ordinary
+     *        speech follows.
+     * @param final_pause_ms Receives the length of that final silence in
+     *        milliseconds, whether or not it was appended; may be null.
      * @return Synthesis result with audio buffer.
      */
-    SynthesisResult synthesize_spelled(const std::string& text);
+    SynthesisResult synthesize_spelled(const std::string& text, bool final_pause = true,
+                                       uint32_t* final_pause_ms = nullptr);
 
     // =========================================================================
     // Emoji Dictionary

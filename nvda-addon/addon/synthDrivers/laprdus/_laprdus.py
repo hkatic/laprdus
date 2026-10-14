@@ -240,6 +240,16 @@ def _configure_functions(lib):
     ]
     lib.laprdus_synthesize_spelled.restype = ctypes.c_int32
 
+    lib.laprdus_synthesize_spelled_ex.argtypes = [
+        LaprdusHandle,
+        ctypes.c_char_p,
+        ctypes.c_int,
+        ctypes.POINTER(ctypes.c_uint32),
+        ctypes.POINTER(ctypes.POINTER(ctypes.c_int16)),
+        ctypes.POINTER(LaprdusAudioFormat)
+    ]
+    lib.laprdus_synthesize_spelled_ex.restype = ctypes.c_int32
+
     # Emoji dictionary functions
     lib.laprdus_load_emoji_dictionary.argtypes = [LaprdusHandle, ctypes.c_char_p]
     lib.laprdus_load_emoji_dictionary.restype = LaprdusError
@@ -767,16 +777,25 @@ class LaprdusEngine(object):
         """Clear all entries from the spelling dictionary."""
         self._lib.laprdus_clear_spelling_dictionary(self._handle)
 
-    def synthesize_spelled(self, text):
+    def synthesize_spelled(self, text, final_pause=True):
         """
         Synthesize text in spelling mode (character by character).
 
         Args:
             text: Text to spell (str or unicode)
+            final_pause: Whether the silence that follows every spelled
+                character (the spelling pause plus the spelling speed's share
+                of the character's duration) is appended after the last one
+                too. The driver passes False and adds that silence itself only
+                when another character or ordinary speech follows, so that a
+                BreakCommand from NVDA (its delayed character descriptions)
+                alone sets the gap after a character.
 
         Returns:
-            tuple: (samples as bytes, sample_rate, bits_per_sample, channels)
-                   or None on failure
+            tuple: (samples as bytes, sample_rate, bits_per_sample, channels,
+                    final_pause_ms), where final_pause_ms is the length of
+                    that final silence whether or not it was appended,
+                    or None on failure
         """
         if not self._initialized:
             return None
@@ -790,11 +809,14 @@ class LaprdusEngine(object):
         # Prepare output parameters
         samples_ptr = ctypes.POINTER(ctypes.c_int16)()
         audio_format = LaprdusAudioFormat()
+        final_pause_ms = ctypes.c_uint32(0)
 
         # Call spelling synthesis
-        num_samples = self._lib.laprdus_synthesize_spelled(
+        num_samples = self._lib.laprdus_synthesize_spelled_ex(
             self._handle,
             text_bytes,
+            1 if final_pause else 0,
+            ctypes.byref(final_pause_ms),
             ctypes.byref(samples_ptr),
             ctypes.byref(audio_format)
         )
@@ -813,10 +835,11 @@ class LaprdusEngine(object):
                 samples_bytes,
                 audio_format.sample_rate,
                 audio_format.bits_per_sample,
-                audio_format.channels
+                audio_format.channels,
+                int(final_pause_ms.value),
             )
         finally:
-            # Free the C-allocated buffer
+            # Free the C buffer
             self._lib.laprdus_free_buffer(samples_ptr)
 
     def _get_error_message(self):
