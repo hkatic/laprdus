@@ -48,6 +48,23 @@ struct EngineTests {
         #expect(chunk.samples.count > 0)
     }
 
+    /// A spelled character ends with the spelling pause unless the caller
+    /// asks to place that pause itself; its length is reported either way,
+    /// and ordinary text owes none. The speech extension relies on this to
+    /// put only the comma pause between a spelled badge count and the text
+    /// after it.
+    @Test func spelledTextReportsItsFinalPause() throws {
+        let engine = try LaprdusEngine()
+        try engine.loadVoice("zvonko", dictionaries: .bundledOnly)
+        let withPause = try engine.synthesize("1", spelled: true)
+        let without = try engine.synthesize("1", spelled: true, finalPause: false)
+        #expect(withPause.finalPause > 0.2)
+        #expect(without.finalPause == withPause.finalPause)
+        let pauseSamples = Int(withPause.finalPause * withPause.sampleRate)
+        #expect(abs(withPause.samples.count - without.samples.count - pauseSamples) < 50)
+        #expect(try engine.synthesize("Tab").finalPause == 0)
+    }
+
     @Test func derivedVoicesReferenceBasePitch() throws {
         let detence = try #require(VoiceCatalog.voice(withID: "detence"))
         #expect(detence.basePitch == 1.5)

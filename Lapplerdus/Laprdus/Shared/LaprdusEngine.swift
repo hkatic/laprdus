@@ -24,6 +24,12 @@ final class LaprdusEngine: @unchecked Sendable {
         let samples: [Int16]
         let sampleRate: Double
         let channels: Int
+        /// Spelled text: the silence the engine puts after the last spelled
+        /// character (the spelling pause plus the spelling speed's share of
+        /// the character's duration), in seconds. It is part of `samples`
+        /// when the chunk was synthesized with `finalPause`; otherwise the
+        /// caller owes it to whatever it plays next. Zero for ordinary text.
+        let finalPause: Double
     }
 
     private let handle: LaprdusHandle
@@ -150,12 +156,18 @@ final class LaprdusEngine: @unchecked Sendable {
         }
     }
 
-    func synthesize(_ text: String, spelled: Bool = false) throws -> AudioChunk {
+    /// Synthesizes text, or spells it character by character when `spelled`.
+    /// A spelled chunk ends with the silence that keeps spelled characters
+    /// apart unless `finalPause` is false; `AudioChunk.finalPause` reports
+    /// its length either way, so a caller that places the next sound itself
+    /// can add it only where nothing else separates the two.
+    func synthesize(_ text: String, spelled: Bool = false, finalPause: Bool = true) throws -> AudioChunk {
         try queue.sync {
             var samples: UnsafeMutablePointer<Int16>? = nil
             var format = LaprdusAudioFormat()
+            var finalPauseMs: UInt32 = 0
             let count = spelled
-                ? laprdus_synthesize_spelled(handle, text, &samples, &format)
+                ? laprdus_synthesize_spelled_ex(handle, text, finalPause ? 1 : 0, &finalPauseMs, &samples, &format)
                 : laprdus_synthesize(handle, text, &samples, &format)
             guard count >= 0, let buffer = samples else {
                 throw LaprdusEngineError.api(lastErrorMessage)
@@ -165,7 +177,8 @@ final class LaprdusEngine: @unchecked Sendable {
             return AudioChunk(
                 samples: array,
                 sampleRate: Double(format.sample_rate),
-                channels: Int(max(format.channels, 1))
+                channels: Int(max(format.channels, 1)),
+                finalPause: Double(finalPauseMs) / 1000
             )
         }
     }

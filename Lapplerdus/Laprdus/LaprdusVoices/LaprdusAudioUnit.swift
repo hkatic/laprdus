@@ -109,6 +109,14 @@ public class LaprdusAudioUnit: AVSpeechSynthesisProviderAudioUnit {
             // screen reader navigation names characters ("Č" → "Če").
             let singleCharacter = speech.count == 1 && speech[0].text.count == 1
             var samples: [Float] = []
+            // The silence a spelled part owes to what follows it (seconds).
+            // The engine leaves the pause after the last spelled character
+            // out; text that follows with nothing between gets it, a break
+            // or a phrase boundary replaces it. VoiceOver reads a button with
+            // a badge as three phrases, "Notifications 1 Tab", with the count
+            // spelled: the spelling pause on top of the comma pause held the
+            // type of the control back.
+            var owedPause = 0.0
             for part in utterance.parts {
                 guard renderState.isCurrent(request) else { return }
                 switch part {
@@ -131,18 +139,29 @@ public class LaprdusAudioUnit: AVSpeechSynthesisProviderAudioUnit {
                     // symbol) must not silence the parts around it.
                     guard let chunk = try? engine.synthesize(
                         speech.text,
-                        spelled: speech.spellOut || singleCharacter
+                        spelled: speech.spellOut || singleCharacter,
+                        finalPause: false
                     ) else { continue }
+                    samples.append(contentsOf: silence(seconds: owedPause))
                     samples.append(contentsOf: chunk.samples.lazy.map { Float($0) / Float(Int16.max) })
+                    owedPause = chunk.finalPause
                 case .pause(let seconds):
+                    // The break alone sets the gap after a spelled character.
+                    owedPause = 0
                     samples.append(contentsOf: silence(seconds: seconds))
                 case .phraseBoundary:
                     // The engine ends an unpunctuated phrase without a pause,
                     // so phrases the host keeps apart get the one the user
-                    // chose for commas.
+                    // chose for commas; after a spelled part it is the whole
+                    // gap.
+                    owedPause = 0
                     samples.append(contentsOf: silence(seconds: Double(max(0, min(settings.commaPause, 2000))) / 1000))
                 }
             }
+            // A request that ends with a spelled character keeps that
+            // character's pause, so the characters VoiceOver sends one by one
+            // (typing, moving by character) keep the spelling speed's cadence.
+            samples.append(contentsOf: silence(seconds: owedPause))
             finishWith(samples: samples, request: request)
         } catch {
             finishWith(samples: [], request: request)
