@@ -14,21 +14,128 @@ struct EngineTests {
 
     @Test func voiceRegistryExposesAllVoices() throws {
         let ids = VoiceCatalog.all.map(\.id)
-        #expect(ids == ["josip", "vlado", "detence", "baba", "djed",
+        #expect(ids == ["josip", "vlado", "detence", "baba", "djedo",
                         "zvonko", "stojan", "mirsad",
-                        "orguljas", "klapa", "trubac", "harmonikas",
-                        "sevdalija", "sazlija", "pjevac", "pevac", "solist",
-                        "becarac"])
+                        "orguljas", "dalmacija_klapa", "trubac", "harmonikas",
+                        "sevdalija", "sazlija", "lika_velebit", "solunac",
+                        "sarajevo_bembasa", "becarac"])
+        // Names come from the registry, without a language or a prefix.
+        #expect(VoiceCatalog.voice(withID: "djedo")?.displayName == "Đedo")
+        #expect(VoiceCatalog.voice(withID: "dalmacija_klapa")?.displayName == "Dalmacija Klapa")
+        #expect(VoiceCatalog.voice(withID: "zvonko")?.localizedName == "Zvonko")
     }
 
+    /// A voice's language code is only its native one: every voice speaks
+    /// every language, and Zvonko is the default for all of them.
     @Test func formantVoicesHaveTheirOwnLanguages() throws {
         #expect(VoiceCatalog.voice(withID: "zvonko")?.languageCode == "hr-HR")
         #expect(VoiceCatalog.voice(withID: "stojan")?.languageCode == "sr-RS")
         #expect(VoiceCatalog.voice(withID: "mirsad")?.languageCode == "bs-BA")
-        #expect(VoiceCatalog.defaultVoiceID(forLanguage: "bs-BA") == "mirsad")
-        // Each language defaults to its formant voice.
+        #expect(VoiceCatalog.defaultVoiceID == "zvonko")
         #expect(VoiceCatalog.defaultVoiceID(forLanguage: "hr-HR") == "zvonko")
-        #expect(VoiceCatalog.defaultVoiceID(forLanguage: "sr-RS") == "stojan")
+        #expect(VoiceCatalog.defaultVoiceID(forLanguage: "sr-RS") == "zvonko")
+        #expect(VoiceCatalog.defaultVoiceID(forLanguage: "bs-BA") == "zvonko")
+        #expect(LaprdusEngine.defaultVoiceID == "zvonko")
+    }
+
+    @Test func renamedVoiceIDsResolveToTheNewVoices() throws {
+        #expect(VoiceCatalog.canonicalVoiceID("djed") == "djedo")
+        #expect(VoiceCatalog.canonicalVoiceID("dijete") == "detence")
+        #expect(VoiceCatalog.canonicalVoiceID("baka") == "baba")
+        #expect(VoiceCatalog.canonicalVoiceID("klapa") == "dalmacija_klapa")
+        #expect(VoiceCatalog.canonicalVoiceID("pjevac") == "lika_velebit")
+        #expect(VoiceCatalog.canonicalVoiceID("pevac") == "solunac")
+        #expect(VoiceCatalog.canonicalVoiceID("solist") == "sarajevo_bembasa")
+        #expect(VoiceCatalog.canonicalVoiceID("zvonko") == "zvonko")
+        #expect(VoiceCatalog.voice(withID: "djed")?.id == "djedo")
+        #expect(VoiceCatalog.voice(withID: "pjevac")?.isSinging == true)
+
+        // The engine takes the old id too and reports the new one.
+        let engine = try LaprdusEngine()
+        try engine.loadVoice("djed", dictionaries: .bundledOnly)
+        #expect(engine.currentVoice == "djedo")
+        #expect(try engine.synthesize("Dobar dan").samples.count > 0)
+    }
+
+    @Test func languagesComeFromTheEngine() throws {
+        #expect(Language.all.map(\.code) == ["hr-HR", "sr-RS", "bs-BA"])
+        #expect(Language.all.map(\.shortCode) == ["hr", "sr", "bs"])
+        #expect(Language.all.map(\.englishName) == ["Croatian", "Serbian", "Bosnian"])
+        #expect(LaprdusEngine.languages.count == 3)
+        #expect(Language.language(matching: "sr")?.code == "sr-RS")
+        #expect(Language.language(matching: "bs_BA")?.code == "bs-BA")
+        #expect(Language.language(matching: "sr-Latn-RS")?.code == "sr-RS")
+        #expect(Language.language(matching: "HR-hr")?.code == "hr-HR")
+        #expect(Language.language(matching: "en-US") == nil)
+        #expect(Language.language(matching: "") == nil)
+        #expect(Language.language(matching: VoiceCatalog.defaultLanguageCode) != nil)
+    }
+
+    /// Once chosen, the language sticks across voice changes, and every
+    /// voice speaks it: Josip reads "1000" as hiljadu in Serbian, so the
+    /// Serbian rendering differs from the Croatian one of the same text.
+    @Test func chosenLanguageSurvivesVoiceChanges() throws {
+        let engine = try LaprdusEngine()
+        try engine.loadVoice("zvonko", dictionaries: .bundledOnly)
+        #expect(engine.currentLanguage == "hr-HR")
+        #expect(engine.chosenLanguage == nil)
+        let croatian = try engine.synthesize("1000 i 200").samples
+
+        try engine.setLanguage("sr-RS")
+        #expect(engine.currentLanguage == "sr-RS")
+        #expect(engine.chosenLanguage == "sr-RS")
+        let serbian = try engine.synthesize("1000 i 200").samples
+        #expect(!serbian.isEmpty)
+        #expect(serbian != croatian)
+
+        // A voice change keeps the chosen language, a recorded voice included.
+        try engine.loadVoice("josip", dictionaries: .bundledOnly)
+        #expect(engine.currentLanguage == "sr-RS")
+        #expect(try engine.synthesize("1000 i 200").samples.count > 0)
+        try engine.loadVoice("mirsad", dictionaries: .bundledOnly)
+        #expect(engine.currentLanguage == "sr-RS")
+
+        try engine.setLanguage("bs")
+        #expect(engine.currentLanguage == "bs-BA")
+        #expect(throws: LaprdusEngineError.self) {
+            try engine.setLanguage("xx-YY")
+        }
+        #expect(engine.currentLanguage == "bs-BA")
+    }
+
+    /// The system voice list: every voice in every language, each entry
+    /// naming both, and the identifiers map back to what they name.
+    @Test func providerVoicesCoverEveryVoiceInEveryLanguage() throws {
+        let entries = VoiceCatalog.providerVoices
+        #expect(entries.count == 54)
+        #expect(Set(entries.map(\.identifier)).count == 54)
+        for language in Language.all {
+            #expect(entries.filter { $0.language == language }.count == 18)
+        }
+        #expect(entries.first?.identifier == "com.hrvojekatic.laprdus.josip.hr")
+        #expect(entries.contains { $0.identifier == "com.hrvojekatic.laprdus.zvonko.sr" })
+        #expect(entries.contains { $0.identifier == "com.hrvojekatic.laprdus.sarajevo_bembasa.bs" })
+
+        for entry in entries {
+            let resolved = try #require(VoiceCatalog.providerVoice(forIdentifier: entry.identifier))
+            #expect(resolved.voice.id == entry.voice.id)
+            #expect(resolved.language.code == entry.language.code)
+        }
+
+        // An identifier from before 2.0 is the voice in its native language.
+        let legacy = try #require(VoiceCatalog.providerVoice(forIdentifier: "com.hrvojekatic.laprdus.stojan"))
+        #expect(legacy.voice.id == "stojan")
+        #expect(legacy.language.code == "sr-RS")
+        let renamed = try #require(VoiceCatalog.providerVoice(forIdentifier: "com.hrvojekatic.laprdus.djed"))
+        #expect(renamed.voice.id == "djedo")
+        #expect(renamed.language.code == "sr-RS")
+        let renamedWithLanguage = try #require(VoiceCatalog.providerVoice(forIdentifier: "com.hrvojekatic.laprdus.pevac.hr"))
+        #expect(renamedWithLanguage.voice.id == "solunac")
+        #expect(renamedWithLanguage.language.code == "hr-HR")
+
+        #expect(VoiceCatalog.providerVoice(forIdentifier: "com.apple.voice.compact.hr-HR.Lana") == nil)
+        #expect(VoiceCatalog.providerVoice(forIdentifier: "com.hrvojekatic.laprdus.nobody.hr") == nil)
+        #expect(VoiceCatalog.providerVoice(forIdentifier: "com.hrvojekatic.laprdus.zvonko.en") == nil)
     }
 
     @Test func formantVoicesSynthesizeAndSwitchBack() throws {
@@ -140,11 +247,18 @@ struct EngineTests {
         let slowest = try engine.synthesize("Dobar dan, kako ste?")
         #expect(slowest.samples.count > normal.samples.count * 3)
 
+        // Kind from the registry: no data file means formant, a formant
+        // voice with a base voice sings.
         #expect(VoiceCatalog.voice(withID: "zvonko")?.isFormant == true)
         #expect(VoiceCatalog.voice(withID: "josip")?.isFormant == false)
-        #expect(VoiceCatalog.voice(withID: "klapa")?.isFormant == true)
-        #expect(VoiceCatalog.voice(withID: "klapa")?.isSinging == true)
+        #expect(VoiceCatalog.voice(withID: "baba")?.isFormant == false)
+        #expect(VoiceCatalog.voice(withID: "baba")?.isSinging == false)
+        #expect(VoiceCatalog.voice(withID: "dalmacija_klapa")?.isFormant == true)
+        #expect(VoiceCatalog.voice(withID: "dalmacija_klapa")?.isSinging == true)
+        #expect(VoiceCatalog.voice(withID: "becarac")?.isSinging == true)
         #expect(VoiceCatalog.voice(withID: "zvonko")?.isSinging == false)
+        #expect(VoiceCatalog.all.filter(\.isSinging).count == 10)
+        #expect(VoiceCatalog.all.filter(\.isFormant).count == 13)
         #expect((VoiceCatalog.voice(withID: "zvonko")?.nominalWordsPerMinute ?? 0) > 100)
     }
 }
@@ -513,6 +627,9 @@ struct SettingsTests {
 
         let snapshot = SettingsSnapshot.load(from: defaults)
         #expect(snapshot.defaultVoice == VoiceCatalog.defaultVoiceID)
+        #expect(snapshot.defaultVoice == "zvonko")
+        #expect(snapshot.language == VoiceCatalog.defaultLanguageCode)
+        #expect(Language.language(matching: snapshot.language) != nil)
         #expect(snapshot.speed == 1.0)
         #expect(snapshot.pitch == 1.0)
         #expect(snapshot.volume == 1.0)
@@ -537,10 +654,33 @@ struct SettingsTests {
         store.speed = 1.7
         store.inflectionEnabled = false
         store.defaultVoice = "vlado"
+        store.language = "bs-BA"
 
         let reloaded = SettingsSnapshot.load(from: defaults)
         #expect(reloaded.speed == 1.7)
         #expect(reloaded.inflectionEnabled == false)
         #expect(reloaded.defaultVoice == "vlado")
+        #expect(reloaded.language == "bs-BA")
+        #expect(defaults.string(forKey: "language") == "bs-BA")
+    }
+
+    /// Settings saved by 1.0 hold the old voice ids and no language; a
+    /// corrupted suite may hold anything.
+    @Test func storedValuesAreNormalized() throws {
+        let suiteName = "LaprdusTests-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        defaults.set("djed", forKey: SettingsKey.defaultVoice)
+        #expect(SettingsSnapshot.load(from: defaults).defaultVoice == "djedo")
+        defaults.set("pjevac", forKey: SettingsKey.defaultVoice)
+        #expect(SettingsSnapshot.load(from: defaults).defaultVoice == "lika_velebit")
+        defaults.set("nobody", forKey: SettingsKey.defaultVoice)
+        #expect(SettingsSnapshot.load(from: defaults).defaultVoice == "zvonko")
+
+        defaults.set("sr", forKey: SettingsKey.language)
+        #expect(SettingsSnapshot.load(from: defaults).language == "sr-RS")
+        defaults.set("en-US", forKey: SettingsKey.language)
+        #expect(SettingsSnapshot.load(from: defaults).language == VoiceCatalog.defaultLanguageCode)
     }
 }

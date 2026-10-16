@@ -31,7 +31,7 @@ In short: modern synthesizers offer quality at the cost of resources; Laprdus of
 ## Features
 
 - Croatian, Serbian and Bosnian speech synthesis (Latin and Cyrillic scripts)
-- Five voices (two physical, three derived)
+- Eighteen voices (two recorded, three derived from them, three formant, ten singing presets), every one of them speaking all three languages
 - Adjustable speech rate, pitch, and volume
 - Natural inflection based on punctuation
 - Number reading as words (up to centillions) or digit-by-digit
@@ -40,26 +40,30 @@ In short: modern synthesizers offer quality at the cost of resources; Laprdus of
 
 ## Voices
 
-| Voice | Type | Language | Description |
-|-------|------|----------|-------------|
-| **Josip** | Physical | Croatian | Adult male, default Croatian voice |
-| **Vlado** | Physical | Serbian | Adult male, default Serbian voice |
-| **Detence** | Derived | Croatian | Child voice (higher pitch) |
-| **Baba** | Derived | Croatian | Grandmother voice (slightly higher pitch) |
-| **Djedo** | Derived | Serbian | Grandfather voice (lower pitch) |
-| **Zvonko** | Formant | Croatian | Adult male, synthesized by rule |
-| **Stojan** | Formant | Serbian | Adult male, lower and darker, synthesized by rule |
-| **Mirsad** | Formant | Bosnian | Adult male, higher and more melodic, synthesized by rule |
-| **Zvonko Orguljaš** | Singing | Croatian | Zvonko at the pipe organ, sings *Vila Velebita* |
-| **Klapa Zvonko** | Singing | Croatian | Zvonko as a whole klapa (a Dalmatian a cappella group), sings *Vila Velebita* |
-| **Stojan Trubač** | Singing | Serbian | Stojan as a trumpet, sings *Kreće se lađa francuska* |
-| **Stojan Harmonikaš** | Singing | Serbian | Stojan as an accordion, sings *Kreće se lađa francuska* |
-| **Mirsad Sevdalija** | Singing | Bosnian | Mirsad singing sevdah, sings *Kad ja pođoh na Bembašu* |
-| **Mirsad Sazlija** | Singing | Bosnian | Mirsad as a saz, sings *Kad ja pođoh na Bembašu* |
-| **Zvonko Pjevač** | Singing | Croatian | Zvonko singing with his own voice, at his own pitch, *Vila Velebita* |
-| **Stojan Pevač** | Singing | Serbian | Stojan singing with his own voice, *Kreće se lađa francuska* |
-| **Mirsad Solist** | Singing | Bosnian | Mirsad singing with his own voice, *Kad ja pođoh na Bembašu* |
-| **Zvonko Bećarac** | Singing | Croatian | Zvonko singing a bećarac, the two-line song of Slavonia, with his own voice |
+Every voice speaks every language. The voice chooses the sound; the language (Croatian, Serbian or Bosnian) chooses the pronunciation rules, the accent lexicon, the number words (*tisuća* / *hiljada*) and the letter names used for spelling, and is set separately on each platform: the **Language** setting of the NVDA add-on (which also follows NVDA's automatic language switching), one of the three SAPI5 voices *Laprdus Croatian*, *Laprdus Serbian* and *Laprdus Bosnian* (all of them speaking with the voice chosen in the Laprdus Configurator), the language of the system voice on Android and Apple (every voice is listed under all three languages), `-L hr|sr|bs` on the command line and `spd-say -l` with Speech Dispatcher. A voice's *native language* in the table is what it speaks when nothing else is asked for. **Zvonko is the default voice** on every platform and for every language.
+
+| Voice | ID | Type | Native language | Description |
+|-------|----|------|-----------------|-------------|
+| **Josip** | `josip` | Recorded | Croatian | Adult male |
+| **Vlado** | `vlado` | Recorded | Serbian | Adult male |
+| **Detence** | `detence` | Derived | Croatian | Child voice (higher pitch) |
+| **Baba** | `baba` | Derived | Croatian | Grandmother voice (slightly higher pitch) |
+| **Đedo** | `djedo` | Derived | Serbian | Grandfather voice (lower pitch) |
+| **Zvonko** | `zvonko` | Formant | Croatian | Adult male, synthesized by rule; the default voice |
+| **Stojan** | `stojan` | Formant | Serbian | Adult male, lower and darker, synthesized by rule |
+| **Mirsad** | `mirsad` | Formant | Bosnian | Adult male, higher and more melodic, synthesized by rule |
+| **Orguljaš - Vila Velebita** | `orguljas` | Singing | Croatian | Zvonko at the pipe organ, sings *Vila Velebita* |
+| **Dalmacija Klapa** | `dalmacija_klapa` | Singing | Croatian | Zvonko as a whole klapa (a Dalmatian a cappella group), sings *Vila Velebita* |
+| **Trubač - Kreće se lađa francuska** | `trubac` | Singing | Serbian | Stojan as a trumpet, sings *Kreće se lađa francuska* |
+| **Harmonikaš - Kreće se lađa francuska** | `harmonikas` | Singing | Serbian | Stojan as an accordion, sings *Kreće se lađa francuska* |
+| **Sevdalija - Kad ja pođoh na Bembašu** | `sevdalija` | Singing | Bosnian | Mirsad singing sevdah, sings *Kad ja pođoh na Bembašu* |
+| **Sazlija - Kad ja pođoh na Bembašu** | `sazlija` | Singing | Bosnian | Mirsad as a saz, sings *Kad ja pođoh na Bembašu* |
+| **Lika Velebit** | `lika_velebit` | Singing | Croatian | Zvonko singing with his own voice, at his own pitch, *Vila Velebita* |
+| **Solunac** | `solunac` | Singing | Serbian | Stojan singing with his own voice, *Kreće se lađa francuska* |
+| **Sarajevo Bembaša** | `sarajevo_bembasa` | Singing | Bosnian | Mirsad singing with his own voice, *Kad ja pođoh na Bembašu* |
+| **Bećarac** | `becarac` | Singing | Croatian | Zvonko singing a bećarac, the two-line song of Slavonia, with his own voice |
+
+The IDs are plain ASCII without diacritics on purpose, so that they register safely on every platform. The IDs of earlier versions (`djed`, `klapa`, `pjevac`, `pevac`, `solist`) are still accepted in settings files and scripts and resolve to the renamed voices.
 
 ### Formant voices
 
@@ -75,26 +79,26 @@ In the tradition of the singing voices of DECtalk and of the Macintosh (Pipe Org
 
 | Preset | ID | Sings | Song |
 |--------|----|-------|------|
-| Zvonko Orguljaš | `orguljas` | pipe organ | Vila Velebita (anonymous, 1882) |
-| Klapa Zvonko | `klapa` | one-man klapa | Vila Velebita |
-| Stojan Trubač | `trubac` | trumpet | Kreće se lađa francuska (Milosavljević) |
-| Stojan Harmonikaš | `harmonikas` | accordion | Kreće se lađa francuska |
-| Mirsad Sevdalija | `sevdalija` | sevdah singer | Kad ja pođoh na Bembašu (traditional) |
-| Mirsad Sazlija | `sazlija` | saz | Kad ja pođoh na Bembašu |
-| Zvonko Pjevač | `pjevac` | Zvonko's own voice, at his own pitch | Vila Velebita |
-| Stojan Pevač | `pevac` | Stojan's own voice | Kreće se lađa francuska |
-| Mirsad Solist | `solist` | Mirsad's own voice | Kad ja pođoh na Bembašu |
-| Zvonko Bećarac | `becarac` | Zvonko's own voice | the bećarac tune (traditional, Slavonia); any ten-syllable couplet fits |
+| Orguljaš - Vila Velebita | `orguljas` | pipe organ (Zvonko) | Vila Velebita (anonymous, 1882) |
+| Dalmacija Klapa | `dalmacija_klapa` | one-man klapa (Zvonko) | Vila Velebita |
+| Trubač - Kreće se lađa francuska | `trubac` | trumpet (Stojan) | Kreće se lađa francuska (Milosavljević) |
+| Harmonikaš - Kreće se lađa francuska | `harmonikas` | accordion (Stojan) | Kreće se lađa francuska |
+| Sevdalija - Kad ja pođoh na Bembašu | `sevdalija` | sevdah singer (Mirsad) | Kad ja pođoh na Bembašu (traditional) |
+| Sazlija - Kad ja pođoh na Bembašu | `sazlija` | saz (Mirsad) | Kad ja pođoh na Bembašu |
+| Lika Velebit | `lika_velebit` | Zvonko's own voice, at his own pitch | Vila Velebita |
+| Solunac | `solunac` | Stojan's own voice | Kreće se lađa francuska |
+| Sarajevo Bembaša | `sarajevo_bembasa` | Mirsad's own voice | Kad ja pođoh na Bembašu |
+| Bećarac | `becarac` | Zvonko's own voice | the bećarac tune (traditional, Slavonia); any ten-syllable couplet fits |
 
-The rate slider sets the tempo, the pitch slider transposes the song, and the inflection setting sets the depth of the vibrato (0% switches it off).
+The rate slider sets the tempo, the pitch slider transposes the song, and the inflection setting sets the depth of the vibrato (0% switches it off). Like every other voice, a preset sings in whichever of the three languages is chosen; its native language is that of its song.
 
 ```bash
-laprdus -v klapa "Oj ti vilo, vilo Velebita, ti našeg roda diko, tvoja slava jeste nama sveta, tebi Hrvat kliko."
+laprdus -v dalmacija_klapa "Oj ti vilo, vilo Velebita, ti našeg roda diko, tvoja slava jeste nama sveta, tebi Hrvat kliko."
 laprdus -v harmonikas -r 1.2 "Kreće se lađa francuska sa pristaništa solunska."
 laprdus -v sevdalija "Kad ja pođoh na Bembašu, na Bembašu, na vodu."
 laprdus -v becarac "U mog strica osam kobasica, sedam prži, osmu strina drži."
 ```
-- Number words follow the language of the voice (*tisuća* / *hiljada*, *milijun* / *milion*)
+- Number words follow the chosen language, for every voice (*tisuća* / *hiljada*, *milijun* / *milion*, *dvjesto* / *dvesta*)
 - Stress can be written in the text or in a pronunciation dictionary with the usual accent marks (`telèfon`, `gláva`, `kȕća`, `grȃd`)
 
 Tuning notes and the measurements the voices are based on are in [docs/formant.md](docs/formant.md).
@@ -105,14 +109,14 @@ Tuning notes and the measurements the voices are based on are in [docs/formant.m
 
 1. Download `Laprdus_SAPI5_Setup.exe` from the [releases page](https://github.com/hkatic/laprdus/releases)
 2. Run the installer (recommended: Run as Administrator)
-3. Laprdus voices will appear in Windows TTS settings
+3. Three voices appear in Windows TTS settings: **Laprdus Croatian**, **Laprdus Serbian** and **Laprdus Bosnian**. They choose the language; all three speak with the voice chosen in the Laprdus Configurator (Zvonko until you change it). The installer removes the per-voice registrations of earlier versions on install, upgrade and repair.
 
 ### NVDA Addon
 
 1. Download `laprdus-*.nvda-addon` from the [releases page](https://github.com/hkatic/laprdus/releases)
 2. Double-click the file to install
 3. Restart NVDA when prompted
-4. Select Laprdus in NVDA Settings > Speech
+4. Select Laprdus in NVDA Settings > Speech; the **Voice** list holds all eighteen voices and the **Language** list chooses Croatian, Serbian or Bosnian for whichever voice is selected (NVDA's automatic language switching also switches among the three)
 
 ### Linux
 
@@ -161,8 +165,12 @@ After the app has been launched once, the Laprdus voices become available system
 # Speak text
 laprdus "Dobar dan!"
 
-# Use different voice
+# Use a different voice (it speaks its native language, Serbian for Vlado)
 laprdus -v vlado "Zdravo svete!"
+
+# Any voice in any language: Zvonko speaking Serbian, Vlado speaking Croatian
+laprdus -L sr "Zdravo svete!"
+laprdus -v vlado -L hr "Dobar dan svima!"
 
 # Adjust rate and pitch
 laprdus -r 1.5 -p 1.2 "Brži i viši govor"
@@ -181,7 +189,8 @@ laprdus -l
 
 | Option | Description |
 |--------|-------------|
-| `-v, --voice` | Voice (josip, vlado, detence, baba, djed, zvonko, stojan, mirsad, or a singing preset: orguljas, klapa, trubac, harmonikas, sevdalija, sazlija, pjevac, pevac, solist, becarac) |
+| `-v, --voice` | Voice (zvonko (default), stojan, mirsad, josip, vlado, detence, baba, djedo, or a singing preset: orguljas, dalmacija_klapa, trubac, harmonikas, sevdalija, sazlija, lika_velebit, solunac, sarajevo_bembasa, becarac) |
+| `-L, --language` | Language: `hr`, `sr` or `bs`. Any voice speaks any language; without this option a voice speaks its native language |
 | `-r, --speech-rate` | Speech rate (0.5-2.0, default: 1.0; the formant voices accept 0.25-4.0) |
 | `-p, --speech-pitch` | Speech pitch (0.5-2.0, default: 1.0; the formant voices accept 0.25-4.0) |
 | `-I, --inflection` | Inflection of the formant voices, 0-100% (default: 50; 0 is a monotone, 100 the widest melody) |
@@ -192,7 +201,7 @@ laprdus -l
 | `-e, --period-pauses` | Period pause duration in ms |
 | `-o, --output-file` | Output to WAV file |
 | `-i, --input-file` | Read text from file |
-| `-l, --list-voices` | List available voices |
+| `-l, --list-voices` | List available voices with their native language |
 | `-h, --help` | Show help |
 
 ### Formant voice settings
@@ -223,7 +232,7 @@ Laprdus stores user settings and custom dictionaries in platform-specific locati
 | `user.json` | Custom pronunciation dictionary for words and phrases |
 | `spelling.json` | Character pronunciations for spelling mode |
 | `emoji.json` | Emoji-to-text mappings for emoji reading |
-| `accents.json` | Accent lexicon of the formant voices: word stress, length and tone, as words, stems, paradigms or whole verbs in the notation of the built-in lexicon (`{ "word": "kontr'o:l*" }`, `{ "verb": "ur'e:d=i<p" }`); parsed once at load, so it costs nothing per utterance |
+| `accents.json` | Accent lexicon: word stress, length and tone, as words, stems, paradigms or whole verbs in the notation of the built-in lexicon (`{ "word": "kontr'o:l*" }`, `{ "verb": "ur'e:d=i<p" }`); an optional `"language"` limits an entry to Croatian, Serbian or Bosnian; parsed once at load, so it costs nothing per utterance |
 
 ### Dictionary Format
 
@@ -477,7 +486,7 @@ xcodebuild -scheme Laprdus -destination 'generic/platform=iOS' build -allowProvi
 ##### Testing checklist for Apple
 
 - [ ] App builds and launches on macOS and on a physical iPhone/iPad
-- [ ] Speak/Stop works on the main screen with each of the 5 voices
+- [ ] Speak/Stop works on the main screen with each voice and in each of the three languages
 - [ ] Settings changes (rate, pitch, volume, pauses) are audible in the app
 - [ ] Dictionary entries affect pronunciation
 - [ ] Laprdus voices appear in the system voice list after the first app launch

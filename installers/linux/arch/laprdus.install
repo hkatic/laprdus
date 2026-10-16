@@ -35,7 +35,7 @@ configure_speechd() {
         cat >> "$SPEECHD_CONF" << 'EOF'
 
 # BEGIN LAPRDUS TTS
-# LaprdusTTS - Croatian/Serbian Text-to-Speech
+# LaprdusTTS - Croatian/Serbian/Bosnian Text-to-Speech
 AddModule "laprdus" "sd_laprdus" "laprdus.conf"
 LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
@@ -49,7 +49,7 @@ EOF
         cat >> "$SPEECHD_CONF" << 'EOF'
 
 # BEGIN LAPRDUS TTS
-# LaprdusTTS - Croatian/Serbian Text-to-Speech
+# LaprdusTTS - Croatian/Serbian/Bosnian Text-to-Speech
 LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"

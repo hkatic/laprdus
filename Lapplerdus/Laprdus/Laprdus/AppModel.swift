@@ -17,15 +17,20 @@ final class AppModel: ObservableObject {
     private let player = AudioPlayer()
     private var playbackTask: Task<Void, Never>?
 
-    /// Loads the engine and the persisted default voice. Called once at launch.
+    /// Loads the engine, the persisted default voice and the persisted
+    /// language. Called once at launch.
     func initialize() async {
         guard engine == nil else { return }
         do {
             let engine = try LaprdusEngine()
             self.engine = engine
             let voiceID = settings.defaultVoice
+            let language = settings.language
             let state = dictionaryState
-            try await runOnEngineQueue { try engine.loadVoice(voiceID, dictionaries: state) }
+            try await runOnEngineQueue {
+                try engine.loadVoice(voiceID, dictionaries: state)
+                try engine.setLanguage(language)
+            }
             isInitialized = true
         } catch {
             errorMessage = String(localized: "Error starting TTS engine")
@@ -58,6 +63,8 @@ final class AppModel: ObservableObject {
                 let chunk = try await runOnEngineQueue {
                     // Picks up dictionary entries edited since the last speak.
                     engine.syncDictionaries(state)
+                    // The voice and the language come from the settings.
+                    try engine.setLanguage(snapshot.language)
                     engine.apply(snapshot)
                     return try engine.synthesize(text)
                 }
@@ -81,12 +88,30 @@ final class AppModel: ObservableObject {
         isPlaying = false
     }
 
-    /// Switches the active voice; persists the choice only on success.
+    /// Switches the language every voice speaks; persists the choice only on
+    /// success.
+    func selectLanguage(_ code: String) async {
+        guard let engine else { return }
+        do {
+            try await runOnEngineQueue { try engine.setLanguage(code) }
+            settings.language = code
+        } catch {
+            errorMessage = String(localized: "Error selecting language")
+        }
+    }
+
+    /// Switches the active voice; persists the choice only on success. The
+    /// chosen language stays: the engine keeps it across voice changes, and
+    /// it is applied again here in case nothing chose one yet.
     func selectVoice(_ voiceID: String) async {
         guard let engine else { return }
         do {
             let state = dictionaryState
-            try await runOnEngineQueue { try engine.loadVoice(voiceID, dictionaries: state) }
+            let language = settings.language
+            try await runOnEngineQueue {
+                try engine.loadVoice(voiceID, dictionaries: state)
+                try engine.setLanguage(language)
+            }
             settings.defaultVoice = voiceID
             // A recorded voice cannot use the wider rate and pitch of the
             // formant voices: pull the values back into its range.

@@ -34,7 +34,7 @@ class SettingsScreenAccessibilityTest {
     private val testVoices = listOf(
         VoiceInfo(
             id = "josip",
-            displayName = "Laprdus Josip (Croatian)",
+            displayName = "Josip",
             languageCode = "hr-HR",
             gender = "Male",
             age = "Adult",
@@ -42,7 +42,7 @@ class SettingsScreenAccessibilityTest {
         ),
         VoiceInfo(
             id = "vlado",
-            displayName = "Laprdus Vlado (Serbian)",
+            displayName = "Vlado",
             languageCode = "sr-RS",
             gender = "Male",
             age = "Adult",
@@ -54,6 +54,7 @@ class SettingsScreenAccessibilityTest {
         isLoading = false,
         availableVoices = testVoices,
         selectedVoiceId = "josip",
+        language = "hr",
         speed = 1.0f,
         pitch = 1.0f,
         volume = 0.8f,
@@ -337,6 +338,55 @@ class SettingsScreenAccessibilityTest {
     }
 
     // ==========================================================================
+    // Language Dropdown Tests
+    // ==========================================================================
+
+    @Test
+    fun languageSettingItem_hasCorrectStateDescription() {
+        composeTestRule.setContent {
+            LanguageSettingItem(
+                selectedLanguage = "sr",
+                onLanguageSelected = {}
+            )
+        }
+
+        // Verify stateDescription contains the label and the dropdown role
+        val hasDropdownState = SemanticsMatcher("has Language and Dropdown in stateDescription") { node ->
+            val stateDesc = node.config.getOrNull(SemanticsProperties.StateDescription)
+            stateDesc != null && stateDesc.contains("Language") && stateDesc.contains("Dropdown")
+        }
+        composeTestRule.onNode(hasDropdownState).assertExists()
+    }
+
+    @Test
+    fun languageSettingItem_hasCorrectContentDescription_withSelectedLanguage() {
+        composeTestRule.setContent {
+            LanguageSettingItem(
+                selectedLanguage = "sr",
+                onLanguageSelected = {}
+            )
+        }
+
+        // Verify contentDescription contains the selected language's name
+        composeTestRule.onNode(hasContentDescription("Serbian")).assertExists()
+    }
+
+    @Test
+    fun languageSettingItem_hasTraversalGroup() {
+        composeTestRule.setContent {
+            LanguageSettingItem(
+                selectedLanguage = "hr",
+                onLanguageSelected = {}
+            )
+        }
+
+        val hasTraversalGroup = SemanticsMatcher("has isTraversalGroup") { node ->
+            node.config.getOrNull(SemanticsProperties.IsTraversalGroup) == true
+        }
+        composeTestRule.onNode(hasTraversalGroup).assertExists()
+    }
+
+    // ==========================================================================
     // Category Header Tests
     // ==========================================================================
 
@@ -365,6 +415,7 @@ class SettingsScreenAccessibilityTest {
                 uiState = defaultUiState,
                 onNavigateBack = {},
                 onVoiceSelected = {},
+                onLanguageSelected = {},
                 onSpeedChange = {},
                 onPitchChange = {},
                 onVolumeChange = {},
@@ -409,6 +460,7 @@ class SettingsScreenAccessibilityTest {
                 uiState = defaultUiState,
                 onNavigateBack = {},
                 onVoiceSelected = {},
+                onLanguageSelected = {},
                 onSpeedChange = {},
                 onPitchChange = {},
                 onVolumeChange = {},
@@ -452,6 +504,7 @@ class SettingsScreenAccessibilityTest {
                 uiState = defaultUiState,
                 onNavigateBack = {},
                 onVoiceSelected = {},
+                onLanguageSelected = {},
                 onSpeedChange = {},
                 onPitchChange = {},
                 onVolumeChange = {},
@@ -498,6 +551,7 @@ class SettingsScreenAccessibilityTest {
                 uiState = defaultUiState,
                 onNavigateBack = {},
                 onVoiceSelected = {},
+                onLanguageSelected = {},
                 onSpeedChange = {},
                 onPitchChange = {},
                 onVolumeChange = {},
@@ -530,11 +584,11 @@ class SettingsScreenAccessibilityTest {
         )
 
         // Count interactive elements:
-        // 1 voice dropdown + 6 sliders + 6 switches + 3 restore buttons = 16 items
+        // 1 voice dropdown + 1 language dropdown + 6 sliders + 6 switches + 3 restore buttons = 17 items
         val nodeCount = traversalGroupNodes.fetchSemanticsNodes().size
         assertTrue(
-            "Should have at least 16 items with isTraversalGroup for proper TalkBack navigation (found $nodeCount)",
-            nodeCount >= 16
+            "Should have at least 17 items with isTraversalGroup for proper TalkBack navigation (found $nodeCount)",
+            nodeCount >= 17
         )
     }
 }

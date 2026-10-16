@@ -702,8 +702,17 @@ if target_platform == 'windows':
 
     # Config GUI source files (statically linked with core for simplicity)
     config_sources = [
-        # Core (needed for UserConfig)
+        # Core (UserConfig, and the voice registry with the formant voice
+        # table it refers to)
         'src/core/user_config.cpp',
+        'src/core/voice_registry.cpp',
+        'src/core/phoneme_mapper.cpp',
+        'src/formant/klatt_synth.cpp',
+        'src/formant/formant_phonemes.cpp',
+        'src/formant/formant_lexicon.cpp',
+        'src/formant/formant_frontend.cpp',
+        'src/formant/formant_intonation.cpp',
+        'src/formant/formant_synthesizer.cpp',
         # Config GUI
         'src/platform/windows/config/main.cpp',
         'src/platform/windows/config/config_dialog.cpp',

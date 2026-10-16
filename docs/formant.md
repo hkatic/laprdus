@@ -2524,7 +2524,7 @@ entries in `COMMON` prevent the generic *-ević* rule from restoring stress
 and length on *o*. Both recorded and
 formant voices use this front end. Tests cover cases, possessives,
 capitalization, Cyrillic input and phrases in Zvonko, Stojan and Mirsad;
-dedicated tests also check Josip, Vlado, Detence, Baba and Djed. Audio must
+dedicated tests also check Josip, Vlado, Detence, Baba and Đedo. Audio must
 match explicitly accented input. Duration comparisons keep Enida's *i*
 long, Isaković's unstressed *a* short and Spasojević's unstressed *o* short;
 separate comparisons reject the previous stress on Isaković's *a* and on
@@ -3449,9 +3449,20 @@ at 1.0x, 1.7x and 4.0x, with an uninterrupted single-word control.
 
 ## 6. The three speakers
 
+Zvonko, Stojan and Mirsad are voices, not languages. Each has a native
+language (the "Language" row below), spoken when the host asks for nothing
+else, but every one of them speaks all three: `TTSEngine::set_language()`
+rebuilds the front end of any of them (letter-to-sound rules, lexicon,
+letter names, number dialect) and leaves the voice's sound (pitch, vocal
+tract, phonation, tempo) alone. Zvonko is the default voice for every
+language on every platform. The rows marked with a language name (numbers,
+*ne* + verb, accent on prepositions, post-accentual length) are properties
+of the language the voice is speaking at the moment; they were measured
+with each voice in its native language.
+
 | | Zvonko | Stojan | Mirsad |
 |---|---|---|---|
-| Language | Croatian | Serbian | Bosnian |
+| Native language | Croatian | Serbian | Bosnian |
 | Mid pitch | 112 Hz | 98 Hz | 124 Hz |
 | Vocal tract (formant scale) | 1.00 | 0.965 (longer) | 1.02 (shorter) |
 | Phonation | neutral | firmer, darker | softer, breathier |
@@ -3471,18 +3482,22 @@ DECtalk (`[dey<400,22>]`: a phoneme, a duration and a note code) and of
 the Macintosh (Pipe Organ, Cellos, Bad News, Good News), which sing any
 text to a fixed tune, one syllable per note, and start the tune over with
 every utterance. Ours do the same with a public-domain folk song of the
-voice's country:
+base voice's country. The presets are voices like any other: their display
+names no longer carry the base voice's name (the ids `klapa`, `pjevac`,
+`pevac` and `solist` of earlier versions still resolve to the renamed
+presets), their native language is that of their song, and they sing in
+whichever of the three languages is chosen:
 
 | Preset | ID | Base | Source | Song |
 |---|---|---|---|---|
-| Zvonko Orguljaš | `orguljas` | Zvonko | pipe organ (stack of partials over a 16' sub-octave, church reverb, no vibrato) | *Vila Velebita* (anonymous, 1882; from a public-domain MIDI transcription) |
-| Klapa Zvonko | `klapa` | Zvonko | three glottal voices ±10 cents and a bass an octave down, light reverb, vibrato 5.5 Hz ±30 cents | the same |
-| Stojan Trubač | `trubac` | Stojan | sawtooth through a tanh that saturates with level (the lips), slow attack, vibrato 6 Hz ±25 cents setting in late | *Kreće se lađa francuska* (Milosavljević d. 1944) |
-| Stojan Harmonikaš | `harmonikas` | Stojan | two sawtooth reeds, the second 14 cents sharp (musette beating), no vibrato | the same |
-| Mirsad Sevdalija | `sevdalija` | Mirsad | the glottal voice, breathier, F5 pulled down to 3.1 kHz and narrowed (singer's formant, DECtalk's f5/b5 trick), vibrato 5.5 Hz ±60 cents, 90 ms portamento | *Kad ja pođoh na Bembašu* (traditional, printed 1906) |
-| Mirsad Sazlija | `sazlija` | Mirsad | sawtooth with a chorus and a sub-octave, plucked: 350 ms decay, re-picked every eighth note (tremolo), brightness falling as it decays | the same |
-| Zvonko Bećarac | `becarac` | Zvonko | dry voice, vibrato 6 Hz ±20 cents, 30 ms portamento | the bećarac tune of Slavonia (traditional; 2/4, quarter = 75), as transcribed for "U mog strica osam kobasica, sedam prži, osmu strina drži": two ten-syllable lines, so any bećarac couplet fits |
-| Zvonko Pjevač, Stojan Pevač, Mirsad Solist | `pjevac`, `pevac`, `solist` | each voice | the voice itself ("dry": its own source and phonation, no chorus or hall), vibrato 5.5 Hz ±40 cents, 60 ms portamento; the song transposed in whole semitones so the middle of its range lies five semitones above the voice's speaking pitch (Zvonko then sings *Vila Velebita* between G2 and G3, 98-196 Hz) | the song of the language |
+| Orguljaš - Vila Velebita | `orguljas` | Zvonko | pipe organ (stack of partials over a 16' sub-octave, church reverb, no vibrato) | *Vila Velebita* (anonymous, 1882; from a public-domain MIDI transcription) |
+| Dalmacija Klapa | `dalmacija_klapa` (was `klapa`) | Zvonko | three glottal voices ±10 cents and a bass an octave down, light reverb, vibrato 5.5 Hz ±30 cents | the same |
+| Trubač - Kreće se lađa francuska | `trubac` | Stojan | sawtooth through a tanh that saturates with level (the lips), slow attack, vibrato 6 Hz ±25 cents setting in late | *Kreće se lađa francuska* (Milosavljević d. 1944) |
+| Harmonikaš - Kreće se lađa francuska | `harmonikas` | Stojan | two sawtooth reeds, the second 14 cents sharp (musette beating), no vibrato | the same |
+| Sevdalija - Kad ja pođoh na Bembašu | `sevdalija` | Mirsad | the glottal voice, breathier, F5 pulled down to 3.1 kHz and narrowed (singer's formant, DECtalk's f5/b5 trick), vibrato 5.5 Hz ±60 cents, 90 ms portamento | *Kad ja pođoh na Bembašu* (traditional, printed 1906) |
+| Sazlija - Kad ja pođoh na Bembašu | `sazlija` | Mirsad | sawtooth with a chorus and a sub-octave, plucked: 350 ms decay, re-picked every eighth note (tremolo), brightness falling as it decays | the same |
+| Bećarac | `becarac` | Zvonko | dry voice, vibrato 6 Hz ±20 cents, 30 ms portamento | the bećarac tune of Slavonia (traditional; 2/4, quarter = 75), as transcribed for "U mog strica osam kobasica, sedam prži, osmu strina drži": two ten-syllable lines, so any bećarac couplet fits |
+| Lika Velebit, Solunac, Sarajevo Bembaša | `lika_velebit` (was `pjevac`), `solunac` (was `pevac`), `sarajevo_bembasa` (was `solist`) | Zvonko, Stojan, Mirsad | the voice itself ("dry": its own source and phonation, no chorus or hall), vibrato 5.5 Hz ±40 cents, 60 ms portamento; the song transposed in whole semitones so the middle of its range lies five semitones above the voice's speaking pitch (Zvonko then sings *Vila Velebita* between G2 and G3, 98-196 Hz) | the song of the base voice |
 
 The songs were chosen as the best-known songs of each country whose words
 and tune are both out of copyright (an agent checked the authors' dates
@@ -3615,8 +3630,8 @@ Croatian speaker 11.1%; eSpeak NG Croatian 23.2%; Josip 33.1%.
   "English words"). Other languages' words get the native rules.
 - The spelling dictionary (`data/dictionary/spelling.json`) names digits,
   punctuation and symbols in Croatian for all voices (*točka*, not *tačka*).
-  Letters are named by the front end in the language of the voice
-  (`formant::letter_name`), or spelled by their sounds
+  Letters are named by the front end in the language being spoken, which
+  any voice can switch (`formant::letter_name`), or spelled by their sounds
   (`Frontend::letter_sound`: an `Utterance` with `isolated_sound` set, whose
   durations the builder fixes: the consonant and a neutral release vowel
   after it, "bə", "sə", as eSpeak's Croatian voice sounds letters out). The

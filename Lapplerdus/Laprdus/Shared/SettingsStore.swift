@@ -6,6 +6,7 @@ import Foundation
 
 enum SettingsKey {
     static let defaultVoice = "default_voice"
+    static let language = "language"
     static let speed = "speed"
     static let pitch = "pitch"
     static let volume = "volume"
@@ -29,6 +30,9 @@ enum SettingsKey {
 /// by the speech extension (which has no UI and no observation needs).
 struct SettingsSnapshot: Sendable {
     var defaultVoice = VoiceCatalog.defaultVoiceID
+    /// Language every voice speaks in the app: "hr-HR", "sr-RS" or "bs-BA".
+    /// The system voices take their language from the voice the host picked.
+    var language = VoiceCatalog.defaultLanguageCode
     var speed: Float = 1.0
     var pitch: Float = 1.0
     var volume: Float = 1.0
@@ -61,6 +65,7 @@ struct SettingsSnapshot: Sendable {
     static func load(from defaults: UserDefaults = AppGroup.defaults) -> SettingsSnapshot {
         var snapshot = SettingsSnapshot()
         if let value = defaults.string(forKey: SettingsKey.defaultVoice) { snapshot.defaultVoice = value }
+        if let value = defaults.string(forKey: SettingsKey.language) { snapshot.language = value }
         if defaults.object(forKey: SettingsKey.speed) != nil { snapshot.speed = defaults.float(forKey: SettingsKey.speed) }
         if defaults.object(forKey: SettingsKey.pitch) != nil { snapshot.pitch = defaults.float(forKey: SettingsKey.pitch) }
         if defaults.object(forKey: SettingsKey.volume) != nil { snapshot.volume = defaults.float(forKey: SettingsKey.volume) }
@@ -94,9 +99,13 @@ struct SettingsSnapshot: Sendable {
     /// be corrupted); out-of-range or non-finite values would break the
     /// settings sliders even though the engine clamps its own parameters.
     private mutating func sanitize() {
+        // A voice saved under its pre-2.0 id ("djed", "pjevac") is the
+        // renamed voice, not a reason to fall back to the default.
+        defaultVoice = VoiceCatalog.canonicalVoiceID(defaultVoice)
         if VoiceCatalog.voice(withID: defaultVoice) == nil {
             defaultVoice = VoiceCatalog.defaultVoiceID
         }
+        language = Language.language(matching: language)?.code ?? VoiceCatalog.defaultLanguageCode
         // The recorded voices stop at 0.5x and 2.0x, the formant voices go
         // from 0.25x to 4.0x.
         let range = VoiceCatalog.speedPitchRange(forVoice: defaultVoice)
@@ -127,6 +136,7 @@ final class SettingsStore: ObservableObject {
     private let defaults: UserDefaults
 
     @Published var defaultVoice: String { didSet { defaults.set(defaultVoice, forKey: SettingsKey.defaultVoice) } }
+    @Published var language: String { didSet { defaults.set(language, forKey: SettingsKey.language) } }
     @Published var speed: Float { didSet { defaults.set(speed, forKey: SettingsKey.speed) } }
     @Published var pitch: Float { didSet { defaults.set(pitch, forKey: SettingsKey.pitch) } }
     @Published var volume: Float { didSet { defaults.set(volume, forKey: SettingsKey.volume) } }
@@ -149,6 +159,7 @@ final class SettingsStore: ObservableObject {
         self.defaults = defaults
         let snapshot = SettingsSnapshot.load(from: defaults)
         defaultVoice = snapshot.defaultVoice
+        language = snapshot.language
         speed = snapshot.speed
         pitch = snapshot.pitch
         volume = snapshot.volume
@@ -171,6 +182,7 @@ final class SettingsStore: ObservableObject {
     var snapshot: SettingsSnapshot {
         SettingsSnapshot(
             defaultVoice: defaultVoice,
+            language: language,
             speed: speed,
             pitch: pitch,
             volume: volume,

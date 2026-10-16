@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <memory>
 #include <mutex>
+#include <optional>
 
 #include "../../core/tts_engine.hpp"
 #include "../../core/voice_registry.hpp"
@@ -29,9 +30,15 @@ struct NativeEngine {
     std::mutex mutex;
     std::unique_ptr<laprdus::TTSEngine> engine;
     // The current voice's base_pitch, kept across parameter changes so the
-    // derived voices (detence=1.5, baba=1.2, djed=0.75) keep their character
+    // derived voices (detence=1.5, baba=1.2, djedo=0.75) keep their character
     // pitch when Android TTS requests pitch changes
     float voice_base_pitch = 1.0f;
+    // The voice loaded at the moment (canonical id), or null before the first.
+    const laprdus::VoiceDefinition* voice = nullptr;
+    // The language the host chose (nativeSetLanguage). It sticks across
+    // voice loads: every voice speaks every language. Without one, each
+    // voice speaks its native language.
+    std::optional<laprdus::VoiceLanguage> chosen_language;
 };
 
 // One JNI call's hold on a native engine: locked for the whole call.
@@ -86,7 +93,7 @@ jobject createVoiceInfoObject(JNIEnv* env, const laprdus::VoiceDefinition* voice
     }
 
     jmethodID constructor = env->GetMethodID(voiceInfoClass, "<init>",
-        "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;F)V");
+        "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;FLjava/lang/String;Z)V");
     if (!constructor) {
         LOGE("Failed to find VoiceInfo constructor");
         return nullptr;
@@ -98,15 +105,18 @@ jobject createVoiceInfoObject(JNIEnv* env, const laprdus::VoiceDefinition* voice
     jstring gender = env->NewStringUTF(laprdus::voice_gender_string(voice->gender));
     jstring age = env->NewStringUTF(laprdus::voice_age_string(voice->age));
     jfloat basePitch = voice->base_pitch;
+    jstring baseVoiceId = voice->base_voice_id ? env->NewStringUTF(voice->base_voice_id) : nullptr;
+    jboolean isFormant = laprdus::VoiceRegistry::is_formant_voice(voice) ? JNI_TRUE : JNI_FALSE;
 
     jobject voiceInfo = env->NewObject(voiceInfoClass, constructor,
-        id, displayName, languageCode, gender, age, basePitch);
+        id, displayName, languageCode, gender, age, basePitch, baseVoiceId, isFormant);
 
     env->DeleteLocalRef(id);
     env->DeleteLocalRef(displayName);
     env->DeleteLocalRef(languageCode);
     env->DeleteLocalRef(gender);
     env->DeleteLocalRef(age);
+    if (baseVoiceId) env->DeleteLocalRef(baseVoiceId);
 
     return voiceInfo;
 }
@@ -146,7 +156,11 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeShutdown(
     LOGI("Shutting down LaprdusTTS native engine");
     // Releases the voice and every setting; a fresh engine without a voice
     // takes its place, so the object stays usable for the next voice.
-    if (engine.native()) engine.native()->engine = std::make_unique<laprdus::TTSEngine>();
+    if (NativeEngine* native = engine.native()) {
+        native->engine = std::make_unique<laprdus::TTSEngine>();
+        native->voice = nullptr;
+        native->chosen_language.reset();
+    }
 }
 
 JNIEXPORT jboolean JNICALL
@@ -411,7 +425,13 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeGetVoiceInfo(
     return createVoiceInfoObject(env, voice);
 }
 
-JNIEXPORT jboolean JNICALL
+/**
+ * Loads a voice by id (the ids of earlier versions are accepted) and
+ * returns its canonical id, or null when it cannot be loaded. The language
+ * chosen with nativeSetLanguage() is applied after the load; without one
+ * the voice speaks its native language.
+ */
+JNIEXPORT jstring JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetVoice(
     JNIEnv* env,
     jobject thiz,
@@ -422,94 +442,88 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetVoice(
     (void)thiz;
     LockedEngine engine(handle);
     NativeEngine* native = engine.native();
-    if (!native) return JNI_FALSE;
+    if (!native) return nullptr;
 
     std::string id = jstringToString(env, voiceId);
     if (id.empty()) {
         LOGE("Invalid voice ID");
-        return JNI_FALSE;
+        return nullptr;
     }
 
-    // Find voice definition
+    // Find voice definition (an old id resolves to the renamed voice)
     const laprdus::VoiceDefinition* voice = laprdus::VoiceRegistry::find_by_id(id.c_str());
     if (!voice) {
         LOGE("Voice not found: %s", id.c_str());
-        return JNI_FALSE;
+        return nullptr;
     }
 
-    // Formant voices are synthesized by rule: there is no asset to load
-    if (laprdus::VoiceRegistry::is_formant_voice(voice)) {
-        if (!native->engine) {
-            native->engine = std::make_unique<laprdus::TTSEngine>();
-        }
-        if (!native->engine->initialize_formant(voice->id)) {
-            LOGE("Failed to initialize formant voice: %s", id.c_str());
-            return JNI_FALSE;
-        }
-
-        native->voice_base_pitch = voice->base_pitch;
-        laprdus::VoiceParams params = native->engine->voice_params();
-        params.pitch = native->voice_base_pitch;
-        native->engine->set_voice_params(params);
-
-        LOGI("Formant voice set successfully: %s", id.c_str());
-        return JNI_TRUE;
-    }
-
-    // Get the physical voice (for derived voices)
-    const laprdus::VoiceDefinition* physicalVoice = laprdus::VoiceRegistry::get_physical_voice(voice);
-    if (!physicalVoice) {
-        LOGE("Failed to get physical voice for: %s", id.c_str());
-        return JNI_FALSE;
-    }
-
-    // Get asset manager
-    AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
-    if (!mgr) {
-        LOGE("Failed to get asset manager");
-        return JNI_FALSE;
-    }
-
-    // Get data filename from voice registry
-    const char* dataFilename = laprdus::VoiceRegistry::get_data_filename(voice);
-    if (!dataFilename) {
-        LOGE("No data filename for voice: %s", id.c_str());
-        return JNI_FALSE;
-    }
-
-    // Build full asset path with voices/ subdirectory prefix
-    std::string assetPath = std::string("voices/") + dataFilename;
-
-    // Open asset
-    AAsset* asset = AAssetManager_open(mgr, assetPath.c_str(), AASSET_MODE_BUFFER);
-    if (!asset) {
-        LOGE("Failed to open voice asset: %s", assetPath.c_str());
-        return JNI_FALSE;
-    }
-
-    // Get data
-    size_t size = AAsset_getLength(asset);
-    const uint8_t* data = static_cast<const uint8_t*>(AAsset_getBuffer(asset));
-
-    if (!data || size == 0) {
-        AAsset_close(asset);
-        LOGE("Voice asset is empty: %s", dataFilename);
-        return JNI_FALSE;
-    }
-
-    // Initialize or reinitialize engine with new voice data
     if (!native->engine) {
         native->engine = std::make_unique<laprdus::TTSEngine>();
     }
 
-    bool success = native->engine->initialize_from_memory(data, size, {});
-    AAsset_close(asset);
+    // Formant voices are synthesized by rule: there is no asset to load
+    if (laprdus::VoiceRegistry::is_formant_voice(voice)) {
+        if (!native->engine->initialize_formant(voice->id)) {
+            LOGE("Failed to initialize formant voice: %s", id.c_str());
+            return nullptr;
+        }
+    } else {
+        // Get the physical voice (for derived voices)
+        const laprdus::VoiceDefinition* physicalVoice = laprdus::VoiceRegistry::get_physical_voice(voice);
+        if (!physicalVoice) {
+            LOGE("Failed to get physical voice for: %s", id.c_str());
+            return nullptr;
+        }
 
-    if (!success) {
-        LOGE("Failed to load voice data: %s", dataFilename);
-        return JNI_FALSE;
+        // Get asset manager
+        AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
+        if (!mgr) {
+            LOGE("Failed to get asset manager");
+            return nullptr;
+        }
+
+        // Get data filename from voice registry
+        const char* dataFilename = laprdus::VoiceRegistry::get_data_filename(voice);
+        if (!dataFilename) {
+            LOGE("No data filename for voice: %s", id.c_str());
+            return nullptr;
+        }
+
+        // Build full asset path with voices/ subdirectory prefix
+        std::string assetPath = std::string("voices/") + dataFilename;
+
+        // Open asset
+        AAsset* asset = AAssetManager_open(mgr, assetPath.c_str(), AASSET_MODE_BUFFER);
+        if (!asset) {
+            LOGE("Failed to open voice asset: %s", assetPath.c_str());
+            return nullptr;
+        }
+
+        // Get data
+        size_t size = AAsset_getLength(asset);
+        const uint8_t* data = static_cast<const uint8_t*>(AAsset_getBuffer(asset));
+
+        if (!data || size == 0) {
+            AAsset_close(asset);
+            LOGE("Voice asset is empty: %s", dataFilename);
+            return nullptr;
+        }
+
+        // Initialize or reinitialize engine with new voice data
+        bool success = native->engine->initialize_from_memory(data, size, {});
+        AAsset_close(asset);
+
+        if (!success) {
+            LOGE("Failed to load voice data: %s", dataFilename);
+            return nullptr;
+        }
     }
-    native->engine->set_language(voice->language);
+
+    // The language: the host's choice if it made one, else the voice's own.
+    // initialize_formant() starts in the native language; a recorded voice
+    // keeps whatever the engine spoke before, so both are set explicitly.
+    native->voice = voice;
+    native->engine->set_language(native->chosen_language.value_or(voice->language));
 
     // Store and apply voice's base pitch for derived voices
     // This base_pitch defines the voice character (e.g., detence=1.5 for child voice)
@@ -521,11 +535,81 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetVoice(
     native->engine->set_voice_params(params);
 
     if (voice->base_pitch != 1.0f) {
-        LOGI("Applied base pitch %.2f for derived voice: %s", voice->base_pitch, id.c_str());
+        LOGI("Applied base pitch %.2f for derived voice: %s", voice->base_pitch, voice->id);
     }
 
-    LOGI("Voice set successfully: %s", id.c_str());
+    LOGI("Voice set successfully: %s (language %s)", voice->id,
+         laprdus::voice_language_code(native->engine->language()));
+    return env->NewStringUTF(voice->id);
+}
+
+// =============================================================================
+// Language Methods
+// =============================================================================
+
+/**
+ * Chooses the language every voice speaks from now on: "hr", "sr", "bs",
+ * "hr-HR", "hrv", "srp", "bos", "Croatian", ... (see parse_voice_language).
+ * Null or an empty tag goes back to each voice's native language. Returns
+ * false for a tag that is not one of the three languages.
+ */
+JNIEXPORT jboolean JNICALL
+Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetLanguage(
+    JNIEnv* env,
+    jobject thiz,
+    jlong handle,
+    jstring tag) {
+
+    (void)thiz;
+    LockedEngine engine(handle);
+    NativeEngine* native = engine.native();
+    if (!native) return JNI_FALSE;
+
+    std::string text = jstringToString(env, tag);
+    if (text.empty()) {
+        native->chosen_language.reset();
+        if (native->engine && native->voice) {
+            native->engine->set_language(native->voice->language);
+        }
+        return JNI_TRUE;
+    }
+
+    laprdus::VoiceLanguage language;
+    if (!laprdus::parse_voice_language(text.c_str(), &language)) {
+        LOGE("Unknown language: %s", text.c_str());
+        return JNI_FALSE;
+    }
+    native->chosen_language = language;
+    if (native->engine && native->engine->is_initialized()) {
+        native->engine->set_language(language);
+    }
     return JNI_TRUE;
+}
+
+/**
+ * The language spoken now, as "hr-HR", "sr-RS" or "bs-BA": the chosen one,
+ * else the loaded voice's native one, else Croatian.
+ */
+JNIEXPORT jstring JNICALL
+Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeGetLanguage(
+    JNIEnv* env,
+    jobject thiz,
+    jlong handle) {
+
+    (void)thiz;
+    LockedEngine engine(handle);
+    NativeEngine* native = engine.native();
+    laprdus::VoiceLanguage language = laprdus::VoiceLanguage::Croatian;
+    if (native) {
+        if (native->engine && native->engine->is_initialized()) {
+            language = native->engine->language();
+        } else if (native->chosen_language) {
+            language = *native->chosen_language;
+        } else if (native->voice) {
+            language = native->voice->language;
+        }
+    }
+    return env->NewStringUTF(laprdus::voice_language_code(language));
 }
 
 // =============================================================================

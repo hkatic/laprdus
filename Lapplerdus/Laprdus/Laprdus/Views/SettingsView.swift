@@ -29,7 +29,23 @@ struct SettingsView: View {
         )
     }
 
-    /// Whether the selected voice is a formant voice (Zvonko, Stojan, Mirsad).
+    /// The language picker binds to the persisted language the same way;
+    /// selectLanguage persists only on success.
+    private var selectedLanguage: Binding<String> {
+        Binding(
+            get: { settings.language },
+            set: { newValue in
+                guard newValue != settings.language else { return }
+                Task {
+                    await model.selectLanguage(newValue)
+                }
+            }
+        )
+    }
+
+    /// Whether the selected voice is synthesized by rule (Zvonko, Stojan,
+    /// Mirsad and the singing voices): those take the wider rate and pitch
+    /// ranges and finer slider steps.
     private var isFormantVoice: Bool {
         VoiceCatalog.isFormantVoice(settings.defaultVoice)
     }
@@ -74,6 +90,18 @@ struct SettingsView: View {
                 Text("Voice")
             }
             .accessibilityHint(Text("Select voice for speech synthesis"))
+
+            // Every voice speaks every language; the language is chosen
+            // here, separately from the voice.
+            Picker(selection: selectedLanguage) {
+                ForEach(Language.all) { language in
+                    Text(language.localizedName)
+                        .tag(language.code)
+                }
+            } label: {
+                Text("Language")
+            }
+            .accessibilityHint(Text("Select the language spoken by every voice"))
 
             // Voice selection errors must be visible on this tab; the Main
             // tab's error area is not on screen while Settings is active.

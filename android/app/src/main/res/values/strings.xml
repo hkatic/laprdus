@@ -13,6 +13,7 @@
     <string name="stop_button">Stop</string>
     <string name="loading">Loading…</string>
     <string name="select_voice">Select voice</string>
+    <string name="language_label">Language</string>
 
     <!-- Language names -->
     <string name="language_croatian">Croatian</string>
@@ -25,6 +26,9 @@
     <string name="age_child">Child</string>
     <string name="age_adult">Adult</string>
     <string name="age_senior">Senior</string>
+    <string name="voice_kind_recorded">recorded voice</string>
+    <string name="voice_kind_formant">synthesized by rule</string>
+    <string name="voice_kind_singing">singing voice</string>
 
     <!-- Settings screen -->
     <string name="settings_title">Settings</string>
@@ -44,7 +48,7 @@
     <string name="setting_force_volume_title">Force Laprdus speech volume</string>
     <string name="setting_force_volume_subtitle">Use Laprdus volume settings instead of application settings</string>
     <string name="setting_force_language_title">Force language</string>
-    <string name="setting_force_language_subtitle">Use selected language regardless of system settings</string>
+    <string name="setting_force_language_subtitle">Always speak the language chosen above, ignoring the language apps request</string>
 
     <!-- Emoji settings -->
     <string name="setting_emoji_enabled_title">Enable emoji reading</string>
@@ -91,6 +95,7 @@
 
     <!-- Control descriptions for accessibility -->
     <string name="cd_voice_dropdown_desc">Select voice for speech synthesis</string>
+    <string name="cd_language_dropdown_desc">Select the language to speak</string>
     <string name="cd_dict_type_dropdown_desc">Select dictionary type</string>
     <string name="cd_restore_speed_desc">Sets speech rate to default value</string>
     <string name="cd_restore_pitch_desc">Sets speech pitch to default value</string>

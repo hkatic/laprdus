@@ -3,7 +3,7 @@
 Name:           laprdus
 Version:        2.0.0
 Release:        1%{?dist}
-Summary:        Croatian/Serbian Text-to-Speech Engine
+Summary:        Croatian/Serbian/Bosnian Text-to-Speech Engine
 
 License:        GPL-3.0-or-later
 URL:            https://hrvojekatic.com/laprdus
@@ -19,12 +19,14 @@ BuildRequires:  glib2-devel
 Requires:       speech-dispatcher
 
 %description
-LaprdusTTS is a concatenative text-to-speech engine supporting Croatian
-and Serbian languages. It provides natural-sounding speech synthesis
-using pre-recorded phoneme samples.
+LaprdusTTS is a text-to-speech engine for Croatian, Serbian and Bosnian,
+with voices synthesized by rule (formant synthesis) and voices rendered
+from pre-recorded phoneme samples.
 
 Features:
-* Multiple voices: Josip (Croatian), Vlado (Serbian), and derived voices
+* Voices: Josip, Vlado, Detence, Baba, Đedo, Zvonko (default), Stojan,
+  Mirsad and ten singing voices; every voice speaks Croatian, Serbian
+  and Bosnian
 * Speech Dispatcher integration for use with Orca screen reader
 * Command-line utility for terminal-based speech synthesis
 * Adjustable speech rate, pitch, and volume
@@ -37,8 +39,8 @@ Requires:       %{name}%{?_isa} = %{version}-%{release}
 
 %description devel
 This package provides the development headers for LaprdusTTS,
-allowing developers to integrate Croatian/Serbian text-to-speech
-into their applications.
+allowing developers to integrate Croatian, Serbian and Bosnian
+text-to-speech into their applications.
 
 %prep
 %autosetup
@@ -112,7 +114,7 @@ if [ -f "$SPEECHD_CONF" ]; then
                 cat >> "$SPEECHD_CONF" << 'EOF'
 
 # BEGIN LAPRDUS TTS
-# LaprdusTTS - Croatian/Serbian Text-to-Speech
+# LaprdusTTS - Croatian/Serbian/Bosnian Text-to-Speech
 AddModule "laprdus" "sd_laprdus" "laprdus.conf"
 LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
@@ -127,7 +129,7 @@ EOF
                 cat >> "$SPEECHD_CONF" << 'EOF'
 
 # BEGIN LAPRDUS TTS
-# LaprdusTTS - Croatian/Serbian Text-to-Speech
+# LaprdusTTS - Croatian/Serbian/Bosnian Text-to-Speech
 LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"
@@ -195,7 +197,9 @@ fi
 %changelog
 * Wed Oct 07 2026 Hrvoje Katic <hrvoje.katic@gmail.com> - 2.0.0-1
 - Laprdus 2.0
-- New formant voices synthesized by rule: Zvonko (Croatian), Stojan (Serbian) and Mirsad (Bosnian), the default voice of each language
+- New formant voices synthesized by rule: Zvonko (the default voice), Stojan and Mirsad, and ten singing voices
+- Every voice speaks Croatian, Serbian and Bosnian: the language is chosen apart from the voice (CLI -L; Speech Dispatcher SET LANGUAGE keeps the voice)
+- Voice ids are plain ASCII (djedo for Đedo); the old ids djed, klapa, pjevac, pevac and solist are still accepted
 - Library SONAME bumped to liblaprdus.so.2
 
 * Sun Feb 08 2026 Hrvoje Katic <hrvoje.katic@gmail.com> - 1.0.0-1

@@ -73,16 +73,42 @@ class LaprdusTTSEngineEndToEndTest {
     }
 
     @Test
-    fun engineExposesAllFiveVoices() {
+    fun engineExposesEveryVoiceInEveryLanguage() {
         val engine = connectEngine()
         assertTrue(engine.setLanguage(CROATIAN) >= 0)
 
         val voices = engine.voices
         assertNotNull("getVoices() must not fail for the connected engine", voices)
         val names = voices!!.map { it.name }
-        for (expected in listOf("josip", "vlado", "detence", "baba", "djed")) {
-            assertTrue("voice '$expected' missing from $names", names.contains(expected))
+        // One system voice per (voice x language): 18 voices in hr, sr and bs
+        assertEquals("54 system voices expected, got $names", 54, names.size)
+        for (id in VOICE_IDS) {
+            for (language in listOf("hr", "sr", "bs")) {
+                assertTrue("voice '$id-$language' missing from $names", names.contains("$id-$language"))
+            }
         }
+        val serbianZvonko = voices.first { it.name == "zvonko-sr" }
+        assertEquals(Locale.forLanguageTag("sr-RS"), serbianZvonko.locale)
+        val bosnianJosip = voices.first { it.name == "josip-bs" }
+        assertEquals(Locale.forLanguageTag("bs-BA"), bosnianJosip.locale)
+    }
+
+    @Test
+    fun defaultVoiceOfEveryLanguageIsTheConfiguredVoice() {
+        val engine = connectEngine()
+
+        assertTrue(engine.setLanguage(SERBIAN) >= 0)
+        val serbian = engine.voice
+        assertNotNull("setLanguage(sr-RS) must select a voice", serbian)
+        assertTrue("the Serbian default is the configured voice in Serbian, got ${serbian!!.name}",
+            serbian.name.endsWith("-sr"))
+
+        assertTrue(engine.setLanguage(CROATIAN) >= 0)
+        val croatian = engine.voice
+        assertNotNull(croatian)
+        assertTrue(croatian!!.name.endsWith("-hr"))
+        // The voice itself does not change with the language
+        assertEquals(serbian.name.removeSuffix("-sr"), croatian.name.removeSuffix("-hr"))
     }
 
     // ==========================================================================
@@ -204,5 +230,13 @@ class LaprdusTTSEngineEndToEndTest {
         const val MIN_WAV_BYTES = 1000L
         val CROATIAN: Locale = Locale("hr", "HR")
         val SERBIAN: Locale = Locale("sr", "RS")
+
+        /** The 18 voice ids of the registry, in its order. */
+        val VOICE_IDS = listOf(
+            "josip", "vlado", "detence", "baba", "djedo",
+            "zvonko", "stojan", "mirsad",
+            "orguljas", "dalmacija_klapa", "trubac", "harmonikas", "sevdalija", "sazlija",
+            "lika_velebit", "solunac", "sarajevo_bembasa", "becarac"
+        )
     }
 }

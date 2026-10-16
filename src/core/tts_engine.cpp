@@ -97,7 +97,7 @@ bool TTSEngine::initialize(const std::string& phoneme_path,
     }
 
     m_impl->formant.reset();
-    m_impl->number_converter.set_dialect(CroatianNumbers::Dialect::Croatian);
+    m_impl->number_converter.set_dialect(number_dialect(m_impl->concat_language));
 
     // Create synthesizer (analyses the recordings)
     m_impl->synthesizer = std::make_unique<AudioSynthesizer>(m_impl->phoneme_data,
@@ -132,7 +132,7 @@ bool TTSEngine::initialize_from_memory(const uint8_t* data, size_t size,
     }
 
     m_impl->formant.reset();
-    m_impl->number_converter.set_dialect(CroatianNumbers::Dialect::Croatian);
+    m_impl->number_converter.set_dialect(number_dialect(m_impl->concat_language));
 
     // Create synthesizer (analyses the recordings)
     m_impl->synthesizer = std::make_unique<AudioSynthesizer>(m_impl->phoneme_data,
@@ -163,22 +163,21 @@ bool TTSEngine::initialize_formant(const char* voice_id) {
     m_impl->synthesizer.reset();
     m_impl->phoneme_data.clear();   // a formant voice needs no recordings
 
-    // Number words follow the voice's language (tisuća / hiljada, ...)
-    switch (voice->language) {
-        case VoiceLanguage::Serbian:
-            m_impl->number_converter.set_dialect(CroatianNumbers::Dialect::Serbian);
-            break;
-        case VoiceLanguage::Bosnian:
-            m_impl->number_converter.set_dialect(CroatianNumbers::Dialect::Bosnian);
-            break;
-        case VoiceLanguage::Croatian:
-        default:
-            m_impl->number_converter.set_dialect(CroatianNumbers::Dialect::Croatian);
-            break;
-    }
+    // Number words follow the language spoken (tisuća / hiljada, ...): the
+    // voice's native one until set_language() asks for another.
+    m_impl->number_converter.set_dialect(number_dialect(voice->language));
 
     m_impl->initialized = true;
     return true;
+}
+
+CroatianNumbers::Dialect TTSEngine::number_dialect(VoiceLanguage language) {
+    switch (language) {
+        case VoiceLanguage::Serbian: return CroatianNumbers::Dialect::Serbian;
+        case VoiceLanguage::Bosnian: return CroatianNumbers::Dialect::Bosnian;
+        case VoiceLanguage::Croatian:
+        default: return CroatianNumbers::Dialect::Croatian;
+    }
 }
 
 void TTSEngine::set_language(VoiceLanguage language) {
@@ -187,6 +186,10 @@ void TTSEngine::set_language(VoiceLanguage language) {
     if (m_impl->synthesizer) {
         m_impl->synthesizer->set_language(language);
     }
+    if (m_impl->formant) {
+        m_impl->formant->set_language(language);
+    }
+    m_impl->number_converter.set_dialect(number_dialect(language));
 }
 
 bool TTSEngine::is_formant() const {

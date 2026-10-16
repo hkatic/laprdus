@@ -79,16 +79,28 @@ typedef struct LaprdusVoiceParams {
 // =============================================================================
 
 typedef struct LaprdusVoiceInfo {
-    const char* id;              // Internal ID: "josip", "vlado", etc.
-    const char* display_name;    // Display name: "Laprdus Josip (Croatian)"
-    const char* language_code;   // Language code: "hr-HR", "sr-RS" or "bs-BA"
-    uint16_t language_lcid;      // Windows LCID: 0x041A, 0x081A or 0x141A
+    const char* id;              // Internal ID, plain ASCII: "josip", "djedo", "lika_velebit"
+    const char* display_name;    // Name shown to the user: "Josip", "Đedo", "Dalmacija Klapa"
+    const char* language_code;   // Native language: "hr-HR", "sr-RS" or "bs-BA" (every voice speaks all three; see laprdus_set_language)
+    uint16_t language_lcid;      // Windows LCID of the native language: 0x041A, 0x081A or 0x141A
     const char* gender;          // "Male" or "Female"
     const char* age;             // "Child", "Adult", or "Senior"
     float base_pitch;            // Base pitch multiplier (1.0 for normal)
     const char* base_voice_id;   // Base voice ID for derived voices (NULL if physical)
     const char* data_filename;   // Phoneme data file (NULL for formant voices, which need none)
 } LaprdusVoiceInfo;
+
+// =============================================================================
+// Language information
+// =============================================================================
+
+typedef struct LaprdusLanguageInfo {
+    const char* code;            // "hr-HR", "sr-RS", "bs-BA"
+    const char* short_code;      // "hr", "sr", "bs"
+    uint16_t lcid;               // Windows LCID: 0x041A, 0x081A, 0x141A
+    const char* english_name;    // "Croatian", "Serbian", "Bosnian"
+    const char* native_name;     // "Hrvatski", "Srpski", "Bosanski"
+} LaprdusLanguageInfo;
 
 // =============================================================================
 // Lifecycle Functions
@@ -365,11 +377,67 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_voice(
 );
 
 /**
- * Get the currently active voice ID.
+ * Get the currently active voice ID (the canonical id, even when the voice
+ * was set by one of the ids of earlier versions).
  * @param handle Engine handle.
  * @return Voice ID string, or NULL if no voice is set.
  */
 LAPRDUS_API const char* LAPRDUS_CALL laprdus_get_current_voice(LaprdusHandle handle);
+
+/**
+ * Id of the default voice of every language and platform: "zvonko".
+ */
+LAPRDUS_API const char* LAPRDUS_CALL laprdus_get_default_voice(void);
+
+// =============================================================================
+// Language Selection
+// =============================================================================
+//
+// Every voice speaks every language. The language chooses the text front
+// end (letter-to-sound rules, accent lexicon, letter names) and the number
+// words (tisuća / hiljada); the voice chooses the sound. A voice speaks
+// its native language (LaprdusVoiceInfo.language_code) until
+// laprdus_set_language() asks for another; the chosen language then stays
+// across laprdus_set_voice() calls.
+
+/**
+ * Number of languages (3: Croatian, Serbian, Bosnian).
+ */
+LAPRDUS_API uint32_t LAPRDUS_CALL laprdus_get_language_count(void);
+
+/**
+ * Information about a language by index (0 = Croatian, 1 = Serbian,
+ * 2 = Bosnian).
+ * @param index Language index (0 to count-1).
+ * @param out_info Pointer to receive the language information.
+ * @return LAPRDUS_OK on success, error code on failure.
+ */
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_get_language_info(
+    uint32_t index,
+    LaprdusLanguageInfo* out_info
+);
+
+/**
+ * Set the language spoken by the current voice and by every voice set
+ * after it.
+ * @param handle Engine handle.
+ * @param language Language tag or name, in any case: "hr", "hr-HR",
+ *        "hr_HR", "hrv", "sr", "sr-Latn-RS", "srp", "bs", "bs-BA", "bos",
+ *        "Croatian", "hrvatski", ... NULL or "" returns to the voice's
+ *        native language, now and after every later voice change.
+ * @return LAPRDUS_OK, or LAPRDUS_ERROR_INVALID_PARAMETER for an unknown tag.
+ */
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_language(
+    LaprdusHandle handle,
+    const char* language
+);
+
+/**
+ * Language spoken at the moment, as "hr-HR", "sr-RS" or "bs-BA".
+ * @param handle Engine handle.
+ * @return Language code, or NULL for an invalid handle.
+ */
+LAPRDUS_API const char* LAPRDUS_CALL laprdus_get_language(LaprdusHandle handle);
 
 // =============================================================================
 // Synthesis Functions
@@ -555,7 +623,7 @@ LAPRDUS_API void LAPRDUS_CALL laprdus_clear_dictionary(LaprdusHandle handle);
  * Load the bundled spelling dictionary from a JSON file (replaces every
  * entry, the user's too). It names digits, punctuation and symbols for
  * spelling mode ("." -> "točka"); the letters of the alphabet are named by
- * the engine itself, in the language of the voice ("b" -> "be", Serbian
+ * the engine itself, in the language spoken (laprdus_set_language; "b" -> "be", Serbian
  * "š" -> "ša"), or spelled by their sounds (laprdus_set_spelling_mode).
  * @param handle Engine handle.
  * @param dictionary_path Path to the spelling dictionary JSON file.
@@ -721,7 +789,7 @@ LAPRDUS_API void LAPRDUS_CALL laprdus_clear_emoji_dictionary(LaprdusHandle handl
  *   { "entries": [ { "word": "kontr'o:l*" }, { "word": "sign'a:l|a|u|om" },
  *                  { "verb": "ur'e:d=i<p" }, { "verb": "dijel:i", "language": "hr" } ] }
  * "word" is a word, a stem (*) or a paradigm (|); "verb" a whole stem or a
- * root with a long ije; "language" (hr, sr, bs) limits an entry to one voice.
+ * root with a long ije; "language" (hr, sr, bs) limits an entry to one language (laprdus_set_language).
  * Only the formant voices (Zvonko, Stojan, Mirsad and the singing presets)
  * use it; it is kept across voice changes. The file is parsed once; a bad
  * entry is skipped, and laprdus_get_accent_lexicon_report() tells what was
@@ -870,7 +938,7 @@ typedef enum {
 
 /**
  * Choose whether spelled letters are read by their names (the default) or
- * by their sounds. Letter names follow the language of the voice. The
+ * by their sounds. Letter names follow the language spoken. The
  * foreign letters q, w, x and y, digits, punctuation and symbols are read by
  * name in both modes.
  * @param handle Engine handle.

@@ -57,6 +57,7 @@ import androidx.compose.material.icons.filled.ChevronRight
 import com.hrvojekatic.laprdus.AboutActivity
 import com.hrvojekatic.laprdus.DictionaryActivity
 import com.hrvojekatic.laprdus.R
+import com.hrvojekatic.laprdus.tts.Language
 import com.hrvojekatic.laprdus.tts.VoiceInfo
 import com.hrvojekatic.laprdus.viewmodel.SettingsUiState
 import androidx.compose.ui.platform.LocalContext
@@ -75,6 +76,7 @@ fun SettingsScreen(
     uiState: SettingsUiState,
     onNavigateBack: () -> Unit,
     onVoiceSelected: (String) -> Unit,
+    onLanguageSelected: (String) -> Unit,
     onSpeedChange: (Float) -> Unit,
     onPitchChange: (Float) -> Unit,
     onVolumeChange: (Float) -> Unit,
@@ -184,6 +186,14 @@ fun SettingsScreen(
                         voices = uiState.availableVoices,
                         selectedVoiceId = uiState.selectedVoiceId,
                         onVoiceSelected = onVoiceSelected
+                    )
+                }
+
+                // Language Selector (every voice speaks every language)
+                item {
+                    LanguageSettingItem(
+                        selectedLanguage = uiState.language,
+                        onLanguageSelected = onLanguageSelected
                     )
                 }
 
@@ -538,10 +548,10 @@ fun VoiceSettingItem(
     onVoiceSelected: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val selectedVoice = voices.find { it.id == selectedVoiceId }
+    val selectedVoice = voices.find { it.id == VoiceInfo.normalizeId(selectedVoiceId) }
     val voiceSelectorLabel = stringResource(R.string.voice_label)
     val selectVoiceText = stringResource(R.string.select_voice)
-    val selectedVoiceName = selectedVoice?.localizedDisplayName ?: selectVoiceText
+    val selectedVoiceName = selectedVoice?.displayName ?: selectVoiceText
     val dropdownDesc = stringResource(R.string.cd_voice_dropdown_desc)
 
     // Row wrapper with Role.DropdownList for native TalkBack role announcement
@@ -591,13 +601,13 @@ fun VoiceSettingItem(
                 voices.forEach { voice ->
                     // Capture composable values before entering non-composable lambda
                     val voiceDescription = getVoiceDescription(voice)
-                    val itemContentDescription = "${voice.localizedDisplayName}, $voiceDescription"
+                    val itemContentDescription = "${voice.displayName}, $voiceDescription"
 
                     DropdownMenuItem(
                         text = {
                             Column {
                                 Text(
-                                    text = voice.localizedDisplayName,
+                                    text = voice.displayName,
                                     style = MaterialTheme.typography.bodyLarge
                                 )
                                 Text(
@@ -622,15 +632,11 @@ fun VoiceSettingItem(
 }
 
 /**
- * Get a user-friendly description for a voice.
+ * Get a user-friendly description for a voice: gender, age and kind. No
+ * language: every voice speaks every language (see [LanguageSettingItem]).
  */
 @Composable
 private fun getVoiceDescription(voice: VoiceInfo): String {
-    val language = when {
-        voice.isCroatian -> stringResource(R.string.language_croatian)
-        voice.isBosnian -> stringResource(R.string.language_bosnian)
-        else -> stringResource(R.string.language_serbian)
-    }
     val ageDesc = when (voice.age) {
         "Child" -> stringResource(R.string.age_child)
         "Adult" -> stringResource(R.string.age_adult)
@@ -642,7 +648,103 @@ private fun getVoiceDescription(voice: VoiceInfo): String {
     } else {
         stringResource(R.string.gender_female)
     }
-    return "$language - $genderDesc, $ageDesc"
+    val kind = when {
+        voice.isSingingVoice -> stringResource(R.string.voice_kind_singing)
+        voice.isFormantVoice -> stringResource(R.string.voice_kind_formant)
+        else -> stringResource(R.string.voice_kind_recorded)
+    }
+    return "$genderDesc, $ageDesc, $kind"
+}
+
+/**
+ * Language selector dropdown for settings: Croatian, Serbian or Bosnian,
+ * spoken by whichever voice is selected.
+ *
+ * Accessibility for TalkBack: the same pattern as [VoiceSettingItem].
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LanguageSettingItem(
+    selectedLanguage: String,
+    onLanguageSelected: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val languageSelectorLabel = stringResource(R.string.language_label)
+    val selectedLanguageName = languageName(selectedLanguage)
+    val dropdownDesc = stringResource(R.string.cd_language_dropdown_desc)
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+            .semantics(mergeDescendants = true) {
+                isTraversalGroup = true
+                contentDescription = languageSelectorLabel
+                stateDescription = selectedLanguageName
+            }
+            .clickable(
+                role = Role.DropdownList,
+                onClickLabel = dropdownDesc
+            ) { expanded = true }
+    ) {
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = it },
+            modifier = Modifier.clearAndSetSemantics { }
+        ) {
+            OutlinedTextField(
+                value = selectedLanguageName,
+                onValueChange = {},
+                readOnly = true,
+                label = {
+                    Text(
+                        text = languageSelectorLabel,
+                        modifier = Modifier.clearAndSetSemantics { }
+                    )
+                },
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                },
+                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                    .clearAndSetSemantics { }
+            )
+
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                Language.ALL.forEach { language ->
+                    val name = languageName(language)
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = name,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        },
+                        onClick = {
+                            onLanguageSelected(language)
+                            expanded = false
+                        },
+                        modifier = Modifier.semantics {
+                            contentDescription = name
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** The localized name of a language code ("hr", "sr", "bs"). */
+@Composable
+private fun languageName(language: String): String = when (language) {
+    Language.SERBIAN -> stringResource(R.string.language_serbian)
+    Language.BOSNIAN -> stringResource(R.string.language_bosnian)
+    else -> stringResource(R.string.language_croatian)
 }
 
 /**

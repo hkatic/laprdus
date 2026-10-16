@@ -9,6 +9,7 @@ import com.hrvojekatic.laprdus.BuildConfig
 import com.hrvojekatic.laprdus.audio.AudioPlayer
 import com.hrvojekatic.laprdus.data.DictionaryRepository
 import com.hrvojekatic.laprdus.data.SettingsRepository
+import com.hrvojekatic.laprdus.tts.Language
 import com.hrvojekatic.laprdus.tts.LaprdusTTS
 import com.hrvojekatic.laprdus.tts.VoiceInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -34,6 +35,8 @@ data class TTSUiState(
     val isPlaying: Boolean = false,
     val inputText: String = "Dobar dan. Ja sam Laprdus, rođen sam 2026. godine, i drago mi je da se možemo upoznati! 😁\nKako si ti? ❤\n",
     val selectedVoiceId: String = SettingsRepository.DEFAULT_VOICE,
+    /** The language the preview speaks ("hr", "sr" or "bs"), from the settings. */
+    val language: String = SettingsRepository.DEFAULT_LANGUAGE,
     val availableVoices: List<VoiceInfo> = emptyList(),
     val speed: Float = 1.0f,
     val pitch: Float = 1.0f,
@@ -108,6 +111,8 @@ class TTSViewModel @Inject constructor(
 
             // Apply advanced settings
             tts.applySettings(savedSettings)
+            // The chosen language, whatever the voice
+            tts.setLanguage(savedSettings.language)
 
             // If voice changed, reload it (unless the settings screen already
             // loaded it into this engine)
@@ -128,6 +133,7 @@ class TTSViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     selectedVoiceId = savedSettings.defaultVoice,
+                    language = savedSettings.language,
                     speed = savedSettings.speed,
                     pitch = savedSettings.pitch,
                     volume = savedSettings.volume
@@ -163,6 +169,8 @@ class TTSViewModel @Inject constructor(
             // The advanced settings first: the user dictionaries switch
             // decides what setVoice() loads on top of the bundled dictionaries.
             tts.applySettings(savedSettings)
+            // The language sticks across voice loads
+            tts.setLanguage(savedSettings.language)
 
             // Initialize TTS with default voice using setVoice()
             // This ensures proper loading of voice data AND dictionaries
@@ -183,6 +191,7 @@ class TTSViewModel @Inject constructor(
                         isLoading = false,
                         availableVoices = voices,
                         selectedVoiceId = defaultVoiceId,
+                        language = savedSettings.language,
                         speed = savedSettings.speed,
                         pitch = savedSettings.pitch,
                         volume = savedSettings.volume
@@ -201,6 +210,7 @@ class TTSViewModel @Inject constructor(
                         isLoading = false,
                         availableVoices = voices,
                         selectedVoiceId = defaultVoiceId,
+                        language = savedSettings.language,
                         speed = savedSettings.speed,
                         pitch = savedSettings.pitch,
                         volume = savedSettings.volume,
@@ -262,6 +272,19 @@ class TTSViewModel @Inject constructor(
                 Log.e(TAG, "Error selecting voice", e)
                 _uiState.update { it.copy(error = context.getString(R.string.error_prefix, e.message ?: "")) }
             }
+        }
+    }
+
+    /**
+     * Choose the language of the preview (and of the settings), persisting it.
+     * The voice stays: every voice speaks every language.
+     */
+    fun selectLanguage(language: String) {
+        if (!Language.isValid(language)) return
+        tts.setLanguage(language)
+        _uiState.update { it.copy(language = language) }
+        viewModelScope.launch {
+            settings.setLanguage(language)
         }
     }
 
@@ -336,6 +359,7 @@ class TTSViewModel @Inject constructor(
                 val state = _uiState.value
                 val samples = withContext(Dispatchers.Default) {
                     tts.exclusive {
+                        tts.setLanguage(state.language)
                         tts.speed = state.speed
                         tts.pitch = state.pitch
                         tts.volume = state.volume

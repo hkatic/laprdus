@@ -19,7 +19,9 @@
 #include <cstdlib>
 #include <cstdio>
 #include <string>
+#include <strings.h>   /* strcasecmp, as the module uses it */
 #include <array>
+#include <vector>
 #include <thread>
 #include <chrono>
 
@@ -176,13 +178,23 @@ TEST_CASE("Speech Dispatcher voice selection", "[speechd][integration]") {
         SKIP("Laprdus module not installed");
     }
 
-    SECTION("Croatian voice") {
+    SECTION("Recorded voice by id") {
         auto [code, output] = run_spd_say("-o laprdus -y josip -w \"Dobar dan!\"");
         REQUIRE(code == 0);
     }
 
-    SECTION("Serbian voice") {
-        auto [code, output] = run_spd_say("-o laprdus -y vlado -w \"Zdravo!\"");
+    SECTION("Recorded voice by id, another language") {
+        auto [code, output] = run_spd_say("-o laprdus -y vlado -l hr -w \"Zdravo!\"");
+        REQUIRE(code == 0);
+    }
+
+    SECTION("Voice by display name") {
+        auto [code, output] = run_spd_say("-o laprdus -y \"Dalmacija Klapa\" -w \"Oj!\"");
+        REQUIRE(code == 0);
+    }
+
+    SECTION("Old man by folded name") {
+        auto [code, output] = run_spd_say("-o laprdus -y Djedo -w \"Zdravo!\"");
         REQUIRE(code == 0);
     }
 }
@@ -274,45 +286,200 @@ TEST_CASE("Speech Dispatcher language selection", "[speechd][integration]") {
         auto [code, output] = run_spd_say("-o laprdus -l sr -w \"Srpski\"");
         REQUIRE(code == 0);
     }
+
+    SECTION("Bosnian") {
+        auto [code, output] = run_spd_say("-o laprdus -l bs -w \"Bosanski\"");
+        REQUIRE(code == 0);
+    }
+
+    SECTION("Another language keeps speaking") {
+        auto [code, output] = run_spd_say("-o laprdus -l de -w \"Guten Tag\"");
+        REQUIRE(code == 0);
+    }
 }
 
 // =============================================================================
 // Voice Definition Tests (Unit tests using C API)
 // =============================================================================
 
-TEST_CASE("Module voice list matches C API", "[speechd][voices]") {
-    uint32_t count = laprdus_get_voice_count();
-    REQUIRE(count >= 5);
+namespace {
 
-    std::vector<std::string> expected_voices = {"josip", "vlado", "detence", "baba", "djed"};
-    std::vector<std::string> found_voices;
+// One entry of the module's voice list: name = display name, language =
+// one of the three language codes, variant = the voice id.
+struct ModuleVoice { std::string name; std::string language; std::string variant; };
 
-    for (uint32_t i = 0; i < count; i++) {
+// The list the module builds in build_voice_list(): every voice for every
+// language, in registry order.
+std::vector<ModuleVoice> module_voice_list() {
+    std::vector<ModuleVoice> list;
+    uint32_t voices = laprdus_get_voice_count();
+    uint32_t languages = laprdus_get_language_count();
+    for (uint32_t i = 0; i < voices; i++) {
         LaprdusVoiceInfo info;
-        if (laprdus_get_voice_info(i, &info) == LAPRDUS_OK) {
-            found_voices.push_back(info.id);
+        if (laprdus_get_voice_info(i, &info) != LAPRDUS_OK) continue;
+        for (uint32_t l = 0; l < languages; l++) {
+            LaprdusLanguageInfo lang;
+            if (laprdus_get_language_info(l, &lang) != LAPRDUS_OK) continue;
+            list.push_back({info.display_name, lang.code, info.id});
+        }
+    }
+    return list;
+}
+
+// The module's ascii_fold(): lowercase ASCII, č ć -> c, đ -> dj, š -> s, ž -> z
+std::string ascii_fold(const std::string& in) {
+    std::string out;
+    for (size_t i = 0; i < in.size(); ++i) {
+        unsigned char c = static_cast<unsigned char>(in[i]);
+        unsigned char d = i + 1 < in.size() ? static_cast<unsigned char>(in[i + 1]) : 0;
+        const char* rep = nullptr;
+        if (c == 0xC4) {
+            if (d == 0x8C || d == 0x8D || d == 0x86 || d == 0x87) rep = "c";
+            else if (d == 0x90 || d == 0x91) rep = "dj";
+        } else if (c == 0xC5) {
+            if (d == 0xA0 || d == 0xA1) rep = "s";
+            else if (d == 0xBD || d == 0xBE) rep = "z";
+        }
+        if (rep) { out += rep; ++i; continue; }
+        out += static_cast<char>((c >= 'A' && c <= 'Z') ? c - 'A' + 'a' : c);
+    }
+    return out;
+}
+
+// The module's find_voice_id(): id (old ids too), display name, folded name
+std::string find_voice_id(const std::string& name) {
+    LaprdusVoiceInfo info;
+    if (laprdus_get_voice_info_by_id(name.c_str(), &info) == LAPRDUS_OK) return info.id;
+    std::string wanted = ascii_fold(name);
+    if (laprdus_get_voice_info_by_id(wanted.c_str(), &info) == LAPRDUS_OK) return info.id;
+    for (uint32_t i = 0; i < laprdus_get_voice_count(); i++) {
+        if (laprdus_get_voice_info(i, &info) != LAPRDUS_OK) continue;
+        if (strcasecmp(info.id, name.c_str()) == 0) return info.id;
+        if (strcasecmp(info.display_name, name.c_str()) == 0) return info.id;
+        if (ascii_fold(info.display_name) == wanted) return info.id;
+    }
+    return "";
+}
+
+} // namespace
+
+TEST_CASE("Module voice list has every voice for every language", "[speechd][voices]") {
+    REQUIRE(laprdus_get_voice_count() == 18);
+    REQUIRE(laprdus_get_language_count() == 3);
+
+    std::vector<ModuleVoice> list = module_voice_list();
+    REQUIRE(list.size() == 54);
+
+    // Every voice id appears with hr-HR, sr-RS and bs-BA
+    const char* const ids[] = {"josip", "vlado", "detence", "baba", "djedo",
+                               "zvonko", "stojan", "mirsad",
+                               "orguljas", "dalmacija_klapa", "trubac", "harmonikas",
+                               "sevdalija", "sazlija", "lika_velebit", "solunac",
+                               "sarajevo_bembasa", "becarac"};
+    for (const char* id : ids) {
+        for (const char* language : {"hr-HR", "sr-RS", "bs-BA"}) {
+            INFO(std::string(id) + " " + language);
+            auto it = std::find_if(list.begin(), list.end(), [&](const ModuleVoice& v) {
+                return v.variant == id && v.language == language;
+            });
+            REQUIRE(it != list.end());
         }
     }
 
-    for (const auto& voice : expected_voices) {
-        bool found = std::find(found_voices.begin(), found_voices.end(), voice) != found_voices.end();
-        CAPTURE(voice);
-        REQUIRE(found);
+    // Names are the registry's display names, without "Laprdus" or a language
+    for (const ModuleVoice& voice : list) {
+        INFO(voice.name + " " + voice.language + " " + voice.variant);
+        LaprdusVoiceInfo info;
+        REQUIRE(laprdus_get_voice_info_by_id(voice.variant.c_str(), &info) == LAPRDUS_OK);
+        REQUIRE(voice.name == info.display_name);
+        REQUIRE(voice.name.find("Laprdus") == std::string::npos);
+        REQUIRE(voice.name.find("(") == std::string::npos);
+    }
+    auto djedo = std::find_if(list.begin(), list.end(), [](const ModuleVoice& v) { return v.variant == "djedo"; });
+    REQUIRE(djedo != list.end());
+    REQUIRE(djedo->name == "\xC4\x90" "edo");
+
+    // The language filter of LIST VOICES (module_process.c) matches the
+    // whole code or the part before the dash: "sr" gives 18 entries.
+    size_t serbian = std::count_if(list.begin(), list.end(), [](const ModuleVoice& v) {
+        return v.language == "sr-RS";
+    });
+    REQUIRE(serbian == 18);
+}
+
+TEST_CASE("Module resolves voices by id, old id, name and folded name", "[speechd][voices]") {
+    REQUIRE(find_voice_id("zvonko") == "zvonko");
+    REQUIRE(find_voice_id("Zvonko") == "zvonko");
+    REQUIRE(find_voice_id("djedo") == "djedo");
+    REQUIRE(find_voice_id("djed") == "djedo");                       // old id
+    REQUIRE(find_voice_id("\xC4\x90" "edo") == "djedo");             // Đedo
+    REQUIRE(find_voice_id("Djedo") == "djedo");                      // folded
+    REQUIRE(find_voice_id("klapa") == "dalmacija_klapa");            // old id
+    REQUIRE(find_voice_id("Dalmacija Klapa") == "dalmacija_klapa");
+    REQUIRE(find_voice_id("dalmacija klapa") == "dalmacija_klapa");
+    REQUIRE(find_voice_id("Orgulja\xC5\xA1 - Vila Velebita") == "orguljas");
+    REQUIRE(find_voice_id("Orguljas - Vila Velebita") == "orguljas");
+    REQUIRE(find_voice_id("Be\xC4\x87" "arac") == "becarac");
+    REQUIRE(find_voice_id("becarac") == "becarac");
+    REQUIRE(find_voice_id("pjevac") == "lika_velebit");
+    REQUIRE(find_voice_id("Sarajevo Bembasa") == "sarajevo_bembasa");
+    REQUIRE(find_voice_id("Solist") == "sarajevo_bembasa");          // old id, any case
+    REQUIRE(find_voice_id("nobody") == "");
+    REQUIRE(ascii_fold("\xC4\x8C\xC4\x87\xC4\x90\xC4\x91\xC5\xA0\xC5\xBE") == "ccdjdjsz");
+}
+
+TEST_CASE("Module symbolic voices are the same for every language", "[speechd][voices]") {
+    // SET VOICE MALE1 is Zvonko, the default voice, for hr, sr and bs alike;
+    // the others are Josip, Đedo, Baba and Detence.
+    REQUIRE(std::string(laprdus_get_default_voice()) == "zvonko");
+    struct Symbolic { const char* type; const char* id; };
+    const Symbolic symbolic[] = {
+        {"MALE1", "zvonko"}, {"MALE2", "josip"}, {"MALE3", "djedo"},
+        {"FEMALE1", "baba"}, {"FEMALE3", "baba"},
+        {"CHILD_MALE", "detence"}, {"CHILD_FEMALE", "detence"},
+    };
+    for (const auto& s : symbolic) {
+        CAPTURE(s.type);
+        LaprdusVoiceInfo info;
+        REQUIRE(laprdus_get_voice_info_by_id(s.id, &info) == LAPRDUS_OK);
+        REQUIRE(std::string(info.id) == s.id);
     }
 }
 
-TEST_CASE("Module voice languages are correct", "[speechd][voices]") {
-    // Croatian voices
-    {
-        LaprdusVoiceInfo info;
-        REQUIRE(laprdus_get_voice_info_by_id("josip", &info) == LAPRDUS_OK);
-        REQUIRE(std::string(info.language_code).find("hr") != std::string::npos);
+TEST_CASE("Module language switch keeps the voice", "[speechd][voices]") {
+    // SET LANGUAGE calls laprdus_set_language(): the voice stays and speaks
+    // the language; a language Laprdus does not speak is ignored.
+    LaprdusHandle engine = laprdus_create();
+    REQUIRE(engine != nullptr);
+    REQUIRE(laprdus_set_voice(engine, "zvonko", "/nonexistent") == LAPRDUS_OK);
+    REQUIRE(std::string(laprdus_get_language(engine)) == "hr-HR");
+    for (const char* tag : {"sr", "SR", "sr-RS", "sr_RS"}) {
+        CAPTURE(tag);
+        REQUIRE(laprdus_set_language(engine, tag) == LAPRDUS_OK);
+        REQUIRE(std::string(laprdus_get_language(engine)) == "sr-RS");
+        REQUIRE(std::string(laprdus_get_current_voice(engine)) == "zvonko");
     }
+    REQUIRE(laprdus_set_language(engine, "bs-BA") == LAPRDUS_OK);
+    REQUIRE(std::string(laprdus_get_language(engine)) == "bs-BA");
+    REQUIRE(laprdus_set_language(engine, "de") != LAPRDUS_OK);
+    REQUIRE(std::string(laprdus_get_language(engine)) == "bs-BA");
+    // The language stays when MALE1 or another voice is set afterwards
+    REQUIRE(laprdus_set_voice(engine, "stojan", "/nonexistent") == LAPRDUS_OK);
+    REQUIRE(std::string(laprdus_get_language(engine)) == "bs-BA");
+    laprdus_destroy(engine);
+}
 
-    // Serbian voices
-    {
+TEST_CASE("Module voice languages are correct", "[speechd][voices]") {
+    struct Native { const char* id; const char* language; };
+    const Native native[] = {
+        {"josip", "hr-HR"}, {"vlado", "sr-RS"}, {"detence", "hr-HR"},
+        {"baba", "hr-HR"}, {"djedo", "sr-RS"},
+        {"zvonko", "hr-HR"}, {"stojan", "sr-RS"}, {"mirsad", "bs-BA"},
+    };
+    for (const auto& n : native) {
+        CAPTURE(n.id);
         LaprdusVoiceInfo info;
-        REQUIRE(laprdus_get_voice_info_by_id("vlado", &info) == LAPRDUS_OK);
-        REQUIRE(std::string(info.language_code).find("sr") != std::string::npos);
+        REQUIRE(laprdus_get_voice_info_by_id(n.id, &info) == LAPRDUS_OK);
+        REQUIRE(std::string(info.language_code) == n.language);
     }
 }

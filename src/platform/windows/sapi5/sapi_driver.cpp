@@ -82,6 +82,9 @@ STDMETHODIMP LaprdusSAPIDriver::Speak(
     (void)rguidFormatId;
     (void)pWaveFormatEx;
 
+    // A voice chosen in the Configurator since the last utterance speaks now
+    ReloadIfSettingsChanged();
+
     // Check if engine is initialized
     if (!m_initialized || !m_engine) {
         return E_FAIL;
@@ -213,121 +216,90 @@ HRESULT LaprdusSAPIDriver::InitializeEngine() {
         return E_FAIL;
     }
 
-    // Read VoiceId from token (for derived voice support)
-    CSpDynamicString voiceId;
-    m_token->GetStringValue(L"VoiceId", &voiceId);
-
-    // Read BasePitch from token (for derived voices like child, grandma, grandpa)
-    // Note: Use locale-independent parsing to handle decimal separator correctly
-    // on systems with comma as decimal separator (e.g., Croatian, Serbian locales)
-    CSpDynamicString basePitchStr;
-    m_basePitch = 1.0f;
-    if (SUCCEEDED(m_token->GetStringValue(L"BasePitch", &basePitchStr)) && basePitchStr) {
-        // Parse using locale-independent method (period as decimal separator)
-        wchar_t* endPtr = nullptr;
-        double value = wcstod(basePitchStr.m_psz, &endPtr);
-        // If wcstod failed to parse (locale uses comma), try manual parsing
-        if (endPtr == basePitchStr.m_psz || value == 0.0) {
-            // Manual parsing: look for period and parse integer and fractional parts
-            std::wstring str(basePitchStr.m_psz);
-            size_t dotPos = str.find(L'.');
-            if (dotPos != std::wstring::npos) {
-                int intPart = _wtoi(str.substr(0, dotPos).c_str());
-                std::wstring fracStr = str.substr(dotPos + 1);
-                double fracPart = static_cast<double>(_wtoi(fracStr.c_str()));
-                for (size_t i = 0; i < fracStr.length(); ++i) {
-                    fracPart /= 10.0;
+    // The language comes from the token: a "Language" value ("hr", "sr",
+    // "bs") on the tokens of this version, the LCID in Attributes\Language
+    // on any other.
+    m_language = VoiceLanguage::Croatian;
+    CSpDynamicString languageTag;
+    if (SUCCEEDED(m_token->GetStringValue(L"Language", &languageTag)) && languageTag) {
+        laprdus::parse_voice_language(WideToUtf8(languageTag.m_psz).c_str(), &m_language);
+    } else {
+        CComPtr<ISpDataKey> attributes;
+        CSpDynamicString lcidStr;
+        if (SUCCEEDED(m_token->OpenKey(L"Attributes", &attributes)) && attributes &&
+            SUCCEEDED(attributes->GetStringValue(L"Language", &lcidStr)) && lcidStr) {
+            const unsigned long lcid = wcstoul(lcidStr.m_psz, nullptr, 16) & 0xFFFF;
+            for (size_t i = 0; i < laprdus::LANGUAGE_COUNT; ++i) {
+                const auto lang = static_cast<VoiceLanguage>(i);
+                if (laprdus::voice_language_lcid(lang) == lcid) {
+                    m_language = lang;
                 }
-                value = static_cast<double>(intPart) + fracPart;
-            } else {
-                value = static_cast<double>(_wtoi(basePitchStr.m_psz));
             }
         }
-        m_basePitch = static_cast<float>(value);
-        // Clamp to valid range (0.25 - 4.0 for voice character pitch)
-        if (m_basePitch < 0.25f) m_basePitch = 0.25f;
-        if (m_basePitch > 4.0f) m_basePitch = 4.0f;
     }
 
-    // Get the path to phoneme data from token attributes
-    CSpDynamicString phonemeDataPath;
-    HRESULT hr = m_token->GetStringValue(L"PhonemeDataPath", &phonemeDataPath);
-
-    std::wstring dataPath;
-    if (SUCCEEDED(hr) && phonemeDataPath) {
-        dataPath = phonemeDataPath.m_psz;
+    // The voice comes from the Configurator (settings.json); a token of an
+    // earlier version names its own voice in "VoiceId".
+    CSpDynamicString tokenVoiceId;
+    std::string voiceId;
+    if (SUCCEEDED(m_token->GetStringValue(L"VoiceId", &tokenVoiceId)) && tokenVoiceId) {
+        voiceId = WideToUtf8(tokenVoiceId.m_psz);
     } else {
-        // Default path: relative to DLL location
-        // Try to build path based on voice ID
+        voiceId = ConfiguredVoiceId();
+    }
+    const laprdus::VoiceDefinition* voiceDef = laprdus::VoiceRegistry::find_by_id(voiceId.c_str());
+    if (!voiceDef) {
+        voiceDef = laprdus::VoiceRegistry::default_voice();
+    }
+    if (!voiceDef) {
+        return E_FAIL;
+    }
+    m_voiceId = voiceDef->id;
+    m_basePitch = voiceDef->base_pitch;
+
+    // Everything lives next to the DLL: voices\*.bin and dictionaries\*.json
+    std::filesystem::path installDir;
+    {
         wchar_t modulePath[MAX_PATH];
         HMODULE hModule = nullptr;
-
-        // Get handle to this DLL using a static variable's address
         static int dummy = 0;
         GetModuleHandleExW(
             GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
             GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
             reinterpret_cast<LPCWSTR>(&dummy),
             &hModule);
-
         if (hModule && GetModuleFileNameW(hModule, modulePath, MAX_PATH)) {
-            std::filesystem::path path(modulePath);
-            std::filesystem::path parentDir = path.parent_path();
-
-            // If we have a voice ID, look up its data filename
-            if (voiceId && voiceId.m_psz) {
-                std::string voiceIdUtf8 = WideToUtf8(voiceId.m_psz);
-                const laprdus::VoiceDefinition* voice = laprdus::VoiceRegistry::find_by_id(voiceIdUtf8.c_str());
-                if (voice) {
-                    const char* dataFilename = laprdus::VoiceRegistry::get_data_filename(voice);
-                    if (dataFilename) {
-                        // Voice data is in voices/ subdirectory
-                        path = parentDir / "voices" / dataFilename;
-                        dataPath = path.wstring();
-                    }
-                }
-            }
-
-            // Fallback to default voice in voices subdirectory
-            // Note: dataFilename from voice_registry is just the filename (e.g., "Josip.bin")
-            // We need to prepend "voices/" subdirectory
-            if (dataPath.empty()) {
-                path = parentDir / "voices" / "Josip.bin";
-                dataPath = path.wstring();
-            }
+            installDir = std::filesystem::path(modulePath).parent_path();
         }
     }
-
-    if (dataPath.empty()) {
+    if (installDir.empty()) {
         return E_FAIL;
     }
 
     // Create engine
     m_engine = std::make_unique<TTSEngine>();
 
-    // Formant voices are synthesized by rule and load no phoneme data; for
-    // them dataPath only locates the install directory (dictionaries below).
-    const laprdus::VoiceDefinition* voiceDef = nullptr;
-    if (voiceId && voiceId.m_psz) {
-        voiceDef = laprdus::VoiceRegistry::find_by_id(WideToUtf8(voiceId.m_psz).c_str());
-    }
-
     if (laprdus::VoiceRegistry::is_formant_voice(voiceDef)) {
+        // Synthesized by rule: no data file
         if (!m_engine->initialize_formant(voiceDef->id)) {
             m_engine.reset();
             return E_FAIL;
         }
     } else {
-        // Convert path to UTF-8 and initialize
-        std::string utf8Path = WideToUtf8(dataPath);
-        if (!m_engine->initialize(utf8Path)) {
+        const char* dataFilename = laprdus::VoiceRegistry::get_data_filename(voiceDef);
+        if (!dataFilename) {
             m_engine.reset();
             return E_FAIL;
         }
-        if (voiceDef) {
-            m_engine->set_language(voiceDef->language);
+        std::filesystem::path dataPath = installDir / "voices" / dataFilename;
+        if (!m_engine->initialize(WideToUtf8(dataPath.wstring()))) {
+            m_engine.reset();
+            return E_FAIL;
         }
     }
+
+    // Every voice speaks the token's language
+    m_engine->set_language(m_language);
 
     // Apply base pitch for derived voices
     if (m_basePitch != 1.0f) {
@@ -336,10 +308,6 @@ HRESULT LaprdusSAPIDriver::InitializeEngine() {
         m_engine->set_voice_params(params);
     }
 
-    // Load dictionaries from the dictionaries subdirectory
-    // Voice data is in {app}/voices/, dictionaries are in {app}/dictionaries/
-    std::filesystem::path dataFilePath(dataPath);
-    std::filesystem::path installDir = dataFilePath.parent_path().parent_path();  // Go up from voices/
     std::filesystem::path dictsDir = installDir / "dictionaries";
 
     // Load pronunciation dictionary
@@ -366,6 +334,8 @@ HRESULT LaprdusSAPIDriver::InitializeEngine() {
 
     // Load user configuration from %APPDATA%\Laprdus
     laprdus::UserConfig userConfig;
+    m_settingsPath = userConfig.get_settings_path();
+    m_settingsStamp = FileStamp(m_settingsPath);
     if (userConfig.load_settings()) {
         // Apply user settings to engine
         const laprdus::UserSettings& settings = userConfig.settings();
@@ -420,6 +390,46 @@ HRESULT LaprdusSAPIDriver::InitializeEngine() {
 
     m_initialized = true;
     return S_OK;
+}
+
+std::string LaprdusSAPIDriver::ConfiguredVoiceId() {
+    laprdus::UserConfig userConfig;
+    if (userConfig.load_settings() && !userConfig.settings().default_voice.empty()) {
+        return userConfig.settings().default_voice;
+    }
+    return laprdus::VoiceRegistry::default_voice_id();
+}
+
+long long LaprdusSAPIDriver::FileStamp(const std::string& path) {
+    std::error_code ec;
+    const auto time = std::filesystem::last_write_time(std::filesystem::u8path(path), ec);
+    if (ec) {
+        return 0;
+    }
+    return static_cast<long long>(time.time_since_epoch().count());
+}
+
+void LaprdusSAPIDriver::ReloadIfSettingsChanged() {
+    if (m_settingsPath.empty()) {
+        return;
+    }
+    const long long stamp = FileStamp(m_settingsPath);
+    if (stamp == m_settingsStamp) {
+        return;
+    }
+    // Rebuild the engine with the settings as they are now (voice, rate,
+    // pitch, dictionaries); the token (and so the language) is unchanged.
+    std::unique_ptr<TTSEngine> previous = std::move(m_engine);
+    const std::string previousVoiceId = m_voiceId;
+    const float previousBasePitch = m_basePitch;
+    m_initialized = false;
+    if (FAILED(InitializeEngine())) {
+        m_engine = std::move(previous);
+        m_voiceId = previousVoiceId;
+        m_basePitch = previousBasePitch;
+        m_initialized = m_engine != nullptr;
+        m_settingsStamp = stamp;
+    }
 }
 
 std::vector<LaprdusSAPIDriver::TextRun> LaprdusSAPIDriver::ExtractRuns(const SPVTEXTFRAG* pTextFragList) {

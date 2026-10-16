@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hrvojekatic.laprdus.data.SettingsRepository
+import com.hrvojekatic.laprdus.tts.Language
 import com.hrvojekatic.laprdus.tts.LaprdusTTS
 import com.hrvojekatic.laprdus.tts.VoiceInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,6 +27,8 @@ data class SettingsUiState(
     val isLoading: Boolean = true,
     val availableVoices: List<VoiceInfo> = emptyList(),
     val selectedVoiceId: String = SettingsRepository.DEFAULT_VOICE,
+    /** The language spoken ("hr", "sr" or "bs"); every voice speaks every language. */
+    val language: String = SettingsRepository.DEFAULT_LANGUAGE,
     val speed: Float = SettingsRepository.DEFAULT_SPEED,
     val pitch: Float = SettingsRepository.DEFAULT_PITCH,
     val volume: Float = SettingsRepository.DEFAULT_VOLUME,
@@ -109,11 +112,14 @@ class SettingsViewModel @Inject constructor(
 
                 // Collect all settings from repository
                 settings.allSettings.collect { allSettings ->
+                    // The app's engine speaks the chosen language
+                    tts.setLanguage(allSettings.language)
                     _uiState.update { state ->
                         state.copy(
                             isLoading = false,
                             availableVoices = voices,
                             selectedVoiceId = allSettings.defaultVoice,
+                            language = allSettings.language,
                             speed = allSettings.speed,
                             pitch = allSettings.pitch,
                             volume = allSettings.volume,
@@ -196,6 +202,25 @@ class SettingsViewModel @Inject constructor(
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = context.getString(R.string.error_prefix, e.message ?: "")) }
             }
+        }
+    }
+
+    // ==========================================================================
+    // Language Settings
+    // ==========================================================================
+
+    /**
+     * Choose the language and persist it. Every voice speaks every language:
+     * the voice stays, the app's engine switches at once, and the speech
+     * service follows when the language is forced.
+     * @param language "hr", "sr" or "bs"
+     */
+    fun selectLanguage(language: String) {
+        if (!Language.isValid(language)) return
+        viewModelScope.launch {
+            tts.setLanguage(language)
+            settings.setLanguage(language)
+            _uiState.update { it.copy(language = language) }
         }
     }
 
@@ -321,8 +346,9 @@ class SettingsViewModel @Inject constructor(
     // ==========================================================================
 
     /**
-     * Set whether to force the selected language regardless of system settings.
-     * @param enabled True to force the selected language
+     * Set whether every app is spoken in the language chosen above,
+     * ignoring the language apps request.
+     * @param enabled True to force the chosen language
      */
     fun setForceLanguage(enabled: Boolean) {
         viewModelScope.launch {

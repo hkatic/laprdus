@@ -19,7 +19,7 @@ _dicts_dir = os.path.join(_addon_dir, "dictionaries")
 # DLL path detection
 _dll_name = "laprd64.dll" if _is_64bit else "laprd32.dll"
 _dll_path = os.path.join(_addon_dir, _dll_name)
-_phonemes_path = os.path.join(_voices_dir, "Josip.bin")  # Default voice
+_phonemes_path = os.path.join(_voices_dir, "Josip.bin")  # Recorded voice data (the formant voices need none)
 
 # Module-level library reference
 _lib = None
@@ -55,7 +55,12 @@ class LaprdusAudioFormat(ctypes.Structure):
 
 
 class LaprdusVoiceInfo(ctypes.Structure):
-    """Voice information structure."""
+    """Voice information structure.
+
+    display_name is UTF-8 and may contain diacritics ("Đedo", "Orguljaš - Vila
+    Velebita"); language_code is the voice's native language only: every
+    voice speaks every language (see LaprdusEngine.set_language).
+    """
     _fields_ = [
         ("id", ctypes.c_char_p),
         ("display_name", ctypes.c_char_p),
@@ -66,6 +71,17 @@ class LaprdusVoiceInfo(ctypes.Structure):
         ("base_pitch", ctypes.c_float),
         ("base_voice_id", ctypes.c_char_p),
         ("data_filename", ctypes.c_char_p),
+    ]
+
+
+class LaprdusLanguageInfo(ctypes.Structure):
+    """Language information structure (laprdus_get_language_info)."""
+    _fields_ = [
+        ("code", ctypes.c_char_p),          # "hr-HR", "sr-RS", "bs-BA"
+        ("short_code", ctypes.c_char_p),    # "hr", "sr", "bs"
+        ("lcid", ctypes.c_uint16),          # 0x041A, 0x081A, 0x141A
+        ("english_name", ctypes.c_char_p),  # "Croatian", "Serbian", "Bosnian"
+        ("native_name", ctypes.c_char_p),   # "Hrvatski", "Srpski", "Bosanski"
     ]
 
 
@@ -203,6 +219,25 @@ def _configure_functions(lib):
 
     lib.laprdus_get_current_voice.argtypes = [LaprdusHandle]
     lib.laprdus_get_current_voice.restype = ctypes.c_char_p
+
+    lib.laprdus_get_default_voice.argtypes = []
+    lib.laprdus_get_default_voice.restype = ctypes.c_char_p
+
+    # Language selection: every voice speaks every language
+    lib.laprdus_get_language_count.argtypes = []
+    lib.laprdus_get_language_count.restype = ctypes.c_uint32
+
+    lib.laprdus_get_language_info.argtypes = [
+        ctypes.c_uint32,
+        ctypes.POINTER(LaprdusLanguageInfo)
+    ]
+    lib.laprdus_get_language_info.restype = LaprdusError
+
+    lib.laprdus_set_language.argtypes = [LaprdusHandle, ctypes.c_char_p]
+    lib.laprdus_set_language.restype = LaprdusError
+
+    lib.laprdus_get_language.argtypes = [LaprdusHandle]
+    lib.laprdus_get_language.restype = ctypes.c_char_p
 
     # Dictionary functions
     lib.laprdus_load_dictionary.argtypes = [LaprdusHandle, ctypes.c_char_p]
@@ -434,25 +469,62 @@ def get_voice_info_by_id(voice_id):
     return _voice_info_to_dict(info)
 
 
+def _decode_str(s):
+    """Decode a UTF-8 C string from the DLL (None stays None)."""
+    if s is None:
+        return None
+    if isinstance(s, bytes):
+        return s.decode("utf-8", errors="replace")
+    return s
+
+
 def _voice_info_to_dict(info):
     """Convert LaprdusVoiceInfo structure to Python dict."""
-    def decode_str(s):
-        if s is None:
-            return None
-        if isinstance(s, bytes):
-            return s.decode("utf-8", errors="replace")
-        return s
-
     return {
-        "id": decode_str(info.id),
-        "display_name": decode_str(info.display_name),
-        "language_code": decode_str(info.language_code),
+        "id": _decode_str(info.id),
+        "display_name": _decode_str(info.display_name),
+        "language_code": _decode_str(info.language_code),
         "language_lcid": info.language_lcid,
-        "gender": decode_str(info.gender),
-        "age": decode_str(info.age),
+        "gender": _decode_str(info.gender),
+        "age": _decode_str(info.age),
         "base_pitch": info.base_pitch,
-        "base_voice_id": decode_str(info.base_voice_id),
-        "data_filename": decode_str(info.data_filename),
+        "base_voice_id": _decode_str(info.base_voice_id),
+        "data_filename": _decode_str(info.data_filename),
+    }
+
+
+def get_default_voice():
+    """Id of the default voice of every language ("zvonko")."""
+    lib = _load_library()
+    return _decode_str(lib.laprdus_get_default_voice()) or "zvonko"
+
+
+def get_language_count():
+    """Number of languages every voice speaks (3)."""
+    lib = _load_library()
+    return lib.laprdus_get_language_count()
+
+
+def get_language_info(index):
+    """
+    Get language information by index (0 Croatian, 1 Serbian, 2 Bosnian).
+
+    Returns:
+        dict with keys code ("hr-HR"), short_code ("hr"), lcid,
+        english_name ("Croatian") and native_name ("Hrvatski"),
+        or None on failure
+    """
+    lib = _load_library()
+    info = LaprdusLanguageInfo()
+    result = lib.laprdus_get_language_info(index, ctypes.byref(info))
+    if result != LAPRDUS_OK:
+        return None
+    return {
+        "code": _decode_str(info.code),
+        "short_code": _decode_str(info.short_code),
+        "lcid": info.lcid,
+        "english_name": _decode_str(info.english_name),
+        "native_name": _decode_str(info.native_name),
     }
 
 
@@ -720,6 +792,40 @@ class LaprdusEngine(object):
                 return result.decode("utf-8", errors="replace")
             return result
         return None
+
+    def set_language(self, language):
+        """
+        Set the language the current voice, and every voice set after it,
+        speaks: letter-to-sound rules, accent lexicon, letter names when
+        spelling and number words. Every voice speaks every language.
+
+        Args:
+            language: A tag or name in any case ("hr", "hr-HR", "hr_HR",
+                "sr", "sr-Latn", "bs", "Croatian", ...). None or "" returns
+                to the voice's native language, now and after later voice
+                changes.
+
+        Returns:
+            True on success, False for an unknown tag
+        """
+        if language is None:
+            language_bytes = None
+        elif isinstance(language, bytes):
+            language_bytes = language
+        else:
+            language_bytes = language.encode("utf-8")
+
+        result = self._lib.laprdus_set_language(self._handle, language_bytes)
+        return result == LAPRDUS_OK
+
+    def get_language(self):
+        """
+        Language spoken at the moment.
+
+        Returns:
+            "hr-HR", "sr-RS" or "bs-BA", or None for an invalid handle
+        """
+        return _decode_str(self._lib.laprdus_get_language(self._handle))
 
     def load_dictionary(self, dictionary_path=None):
         """

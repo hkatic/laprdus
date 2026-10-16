@@ -20,6 +20,7 @@ import com.hrvojekatic.laprdus.data.migration.DictionaryMigrator
 import com.hrvojekatic.laprdus.data.migration.MigrationResult
 import com.hrvojekatic.laprdus.data.migration.SimulatedMigrationCrashException
 import com.hrvojekatic.laprdus.data.storage.LaprdusStorage
+import com.hrvojekatic.laprdus.tts.Language
 import com.hrvojekatic.laprdus.tts.LaprdusTTS
 import com.hrvojekatic.laprdus.tts.VoiceInfo
 import kotlinx.coroutines.CancellationException
@@ -36,13 +37,19 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import java.text.BreakIterator
-import java.util.Locale
 
 /**
  * Android TextToSpeechService implementation for system-wide TTS.
- * Supports Croatian (hr-HR) and Serbian (sr-RS) languages.
+ * Speaks Croatian (hr-HR), Serbian (sr-RS) and Bosnian (bs-BA) with every
+ * voice: the system sees one voice per (voice x language), named
+ * `<id>-<language>` (`zvonko-hr`, `djedo-sr`, `lika_velebit-bs`).
  *
- * This service allows other apps to use Laprdus as their TTS engine.
+ * This service allows other apps to use Laprdus as their TTS engine. The
+ * voice that speaks is always the one configured in Laprdus's settings;
+ * apps choose the language (with `setLanguage()`, `setVoice()` or the
+ * locale of each request), unless "Force language" is on, in which case the
+ * language from Laprdus's settings is spoken everywhere. See
+ * [SpeechSelection].
  *
  * Direct Boot: the service is declared `directBootAware`, so screen readers
  * can use it on the lock screen after a restart, before the user's first
@@ -79,8 +86,21 @@ class LaprdusTTSService : TextToSpeechService() {
 
     @Volatile
     private var tts: LaprdusTTS? = null
+
+    /** The configured voice and the language apps asked for. */
+    private val selection = SpeechSelection(FALLBACK_VOICE, Language.deviceDefault())
+
+    /** The configured voice (canonical id); what the engine should have loaded. */
+    private var currentVoiceId: String
+        get() = selection.voiceId
+        set(value) = selection.setConfiguredVoice(value)
+
+    /**
+     * A saved voice the engine could not load (the fallback speaks instead),
+     * so that a request does not try it again until the setting changes.
+     */
     @Volatile
-    private var currentVoiceId: String = FALLBACK_VOICE
+    private var unloadableVoiceId: String? = null
 
     // Assigned in onCreate: a Service has no base context in its constructor,
     // so these must not be property initializers.
@@ -222,10 +242,11 @@ class LaprdusTTSService : TextToSpeechService() {
         val settings = cachedSettings ?: readSettingsBlocking().also { cachedSettings = it }
         currentVoiceId = settings.defaultVoice
 
-        // Initialize with saved voice using setVoice
+        // Initialize with saved voice using setVoice (unless onLoadLanguage,
+        // called from super.onCreate(), has just loaded it).
         // This ensures proper loading, pitch settings, and user dictionaries
         try {
-            val success = setVoiceAndLoadUserDictionaries(currentVoiceId)
+            val success = ensureConfiguredVoiceLoaded()
             if (success) {
                 logDebug { "Engine initialized with $currentVoiceId voice" }
             } else {
@@ -250,8 +271,9 @@ class LaprdusTTSService : TextToSpeechService() {
      * The app has an engine of its own, so what the user changes there
      * reaches the service through the saved settings: a newly chosen voice
      * is loaded at once (TalkBack speaks with it from the next utterance, as
-     * the user expects after picking it), and switching the user
-     * dictionaries on or off reloads the dictionaries.
+     * the user expects after picking it), a newly chosen or newly forced
+     * language is spoken at once, and switching the user dictionaries on or
+     * off reloads the dictionaries.
      */
     private fun followSettingsChanges(
         previous: SettingsRepository.TTSSettings?,
@@ -263,11 +285,22 @@ class LaprdusTTSService : TextToSpeechService() {
                 logDebug { "Saved voice changed to ${settings.defaultVoice}; loading it" }
                 if (setVoiceAndLoadUserDictionaries(settings.defaultVoice)) {
                     currentVoiceId = settings.defaultVoice
+                    unloadableVoiceId = null
                 } else {
                     Log.e(TAG, "Failed to load the newly chosen voice ${settings.defaultVoice}")
+                    unloadableVoiceId = settings.defaultVoice
                 }
             } else if (settings.userDictionariesEnabled != previous.userDictionariesEnabled) {
                 tts?.reloadDictionaries(assets)
+            }
+            if (settings.forceLanguage != previous.forceLanguage ||
+                (settings.forceLanguage && settings.language != previous.language)
+            ) {
+                // Every request sets its language again; this keeps the
+                // engine right for anything that reads it in between.
+                val language = selection.currentLanguage(settings.forceLanguage, settings.language)
+                logDebug { "Language setting changed; speaking $language" }
+                tts?.setLanguage(language)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to follow a settings change", e)
@@ -483,66 +516,36 @@ class LaprdusTTSService : TextToSpeechService() {
     }
 
     /**
-     * Get the current language configuration.
-     * The framework expects ISO3 language and country codes here.
+     * Get the current language configuration: the language the service
+     * speaks now (the one apps asked for, or the forced one), not the voice's
+     * native language. The framework expects ISO3 language and country codes.
      */
     override fun onGetLanguage(): Array<String> {
-        return when (languageOfVoice(currentVoiceId)) {
-            "sr" -> arrayOf("srp", "SRB", "")
-            "bs" -> arrayOf("bos", "BIH", "")
-            else -> arrayOf("hrv", "HRV", "")
-        }
-    }
-
-    /** Two-letter language of a voice. */
-    private fun languageOfVoice(voiceId: String): String = when (voiceId) {
-        "vlado", "djed", "stojan", "trubac", "harmonikas", "pevac" -> "sr"
-        "mirsad", "sevdalija", "sazlija", "solist" -> "bs"
-        else -> "hr"
-    }
-
-    /** Two-letter code of a language Laprdus speaks, null for any other. */
-    private fun spokenLanguage(lang: String): String? = when (lang.lowercase()) {
-        "hr", "hrv" -> "hr"
-        "sr", "srp" -> "sr"
-        "bs", "bos" -> "bs"
-        else -> null
-    }
-
-    /** Default voice of a language: its formant voice. */
-    private fun defaultVoiceFor(language: String?): String = when (language) {
-        "sr" -> "stojan"
-        "bs" -> "mirsad"
-        else -> "zvonko"
+        val settings = cachedSettings ?: SettingsRepository.TTSSettings()
+        return Language.iso3(selection.currentLanguage(settings.forceLanguage, settings.language))
     }
 
     /**
-     * Load the specified language.
-     * Unknown languages fall back to the current voice instead of failing,
-     * matching the availability contract of onIsLanguageAvailable.
+     * Load the specified language: every voice speaks every language, so
+     * the configured voice is kept and only the engine's language changes.
+     * A language Laprdus does not speak leaves the current language, matching
+     * the availability contract of onIsLanguageAvailable. The engine is
+     * loaded here when it has no voice yet (the framework calls this from
+     * super.onCreate()).
      */
     override fun onLoadLanguage(lang: String, country: String?, variant: String?): Int {
         val available = onIsLanguageAvailable(lang, country, variant)
-
-        // A voice that already speaks the requested language is kept, so the
-        // voice the user chose is not replaced by the language's default.
-        val language = spokenLanguage(lang)
-        val voiceId = if (language == null || language == languageOfVoice(currentVoiceId)) {
-            currentVoiceId
-        } else {
-            defaultVoiceFor(language)
-        }
+        val language = selection.requestLanguage(lang)
 
         return try {
-            val success = setVoiceAndLoadUserDictionaries(voiceId)
-            if (success) {
-                currentVoiceId = voiceId
-                logDebug { "Loaded language: $lang with voice: $voiceId" }
-                available
-            } else {
-                Log.e(TAG, "Failed to load voice $voiceId for language $lang")
-                TextToSpeech.LANG_NOT_SUPPORTED
+            if (!ensureConfiguredVoiceLoaded()) {
+                Log.e(TAG, "Failed to load voice $currentVoiceId for language $lang")
+                return TextToSpeech.LANG_NOT_SUPPORTED
             }
+            val settings = cachedSettings ?: SettingsRepository.TTSSettings()
+            tts?.setLanguage(selection.currentLanguage(settings.forceLanguage, settings.language))
+            logDebug { "Loaded language: $lang (${language ?: "not spoken, kept the current one"}) with voice: $currentVoiceId" }
+            available
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load language", e)
             TextToSpeech.LANG_NOT_SUPPORTED
@@ -550,21 +553,24 @@ class LaprdusTTSService : TextToSpeechService() {
     }
 
     /**
-     * Get all available voices.
+     * Loads the configured voice (and its dictionaries) unless the engine
+     * already has it.
+     */
+    private fun ensureConfiguredVoiceLoaded(): Boolean {
+        val engine = tts ?: return false
+        if (engine.isInitialized() && engine.currentVoiceId == currentVoiceId) return true
+        return setVoiceAndLoadUserDictionaries(currentVoiceId)
+    }
+
+    /**
+     * Get all available voices: every Laprdus voice in every language,
+     * named `<id>-<language>` with that language's locale (54 in all).
      */
     override fun onGetVoices(): List<Voice> {
         val voices = mutableListOf<Voice>()
         val engine = tts ?: return voices
 
-        val allVoices = engine.getAllVoices()
-        for (info in allVoices) {
-            val locale = when (info.languageCode) {
-                "hr-HR" -> Locale.forLanguageTag("hr-HR")
-                "sr-RS" -> Locale.forLanguageTag("sr-RS")
-                "bs-BA" -> Locale.forLanguageTag("bs-BA")
-                else -> Locale.forLanguageTag("hr-HR")
-            }
-
+        for (info in engine.getAllVoices()) {
             // Determine quality based on voice type
             val quality = if (info.isPhysicalVoice) {
                 Voice.QUALITY_HIGH
@@ -572,16 +578,18 @@ class LaprdusTTSService : TextToSpeechService() {
                 Voice.QUALITY_NORMAL
             }
 
-            voices.add(
-                Voice(
-                    info.id,
-                    locale,
-                    quality,
-                    Voice.LATENCY_NORMAL,
-                    false,
-                    emptySet()
+            for (language in Language.ALL) {
+                voices.add(
+                    Voice(
+                        VoiceName(info.id, language).name,
+                        Language.locale(language),
+                        quality,
+                        Voice.LATENCY_NORMAL,
+                        false,
+                        emptySet()
+                    )
                 )
-            )
+            }
         }
 
         logDebug { "Returning ${voices.size} voices" }
@@ -589,15 +597,12 @@ class LaprdusTTSService : TextToSpeechService() {
     }
 
     /**
-     * Check if a voice name is valid.
+     * Check if a voice name is valid: `<id>-<language>`, a bare id (the
+     * voice's native language), or an id of an earlier version.
      */
     override fun onIsValidVoiceName(voiceName: String?): Int {
-        if (voiceName == null) return TextToSpeech.ERROR
-
         val engine = tts ?: return TextToSpeech.ERROR
-        val allVoices = engine.getAllVoices()
-
-        return if (allVoices.any { it.id == voiceName }) {
+        return if (VoiceName.parse(voiceName, engine.getAllVoices()) != null) {
             TextToSpeech.SUCCESS
         } else {
             TextToSpeech.ERROR
@@ -605,23 +610,28 @@ class LaprdusTTSService : TextToSpeechService() {
     }
 
     /**
-     * Load a specific voice.
+     * Load a specific voice. The name's language becomes the requested
+     * language; the voice that speaks stays the configured one (the
+     * framework attaches a voice name to every request once an app has
+     * called setLanguage(), so honouring it would keep an app on the voice
+     * it saw first after the user has chosen another in Laprdus's settings).
      */
     override fun onLoadVoice(voiceName: String?): Int {
-        if (voiceName == null) return TextToSpeech.ERROR
-
         val engine = tts ?: return TextToSpeech.ERROR
+        if (!selection.requestVoiceName(voiceName, engine.getAllVoices())) {
+            Log.e(TAG, "Unknown voice: $voiceName")
+            return TextToSpeech.ERROR
+        }
 
         return try {
-            val success = setVoiceAndLoadUserDictionaries(voiceName)
-            if (success) {
-                currentVoiceId = voiceName
-                logDebug { "Loaded voice: $voiceName" }
-                TextToSpeech.SUCCESS
-            } else {
-                Log.e(TAG, "Failed to load voice: $voiceName")
-                TextToSpeech.ERROR
+            if (!ensureConfiguredVoiceLoaded()) {
+                Log.e(TAG, "Failed to load voice $currentVoiceId")
+                return TextToSpeech.ERROR
             }
+            val settings = cachedSettings ?: SettingsRepository.TTSSettings()
+            engine.setLanguage(selection.currentLanguage(settings.forceLanguage, settings.language))
+            logDebug { "Loaded voice: $voiceName (speaking ${selection.requestedLanguage} with $currentVoiceId)" }
+            TextToSpeech.SUCCESS
         } catch (e: Exception) {
             Log.e(TAG, "Exception loading voice", e)
             TextToSpeech.ERROR
@@ -629,14 +639,15 @@ class LaprdusTTSService : TextToSpeechService() {
     }
 
     /**
-     * Get the default voice name for a language.
+     * Get the default voice name for a language: the configured voice in
+     * that language (`<voice>-hr` for a language Laprdus does not speak).
      */
     override fun onGetDefaultVoiceNameFor(
         lang: String,
         country: String?,
         variant: String?
     ): String {
-        return defaultVoiceFor(spokenLanguage(lang))
+        return selection.defaultVoiceNameFor(lang)
     }
 
     /**
@@ -670,8 +681,9 @@ class LaprdusTTSService : TextToSpeechService() {
     }
 
     /**
-     * Synthesize text to speech.
-     * Respects force settings from SettingsRepository when enabled.
+     * Synthesize text to speech with the configured voice, in the language
+     * of the request's locale (the Laprdus language setting when the
+     * language is forced). Respects the other force settings too.
      *
      * When a single character is detected (common when TalkBack navigates character-by-character
      * or when typing on the keyboard), uses spelled synthesis mode which pronounces the character
@@ -688,6 +700,7 @@ class LaprdusTTSService : TextToSpeechService() {
             Log.w(TAG, "Engine not initialized, attempting recovery...")
             when (val ready = engineRuntime.ensureReady(currentVoiceId)) {
                 is EngineRuntime.ReadyResult.Ready -> {
+                    if (ready.usedFallback) unloadableVoiceId = currentVoiceId
                     currentVoiceId = ready.voiceId
                     engine = tts
                 }
@@ -722,18 +735,27 @@ class LaprdusTTSService : TextToSpeechService() {
             // edited there is loaded from another thread).
             val useSpelledMode = isSingleGrapheme(text)
             val samples = engine.exclusive {
-                // Apply force language - use saved voice regardless of request
-                if (settings.forceLanguage) {
-                    val savedVoice = settings.defaultVoice
-                    if (savedVoice != currentVoiceId) {
-                        logDebug { "Using forced language voice: $savedVoice" }
-                        if (setVoiceAndLoadUserDictionaries(savedVoice)) {
-                            currentVoiceId = savedVoice
-                        } else {
-                            Log.e(TAG, "Failed to switch to forced voice: $savedVoice")
-                        }
+                // The configured voice always speaks (the request's voice
+                // name, if any, only names a language; see onLoadVoice). A
+                // voice that failed to load is not retried on every request.
+                val savedVoice = settings.defaultVoice
+                if (savedVoice != currentVoiceId && savedVoice != unloadableVoiceId) {
+                    logDebug { "Loading the configured voice: $savedVoice" }
+                    if (setVoiceAndLoadUserDictionaries(savedVoice)) {
+                        currentVoiceId = savedVoice
+                        unloadableVoiceId = null
+                    } else {
+                        Log.e(TAG, "Failed to switch to the configured voice: $savedVoice")
+                        unloadableVoiceId = savedVoice
                     }
                 }
+
+                // The language: the request's locale, or the Laprdus setting
+                // when the language is forced. Every voice speaks every one.
+                val language = selection.languageFor(
+                    request.language, settings.forceLanguage, settings.language
+                )
+                engine.setLanguage(language)
 
                 // Rate and pitch: Android asks relative to normal (100 = 1.0),
                 // and the Laprdus settings are the normal, so TalkBack's rate
@@ -745,7 +767,7 @@ class LaprdusTTSService : TextToSpeechService() {
                 engine.pitch = VoiceInfo.requestValue(
                     settings.pitch, request.pitch / 100f, settings.forcePitch, currentVoiceId
                 )
-                logDebug { "Rate ${engine.speed}, pitch ${engine.pitch} (forced: ${settings.forceSpeed}, ${settings.forcePitch})" }
+                logDebug { "Voice $currentVoiceId, language $language, rate ${engine.speed}, pitch ${engine.pitch} (forced: ${settings.forceLanguage}, ${settings.forceSpeed}, ${settings.forcePitch})" }
 
                 // Apply volume - use Laprdus settings if force is enabled, reset to 1.0 if not
                 engine.volume = if (settings.forceVolume) settings.volume else 1.0f

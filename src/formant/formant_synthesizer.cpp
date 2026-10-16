@@ -165,14 +165,14 @@ struct Preset {
 
 const Preset PRESETS[] = {
     {"orguljas", "zvonko", &STYLE_ORGULJE},
-    {"klapa", "zvonko", &STYLE_KLAPA},
+    {"dalmacija_klapa", "zvonko", &STYLE_KLAPA},
     {"trubac", "stojan", &STYLE_TRUBA},
     {"harmonikas", "stojan", &STYLE_HARMONIKA},
     {"sevdalija", "mirsad", &STYLE_SEVDAH},
     {"sazlija", "mirsad", &STYLE_SAZ},
-    {"pjevac", "zvonko", &STYLE_PJEVAC},
-    {"pevac", "stojan", &STYLE_PEVAC},
-    {"solist", "mirsad", &STYLE_SOLIST},
+    {"lika_velebit", "zvonko", &STYLE_PJEVAC},
+    {"solunac", "stojan", &STYLE_PEVAC},
+    {"sarajevo_bembasa", "mirsad", &STYLE_SOLIST},
     {"becarac", "zvonko", &STYLE_BECARAC},
 };
 
@@ -1933,6 +1933,14 @@ const FormantVoice* find_formant_voice(const char* voice_id) {
         }
     }
     return nullptr;
+}
+
+void FormantSynthesizer::set_language(VoiceLanguage language) {
+    if (language == m_voice.language) return;
+    std::shared_ptr<const UserLexicon> lexicon = m_user_lexicon;
+    m_voice.language = language;
+    m_frontend = Frontend(language);
+    m_frontend.set_user_lexicon(lexicon);
 }
 
 FormantSynthesizer::FormantSynthesizer(const FormantVoice& voice)

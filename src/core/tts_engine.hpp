@@ -69,21 +69,28 @@ public:
 
     /**
      * Initialize engine with a formant voice. No phoneme data is needed:
-     * speech is produced by rule (see src/formant/).
+     * speech is produced by rule (see src/formant/). The voice starts in
+     * its native language; call set_language() for another.
      * @param voice_id Formant voice ID ("zvonko", "stojan", "mirsad") or a
-     *        singing preset ("orguljas", "klapa", "trubac", "harmonikas",
-     *        "sevdalija", "sazlija", "pjevac", "pevac", "solist", "becarac").
+     *        singing preset ("orguljas", "dalmacija_klapa", "trubac",
+     *        "harmonikas", "sevdalija", "sazlija", "lika_velebit",
+     *        "solunac", "sarajevo_bembasa", "becarac").
      * @return true on success, false if the ID is not a formant voice.
      */
     bool initialize_formant(const char* voice_id);
 
     /**
-     * Set the language of a recorded voice (Josip: Croatian, Vlado:
-     * Serbian): chooses the text front end's rules and lexicon. Formant
-     * voices carry their own language and ignore this.
-     * @param language Voice language.
+     * Set the language spoken, independently of the voice: the text front
+     * end's letter-to-sound rules, accent lexicon and letter names, and
+     * the number words (tisuća / hiljada). Works for every voice; a
+     * recorded voice loaded later keeps the language, a formant voice
+     * loaded later starts in its native one.
+     * @param language Language to speak.
      */
     void set_language(VoiceLanguage language);
+
+    /** Language spoken at the moment (see set_language()). */
+    VoiceLanguage language() const { return current_language(); }
 
     /**
      * Check if the engine currently speaks with a formant voice.
@@ -214,7 +221,7 @@ public:
      * Load the bundled spelling dictionary from file (replaces all existing
      * entries, the user's too). It names digits, punctuation and symbols;
      * the letters of the alphabet are named by the engine itself in the
-     * language of the voice (formant::letter_name).
+     * language spoken (set_language(); formant::letter_name).
      * @param path Path to spelling dictionary JSON file.
      * @return true on success.
      */
@@ -263,7 +270,7 @@ public:
      * The spelling speed controls additional silence on top of the spelling pause.
      *
      * A letter of the alphabet (Latin or Cyrillic, any case) is read by its
-     * name in the language of the voice, or by its sound when the spelling
+     * name in the language spoken, or by its sound when the spelling
      * mode is LetterSounds; q, w, x and y, which are not letters of these
      * languages, keep their names (ku, duplo ve, iks, ipsilon) in both
      * modes. Every other character is read by its entry in the spelling
@@ -434,6 +441,8 @@ private:
     void begin_utterance();
     // Language of the current voice (letter names, symbol names).
     VoiceLanguage current_language() const;
+    // Number words of a language (tisuća / hiljada).
+    static CroatianNumbers::Dialect number_dialect(VoiceLanguage language);
     // One character of synthesize_spelled(): its name, its sound or its entry.
     SynthesisResult spell_character(const std::string& character);
     // "veliko N": the words spoken, the letter spelled (see synthesize()).

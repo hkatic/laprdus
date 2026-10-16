@@ -103,6 +103,8 @@ def main():
     ap.add_argument("--data", default=None, help="voice data directory (-D)")
     ap.add_argument("--classes", default="v,l,nj,d,n,m")
     ap.add_argument("--voices", default="zvonko,stojan,mirsad")
+    ap.add_argument("--language", default=None,
+                    help="language every voice speaks (hr, sr, bs; CLI -L); default: its native one")
     ap.add_argument("--rates", default="1.0,1.7")
     ap.add_argument("--letters", action="store_true", help="spelled letters instead of words")
     ap.add_argument("--say", default=None, help="a macOS voice to check instead of the CLI")
@@ -131,7 +133,7 @@ def main():
                                    check=True, capture_output=True)
                     check(cls, word, *read(wav))
                 continue
-            base = [src] + (["-D", args.data] if args.data else [])
+            base = [src] + (["-D", args.data] if args.data else [])                 + (["-L", args.language] if args.language else [])
             for voice in args.voices.split(","):
                 if args.letters:
                     for mode in ("names", "sounds"):

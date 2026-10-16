@@ -36,6 +36,10 @@ final class LaprdusEngine: @unchecked Sendable {
     private let queue = DispatchQueue(label: "com.hrvojekatic.laprdus.engine")
     private var currentVoiceID: String?
     private var appliedDictionaryStamp: String?
+    /// Language code given to setLanguage, if any. The C API keeps the
+    /// chosen language itself across later voice changes; this only avoids
+    /// asking it again for the same language.
+    private var chosenLanguageCode: String?
 
     init() throws {
         guard let created = laprdus_create() else {
@@ -52,6 +56,12 @@ final class LaprdusEngine: @unchecked Sendable {
         laprdus_get_version().map { String(cString: $0) } ?? "unknown"
     }
 
+    /// The languages every voice speaks: Croatian, Serbian, Bosnian.
+    static var languages: [Language] { Language.all }
+
+    /// Voice of a new installation: Zvonko, for every language.
+    static var defaultVoiceID: String { VoiceCatalog.defaultVoiceID }
+
     private var lastErrorMessage: String {
         laprdus_get_error_message(handle).map { String(cString: $0) } ?? "Unknown engine error"
     }
@@ -60,8 +70,35 @@ final class LaprdusEngine: @unchecked Sendable {
         queue.sync { laprdus_is_initialized(handle) != 0 }
     }
 
+    /// Id of the loaded voice, as the engine names it (an old id given to
+    /// loadVoice comes back as the renamed voice's id).
     var currentVoice: String? {
         queue.sync { currentVoiceID }
+    }
+
+    /// Language spoken at the moment ("hr-HR", "sr-RS" or "bs-BA"): the one
+    /// chosen with setLanguage, else the voice's native language.
+    var currentLanguage: String {
+        queue.sync { laprdus_get_language(handle).map { String(cString: $0) } ?? "hr-HR" }
+    }
+
+    /// Language code last given to setLanguage, nil when every voice still
+    /// speaks its native language.
+    var chosenLanguage: String? {
+        queue.sync { chosenLanguageCode }
+    }
+
+    /// Chooses the language every voice speaks from now on, across voice
+    /// changes: the engine keeps it itself after loadVoice. Any tag the
+    /// engine understands is accepted ("hr", "sr-RS", "bs_BA").
+    func setLanguage(_ code: String) throws {
+        try queue.sync {
+            guard code != chosenLanguageCode else { return }
+            guard laprdus_set_language(handle, code) == LAPRDUS_OK else {
+                throw LaprdusEngineError.api(lastErrorMessage)
+            }
+            chosenLanguageCode = code
+        }
     }
 
     /// Loads a voice from the bundle's resources and (re)loads the bundled
@@ -93,7 +130,9 @@ final class LaprdusEngine: @unchecked Sendable {
         guard laprdus_set_voice(handle, voiceID, resourcePath) == LAPRDUS_OK else {
             throw LaprdusEngineError.api(lastErrorMessage)
         }
-        currentVoiceID = voiceID
+        // The engine accepts the ids of renamed voices and reports the
+        // current one; the chosen language, if any, is kept by it.
+        currentVoiceID = laprdus_get_current_voice(handle).map { String(cString: $0) } ?? voiceID
         // set_voice may reinitialize the engine and drop dictionary state,
         // so the bundled dictionaries are reloaded after every switch.
         if let path = bundle.path(forResource: "internal", ofType: "json") {

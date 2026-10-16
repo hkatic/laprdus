@@ -1,16 +1,42 @@
 package com.hrvojekatic.laprdus.service
 
 import android.speech.tts.TextToSpeech
+import com.hrvojekatic.laprdus.tts.Language
+import com.hrvojekatic.laprdus.tts.VoiceInfo
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
  * Unit tests for LaprdusTTSService.
- * These tests verify the language processing logic without requiring native code.
+ * These tests verify the language and voice selection logic without
+ * requiring native code.
  */
 class LaprdusTTSServiceTest {
+
+    /** The registry's 18 voices, as the engine reports them. */
+    private val VOICES: List<VoiceInfo> = listOf(
+        VoiceInfo("josip", "Josip", "hr-HR", "Male", "Adult", 1.0f, null, false),
+        VoiceInfo("vlado", "Vlado", "sr-RS", "Male", "Adult", 1.0f, null, false),
+        VoiceInfo("detence", "Detence", "hr-HR", "Male", "Child", 1.5f, "josip", false),
+        VoiceInfo("baba", "Baba", "hr-HR", "Female", "Senior", 1.2f, "josip", false),
+        VoiceInfo("djedo", "\u0110edo", "sr-RS", "Male", "Senior", 0.75f, "vlado", false),
+        VoiceInfo("zvonko", "Zvonko", "hr-HR", "Male", "Adult", 1.0f, null, true),
+        VoiceInfo("stojan", "Stojan", "sr-RS", "Male", "Adult", 1.0f, null, true),
+        VoiceInfo("mirsad", "Mirsad", "bs-BA", "Male", "Adult", 1.0f, null, true),
+        VoiceInfo("orguljas", "Orgulja\u0161 - Vila Velebita", "hr-HR", "Male", "Adult", 1.0f, "zvonko", true),
+        VoiceInfo("dalmacija_klapa", "Dalmacija Klapa", "hr-HR", "Male", "Adult", 1.0f, "zvonko", true),
+        VoiceInfo("trubac", "Truba\u010d - Kre\u0107e se la\u0111a francuska", "sr-RS", "Male", "Adult", 1.0f, "stojan", true),
+        VoiceInfo("harmonikas", "Harmonika\u0161 - Kre\u0107e se la\u0111a francuska", "sr-RS", "Male", "Adult", 1.0f, "stojan", true),
+        VoiceInfo("sevdalija", "Sevdalija - Kad ja po\u0111oh na Bemba\u0161u", "bs-BA", "Male", "Adult", 1.0f, "mirsad", true),
+        VoiceInfo("sazlija", "Sazlija - Kad ja po\u0111oh na Bemba\u0161u", "bs-BA", "Male", "Adult", 1.0f, "mirsad", true),
+        VoiceInfo("lika_velebit", "Lika Velebit", "hr-HR", "Male", "Adult", 1.0f, "zvonko", true),
+        VoiceInfo("solunac", "Solunac", "sr-RS", "Male", "Adult", 1.0f, "stojan", true),
+        VoiceInfo("sarajevo_bembasa", "Sarajevo Bemba\u0161a", "bs-BA", "Male", "Adult", 1.0f, "mirsad", true),
+        VoiceInfo("becarac", "Be\u0107arac", "hr-HR", "Male", "Adult", 1.0f, "zvonko", true)
+    )
 
     // ==========================================================================
     // Single Character Detection Tests (for spelling mode)
@@ -100,32 +126,33 @@ class LaprdusTTSServiceTest {
 
     @Test
     fun `Croatian language code hr is recognized`() {
-        val isSupported = isLanguageSupported("hr", null)
-        assertEquals(true, isSupported)
+        assertEquals("hr", Language.fromTag("hr"))
     }
 
     @Test
     fun `Croatian ISO 639-2 code hrv is recognized`() {
-        val isSupported = isLanguageSupported("hrv", null)
-        assertEquals(true, isSupported)
+        assertEquals("hr", Language.fromTag("hrv"))
     }
 
     @Test
     fun `Serbian language code sr is recognized`() {
-        val isSupported = isLanguageSupported("sr", null)
-        assertEquals(true, isSupported)
+        assertEquals("sr", Language.fromTag("sr"))
     }
 
     @Test
     fun `Serbian ISO 639-2 code srp is recognized`() {
-        val isSupported = isLanguageSupported("srp", null)
-        assertEquals(true, isSupported)
+        assertEquals("sr", Language.fromTag("srp"))
+    }
+
+    @Test
+    fun `Bosnian codes bs and bos are recognized`() {
+        assertEquals("bs", Language.fromTag("bs"))
+        assertEquals("bs", Language.fromTag("bos"))
     }
 
     @Test
     fun `English language code en is not a native language`() {
-        val isSupported = isLanguageSupported("en", null)
-        assertEquals(false, isSupported)
+        assertNull(Language.fromTag("en"))
     }
 
     @Test
@@ -168,31 +195,134 @@ class LaprdusTTSServiceTest {
     }
 
     // ==========================================================================
-    // Default Voice Tests
+    // System voice names: <id>-<language>
     // ==========================================================================
 
     @Test
-    fun `default voice for Croatian is zvonko`() {
-        val voice = getDefaultVoiceFor("hr", "HR")
-        assertEquals("zvonko", voice)
+    fun `there is one system voice per voice and language`() {
+        val names = VoiceName.all(VOICES).map { it.name }
+        assertEquals(VOICES.size * 3, names.size)
+        assertEquals(54, names.size)
+        assertTrue("zvonko-hr" in names)
+        assertTrue("zvonko-sr" in names)
+        assertTrue("zvonko-bs" in names)
+        assertTrue("djedo-sr" in names)
+        assertTrue("lika_velebit-bs" in names)
+        assertEquals("no duplicates", names.size, names.toSet().size)
     }
 
     @Test
-    fun `default voice for Serbian is stojan`() {
-        val voice = getDefaultVoiceFor("sr", "RS")
-        assertEquals("stojan", voice)
+    fun `a voice name is parsed into voice and language`() {
+        assertEquals(VoiceName("zvonko", "sr"), VoiceName.parse("zvonko-sr", VOICES))
+        assertEquals(VoiceName("djedo", "sr"), VoiceName.parse("djedo-sr", VOICES))
+        assertEquals(VoiceName("lika_velebit", "bs"), VoiceName.parse("lika_velebit-bs", VOICES))
+        assertEquals(VoiceName("josip", "bs"), VoiceName.parse("josip-bs", VOICES))
+        assertEquals("zvonko-sr", VoiceName("zvonko", "sr").name)
     }
 
     @Test
-    fun `default voice for Bosnian is mirsad`() {
-        val voice = getDefaultVoiceFor("bos", "BIH")
-        assertEquals("mirsad", voice)
+    fun `a bare voice id means the voice in its native language`() {
+        assertEquals(VoiceName("zvonko", "hr"), VoiceName.parse("zvonko", VOICES))
+        assertEquals(VoiceName("vlado", "sr"), VoiceName.parse("vlado", VOICES))
+        assertEquals(VoiceName("mirsad", "bs"), VoiceName.parse("mirsad", VOICES))
     }
 
     @Test
-    fun `default voice for unknown language is zvonko`() {
-        val voice = getDefaultVoiceFor("en", "US")
-        assertEquals("zvonko", voice)
+    fun `the voice ids of earlier versions are accepted`() {
+        assertEquals(VoiceName("djedo", "sr"), VoiceName.parse("djed", VOICES))
+        assertEquals(VoiceName("djedo", "hr"), VoiceName.parse("djed-hr", VOICES))
+        assertEquals(VoiceName("lika_velebit", "hr"), VoiceName.parse("pjevac", VOICES))
+        assertEquals(VoiceName("sarajevo_bembasa", "sr"), VoiceName.parse("solist-sr", VOICES))
+    }
+
+    @Test
+    fun `names that are not a Laprdus voice are rejected`() {
+        assertNull(VoiceName.parse(null, VOICES))
+        assertNull(VoiceName.parse("", VOICES))
+        assertNull(VoiceName.parse("nobody", VOICES))
+        assertNull(VoiceName.parse("nobody-hr", VOICES))
+        assertNull(VoiceName.parse("zvonko-en", VOICES))
+        assertNull(VoiceName.parse("-hr", VOICES))
+    }
+
+    // ==========================================================================
+    // Which voice and language a request gets
+    // ==========================================================================
+
+    @Test
+    fun `default voice for every language is the configured voice`() {
+        val selection = SpeechSelection("zvonko")
+        assertEquals("zvonko-hr", selection.defaultVoiceNameFor("hr"))
+        assertEquals("zvonko-sr", selection.defaultVoiceNameFor("srp"))
+        assertEquals("zvonko-bs", selection.defaultVoiceNameFor("bos"))
+        // An unspoken language gets the voice in Croatian
+        assertEquals("zvonko-hr", selection.defaultVoiceNameFor("en"))
+
+        selection.setConfiguredVoice("josip")
+        assertEquals("josip-sr", selection.defaultVoiceNameFor("sr"))
+    }
+
+    @Test
+    fun `loading a language keeps the configured voice`() {
+        val selection = SpeechSelection("josip", "hr")
+
+        assertEquals("sr", selection.requestLanguage("srp"))
+        assertEquals("josip", selection.voiceId)
+        assertEquals("sr", selection.requestedLanguage)
+
+        assertEquals("bs", selection.requestLanguage("bos"))
+        assertEquals("josip", selection.voiceId)
+        assertEquals("bs", selection.requestedLanguage)
+    }
+
+    @Test
+    fun `loading an unspoken language keeps the current language`() {
+        val selection = SpeechSelection("zvonko", "sr")
+        assertNull(selection.requestLanguage("eng"))
+        assertEquals("sr", selection.requestedLanguage)
+        assertEquals("zvonko", selection.voiceId)
+    }
+
+    @Test
+    fun `loading a voice name takes its language and keeps the configured voice`() {
+        val selection = SpeechSelection("josip", "hr")
+
+        assertTrue(selection.requestVoiceName("zvonko-sr", VOICES))
+        assertEquals("josip", selection.voiceId)
+        assertEquals("sr", selection.requestedLanguage)
+
+        assertFalse(selection.requestVoiceName("nobody-sr", VOICES))
+        assertEquals("sr", selection.requestedLanguage)
+    }
+
+    @Test
+    fun `a request speaks its own locale`() {
+        val selection = SpeechSelection("zvonko", "hr")
+        assertEquals("sr", selection.languageFor("srp", forceLanguage = false, forcedLanguage = "bs"))
+        assertEquals("bs", selection.languageFor("bos", forceLanguage = false, forcedLanguage = "hr"))
+        // A request without a spoken locale gets the last requested language
+        selection.requestLanguage("sr")
+        assertEquals("sr", selection.languageFor("eng", forceLanguage = false, forcedLanguage = "bs"))
+        assertEquals("sr", selection.languageFor(null, forceLanguage = false, forcedLanguage = "bs"))
+    }
+
+    @Test
+    fun `force language speaks the Laprdus setting whatever the app asks`() {
+        val selection = SpeechSelection("zvonko", "hr")
+        assertEquals("bs", selection.languageFor("srp", forceLanguage = true, forcedLanguage = "bs"))
+        assertEquals("bs", selection.languageFor("hrv", forceLanguage = true, forcedLanguage = "bs"))
+        assertEquals("bs", selection.currentLanguage(forceLanguage = true, forcedLanguage = "bs"))
+        assertEquals("hr", selection.currentLanguage(forceLanguage = false, forcedLanguage = "bs"))
+        // A broken setting falls back to Croatian rather than to the app's language
+        assertEquals("hr", selection.languageFor("srp", forceLanguage = true, forcedLanguage = "xx"))
+    }
+
+    @Test
+    fun `the configured voice is stored by its canonical id`() {
+        val selection = SpeechSelection("djed")
+        assertEquals("djedo", selection.voiceId)
+        selection.setConfiguredVoice("pevac")
+        assertEquals("solunac", selection.voiceId)
     }
 
     // ==========================================================================
@@ -200,22 +330,16 @@ class LaprdusTTSServiceTest {
     // ==========================================================================
 
     @Test
-    fun `all voice IDs are lowercase`() {
-        val validVoices = listOf("josip", "vlado", "detence", "baba", "djed", "zvonko", "stojan", "mirsad")
-        validVoices.forEach { voice ->
-            assertEquals(voice, voice.lowercase())
+    fun `all voice IDs are lowercase ASCII`() {
+        VOICES.forEach { voice ->
+            assertEquals(voice.id, voice.id.lowercase())
+            assertTrue(voice.id, voice.id.all { it in 'a'..'z' || it == '_' })
         }
     }
 
     // ==========================================================================
     // Helper functions (mirroring service logic for testing)
     // ==========================================================================
-
-    private fun isLanguageSupported(lang: String, country: String?): Boolean {
-        val normalizedLang = lang.lowercase()
-        return normalizedLang == "hr" || normalizedLang == "hrv" ||
-               normalizedLang == "sr" || normalizedLang == "srp"
-    }
 
     private fun getLanguageSupportLevel(lang: String, country: String?): Int {
         val normalizedLang = lang.lowercase()
@@ -236,15 +360,6 @@ class LaprdusTTSServiceTest {
                 }
             }
             else -> TextToSpeech.LANG_AVAILABLE
-        }
-    }
-
-    private fun getDefaultVoiceFor(lang: String, country: String?): String {
-        val normalizedLang = lang.lowercase()
-        return when {
-            normalizedLang == "sr" || normalizedLang == "srp" -> "stojan"
-            normalizedLang == "bs" || normalizedLang == "bos" -> "mirsad"
-            else -> "zvonko"
         }
     }
 

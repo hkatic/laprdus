@@ -13,6 +13,7 @@
     <string name="stop_button">Zaustavi</string>
     <string name="loading">Učitavanje…</string>
     <string name="select_voice">Odaberi glas</string>
+    <string name="language_label">Jezik</string>
 
     <!-- Language names -->
     <string name="language_croatian">Hrvatski</string>
@@ -25,6 +26,9 @@
     <string name="age_child">Dijete</string>
     <string name="age_adult">Odrasli</string>
     <string name="age_senior">Stariji</string>
+    <string name="voice_kind_recorded">snimljeni glas</string>
+    <string name="voice_kind_formant">sintetiziran po pravilima</string>
+    <string name="voice_kind_singing">pjevajući glas</string>
 
     <!-- Settings screen -->
     <string name="settings_title">Postavke</string>
@@ -44,7 +48,7 @@
     <string name="setting_force_volume_title">Prisilno koristi Laprdus glasnoću</string>
     <string name="setting_force_volume_subtitle">Koristi Laprdus postavke glasnoće umjesto postavki aplikacije</string>
     <string name="setting_force_language_title">Prisilno koristi jezik</string>
-    <string name="setting_force_language_subtitle">Koristi odabrani jezik bez obzira na postavke sustava</string>
+    <string name="setting_force_language_subtitle">Uvijek govori gore odabranim jezikom, bez obzira na jezik koji aplikacije traže</string>
 
     <!-- Emoji settings -->
     <string name="setting_emoji_enabled_title">Omogući čitanje emojija</string>
@@ -91,6 +95,7 @@
 
     <!-- Control descriptions for accessibility -->
     <string name="cd_voice_dropdown_desc">Odabir glasa za sintezu govora</string>
+    <string name="cd_language_dropdown_desc">Odabir jezika govora</string>
     <string name="cd_dict_type_dropdown_desc">Odabir vrste rječnika</string>
     <string name="cd_restore_speed_desc">Postavlja brzinu govora na zadanu vrijednost</string>
     <string name="cd_restore_pitch_desc">Postavlja visinu govora na zadanu vrijednost</string>

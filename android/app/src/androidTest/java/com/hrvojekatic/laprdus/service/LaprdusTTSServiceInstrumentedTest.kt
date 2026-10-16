@@ -102,15 +102,87 @@ class LaprdusTTSServiceInstrumentedTest {
         val tts = com.hrvojekatic.laprdus.tts.LaprdusTTS.app
         val voices = tts.getAllVoices()
 
-        // Should have 5 voices: josip, vlado, detence, baba, djed
-        assertTrue("Should have at least 5 voices, found ${voices.size}", voices.size >= 5)
+        // The 18 voices of the registry, in its order
+        val expected = listOf(
+            "josip", "vlado", "detence", "baba", "djedo",
+            "zvonko", "stojan", "mirsad",
+            "orguljas", "dalmacija_klapa", "trubac", "harmonikas", "sevdalija", "sazlija",
+            "lika_velebit", "solunac", "sarajevo_bembasa", "becarac"
+        )
+        assertEquals(expected, voices.map { it.id })
 
-        val voiceIds = voices.map { it.id }
-        assertTrue("Should have josip voice", "josip" in voiceIds)
-        assertTrue("Should have vlado voice", "vlado" in voiceIds)
-        assertTrue("Should have detence voice", "detence" in voiceIds)
-        assertTrue("Should have baba voice", "baba" in voiceIds)
-        assertTrue("Should have djed voice", "djed" in voiceIds)
+        // Display names come from the registry: no "Laprdus" prefix, no language
+        val byId = voices.associateBy { it.id }
+        assertEquals("Josip", byId.getValue("josip").displayName)
+        assertEquals("\u0110edo", byId.getValue("djedo").displayName)
+        assertEquals("Dalmacija Klapa", byId.getValue("dalmacija_klapa").displayName)
+        assertEquals("Lika Velebit", byId.getValue("lika_velebit").displayName)
+
+        // Kinds come from the registry fields
+        assertFalse(byId.getValue("josip").isFormantVoice)
+        assertTrue(byId.getValue("zvonko").isFormantVoice)
+        assertFalse(byId.getValue("zvonko").isSingingVoice)
+        assertTrue(byId.getValue("becarac").isSingingVoice)
+        assertEquals("zvonko", byId.getValue("becarac").baseVoiceId)
+        assertEquals("vlado", byId.getValue("djedo").baseVoiceId)
+        assertEquals("sr", byId.getValue("djedo").nativeLanguage)
+        assertEquals("bs", byId.getValue("mirsad").nativeLanguage)
+    }
+
+    @Test
+    fun anOldVoiceIdLoadsTheRenamedVoice() {
+        val tts = com.hrvojekatic.laprdus.tts.LaprdusTTS.app
+        assertTrue(tts.setVoice("djed", context.assets))
+        assertEquals("djedo", tts.currentVoiceId)
+        assertTrue(tts.setVoice("pjevac", context.assets))
+        assertEquals("lika_velebit", tts.currentVoiceId)
+        assertTrue(tts.setVoice("zvonko", context.assets))
+        assertEquals("zvonko", tts.currentVoiceId)
+    }
+
+    @Test
+    fun everyVoiceSpeaksEveryLanguage() {
+        val tts = com.hrvojekatic.laprdus.tts.LaprdusTTS.app
+        try {
+            // Without a chosen language, a voice speaks its native one
+            tts.setLanguage(null)
+            assertTrue(tts.setVoice("josip", context.assets))
+            assertEquals("hr", tts.spokenLanguage)
+            assertTrue(tts.setVoice("vlado", context.assets))
+            assertEquals("sr", tts.spokenLanguage)
+            assertTrue(tts.setVoice("mirsad", context.assets))
+            assertEquals("bs", tts.spokenLanguage)
+
+            // A chosen language sticks across voice loads, for every kind of voice
+            assertTrue(tts.setLanguage("sr"))
+            assertEquals("sr", tts.currentLanguage)
+            assertEquals("sr", tts.spokenLanguage)
+            assertTrue(tts.setVoice("josip", context.assets))
+            assertEquals("sr", tts.spokenLanguage)
+            assertTrue(tts.setVoice("zvonko", context.assets))
+            assertEquals("sr", tts.spokenLanguage)
+            assertTrue(tts.setVoice("becarac", context.assets))
+            assertEquals("sr", tts.spokenLanguage)
+
+            // Tags are accepted; unknown languages are refused and change nothing
+            assertTrue(tts.setLanguage("bs-BA"))
+            assertEquals("bs", tts.spokenLanguage)
+            assertFalse(tts.setLanguage("en"))
+            assertEquals("bs", tts.spokenLanguage)
+
+            // Serbian and Croatian number words differ: 200 is "dvjesto" / "dvesta"
+            assertTrue(tts.setVoice("zvonko", context.assets))
+            assertTrue(tts.setLanguage("hr"))
+            val croatian = tts.synthesize("200")
+            assertTrue(tts.setLanguage("sr"))
+            val serbian = tts.synthesize("200")
+            assertNotNull(croatian)
+            assertNotNull(serbian)
+            assertFalse("the language changes what the same voice says",
+                croatian!!.contentEquals(serbian!!))
+        } finally {
+            tts.setLanguage(null)
+        }
     }
 
     @Test

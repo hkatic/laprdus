@@ -3,7 +3,7 @@
 pkgname=laprdus
 pkgver=2.0.0
 pkgrel=1
-pkgdesc="Croatian/Serbian Text-to-Speech Engine"
+pkgdesc="Croatian/Serbian/Bosnian Text-to-Speech Engine"
 arch=('x86_64' 'aarch64')
 url="https://hrvojekatic.com/laprdus"
 license=('GPL3')

@@ -88,7 +88,7 @@ struct VerbRoot;    // a verb's root or stem with its conjugation (formant_front
  *
  * "word" is a word, a stem ("*") or a paradigm ("|"); "verb" a whole stem
  * ("st'e:m=classes") or a root with a long ije ("root:classes[:prefixes]");
- * "language" ("hr", "sr", "bs") limits an entry to one voice language.
+ * "language" ("hr", "sr", "bs") limits an entry to one language.
  * Every entry is checked when the file is parsed, and a malformed one is
  * skipped and counted, so a typo can neither crash the engine nor silently
  * produce a word without stress. The lexicon is parsed once; synthesis

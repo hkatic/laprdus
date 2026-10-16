@@ -12,6 +12,7 @@ Croatian speech (see docs/formant.md).
 Usage:
     analyze.py file.wav [file2.wav ...]
     analyze.py --voice zvonko "asa" "aša" "aka"     # synthesize with the CLI
+    analyze.py --voice josip --language sr "1000"   # the voice in another language
     analyze.py --step 5 file.wav                     # finer time resolution
 
 Requires numpy. WAV input must be 16-bit mono.
@@ -97,6 +98,8 @@ def main():
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("items", nargs="+", help="WAV files, or texts with --voice")
     parser.add_argument("--voice", help="synthesize the texts with this Laprdus voice")
+    parser.add_argument("--language", help="language the voice speaks (hr, sr, bs; CLI -L); "
+                        "default: the voice's native language")
     parser.add_argument("--cli", default=os.environ.get("LAPRDUS_CLI", "laprdus"),
                         help="path to the laprdus CLI (default: $LAPRDUS_CLI or laprdus)")
     parser.add_argument("--data-dir", default=os.environ.get("LAPRDUS_DATA"),
@@ -109,11 +112,14 @@ def main():
             with tempfile.TemporaryDirectory() as tmp:
                 path = os.path.join(tmp, "out.wav")
                 command = [args.cli, "-v", args.voice, "-o", path]
+                if args.language:
+                    command += ["-L", args.language]
                 if args.data_dir:
                     command += ["-D", args.data_dir]
                 subprocess.run(command + [item], check=True, stdout=subprocess.DEVNULL)
                 samples, rate = read_wav(path)
-            report(f'{args.voice}: "{item}"', samples, rate, args.step)
+            label = args.voice + (f" ({args.language})" if args.language else "")
+            report(f'{label}: "{item}"', samples, rate, args.step)
         else:
             samples, rate = read_wav(item)
             report(item, samples, rate, args.step)

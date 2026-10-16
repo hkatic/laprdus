@@ -624,6 +624,22 @@
         }
       }
     },
+    "Error selecting language" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Greška pri odabiru jezika"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Greška pri izboru jezika"
+          }
+        }
+      }
+    },
     "Error selecting voice" : {
       "localizations" : {
         "hr" : {
@@ -732,6 +748,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Prinudno koristi Laprdus jačinu"
+          }
+        }
+      }
+    },
+    "Formant voice" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Formantni glas"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Formantni glas"
+          }
+        }
+      }
+    },
+    "Language" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jezik"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jezik"
           }
         }
       }
@@ -996,6 +1044,22 @@
         }
       }
     },
+    "Recorded voice" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Snimljeni glas"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Snimljeni glas"
+          }
+        }
+      }
+    },
     "Replacement pronunciation" : {
       "localizations" : {
         "hr" : {
@@ -1108,6 +1172,22 @@
         }
       }
     },
+    "Select the language spoken by every voice" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odabir jezika kojim govore svi glasovi"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Izbor jezika kojim govore svi glasovi"
+          }
+        }
+      }
+    },
     "Select voice for speech synthesis" : {
       "localizations" : {
         "hr" : {
@@ -1184,6 +1264,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Podešavanja i rečnici ne dele se sa glasovima sistema. Ponovna instalacija Laprdusa trebalo bi da to reši."
+          }
+        }
+      }
+    },
+    "Singing voice" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pjevajući glas"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pevajući glas"
           }
         }
       }

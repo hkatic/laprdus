@@ -15,8 +15,12 @@ namespace laprdus {
  *
  * Provides access to voice definitions including:
  * - Physical voices (Josip, Vlado) with their own phoneme data
- * - Derived voices (Detence, Baba, Djedo) that use physical voice data with pitch modification
+ * - Derived voices (Detence, Baba, Đedo) that use physical voice data with pitch modification
  * - Formant voices (Zvonko, Stojan, Mirsad) synthesized by rule, with no data file
+ * - Singing presets of the formant voices
+ *
+ * Every voice speaks every language (Croatian, Serbian, Bosnian); a voice's
+ * `language` is only its native one. The default voice is Zvonko.
  */
 class VoiceRegistry {
 public:
@@ -33,11 +37,18 @@ public:
     static size_t voice_count();
 
     /**
-     * Find voice by ID.
+     * Find voice by ID. The ids of earlier versions ("djed", "klapa",
+     * "pjevac", "pevac", "solist") are accepted and give the renamed voice.
      * @param id Voice ID (e.g., "josip").
      * @return Pointer to voice definition, or nullptr if not found.
      */
     static const VoiceDefinition* find_by_id(const char* id);
+
+    /** Id of the default voice of every language and platform: "zvonko". */
+    static const char* default_voice_id();
+
+    /** The default voice's definition. */
+    static const VoiceDefinition* default_voice();
 
     /**
      * Get voice by index.

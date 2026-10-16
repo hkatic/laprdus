@@ -481,11 +481,17 @@ enum class VoiceAge : uint8_t {
     Senior = 2
 };
 
-// Voice definition structure
+// Voice definition structure.
+//
+// Every voice speaks every language: the language (Croatian, Serbian or
+// Bosnian: letter-to-sound rules, accent lexicon, letter names, number
+// words) is chosen separately from the voice (TTSEngine::set_language(),
+// laprdus_set_language()). `language` is the voice's native language, the
+// one it speaks when the host has not asked for another.
 struct VoiceDefinition {
-    const char* id;              // Internal ID: "josip", "vlado", etc.
-    const char* display_name;    // "Laprdus Josip (Croatian)"
-    VoiceLanguage language;
+    const char* id;              // Internal ID: ASCII, no diacritics: "josip", "djedo", "lika_velebit"
+    const char* display_name;    // Name shown to the user: "Josip", "Ä" "edo", "Dalmacija Klapa"
+    VoiceLanguage language;      // Native language (the default; any language may be set)
     VoiceGender gender;
     VoiceAge age;
     const char* base_voice_id;   // nullptr if physical voice, else "josip" or "vlado"
@@ -497,6 +503,9 @@ struct VoiceDefinition {
 // Voice count
 constexpr size_t VOICE_COUNT = 18;
 
+// Number of languages (VoiceLanguage values 0 .. LANGUAGE_COUNT-1)
+constexpr size_t LANGUAGE_COUNT = 3;
+
 // Language code helpers
 inline const char* voice_language_code(VoiceLanguage lang) {
     switch (lang) {
@@ -505,6 +514,80 @@ inline const char* voice_language_code(VoiceLanguage lang) {
         case VoiceLanguage::Bosnian: return "bs-BA";
         default: return "hr-HR";
     }
+}
+
+// ISO 639-1 code alone: "hr", "sr", "bs"
+inline const char* voice_language_short_code(VoiceLanguage lang) {
+    switch (lang) {
+        case VoiceLanguage::Croatian: return "hr";
+        case VoiceLanguage::Serbian: return "sr";
+        case VoiceLanguage::Bosnian: return "bs";
+        default: return "hr";
+    }
+}
+
+// English name of the language: "Croatian", "Serbian", "Bosnian"
+inline const char* voice_language_english_name(VoiceLanguage lang) {
+    switch (lang) {
+        case VoiceLanguage::Croatian: return "Croatian";
+        case VoiceLanguage::Serbian: return "Serbian";
+        case VoiceLanguage::Bosnian: return "Bosnian";
+        default: return "Croatian";
+    }
+}
+
+// The language's own name of itself (Latin script): "Hrvatski", "Srpski", "Bosanski"
+inline const char* voice_language_native_name(VoiceLanguage lang) {
+    switch (lang) {
+        case VoiceLanguage::Croatian: return "Hrvatski";
+        case VoiceLanguage::Serbian: return "Srpski";
+        case VoiceLanguage::Bosnian: return "Bosanski";
+        default: return "Hrvatski";
+    }
+}
+
+/**
+ * Parse a language tag or name: "hr", "hr-HR", "hr_HR", "hrv", "sr-Latn-RS",
+ * "sr-Cyrl", "srp", "bs", "bs-BA", "bos", "Croatian", "hrvatski", ...,
+ * in any case. Only the first subtag counts. Returns false for anything
+ * else and leaves *out untouched.
+ */
+inline bool parse_voice_language(const char* tag, VoiceLanguage* out) {
+    if (!tag || !out) return false;
+    char code[4] = {0, 0, 0, 0};
+    size_t n = 0;
+    while (tag[n] && tag[n] != '-' && tag[n] != '_' && tag[n] != '.' && tag[n] != '@') {
+        if (n < 3) {
+            char c = tag[n];
+            if (c >= 'A' && c <= 'Z') c = static_cast<char>(c - 'A' + 'a');
+            code[n] = c;
+        }
+        ++n;
+    }
+    if (n == 2 || n == 3) {
+        const char* c = code;
+        if ((c[0] == 'h' && c[1] == 'r' && (n == 2 || c[2] == 'v'))) { *out = VoiceLanguage::Croatian; return true; }
+        if ((c[0] == 's' && c[1] == 'r' && (n == 2 || c[2] == 'p'))) { *out = VoiceLanguage::Serbian; return true; }
+        if ((c[0] == 'b' && c[1] == 's' && n == 2) || (c[0] == 'b' && c[1] == 'o' && c[2] == 's')) { *out = VoiceLanguage::Bosnian; return true; }
+        return false;
+    }
+    // Whole names, English or native
+    struct Name { const char* name; VoiceLanguage lang; };
+    static const Name NAMES[] = {
+        {"croatian", VoiceLanguage::Croatian}, {"hrvatski", VoiceLanguage::Croatian},
+        {"serbian", VoiceLanguage::Serbian}, {"srpski", VoiceLanguage::Serbian},
+        {"bosnian", VoiceLanguage::Bosnian}, {"bosanski", VoiceLanguage::Bosnian},
+    };
+    for (const Name& entry : NAMES) {
+        size_t i = 0;
+        for (; entry.name[i] && tag[i]; ++i) {
+            char c = tag[i];
+            if (c >= 'A' && c <= 'Z') c = static_cast<char>(c - 'A' + 'a');
+            if (c != entry.name[i]) break;
+        }
+        if (!entry.name[i] && !tag[i]) { *out = entry.lang; return true; }
+    }
+    return false;
 }
 
 inline uint16_t voice_language_lcid(VoiceLanguage lang) {

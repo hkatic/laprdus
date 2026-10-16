@@ -39,9 +39,15 @@ namespace laprdus {
  * This allows applications to use LaprdusTTS through the standard
  * Windows text-to-speech system.
  *
- * Registry entries required:
- * - HKLM\SOFTWARE\Microsoft\Speech\Voices\Tokens\Laprdus
+ * Registry entries required (written by the installer):
+ * - one voice token per language, HKLM\SOFTWARE\Microsoft\Speech\Voices\
+ *   Tokens\LaprdusCroatian, LaprdusSerbian, LaprdusBosnian, each with a
+ *   "Language" value ("hr", "sr", "bs") and the usual Attributes; the voice
+ *   that speaks is the one chosen in the Laprdus Configurator
+ *   (settings.json "voice.default", Zvonko by default)
  * - COM registration for CLSID_LaprdusTTS
+ * A token of an earlier version with a "VoiceId" value still works: that
+ * voice speaks, in the token's language.
  */
 class ATL_NO_VTABLE LaprdusSAPIDriver :
     public CComObjectRootEx<CComMultiThreadModel>,
@@ -88,7 +94,11 @@ private:
     CComPtr<ISpObjectToken> m_token;
     std::unique_ptr<TTSEngine> m_engine;
     bool m_initialized = false;
-    float m_basePitch = 1.0f;  // Base pitch from voice token (for derived voices)
+    float m_basePitch = 1.0f;  // Base pitch of the voice (derived voices)
+    VoiceLanguage m_language = VoiceLanguage::Croatian;  // from the token
+    std::string m_voiceId;                                // voice that speaks
+    std::string m_settingsPath;                           // settings.json
+    long long m_settingsStamp = 0;                        // its last write time when loaded
 
     // User settings (loaded from %APPDATA%\Laprdus\settings.json)
     float m_userSpeed = 1.0f;
@@ -98,8 +108,19 @@ private:
     bool m_forcePitch = false;
     bool m_forceVolume = false;
 
-    // Initialize the TTS engine from token attributes
+    // Initialize the TTS engine from the token and the user's settings
     HRESULT InitializeEngine();
+
+    // The voice settings.json asks for (Zvonko when it names none)
+    static std::string ConfiguredVoiceId();
+
+    // Re-initialize when settings.json changed since the engine was set
+    // up, so a voice chosen in the Configurator speaks without restarting
+    // the client
+    void ReloadIfSettingsChanged();
+
+    // Last write time of a file as a plain number (0 if missing)
+    static long long FileStamp(const std::string& path);
 
     // A stretch of an utterance that is synthesized in one go: text that is
     // either spoken or spelled, or (with no text) a silence

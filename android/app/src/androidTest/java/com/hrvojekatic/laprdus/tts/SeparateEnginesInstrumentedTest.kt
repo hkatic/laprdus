@@ -61,6 +61,23 @@ class SeparateEnginesInstrumentedTest {
     }
 
     @Test
+    fun aLanguageChosenOnOneEngineDoesNotChangeTheOther() {
+        val app = LaprdusTTS.app
+        val service = LaprdusTTS.service
+        try {
+            assertTrue(app.setVoice("zvonko", assets))
+            assertTrue(service.setVoice("zvonko", assets))
+            assertTrue(app.setLanguage("sr"))
+            assertTrue(service.setLanguage("bs"))
+            assertEquals("sr", app.spokenLanguage)
+            assertEquals("bs", service.spokenLanguage)
+        } finally {
+            app.setLanguage(null)
+            service.setLanguage(null)
+        }
+    }
+
+    @Test
     fun settingsSurviveLoadingAVoice() {
         // The service applies its settings before it loads its first voice,
         // so loading a voice must keep them.

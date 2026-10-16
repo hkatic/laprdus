@@ -1,5 +1,5 @@
 // laprdus_sapi5.rc - SAPI5 DLL Resources
-// LaprdusTTS Croatian Text-to-Speech Engine
+// LaprdusTTS Croatian/Serbian/Bosnian Text-to-Speech Engine
 
 #include <windows.h>
 

@@ -61,6 +61,13 @@ class LaprdusTTS private constructor() {
          * Get the library version
          */
         fun getVersion(): String = nativeGetVersion()
+
+        /**
+         * The canonical id of a saved voice id: the ids of earlier versions
+         * ("djed", "klapa", "pjevac", "pevac", "solist") give the renamed
+         * voice's id, so a saved id compares with the voice list.
+         */
+        fun normalizeVoiceId(id: String): String = VoiceInfo.normalizeId(id)
     }
 
     // ==========================================================================
@@ -83,7 +90,9 @@ class LaprdusTTS private constructor() {
     private external fun nativeCancel()
     private external fun nativeGetVoiceCount(): Int
     private external fun nativeGetVoiceInfo(index: Int): VoiceInfo?
-    private external fun nativeSetVoice(handle: Long, voiceId: String, assetManager: AssetManager): Boolean
+    private external fun nativeSetVoice(handle: Long, voiceId: String, assetManager: AssetManager): String?
+    private external fun nativeSetLanguage(handle: Long, tag: String?): Boolean
+    private external fun nativeGetLanguage(handle: Long): String
     private external fun nativeLoadDictionaryFromAssets(handle: Long, assetManager: AssetManager, assetPath: String): Boolean
     private external fun nativeAddPronunciation(handle: Long, grapheme: String, phoneme: String, caseSensitive: Boolean, wholeWord: Boolean)
     private external fun nativeAddSpellingEntry(handle: Long, character: String, pronunciation: String)
@@ -148,9 +157,22 @@ class LaprdusTTS private constructor() {
     @Volatile
     var userDictionariesEnabled: Boolean = true
 
-    /** The voice this engine has loaded, or null before the first [setVoice]. */
+    /**
+     * The canonical id of the voice this engine has loaded (an old id given
+     * to [setVoice] reads back as the renamed voice's), or null before the
+     * first [setVoice].
+     */
     @Volatile
     var currentVoiceId: String? = null
+        private set
+
+    /**
+     * The language chosen with [setLanguage] ("hr", "sr" or "bs"), or null
+     * when every voice speaks its native language. [spokenLanguage] is what
+     * the engine speaks at the moment.
+     */
+    @Volatile
+    var currentLanguage: String? = null
         private set
 
     /**
@@ -161,6 +183,7 @@ class LaprdusTTS private constructor() {
         exclusive {
             nativeShutdown(handle)
             currentVoiceId = null
+            currentLanguage = null
         }
     }
 
@@ -284,22 +307,49 @@ class LaprdusTTS private constructor() {
     }
 
     /**
-     * Set the active voice for synthesis
-     * For derived voices (child, grandma, grandpa), this also applies the appropriate pitch
+     * Set the active voice for synthesis.
+     * For derived voices (child, grandma, grandpa), this also applies the
+     * appropriate pitch. The voice speaks the language chosen with
+     * [setLanguage], or its native one when none was chosen.
      *
-     * @param voiceId Voice ID: "zvonko", "stojan", "mirsad", "josip", "vlado", "detence", "baba" or "djed"
+     * @param voiceId Voice ID ("zvonko", "josip", "djedo", "lika_velebit", ...);
+     *   the ids of earlier versions ("djed", "pjevac", ...) are accepted and
+     *   [currentVoiceId] then holds the renamed voice's id
      * @param assetManager Asset manager to load voice data
      * @return true if voice was set successfully
      */
     fun setVoice(voiceId: String, assetManager: AssetManager): Boolean = exclusive {
         Log.d(TAG, "Setting voice: $voiceId")
-        val success = nativeSetVoice(handle, voiceId, assetManager)
-        if (success) {
-            currentVoiceId = voiceId
+        val canonicalId = nativeSetVoice(handle, voiceId, assetManager)
+        if (canonicalId != null) {
+            currentVoiceId = canonicalId
             loadAllDictionaries(assetManager)
         }
-        success
+        canonicalId != null
     }
+
+    /**
+     * Choose the language every voice speaks from now on, independently of
+     * the voice: "hr", "sr" or "bs" (a tag such as "hr-HR", "hrv" or "srp"
+     * is accepted too). It sticks across [setVoice] calls. Null goes back
+     * to each voice's native language.
+     *
+     * @return false for a language Laprdus does not speak (nothing changes)
+     */
+    fun setLanguage(language: String?): Boolean = exclusive {
+        val code = if (language == null) null else (Language.fromTag(language) ?: return@exclusive false)
+        if (code == currentLanguage) return@exclusive true
+        val ok = nativeSetLanguage(handle, code)
+        if (ok) currentLanguage = code
+        ok
+    }
+
+    /**
+     * The language the engine speaks at the moment ("hr", "sr" or "bs"):
+     * the chosen one, else the loaded voice's native one.
+     */
+    val spokenLanguage: String
+        get() = Language.fromTag(nativeGetLanguage(handle)) ?: Language.DEFAULT
 
     /**
      * Reload the bundled dictionaries and the user's on top of them, so an

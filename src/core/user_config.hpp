@@ -38,7 +38,8 @@ struct UserSettings {
     SpellingMode spelling_mode = SpellingMode::LetterNames;  // Letter names or sounds
     int spelling_speed = SPELLING_SPEED_DEFAULT;             // Rate of spelled characters (0-100)
 
-    // Default voice (for platforms that can set it)
+    // The voice (empty = Zvonko). Every voice speaks every language; the
+    // language is the host's choice (SAPI5 token, NVDA setting, CLI -L).
     std::string default_voice;
 
     // Force settings (override SAPI5/system values with Laprdus values)

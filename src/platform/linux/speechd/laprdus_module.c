@@ -29,10 +29,15 @@
  * Emacspeak, and other SSIP clients.
  *
  * Features:
- * - 3 formant voices (Zvonko - Croatian, Stojan - Serbian, Mirsad - Bosnian),
- *   the default for their language
- * - 5 recorded voices (Josip, Vlado, Detence, Baba, Djedo)
- * - Full SSIP parameter support (rate, pitch, volume)
+ * - Every voice speaks every language (Croatian, Serbian, Bosnian): the
+ *   voice list has one entry per voice and language, SET LANGUAGE changes
+ *   the language and keeps the voice, SET VOICE MALE1 is Zvonko for all
+ *   three languages
+ * - 3 formant voices (Zvonko, the default; Stojan; Mirsad) and ten singing
+ *   presets of theirs
+ * - 5 recorded voices (Josip, Vlado, Detence, Baba, Đedo)
+ * - Voice names and ids come from the engine's registry
+ * - Full SSIP parameter support (rate, pitch, volume, pitch range)
  * - Spelling mode support
  * - Punctuation mode support (via pauses)
  */
@@ -60,6 +65,7 @@
 
 /* Default paths */
 #define DEFAULT_DATA_DIR "/usr/share/laprdus"
+/* The default voice of every language, the same as laprdus_get_default_voice() */
 #define DEFAULT_VOICE "zvonko"
 
 /* Configuration options */
@@ -207,69 +213,107 @@ static void apply_parameters(void)
 }
 
 /**
- * Get display name for a voice ID.
- * Returns the user-facing name (e.g., "Josip", "Đedo") for Orca/SSIP clients.
- */
-static const char* get_voice_display_name(const char *id)
-{
-    if (strcmp(id, "josip") == 0) return "Josip";
-    if (strcmp(id, "vlado") == 0) return "Vlado";
-    if (strcmp(id, "detence") == 0) return "Detence";
-    if (strcmp(id, "baba") == 0) return "Baba";
-    if (strcmp(id, "djed") == 0) return "\xc4\x90" "edo";  /* Đedo in UTF-8 */
-    if (strcmp(id, "zvonko") == 0) return "Zvonko";
-    if (strcmp(id, "stojan") == 0) return "Stojan";
-    if (strcmp(id, "mirsad") == 0) return "Mirsad";
-    if (strcmp(id, "orguljas") == 0) return "Orgulja\xc5\xa1";       /* Orguljaš */
-    if (strcmp(id, "klapa") == 0) return "Klapa";
-    if (strcmp(id, "trubac") == 0) return "Truba\xc4\x8d";           /* Trubač */
-    if (strcmp(id, "harmonikas") == 0) return "Harmonika\xc5\xa1";   /* Harmonikaš */
-    if (strcmp(id, "sevdalija") == 0) return "Sevdalija";
-    if (strcmp(id, "sazlija") == 0) return "Sazlija";
-    if (strcmp(id, "pjevac") == 0) return "Pjeva\xc4\x8d";           /* Pjevač */
-    if (strcmp(id, "pevac") == 0) return "Peva\xc4\x8d";             /* Pevač */
-    if (strcmp(id, "solist") == 0) return "Solist";
-    if (strcmp(id, "becarac") == 0) return "Be\xc4\x87" "arac";         /* Bećarac */
-    return id;
-}
-
-/**
- * Build the voice list from Laprdus API
+ * Build the voice list from the Laprdus API: one SPDVoice per voice and
+ * language, since every voice speaks every language. The name is the
+ * registry's display name (what Orca shows), the language one of hr-HR,
+ * sr-RS, bs-BA, and the variant the voice id, which SET SYNTHESIS_VOICE
+ * accepts back.
  */
 static void build_voice_list(void)
 {
-    uint32_t count = laprdus_get_voice_count();
-    if (count == 0) {
-        voice_list = malloc(sizeof(SPDVoice*));
-        voice_list[0] = NULL;
-        return;
-    }
+    uint32_t voices = laprdus_get_voice_count();
+    uint32_t languages = laprdus_get_language_count();
+    size_t total = (size_t)voices * languages;
 
-    voice_list = malloc((count + 1) * sizeof(SPDVoice*));
+    voice_list = malloc((total + 1) * sizeof(SPDVoice*));
     if (!voice_list) {
         ERR("Failed to allocate voice list");
         return;
     }
 
-    for (uint32_t i = 0; i < count; i++) {
+    size_t n = 0;
+    for (uint32_t i = 0; i < voices; i++) {
         LaprdusVoiceInfo info;
-        if (laprdus_get_voice_info(i, &info) == LAPRDUS_OK) {
-            voice_list[i] = malloc(sizeof(SPDVoice));
-            if (voice_list[i]) {
-                /* Use display name so Orca shows proper voice names */
-                voice_list[i]->name = strdup(get_voice_display_name(info.id));
-                voice_list[i]->language = strdup(info.language_code);
-                /* Variant stores the internal voice ID for selection */
-                voice_list[i]->variant = strdup(info.id);
-                DBG("Registered voice: %s (%s) [%s]",
-                    voice_list[i]->name, voice_list[i]->language,
-                    voice_list[i]->variant);
-            }
-        } else {
-            voice_list[i] = NULL;
+        if (laprdus_get_voice_info(i, &info) != LAPRDUS_OK) continue;
+        for (uint32_t l = 0; l < languages; l++) {
+            LaprdusLanguageInfo lang;
+            if (laprdus_get_language_info(l, &lang) != LAPRDUS_OK) continue;
+            SPDVoice *voice = malloc(sizeof(SPDVoice));
+            if (!voice) continue;
+            voice->name = strdup(info.display_name);
+            voice->language = strdup(lang.code);
+            voice->variant = strdup(info.id);
+            voice_list[n++] = voice;
+            DBG("Registered voice: %s (%s) [%s]",
+                voice->name, voice->language, voice->variant);
         }
     }
-    voice_list[count] = NULL;
+    voice_list[n] = NULL;
+}
+
+/**
+ * Lowercase ASCII form of a UTF-8 name: č ć -> c, đ -> dj, š -> s, ž -> z,
+ * so that "Djedo" finds Đedo and "Orguljas - Vila Velebita" the organist.
+ */
+static void ascii_fold(const char *in, char *out, size_t size)
+{
+    const unsigned char *p = (const unsigned char*)in;
+    size_t n = 0;
+    while (*p && n + 3 < size) {
+        unsigned char c = p[0];
+        unsigned char d = p[1];
+        const char *rep = NULL;
+        if (c == 0xC4) {
+            if (d == 0x8C || d == 0x8D || d == 0x86 || d == 0x87) rep = "c";   /* Č č Ć ć */
+            else if (d == 0x90 || d == 0x91) rep = "dj";                     /* Đ đ */
+        } else if (c == 0xC5) {
+            if (d == 0xA0 || d == 0xA1) rep = "s";                           /* Š š */
+            else if (d == 0xBD || d == 0xBE) rep = "z";                      /* Ž ž */
+        }
+        if (rep) {
+            while (*rep) out[n++] = *rep++;
+            p += 2;
+            continue;
+        }
+        out[n++] = (c >= 'A' && c <= 'Z') ? (char)(c - 'A' + 'a') : (char)c;
+        p++;
+    }
+    out[n] = '\0';
+}
+
+/**
+ * Resolve what a client calls a voice to a registry id: a voice id (an old
+ * one too: the engine maps djed, klapa, pjevac, pevac, solist to the renamed
+ * voices), a display name, or its ASCII-folded form, all case-insensitive.
+ * Returns the canonical id (a pointer into the registry) or NULL.
+ */
+static const char *find_voice_id(const char *name)
+{
+    if (!name || !*name) return NULL;
+
+    LaprdusVoiceInfo info;
+    if (laprdus_get_voice_info_by_id(name, &info) == LAPRDUS_OK) {
+        return info.id;
+    }
+
+    char wanted[128];
+    char candidate[128];
+    ascii_fold(name, wanted, sizeof(wanted));
+
+    /* Ids are lowercase ASCII: the folded form finds "Djed" or "Solist" too */
+    if (laprdus_get_voice_info_by_id(wanted, &info) == LAPRDUS_OK) {
+        return info.id;
+    }
+
+    uint32_t count = laprdus_get_voice_count();
+    for (uint32_t i = 0; i < count; i++) {
+        if (laprdus_get_voice_info(i, &info) != LAPRDUS_OK) continue;
+        if (strcasecmp(info.id, name) == 0) return info.id;
+        if (strcasecmp(info.display_name, name) == 0) return info.id;
+        ascii_fold(info.display_name, candidate, sizeof(candidate));
+        if (strcmp(candidate, wanted) == 0) return info.id;
+    }
+    return NULL;
 }
 
 /**
@@ -290,31 +334,31 @@ static void free_voice_list(void)
 }
 
 /**
- * Set voice by name
+ * Set voice by id or name. The language chosen with SET LANGUAGE stays:
+ * laprdus_set_voice() keeps it across voice changes.
  */
 static int set_voice(const char *name)
 {
     if (!engine || !name) return -1;
 
-    /* Check if voice exists */
-    LaprdusVoiceInfo info;
-    if (laprdus_get_voice_info_by_id(name, &info) != LAPRDUS_OK) {
+    const char *id = find_voice_id(name);
+    if (!id) {
         ERR("Voice not found: %s", name);
         return -1;
     }
 
     /* Set the voice */
     const char *data_dir = laprdus_data_dir ? laprdus_data_dir : DEFAULT_DATA_DIR;
-    if (laprdus_set_voice(engine, name, data_dir) != LAPRDUS_OK) {
-        ERR("Failed to set voice: %s (%s)", name, laprdus_get_error_message(engine));
+    if (laprdus_set_voice(engine, id, data_dir) != LAPRDUS_OK) {
+        ERR("Failed to set voice: %s (%s)", id, laprdus_get_error_message(engine));
         return -1;
     }
 
-    /* Remember current voice */
+    /* Remember current voice by its canonical id */
     if (current_voice_name) free(current_voice_name);
-    current_voice_name = strdup(name);
+    current_voice_name = strdup(id);
 
-    DBG("Set voice: %s", name);
+    DBG("Set voice: %s (language %s)", id, laprdus_get_language(engine));
     return 0;
 }
 
@@ -383,15 +427,13 @@ int module_init(char **msg)
     const char *data_dir = laprdus_data_dir ? laprdus_data_dir : DEFAULT_DATA_DIR;
     const char *voice = laprdus_default_voice ? laprdus_default_voice : DEFAULT_VOICE;
 
-    if (laprdus_set_voice(engine, voice, data_dir) != LAPRDUS_OK) {
+    if (set_voice(voice) != 0) {
         *msg = strdup("Failed to initialize voice. Check data directory.");
         ERR("%s: %s", *msg, laprdus_get_error_message(engine));
         laprdus_destroy(engine);
         engine = NULL;
         return -1;
     }
-
-    current_voice_name = strdup(voice);
 
     /* Load dictionaries if present */
     char dict_path[512];
@@ -425,35 +467,6 @@ SPDVoice **module_list_voices(void)
 }
 
 /**
- * Default voice of a language ("hr", "sr-RS", ...), NULL for other languages
- */
-static const char *default_voice_for_language(const char *lang)
-{
-    if (!lang) return NULL;
-    if (strncasecmp(lang, "hr", 2) == 0) return "zvonko";
-    if (strncasecmp(lang, "sr", 2) == 0) return "stojan";
-    if (strncasecmp(lang, "bs", 2) == 0) return "mirsad";
-    return NULL;
-}
-
-/**
- * Language code of the voice in use ("hr-HR", ...), NULL if unknown
- */
-static const char *current_voice_language(void)
-{
-    const char *id = engine ? laprdus_get_current_voice(engine) : NULL;
-    if (!id) return NULL;
-    uint32_t count = laprdus_get_voice_count();
-    for (uint32_t i = 0; i < count; i++) {
-        LaprdusVoiceInfo info;
-        if (laprdus_get_voice_info(i, &info) == LAPRDUS_OK && strcmp(info.id, id) == 0) {
-            return info.language_code;
-        }
-    }
-    return NULL;
-}
-
-/**
  * Set a parameter
  */
 int module_set(const char *var, const char *val)
@@ -463,18 +476,17 @@ int module_set(const char *var, const char *val)
     if (!var || !val) return -1;
 
     if (strcmp(var, "voice") == 0) {
-        /* Voice type (MALE1, FEMALE1, etc.) - map to our voices.
-         * MALE1 is the default voice of the language in use, MALE2 the
-         * recorded voice of that language. */
-        const char *lang = current_voice_language();
-        int serbian = lang && strncasecmp(lang, "sr", 2) == 0;
+        /* Voice type (MALE1, FEMALE1, etc.). The same voice for every
+         * language, since every voice speaks every language: MALE1 is the
+         * default voice Zvonko, MALE2 the recorded Josip, MALE3 the old
+         * man, FEMALE1 the old woman, the children Detence. The language
+         * stays whatever SET LANGUAGE chose. */
         if (strcasecmp(val, "male1") == 0) {
-            const char *voice = default_voice_for_language(lang);
-            return set_voice(voice ? voice : DEFAULT_VOICE);
+            return set_voice(DEFAULT_VOICE);
         } else if (strcasecmp(val, "male2") == 0) {
-            return set_voice(serbian ? "vlado" : "josip");
+            return set_voice("josip");
         } else if (strcasecmp(val, "male3") == 0) {
-            return set_voice("djed");
+            return set_voice("djedo");
         } else if (strcasecmp(val, "female1") == 0 || strcasecmp(val, "female3") == 0) {
             return set_voice("baba");
         } else if (strcasecmp(val, "child_male") == 0 || strcasecmp(val, "child_female") == 0) {
@@ -484,64 +496,33 @@ int module_set(const char *var, const char *val)
         return set_voice(val);
     }
     else if (strcmp(var, "synthesis_voice") == 0) {
-        /* Synthesis voice - NULL means keep current voice */
+        /* Synthesis voice - NULL means keep current voice. Orca sends the
+         * name field of the voice list, spd-say -y an id or a name;
+         * set_voice() resolves ids (old ones too), display names and
+         * their ASCII-folded forms. */
         if (strcmp(val, "NULL") == 0 || strlen(val) == 0) {
             return 0;  /* Keep current voice */
         }
-        /* Try as internal voice ID first */
         if (set_voice(val) == 0) {
             return 0;
-        }
-        /* Map display name to internal ID (Orca sends the name field) */
-        if (strcasecmp(val, "Josip") == 0) return set_voice("josip");
-        if (strcasecmp(val, "Vlado") == 0) return set_voice("vlado");
-        if (strcasecmp(val, "Detence") == 0) return set_voice("detence");
-        if (strcasecmp(val, "Baba") == 0) return set_voice("baba");
-        if (strcasecmp(val, "Zvonko") == 0) return set_voice("zvonko");
-        if (strcasecmp(val, "Stojan") == 0) return set_voice("stojan");
-        if (strcasecmp(val, "Mirsad") == 0) return set_voice("mirsad");
-        /* Singing presets */
-        if (strcasecmp(val, "Orgulja\xc5\xa1") == 0 ||
-            strcasecmp(val, "Orguljas") == 0) return set_voice("orguljas");
-        if (strcasecmp(val, "Klapa") == 0) return set_voice("klapa");
-        if (strcasecmp(val, "Truba\xc4\x8d") == 0 ||
-            strcasecmp(val, "Trubac") == 0) return set_voice("trubac");
-        if (strcasecmp(val, "Harmonika\xc5\xa1") == 0 ||
-            strcasecmp(val, "Harmonikas") == 0) return set_voice("harmonikas");
-        if (strcasecmp(val, "Sevdalija") == 0) return set_voice("sevdalija");
-        if (strcasecmp(val, "Sazlija") == 0) return set_voice("sazlija");
-        if (strcasecmp(val, "Pjeva\xc4\x8d") == 0 ||
-            strcasecmp(val, "Pjevac") == 0) return set_voice("pjevac");
-        if (strcasecmp(val, "Peva\xc4\x8d") == 0 ||
-            strcasecmp(val, "Pevac") == 0) return set_voice("pevac");
-        if (strcasecmp(val, "Solist") == 0) return set_voice("solist");
-        if (strcasecmp(val, "Be\xc4\x87" "arac") == 0 ||
-            strcasecmp(val, "Becarac") == 0) return set_voice("becarac");
-        /* Đedo - try both UTF-8 and ASCII forms */
-        if (strcasecmp(val, "\xc4\x90" "edo") == 0 ||
-            strcasecmp(val, "Djed") == 0 ||
-            strcasecmp(val, "Djedo") == 0) return set_voice("djed");
-        /* Try as variant (internal ID) from voice list */
-        if (voice_list) {
-            for (int i = 0; voice_list[i] != NULL; i++) {
-                if (strcasecmp(voice_list[i]->variant, val) == 0) {
-                    return set_voice(voice_list[i]->variant);
-                }
-            }
         }
         ERR("Unknown synthesis voice: %s", val);
         return -1;
     }
     else if (strcmp(var, "language") == 0) {
-        /* Set voice by language code. A voice that already speaks the
-         * language is kept; otherwise the default voice of the language is
-         * used. Other languages continue with the current voice. */
-        const char *voice = default_voice_for_language(val);
-        const char *lang = current_voice_language();
-        if (!voice || (lang && strncasecmp(lang, val, 2) == 0)) {
+        /* Every voice speaks every language: switch the language and keep
+         * the voice. Croatian, Serbian and Bosnian in any spelling (hr,
+         * sr-RS, bs_BA, ...) are accepted; other languages are ignored and
+         * the current language continues. */
+        if (strcmp(val, "NULL") == 0 || strlen(val) == 0) {
             return 0;
         }
-        return set_voice(voice);
+        if (laprdus_set_language(engine, val) == LAPRDUS_OK) {
+            DBG("Language: %s", laprdus_get_language(engine));
+        } else {
+            DBG("Language %s not spoken, keeping %s", val, laprdus_get_language(engine));
+        }
+        return 0;
     }
     else if (strcmp(var, "rate") == 0) {
         current_rate = atoi(val);

@@ -105,9 +105,10 @@ struct FormantVoice {
 
 /**
  * Find a formant voice by voice ID: a speaking voice ("zvonko", "stojan",
- * "mirsad") or a singing preset ("orguljas", "klapa", "trubac",
- * "harmonikas", "sevdalija", "sazlija", "pjevac", "pevac", "solist",
- * "becarac").
+ * "mirsad") or a singing preset ("orguljas", "dalmacija_klapa", "trubac",
+ * "harmonikas", "sevdalija", "sazlija", "lika_velebit", "solunac",
+ * "sarajevo_bembasa", "becarac"). The ids of earlier versions are resolved
+ * by VoiceRegistry::find_by_id(), not here.
  */
 const FormantVoice* find_formant_voice(const char* voice_id);
 
@@ -152,11 +153,19 @@ public:
     /** True for the singing presets. */
     bool is_singing() const { return m_voice.singing != nullptr; }
 
-    /** Language of the voice. */
+    /** Language the voice speaks at the moment (its native one until set). */
     VoiceLanguage language() const { return m_voice.language; }
+
+    /**
+     * Speak another language: the text front end is rebuilt with that
+     * language's rules and lexicon (the user's accent entries are kept).
+     * The voice itself (pitch, vocal tract, phonation) is unchanged.
+     */
+    void set_language(VoiceLanguage language);
 
     /** The user's accent entries (see UserLexicon); nullptr removes them. */
     void set_user_lexicon(const std::shared_ptr<const UserLexicon>& lexicon) {
+        m_user_lexicon = lexicon;
         m_frontend.set_user_lexicon(lexicon);
     }
 
@@ -168,6 +177,7 @@ private:
 
     FormantVoice m_voice;
     Frontend m_frontend;
+    std::shared_ptr<const UserLexicon> m_user_lexicon;
     KlattSynth m_synth;
     std::vector<Note> m_melody;     // singing presets: the song
     size_t m_cursor = 0;            // next note to sing

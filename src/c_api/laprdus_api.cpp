@@ -20,7 +20,9 @@
 struct LaprdusEngine {
     laprdus::TTSEngine engine;
     std::string last_error;
-    std::string current_voice_id;     // Currently active voice ID
+    std::string current_voice_id;     // Currently active voice ID (canonical)
+    bool language_chosen = false;     // laprdus_set_language() was called
+    laprdus::VoiceLanguage language = laprdus::VoiceLanguage::Croatian;  // ... with this language
     std::string data_directory;       // Directory containing voice .bin files
     float voice_base_pitch = 1.0f;    // Base pitch of current voice
     float character_pitch = 1.0f;     // Last value given to laprdus_set_pitch
@@ -746,14 +748,15 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_voice(
 
     // Formant voices are synthesized by rule and have no data file to load
     if (laprdus::VoiceRegistry::is_formant_voice(voice)) {
-        if (handle->current_voice_id != voice_id || !handle->engine.is_formant()) {
+        if (handle->current_voice_id != voice->id || !handle->engine.is_formant()) {
             if (!handle->engine.initialize_formant(voice->id)) {
                 set_error(handle, "Failed to initialize formant voice: " + std::string(voice_id));
                 return LAPRDUS_ERROR_LOAD_FAILED;
             }
         }
+        handle->engine.set_language(handle->language_chosen ? handle->language : voice->language);
         handle->data_directory = data_directory;
-        handle->current_voice_id = voice_id;
+        handle->current_voice_id = voice->id;
         handle->voice_base_pitch = voice->base_pitch;
         apply_character_pitch(handle);
         return LAPRDUS_OK;
@@ -804,12 +807,12 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_voice(
 
         handle->data_directory = data_directory;
     }
-    handle->engine.set_language(voice->language);
+    handle->engine.set_language(handle->language_chosen ? handle->language : voice->language);
 
     // Store current voice and apply its base pitch, so that a derived voice
     // sounds like itself (and its base voice like itself again) without the
     // caller having to set the pitch after every voice change.
-    handle->current_voice_id = voice_id;
+    handle->current_voice_id = voice->id;
     handle->voice_base_pitch = voice->base_pitch;
     apply_character_pitch(handle);
 
@@ -826,6 +829,71 @@ LAPRDUS_API const char* LAPRDUS_CALL laprdus_get_current_voice(LaprdusHandle han
     }
 
     return handle->current_voice_id.c_str();
+}
+
+LAPRDUS_API const char* LAPRDUS_CALL laprdus_get_default_voice(void) {
+    return laprdus::VoiceRegistry::default_voice_id();
+}
+
+// =============================================================================
+// Language Selection
+// =============================================================================
+
+LAPRDUS_API uint32_t LAPRDUS_CALL laprdus_get_language_count(void) {
+    return static_cast<uint32_t>(laprdus::LANGUAGE_COUNT);
+}
+
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_get_language_info(
+    uint32_t index,
+    LaprdusLanguageInfo* out_info) {
+
+    if (!out_info || index >= laprdus::LANGUAGE_COUNT) {
+        return LAPRDUS_ERROR_INVALID_PARAMETER;
+    }
+    const laprdus::VoiceLanguage lang = static_cast<laprdus::VoiceLanguage>(index);
+    out_info->code = laprdus::voice_language_code(lang);
+    out_info->short_code = laprdus::voice_language_short_code(lang);
+    out_info->lcid = laprdus::voice_language_lcid(lang);
+    out_info->english_name = laprdus::voice_language_english_name(lang);
+    out_info->native_name = laprdus::voice_language_native_name(lang);
+    return LAPRDUS_OK;
+}
+
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_language(
+    LaprdusHandle handle,
+    const char* language) {
+
+    if (!handle) {
+        return LAPRDUS_ERROR_INVALID_HANDLE;
+    }
+
+    if (!language || !*language) {
+        // Back to the voice's native language
+        handle->language_chosen = false;
+        const laprdus::VoiceDefinition* voice = handle->current_voice_id.empty() ? nullptr :
+            laprdus::VoiceRegistry::find_by_id(handle->current_voice_id.c_str());
+        if (voice) {
+            handle->engine.set_language(voice->language);
+        }
+        return LAPRDUS_OK;
+    }
+
+    laprdus::VoiceLanguage lang;
+    if (!laprdus::parse_voice_language(language, &lang)) {
+        set_error(handle, "Unknown language: " + std::string(language));
+        return LAPRDUS_ERROR_INVALID_PARAMETER;
+    }
+    handle->language_chosen = true;
+    handle->language = lang;
+    handle->engine.set_language(lang);
+    return LAPRDUS_OK;
+}
+
+LAPRDUS_API const char* LAPRDUS_CALL laprdus_get_language(LaprdusHandle handle) {
+    if (!handle) {
+        return nullptr;
+    }
+    return laprdus::voice_language_code(handle->engine.language());
 }
 
 // =============================================================================

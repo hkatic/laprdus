@@ -50,15 +50,26 @@ public class LaprdusAudioUnit: AVSpeechSynthesisProviderAudioUnit {
 
     // MARK: - Voices
 
+    /// One system voice per voice and language (18 x 3 = 54): every voice
+    /// is listed under Croatian, Serbian and Bosnian, and the entry the host
+    /// picks names both. The system shows the language itself, so the name
+    /// is the bare display name from the registry.
     public override var speechVoices: [AVSpeechSynthesisProviderVoice] {
         get {
-            VoiceCatalog.all.map { voice in
-                AVSpeechSynthesisProviderVoice(
-                    name: voice.localizedName,
-                    identifier: voice.providerIdentifier,
-                    primaryLanguages: [voice.languageCode],
-                    supportedLanguages: ["hr-HR", "sr-RS", "bs-BA"]
+            VoiceCatalog.providerVoices.map { entry in
+                let voice = AVSpeechSynthesisProviderVoice(
+                    name: entry.voice.displayName,
+                    identifier: entry.identifier,
+                    primaryLanguages: [entry.language.code],
+                    supportedLanguages: [entry.language.code]
                 )
+                voice.gender = entry.voice.gender == "Female" ? .female : .male
+                switch entry.voice.age {
+                case "Child": voice.age = 8
+                case "Senior": voice.age = 70
+                default: voice.age = 35
+                }
+                return voice
             }
         }
         set {}
@@ -89,8 +100,9 @@ public class LaprdusAudioUnit: AVSpeechSynthesisProviderAudioUnit {
             let engine = try ensureEngine()
 
             // The host always picks a concrete voice on Apple platforms
-            // (Spoken Content / VoiceOver), so honor its request.
-            let voiceID = voiceID(fromIdentifier: speechRequest.voice.identifier)
+            // (Spoken Content / VoiceOver), and its identifier names the
+            // voice and the language, so honor both.
+            let (voiceID, languageCode) = resolve(identifier: speechRequest.voice.identifier, settings: settings)
             let dictionaries = DictionaryStore()
                 .dictionaryState(userDictionariesEnabled: settings.userDictionariesEnabled)
             if engine.currentVoice != voiceID || !engine.isInitialized {
@@ -101,6 +113,9 @@ public class LaprdusAudioUnit: AVSpeechSynthesisProviderAudioUnit {
                 // only when the voice changes.
                 engine.syncDictionaries(dictionaries)
             }
+            // The chosen language survives voice changes inside the engine,
+            // and the wrapper asks for it again only when it differs.
+            try engine.setLanguage(languageCode)
 
             engine.apply(settings)
 
@@ -190,12 +205,17 @@ public class LaprdusAudioUnit: AVSpeechSynthesisProviderAudioUnit {
         return created
     }
 
-    private func voiceID(fromIdentifier identifier: String) -> String {
-        if let voice = VoiceCatalog.all.first(where: { $0.providerIdentifier == identifier }) {
-            return voice.id
+    /// The voice and language a request's voice identifier names:
+    /// "com.hrvojekatic.laprdus.zvonko.sr" is Zvonko speaking Serbian, a
+    /// pre-2.0 identifier without the language part is the voice in its
+    /// native language, and an old voice id is the renamed voice. An
+    /// identifier that is none of ours is never refused: the voice and the
+    /// language from the settings speak instead.
+    private func resolve(identifier: String, settings: SettingsSnapshot) -> (voiceID: String, languageCode: String) {
+        if let entry = VoiceCatalog.providerVoice(forIdentifier: identifier) {
+            return (entry.voice.id, entry.language.code)
         }
-        // Never refuse an unknown voice: fall back to the persisted default.
-        return SettingsSnapshot.load().defaultVoice
+        return (settings.defaultVoice, settings.language)
     }
 
     // MARK: - Rendering

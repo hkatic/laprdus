@@ -2,17 +2,25 @@ package com.hrvojekatic.laprdus.tts
 
 /**
  * Voice information returned from native engine.
- * Matches LaprdusVoiceInfo structure in C++.
+ * Matches the VoiceDefinition of the C++ voice registry.
  *
- * @property id Internal voice ID: "josip", "vlado", "detence", "baba", "djed",
- *   a formant voice: "zvonko", "stojan", "mirsad", or a singing preset:
- *   "orguljas", "klapa", "trubac", "harmonikas", "sevdalija", "sazlija",
- *   "pjevac", "pevac", "solist", "becarac"
- * @property displayName User-visible name: "Laprdus Josip (Croatian)"
- * @property languageCode BCP-47 language tag: "hr-HR", "sr-RS" or "bs-BA"
+ * Every voice speaks every language (see [Language]); [languageCode] is only
+ * the voice's native language, the one it speaks when no other is chosen.
+ *
+ * @property id Internal voice ID, plain ASCII: the recorded voices "josip",
+ *   "vlado", "detence", "baba", "djedo"; the formant voices "zvonko",
+ *   "stojan", "mirsad"; the singing presets "orguljas", "dalmacija_klapa",
+ *   "trubac", "harmonikas", "sevdalija", "sazlija", "lika_velebit", "solunac",
+ *   "sarajevo_bembasa", "becarac"
+ * @property displayName The name shown to the user, from the registry:
+ *   "Josip", "Đedo", "Dalmacija Klapa"
+ * @property languageCode BCP-47 tag of the native language: "hr-HR", "sr-RS" or "bs-BA"
  * @property gender Voice gender: "Male" or "Female"
  * @property age Voice age category: "Child", "Adult", or "Senior"
  * @property basePitch Base pitch multiplier for derived voices (1.0 for physical voices)
+ * @property baseVoiceId The voice this one is derived from ("josip", "vlado",
+ *   "zvonko", ...), null for josip, vlado, zvonko, stojan and mirsad
+ * @property isFormant Whether the voice is synthesized by rule (no data file)
  */
 data class VoiceInfo(
     val id: String,
@@ -20,12 +28,14 @@ data class VoiceInfo(
     val languageCode: String,
     val gender: String,
     val age: String,
-    val basePitch: Float
+    val basePitch: Float,
+    val baseVoiceId: String? = null,
+    val isFormant: Boolean = false
 ) {
     /**
      * Whether this voice is not derived from another one by a pitch change.
      * True for josip, vlado and the formant voices (zvonko, stojan, mirsad);
-     * false for detence (child), baba (grandma), djed (grandpa).
+     * false for detence (child), baba (grandma), djedo (grandpa).
      */
     val isPhysicalVoice: Boolean
         get() = basePitch == 1.0f
@@ -33,21 +43,49 @@ data class VoiceInfo(
     /**
      * Whether this voice is synthesized by rule (Zvonko, Stojan, Mirsad and
      * the singing presets). Formant voices accept the wider rate and pitch
-     * ranges and have the inflection level and acceleration settings.
+     * ranges.
      */
     val isFormantVoice: Boolean
-        get() = id in FORMANT_VOICE_IDS
+        get() = isFormant
 
-    /** Whether this voice sings the text to a folk song instead of speaking it. */
+    /**
+     * Whether this voice sings the text to a folk song instead of speaking
+     * it: a formant voice derived from another formant voice.
+     */
     val isSingingVoice: Boolean
-        get() = id in SINGING_VOICE_IDS
+        get() = isFormant && baseVoiceId != null
+
+    /** Short code of the voice's native language: "hr", "sr" or "bs". */
+    val nativeLanguage: String
+        get() = Language.fromTag(languageCode) ?: Language.DEFAULT
 
     companion object {
+        /** The ids of the formant voices that sing instead of speaking. */
         val SINGING_VOICE_IDS = setOf(
-            "orguljas", "klapa", "trubac", "harmonikas", "sevdalija", "sazlija",
-            "pjevac", "pevac", "solist", "becarac"
+            "orguljas", "dalmacija_klapa", "trubac", "harmonikas", "sevdalija", "sazlija",
+            "lika_velebit", "solunac", "sarajevo_bembasa", "becarac"
         )
+
+        /** The ids of every voice synthesized by rule. */
         val FORMANT_VOICE_IDS = setOf("zvonko", "stojan", "mirsad") + SINGING_VOICE_IDS
+
+        /**
+         * The ids of earlier versions and the ids of the renamed voices.
+         * The engine accepts the old ids too; this map is for comparing a
+         * saved id against the voice list.
+         */
+        val LEGACY_IDS: Map<String, String> = mapOf(
+            "djed" to "djedo",
+            "dijete" to "detence",
+            "baka" to "baba",
+            "klapa" to "dalmacija_klapa",
+            "pjevac" to "lika_velebit",
+            "pevac" to "solunac",
+            "solist" to "sarajevo_bembasa"
+        )
+
+        /** The canonical id of a voice: an old id gives the renamed voice's. */
+        fun normalizeId(id: String): String = LEGACY_IDS[id] ?: id
 
         /** Speed and pitch range of the recorded voices. */
         val RECORDED_RANGE = 0.5f..2.0f
@@ -55,7 +93,9 @@ data class VoiceInfo(
         /** Speed and pitch range of the formant voices. */
         val FORMANT_RANGE = 0.25f..4.0f
 
-        fun isFormantVoice(id: String?): Boolean = id in FORMANT_VOICE_IDS
+        /** Whether [id] (an old id too) names a voice synthesized by rule. */
+        fun isFormantVoice(id: String?): Boolean =
+            id != null && normalizeId(id) in FORMANT_VOICE_IDS
 
         /** Speed and pitch range of a voice. */
         fun rangeFor(id: String?): ClosedFloatingPointRange<Float> =
@@ -72,42 +112,4 @@ data class VoiceInfo(
             return if (value.isFinite()) value.coerceIn(rangeFor(id)) else 1.0f
         }
     }
-
-    /**
-     * Whether this voice speaks Croatian
-     */
-    val isCroatian: Boolean
-        get() = languageCode == "hr-HR"
-
-    /**
-     * Whether this voice speaks Bosnian
-     */
-    val isBosnian: Boolean
-        get() = languageCode == "bs-BA"
-
-    /**
-     * Get a user-friendly display name with language info
-     */
-    val localizedDisplayName: String
-        get() = when (id) {
-            "josip" -> "Josip"
-            "vlado" -> "Vlado"
-            "detence" -> "Dijete"
-            "baba" -> "Baka"
-            "djed" -> "Đedo"
-            "zvonko" -> "Zvonko"
-            "stojan" -> "Stojan"
-            "mirsad" -> "Mirsad"
-            "orguljas" -> "Zvonko Orguljaš"
-            "klapa" -> "Klapa Zvonko"
-            "trubac" -> "Stojan Trubač"
-            "harmonikas" -> "Stojan Harmonikaš"
-            "sevdalija" -> "Mirsad Sevdalija"
-            "sazlija" -> "Mirsad Sazlija"
-            "pjevac" -> "Zvonko Pjevač"
-            "pevac" -> "Stojan Pevač"
-            "solist" -> "Mirsad Solist"
-            "becarac" -> "Zvonko Bećarac"
-            else -> displayName
-        }
 }

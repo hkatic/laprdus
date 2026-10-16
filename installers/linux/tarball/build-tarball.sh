@@ -350,11 +350,11 @@ configure_speechd() {
         cat >> "$SPEECHD_CONF" << 'SPEECHD_EOF'
 
 # BEGIN LAPRDUS TTS
-# LaprdusTTS - Croatian/Serbian Text-to-Speech
+# LaprdusTTS - Croatian/Serbian/Bosnian Text-to-Speech
 # Added automatically by package installation
 AddModule "laprdus" "sd_laprdus" "laprdus.conf"
 
-# Set LaprdusTTS as default for Croatian and Serbian
+# Set LaprdusTTS as default for Croatian, Serbian and Bosnian
 LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"
@@ -368,10 +368,10 @@ SPEECHD_EOF
         cat >> "$SPEECHD_CONF" << 'SPEECHD_EOF'
 
 # BEGIN LAPRDUS TTS
-# LaprdusTTS - Croatian/Serbian Text-to-Speech
+# LaprdusTTS - Croatian/Serbian/Bosnian Text-to-Speech
 # Module is auto-detected by Speech Dispatcher (no AddModule needed)
 
-# Set LaprdusTTS as default for Croatian and Serbian
+# Set LaprdusTTS as default for Croatian, Serbian and Bosnian
 LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"
@@ -514,11 +514,11 @@ chmod +x "${PKG}/uninstall.sh"
 
 # Create README
 cat > "${PKG}/README" << 'README_EOF'
-LaprdusTTS - Croatian/Serbian Text-to-Speech Engine
-====================================================
+LaprdusTTS - Croatian/Serbian/Bosnian Text-to-Speech Engine
+============================================================
 
-This package contains LaprdusTTS, a concatenative text-to-speech
-engine for Croatian and Serbian languages.
+This package contains LaprdusTTS, a text-to-speech engine for Croatian,
+Serbian and Bosnian. Every voice speaks every language.
 
 Installation
 ------------
@@ -538,8 +538,10 @@ Usage
 
 Command-line:
   laprdus "Dobar dan!"
-  laprdus -v vlado -r 1.5 "Zdravo svete!"
+  laprdus -v vlado -L sr -r 1.5 "Zdravo svete!"
+  laprdus -v zvonko -L bs "Dobar dan, kako ste?"
   laprdus -i document.txt -o speech.wav
+  laprdus -l                      (list the voices)
 
 Speech Dispatcher (for Orca):
   Speech Dispatcher is configured automatically during installation.
@@ -549,16 +551,21 @@ Speech Dispatcher (for Orca):
 Voices
 ------
 
-  zvonko  - Croatian male adult (formant synthesis, default)
-  stojan  - Serbian male adult (formant synthesis)
-  mirsad  - Bosnian male adult (formant synthesis)
-  orguljas, klapa, trubac, harmonikas, sevdalija, sazlija, pjevac, pevac, solist, becarac
-          - singing presets of the formant voices
-  josip   - Croatian male adult
-  vlado   - Serbian male adult
-  detence - Croatian child
-  baba    - Croatian female senior
-  djed    - Serbian male senior
+Every voice speaks Croatian, Serbian and Bosnian; choose the language
+with -L hr|sr|bs (without -L a voice speaks its native language, named
+here). Zvonko is the default voice.
+
+  zvonko   - Zvonko, Croatian male adult (formant synthesis, default)
+  stojan   - Stojan, Serbian male adult (formant synthesis)
+  mirsad   - Mirsad, Bosnian male adult (formant synthesis)
+  josip    - Josip, Croatian male adult (recorded)
+  vlado    - Vlado, Serbian male adult (recorded)
+  detence  - Detence, Croatian child
+  baba     - Baba, Croatian female senior
+  djedo    - Đedo, Serbian male senior
+  orguljas, dalmacija_klapa, lika_velebit, becarac, trubac, harmonikas,
+  solunac, sevdalija, sazlija, sarajevo_bembasa
+           - ten singing voices of the formant voices
 
 Uninstallation
 --------------

@@ -15,6 +15,8 @@ import com.hrvojekatic.laprdus.data.migration.SettingsMigrator
 import com.hrvojekatic.laprdus.data.migration.SimulatedMigrationCrashException
 import com.hrvojekatic.laprdus.data.storage.LaprdusStorage
 import com.hrvojekatic.laprdus.data.storage.StorageLogger
+import com.hrvojekatic.laprdus.tts.Language
+import com.hrvojekatic.laprdus.tts.VoiceInfo
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -49,6 +51,7 @@ class SettingsRepository internal constructor(
     companion object {
         // Preference keys
         private val KEY_DEFAULT_VOICE = stringPreferencesKey("default_voice")
+        private val KEY_LANGUAGE = stringPreferencesKey("language")
         private val KEY_SPEED = floatPreferencesKey("speed")
         private val KEY_PITCH = floatPreferencesKey("pitch")
         private val KEY_VOLUME = floatPreferencesKey("volume")
@@ -78,7 +81,13 @@ class SettingsRepository internal constructor(
         private val KEY_USER_DICTIONARIES_ENABLED = booleanPreferencesKey("user_dictionaries_enabled")
 
         // Default values
+        /** The default voice of every language: Zvonko. */
         const val DEFAULT_VOICE = "zvonko"
+        /**
+         * The default of the Language setting ("hr", "sr" or "bs"): the
+         * device's language when Laprdus speaks it, else Croatian.
+         */
+        val DEFAULT_LANGUAGE: String get() = Language.deviceDefault()
         const val DEFAULT_SPEED = 1.0f
         const val DEFAULT_PITCH = 1.0f
         const val DEFAULT_VOLUME = 1.0f
@@ -216,21 +225,48 @@ class SettingsRepository internal constructor(
     // ==========================================================================
 
     /**
-     * Flow of the default voice ID
+     * Flow of the default voice ID: the voice that speaks, in every
+     * language. A saved id of an earlier version ("djed", "pjevac", ...)
+     * reads as the renamed voice's id ("djedo", "lika_velebit").
      */
     val defaultVoice: Flow<String> = prefs
-        .map { preferences ->
-            preferences[KEY_DEFAULT_VOICE] ?: DEFAULT_VOICE
-        }
+        .map { preferences -> preferences.defaultVoice() }
 
     /**
      * Set the default voice
-     * @param voiceId Voice ID: "zvonko", "stojan", "mirsad", "josip", "vlado", "detence", "baba" or "djed"
+     * @param voiceId Voice ID: "zvonko", "stojan", "mirsad", "josip", "vlado",
+     *   "detence", "baba", "djedo" or a singing preset; an old id is saved
+     *   as the renamed voice's
      */
     suspend fun setDefaultVoice(voiceId: String) {
         ensureMigrated()
         dataStore.edit { preferences ->
-            preferences[KEY_DEFAULT_VOICE] = voiceId
+            preferences[KEY_DEFAULT_VOICE] = VoiceInfo.normalizeId(voiceId)
+        }
+    }
+
+    // ==========================================================================
+    // Language Settings
+    // ==========================================================================
+
+    /**
+     * Flow of the language setting ("hr", "sr" or "bs"): the language of the
+     * in-app playback, and of every app when the language is forced. Every
+     * voice speaks every language.
+     */
+    val language: Flow<String> = prefs
+        .map { preferences -> preferences.language() }
+
+    /**
+     * Set the language.
+     * @param language "hr", "sr" or "bs" (a tag such as "hr-HR" or "srp" is
+     *   accepted); anything else is ignored
+     */
+    suspend fun setLanguage(language: String) {
+        val code = Language.fromTag(language) ?: return
+        ensureMigrated()
+        dataStore.edit { preferences ->
+            preferences[KEY_LANGUAGE] = code
         }
     }
 
@@ -381,7 +417,9 @@ class SettingsRepository internal constructor(
 
     /**
      * Flow of the force language setting.
-     * When enabled, the selected language is used regardless of system settings.
+     * When enabled, every app is spoken in the language of the [language]
+     * setting, whatever language the app asked for. Otherwise the app's
+     * requested language is spoken (with the configured voice either way).
      */
     val forceLanguage: Flow<Boolean> = prefs
         .map { preferences ->
@@ -389,8 +427,8 @@ class SettingsRepository internal constructor(
         }
 
     /**
-     * Set whether to force the selected language regardless of system settings.
-     * @param enabled True to force the selected language
+     * Set whether to speak the [language] setting regardless of the language apps request.
+     * @param enabled True to force the chosen language
      */
     suspend fun setForceLanguage(enabled: Boolean) {
         ensureMigrated()
@@ -715,6 +753,8 @@ class SettingsRepository internal constructor(
      */
     data class TTSSettings(
         val defaultVoice: String = DEFAULT_VOICE,
+        /** The language spoken in the app and, when forced, everywhere: "hr", "sr" or "bs". */
+        val language: String = DEFAULT_LANGUAGE,
         val speed: Float = DEFAULT_SPEED,
         val pitch: Float = DEFAULT_PITCH,
         val volume: Float = DEFAULT_VOLUME,
@@ -742,8 +782,21 @@ class SettingsRepository internal constructor(
      */
     val allSettings: Flow<TTSSettings> = prefs.map { preferences -> preferences.toSettings() }
 
+    /**
+     * The saved voice, with an id of an earlier version mapped to the renamed
+     * voice's. Read-time only (idempotent, no write), so a store that cannot
+     * be written still loads the right voice.
+     */
+    private fun Preferences.defaultVoice(): String =
+        VoiceInfo.normalizeId(this[KEY_DEFAULT_VOICE] ?: DEFAULT_VOICE)
+
+    /** The saved language; a value that is not a language reads as the default. */
+    private fun Preferences.language(): String =
+        Language.fromTag(this[KEY_LANGUAGE]) ?: DEFAULT_LANGUAGE
+
     private fun Preferences.toSettings(): TTSSettings = TTSSettings(
-        defaultVoice = this[KEY_DEFAULT_VOICE] ?: DEFAULT_VOICE,
+        defaultVoice = defaultVoice(),
+        language = language(),
         speed = this[KEY_SPEED] ?: DEFAULT_SPEED,
         pitch = this[KEY_PITCH] ?: DEFAULT_PITCH,
         volume = this[KEY_VOLUME] ?: DEFAULT_VOLUME,

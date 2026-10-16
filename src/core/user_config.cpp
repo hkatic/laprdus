@@ -209,7 +209,7 @@ std::string generate_settings_json(const UserSettings& settings) {
     json << "    \"description\": \"LaprdusTTS user settings\",\n";
     json << "\n";
     json << "    \"_help\": {\n";
-    json << "        \"voice.default\": \"Default voice ID: zvonko, stojan, mirsad, josip, vlado, detence, baba, djed, or a singing preset orguljas, klapa, trubac, harmonikas, sevdalija, sazlija, pjevac, pevac, solist, becarac (empty = auto)\",\n";
+    json << "        \"voice.default\": \"Voice ID: zvonko (default), stojan, mirsad, josip, vlado, detence, baba, djedo, or a singing preset orguljas, dalmacija_klapa, trubac, harmonikas, sevdalija, sazlija, lika_velebit, solunac, sarajevo_bembasa, becarac. Every voice speaks every language; the language comes from the host (SAPI5 voice token, NVDA language setting, CLI -L)\",\n";
     json << "        \"speech.speed\": \"Speech rate from 0.5 (slow) to 2.0 (fast), default 1.0; formant voices accept 0.25 to 4.0\",\n";
     json << "        \"speech.pitch\": \"Voice pitch from 0.5 (low) to 2.0 (high), default 1.0; formant voices accept 0.25 to 4.0\",\n";
     json << "        \"speech.volume\": \"Volume from 0.0 (silent) to 1.0 (full), default 1.0\",\n";

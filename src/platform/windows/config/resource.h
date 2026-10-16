@@ -131,24 +131,16 @@
 #define IDS_SPELLING_SOUNDS     1129
 
 // Voice names for combo box
-#define IDS_VOICE_JOSIP         1130
-#define IDS_VOICE_VLADO         1131
-#define IDS_VOICE_DETENCE       1132
-#define IDS_VOICE_BABA          1133
-#define IDS_VOICE_DJEDO         1134
-#define IDS_VOICE_ZVONKO        1135
-#define IDS_VOICE_STOJAN        1136
-#define IDS_VOICE_MIRSAD        1137
-#define IDS_VOICE_ORGULJAS      1150
-#define IDS_VOICE_KLAPA         1151
-#define IDS_VOICE_TRUBAC        1152
-#define IDS_VOICE_HARMONIKAS    1153
-#define IDS_VOICE_SEVDALIJA     1154
-#define IDS_VOICE_SAZLIJA       1155
-#define IDS_VOICE_PJEVAC        1156
-#define IDS_VOICE_PEVAC         1157
-#define IDS_VOICE_SOLIST        1158
-#define IDS_VOICE_BECARAC       1159
+// Voice kinds shown after the voice's name in the combo box; the names
+// themselves come from the voice registry
+#define IDS_VOICE_KIND_RECORDED 1130
+#define IDS_VOICE_KIND_CHILD    1131
+#define IDS_VOICE_KIND_GRANDMA  1132
+#define IDS_VOICE_KIND_GRANDPA  1133
+#define IDS_VOICE_KIND_FORMANT  1134
+#define IDS_VOICE_KIND_SINGING  1135
+#define IDS_VOICE_DEFAULT       1136
+#define IDS_VOICE_NOTE          1137
 
 // Test text
 #define IDS_TEST_TEXT           1140

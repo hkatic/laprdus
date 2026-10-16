@@ -102,8 +102,8 @@ else
     skip "CLI version info not found in help"
 fi
 
-# Test CLI lists voices
-if "${PREFIX}/bin/laprdus" -l 2>&1 | grep -q "josip"; then
+# Test CLI lists voices (every voice with its native language, djedo by its new id)
+if "${PREFIX}/bin/laprdus" -l 2>&1 | grep -q "^zvonko .*hr-HR" &&    "${PREFIX}/bin/laprdus" -l 2>&1 | grep -q "^djedo .*sr-RS" &&    "${PREFIX}/bin/laprdus" -l 2>&1 | grep -q "^mirsad .*bs-BA" &&    "${PREFIX}/bin/laprdus" -l 2>&1 | grep -q "Every voice speaks every language"; then
     pass "CLI lists voices"
 else
     fail "CLI failed to list voices"
@@ -208,6 +208,24 @@ if "${PREFIX}/bin/laprdus" -v vlado -o "${TEST_OUTPUT}" "Zdravo!" 2>/dev/null; t
     fi
 else
     fail "Serbian synthesis failed"
+fi
+
+# Test the language option: every voice speaks every language
+for LANG_CODE in hr sr bs; do
+    if "${PREFIX}/bin/laprdus" -v zvonko -L "${LANG_CODE}" -o "${TEST_OUTPUT}" "1000" 2>/dev/null; then
+        pass "Language ${LANG_CODE} works with -L"
+        rm -f "${TEST_OUTPUT}"
+    else
+        fail "Language ${LANG_CODE} failed with -L"
+    fi
+done
+
+# Test the renamed voice and its old id
+if "${PREFIX}/bin/laprdus" -v djedo -o "${TEST_OUTPUT}" "Zdravo!" 2>/dev/null &&    "${PREFIX}/bin/laprdus" -v djed -o "${TEST_OUTPUT}" "Zdravo!" 2>/dev/null; then
+    pass "Voice djedo works by its new and old id"
+    rm -f "${TEST_OUTPUT}"
+else
+    fail "Voice djedo failed"
 fi
 
 # Test rate parameter

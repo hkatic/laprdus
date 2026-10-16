@@ -134,7 +134,7 @@ TEST_CASE("Recorded voices speak", "[concat][synthesis]") {
     const char* dir = data_dir();
     if (!dir) return;
     Engine engine;
-    const char* voices[] = {"josip", "vlado", "detence", "baba", "djed"};
+    const char* voices[] = {"josip", "vlado", "detence", "baba", "djedo"};
     for (const char* voice : voices) {
         REQUIRE(laprdus_set_voice(engine.handle, voice, dir) == LAPRDUS_OK);
         std::vector<int16_t> audio = speak(engine.handle, "Dobar dan, kako ste?");
@@ -248,7 +248,7 @@ TEST_CASE("Derived voices differ from their base voice in pitch", "[concat][pitc
     double detence = median_pitch(speak(engine.handle, text));
     REQUIRE(laprdus_set_voice(engine.handle, "vlado", dir) == LAPRDUS_OK);
     double vlado = median_pitch(speak(engine.handle, text));
-    REQUIRE(laprdus_set_voice(engine.handle, "djed", dir) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_voice(engine.handle, "djedo", dir) == LAPRDUS_OK);
     double djed = median_pitch(speak(engine.handle, text));
     REQUIRE(josip > 0.0);
     REQUIRE(vlado > 0.0);
@@ -312,6 +312,49 @@ TEST_CASE("A period inside a word or a number is read by name", "[concat][text]"
     REQUIRE(laprdus_set_voice(engine.handle, "vlado", dir) == LAPRDUS_OK);
     REQUIRE(same("datoteka.txt", "datoteka ta\xC4\x8Dka txt"));
     REQUIRE(same("3,14", "tri zarez \xC4\x8D" "etrnaest"));
+}
+
+TEST_CASE("Number words follow the chosen language for recorded voices", "[concat][language]") {
+    // Josip and Vlado speak every language too: the language chosen with
+    // laprdus_set_language() picks the number words (tisuću / hiljadu),
+    // stays across voice changes, and NULL returns to the voice's own.
+    const char* dir = data_dir();
+    if (!dir) SKIP("Set LAPRDUS_DATA to test the recorded voices' languages");
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "josip", dir) == LAPRDUS_OK);
+    REQUIRE(std::string(laprdus_get_language(engine.handle)) == "hr-HR");
+    std::vector<int16_t> croatian = speak(engine.handle, "1000");
+    REQUIRE(!croatian.empty());
+    REQUIRE(croatian == speak(engine.handle, "tisu\xC4\x87u"));
+
+    REQUIRE(laprdus_set_language(engine.handle, "sr") == LAPRDUS_OK);
+    REQUIRE(std::string(laprdus_get_language(engine.handle)) == "sr-RS");
+    REQUIRE(std::string(laprdus_get_current_voice(engine.handle)) == "josip");
+    REQUIRE(speak(engine.handle, "1000") == speak(engine.handle, "hiljadu"));
+    REQUIRE(speak(engine.handle, "2000") == speak(engine.handle, "dve hiljade"));
+    REQUIRE(speak(engine.handle, "1000") != croatian);
+
+    REQUIRE(laprdus_set_language(engine.handle, "bs") == LAPRDUS_OK);
+    REQUIRE(std::string(laprdus_get_language(engine.handle)) == "bs-BA");
+    REQUIRE(speak(engine.handle, "2000") == speak(engine.handle, "dvije hiljade"));
+
+    // The chosen language stays when the voice changes ...
+    REQUIRE(laprdus_set_voice(engine.handle, "vlado", dir) == LAPRDUS_OK);
+    REQUIRE(std::string(laprdus_get_language(engine.handle)) == "bs-BA");
+    // ... and Vlado speaking Croatian says tisuću
+    REQUIRE(laprdus_set_language(engine.handle, "hr-HR") == LAPRDUS_OK);
+    REQUIRE(std::string(laprdus_get_language(engine.handle)) == "hr-HR");
+    std::vector<int16_t> vlado_croatian = speak(engine.handle, "1000");
+    REQUIRE(vlado_croatian == speak(engine.handle, "tisu\xC4\x87u"));
+    REQUIRE(vlado_croatian != speak(engine.handle, "hiljadu"));
+
+    // NULL: back to Vlado's native Serbian, also after later voice changes
+    REQUIRE(laprdus_set_language(engine.handle, nullptr) == LAPRDUS_OK);
+    REQUIRE(std::string(laprdus_get_language(engine.handle)) == "sr-RS");
+    REQUIRE(speak(engine.handle, "1000") == speak(engine.handle, "hiljadu"));
+    REQUIRE(laprdus_set_voice(engine.handle, "detence", dir) == LAPRDUS_OK);
+    REQUIRE(std::string(laprdus_get_language(engine.handle)) == "hr-HR");
+    REQUIRE(speak(engine.handle, "1000") == speak(engine.handle, "tisu\xC4\x87u"));
 }
 
 TEST_CASE("Spelling works with a recorded voice", "[concat][spelling]") {
@@ -432,7 +475,7 @@ TEST_CASE("Recorded voices share surname stress and vowel length", "[concat][tex
         {u8"Knezović i Knežević", u8"Knȇzović i Knéžević"},
     };
     Engine engine;
-    for (const char* voice : {"josip", "vlado", "detence", "baba", "djed"}) {
+    for (const char* voice : {"josip", "vlado", "detence", "baba", "djedo"}) {
         INFO(voice);
         REQUIRE(laprdus_set_voice(engine.handle, voice, dir) == LAPRDUS_OK);
         for (const auto& c : cases) {

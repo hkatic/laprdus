@@ -72,32 +72,36 @@ It has two kinds of voices:
 
 ### Voice System
 
-| Voice | Type | Language | base_pitch |
-|-------|------|----------|------------|
-| josip | Physical | Croatian | 1.0 |
-| vlado | Physical | Serbian | 1.0 |
-| detence | Derived (josip) | Croatian | 1.5 (child) |
-| baba | Derived (josip) | Croatian | 1.2 (grandma) |
-| djed | Derived (vlado) | Serbian | 0.75 (grandpa, Đedo) |
-| zvonko | Formant | Croatian | 1.0 |
-| stojan | Formant | Serbian | 1.0 |
-| mirsad | Formant | Bosnian | 1.0 |
-| orguljas | Singing preset (zvonko) | Croatian | 1.0 (pipe organ) |
-| klapa | Singing preset (zvonko) | Croatian | 1.0 (klapa choir) |
-| trubac | Singing preset (stojan) | Serbian | 1.0 (trumpet) |
-| harmonikas | Singing preset (stojan) | Serbian | 1.0 (accordion) |
-| sevdalija | Singing preset (mirsad) | Bosnian | 1.0 (sevdah singer) |
-| sazlija | Singing preset (mirsad) | Bosnian | 1.0 (saz) |
-| pjevac | Singing preset (zvonko) | Croatian | 1.0 (own voice, own pitch) |
-| pevac | Singing preset (stojan) | Serbian | 1.0 (own voice, own pitch) |
-| solist | Singing preset (mirsad) | Bosnian | 1.0 (own voice, own pitch) |
-| becarac | Singing preset (zvonko) | Croatian | 1.0 (own voice, bećarac tune) |
+| # | id | display_name | Type | Native language | base_pitch |
+|---|----|--------------|------|-----------------|------------|
+| 0 | josip | Josip | Physical | hr-HR | 1.0 |
+| 1 | vlado | Vlado | Physical | sr-RS | 1.0 |
+| 2 | detence | Detence | Derived (josip) | hr-HR | 1.5 (child) |
+| 3 | baba | Baba | Derived (josip) | hr-HR | 1.2 (grandma, Female Senior) |
+| 4 | djedo | Đedo | Derived (vlado) | sr-RS | 0.75 (grandpa, Male Senior) |
+| 5 | zvonko | Zvonko | Formant | hr-HR | 1.0 (the default voice) |
+| 6 | stojan | Stojan | Formant | sr-RS | 1.0 |
+| 7 | mirsad | Mirsad | Formant | bs-BA | 1.0 |
+| 8 | orguljas | Orguljaš - Vila Velebita | Singing preset (zvonko) | hr-HR | 1.0 (pipe organ) |
+| 9 | dalmacija_klapa | Dalmacija Klapa | Singing preset (zvonko) | hr-HR | 1.0 (klapa choir) |
+| 10 | trubac | Trubač - Kreće se lađa francuska | Singing preset (stojan) | sr-RS | 1.0 (trumpet) |
+| 11 | harmonikas | Harmonikaš - Kreće se lađa francuska | Singing preset (stojan) | sr-RS | 1.0 (accordion) |
+| 12 | sevdalija | Sevdalija - Kad ja pođoh na Bembašu | Singing preset (mirsad) | bs-BA | 1.0 (sevdah singer) |
+| 13 | sazlija | Sazlija - Kad ja pođoh na Bembašu | Singing preset (mirsad) | bs-BA | 1.0 (saz) |
+| 14 | lika_velebit | Lika Velebit | Singing preset (zvonko) | hr-HR | 1.0 (own voice, own pitch) |
+| 15 | solunac | Solunac | Singing preset (stojan) | sr-RS | 1.0 (own voice, own pitch) |
+| 16 | sarajevo_bembasa | Sarajevo Bembaša | Singing preset (mirsad) | bs-BA | 1.0 (own voice, own pitch) |
+| 17 | becarac | Bećarac | Singing preset (zvonko) | hr-HR | 1.0 (own voice, bećarac tune) |
 
-**Default voices.** The formant voice of a language is its default on every platform: Zvonko for Croatian, Stojan for Serbian, Mirsad for Bosnian (CLI `-v` default, Speech Dispatcher `MALE1` and language requests, Android `DEFAULT_VOICE` / `onLoadLanguage` / fallback voice, NVDA by NVDA's language, Apple by the device's preferred language, Windows config GUI). A voice the user has chosen is never replaced when it already speaks the requested language. The recorded voices stay available. SAPI5 has no Laprdus-side default: Windows picks among the registered tokens.
+**Every voice speaks every language.** Language (hr, sr, bs) is chosen separately from the voice, as in eSpeak or Eloquence; a voice's `language` / `language_code` in the registry is only its *native* language, spoken until the host asks for another. The language selects the text front end (letter-to-sound rules, accent lexicon, letter names when spelling) and the number words (tisuća/milijun hr, hiljada/milion/dvesta sr, hiljada/milion/dvjesto bs) for every voice, Josip and Vlado included. C API: `laprdus_set_language(h, tag)` ("hr", "hr-HR", "hr_HR", "hrv", "sr-Latn-RS", "srp", "bs", "bos", "Croatian", "hrvatski", any case; NULL/"" = back to the voice's native language), `laprdus_get_language(h)` ("hr-HR" | "sr-RS" | "bs-BA"), `laprdus_get_language_count()` (3), `laprdus_get_language_info(index, &LaprdusLanguageInfo)` (code, short_code, lcid 0x041A/0x081A/0x141A, english_name, native_name Hrvatski/Srpski/Bosanski). Once set, the language sticks across later `laprdus_set_voice()` calls. C++: `TTSEngine::set_language(VoiceLanguage)` works for every voice and sets the number dialect, `TTSEngine::language()` reads it, `initialize()` / `initialize_formant()` start in the voice's native language (call `set_language()` after them when the host chose one), `laprdus::parse_voice_language()` and `voice_language_code/short_code/lcid/english_name/native_name()` live in `types.hpp`. Per platform: NVDA "Language" combo (hr/sr/bs, default from NVDA's UI language; `LangChangeCommand` switches among the three and ignores other languages); SAPI5 three tokens "Laprdus Croatian" / "Laprdus Serbian" / "Laprdus Bosnian" that set the language and speak with the voice from `settings.json` (`voice.default`, empty = zvonko; no language key); Android 54 system voices `<id>-<lang>` (the requested locale sets the language, the configured voice is kept; a Language setting for in-app playback; "Force language" = ignore the requested language, speak the one chosen in settings); Apple one `AVSpeechSynthesisProviderVoice` per voice × language, identifier `com.hrvojekatic.laprdus.<id>.<lang short>`, a Language picker in the app; CLI `-L hr|sr|bs` (without it a voice speaks its native language; `-l` lists voices with their native language); Speech Dispatcher LIST VOICES returns every voice for every language, SET LANGUAGE calls `laprdus_set_language()` and keeps the voice (`spd-say -l sr -y "Zvonko"`), MALE1 = zvonko, MALE2 josip, MALE3 djedo, FEMALE1 baba, CHILD_MALE detence for all three languages.
+
+**Default voice: Zvonko everywhere**, for every language and platform (`laprdus_get_default_voice()` / `VoiceRegistry::default_voice_id()` = "zvonko": CLI `-v` default, Speech Dispatcher `MALE1`, Android `DEFAULT_VOICE` / fallback voice, NVDA, Apple, the Windows config GUI, SAPI5 `voice.default` empty). A voice the user has chosen is never replaced. The recorded voices stay available.
+
+**Ids and names.** Ids are plain ASCII without diacritics on purpose (dj for đ, c for č/ć, s for š, z for ž): registration safety. Display names come from the registry (`LaprdusVoiceInfo.display_name`, UTF-8, no "Laprdus" prefix, no language suffix); platform UIs must not hard-code them (they may append a localized description: child, grandma, formant, singing). Old ids resolve to the renamed voice in `VoiceRegistry::find_by_id()`, `laprdus_set_voice()` and `laprdus_get_voice_info_by_id()` (djed → djedo, dijete → detence, baka → baba, klapa → dalmacija_klapa, pjevac → lika_velebit, pevac → solunac, solist → sarajevo_bembasa); `laprdus_get_current_voice()` returns the canonical id; UIs normalize a saved id before comparing it with the list. The spellings "Djed", "Djedo", "Baka", "Dijete", "Detenče", "Zvonko Orguljaš", "Klapa Zvonko", "Stojan Trubač", "Mirsad Solist" etc. must not appear anywhere: Detence, Baba, Đedo, and the preset names of the table.
 
 `laprdus_set_voice()` applies the voice's base pitch itself (times the last `laprdus_set_pitch()` value), so derived voices sound right without a pitch call after every voice change.
 
-`VoiceDefinition::synthesis` (`VoiceSynthesis::Concatenative` / `Formant`) tells the two kinds apart. Formant voices have no `data_filename`; `laprdus_set_voice()` accepts any data directory for them. New voices must be appended to the registry: existing code and saved settings rely on the order of the first five.
+`VoiceDefinition::synthesis` (`VoiceSynthesis::Concatenative` / `Formant`) tells the two kinds apart. Formant voices have no `data_filename`; `laprdus_set_voice()` accepts any data directory for them. A singing preset has a `base_voice_id` and no `data_filename` (or index >= 8). New voices must be appended to the registry: existing code and saved settings rely on the order of the first five.
 
 ### Audio Parameters (types.hpp)
 
@@ -130,7 +134,7 @@ Things to know before changing them:
 - **settings.json of version 1.0** (no `inflection_level` key) is migrated when read (`parse_settings_json()` in `user_config.cpp`, mirrored in the NVDA driver): `inflection: false` becomes level 0 with inflection enabled (no screen shows the switch any more), and an unforced `speed` / `pitch`, which 1.0 ignored, reads as 1.0 so the upgrade does not change the host's rate. Pause values mean the same in both versions; a colon pauses for the comma pause.
 - **A host's rate and pitch scale the user's own.** The rate and pitch in Laprdus's settings are the voice's normal; TalkBack, VoiceOver, NVDA, SAPI5 and Speech Dispatcher ask relative to their normal (Android `speechRate` 100, SSML 1.0, SAPI rate 0, NVDA 50, SSIP 0), so every platform sets `laprdus_set_speed(setting × host)` and `laprdus_set_user_pitch(setting × host)`, clamped to the voice's range (`VoiceInfo.requestValue()` on Android, `VoiceCatalog.requestValue()` on Apple). The force switches (`force.speed` / `force.pitch`, `force_speed` / `force_pitch`) mean "ignore the host": the setting alone. Volume is not scaled (host volume, or 1.0 on Android and Apple, unless forced). Speech Dispatcher has no force switches and reads the setting back with `laprdus_get_speed()` / `laprdus_get_user_pitch()` after `laprdus_load_user_config()`. Before this, an unforced Laprdus rate was ignored by every host, so the rate slider seemed dead next to the acceleration slider.
 - **Android: the app and the TTS service have separate native engines** in one process: `LaprdusTTS.service` and `LaprdusTTS.app` (Hilt provides the latter). The JNI bridge keeps one `NativeEngine` per object and every native call takes its handle; there is no global engine. The service follows the app through saved state only: a newly saved default voice is loaded at once, and the user dictionaries switch or any dictionary write (`DictionaryRepository.changes`) reloads the dictionaries (`LaprdusTTS.reloadDictionaries()`: bundled, then the user's from `userDictionaryDir`). Sequences such as "set the request's rate and pitch, then synthesize" and voice loads run inside `LaprdusTTS.exclusive { }`.
-- **Number words follow the voice language**: `CroatianNumbers::set_dialect()` is set by `TTSEngine::initialize_formant()` (tisuća/milijun/dvjesto, hiljada/milion/dvesta, hiljada/milion/dvjesto) and reset to Croatian when a concatenative voice is loaded, so Josip and Vlado are unchanged. One and two agree with the feminine scale words in every dialect (dvije tisuće, dve hiljade, dvadeset jedna tisuća, dvije milijarde).
+- **Number words follow the language**, for every voice: `CroatianNumbers::set_dialect()` is set by `TTSEngine::set_language()` (tisuća/milijun/dvjesto for hr, hiljada/milion/dvesta for sr, hiljada/milion/dvjesto for bs), starting from the voice's native language in `initialize()` / `initialize_formant()`; Josip speaking Serbian says *hiljada*, Stojan speaking Croatian *tisuća*. One and two agree with the feminine scale words in every dialect (dvije tisuće, dve hiljade, dvadeset jedna tisuća, dvije milijarde).
 - **Synthesis is deterministic**: the same text and settings give the same samples (`tests/linux/test_formant.cpp` relies on it).
 - **Acoustic values come from measurements**, not from taste: vowel formants and durations from Bakran's work on standard Croatian, consonant spectra, levels and transitions from analysis of recorded Croatian speech. `docs/formant.md` records the sources, the measured values and how to repeat the measurements. Change numbers in `formant_phonemes.cpp` only with a measurement or a listening test behind them.
 - **Stress** is lexical and cannot be fully predicted. To fix a word, add it to `formant_lexicon.cpp` (notation at the top of the file) and check its whole paradigm, not just the dictionary form: the accent often moves in the other cases and persons (sìgnal/signála, podátak/pòdātākā, obavijéstiti/obàvijēstīm), and a stem entry also catches derived words with a different accent (see "Stress" in `docs/formant.md`). Verbs are not listed form by form: `IJE_VERBS` has the roots with a long *ije* (podijeliti, promijeniti), `VERBS` whole stems with accent and conjugation class (`ur'e:d=i`), and `StressRules::verb_form()` builds the forms; an imperative that is also a noun's case (potvrdi, uredi) is the verb only at the head of a clause; users can do the same from a pronunciation dictionary by writing accent marks in the replacement (`telèfon`). Place names and personal names are tables of their own (`formant_proper_names.inc`, edit `tools/formant/places.tsv` or `persons.tsv` and run `tools/formant/proper_names.py`), used only for words written with a capital letter (not in all-capitals text, and after the user's own entries) so that a village or a name never changes the common word it is spelled like; a personal name wins over a place; an entry marked `=` (spelled like a frequent word) is also skipped for the first word of a clause; `proper_names.py` refuses two accents for one spelling. Number compounds of age and time (petogòdišnjī, šestòmjesečnī, malòljetan) are a rule, `StressRules::time_compound()`, and so are Slavic names in -mir/-dar/-zar (Rȁdomīr, Bȍžidār), `StressRules::slavic_compound_name()`.
@@ -138,15 +142,17 @@ Things to know before changing them:
 - **Users have their own accent lexicon**: `accents.json` next to the user dictionaries, entries in the built-in notation as JSON (`{ "word": "kontr'o:l*" }`, `{ "verb": "ur'e:d=i<p" }`, optional `"language"`). `formant::UserLexicon` parses and validates it once; `Frontend::set_user_lexicon()` consults the user's forms, stems and verbs before the built-in ones. The engine keeps it across voice changes (`TTSEngine::load_accent_lexicon()`, C API `laprdus_load_accent_lexicon()`, report via `laprdus_get_accent_lexicon_report()`); `laprdus_load_user_config()`, both CLIs, SAPI5, NVDA, Android (`LaprdusTTS.loadAccentLexicon`) and Apple (`DictionaryState.accentLexiconURL`) load it with the user dictionaries, and user dictionaries off removes it. See "Stress" in `docs/formant.md` and 5.11 in `docs/laprdus.md`.
 - **Croatian tiflo- compounds** follow the user's requested two-component pronunciation, including established dictionary terms. `Frontend::process()` splits after `tiflo` when the remaining letters contain a vowel or syllabic r; both parts get their ordinary accent analysis, and the second has `joined = true` so they share one prosodic word without an internal boundary pause. Lowercase, uppercase and inner capitals behave alike. The short falling `t^iflo` is a listener preference; HJP gives single accents in *tiflòlog, tiflològija, tiflòloškī*. Written accent marks and the user's whole-word exact, stem and verb entries override the split. See the source discussion in `docs/formant.md`.
 - **Frontend structure tests** (`tests/linux/test_frontend.cpp`) check accents and joined word boundaries directly. Compile them with `src/formant/formant_frontend.cpp`, `formant_lexicon.cpp`, `formant_phonemes.cpp` and `src/core/phoneme_mapper.cpp`, using `-I include -I src -I tests/linux`; these internal C++ APIs are not exported by the dylib. Run these alongside the synthesis tests when changing frontend structure. The complete build command is in `docs/formant.md`, section 7.
-- Platform code that bypasses `laprdus_set_voice()` must check `VoiceRegistry::is_formant_voice()` and call `TTSEngine::initialize_formant()` (see the Android JNI bridge and the SAPI5 driver).
+- Platform code that bypasses `laprdus_set_voice()` must check `VoiceRegistry::is_formant_voice()` and call `TTSEngine::initialize_formant()`, then `TTSEngine::set_language()` when the host chose a language (see the Android JNI bridge and the SAPI5 driver).
 
-**Singing presets.** `orguljas`, `klapa`, `pjevac` (Zvonko), `trubac`, `harmonikas`, `pevac` (Stojan), `sevdalija`, `sazlija`, `solist` (Mirsad), `becarac` (Zvonko, the bećarac tune) are formant voices whose `FormantVoice::singing` points at a `SingingStyle` (song, sound source, chorus, sub-octave, reverb, vibrato, note envelope, transpose; all in `formant_synthesizer.cpp`). They sing the text to a public-domain folk song, one syllable per note (a `~` note in the song notation is a melisma, `R` a rest), the vowel on the beat with the consonants before it; the song restarts with every synthesis call (`TTSEngine::begin_utterance()`), and clauses of one call continue it. Rate = tempo, pitch = transposition, inflection level = vibrato depth. `SingingStyle::dry` (pjevac, pevac, solist) keeps the voice's own source and phonation and transposes the song so the middle of its range sits five semitones above the voice's `base_f0`. Notes without a rest between them are legato: the attack envelope is applied only after a rest or at the start of a clause. Base voice is in `base_voice_id` (platform code uses it only as metadata; `data_filename` stays null). The instrument sources (`SourceKind`), chorus, sub-octave and reverb live in `klatt_synth.cpp`; the speaking voices do not use them and their output is unchanged. See "Singing presets" in `docs/formant.md`.
+**Singing presets.** `orguljas`, `dalmacija_klapa`, `lika_velebit` (Zvonko), `trubac`, `harmonikas`, `solunac` (Stojan), `sevdalija`, `sazlija`, `sarajevo_bembasa` (Mirsad), `becarac` (Zvonko, the bećarac tune) are formant voices whose `FormantVoice::singing` points at a `SingingStyle` (song, sound source, chorus, sub-octave, reverb, vibrato, note envelope, transpose; all in `formant_synthesizer.cpp`). They sing the text to a public-domain folk song, one syllable per note (a `~` note in the song notation is a melisma, `R` a rest), the vowel on the beat with the consonants before it; the song restarts with every synthesis call (`TTSEngine::begin_utterance()`), and clauses of one call continue it. Rate = tempo, pitch = transposition, inflection level = vibrato depth. A preset sings in whichever language is set; its native language is that of its song. `SingingStyle::dry` (lika_velebit, solunac, sarajevo_bembasa) keeps the voice's own source and phonation and transposes the song so the middle of its range sits five semitones above the voice's `base_f0`. Notes without a rest between them are legato: the attack envelope is applied only after a rest or at the start of a clause. Base voice is in `base_voice_id` (platform code uses it only as metadata; `data_filename` stays null). The instrument sources (`SourceKind`), chorus, sub-octave and reverb live in `klatt_synth.cpp`; the speaking voices do not use them and their output is unchanged. See "Singing presets" in `docs/formant.md`.
 
 ```bash
 B=build/macos-arm64-release
 $B/laprdus -D $B -v zvonko "Dobar dan, kako ste?"
 $B/laprdus -D $B -v stojan -o out.wav "Добар дан!"
 $B/laprdus -D $B -v mirsad -r 2.0 "Brzo, ali razgovijetno."
+$B/laprdus -D $B -v zvonko -L sr "Zvonko govori srpski: dve hiljade."
+$B/laprdus -D $B -v vlado -L hr "Vlado govori hrvatski: dvije tisuće."
 ```
 
 ## C API
@@ -188,7 +194,7 @@ Two separate pitch parameters serve different purposes:
 | `pitch` | 0.25 - 4.0 | Voice character (derived voices) | Recorded: formants × sqrt(pitch), F0 × pitch. Formant voices: F0 × pitch |
 | `user_pitch` | 0.5 - 2.0 (formant 0.25 - 4.0) | User preference (SAPI5/NVDA slider) | F0 only - keeps voice identity |
 
-`TTSEngine::set_language()` tells the recorded voices' front end which language's rules and lexicon to use (`laprdus_set_voice()`, the SAPI5 driver and the Android bridge call it); number words stay Croatian for Josip and Vlado.
+`TTSEngine::set_language()` tells the front end of any voice, recorded or formant, which language's rules, lexicon and letter names to use and sets the number dialect (`laprdus_set_language()`, the SAPI5 driver and the Android bridge call it); Josip and Vlado speaking Serbian or Bosnian say *hiljada*.
 
 ## Dependencies
 
@@ -348,11 +354,15 @@ The CLI is automatically included in the SAPI5 installer. For standalone use:
 # Show help
 laprdus.exe -h
 
-# List available voices
+# List available voices (each with its native language; every voice speaks every language)
 laprdus.exe -l
 
-# Speak text to audio device
+# Speak text to audio device (Zvonko, Croatian)
 laprdus.exe "Dobar dan!"
+
+# Any voice in any language
+laprdus.exe -v vlado -L hr "Dobar dan svima!"
+laprdus.exe -L sr "Zdravo svete!"
 
 # Output to WAV file
 laprdus.exe -o output.wav "Text to speak"
@@ -370,7 +380,8 @@ echo "Text" | laprdus.exe -o output.wav
 **CLI Options:**
 | Option | Description |
 |--------|-------------|
-| `-v, --voice` | Select voice (zvonko (default), stojan, mirsad, josip, vlado, detence, baba, djed) |
+| `-v, --voice` | Select voice (zvonko (default), stojan, mirsad, josip, vlado, detence, baba, djedo, or a singing preset; old ids accepted) |
+| `-L, --language` | Language hr, sr or bs; any voice speaks any language, without it a voice speaks its native language |
 | `-r, --speech-rate` | Speech rate 0.5-2.0 (default: 1.0); formant voices 0.25-4.0 |
 | `-p, --speech-pitch` | Speech pitch 0.5-2.0 (default: 1.0); formant voices 0.25-4.0 |
 | `-I, --inflection` | Inflection level 0-100 (default: 50; 0 is a monotone) |
@@ -490,15 +501,17 @@ After installing SAPI5, test with PowerShell:
 ```powershell
 Add-Type -AssemblyName System.Speech
 $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer
-$synth.SelectVoice("Laprdus Josip")
+$synth.SelectVoice("Laprdus Croatian")   # or "Laprdus Serbian" / "Laprdus Bosnian"; the voice is settings.json voice.default
 $synth.Speak("Dobar dan!")
 ```
+
+SAPI5 registers three voice tokens, one per language ("Laprdus Croatian" 0x041A, "Laprdus Serbian" 0x081A, "Laprdus Bosnian" 0x141A), not one per Laprdus voice. The token sets the language; the voice comes from `settings.json` `voice.default` (empty = zvonko, old ids accepted), chosen in the Laprdus Configurator. There is no language key in `settings.json`. The installer removes the per-voice tokens of earlier versions on install, upgrade and repair, and re-registers the three.
 
 ### NVDA Addon
 
 1. Install the `.nvda-addon` file
 2. Restart NVDA
-3. Select "Laprdus Croatian/Serbian" in NVDA voice settings
+3. Select "Laprdus" in NVDA's synthesizer settings; the Voice list holds all 18 voices (default Zvonko) and the Language setting chooses hr, sr or bs for any of them
 
 ## Android
 
@@ -570,7 +583,7 @@ Voice data and bundled dictionaries load from APK assets, so synthesis itself ne
 
 **Migration.** Builds 10 and earlier stored this data in credential-encrypted (CE) storage (`/data/user/0/<pkg>/files`), which is unreadable while locked. `SettingsMigrator` and `DictionaryMigrator` copy it once after unlock: DE values win, legacy values only fill missing keys, every step is crash-safe and idempotent (re-running after a crash converges), and the migrators are re-armed on `ACTION_USER_UNLOCKED`, on a rate-limited delayed retry, and on the next process start. Debug builds can force a crash at a named step by writing a `MigrationCrashPoint` name into `files/debug/crash_point` in the DE directory.
 
-**Failure policy.** Storage problems (unreadable or corrupt DE/legacy files, failed copies) never crash: they are logged, defaults are used, a localized notice is shown in the Settings screen (settings) or the Dictionaries screen (dictionaries), and migration is retried later. Only "no voice loadable at all" (requested voice and the `josip` fallback both fail) throws `LaprdusEngineUnavailableException`, and only from the synthesis path, so `speak()` returns ERROR and TalkBack can switch engines. A DE crash marker bounds this to 3 throws per 10 minutes; after that the service reports `callback.error()` per utterance instead.
+**Failure policy.** Storage problems (unreadable or corrupt DE/legacy files, failed copies) never crash: they are logged, defaults are used, a localized notice is shown in the Settings screen (settings) or the Dictionaries screen (dictionaries), and migration is retried later. Only "no voice loadable at all" (requested voice and the default-voice fallback, `zvonko`, both fail) throws `LaprdusEngineUnavailableException`, and only from the synthesis path, so `speak()` returns ERROR and TalkBack can switch engines. A DE crash marker bounds this to 3 throws per 10 minutes; after that the service reports `callback.error()` per utterance instead.
 
 **Backup rules.** `backup_rules.xml` and `data_extraction_rules.xml` must stay empty: with no rules the framework backs up both CE and DE files, while adding any `<include>` flips the file to include-only and silently drops everything not listed.
 
@@ -620,8 +633,12 @@ sudo dnf install pulseaudio-libs-devel alsa-lib-devel speech-dispatcher-devel gl
 # Basic usage
 laprdus "Dobar dan!"
 
-# Select voice
+# Select voice (speaks its native language, Serbian for Vlado)
 laprdus -v vlado "Zdravo svete!"
+
+# Select the language separately: any voice speaks any language
+laprdus -v vlado -L hr "Dobar dan svima!"
+laprdus -L bs "Dobar dan!"
 
 # Adjust parameters
 laprdus -r 1.5 -p 1.2 -V 0.8 "Brzo i visoko"
@@ -643,7 +660,8 @@ laprdus -l
 
 | Option | Long Form | Description |
 |--------|-----------|-------------|
-| `-v` | `--voice` | Select voice (zvonko (default), stojan, mirsad, josip, vlado, detence, baba, djed) |
+| `-v` | `--voice` | Select voice (zvonko (default), stojan, mirsad, josip, vlado, detence, baba, djedo, or a singing preset; old ids accepted) |
+| `-L` | `--language` | Language hr, sr or bs; any voice speaks any language, without it a voice speaks its native language |
 | `-r` | `--speech-rate` | Speech rate (0.5-2.0, default 1.0; formant voices 0.25-4.0) |
 | `-p` | `--speech-pitch` | Speech pitch (0.5-2.0, default 1.0; formant voices 0.25-4.0) |
 | `-I` | `--inflection` | Inflection level (0-100, default 50) |
@@ -670,7 +688,9 @@ The installation:
 1. Installs the module binary to `/usr/lib/speech-dispatcher-modules/sd_laprdus`
 2. Installs the config to `/etc/speech-dispatcher/modules/laprdus.conf`
 3. Automatically adds `AddModule "laprdus"` to `/etc/speech-dispatcher/speechd.conf`
-4. Sets LaprdusTTS as the default for Croatian (hr) and Serbian (sr) languages
+4. Sets LaprdusTTS as the default for Croatian (hr), Serbian (sr) and Bosnian (bs)
+
+The module lists every voice for every language; `SET LANGUAGE` calls `laprdus_set_language()` and keeps the voice; `MALE1` is Zvonko for all three languages (MALE2 Josip, MALE3 Đedo, FEMALE1 Baba, CHILD_MALE Detence).
 
 After installation, restart Speech Dispatcher:
 ```bash
@@ -682,6 +702,8 @@ Test with spd-say:
 spd-say -o laprdus "Dobar dan!"
 spd-say -o laprdus -l hr "Hrvatski tekst"
 spd-say -o laprdus -l sr "Srpski tekst"
+spd-say -o laprdus -l sr -y "Zvonko" "Zvonko govori srpski"
+spd-say -o laprdus -l bs -y "Josip" "Josip govori bosanski"
 ```
 
 **Manual Configuration** (only if automatic configuration fails):
@@ -991,7 +1013,7 @@ g++ -std=c++17 -I include -I tests/linux tests/linux/test_cli.cpp \
 g++ -std=c++17 -I include -I tests/linux tests/linux/test_speechd_module.cpp \
     -o build/linux-x64-release/test_speechd_module -L build/linux-x64-release -llaprdus -lpthread
 
-# Run CLI and API tests (should show "20 passed, 0 failed")
+# Run CLI and API tests (should show "21 passed, 0 failed")
 LD_LIBRARY_PATH=build/linux-x64-release \
     LAPRDUS_CLI=./build/linux-x64-release/laprdus \
     LAPRDUS_DATA=./build/linux-x64-release \
@@ -1015,7 +1037,7 @@ clang++ -std=c++17 -I include -I tests/linux tests/linux/test_formant.cpp \
     -o $B/test_formant -L $B -llaprdus -Wl,-rpath,@loader_path
 LAPRDUS_DATA=$B $B/test_formant
 
-# Run Speech Dispatcher tests (should show "5 passed, 0 failed")
+# Run Speech Dispatcher tests (should show "8 passed, 0 failed")
 LD_LIBRARY_PATH=build/linux-x64-release \
     ./build/linux-x64-release/test_speechd_module
 
@@ -1028,12 +1050,12 @@ LD_LIBRARY_PATH=build/linux-x64-release \
 
 - [ ] Linux library (`liblaprdus.so`) builds without errors
 - [ ] Linux CLI (`laprdus`) builds without errors
-- [ ] CLI tests pass (20/20)
-- [ ] Speech Dispatcher tests pass (5/5 mapping tests, integration tests may skip)
+- [ ] CLI tests pass (21/21)
+- [ ] Speech Dispatcher tests pass (8/8 mapping tests, integration tests may skip)
 - [ ] CLI `-h` displays help correctly
-- [ ] CLI `-l` lists all 8 voices
+- [ ] CLI `-l` lists all 18 voices with their native language
 - [ ] CLI synthesizes audio to WAV file correctly
-- [ ] All voices synthesize correctly (josip, vlado, detence, baba, djed, zvonko, stojan, mirsad)
+- [ ] All voices synthesize correctly (josip, vlado, detence, baba, djedo, zvonko, stojan, mirsad, the singing presets), and `-L hr|sr|bs` switches the language of any of them
 - [ ] Formant voice tests pass (`test_formant`)
 - [ ] Recorded voice tests pass (`test_concat`, needs `LAPRDUS_DATA`)
 
@@ -1114,7 +1136,7 @@ Before marking a task complete, verify:
 - [ ] NVDA addon builds successfully
 - [ ] Linux library builds without errors
 - [ ] Linux CLI builds without errors
-- [ ] Linux tests pass (25 total: 20 CLI/API + 5 speechd)
+- [ ] Linux tests pass (29 total: 21 CLI/API + 8 speechd)
 - [ ] Android APK builds successfully (warnings OK)
 - [ ] Android APK installed on user's physical device
 - [ ] Installers launched for user testing
@@ -1154,7 +1176,7 @@ The dictionary uses JSON format at `data/dictionary/internal.json`:
 
 `TTSEngine::synthesize_spelled()` (C API `laprdus_synthesize_spelled()`) reads text character by character, at the normal speech rate, with a pause after every character, including the last. It is what every platform calls for screen reader spelling, typed-character echo, SAPI5 `SPVA_SpellOut` and single-character requests. Per character (`spell_character()`):
 
-- **A letter of the alphabet** (`formant::spelling_letter()`: Latin or Cyrillic, any case, the ligatures and љ/њ/џ as digraphs, ä-type letters folded) is read by its **name** in the language of the voice (`formant::letter_name()`: Croatian and Bosnian *a, be, ce, če, će, de, dže, đe, e, ef, ge, ha, i, je, ka, el, elj, em, en, enj, o, pe, er, es, eš, te, u, ve, ze, že*, foreign *ku, duplo ve, iks, ipsilon*; Serbian per decision 41 of the Odbor za standardizaciju srpskog jezika: *lje, nje, ša*, the same for Cyrillic and Latin) or, when `VoiceParams::spelling_mode` is `SpellingMode::LetterSounds`, by its **sound**: `Frontend::letter_sound()` builds an `Utterance` with `isolated_sound = true` (a vowel letter as a stressed syllable; a consonant letter as the consonant plus a stressed SCHWA release vowel, "bə", "sə", "mə", as eSpeak's Croatian voice sounds letters out: measured 70-90 ms of consonant and 110-130 ms of vowel at full level; the foreign letters *q, w, x, y* (`formant::is_foreign_letter()`) keep their names in sound mode too), and `FormantSynthesizer::synthesize_letter_sound()` / `AudioSynthesizer::synthesize_letter_sound()` render it with fixed durations. The same letter names are used for spelled-out abbreviations in running text ("USB", "HR").
+- **A letter of the alphabet** (`formant::spelling_letter()`: Latin or Cyrillic, any case, the ligatures and љ/њ/џ as digraphs, ä-type letters folded) is read by its **name** in the language currently set (`TTSEngine::language()`, for every voice; `formant::letter_name()`: Croatian and Bosnian *a, be, ce, če, će, de, dže, đe, e, ef, ge, ha, i, je, ka, el, elj, em, en, enj, o, pe, er, es, eš, te, u, ve, ze, že*, foreign *ku, duplo ve, iks, ipsilon*; Serbian per decision 41 of the Odbor za standardizaciju srpskog jezika: *lje, nje, ša*, the same for Cyrillic and Latin) or, when `VoiceParams::spelling_mode` is `SpellingMode::LetterSounds`, by its **sound**: `Frontend::letter_sound()` builds an `Utterance` with `isolated_sound = true` (a vowel letter as a stressed syllable; a consonant letter as the consonant plus a stressed SCHWA release vowel, "bə", "sə", "mə", as eSpeak's Croatian voice sounds letters out: measured 70-90 ms of consonant and 110-130 ms of vowel at full level; the foreign letters *q, w, x, y* (`formant::is_foreign_letter()`) keep their names in sound mode too), and `FormantSynthesizer::synthesize_letter_sound()` / `AudioSynthesizer::synthesize_letter_sound()` render it with fixed durations. The same letter names are used for spelled-out abbreviations in running text ("USB", "HR").
 - **Everything else** (digits, punctuation, symbols) is read by its entry in the bundled spelling dictionary, or spoken as text when it has none.
 - **The user's spelling entries** (`add_spelling_entry()`, `append_spelling_dictionary()`, a second `SpellingDictionary` layer) win over all of that, with one exception: in sound mode a user entry that is merely a letter's name (`formant::is_letter_name()`: the built-in names of any language, plus the old *jot*) gives way to the sound; any other entry is spoken as written. `load_spelling_dictionary*()` replaces the bundled layer and clears the user layer, so every platform's "load bundled, then add the user's" sequence keeps working.
 - **Capital letters announced by a screen reader** arrive as text, not as a spelled character: NVDA "veliko N" (hr/sr/bs) and "cap N", TalkBack "veliko slovo N" (hr), "велико Н" (sr), "veliko N" (sr Latin, bs), VoiceOver "veliko početno slovo N" (hr). `TTSEngine::synthesize()` (and `synthesize_streaming()`) recognize a whole request of *veliko*/*cap*/*capital*, optionally *slovo*/*početno*/*letter*, and one letter, and render the words as text followed by `synthesize_spelled()` of the letter, so the spelling mode, spelling speed and user spelling entries apply on every platform. Anything else ("Plan B", "veliko N je slovo") is ordinary text.
@@ -1260,7 +1282,7 @@ The Apple port lives in `Lapplerdus/Laprdus/Laprdus.xcodeproj` (Xcode 26+) and m
 | Target | Purpose |
 |--------|---------|
 | `Laprdus` | Multiplatform SwiftUI app (iOS, iPadOS, macOS) with a 4-tab layout: Main (sample text + play button), Settings, Dictionaries, About |
-| `LaprdusVoices` | Speech synthesis provider app extension (`AVSpeechSynthesisProviderAudioUnit`, `ausp` Audio Unit) — exposes the 8 voices system-wide to VoiceOver/Spoken Content, like the Android `TextToSpeechService` |
+| `LaprdusVoices` | Speech synthesis provider app extension (`AVSpeechSynthesisProviderAudioUnit`, `ausp` Audio Unit) — exposes every voice under each of the three languages system-wide to VoiceOver/Spoken Content (one `AVSpeechSynthesisProviderVoice` per voice × language, identifier `com.hrvojekatic.laprdus.<id>.<lang short>`; the request's voice identifier gives both voice and language), like the Android `TextToSpeechService` |
 | `LaprdusTests` | Unit tests (Swift Testing), hosted in the app |
 
 ### Structure
@@ -1283,7 +1305,7 @@ Lapplerdus/Laprdus/
   - the app calls `AVSpeechSynthesisProviderVoice.updateSpeechVoices()` (`SystemVoices.update()` in `LaprdusApp.swift`); registering the extension alone is not enough;
   - the app group is one the platform actually grants: `group.com.hrvojekatic.laprdus` on iOS, `<team id>.com.hrvojekatic.laprdus` on macOS. Both come from the build setting `LAPRDUS_APP_GROUP` (per-SDK in the project file), are expanded into the entitlements, and are read back at run time by `AppGroup.identifier`. A `group.` identifier that the macOS provisioning profile does not list is refused by the system.
 - To check what the system did with the voices: `/usr/bin/log show --last 10m --predicate 'process == "axassetsd" AND category == "VoiceDB"'` ("Set N records for loader: ausp_lprd_HKTC" is success).
-- Settings use the shared app-group `UserDefaults` suite with the **same keys and defaults as the Android DataStore** (`default_voice`, `speed`, `pitch`, `volume`, `force_speed`/`force_pitch`/`force_volume`, `emoji_enabled`, `inflection_enabled`, `*_pause`, `number_mode`, `user_dictionaries_enabled`). The user pitch slider maps to `laprdus_set_user_pitch`; voice-character pitch comes from the registry via `laprdus_set_voice`.
+- Settings use the shared app-group `UserDefaults` suite with the **same keys and defaults as the Android DataStore** (`default_voice` (default zvonko), `speed`, `pitch`, `volume`, `force_speed`/`force_pitch`/`force_volume`, `emoji_enabled`, `inflection_enabled`, `*_pause`, `number_mode`, `user_dictionaries_enabled`). The app's Language picker chooses the language of in-app playback only; a system request's language comes from the voice identifier it names. The user pitch slider maps to `laprdus_set_user_pitch`; voice-character pitch comes from the registry via `laprdus_set_voice`.
 - User dictionaries are stored in the app group container (`Dictionaries/user.json`, `spelling.json`, `emoji.json`, plus `accents.json` for the formant voices' accent lexicon, which has no editor yet) in the **same JSON format as Android**, and are applied both in-app and in the extension. All three files use `grapheme`/`phoneme` entries (that is what every platform's editor writes); the engine's spelling and emoji parsers accept those keys next to the bundled files' `character`/`pronunciation` and `emoji`/`text`.
 - One speech request is not one phrase. VoiceOver describes an item as a row of `<voice>` elements (name, value, type), puts `<break>` between some of them, and marks only a part as `<say-as interpret-as="characters">` (a one-character badge count next to a button name). `SSMLParser` therefore returns ordered parts (text, spelled text, pause, phrase boundary), each with its own rate and pitch, and `LaprdusAudioUnit` synthesizes them one by one: a `<break>` is silence of its length, a boundary between `<voice>`/`<p>`/`<s>` elements is the user's comma pause. A spelled part is synthesized without its trailing spelling pause (`laprdus_synthesize_spelled_ex`, reported in `AudioChunk.finalPause`) and owes it to what follows: text with nothing between gets it, a `<break>` or a phrase boundary replaces it (the badge count of "Notifications 1 Tab" is followed by the comma pause alone; before, the spelling pause and the comma pause added up to a gap four times the one before the count), and at the end of the request it is appended, so characters VoiceOver sends one by one keep the spelling cadence. Never decide spelling, rate or pitch for a whole request.
 - VoiceOver nests `<prosody>` elements (a neutral outer one, an inner `pitch="+50.0%"` for capital letters); `SSMLParser` treats inner values as relative to the outer ones. The extension logs the markup and the parts of each request (never the text): `log show --info --predicate 'subsystem == "com.hrvojekatic.laprdus"'`.
@@ -1310,4 +1332,4 @@ After installing/running the app once, the `LaprdusVoices` extension registers w
 - **iOS**: Settings → Accessibility → Spoken Content → Voices
 - **macOS**: System Settings → Accessibility → Spoken Content → System voice → Manage Voices
 
-The extension mirrors the Android service behavior: honors host rate/pitch unless the "Force" settings are on, pins volume to 1.0 unless forced, and speaks single grapheme clusters through the spelling dictionary. It always synthesizes with the voice the host requested — Android's "Force language" setting has no Apple equivalent (Spoken Content always names a concrete voice) and is not part of this port.
+The extension mirrors the Android service behavior: honors host rate/pitch unless the "Force" settings are on, pins volume to 1.0 unless forced, and speaks single grapheme clusters through the spelling dictionary. It always synthesizes with the voice and the language the host's voice identifier names (every voice is listed under hr, sr and bs) — Android's "Force language" setting has no Apple equivalent (Spoken Content always names a concrete voice and language) and is not part of this port.

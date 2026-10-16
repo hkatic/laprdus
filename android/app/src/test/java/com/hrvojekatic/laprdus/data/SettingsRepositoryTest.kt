@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.PreferencesFileSerializer
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
@@ -20,6 +21,7 @@ import com.hrvojekatic.laprdus.data.migration.OneShotCrashInjector
 import com.hrvojekatic.laprdus.data.migration.SettingsMigrator
 import com.hrvojekatic.laprdus.data.migration.SimulatedMigrationCrashException
 import com.hrvojekatic.laprdus.data.storage.StorageLogger
+import com.hrvojekatic.laprdus.tts.Language
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
@@ -80,8 +82,9 @@ class SettingsRepositoryTest {
     // ==========================================================================
 
     @Test
-    fun `defaultVoice returns josip when not set`() = runTest {
+    fun `defaultVoice returns zvonko when not set`() = runTest {
         val defaultVoice = repository.defaultVoice.first()
+        assertEquals("zvonko", SettingsRepository.DEFAULT_VOICE)
         assertEquals(SettingsRepository.DEFAULT_VOICE, defaultVoice)
     }
 
@@ -90,6 +93,79 @@ class SettingsRepositoryTest {
         repository.setDefaultVoice("vlado")
         val voice = repository.defaultVoice.first()
         assertEquals("vlado", voice)
+    }
+
+    @Test
+    fun `a saved voice id of an earlier version reads as the renamed voice`() = runTest {
+        // Written by version 1.0 / build 11, before the voices were renamed
+        testDataStore.edit { it[KEY_DEFAULT_VOICE] = "djed" }
+
+        assertEquals("djedo", repository.defaultVoice.first())
+        assertEquals("djedo", repository.allSettings.first().defaultVoice)
+        assertEquals("djedo", repository.readSettingsNow().defaultVoice)
+        // Read-time only: the store keeps what it had until the next write
+        assertEquals("djed", testDataStore.data.first()[KEY_DEFAULT_VOICE])
+    }
+
+    @Test
+    fun `every old voice id reads as its new one`() = runTest {
+        val renamed = mapOf(
+            "djed" to "djedo", "dijete" to "detence", "baka" to "baba",
+            "klapa" to "dalmacija_klapa", "pjevac" to "lika_velebit",
+            "pevac" to "solunac", "solist" to "sarajevo_bembasa"
+        )
+        for ((old, new) in renamed) {
+            testDataStore.edit { it[KEY_DEFAULT_VOICE] = old }
+            assertEquals(old, new, repository.defaultVoice.first())
+        }
+    }
+
+    @Test
+    fun `setDefaultVoice saves an old id as the renamed voice`() = runTest {
+        repository.setDefaultVoice("pjevac")
+        assertEquals("lika_velebit", testDataStore.data.first()[KEY_DEFAULT_VOICE])
+        assertEquals("lika_velebit", repository.defaultVoice.first())
+    }
+
+    // ==========================================================================
+    // Language Settings Tests
+    // ==========================================================================
+
+    @Test
+    fun `language defaults to the device language or Croatian`() = runTest {
+        val expected = Language.deviceDefault()
+        assertTrue(expected in Language.ALL)
+        assertEquals(expected, SettingsRepository.DEFAULT_LANGUAGE)
+        assertEquals(expected, repository.language.first())
+        assertEquals(expected, repository.allSettings.first().language)
+    }
+
+    @Test
+    fun `setLanguage persists the short code`() = runTest {
+        repository.setLanguage("sr")
+        assertEquals("sr", repository.language.first())
+        assertEquals("sr", testDataStore.data.first()[KEY_LANGUAGE])
+
+        // A tag is accepted and stored as the short code
+        repository.setLanguage("bs-BA")
+        assertEquals("bs", repository.language.first())
+        repository.setLanguage("hrv")
+        assertEquals("hr", repository.language.first())
+    }
+
+    @Test
+    fun `setLanguage ignores a language Laprdus does not speak`() = runTest {
+        repository.setLanguage("sr")
+        repository.setLanguage("en")
+        repository.setLanguage("")
+        assertEquals("sr", repository.language.first())
+    }
+
+    @Test
+    fun `a stored language that is not a language reads as the default`() = runTest {
+        testDataStore.edit { it[KEY_LANGUAGE] = "klingon" }
+        assertEquals(SettingsRepository.DEFAULT_LANGUAGE, repository.language.first())
+        assertEquals(SettingsRepository.DEFAULT_LANGUAGE, repository.allSettings.first().language)
     }
 
     // ==========================================================================
@@ -770,11 +846,11 @@ class SettingsRepositoryTest {
 
     @Test
     fun `onUserUnlocked without a migrator is a no-op`() = runTest {
-        repository.setDefaultVoice("djed")
+        repository.setDefaultVoice("djedo")
 
         repository.onUserUnlocked()
 
-        assertEquals("djed", repository.defaultVoice.first())
+        assertEquals("djedo", repository.defaultVoice.first())
         assertNull(repository.lastMigrationResult)
     }
 
@@ -1009,6 +1085,7 @@ class SettingsRepositoryTest {
     companion object {
         // Same names and types as the private keys in SettingsRepository.
         private val KEY_DEFAULT_VOICE = stringPreferencesKey("default_voice")
+        private val KEY_LANGUAGE = stringPreferencesKey("language")
         private val KEY_SPEED = floatPreferencesKey("speed")
         private val KEY_FORCE_SPEED = booleanPreferencesKey("force_speed")
         private val KEY_SENTENCE_PAUSE = intPreferencesKey("sentence_pause")

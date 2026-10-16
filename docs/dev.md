@@ -115,8 +115,12 @@ The main orchestrator class that coordinates the synthesis pipeline.
 
 **Key Methods:**
 ```cpp
-// Initialize with voice data
+// Initialize with voice data (old voice ids accepted); starts in the voice's native language
 bool initialize(const std::string& voice_id, const std::string& data_path);
+
+// Language of any voice: front end rules, lexicon, letter names, number dialect
+void set_language(VoiceLanguage language);
+VoiceLanguage language() const;
 
 // Main synthesis function
 SynthesisResult synthesize(const std::string& text);
@@ -182,7 +186,11 @@ enum class Phoneme : uint8_t {
 
 ### 2.3 CroatianNumbers (`src/core/croatian_numbers.cpp`)
 
-Converts numeric strings to Croatian words.
+Converts numeric strings to words in the current language: `set_dialect()`
+is called by `TTSEngine::set_language()` for every voice (Croatian
+*tisuća / milijun / dvjesto*, Serbian *hiljada / milion / dvesta*, Bosnian
+*hiljada / milion / dvjesto*; one and two agree with the feminine scale
+words: *dvije tisuće*, *dve hiljade*).
 
 **Features:**
 - Supports numbers from 0 to 10^303 (centillions)
@@ -221,41 +229,92 @@ struct PauseSettings {
 
 Manages voice definitions including physical, derived and formant voices.
 
-**Voice Types:**
-1. **Physical voices** - Have their own phoneme data files
-   - `josip` - Croatian male adult (Josip.bin)
-   - `vlado` - Serbian male adult (Vlado.bin)
+**Voices and languages are separate.** Every voice speaks every language
+(Croatian `hr-HR`, Serbian `sr-RS`, Bosnian `bs-BA`); the registry's
+`language` of a voice is only its *native* language, spoken when the host
+asks for nothing else. `TTSEngine::set_language()` switches the language of
+any voice (letter-to-sound rules, accent lexicon, letter names, number
+dialect), `TTSEngine::language()` reports it. The default voice is
+`VoiceRegistry::default_voice_id()` = `zvonko`, for every language and
+platform. The registry order below is part of the contract: code and saved
+settings rely on the index of the first five.
 
-2. **Derived voices** - Use base voice data with pitch modification
-   - `detence` - Child voice (base: josip, pitch: 1.5)
-   - `baba` - Grandmother voice (base: josip, pitch: 1.2)
-   - `djed` - Grandfather voice (base: vlado, pitch: 0.75)
+| # | id | display_name | native | base | base_pitch | kind |
+|---|----|--------------|--------|------|-----------|------|
+| 0 | `josip` | Josip | hr-HR | - | 1.0 | recorded (Josip.bin) |
+| 1 | `vlado` | Vlado | sr-RS | - | 1.0 | recorded (Vlado.bin) |
+| 2 | `detence` | Detence | hr-HR | josip | 1.5 | derived, child |
+| 3 | `baba` | Baba | hr-HR | josip | 1.2 | derived, grandmother (Female, Senior) |
+| 4 | `djedo` | Đedo | sr-RS | vlado | 0.75 | derived, grandfather (Male, Senior) |
+| 5 | `zvonko` | Zvonko | hr-HR | - | 1.0 | formant (the default voice) |
+| 6 | `stojan` | Stojan | sr-RS | - | 1.0 | formant |
+| 7 | `mirsad` | Mirsad | bs-BA | - | 1.0 | formant |
+| 8 | `orguljas` | Orguljaš - Vila Velebita | hr-HR | zvonko | 1.0 | singing, pipe organ |
+| 9 | `dalmacija_klapa` | Dalmacija Klapa | hr-HR | zvonko | 1.0 | singing, klapa (*Vila Velebita*) |
+| 10 | `trubac` | Trubač - Kreće se lađa francuska | sr-RS | stojan | 1.0 | singing, trumpet |
+| 11 | `harmonikas` | Harmonikaš - Kreće se lađa francuska | sr-RS | stojan | 1.0 | singing, accordion |
+| 12 | `sevdalija` | Sevdalija - Kad ja pođoh na Bembašu | bs-BA | mirsad | 1.0 | singing, sevdah singer |
+| 13 | `sazlija` | Sazlija - Kad ja pođoh na Bembašu | bs-BA | mirsad | 1.0 | singing, saz |
+| 14 | `lika_velebit` | Lika Velebit | hr-HR | zvonko | 1.0 | singing, Zvonko's own voice (*Vila Velebita*) |
+| 15 | `solunac` | Solunac | sr-RS | stojan | 1.0 | singing, Stojan's own voice (*Kreće se lađa francuska*) |
+| 16 | `sarajevo_bembasa` | Sarajevo Bembaša | bs-BA | mirsad | 1.0 | singing, Mirsad's own voice (*Kad ja pođoh na Bembašu*) |
+| 17 | `becarac` | Bećarac | hr-HR | zvonko | 1.0 | singing, Zvonko's own voice, the bećarac tune |
 
-3. **Formant voices** - Synthesized by rule, no data file (see `src/formant/` and `docs/formant.md`)
-   - `zvonko` - Croatian male adult
-   - `stojan` - Serbian male adult
-   - `mirsad` - Bosnian male adult
+Recorded voices (0-4) need `Josip.bin` / `Vlado.bin` and accept speed and
+user pitch 0.5-2.0; formant voices (5-17) need no data file and accept
+0.25-4.0. Tell the kinds apart by the fields, not by id sets: `data_filename`
+is NULL for formant voices, `base_voice_id` is NULL for josip, vlado,
+zvonko, stojan and mirsad; a singing preset has a base voice and no data
+file (or simply index >= 8). See `docs/formant.md` for the formant voices
+and "Singing presets" there for the presets.
 
-4. **Singing presets** - Formant voices that sing the text to a folk song (see "Singing presets" in `docs/formant.md`)
-   - `orguljas`, `klapa`, `pjevac` - Zvonko as a pipe organ / a klapa / himself (Croatian, *Vila Velebita*)
-   - `trubac`, `harmonikas`, `pevac` - Stojan as a trumpet / an accordion / himself (Serbian, *Kreće se lađa francuska*)
-   - `sevdalija`, `sazlija`, `solist` - Mirsad as a sevdah singer / a saz / himself (Bosnian, *Kad ja pođoh na Bembašu*)
-   - `becarac` - Zvonko singing the bećarac tune (Croatian, Slavonia)
+**Ids** are plain ASCII without diacritics on purpose (dj for đ, c for č/ć,
+s for š, z for ž), so they register safely on every platform. Display
+names come from the registry (UTF-8, no "Laprdus" prefix, no language
+suffix); platform UIs must not hard-code them, though they may append a
+localized description (child, grandma, formant, singing).
 
-**Voice Info Structure:**
+**Aliases.** The ids of earlier versions are accepted by
+`VoiceRegistry::find_by_id()`, `laprdus_set_voice()` and
+`laprdus_get_voice_info_by_id()` and resolve to the renamed voice;
+`laprdus_get_current_voice()` returns the canonical id. UIs that compare a
+saved id against the voice list should normalize it first.
+
+| old id | id |
+|--------|----|
+| `djed` | `djedo` |
+| `dijete` | `detence` |
+| `baka` | `baba` |
+| `klapa` | `dalmacija_klapa` |
+| `pjevac` | `lika_velebit` |
+| `pevac` | `solunac` |
+| `solist` | `sarajevo_bembasa` |
+
+**Voice Info Structure** (C API `LaprdusVoiceInfo`):
 ```cpp
-struct VoiceInfo {
-    std::string id;           // "josip", "vlado", etc.
-    std::string display_name; // "Laprdus Josip (Croatian)"
-    std::string language;     // "hr-HR", "sr-RS" or "bs-BA"
-    uint16_t lcid;            // Windows LCID
-    std::string gender;       // "Male" or "Female"
-    std::string age;          // "Child", "Adult", "Senior"
-    float base_pitch;         // Pitch multiplier (1.0 = normal)
-    std::string base_voice;   // Base voice ID for derived voices
-    std::string data_file;    // Phoneme data filename
-};
+typedef struct LaprdusVoiceInfo {
+    const char* id;              // Plain ASCII: "josip", "djedo", "lika_velebit"
+    const char* display_name;    // Shown to the user: "Josip", "Đedo", "Dalmacija Klapa"
+    const char* language_code;   // Native language: "hr-HR", "sr-RS" or "bs-BA"
+                                 // (every voice speaks all three; see laprdus_set_language)
+    uint16_t language_lcid;      // Windows LCID of the native language: 0x041A, 0x081A, 0x141A
+    const char* gender;          // "Male" or "Female"
+    const char* age;             // "Child", "Adult", or "Senior"
+    float base_pitch;            // Base pitch multiplier (1.0 for normal)
+    const char* base_voice_id;   // Base voice ID for derived voices (NULL if physical)
+    const char* data_filename;   // Phoneme data file (NULL for formant voices)
+} LaprdusVoiceInfo;
 ```
+
+**Languages** (`LaprdusLanguageInfo`, `laprdus_get_language_info()`;
+`laprdus::VoiceLanguage` and `voice_language_code/short_code/lcid/english_name/native_name()`
+in `types.hpp`; `laprdus::parse_voice_language()` parses tags and names):
+
+| index | code | short | LCID | English | native |
+|-------|------|-------|------|---------|--------|
+| 0 | hr-HR | hr | 0x041A | Croatian | Hrvatski |
+| 1 | sr-RS | sr | 0x081A | Serbian | Srpski |
+| 2 | bs-BA | bs | 0x141A | Bosnian | Bosanski |
 
 ### 2.6 Dictionary System (`src/core/`)
 
@@ -379,8 +438,15 @@ LaprdusHandle laprdus_create(void);
 void laprdus_destroy(LaprdusHandle handle);
 
 // Initialization
-LaprdusError laprdus_set_voice(handle, voice_id, data_directory);
+LaprdusError laprdus_set_voice(handle, voice_id, data_directory);  // old ids accepted
 LaprdusError laprdus_load_dictionary(handle, path);
+const char* laprdus_get_default_voice(void);                       // "zvonko"
+
+// Language (every voice speaks every language; see below)
+uint32_t laprdus_get_language_count(void);                         // 3
+LaprdusError laprdus_get_language_info(index, &info);              // LaprdusLanguageInfo: code, short_code, lcid, english_name, native_name
+LaprdusError laprdus_set_language(handle, "sr");                   // "hr", "hr-HR", "hr_HR", "hrv", "sr-Latn-RS", "srp", "bs", "bos", "Croatian", "hrvatski"...
+const char* laprdus_get_language(handle);                          // "hr-HR" | "sr-RS" | "bs-BA"
 
 // Synthesis
 int32_t laprdus_synthesize(handle, text, &samples, &format);
@@ -400,6 +466,20 @@ LaprdusError laprdus_set_inflection_level(handle, level);   // 0.0 monotone .. 1
 LaprdusError laprdus_set_acceleration(handle, factor);      // 0.5 .. 3.0, multiplies the speed
 float laprdus_get_nominal_wpm(voice_id);                    // words/min at speed 1.0 (Zvonko: 175)
 ```
+
+**Language.** The voice chooses the sound; the language chooses the text
+front end (letter-to-sound rules, accent lexicon, letter names when
+spelling) and the number words (*tisuća* / *milijun* for hr, *hiljada* /
+*milion* / *dvesta* for sr, *hiljada* / *milion* / *dvjesto* for bs), for
+every voice, Josip and Vlado included. A voice speaks its native language
+(`LaprdusVoiceInfo.language_code`) until `laprdus_set_language()` asks for
+another; the chosen language then sticks across later `laprdus_set_voice()`
+calls ("set the language once, switch voices freely"). `NULL` or `""`
+returns to the voice's native language, now and after every later voice
+change; an unknown tag is `LAPRDUS_ERROR_INVALID_PARAMETER`. Platform code
+that bypasses the C API (the Android JNI bridge, the SAPI5 driver) calls
+`TTSEngine::set_language(VoiceLanguage)` after `initialize()` /
+`initialize_formant()`, which start in the voice's native language.
 
 **Host rate and pitch.** The user's own rate and pitch (`speech.speed`,
 `speech.pitch` in `settings.json`, `speed`/`pitch` on Android and Apple) are
@@ -433,9 +513,18 @@ COM-based Speech API 5 driver.
 - Single CLSID with registry virtualization
 
 **Voice Enumeration:**
-All 5 voices registered with appropriate LCIDs:
-- Croatian: 0x041A (hr-HR)
-- Serbian: 0x081A (sr-RS)
+Three voice tokens, one per language, instead of one per Laprdus voice:
+- "Laprdus Croatian" - LCID 0x041A (hr-HR)
+- "Laprdus Serbian" - LCID 0x081A (sr-RS)
+- "Laprdus Bosnian" - LCID 0x141A (bs-BA)
+
+The token sets the language (`TTSEngine::set_language()`); the voice comes
+from `settings.json` (`voice.default`, empty = `zvonko`, old ids accepted),
+so all three tokens speak with the voice chosen in the Laprdus
+Configurator. There is no language key in `settings.json`: the host chooses
+the language. The installer removes the per-voice tokens of earlier
+versions on install, upgrade and repair and re-registers the three language
+tokens.
 
 ### 4.3 NVDA Addon (`nvda-addon/`)
 
@@ -449,6 +538,7 @@ Python-based synthesizer driver for NVDA screen reader.
 **Features:**
 - NVDA's rate and pitch sliders scale `speech.speed` and `speech.pitch` from settings.json (unless forced); rate boost multiplies every slider position by 3 through the engine's acceleration (`speech.acceleration` is not used), as eSpeak's and OneCore's boost does
 - NVDA's inflection slider sets the inflection level (0-100 → 0.0-1.0) and keeps inflection enabled; `speech.inflection` and `speech.inflection_level` from settings.json are not used under NVDA
+- A separate **Language** setting (NVDA's standard `LanguageSetting`: hr, sr, bs; default from NVDA's UI language, else hr); the voice list shows all 18 voices by registry `display_name` for any language, and the default voice is `zvonko`. NVDA's automatic language switching (`LangChangeCommand`) switches among hr/sr/bs and ignores other languages
 - Character mode for spelling
 - Shared settings with SAPI5 via settings.json
 - Croatian/Serbian translations
@@ -472,7 +562,15 @@ Automatically added to `/etc/speech-dispatcher/speechd.conf`:
 AddModule "laprdus" "sd_laprdus" "laprdus.conf"
 LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
+LanguageDefaultModule "bs" "laprdus"
 ```
+
+**Voices and languages:** `LIST VOICES` returns every voice for every
+language (hr, sr, bs); `SET LANGUAGE` calls `laprdus_set_language()` and
+keeps the voice (`spd-say -l sr -y "Zvonko"`: Zvonko speaking Serbian).
+The symbolic voices are the same in all three languages: MALE1 = `zvonko`,
+MALE2 = `josip`, MALE3 = `djedo`, FEMALE1 = `baba`, CHILD_MALE = `detence`.
+SSIP `pitch_range` maps onto the inflection level.
 
 ### 4.5 Android (`android/` and `src/platform/android/`)
 
@@ -498,6 +596,7 @@ service sets a request's rate and pitch and synthesizes.
 - Implements `TextToSpeechService`
 - Hilt dependency injection
 - Jetpack Compose settings UI
+- Offers every voice for every locale: 54 system voices named `<id>-<lang>` (`zvonko-sr`). The requested locale sets the engine language (`TTSEngine::set_language()` through the JNI bridge), the voice stays the one configured in the app, and the default voice is `zvonko`. The app has a Language setting for its in-app playback; "Force language" means: ignore the requested language and speak the one chosen in Laprdus settings
 
 **Build Requirements:**
 - NDK with CMake
@@ -607,20 +706,23 @@ LD_LIBRARY_PATH=build/linux-x64-release \
 ```powershell
 Add-Type -AssemblyName System.Speech
 $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer
-$synth.SelectVoice("Laprdus Josip")
+$synth.SelectVoice("Laprdus Croatian")   # or "Laprdus Serbian", "Laprdus Bosnian"
 $synth.Speak("Dobar dan!")
 ```
 
 **NVDA:**
 1. Install `.nvda-addon` file
 2. Restart NVDA
-3. Select "Laprdus" in voice settings
+3. Select "Laprdus" in voice settings, a voice in Voice and a language in Language
 4. Test synthesis and spelling mode
 
 **Linux CLI:**
 ```bash
-laprdus "Dobar dan!"
-laprdus -v vlado -r 1.5 "Zdravo svete!"
+laprdus "Dobar dan!"                       # Zvonko, Croatian
+laprdus -v vlado -r 1.5 "Zdravo svete!"    # Vlado in its native Serbian
+laprdus -v vlado -L hr "Dobar dan svima!"  # Vlado speaking Croatian
+laprdus -L bs "Dobar dan!"                 # Zvonko speaking Bosnian
+laprdus -l                                 # every voice with its native language
 laprdus -o output.wav "Test"
 ```
 

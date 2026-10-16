@@ -7,44 +7,35 @@
 #include "dictionary_dialog.hpp"
 #include "dark_mode.hpp"
 #include "resource.h"
+#include "core/voice_registry.hpp"
 #include <sapi.h>
 #include <sphelper.h>
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 
 // Link with SAPI
 #pragma comment(lib, "sapi.lib")
 
 namespace laprdus {
 
-// Voice IDs mapped to combo box indices
-static const char* VOICE_IDS[] = {
-    "josip",
-    "vlado",
-    "detence",
-    "baba",
-    "djed",
-    "zvonko",
-    "stojan",
-    "mirsad",
-    // Singing presets (formant voices)
-    "orguljas",
-    "klapa",
-    "trubac",
-    "harmonikas",
-    "sevdalija",
-    "sazlija",
-    "pjevac",
-    "pevac",
-    "solist",
-    "becarac"
-};
-static const int NUM_VOICES = sizeof(VOICE_IDS) / sizeof(VOICE_IDS[0]);
+// The voice combo box lists VoiceRegistry::all_voices() in registry order;
+// the item index is the registry index.
+static const char* SelectedVoiceId(HWND hDlg) {
+    const int index = static_cast<int>(SendDlgItemMessageW(hDlg, IDC_VOICE_COMBO, CB_GETCURSEL, 0, 0));
+    const VoiceDefinition* voice = index >= 0 ? VoiceRegistry::get_by_index(static_cast<size_t>(index)) : nullptr;
+    return voice ? voice->id : VoiceRegistry::default_voice_id();
+}
 
-// Index of the first formant voice in VOICE_IDS (zvonko, stojan, mirsad and
-// the singing presets after them)
-static const int FIRST_FORMANT_VOICE = 5;
+static std::wstring Utf8ToWide(const char* utf8) {
+    if (!utf8 || !*utf8) return std::wstring();
+    const int size = MultiByteToWideChar(CP_UTF8, 0, utf8, -1, nullptr, 0);
+    if (size <= 0) return std::wstring();
+    std::wstring wide(static_cast<size_t>(size - 1), L'\0');
+    MultiByteToWideChar(CP_UTF8, 0, utf8, -1, wide.data(), size);
+    return wide;
+}
 
 // Slider ranges (percent). The recorded voices stop at 0.5x and 2.0x; the
 // formant voices go from 0.25x to 4.0x.
@@ -226,25 +217,29 @@ void ConfigDialog::InitializeVoiceCombo(HWND hDlg) {
     HWND hCombo = GetDlgItem(hDlg, IDC_VOICE_COMBO);
     if (!hCombo) return;
 
-    // Add voice names
-    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_JOSIP).c_str());
-    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_VLADO).c_str());
-    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_DETENCE).c_str());
-    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_BABA).c_str());
-    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_DJEDO).c_str());
-    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_ZVONKO).c_str());
-    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_STOJAN).c_str());
-    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_MIRSAD).c_str());
-    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_ORGULJAS).c_str());
-    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_KLAPA).c_str());
-    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_TRUBAC).c_str());
-    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_HARMONIKAS).c_str());
-    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_SEVDALIJA).c_str());
-    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_SAZLIJA).c_str());
-    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_PJEVAC).c_str());
-    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_PEVAC).c_str());
-    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_SOLIST).c_str());
-    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_VOICE_BECARAC).c_str());
+    // Every voice of the registry, named as the registry names it, with its
+    // kind after the name: "Josip (snimljeni glas)", "Detence (dijete)",
+    // "Zvonko (formantni glas, zadani)", "Dalmacija Klapa (pjeva)".
+    for (const VoiceDefinition& voice : VoiceRegistry::all_voices()) {
+        UINT kind;
+        if (VoiceRegistry::is_formant_voice(&voice)) {
+            kind = voice.base_voice_id ? IDS_VOICE_KIND_SINGING : IDS_VOICE_KIND_FORMANT;
+        } else if (!voice.base_voice_id) {
+            kind = IDS_VOICE_KIND_RECORDED;
+        } else if (voice.age == VoiceAge::Child) {
+            kind = IDS_VOICE_KIND_CHILD;
+        } else if (voice.gender == VoiceGender::Female) {
+            kind = IDS_VOICE_KIND_GRANDMA;
+        } else {
+            kind = IDS_VOICE_KIND_GRANDPA;
+        }
+        std::wstring label = Utf8ToWide(voice.display_name) + L" (" + LoadLocalizedString(kind);
+        if (std::strcmp(voice.id, VoiceRegistry::default_voice_id()) == 0) {
+            label += L", " + LoadLocalizedString(IDS_VOICE_DEFAULT);
+        }
+        label += L")";
+        SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)label.c_str());
+    }
 }
 
 void ConfigDialog::InitializeSliders(HWND hDlg) {
@@ -313,8 +308,7 @@ void ConfigDialog::InitializeSliders(HWND hDlg) {
 }
 
 bool ConfigDialog::IsFormantVoiceSelected(HWND hDlg) const {
-    int voiceIndex = static_cast<int>(SendDlgItemMessageW(hDlg, IDC_VOICE_COMBO, CB_GETCURSEL, 0, 0));
-    return voiceIndex >= FIRST_FORMANT_VOICE && voiceIndex < NUM_VOICES;
+    return VoiceRegistry::is_formant_voice(VoiceRegistry::find_by_id(SelectedVoiceId(hDlg)));
 }
 
 // The speed and pitch sliders follow the selected voice: the recorded voices
@@ -347,13 +341,15 @@ void ConfigDialog::UpdateVoiceRanges(HWND hDlg) {
 }
 
 void ConfigDialog::LoadSettingsToControls(HWND hDlg) {
-    // Voice combo box
-    // Without a saved voice the default is Zvonko
-    const std::string selected = m_settings.default_voice.empty() ? "zvonko" : m_settings.default_voice;
+    // Voice combo box. Without a saved voice the default is Zvonko; an id
+    // of an earlier version (djed, klapa, pjevac, ...) selects the renamed
+    // voice.
+    const VoiceDefinition* selected = VoiceRegistry::find_by_id(m_settings.default_voice.c_str());
+    if (!selected) selected = VoiceRegistry::default_voice();
     int voiceIndex = 0;
-    for (int i = 0; i < NUM_VOICES; i++) {
-        if (selected == VOICE_IDS[i]) {
-            voiceIndex = i;
+    for (size_t i = 0; i < VoiceRegistry::voice_count(); i++) {
+        if (VoiceRegistry::get_by_index(i) == selected) {
+            voiceIndex = static_cast<int>(i);
             break;
         }
     }
@@ -458,10 +454,7 @@ void ConfigDialog::UpdateAccelerationValue(HWND hDlg) {
 
 void ConfigDialog::CollectSettingsFromControls(HWND hDlg) {
     // Voice
-    int voiceIndex = static_cast<int>(SendDlgItemMessageW(hDlg, IDC_VOICE_COMBO, CB_GETCURSEL, 0, 0));
-    if (voiceIndex >= 0 && voiceIndex < NUM_VOICES) {
-        m_settings.default_voice = VOICE_IDS[voiceIndex];
-    }
+    m_settings.default_voice = SelectedVoiceId(hDlg);
 
     // Speed (50-200 mapped to 0.5-2.0; formant voices 25-400)
     int speedValue = static_cast<int>(SendDlgItemMessageW(hDlg, IDC_SPEED_SLIDER, TBM_GETPOS, 0, 0));
@@ -683,9 +676,28 @@ void ConfigDialog::OnApply(HWND hDlg) {
     m_settingsChanged = false;
 }
 
+// The SAPI5 voice tokens are one per language ("Laprdus Croatian",
+// "Laprdus Serbian", "Laprdus Bosnian"); the voice they speak with is the
+// one saved in settings.json. The test therefore saves the settings first
+// and then speaks through the token of the configurator's own language.
+static const wchar_t* TestTokenLanguage() {
+    const LANGID id = GetUserDefaultUILanguage();
+    switch (id) {
+        case 0x141A: case 0x201A: case 0x641A: case 0x681A:   // Bosnian
+            return L"bs";
+        case 0x081A: case 0x0C1A: case 0x181A: case 0x1C1A: case 0x2C1A: case 0x301A: case 0x7C1A:
+            return L"sr";
+        default:
+            return L"hr";
+    }
+}
+
 void ConfigDialog::OnTest(HWND hDlg) {
-    // Apply current settings before testing
+    // Apply and save the current settings: the SAPI5 driver reads the voice
+    // from settings.json when it notices the file changed
     CollectSettingsFromControls(hDlg);
+    m_config.set_settings(m_settings);
+    m_config.save_settings();
 
     // Get the test text
     std::wstring testText = LoadLocalizedString(IDS_TEST_TEXT);
@@ -698,38 +710,32 @@ void ConfigDialog::OnTest(HWND hDlg) {
         IID_ISpVoice, (void**)&pVoice);
 
     if (SUCCEEDED(hr) && pVoice) {
-        // Find and select the appropriate Laprdus voice
+        const wchar_t* wanted = TestTokenLanguage();
+        ISpObjectToken* pChosen = nullptr;      // the token of our language
+        ISpObjectToken* pFallback = nullptr;    // any Laprdus token
+
         ISpObjectTokenCategory* pCategory = nullptr;
         hr = SpGetCategoryFromId(SPCAT_VOICES, &pCategory);
-
         if (SUCCEEDED(hr) && pCategory) {
             IEnumSpObjectTokens* pEnum = nullptr;
             hr = pCategory->EnumTokens(nullptr, nullptr, &pEnum);
-
             if (SUCCEEDED(hr) && pEnum) {
                 ISpObjectToken* pToken = nullptr;
-                while (pEnum->Next(1, &pToken, nullptr) == S_OK) {
+                while (!pChosen && pEnum->Next(1, &pToken, nullptr) == S_OK) {
                     LPWSTR pId = nullptr;
                     if (SUCCEEDED(pToken->GetId(&pId)) && pId) {
-                        // Look for Laprdus voice token
                         if (wcsstr(pId, L"Laprdus") != nullptr) {
-                            // Check if it matches the selected voice
-                            LPWSTR pVoiceId = nullptr;
-                            if (SUCCEEDED(pToken->GetStringValue(L"VoiceId", &pVoiceId)) && pVoiceId) {
-                                std::string voiceIdStr;
-                                int size = WideCharToMultiByte(CP_UTF8, 0, pVoiceId, -1, nullptr, 0, nullptr, nullptr);
-                                if (size > 0) {
-                                    voiceIdStr.resize(size - 1);
-                                    WideCharToMultiByte(CP_UTF8, 0, pVoiceId, -1, voiceIdStr.data(), size, nullptr, nullptr);
+                            LPWSTR pLang = nullptr;
+                            if (SUCCEEDED(pToken->GetStringValue(L"Language", &pLang)) && pLang) {
+                                if (_wcsicmp(pLang, wanted) == 0) {
+                                    pChosen = pToken;
+                                    pChosen->AddRef();
                                 }
-                                CoTaskMemFree(pVoiceId);
-
-                                if (voiceIdStr == m_settings.default_voice || m_settings.default_voice.empty()) {
-                                    pVoice->SetVoice(pToken);
-                                    CoTaskMemFree(pId);
-                                    pToken->Release();
-                                    break;
-                                }
+                                CoTaskMemFree(pLang);
+                            }
+                            if (!pFallback) {
+                                pFallback = pToken;
+                                pFallback->AddRef();
                             }
                         }
                         CoTaskMemFree(pId);
@@ -740,6 +746,13 @@ void ConfigDialog::OnTest(HWND hDlg) {
             }
             pCategory->Release();
         }
+
+        ISpObjectToken* pUse = pChosen ? pChosen : pFallback;
+        if (pUse) {
+            pVoice->SetVoice(pUse);
+        }
+        if (pChosen) pChosen->Release();
+        if (pFallback) pFallback->Release();
 
         // Speak the test text
         pVoice->Speak(testText.c_str(), SPF_ASYNC, nullptr);

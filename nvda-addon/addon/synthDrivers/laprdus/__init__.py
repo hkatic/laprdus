@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # LaprdusTTS NVDA SynthDriver
-# Croatian/Serbian text-to-speech synthesizer for NVDA
+# Croatian/Serbian/Bosnian text-to-speech synthesizer for NVDA
 # Compatible with NVDA 2019.3 to 2026.1
 
 import queue as Queue
@@ -23,21 +23,86 @@ string_types = (str,)
 _DEBUG_ENABLED = _os.path.exists(_os.path.join(_tempfile.gettempdir(), "laprdus_debug"))
 _DEBUG_LOG_PATH = _os.path.join(_tempfile.gettempdir(), "laprdus_debug.log") if _DEBUG_ENABLED else None
 
-def _default_voice():
-    """Voice of a new installation: the formant voice of NVDA's language.
+# The default voice of every language: every voice speaks every language,
+# and the language is a setting of its own (see _default_language)
+DEFAULT_VOICE = "zvonko"
 
+# The languages every voice speaks, as NVDA language codes, in the
+# engine's order (laprdus_get_language_info), with their native names
+# for when NVDA has no description of its own
+LANGUAGES = OrderedDict([
+    ("hr", "Hrvatski"),
+    ("sr", "Srpski"),
+    ("bs", "Bosanski"),
+])
+DEFAULT_LANGUAGE = "hr"
+
+# Three-letter ISO codes a LangChangeCommand or a saved setting might carry
+_LANGUAGE_ALIASES = {
+    "hrv": "hr",
+    "srp": "sr",
+    "bos": "bs",
+}
+
+# Voice ids of earlier versions and the ids that replaced them. The DLL
+# accepts the old ones, but NVDA's voice combo compares the saved id with
+# the keys of availableVoices, so the driver normalizes them.
+LEGACY_VOICE_IDS = {
+    "djed": "djedo",
+    "dijete": "detence",
+    "baka": "baba",
+    "klapa": "dalmacija_klapa",
+    "pjevac": "lika_velebit",
+    "pevac": "solunac",
+    "solist": "sarajevo_bembasa",
+}
+
+
+def _default_voice():
+    """Voice of a new installation: Zvonko, whatever the language.
+
+    The language, not the voice, follows NVDA's language (_default_language).
     NVDA saves the voice the user picks, so this only applies until then.
+    """
+    return DEFAULT_VOICE
+
+
+def _language_from_tag(tag):
+    """The Laprdus language ("hr", "sr", "bs") a language tag asks for,
+    or None when it is empty or one Laprdus does not speak.
+
+    Accepts NVDA's forms ("hr", "hr_HR", "sr_Latn", "bs_BA"), BCP 47 ones
+    ("hr-HR", "sr-Latn-RS") and ISO 639-2 codes ("hrv", "srp", "bos").
+    """
+    if not tag:
+        return None
+    try:
+        primary = str(tag).strip().lower().replace("-", "_").split("_")[0]
+    except Exception:
+        return None
+    primary = _LANGUAGE_ALIASES.get(primary, primary)
+    return primary if primary in LANGUAGES else None
+
+
+def _default_language():
+    """Language of a new installation: NVDA's language when Laprdus speaks
+    it (Croatian, Serbian or Bosnian), otherwise Croatian.
+
+    NVDA saves the language the user picks, so this only applies until then.
     """
     try:
         import languageHandler
-        lang = (languageHandler.getLanguage() or "").lower()
+        lang = _language_from_tag(languageHandler.getLanguage())
     except Exception:
-        lang = ""
-    if lang.startswith("sr"):
-        return "stojan"
-    if lang.startswith("bs"):
-        return "mirsad"
-    return "zvonko"
+        lang = None
+    return lang or DEFAULT_LANGUAGE
+
+
+def _normalize_voice_id(voice_id):
+    """Map a voice id of an earlier version onto the current one."""
+    if not voice_id:
+        return voice_id
+    return LEGACY_VOICE_IDS.get(voice_id, voice_id)
 
 
 def _debug_log(msg):
@@ -62,15 +127,47 @@ except ImportError:
 
 # Import speech commands with fallback for different NVDA versions
 try:
-    from speech.commands import IndexCommand, CharacterModeCommand, BreakCommand
+    from speech.commands import IndexCommand, CharacterModeCommand, BreakCommand, LangChangeCommand
 except ImportError:
     try:
-        from speech import IndexCommand, CharacterModeCommand, BreakCommand
+        from speech import IndexCommand, CharacterModeCommand, BreakCommand, LangChangeCommand
     except ImportError:
         # Fallback for very old NVDA versions
         IndexCommand = None
         CharacterModeCommand = None
         BreakCommand = None
+        LangChangeCommand = None
+
+# The entries of the Language combo: id plus display name
+try:
+    from autoSettingsUtils.utils import StringParameterInfo
+except ImportError:
+    try:
+        from driverHandler import StringParameterInfo
+    except ImportError:
+        class StringParameterInfo(object):
+            """Minimal stand-in for NVDA's StringParameterInfo."""
+            def __init__(self, id, displayName):
+                self.id = id
+                self.displayName = displayName
+
+
+def _language_setting():
+    """NVDA's standard Language setting (the "Language" combo of the voice
+    settings and of the synth settings ring), saved by NVDA as
+    speechSynths.laprdus.language."""
+    factory = getattr(synthDriverHandler.SynthDriver, "LanguageSetting", None)
+    if factory is not None:
+        return factory()
+    from autoSettingsUtils.driverSetting import DriverSetting
+    return DriverSetting(
+        "language",
+        # Translators: Label for the language setting of the synthesizer
+        _("&Language"),
+        availableInSettingsRing=True,
+        # Translators: Label for the language setting in the synth settings ring
+        displayName=_("Language"),
+    )
 
 # =============================================================================
 # Constants
@@ -154,9 +251,12 @@ class SynthDriver(synthDriverHandler.SynthDriver):
     description = "Laprdus"
 
     # Supported settings - MUST be a tuple
-    # Base settings always available
+    # Base settings always available. The language (Croatian, Serbian,
+    # Bosnian) is chosen separately from the voice: every voice speaks
+    # every language.
     _baseSettings = [
         synthDriverHandler.SynthDriver.VoiceSetting(),
+        _language_setting(),
         synthDriverHandler.SynthDriver.RateSetting(),
         synthDriverHandler.SynthDriver.RateBoostSetting(),
         synthDriverHandler.SynthDriver.PitchSetting(),
@@ -167,11 +267,15 @@ class SynthDriver(synthDriverHandler.SynthDriver):
     _baseSettings.extend(_createCustomSettings())
     supportedSettings = tuple(_baseSettings)
 
-    # Supported speech commands - use set literal
+    # Supported speech commands - use set literal. LangChangeCommand
+    # (NVDA's automatic language switching) switches among Croatian,
+    # Serbian and Bosnian for the text that follows it; other languages
+    # fall back to the Language setting. The voice never changes.
     supportedCommands = {
         IndexCommand,
         CharacterModeCommand,
         BreakCommand,
+        LangChangeCommand,
     } - {None}  # Remove None if any imports failed
 
     # Supported notifications - MUST include both per NVDA docs
@@ -244,11 +348,20 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         self._voice = _default_voice()
         self._availableVoices = None  # Cached voice dict
 
+        # Language selection: the Language setting (NVDA restores the saved
+        # one through loadSettings after __init__) and the language the
+        # engine speaks at the moment, which a LangChangeCommand may move
+        # away from the setting for part of an utterance
+        self._language = _default_language()
+        self._engineLanguage = None
+        self._availableLanguages = None  # Cached language dict
+
         # Current playback sample rate (for rate changes)
         self._currentSampleRate = SAMPLE_RATE
 
-        # Initialize with default voice
+        # Initialize with default voice and language
         self._engine.set_voice(self._voice)
+        self._applyLanguage(self._language)
 
         # Apply voice character pitch (Issue 2: voice derivatives)
         # set_pitch(1.0) triggers effective_pitch = voice_base_pitch * 1.0
@@ -290,14 +403,33 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                 # Poison pill - exit thread
                 break
 
-            text, index, useSpelledSynthesis, isSpellingItem, breakMs = item
-            self._synthesizeAndPlay(text, index, useSpelledSynthesis, isSpellingItem, breakMs)
+            text, index, useSpelledSynthesis, isSpellingItem, breakMs, lang = item
+            self._synthesizeAndPlay(text, index, useSpelledSynthesis, isSpellingItem, breakMs, lang)
 
-    def _queueItem(self, text, index, spelled=False, isSpelling=False, breakMs=0):
+    def _queueItem(self, text, index, spelled=False, isSpelling=False, breakMs=0, lang=None):
         """Queue one item for the speech thread: text to speak (spelled when
         `spelled`), or, with breakMs > 0, silence of that length (NVDA's
-        BreakCommand)."""
-        self._speakQueue.put((text, index, spelled, isSpelling, breakMs))
+        BreakCommand). `lang` is the language ("hr", "sr", "bs") a
+        LangChangeCommand asked for, or None for the Language setting."""
+        self._speakQueue.put((text, index, spelled, isSpelling, breakMs, lang))
+
+    def _applyLanguage(self, lang):
+        """Make the engine speak `lang` ("hr", "sr" or "bs"; None for the
+        Language setting), unless it already does.
+
+        Called from the speech thread before every synthesis and from the
+        setters when the voice or the Language setting changes.
+        """
+        if not self._engine:
+            return
+        lang = lang or self._language
+        if lang == self._engineLanguage:
+            return
+        if self._engine.set_language(lang):
+            self._engineLanguage = lang
+            _debug_log("engine language: %s" % lang)
+        else:
+            log.warning("LaprdusTTS: engine refused language %r" % (lang,))
 
     def _getPlayer(self, sample_rate, bits_per_sample, channels):
         """Return the audio player, recreated when the format changes.
@@ -346,7 +478,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             self._feedSilence(player, remaining)
 
     def _synthesizeAndPlay(self, text, index, useSpelledSynthesis=False, isSpellingItem=False,
-                           breakMs=0):
+                           breakMs=0, lang=None):
         """Synthesize and play audio in the background thread.
 
         IMPORTANT for Say All: The synthIndexReached notification must be sent
@@ -360,6 +492,10 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         character descriptions send a one-second break between a character
         and its description, and that delay alone must set the gap, whatever
         the Laprdus spelling speed.
+
+        `lang` is the language a LangChangeCommand chose for this text
+        ("hr", "sr", "bs"), or None for the Language setting; the engine is
+        switched to it here, in the speech thread, just before synthesis.
         """
         if self._shouldStop.is_set():
             if isSpellingItem:
@@ -414,6 +550,8 @@ class SynthDriver(synthDriverHandler.SynthDriver):
 
             cancelCount = self._cancelCount
             owedPauseMs = 0
+            # The language of this text: the LangChangeCommand's or the setting's
+            self._applyLanguage(lang)
             # Use spelled synthesis for single characters or when explicitly requested
             if is_single_char or useSpelledSynthesis:
                 # For single characters, use the stripped text
@@ -512,6 +650,8 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                 _debug_log("  [%d] IndexCommand(index=%s)" % (i, item.index))
             elif BreakCommand is not None and isinstance(item, BreakCommand):
                 _debug_log("  [%d] BreakCommand(time=%s)" % (i, item.time))
+            elif LangChangeCommand is not None and isinstance(item, LangChangeCommand):
+                _debug_log("  [%d] LangChangeCommand(lang=%s)" % (i, item.lang))
             else:
                 _debug_log("  [%d] Unknown: %s" % (i, type(item).__name__))
 
@@ -520,6 +660,12 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         char_mode = False
         pendingIndex = None  # Index that will be associated with the NEXT text
         textParts = []
+        # Language of the text from here on: None is the Language setting;
+        # a LangChangeCommand for Croatian, Serbian or Bosnian sets it for
+        # the rest of the utterance (the next utterance starts from the
+        # setting again), one for any other language, or with None, returns
+        # to the setting, as the eSpeak driver does
+        utteranceLang = None
 
         for item in speechSequence:
             if CharacterModeCommand is not None and isinstance(item, CharacterModeCommand):
@@ -527,7 +673,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                 if textParts:
                     text = " ".join(textParts)
                     if text.strip():
-                        self._queueItem(text, pendingIndex)
+                        self._queueItem(text, pendingIndex, lang=utteranceLang)
                         pendingIndex = None
                     textParts = []
                 char_mode = item.state
@@ -540,20 +686,33 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                     if stripped:
                         if len(stripped) == 1:
                             _debug_log("Queue char-mode single char: '%s'" % stripped)
-                            self._queueItem(stripped, pendingIndex, spelled=True)
+                            self._queueItem(stripped, pendingIndex, spelled=True, lang=utteranceLang)
                         else:
                             _debug_log("Queue char-mode multi-char: '%s'" % stripped[:50])
-                            self._queueItem(stripped, pendingIndex)
+                            self._queueItem(stripped, pendingIndex, lang=utteranceLang)
                         pendingIndex = None
                 else:
                     textParts.append(item)
+
+            elif LangChangeCommand is not None and isinstance(item, LangChangeCommand):
+                # The text so far keeps its language; what follows gets the
+                # new one. The voice does not change.
+                if textParts:
+                    text = " ".join(textParts)
+                    if text.strip():
+                        self._queueItem(text, pendingIndex, lang=utteranceLang)
+                        pendingIndex = None
+                    textParts = []
+                utteranceLang = _language_from_tag(item.lang)
+                _debug_log("Language changed to %s (requested %s)" % (
+                    utteranceLang or "setting (%s)" % self._language, item.lang))
 
             elif IndexCommand is not None and isinstance(item, IndexCommand):
                 # Flush any accumulated text with the pending index
                 if textParts:
                     text = " ".join(textParts)
                     if text.strip():
-                        self._queueItem(text, pendingIndex)
+                        self._queueItem(text, pendingIndex, lang=utteranceLang)
                         pendingIndex = None
                     textParts = []
                 # Report orphaned pending index (consecutive IndexCommands)
@@ -572,7 +731,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                 if textParts:
                     text = " ".join(textParts)
                     if text.strip():
-                        self._queueItem(text, pendingIndex)
+                        self._queueItem(text, pendingIndex, lang=utteranceLang)
                         pendingIndex = None
                     textParts = []
                 if item.time > 0:
@@ -582,7 +741,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         if textParts:
             text = " ".join(textParts)
             if text.strip():
-                self._queueItem(text, pendingIndex)
+                self._queueItem(text, pendingIndex, lang=utteranceLang)
                 pendingIndex = None
 
         # Handle orphaned trailing index - CRITICAL for Say All
@@ -700,7 +859,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         if self._engine:
             # Apply voice character pitch (base_pitch for derived voices)
             # set_pitch(1.0) → effective_pitch = voice_base_pitch * 1.0
-            # This ensures derived voices (detence, baba, djed) sound correct
+            # This ensures derived voices (Detence, Baba, Đedo) sound correct
             self._engine.set_pitch(1.0)
             # Apply volume (unless forced by Laprdus config)
             if not self._forceVolume:
@@ -1056,14 +1215,27 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         return self._voice
 
     def _set_voice(self, value):
+        # A voice id saved by an earlier version (djed, klapa, pjevac...)
+        # is mapped onto the current one, so that NVDA's voice combo,
+        # which compares against the keys of availableVoices, shows the
+        # right item; an id the registry does not know falls back to the
+        # default voice
+        value = _normalize_voice_id(value)
+        if value not in self.availableVoices:
+            log.warning("LaprdusTTS: unknown voice %r, using %s" % (value, DEFAULT_VOICE))
+            value = DEFAULT_VOICE
         if value != self._voice:
             self._voice = value
             if self._engine:
                 # Set the new voice - this may reload phoneme data
                 self._engine.set_voice(value)
+                # The engine keeps the language across voice changes, but be
+                # explicit: the new voice speaks the chosen language too
+                self._engineLanguage = None
+                self._applyLanguage(self._language)
                 # Apply the voice's character pitch (base_pitch)
                 # set_pitch(1.0) → effective_pitch = voice_base_pitch * 1.0
-                # This makes derived voices (detence, baba, djed) sound correct
+                # This makes derived voices (Detence, Baba, Đedo) sound correct
                 self._engine.set_pitch(1.0)
                 # Reload internal dictionaries (in case they were cleared)
                 self._engine.load_dictionary()
@@ -1083,7 +1255,14 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         return self._availableVoices
 
     def _buildVoiceDict(self):
-        """Build voice dictionary from engine."""
+        """Build the voice dictionary from the engine: every voice, in
+        registry order, by its registry display name.
+
+        The VoiceInfo language is None: every voice speaks every language
+        and the language is the separate Language setting (NVDA's VoiceInfo
+        documents None for "the synth implements language separate from
+        voices").
+        """
         voices = OrderedDict()
         try:
             count = self._laprdus.get_voice_count()
@@ -1092,18 +1271,78 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                 if info:
                     voice_id = info["id"]
                     display_name = info["display_name"]
-                    language = info["language_code"]
                     voices[voice_id] = VoiceInfo(
                         voice_id,
                         display_name,
-                        language
+                        None
                     )
         except Exception as e:
             log.error("LaprdusTTS: Error building voice dict: %s" % str(e))
-            # Fallback to single default voice
-            voices["zvonko"] = VoiceInfo(
-                "zvonko",
-                "Laprdus Zvonko (Croatian)",
-                "hr-HR"
+        if not voices:
+            # Fallback to the default voice alone
+            voices[DEFAULT_VOICE] = VoiceInfo(
+                DEFAULT_VOICE,
+                "Zvonko",
+                None
             )
         return voices
+
+    # =========================================================================
+    # Language property (NVDA's LanguageSetting)
+    # =========================================================================
+
+    def _get_language(self):
+        """The language the voice speaks when the text asks for none:
+        "hr", "sr" or "bs" (NVDA saves it as speechSynths.laprdus.language)."""
+        return self._language
+
+    def _set_language(self, value):
+        lang = _language_from_tag(value)
+        if lang is None:
+            log.warning("LaprdusTTS: unknown language %r, keeping %s" % (value, self._language))
+            return
+        self._language = lang
+        # NVDA calls loadSettings after __init__, so the engine exists by
+        # then; stay safe should the order ever change
+        if getattr(self, "_engine", None):
+            self._applyLanguage(lang)
+
+    def _get_availableLanguages(self):
+        """The languages every voice speaks, keyed by NVDA language code,
+        named by NVDA's own description when it has one, else by the
+        registry's native name."""
+        if self._availableLanguages is None:
+            self._availableLanguages = self._buildLanguageDict()
+        return self._availableLanguages
+
+    def _buildLanguageDict(self):
+        """Build the language dictionary from the engine (falling back to
+        the built-in list)."""
+        native_names = OrderedDict()
+        try:
+            for i in range(self._laprdus.get_language_count()):
+                info = self._laprdus.get_language_info(i)
+                if info and info.get("short_code"):
+                    native_names[info["short_code"]] = info.get("native_name")
+        except Exception as e:
+            log.error("LaprdusTTS: Error building language dict: %s" % str(e))
+        if not native_names:
+            native_names = OrderedDict(LANGUAGES)
+
+        try:
+            import languageHandler
+        except ImportError:
+            languageHandler = None
+
+        languages = OrderedDict()
+        for code, native_name in native_names.items():
+            description = None
+            if languageHandler is not None:
+                try:
+                    description = languageHandler.getLanguageDescription(code)
+                except Exception:
+                    description = None
+            if not description:
+                description = native_name or LANGUAGES.get(code) or code
+            languages[code] = StringParameterInfo(code, description)
+        return languages

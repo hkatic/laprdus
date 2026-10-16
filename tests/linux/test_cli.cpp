@@ -80,7 +80,14 @@ TEST_CASE("CLI displays help with -h", "[cli][help]") {
     REQUIRE(output.find("LaprdusTTS") != std::string::npos);
     REQUIRE(output.find("Usage") != std::string::npos);
     REQUIRE(output.find("--voice") != std::string::npos);
+    REQUIRE(output.find("--language") != std::string::npos);
     REQUIRE(output.find("--speech-rate") != std::string::npos);
+    // The voices are listed by their current ids, the old ones are gone
+    REQUIRE(output.find("djedo") != std::string::npos);
+    REQUIRE(output.find("dalmacija_klapa") != std::string::npos);
+    REQUIRE(output.find("sarajevo_bembasa") != std::string::npos);
+    REQUIRE(output.find(" djed,") == std::string::npos);
+    REQUIRE(output.find("pjevac") == std::string::npos);
 }
 
 TEST_CASE("CLI displays help with --help", "[cli][help]") {
@@ -94,10 +101,79 @@ TEST_CASE("CLI lists voices with -l", "[cli][voices]") {
     auto [exit_code, output] = run_cli("-l");
 
     REQUIRE(exit_code == 0);
-    REQUIRE(output.find("josip") != std::string::npos);
-    REQUIRE(output.find("vlado") != std::string::npos);
+    // Every voice by id with its native language, in registry order
+    const char* const ids[] = {"josip", "vlado", "detence", "baba", "djedo",
+                               "zvonko", "stojan", "mirsad",
+                               "orguljas", "dalmacija_klapa", "trubac", "harmonikas",
+                               "sevdalija", "sazlija", "lika_velebit", "solunac",
+                               "sarajevo_bembasa", "becarac"};
+    size_t previous = 0;
+    for (const char* id : ids) {
+        CAPTURE(id);
+        size_t at = output.find(std::string("\n") + id + " ");
+        REQUIRE(at != std::string::npos);
+        REQUIRE(at > previous);
+        previous = at;
+    }
     REQUIRE(output.find("hr-HR") != std::string::npos);
     REQUIRE(output.find("sr-RS") != std::string::npos);
+    REQUIRE(output.find("bs-BA") != std::string::npos);
+    // Display names from the registry, UTF-8
+    REQUIRE(output.find("\xC4\x90" "edo") != std::string::npos);
+    REQUIRE(output.find("Dalmacija Klapa") != std::string::npos);
+    // ... and the note that the language is chosen apart from the voice
+    REQUIRE(output.find("Every voice speaks every language") != std::string::npos);
+    REQUIRE(output.find("-L hr|sr|bs") != std::string::npos);
+    // --list is the same listing; -L is the language now
+    auto [list_code, list_output] = run_cli("--list");
+    REQUIRE(list_code == 0);
+    REQUIRE(list_output == output);
+}
+
+TEST_CASE("CLI chooses the language with -L", "[cli][language]") {
+    const char* output_file = "/tmp/laprdus_test_language.wav";
+    std::remove(output_file);
+
+    SECTION("Every language with the default voice") {
+        for (const char* language : {"hr", "sr", "bs", "sr-RS", "HR_HR", "bos"}) {
+            CAPTURE(language);
+            auto [exit_code, output] = run_cli(std::string("-L ") + language +
+                                               " -o " + output_file + " \"1000\"");
+            REQUIRE(exit_code == 0);
+            REQUIRE(file_exists(output_file));
+        }
+    }
+
+    SECTION("The language changes the words, the voice stays") {
+        auto [hr_code, hr_output] = run_cli(std::string("-v vlado -L hr -o ") + output_file + " \"1000\"");
+        REQUIRE(hr_code == 0);
+        size_t croatian = file_size(output_file);
+        auto [sr_code, sr_output] = run_cli(std::string("-v vlado -L sr -o ") + output_file + " \"1000\"");
+        REQUIRE(sr_code == 0);
+        size_t serbian = file_size(output_file);
+        auto [native_code, native_output] = run_cli(std::string("-v vlado -o ") + output_file + " \"1000\"");
+        REQUIRE(native_code == 0);
+        // tisuću and hiljadu differ; Vlado's native language is Serbian
+        REQUIRE(croatian != serbian);
+        REQUIRE(file_size(output_file) == serbian);
+    }
+
+    SECTION("Verbose output names the language in use") {
+        auto [exit_code, output] = run_cli(std::string("-w -v josip -L bs -o ") + output_file + " \"Test\"");
+        REQUIRE(exit_code == 0);
+        REQUIRE(output.find("Language: bs-BA") != std::string::npos);
+        auto [native_code, native_output] = run_cli(std::string("-w -v josip -o ") + output_file + " \"Test\"");
+        REQUIRE(native_code == 0);
+        REQUIRE(native_output.find("Language: hr-HR") != std::string::npos);
+    }
+
+    SECTION("An unknown language is refused") {
+        auto [exit_code, output] = run_cli(std::string("-L de -o ") + output_file + " \"Test\"");
+        REQUIRE(exit_code != 0);
+        REQUIRE(output.find("Unknown language") != std::string::npos);
+    }
+
+    std::remove(output_file);
 }
 
 TEST_CASE("CLI fails gracefully without text", "[cli][error]") {
@@ -260,7 +336,8 @@ TEST_CASE("CLI accepts pause settings", "[cli][params]") {
 TEST_CASE("CLI synthesizes with different voices", "[cli][voices]") {
     const char* output_file = "/tmp/laprdus_test_voice.wav";
 
-    std::vector<std::string> voices = {"josip", "vlado", "detence", "baba", "djed"};
+    // The old id djed still loads Đedo
+    std::vector<std::string> voices = {"josip", "vlado", "detence", "baba", "djedo", "djed"};
 
     for (const auto& voice : voices) {
         DYNAMIC_SECTION(("Voice: " + voice).c_str()) {
@@ -296,13 +373,16 @@ TEST_CASE("C API reports version", "[api]") {
 
 TEST_CASE("C API lists voices", "[api]") {
     uint32_t count = laprdus_get_voice_count();
-    REQUIRE(count >= 5); // At least 5 voices
+    REQUIRE(count == 18); // 5 recorded, 3 formant, 10 singing
 
     LaprdusVoiceInfo info;
     REQUIRE(laprdus_get_voice_info(0, &info) == LAPRDUS_OK);
     REQUIRE(info.id != nullptr);
     REQUIRE(info.display_name != nullptr);
     REQUIRE(info.language_code != nullptr);
+
+    REQUIRE(std::string(laprdus_get_default_voice()) == "zvonko");
+    REQUIRE(laprdus_get_language_count() == 3);
 }
 
 TEST_CASE("C API initializes with voice", "[api]") {
@@ -319,6 +399,21 @@ TEST_CASE("C API initializes with voice", "[api]") {
         LaprdusError err = laprdus_set_voice(engine, "vlado", get_data_dir().c_str());
         REQUIRE(err == LAPRDUS_OK);
         REQUIRE(laprdus_is_initialized(engine) != 0);
+    }
+
+    SECTION("Old id (djed) loads the renamed voice") {
+        LaprdusError err = laprdus_set_voice(engine, "djed", get_data_dir().c_str());
+        REQUIRE(err == LAPRDUS_OK);
+        REQUIRE(std::string(laprdus_get_current_voice(engine)) == "djedo");
+    }
+
+    SECTION("A voice speaks the language asked for") {
+        REQUIRE(laprdus_set_voice(engine, "josip", get_data_dir().c_str()) == LAPRDUS_OK);
+        REQUIRE(std::string(laprdus_get_language(engine)) == "hr-HR");
+        REQUIRE(laprdus_set_language(engine, "sr") == LAPRDUS_OK);
+        REQUIRE(std::string(laprdus_get_language(engine)) == "sr-RS");
+        REQUIRE(laprdus_set_language(engine, "xx") == LAPRDUS_ERROR_INVALID_PARAMETER);
+        REQUIRE(std::string(laprdus_get_language(engine)) == "sr-RS");
     }
 
     laprdus_destroy(engine);

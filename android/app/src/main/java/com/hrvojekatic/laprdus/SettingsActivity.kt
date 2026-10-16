@@ -37,6 +37,7 @@ class SettingsActivity : ComponentActivity() {
                     uiState = uiState,
                     onNavigateBack = { finish() },
                     onVoiceSelected = viewModel::selectVoice,
+                    onLanguageSelected = viewModel::selectLanguage,
                     onSpeedChange = viewModel::setSpeed,
                     onPitchChange = viewModel::setPitch,
                     onVolumeChange = viewModel::setVolume,

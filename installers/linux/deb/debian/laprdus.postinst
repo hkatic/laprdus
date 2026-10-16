@@ -48,11 +48,11 @@ configure_speechd() {
         cat >> "$SPEECHD_CONF" << 'EOF'
 
 # BEGIN LAPRDUS TTS
-# LaprdusTTS - Croatian/Serbian Text-to-Speech
+# LaprdusTTS - Croatian/Serbian/Bosnian Text-to-Speech
 # Added automatically by package installation
 AddModule "laprdus" "sd_laprdus" "laprdus.conf"
 
-# Set LaprdusTTS as default for Croatian and Serbian
+# Set LaprdusTTS as default for Croatian, Serbian and Bosnian
 LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"
@@ -64,14 +64,14 @@ EOF
     else
         # Autodetection mode (SD 0.12+): do NOT add AddModule (it would
         # disable autodetection for all other modules). Just add language
-        # defaults so Laprdus is used for Croatian/Serbian.
+        # defaults so Laprdus is used for Croatian, Serbian and Bosnian.
         cat >> "$SPEECHD_CONF" << 'EOF'
 
 # BEGIN LAPRDUS TTS
-# LaprdusTTS - Croatian/Serbian Text-to-Speech
+# LaprdusTTS - Croatian/Serbian/Bosnian Text-to-Speech
 # Module is auto-detected by Speech Dispatcher (no AddModule needed)
 
-# Set LaprdusTTS as default for Croatian and Serbian
+# Set LaprdusTTS as default for Croatian, Serbian and Bosnian
 LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"

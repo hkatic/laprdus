@@ -80,7 +80,7 @@ its neighbours), `unit.f0` the median pitch of the recording, and
 `UnitBank::base_f0()` the median over the vowels.
 
 A **voice character pitch** other than 1.0 (the derived voices: detence 1.5,
-baba 1.2, djed 0.75) resamples the recordings by the square root of the
+baba 1.2, djedo (Đedo) 0.75) resamples the recordings by the square root of the
 factor before the analysis (`AudioSynthesizer::formant_warp_for_pitch`): the
 whole spectrum scales by 1.22 for detence, so the vocal tract sounds shorter,
 and the pitch itself is then raised by the full factor by the renderer. A
@@ -210,7 +210,7 @@ Things that are worth checking by ear after a change:
 - a sentence with stops in every position (`Tata kupuje kaput.`, `Dobar dan.`)
   at rates 1, 2 and 4: the bursts must stay, the closures shrink first;
 - the same sentence with a question mark and with a comma;
-- `detence` and `djed` for the voice character, `-p 0.5` and `-p 2.0` for
+- `detence` and `djedo` for the voice character, `-p 0.5` and `-p 2.0` for
   the user pitch (the lower limit is where PSOLA leaves gaps between periods
   and the voice gets hollow; the recordings allow about an octave each way);
 - Vlado at rate 0.5, where every vowel period is repeated twice.

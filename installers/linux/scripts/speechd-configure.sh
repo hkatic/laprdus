@@ -28,7 +28,7 @@ MARKER_END="# END LAPRDUS TTS"
 # Configuration lines to add (explicit module mode - when AddModule lines exist)
 read -r -d '' LAPRDUS_CONFIG_EXPLICIT << 'EOF' || true
 # BEGIN LAPRDUS TTS
-# LaprdusTTS - Croatian/Serbian Text-to-Speech
+# LaprdusTTS - Croatian/Serbian/Bosnian Text-to-Speech
 AddModule "laprdus" "sd_laprdus" "laprdus.conf"
 LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
@@ -42,7 +42,7 @@ EOF
 # Configuration lines to add (autodetection mode - no AddModule, SD 0.12+)
 read -r -d '' LAPRDUS_CONFIG_AUTODETECT << 'EOF' || true
 # BEGIN LAPRDUS TTS
-# LaprdusTTS - Croatian/Serbian Text-to-Speech
+# LaprdusTTS - Croatian/Serbian/Bosnian Text-to-Speech
 LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"

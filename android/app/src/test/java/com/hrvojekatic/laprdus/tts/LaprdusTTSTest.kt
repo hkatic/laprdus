@@ -7,6 +7,7 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -42,7 +43,7 @@ class LaprdusTTSTest {
         // Physical voice - has data_filename, basePitch 1.0
         val physicalVoice = VoiceInfo(
             id = "josip",
-            displayName = "Laprdus Josip (Croatian)",
+            displayName = "Josip",
             languageCode = "hr-HR",
             gender = "Male",
             age = "Adult",
@@ -52,7 +53,7 @@ class LaprdusTTSTest {
         // Derived voice - has non-1.0 basePitch
         val derivedVoice = VoiceInfo(
             id = "detence",
-            displayName = "Laprdus Detence (Croatian)",
+            displayName = "Detence",
             languageCode = "hr-HR",
             gender = "Male",
             age = "Child",
@@ -64,10 +65,10 @@ class LaprdusTTSTest {
     }
 
     @Test
-    fun `VoiceInfo correctly identifies Croatian voices`() {
+    fun `VoiceInfo reports the native language of a voice`() {
         val croatianVoice = VoiceInfo(
             id = "josip",
-            displayName = "Laprdus Josip (Croatian)",
+            displayName = "Josip",
             languageCode = "hr-HR",
             gender = "Male",
             age = "Adult",
@@ -76,15 +77,25 @@ class LaprdusTTSTest {
 
         val serbianVoice = VoiceInfo(
             id = "vlado",
-            displayName = "Laprdus Vlado (Serbian)",
+            displayName = "Vlado",
             languageCode = "sr-RS",
             gender = "Male",
             age = "Adult",
             basePitch = 1.0f
         )
 
-        assert(croatianVoice.isCroatian)
-        assert(!serbianVoice.isCroatian)
+        // Only the default: every voice speaks every language
+        assertEquals("hr", croatianVoice.nativeLanguage)
+        assertEquals("sr", serbianVoice.nativeLanguage)
+    }
+
+    @Test
+    fun `an old voice id normalizes to the renamed voice`() {
+        // LaprdusTTS.normalizeVoiceId delegates to this (touching the
+        // LaprdusTTS companion would load the native library on the JVM)
+        assertEquals("djedo", VoiceInfo.normalizeId("djed"))
+        assertEquals("lika_velebit", VoiceInfo.normalizeId("pjevac"))
+        assertEquals("zvonko", VoiceInfo.normalizeId("zvonko"))
     }
 
     // ==========================================================================
@@ -122,20 +133,21 @@ class LaprdusTTSTest {
 
     @Test
     fun `all voice IDs are valid strings`() {
-        val validVoiceIds = listOf("josip", "vlado", "detence", "baba", "djed")
+        val validVoiceIds = listOf("josip", "vlado", "detence", "baba", "djedo", "zvonko", "stojan", "mirsad") +
+            VoiceInfo.SINGING_VOICE_IDS
 
         validVoiceIds.forEach { voiceId ->
             assert(voiceId.isNotEmpty()) { "Voice ID should not be empty" }
-            assert(voiceId.all { it.isLowerCase() || it.isDigit() }) {
+            assert(voiceId.all { it in 'a'..'z' || it == '_' }) {
                 "Voice ID '$voiceId' should be lowercase"
             }
         }
     }
 
     @Test
-    fun `Croatian voices are correctly identified`() {
+    fun `native languages of the recorded voices`() {
         val croatianVoices = listOf("josip", "detence", "baba")
-        val serbianVoices = listOf("vlado", "djed")
+        val serbianVoices = listOf("vlado", "djedo")
 
         croatianVoices.forEach { voiceId ->
             val voiceInfo = VoiceInfo(
@@ -146,7 +158,7 @@ class LaprdusTTSTest {
                 age = "Adult",
                 basePitch = 1.0f
             )
-            assert(voiceInfo.isCroatian) { "$voiceId should be Croatian" }
+            assertEquals("$voiceId is natively Croatian", "hr", voiceInfo.nativeLanguage)
         }
 
         serbianVoices.forEach { voiceId ->
@@ -158,7 +170,7 @@ class LaprdusTTSTest {
                 age = "Adult",
                 basePitch = 1.0f
             )
-            assert(!voiceInfo.isCroatian) { "$voiceId should be Serbian" }
+            assertEquals("$voiceId is natively Serbian", "sr", voiceInfo.nativeLanguage)
         }
     }
 
@@ -168,11 +180,11 @@ class LaprdusTTSTest {
 
     @Test
     fun `derived voices have non-standard base pitch`() {
-        // Derived voices: detence (child), baba (grandma), djed (grandpa)
+        // Derived voices: detence (child), baba (grandma), djedo (grandpa)
         val derivedVoicePitches = mapOf(
             "detence" to 1.5f,  // Child - higher pitch
             "baba" to 1.2f,     // Grandma - slightly higher
-            "djed" to 0.75f    // Grandpa - lower pitch
+            "djedo" to 0.75f    // Grandpa - lower pitch
         )
 
         derivedVoicePitches.forEach { (voiceId, expectedPitch) ->

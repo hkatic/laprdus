@@ -11,6 +11,7 @@
  * Usage:
  *   laprdus "Text to speak"
  *   laprdus -v josip -r 1.5 "Dobar dan!"
+ *   laprdus -v vlado -L sr "Zdravo svete!"
  *   laprdus -i input.txt -o output.wav
  *   echo "Hello" | laprdus
  */
@@ -58,6 +59,7 @@
 struct Options {
     std::string text;
     std::string voice = "zvonko";
+    std::string language;            /* hr, sr or bs; empty: the voice's native language */
     float speech_rate = 1.0f;
     float speech_pitch = 1.0f;
     float speech_volume = 1.0f;
@@ -82,11 +84,12 @@ struct Options {
 };
 
 /* Short options */
-static const char *short_options = "v:r:p:V:I:a:dsS:m:c:e:x:q:n:o:i:D:hlLw";
+static const char *short_options = "v:L:r:p:V:I:a:dsS:m:c:e:x:q:n:o:i:D:hlw";
 
 /* Long options */
 static struct option long_options[] = {
     {"voice",               required_argument, nullptr, 'v'},
+    {"language",            required_argument, nullptr, 'L'},
     {"speech-rate",         required_argument, nullptr, 'r'},
     {"speech-pitch",        required_argument, nullptr, 'p'},
     {"speech-volume",       required_argument, nullptr, 'V'},
@@ -106,7 +109,7 @@ static struct option long_options[] = {
     {"data-dir",            required_argument, nullptr, 'D'},
     {"help",                no_argument,       nullptr, 'h'},
     {"list-voices",         no_argument,       nullptr, 'l'},
-    {"list",                no_argument,       nullptr, 'L'},
+    {"list",                no_argument,       nullptr, 'l'},
     {"verbose",             no_argument,       nullptr, 'w'},
     {nullptr,               0,                 nullptr, 0}
 };
@@ -123,10 +126,14 @@ void print_help(const char *program_name)
               << "  " << program_name << " [OPTIONS] -i input.txt\n"
               << "  echo \"Text\" | " << program_name << " [OPTIONS]\n\n"
               << "Options:\n"
-              << "  -v, --voice NAME           Select voice (default: zvonko)\n"
+              << "  -v, --voice ID             Select voice (default: zvonko)\n"
               << "                             Available: zvonko, stojan, mirsad, josip,\n"
-              << "                             vlado, detence, baba, djed, and the singing\n"
+              << "                             vlado, detence, baba, djedo, and the singing\n"
               << "                             presets listed below\n"
+              << "  -L, --language CODE        Language to speak: hr (Croatian), sr (Serbian)\n"
+              << "                             or bs (Bosnian); hr-HR and the like are accepted.\n"
+              << "                             Every voice speaks every language; without -L\n"
+              << "                             the voice speaks its native language\n"
               << "  -r, --speech-rate RATE     Speech rate 0.5-2.0 (default: 1.0);\n"
               << "                             formant voices accept 0.25-4.0\n"
               << "  -p, --speech-pitch PITCH   Speech pitch 0.5-2.0 (default: 1.0);\n"
@@ -156,29 +163,36 @@ void print_help(const char *program_name)
               << "  -h, --help                 Show this help message\n\n"
               << "Examples:\n"
               << "  " << program_name << " \"Dobar dan!\"\n"
-              << "  " << program_name << " -v vlado -r 1.5 \"Zdravo svete!\"\n"
+              << "  " << program_name << " -v vlado -L sr -r 1.5 \"Zdravo svete!\"\n"
+              << "  " << program_name << " -v zvonko -L bs \"Dobar dan, kako ste?\"\n"
               << "  " << program_name << " -i document.txt -o speech.wav\n"
               << "  echo \"Jedan, dva, tri\" | " << program_name << "\n\n"
-              << "Voices:\n"
-              << "  zvonko  - Croatian male adult (formant synthesis, default)\n"
-              << "  stojan  - Serbian male adult (formant synthesis)\n"
-              << "  mirsad  - Bosnian male adult (formant synthesis)\n"
-              << "  josip   - Croatian male adult\n"
-              << "  vlado   - Serbian male adult\n"
-              << "  detence - Croatian child\n"
-              << "  baba    - Croatian female senior\n"
-              << "  djed    - Serbian male senior\n\n"
+              << "Voices (every voice speaks every language; the language named is\n"
+              << "the one it speaks without -L):\n"
+              << "  zvonko   - Zvonko, Croatian male adult (formant synthesis, default)\n"
+              << "  stojan   - Stojan, Serbian male adult (formant synthesis)\n"
+              << "  mirsad   - Mirsad, Bosnian male adult (formant synthesis)\n"
+              << "  josip    - Josip, Croatian male adult (recorded)\n"
+              << "  vlado    - Vlado, Serbian male adult (recorded)\n"
+              << "  detence  - Detence, Croatian child\n"
+              << "  baba     - Baba, Croatian female senior\n"
+              << "  djedo    - \xc4\x90" "edo, Serbian male senior\n\n"
               << "Singing presets (formant voices that sing the text to a folk song;\n"
               << "-r sets the tempo, -p transposes, -I sets the vibrato):\n"
-              << "  orguljas   - Zvonko at the pipe organ (Croatian)\n"
-              << "  klapa      - Zvonko as a whole klapa (Croatian)\n"
-              << "  trubac     - Stojan on the trumpet (Serbian)\n"
-              << "  harmonikas - Stojan on the accordion (Serbian)\n"
-              << "  sevdalija  - Mirsad singing sevdah (Bosnian)\n"
-              << "  sazlija    - Mirsad on the saz (Bosnian)\n"
-              << "  pjevac, pevac, solist\n"
-              << "             - Zvonko, Stojan and Mirsad singing as themselves\n"
-              << "  becarac    - Zvonko singing a be\xc4\x87" "arac (Croatian)\n";
+              << "  orguljas         - Orgulja\xc5\xa1 - Vila Velebita (Zvonko at the pipe organ)\n"
+              << "  dalmacija_klapa  - Dalmacija Klapa (Zvonko as a whole klapa)\n"
+              << "  trubac           - Truba\xc4\x8d - Kre\xc4\x87" "e se la\xc4\x91" "a francuska\n"
+              << "                     (Stojan on the trumpet)\n"
+              << "  harmonikas       - Harmonika\xc5\xa1 - Kre\xc4\x87" "e se la\xc4\x91" "a francuska\n"
+              << "                     (Stojan on the accordion)\n"
+              << "  sevdalija        - Sevdalija - Kad ja po\xc4\x91" "oh na Bemba\xc5\xa1" "u\n"
+              << "                     (Mirsad singing sevdah)\n"
+              << "  sazlija          - Sazlija - Kad ja po\xc4\x91" "oh na Bemba\xc5\xa1" "u\n"
+              << "                     (Mirsad on the saz)\n"
+              << "  lika_velebit     - Lika Velebit (Zvonko singing as himself)\n"
+              << "  solunac          - Solunac (Stojan singing as himself)\n"
+              << "  sarajevo_bembasa - Sarajevo Bemba\xc5\xa1" "a (Mirsad singing as himself)\n"
+              << "  becarac          - Be\xc4\x87" "arac (Zvonko singing a be\xc4\x87" "arac)\n";
 }
 
 /**
@@ -187,14 +201,14 @@ void print_help(const char *program_name)
 void list_voices()
 {
     std::cout << "Available voices:\n\n";
-    std::cout << "ID        Language    Gender    Age       Description\n";
-    std::cout << "--------  ----------  --------  --------  -------------------------\n";
+    std::cout << "ID                Native lang  Gender    Age       Name\n";
+    std::cout << "----------------  -----------  --------  --------  -------------------------\n";
 
     uint32_t count = laprdus_get_voice_count();
     for (uint32_t i = 0; i < count; i++) {
         LaprdusVoiceInfo info;
         if (laprdus_get_voice_info(i, &info) == LAPRDUS_OK) {
-            printf("%-8s  %-10s  %-8s  %-8s  %s\n",
+            printf("%-16s  %-11s  %-8s  %-8s  %s\n",
                    info.id,
                    info.language_code,
                    info.gender ? info.gender : "-",
@@ -202,6 +216,7 @@ void list_voices()
                    info.display_name);
         }
     }
+    printf("\nEvery voice speaks every language: choose it with -L hr|sr|bs.\n");
 }
 
 /**
@@ -219,6 +234,9 @@ bool parse_args(int argc, char *argv[], Options &opts)
         switch (opt) {
             case 'v':
                 opts.voice = optarg;
+                break;
+            case 'L':
+                opts.language = optarg;
                 break;
             case 'r':
                 /* The engine narrows these to 0.5-2.0 for the recorded voices. */
@@ -295,7 +313,6 @@ bool parse_args(int argc, char *argv[], Options &opts)
                 opts.show_help = true;
                 return true;
             case 'l':
-            case 'L':
                 opts.list_voices = true;
                 return true;
             case 'w':
@@ -683,6 +700,19 @@ int main(int argc, char *argv[])
                   << laprdus_get_error_message(engine) << "\n";
         laprdus_destroy(engine);
         return 1;
+    }
+
+    /* Language: the voice's native one unless -L asks for another */
+    if (!opts.language.empty() &&
+        laprdus_set_language(engine, opts.language.c_str()) != LAPRDUS_OK) {
+        std::cerr << "Error: Unknown language '" << opts.language
+                  << "' (use hr, sr or bs)\n";
+        laprdus_destroy(engine);
+        return 1;
+    }
+    if (opts.verbose) {
+        const char *language = laprdus_get_language(engine);
+        std::cout << "Language: " << (language ? language : "?") << "\n";
     }
 
     /* Load dictionaries */
