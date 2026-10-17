@@ -52,6 +52,7 @@ struct DictionaryEditView: View {
                 || language != entry.language
         }
         return !grapheme.isEmpty || !phoneme.isEmpty || !comment.isEmpty
+            || isVerb || !language.isEmpty
     }
 
     var body: some View {

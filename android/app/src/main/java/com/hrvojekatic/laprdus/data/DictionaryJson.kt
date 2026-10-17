@@ -21,7 +21,10 @@ internal object DictionaryJson {
 
     /**
      * Parses dictionary JSON. Entries without a grapheme (for the accent
-     * lexicon: with neither a word nor a verb) are skipped.
+     * lexicon: with neither a word nor a verb) are skipped. A hand-written
+     * accent entry with both a word and a verb, which the engine rejects, is
+     * listed as a word and a verb, so that saving keeps both halves (as two
+     * entries the engine accepts).
      * @throws JSONException if the document is not valid dictionary JSON
      */
     @Throws(JSONException::class)
@@ -32,18 +35,18 @@ internal object DictionaryJson {
         for (i in 0 until entriesArray.length()) {
             val entryObj = entriesArray.optJSONObject(i) ?: continue
             if (type == DictionaryType.ACCENTS) {
+                val language = entryObj.optString("language", "")
+                val comment = entryObj.optString("comment", "")
                 val word = entryObj.optString("word", "")
+                if (word.isNotEmpty()) {
+                    entries.add(DictionaryEntry(grapheme = word, phoneme = "", language = language, comment = comment))
+                }
                 val verb = entryObj.optString("verb", "")
-                if (word.isEmpty() && verb.isEmpty()) continue
-                entries.add(
-                    DictionaryEntry(
-                        grapheme = word.ifEmpty { verb },
-                        phoneme = "",
-                        verb = word.isEmpty(),
-                        language = entryObj.optString("language", ""),
-                        comment = entryObj.optString("comment", "")
+                if (verb.isNotEmpty()) {
+                    entries.add(
+                        DictionaryEntry(grapheme = verb, phoneme = "", verb = true, language = language, comment = comment)
                     )
-                )
+                }
                 continue
             }
             val grapheme = entryObj.optString("grapheme", "")

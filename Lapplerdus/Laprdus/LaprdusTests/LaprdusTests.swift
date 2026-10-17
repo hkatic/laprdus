@@ -324,6 +324,23 @@ struct DictionaryStoreTests {
         #expect(DictionaryStore.accentLexiconFileName == "accents.json")
     }
 
+    @Test func accentEntryWithWordAndVerbIsLoadedAsBoth() throws {
+        // The engine rejects such an entry; the editor shows it as two, so
+        // that the next save loses neither half
+        let (store, dir) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let json = """
+        {"entries":[{"word":"k'ontrola","verb":"ur'e:d=i<p","language":"hr","comment":"both"},{"comment":"nothing"}]}
+        """
+        try json.data(using: .utf8)!.write(to: store.fileURL(for: .accents))
+
+        let loaded = try store.load(.accents)
+        #expect(loaded.map(\.grapheme) == ["k'ontrola", "ur'e:d=i<p"])
+        #expect(loaded.map(\.isVerb) == [false, true])
+        #expect(loaded.map(\.language) == ["hr", "hr"])
+        #expect(loaded.map(\.comment) == ["both", "both"])
+    }
+
     @Test func accentEntriesRoundTripThroughTheirOwnKeys() throws {
         let (store, dir) = try makeStore()
         defer { try? FileManager.default.removeItem(at: dir) }

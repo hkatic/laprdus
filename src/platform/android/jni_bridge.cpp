@@ -14,6 +14,7 @@
 #include <optional>
 
 #include "../../core/tts_engine.hpp"
+#include "utf8_to_utf16.hpp"
 #include "../../core/voice_registry.hpp"
 #include "../../formant/formant_frontend.hpp"
 
@@ -62,6 +63,14 @@ private:
     NativeEngine* m_native;
     std::unique_lock<std::mutex> m_lock;
 };
+
+// A Java string from UTF-8 of any origin: NewStringUTF would abort under
+// CheckJNI on a byte sequence it does not accept, NewString takes UTF-16
+jstring stringToJstring(JNIEnv* env, const std::string& utf8) {
+    std::u16string utf16 = laprdus::utf8_to_utf16(utf8);
+    return env->NewString(reinterpret_cast<const jchar*>(utf16.data()),
+                          static_cast<jsize>(utf16.size()));
+}
 
 // Convert Java string to std::string
 std::string jstringToString(JNIEnv* env, jstring jstr) {
@@ -796,7 +805,9 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeCheckAccentLexicon(
     if (report.rejected == 0) {
         return nullptr;
     }
-    return env->NewStringUTF(report.first_error.c_str());
+    // The reason quotes the user's entry, so it is not necessarily text
+    // NewStringUTF accepts
+    return stringToJstring(env, report.first_error);
 }
 
 JNIEXPORT void JNICALL

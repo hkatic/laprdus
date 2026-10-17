@@ -40,6 +40,60 @@ std::string WideToUtf8(const std::wstring& wstr) {
     return result;
 }
 
+// A string of the resource table, or "" when it is missing
+std::wstring LoadResourceString(HINSTANCE hInstance, UINT id) {
+    wchar_t buffer[512];
+    int len = ::LoadStringW(hInstance, id, buffer, 512);
+    if (len > 0) {
+        return std::wstring(buffer, len);
+    }
+    return L"";
+}
+
+// The first "%s" of a resource string replaced by text of any length
+std::wstring FormatResourceString(const std::wstring& format, const std::wstring& argument) {
+    size_t pos = format.find(L"%s");
+    if (pos == std::wstring::npos) return format + argument;
+    return format.substr(0, pos) + argument + format.substr(pos + 2);
+}
+
+// The dark-mode brush for a WM_CTLCOLOR* message, or FALSE to let the
+// system paint (light mode, or a message without a brush of its own)
+INT_PTR DarkCtlColor(bool darkMode, UINT msg, HDC hdc) {
+    if (!darkMode) return FALSE;
+
+    HBRUSH hBrush = nullptr;
+    switch (msg) {
+    case WM_CTLCOLORSTATIC:
+    case WM_CTLCOLORBTN:
+        hBrush = OnCtlColorStatic(hdc, true);
+        break;
+    case WM_CTLCOLOREDIT:
+    case WM_CTLCOLORLISTBOX:  // the list of a combo box
+        hBrush = OnCtlColorEdit(hdc, true);
+        break;
+    case WM_CTLCOLORDLG:
+        hBrush = OnCtlColorDlg(true);
+        break;
+    }
+    return hBrush ? (INT_PTR)hBrush : FALSE;
+}
+
+// Center a dialog on its parent (or the desktop)
+void CenterOnParent(HWND hDlg) {
+    HWND hParent = GetParent(hDlg);
+    if (!hParent) hParent = GetDesktopWindow();
+
+    RECT rcDlg, rcParent;
+    GetWindowRect(hDlg, &rcDlg);
+    GetWindowRect(hParent, &rcParent);
+
+    int x = rcParent.left + (rcParent.right - rcParent.left - (rcDlg.right - rcDlg.left)) / 2;
+    int y = rcParent.top + (rcParent.bottom - rcParent.top - (rcDlg.bottom - rcDlg.top)) / 2;
+
+    SetWindowPos(hDlg, nullptr, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+}
+
 // Escape a string for JSON output
 std::string EscapeJsonString(const std::string& str) {
     std::string result;
@@ -190,19 +244,28 @@ std::vector<UserDictionaryEntry> ParseDictionaryJson(const std::string& json) {
 
 // Parse the accent lexicon (accents.json): { "word": .. } or { "verb": .. },
 // an optional "language" and "comment". Entries with neither key are dropped.
+// A hand-written entry with both keys, which the engine rejects, is listed
+// as a word and a verb, so that saving keeps both halves (as two entries the
+// engine accepts).
 std::vector<UserDictionaryEntry> ParseAccentJson(const std::string& json) {
     std::vector<UserDictionaryEntry> entries;
 
     for (const std::string& entryJson : SplitJsonEntries(json)) {
         UserDictionaryEntry entry;
-        std::string word = FindJsonStringValue(entryJson, "word");
-        std::string verb = FindJsonStringValue(entryJson, "verb");
-        if (word.empty() && verb.empty()) continue;
-        entry.verb = word.empty();
-        entry.grapheme = Utf8ToWide(entry.verb ? verb : word);
         entry.language = Utf8ToWide(FindJsonStringValue(entryJson, "language"));
         entry.comment = Utf8ToWide(FindJsonStringValue(entryJson, "comment"));
-        entries.push_back(entry);
+        std::string word = FindJsonStringValue(entryJson, "word");
+        if (!word.empty()) {
+            entry.verb = false;
+            entry.grapheme = Utf8ToWide(word);
+            entries.push_back(entry);
+        }
+        std::string verb = FindJsonStringValue(entryJson, "verb");
+        if (!verb.empty()) {
+            entry.verb = true;
+            entry.grapheme = Utf8ToWide(verb);
+            entries.push_back(entry);
+        }
     }
 
     return entries;
@@ -427,62 +490,30 @@ void DictionaryDialog::SetupListViewColumns(HWND hDlg) {
     while (ListView_DeleteColumn(hListView, 0)) {
     }
 
-    LVCOLUMNW col = {};
-    col.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
-
     if (IsAccentLexicon()) {
-        // Entry, Kind, Language, Comment
-        col.pszText = const_cast<LPWSTR>(LoadLocalizedString(IDS_DICT_COL_ENTRY).c_str());
-        col.cx = 160;
-        col.iSubItem = 0;
-        ListView_InsertColumn(hListView, 0, &col);
-
-        col.pszText = const_cast<LPWSTR>(LoadLocalizedString(IDS_DICT_COL_KIND).c_str());
-        col.cx = 60;
-        col.iSubItem = 1;
-        ListView_InsertColumn(hListView, 1, &col);
-
-        col.pszText = const_cast<LPWSTR>(LoadLocalizedString(IDS_DICT_COL_LANGUAGE).c_str());
-        col.cx = 80;
-        col.iSubItem = 2;
-        ListView_InsertColumn(hListView, 2, &col);
-
-        col.pszText = const_cast<LPWSTR>(LoadLocalizedString(IDS_DICT_COL_COMMENT).c_str());
-        col.cx = 150;
-        col.iSubItem = 3;
-        ListView_InsertColumn(hListView, 3, &col);
+        InsertColumn(hListView, 0, IDS_DICT_COL_ENTRY, 160);
+        InsertColumn(hListView, 1, IDS_DICT_COL_KIND, 60);
+        InsertColumn(hListView, 2, IDS_DICT_COL_LANGUAGE, 80);
+        InsertColumn(hListView, 3, IDS_DICT_COL_COMMENT, 150);
         return;
     }
 
-    // Column 0: Original
-    col.pszText = const_cast<LPWSTR>(LoadLocalizedString(IDS_DICT_COL_ORIGINAL).c_str());
-    col.cx = 120;
-    col.iSubItem = 0;
-    ListView_InsertColumn(hListView, 0, &col);
+    InsertColumn(hListView, 0, IDS_DICT_COL_ORIGINAL, 120);
+    InsertColumn(hListView, 1, IDS_DICT_COL_REPLACEMENT, 120);
+    InsertColumn(hListView, 2, IDS_DICT_COL_CASE, 80);
+    InsertColumn(hListView, 3, IDS_DICT_COL_WHOLE_WORD, 80);
+    InsertColumn(hListView, 4, IDS_DICT_COL_COMMENT, 150);
+}
 
-    // Column 1: Replacement
-    col.pszText = const_cast<LPWSTR>(LoadLocalizedString(IDS_DICT_COL_REPLACEMENT).c_str());
-    col.cx = 120;
-    col.iSubItem = 1;
-    ListView_InsertColumn(hListView, 1, &col);
-
-    // Column 2: Case sensitive
-    col.pszText = const_cast<LPWSTR>(LoadLocalizedString(IDS_DICT_COL_CASE).c_str());
-    col.cx = 80;
-    col.iSubItem = 2;
-    ListView_InsertColumn(hListView, 2, &col);
-
-    // Column 3: Whole word
-    col.pszText = const_cast<LPWSTR>(LoadLocalizedString(IDS_DICT_COL_WHOLE_WORD).c_str());
-    col.cx = 80;
-    col.iSubItem = 3;
-    ListView_InsertColumn(hListView, 3, &col);
-
-    // Column 4: Comment
-    col.pszText = const_cast<LPWSTR>(LoadLocalizedString(IDS_DICT_COL_COMMENT).c_str());
-    col.cx = 150;
-    col.iSubItem = 4;
-    ListView_InsertColumn(hListView, 4, &col);
+void DictionaryDialog::InsertColumn(HWND hListView, int index, UINT titleId, int width) {
+    // The title has to outlive the insert: the control copies it only then
+    std::wstring title = LoadLocalizedString(titleId);
+    LVCOLUMNW col = {};
+    col.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
+    col.pszText = const_cast<LPWSTR>(title.c_str());
+    col.cx = width;
+    col.iSubItem = index;
+    ListView_InsertColumn(hListView, index, &col);
 }
 
 void DictionaryDialog::PopulateListView(HWND hDlg) {
@@ -511,8 +542,9 @@ void DictionaryDialog::PopulateListView(HWND hDlg) {
             ListView_InsertItem(hListView, &item);
             ListView_SetItemText(hListView, static_cast<int>(i), 1,
                 const_cast<LPWSTR>(entry.verb ? verbStr.c_str() : wordStr.c_str()));
+            std::wstring languageStr = AccentLanguageName(entry.language);
             ListView_SetItemText(hListView, static_cast<int>(i), 2,
-                const_cast<LPWSTR>(AccentLanguageName(entry.language).c_str()));
+                const_cast<LPWSTR>(languageStr.c_str()));
             ListView_SetItemText(hListView, static_cast<int>(i), 3,
                 const_cast<LPWSTR>(entry.comment.c_str()));
         }
@@ -569,8 +601,8 @@ bool DictionaryDialog::LoadDictionary(DictionaryType type) {
         return true; // Empty dictionary is valid
     }
 
-    // Read file
-    std::ifstream file(path, std::ios::binary);
+    // Read file (a filesystem::path: a stream from a wstring is MSVC-only)
+    std::ifstream file(std::filesystem::path(path), std::ios::binary);
     if (!file.is_open()) {
         return false;
     }
@@ -599,7 +631,7 @@ bool DictionaryDialog::SaveDictionary() {
                                          : GenerateDictionaryJson(m_entries);
 
     // Write file
-    std::ofstream file(path, std::ios::binary);
+    std::ofstream file(std::filesystem::path(path), std::ios::binary);
     if (!file.is_open()) {
         ShowError(m_hDlg, IDS_ERROR_FILE_WRITE);
         return false;
@@ -714,58 +746,31 @@ INT_PTR DictionaryDialog::OnNotify(HWND hDlg, LPNMHDR pnmh) {
 INT_PTR DictionaryDialog::OnCtlColor(HWND hDlg, UINT msg, HDC hdc, HWND hCtrl) {
     (void)hDlg;
     (void)hCtrl;
+    return DarkCtlColor(m_darkMode, msg, hdc);
+}
 
-    if (!m_darkMode) {
-        return FALSE;
-    }
-
-    switch (msg) {
-    case WM_CTLCOLORSTATIC:
-    case WM_CTLCOLORBTN: {
-        HBRUSH hBrush = OnCtlColorStatic(hdc, true);
-        if (hBrush) {
-            return (INT_PTR)hBrush;
-        }
-        break;
-    }
-    case WM_CTLCOLOREDIT: {
-        HBRUSH hBrush = OnCtlColorEdit(hdc, true);
-        if (hBrush) {
-            return (INT_PTR)hBrush;
-        }
-        break;
-    }
-    case WM_CTLCOLORDLG: {
-        HBRUSH hBrush = OnCtlColorDlg(true);
-        if (hBrush) {
-            return (INT_PTR)hBrush;
-        }
-        break;
-    }
-    }
-
-    return FALSE;
+// Open the editor of the current dictionary's entries; true with the result
+// in `result` when the user pressed OK
+bool DictionaryDialog::EditEntry(HWND hDlg, const UserDictionaryEntry* entry, bool isEdit,
+                                 UserDictionaryEntry& result) {
+    AccentEntryDialog accentDlg;
+    DictionaryEntryDialog replacementDlg;
+    EntryDialogBase& dlg = IsAccentLexicon()
+        ? static_cast<EntryDialogBase&>(accentDlg)
+        : static_cast<EntryDialogBase&>(replacementDlg);
+    if (dlg.Show(m_hInstance, hDlg, entry, isEdit) != IDOK) return false;
+    result = dlg.GetEntry();
+    return true;
 }
 
 void DictionaryDialog::OnAddEntry(HWND hDlg) {
     HWND hListView = GetDlgItem(hDlg, IDC_DICT_LISTVIEW);
     int currentIndex = GetSelectedIndex(hListView);
 
-    bool added = false;
-    if (IsAccentLexicon()) {
-        AccentEntryDialog entryDlg;
-        if (entryDlg.Show(m_hInstance, hDlg, nullptr, false) == IDOK) {
-            m_entries.push_back(entryDlg.GetEntry());
-            added = true;
-        }
-    } else {
-        DictionaryEntryDialog entryDlg;
-        if (entryDlg.Show(m_hInstance, hDlg, nullptr, false) == IDOK) {
-            m_entries.push_back(entryDlg.GetEntry());
-            added = true;
-        }
-    }
+    UserDictionaryEntry entry;
+    bool added = EditEntry(hDlg, nullptr, false, entry);
     if (added) {
+        m_entries.push_back(entry);
         m_modified = true;
         PopulateListView(hDlg);
 
@@ -791,21 +796,9 @@ void DictionaryDialog::OnEditEntry(HWND hDlg) {
     int index = GetSelectedIndex(hListView);
     if (index < 0 || index >= static_cast<int>(m_entries.size())) return;
 
-    bool edited = false;
-    if (IsAccentLexicon()) {
-        AccentEntryDialog entryDlg;
-        if (entryDlg.Show(m_hInstance, hDlg, &m_entries[index], true) == IDOK) {
-            m_entries[index] = entryDlg.GetEntry();
-            edited = true;
-        }
-    } else {
-        DictionaryEntryDialog entryDlg;
-        if (entryDlg.Show(m_hInstance, hDlg, &m_entries[index], true) == IDOK) {
-            m_entries[index] = entryDlg.GetEntry();
-            edited = true;
-        }
-    }
-    if (edited) {
+    UserDictionaryEntry entry;
+    if (EditEntry(hDlg, &m_entries[index], true, entry)) {
+        m_entries[index] = entry;
         m_modified = true;
         PopulateListView(hDlg);
     }
@@ -922,17 +915,8 @@ void DictionaryDialog::ApplyDarkMode(HWND hDlg) {
     InvalidateRect(hDlg, nullptr, TRUE);
 }
 
-bool DictionaryDialog::IsDarkModeEnabled() {
-    return IsSystemDarkMode();
-}
-
 std::wstring DictionaryDialog::LoadLocalizedString(UINT id) {
-    wchar_t buffer[512];
-    int len = ::LoadStringW(m_hInstance, id, buffer, 512);
-    if (len > 0) {
-        return std::wstring(buffer, len);
-    }
-    return L"";
+    return LoadResourceString(m_hInstance, id);
 }
 
 void DictionaryDialog::SetControlText(HWND hDlg, int ctrlId, UINT stringId) {
@@ -943,49 +927,36 @@ void DictionaryDialog::SetControlText(HWND hDlg, int ctrlId, UINT stringId) {
 }
 
 // =============================================================================
-// DictionaryEntryDialog Implementation
+// EntryDialogBase Implementation
 // =============================================================================
 
-DictionaryEntryDialog::DictionaryEntryDialog() {
-}
-
-DictionaryEntryDialog::~DictionaryEntryDialog() {
-}
-
-INT_PTR DictionaryEntryDialog::Show(HINSTANCE hInstance, HWND hParent,
+INT_PTR EntryDialogBase::Show(HINSTANCE hInstance, HWND hParent,
     const UserDictionaryEntry* entry, bool isEdit) {
     m_hInstance = hInstance;
     m_isEdit = isEdit;
     m_darkMode = IsSystemDarkMode();
+    m_entry = entry ? *entry : UserDictionaryEntry();
 
-    if (entry) {
-        m_entry = *entry;
-    } else {
-        m_entry = UserDictionaryEntry();
-    }
-
-    INT_PTR result = DialogBoxParamW(
+    return DialogBoxParamW(
         hInstance,
-        MAKEINTRESOURCEW(IDD_DICT_ENTRY_DIALOG),
+        MAKEINTRESOURCEW(DialogResourceId()),
         hParent,
         DialogProc,
         reinterpret_cast<LPARAM>(this)
     );
-
-    return result;
 }
 
-INT_PTR CALLBACK DictionaryEntryDialog::DialogProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
-    DictionaryEntryDialog* pThis = nullptr;
+INT_PTR CALLBACK EntryDialogBase::DialogProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
+    EntryDialogBase* pThis = nullptr;
 
     if (msg == WM_INITDIALOG) {
-        pThis = reinterpret_cast<DictionaryEntryDialog*>(lParam);
+        pThis = reinterpret_cast<EntryDialogBase*>(lParam);
         SetWindowLongPtrW(hDlg, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pThis));
         pThis->m_hDlg = hDlg;
         return pThis->OnInitDialog(hDlg);
     }
 
-    pThis = reinterpret_cast<DictionaryEntryDialog*>(GetWindowLongPtrW(hDlg, GWLP_USERDATA));
+    pThis = reinterpret_cast<EntryDialogBase*>(GetWindowLongPtrW(hDlg, GWLP_USERDATA));
     if (!pThis) {
         return FALSE;
     }
@@ -997,10 +968,9 @@ INT_PTR CALLBACK DictionaryEntryDialog::DialogProc(HWND hDlg, UINT msg, WPARAM w
     case WM_CTLCOLORSTATIC:
     case WM_CTLCOLORBTN:
     case WM_CTLCOLOREDIT:
-        return pThis->OnCtlColor(hDlg, msg, (HDC)wParam, (HWND)lParam);
-
+    case WM_CTLCOLORLISTBOX:
     case WM_CTLCOLORDLG:
-        return pThis->OnCtlColor(hDlg, msg, (HDC)wParam, hDlg);
+        return DarkCtlColor(pThis->m_darkMode, msg, (HDC)wParam);
 
     case WM_CLOSE:
         EndDialog(hDlg, IDCANCEL);
@@ -1010,51 +980,20 @@ INT_PTR CALLBACK DictionaryEntryDialog::DialogProc(HWND hDlg, UINT msg, WPARAM w
     return FALSE;
 }
 
-INT_PTR DictionaryEntryDialog::OnInitDialog(HWND hDlg) {
-    // Set dialog title
-    SetWindowTextW(hDlg, LoadLocalizedString(
-        m_isEdit ? IDS_ENTRY_DIALOG_TITLE_EDIT : IDS_ENTRY_DIALOG_TITLE_ADD).c_str());
-
-    // Initialize control texts
+INT_PTR EntryDialogBase::OnInitDialog(HWND hDlg) {
     InitializeControls(hDlg);
 
-    // Populate with existing entry data
-    SetDlgItemTextW(hDlg, IDC_ENTRY_ORIGINAL_EDIT, m_entry.grapheme.c_str());
-    SetDlgItemTextW(hDlg, IDC_ENTRY_REPLACEMENT_EDIT, m_entry.phoneme.c_str());
-    SetDlgItemTextW(hDlg, IDC_ENTRY_COMMENT_EDIT, m_entry.comment.c_str());
-    CheckDlgButton(hDlg, IDC_ENTRY_CASE_SENSITIVE, m_entry.caseSensitive ? BST_CHECKED : BST_UNCHECKED);
-    CheckDlgButton(hDlg, IDC_ENTRY_WHOLE_WORD, m_entry.wholeWord ? BST_CHECKED : BST_UNCHECKED);
+    if (m_darkMode) {
+        ApplyDarkTitleBar(hDlg, true);
+        ApplyDarkModeToAllControls(hDlg, true);
+        InvalidateRect(hDlg, nullptr, TRUE);
+    }
 
-    // Apply dark mode
-    ApplyDarkMode(hDlg);
-
-    // Center dialog on parent
-    HWND hParent = GetParent(hDlg);
-    if (!hParent) hParent = GetDesktopWindow();
-
-    RECT rcDlg, rcParent;
-    GetWindowRect(hDlg, &rcDlg);
-    GetWindowRect(hParent, &rcParent);
-
-    int x = rcParent.left + (rcParent.right - rcParent.left - (rcDlg.right - rcDlg.left)) / 2;
-    int y = rcParent.top + (rcParent.bottom - rcParent.top - (rcDlg.bottom - rcDlg.top)) / 2;
-
-    SetWindowPos(hDlg, nullptr, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
-
+    CenterOnParent(hDlg);
     return TRUE;
 }
 
-void DictionaryEntryDialog::InitializeControls(HWND hDlg) {
-    SetControlText(hDlg, IDC_ENTRY_ORIGINAL_LABEL, IDS_ENTRY_ORIGINAL_LABEL);
-    SetControlText(hDlg, IDC_ENTRY_REPLACEMENT_LABEL, IDS_ENTRY_REPLACEMENT_LABEL);
-    SetControlText(hDlg, IDC_ENTRY_COMMENT_LABEL, IDS_ENTRY_COMMENT_LABEL);
-    SetControlText(hDlg, IDC_ENTRY_CASE_SENSITIVE, IDS_ENTRY_CASE_SENSITIVE);
-    SetControlText(hDlg, IDC_ENTRY_WHOLE_WORD, IDS_ENTRY_WHOLE_WORD);
-    SetControlText(hDlg, IDOK, IDS_OK);
-    SetControlText(hDlg, IDCANCEL, IDS_CANCEL);
-}
-
-INT_PTR DictionaryEntryDialog::OnCommand(HWND hDlg, WPARAM wParam, LPARAM lParam) {
+INT_PTR EntryDialogBase::OnCommand(HWND hDlg, WPARAM wParam, LPARAM lParam) {
     (void)lParam;
 
     switch (LOWORD(wParam)) {
@@ -1072,40 +1011,43 @@ INT_PTR DictionaryEntryDialog::OnCommand(HWND hDlg, WPARAM wParam, LPARAM lParam
     return FALSE;
 }
 
-INT_PTR DictionaryEntryDialog::OnCtlColor(HWND hDlg, UINT msg, HDC hdc, HWND hCtrl) {
-    (void)hDlg;
-    (void)hCtrl;
+std::wstring EntryDialogBase::LoadLocalizedString(UINT id) {
+    return LoadResourceString(m_hInstance, id);
+}
 
-    if (!m_darkMode) {
-        return FALSE;
+void EntryDialogBase::SetControlText(HWND hDlg, int ctrlId, UINT stringId) {
+    std::wstring text = LoadLocalizedString(stringId);
+    if (!text.empty()) {
+        SetDlgItemTextW(hDlg, ctrlId, text.c_str());
     }
+}
 
-    switch (msg) {
-    case WM_CTLCOLORSTATIC:
-    case WM_CTLCOLORBTN: {
-        HBRUSH hBrush = OnCtlColorStatic(hdc, true);
-        if (hBrush) {
-            return (INT_PTR)hBrush;
-        }
-        break;
-    }
-    case WM_CTLCOLOREDIT: {
-        HBRUSH hBrush = OnCtlColorEdit(hdc, true);
-        if (hBrush) {
-            return (INT_PTR)hBrush;
-        }
-        break;
-    }
-    case WM_CTLCOLORDLG: {
-        HBRUSH hBrush = OnCtlColorDlg(true);
-        if (hBrush) {
-            return (INT_PTR)hBrush;
-        }
-        break;
-    }
-    }
+// =============================================================================
+// DictionaryEntryDialog Implementation
+// =============================================================================
 
-    return FALSE;
+int DictionaryEntryDialog::DialogResourceId() const {
+    return IDD_DICT_ENTRY_DIALOG;
+}
+
+void DictionaryEntryDialog::InitializeControls(HWND hDlg) {
+    SetWindowTextW(hDlg, LoadLocalizedString(
+        m_isEdit ? IDS_ENTRY_DIALOG_TITLE_EDIT : IDS_ENTRY_DIALOG_TITLE_ADD).c_str());
+
+    SetControlText(hDlg, IDC_ENTRY_ORIGINAL_LABEL, IDS_ENTRY_ORIGINAL_LABEL);
+    SetControlText(hDlg, IDC_ENTRY_REPLACEMENT_LABEL, IDS_ENTRY_REPLACEMENT_LABEL);
+    SetControlText(hDlg, IDC_ENTRY_COMMENT_LABEL, IDS_ENTRY_COMMENT_LABEL);
+    SetControlText(hDlg, IDC_ENTRY_CASE_SENSITIVE, IDS_ENTRY_CASE_SENSITIVE);
+    SetControlText(hDlg, IDC_ENTRY_WHOLE_WORD, IDS_ENTRY_WHOLE_WORD);
+    SetControlText(hDlg, IDOK, IDS_OK);
+    SetControlText(hDlg, IDCANCEL, IDS_CANCEL);
+
+    // Populate with existing entry data
+    SetDlgItemTextW(hDlg, IDC_ENTRY_ORIGINAL_EDIT, m_entry.grapheme.c_str());
+    SetDlgItemTextW(hDlg, IDC_ENTRY_REPLACEMENT_EDIT, m_entry.phoneme.c_str());
+    SetDlgItemTextW(hDlg, IDC_ENTRY_COMMENT_EDIT, m_entry.comment.c_str());
+    CheckDlgButton(hDlg, IDC_ENTRY_CASE_SENSITIVE, m_entry.caseSensitive ? BST_CHECKED : BST_UNCHECKED);
+    CheckDlgButton(hDlg, IDC_ENTRY_WHOLE_WORD, m_entry.wholeWord ? BST_CHECKED : BST_UNCHECKED);
 }
 
 bool DictionaryEntryDialog::ValidateAndCollect(HWND hDlg) {
@@ -1138,106 +1080,36 @@ bool DictionaryEntryDialog::ValidateAndCollect(HWND hDlg) {
     return true;
 }
 
-void DictionaryEntryDialog::ApplyDarkMode(HWND hDlg) {
-    if (!m_darkMode) return;
-
-    ApplyDarkTitleBar(hDlg, true);
-    ApplyDarkModeToAllControls(hDlg, true);
-    InvalidateRect(hDlg, nullptr, TRUE);
-}
-
-bool DictionaryEntryDialog::IsDarkModeEnabled() {
-    return IsSystemDarkMode();
-}
-
-std::wstring DictionaryEntryDialog::LoadLocalizedString(UINT id) {
-    wchar_t buffer[512];
-    int len = ::LoadStringW(m_hInstance, id, buffer, 512);
-    if (len > 0) {
-        return std::wstring(buffer, len);
-    }
-    return L"";
-}
-
-void DictionaryEntryDialog::SetControlText(HWND hDlg, int ctrlId, UINT stringId) {
-    std::wstring text = LoadLocalizedString(stringId);
-    if (!text.empty()) {
-        SetDlgItemTextW(hDlg, ctrlId, text.c_str());
-    }
-}
-
 // =============================================================================
 // AccentEntryDialog Implementation
 // =============================================================================
 
-AccentEntryDialog::AccentEntryDialog() {
+namespace {
+
+// The language combo: all, Croatian, Serbian, Bosnian (the order of
+// ACCENT_LANGUAGES); a code the engine does not know (a hand-edited file)
+// is shown as itself in a fifth item, so that OK keeps it and the engine's
+// check names it instead of the dialog silently saving "all languages".
+constexpr int ACCENT_LANGUAGE_COUNT = 4;
+constexpr int ACCENT_LANGUAGE_UNKNOWN = ACCENT_LANGUAGE_COUNT;
+
+} // namespace
+
+int AccentEntryDialog::DialogResourceId() const {
+    return IDD_ACCENT_ENTRY_DIALOG;
 }
 
-AccentEntryDialog::~AccentEntryDialog() {
-}
-
-INT_PTR AccentEntryDialog::Show(HINSTANCE hInstance, HWND hParent,
-    const UserDictionaryEntry* entry, bool isEdit) {
-    m_hInstance = hInstance;
-    m_isEdit = isEdit;
-    m_darkMode = IsSystemDarkMode();
-
-    if (entry) {
-        m_entry = *entry;
-    } else {
-        m_entry = UserDictionaryEntry();
-    }
-
-    return DialogBoxParamW(
-        hInstance,
-        MAKEINTRESOURCEW(IDD_ACCENT_ENTRY_DIALOG),
-        hParent,
-        DialogProc,
-        reinterpret_cast<LPARAM>(this)
-    );
-}
-
-INT_PTR CALLBACK AccentEntryDialog::DialogProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
-    AccentEntryDialog* pThis = nullptr;
-
-    if (msg == WM_INITDIALOG) {
-        pThis = reinterpret_cast<AccentEntryDialog*>(lParam);
-        SetWindowLongPtrW(hDlg, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pThis));
-        pThis->m_hDlg = hDlg;
-        return pThis->OnInitDialog(hDlg);
-    }
-
-    pThis = reinterpret_cast<AccentEntryDialog*>(GetWindowLongPtrW(hDlg, GWLP_USERDATA));
-    if (!pThis) {
-        return FALSE;
-    }
-
-    switch (msg) {
-    case WM_COMMAND:
-        return pThis->OnCommand(hDlg, wParam, lParam);
-
-    case WM_CTLCOLORSTATIC:
-    case WM_CTLCOLORBTN:
-    case WM_CTLCOLOREDIT:
-    case WM_CTLCOLORLISTBOX:
-        return pThis->OnCtlColor(hDlg, msg, (HDC)wParam, (HWND)lParam);
-
-    case WM_CTLCOLORDLG:
-        return pThis->OnCtlColor(hDlg, msg, (HDC)wParam, hDlg);
-
-    case WM_CLOSE:
-        EndDialog(hDlg, IDCANCEL);
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
-INT_PTR AccentEntryDialog::OnInitDialog(HWND hDlg) {
+void AccentEntryDialog::InitializeControls(HWND hDlg) {
     SetWindowTextW(hDlg, LoadLocalizedString(
         m_isEdit ? IDS_ACCENT_DIALOG_TITLE_EDIT : IDS_ACCENT_DIALOG_TITLE_ADD).c_str());
 
-    InitializeControls(hDlg);
+    SetControlText(hDlg, IDC_ACCENT_ENTRY_LABEL, IDS_ACCENT_ENTRY_LABEL);
+    SetControlText(hDlg, IDC_ACCENT_KIND_LABEL, IDS_ACCENT_KIND_LABEL);
+    SetControlText(hDlg, IDC_ACCENT_LANG_LABEL, IDS_ACCENT_LANG_LABEL);
+    SetControlText(hDlg, IDC_ACCENT_COMMENT_LABEL, IDS_ENTRY_COMMENT_LABEL);
+    SetControlText(hDlg, IDC_ACCENT_HELP, IDS_ACCENT_HELP);
+    SetControlText(hDlg, IDOK, IDS_OK);
+    SetControlText(hDlg, IDCANCEL, IDS_CANCEL);
 
     SetDlgItemTextW(hDlg, IDC_ACCENT_ENTRY_EDIT, m_entry.grapheme.c_str());
     SetDlgItemTextW(hDlg, IDC_ACCENT_COMMENT_EDIT, m_entry.comment.c_str());
@@ -1250,107 +1122,27 @@ INT_PTR AccentEntryDialog::OnInitDialog(HWND hDlg) {
         SendMessageW(hKind, CB_SETCURSEL, m_entry.verb ? 1 : 0, 0);
     }
 
-    // Language: all, Croatian, Serbian, Bosnian (the order of ACCENT_LANGUAGES)
     HWND hLang = GetDlgItem(hDlg, IDC_ACCENT_LANG_COMBO);
     if (hLang) {
         SendMessageW(hLang, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_ACCENT_LANG_ALL).c_str());
         SendMessageW(hLang, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_ACCENT_LANG_HR).c_str());
         SendMessageW(hLang, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_ACCENT_LANG_SR).c_str());
         SendMessageW(hLang, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_ACCENT_LANG_BS).c_str());
-        int sel = 0;
+        int sel = -1;
         std::string code = WideToUtf8(m_entry.language);
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < ACCENT_LANGUAGE_COUNT; i++) {
             if (code == ACCENT_LANGUAGES[i]) sel = i;
+        }
+        if (sel < 0) {
+            SendMessageW(hLang, CB_ADDSTRING, 0, (LPARAM)m_entry.language.c_str());
+            sel = ACCENT_LANGUAGE_UNKNOWN;
         }
         SendMessageW(hLang, CB_SETCURSEL, sel, 0);
     }
-
-    ApplyDarkMode(hDlg);
-
-    // Center dialog on parent
-    HWND hParent = GetParent(hDlg);
-    if (!hParent) hParent = GetDesktopWindow();
-
-    RECT rcDlg, rcParent;
-    GetWindowRect(hDlg, &rcDlg);
-    GetWindowRect(hParent, &rcParent);
-
-    int x = rcParent.left + (rcParent.right - rcParent.left - (rcDlg.right - rcDlg.left)) / 2;
-    int y = rcParent.top + (rcParent.bottom - rcParent.top - (rcDlg.bottom - rcDlg.top)) / 2;
-
-    SetWindowPos(hDlg, nullptr, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
-
-    return TRUE;
-}
-
-void AccentEntryDialog::InitializeControls(HWND hDlg) {
-    SetControlText(hDlg, IDC_ACCENT_ENTRY_LABEL, IDS_ACCENT_ENTRY_LABEL);
-    SetControlText(hDlg, IDC_ACCENT_KIND_LABEL, IDS_ACCENT_KIND_LABEL);
-    SetControlText(hDlg, IDC_ACCENT_LANG_LABEL, IDS_ACCENT_LANG_LABEL);
-    SetControlText(hDlg, IDC_ACCENT_COMMENT_LABEL, IDS_ENTRY_COMMENT_LABEL);
-    SetControlText(hDlg, IDC_ACCENT_HELP, IDS_ACCENT_HELP);
-    SetControlText(hDlg, IDOK, IDS_OK);
-    SetControlText(hDlg, IDCANCEL, IDS_CANCEL);
-}
-
-INT_PTR AccentEntryDialog::OnCommand(HWND hDlg, WPARAM wParam, LPARAM lParam) {
-    (void)lParam;
-
-    switch (LOWORD(wParam)) {
-    case IDOK:
-        if (ValidateAndCollect(hDlg)) {
-            EndDialog(hDlg, IDOK);
-        }
-        return TRUE;
-
-    case IDCANCEL:
-        EndDialog(hDlg, IDCANCEL);
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
-INT_PTR AccentEntryDialog::OnCtlColor(HWND hDlg, UINT msg, HDC hdc, HWND hCtrl) {
-    (void)hDlg;
-    (void)hCtrl;
-
-    if (!m_darkMode) {
-        return FALSE;
-    }
-
-    switch (msg) {
-    case WM_CTLCOLORSTATIC:
-    case WM_CTLCOLORBTN: {
-        HBRUSH hBrush = OnCtlColorStatic(hdc, true);
-        if (hBrush) {
-            return (INT_PTR)hBrush;
-        }
-        break;
-    }
-    case WM_CTLCOLOREDIT:
-    case WM_CTLCOLORLISTBOX: {
-        HBRUSH hBrush = OnCtlColorEdit(hdc, true);
-        if (hBrush) {
-            return (INT_PTR)hBrush;
-        }
-        break;
-    }
-    case WM_CTLCOLORDLG: {
-        HBRUSH hBrush = OnCtlColorDlg(true);
-        if (hBrush) {
-            return (INT_PTR)hBrush;
-        }
-        break;
-    }
-    }
-
-    return FALSE;
 }
 
 bool AccentEntryDialog::ValidateAndCollect(HWND hDlg) {
     wchar_t buffer[1024];
-
     GetDlgItemTextW(hDlg, IDC_ACCENT_ENTRY_EDIT, buffer, 1024);
     std::wstring text = buffer;
     // Trim surrounding whitespace
@@ -1365,12 +1157,13 @@ bool AccentEntryDialog::ValidateAndCollect(HWND hDlg) {
         return false;
     }
 
-    UserDictionaryEntry entry;
+    UserDictionaryEntry entry = m_entry;  // an unknown language code stays
     entry.grapheme = text;
     entry.verb = SendMessageW(GetDlgItem(hDlg, IDC_ACCENT_KIND_COMBO), CB_GETCURSEL, 0, 0) == 1;
     int lang = static_cast<int>(SendMessageW(GetDlgItem(hDlg, IDC_ACCENT_LANG_COMBO), CB_GETCURSEL, 0, 0));
-    if (lang < 0 || lang > 3) lang = 0;
-    entry.language = Utf8ToWide(ACCENT_LANGUAGES[lang]);
+    if (lang >= 0 && lang < ACCENT_LANGUAGE_COUNT) {
+        entry.language = Utf8ToWide(ACCENT_LANGUAGES[lang]);
+    }
 
     GetDlgItemTextW(hDlg, IDC_ACCENT_COMMENT_EDIT, buffer, 1024);
     entry.comment = buffer;
@@ -1380,41 +1173,16 @@ bool AccentEntryDialog::ValidateAndCollect(HWND hDlg) {
     formant::UserLexicon::Report report;
     formant::UserLexicon::parse("{\"entries\":[" + AccentEntryJson(entry, "") + "]}", &report);
     if (report.rejected > 0) {
-        std::wstring format = LoadLocalizedString(IDS_ERROR_ACCENT_INVALID);
-        std::wstring reason = Utf8ToWide(report.first_error);
-        wchar_t msg[1024];
-        swprintf_s(msg, format.c_str(), reason.c_str());
-        MessageBoxW(hDlg, msg, L"Error", MB_OK | MB_ICONWARNING);
+        // The reason quotes the whole entry, so the message has no fixed size
+        std::wstring msg = FormatResourceString(
+            LoadLocalizedString(IDS_ERROR_ACCENT_INVALID), Utf8ToWide(report.first_error));
+        MessageBoxW(hDlg, msg.c_str(), L"Error", MB_OK | MB_ICONWARNING);
         SetFocus(GetDlgItem(hDlg, IDC_ACCENT_ENTRY_EDIT));
         return false;
     }
 
     m_entry = entry;
     return true;
-}
-
-void AccentEntryDialog::ApplyDarkMode(HWND hDlg) {
-    if (!m_darkMode) return;
-
-    ApplyDarkTitleBar(hDlg, true);
-    ApplyDarkModeToAllControls(hDlg, true);
-    InvalidateRect(hDlg, nullptr, TRUE);
-}
-
-std::wstring AccentEntryDialog::LoadLocalizedString(UINT id) {
-    wchar_t buffer[512];
-    int len = ::LoadStringW(m_hInstance, id, buffer, 512);
-    if (len > 0) {
-        return std::wstring(buffer, len);
-    }
-    return L"";
-}
-
-void AccentEntryDialog::SetControlText(HWND hDlg, int ctrlId, UINT stringId) {
-    std::wstring text = LoadLocalizedString(stringId);
-    if (!text.empty()) {
-        SetDlgItemTextW(hDlg, ctrlId, text.c_str());
-    }
 }
 
 } // namespace laprdus

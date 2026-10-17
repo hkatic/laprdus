@@ -25,6 +25,7 @@ import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import com.hrvojekatic.laprdus.data.storage.LaprdusStorage
 import java.io.File
 
 /**
@@ -204,6 +205,28 @@ class DictionaryRepositoryTest {
         )
         assertEquals(1, parsed.size)
         assertEquals("p^oruk*", parsed[0].grapheme)
+    }
+
+    @Test
+    fun `accent lexicon parse keeps both halves of an entry with a word and a verb`() {
+        // The engine rejects such an entry; the editor shows it as two, so
+        // that the next save loses neither half
+        val parsed = DictionaryJson.parse(
+            """{"entries":[{"word":"k'ontrola","verb":"ur'e:d=i<p","language":"hr","comment":"both"}]}""",
+            DictionaryType.ACCENTS
+        )
+        assertEquals(2, parsed.size)
+        assertEquals("k'ontrola", parsed[0].grapheme)
+        assertFalse(parsed[0].verb)
+        assertEquals("ur'e:d=i<p", parsed[1].grapheme)
+        assertTrue(parsed[1].verb)
+        assertEquals(listOf("hr", "hr"), parsed.map { it.language })
+        assertEquals(listOf("both", "both"), parsed.map { it.comment })
+    }
+
+    @Test
+    fun `accent lexicon file name is the one the engine loads`() {
+        assertEquals(LaprdusStorage.ACCENT_LEXICON_FILE_NAME, DictionaryType.ACCENTS.fileName)
     }
 
     @Test

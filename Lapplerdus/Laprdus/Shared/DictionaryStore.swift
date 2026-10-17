@@ -78,16 +78,20 @@ final class DictionaryStore: @unchecked Sendable {
                 return []
             }
             if type == .accents {
-                return entries.compactMap { raw in
-                    let word = raw["word"] as? String ?? ""
-                    let verb = raw["verb"] as? String ?? ""
-                    guard !word.isEmpty || !verb.isEmpty else { return nil }
-                    return DictionaryEntry(
-                        grapheme: word.isEmpty ? verb : word,
-                        comment: raw["comment"] as? String ?? "",
-                        isVerb: word.isEmpty,
-                        language: raw["language"] as? String ?? ""
-                    )
+                // A hand-written entry with both a word and a verb, which the
+                // engine rejects, is listed as a word and a verb, so that
+                // saving keeps both halves (as two entries the engine accepts)
+                return entries.flatMap { raw -> [DictionaryEntry] in
+                    let comment = raw["comment"] as? String ?? ""
+                    let language = raw["language"] as? String ?? ""
+                    var result: [DictionaryEntry] = []
+                    if let word = raw["word"] as? String, !word.isEmpty {
+                        result.append(DictionaryEntry(grapheme: word, comment: comment, language: language))
+                    }
+                    if let verb = raw["verb"] as? String, !verb.isEmpty {
+                        result.append(DictionaryEntry(grapheme: verb, comment: comment, isVerb: true, language: language))
+                    }
+                    return result
                 }
             }
             return entries.compactMap { raw in

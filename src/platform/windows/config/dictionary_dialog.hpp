@@ -80,6 +80,7 @@ private:
     void InitializeDictionaryTypeCombo(HWND hDlg);
     void InitializeListView(HWND hDlg);
     void SetupListViewColumns(HWND hDlg);
+    void InsertColumn(HWND hListView, int index, UINT titleId, int width);
     void UpdateButtonStates(HWND hDlg);
     bool IsAccentLexicon() const { return m_currentType == DictionaryType::Accents; }
 
@@ -90,6 +91,8 @@ private:
     void OnDictionaryTypeChanged(HWND hDlg);
 
     // CRUD operations
+    bool EditEntry(HWND hDlg, const UserDictionaryEntry* entry, bool isEdit,
+                   UserDictionaryEntry& result);
     void OnAddEntry(HWND hDlg);
     void OnEditEntry(HWND hDlg);
     void OnDuplicateEntry(HWND hDlg);
@@ -105,7 +108,6 @@ private:
 
     // Dark mode
     void ApplyDarkMode(HWND hDlg);
-    bool IsDarkModeEnabled();
 
     // Member variables
     HINSTANCE m_hInstance = nullptr;
@@ -118,78 +120,13 @@ private:
 };
 
 /**
- * DictionaryEntryDialog - Dialog for adding/editing a dictionary entry.
- *
- * Features:
- * - Original and replacement text fields
- * - Comment text field
- * - Case sensitive and whole word checkboxes
+ * EntryDialogBase - What the two entry editors share: the modal dialog loop,
+ * dark mode, centering on the parent, localized strings. A derived class
+ * names its dialog resource, fills its controls and collects the entry.
  */
-class DictionaryEntryDialog {
+class EntryDialogBase {
 public:
-    DictionaryEntryDialog();
-    ~DictionaryEntryDialog();
-
-    /**
-     * Show the entry editor dialog.
-     * @param hInstance Application instance
-     * @param hParent Parent window handle
-     * @param entry Existing entry to edit (nullptr for new entry)
-     * @param isEdit True if editing, false if adding
-     * @return IDOK if entry was saved, IDCANCEL otherwise
-     */
-    INT_PTR Show(HINSTANCE hInstance, HWND hParent,
-                 const UserDictionaryEntry* entry = nullptr,
-                 bool isEdit = false);
-
-    /**
-     * Get the entry data after dialog closes.
-     * @return The entry data entered by user
-     */
-    const UserDictionaryEntry& GetEntry() const { return m_entry; }
-
-private:
-    // Dialog procedure
-    static INT_PTR CALLBACK DialogProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
-
-    // Message handlers
-    INT_PTR OnInitDialog(HWND hDlg);
-    INT_PTR OnCommand(HWND hDlg, WPARAM wParam, LPARAM lParam);
-    INT_PTR OnCtlColor(HWND hDlg, UINT msg, HDC hdc, HWND hCtrl);
-
-    // Control handling
-    void InitializeControls(HWND hDlg);
-    bool ValidateAndCollect(HWND hDlg);
-
-    // Helpers
-    std::wstring LoadLocalizedString(UINT id);
-    void SetControlText(HWND hDlg, int ctrlId, UINT stringId);
-
-    // Dark mode
-    void ApplyDarkMode(HWND hDlg);
-    bool IsDarkModeEnabled();
-
-    // Member variables
-    HINSTANCE m_hInstance = nullptr;
-    HWND m_hDlg = nullptr;
-    bool m_isEdit = false;
-    bool m_darkMode = false;
-    UserDictionaryEntry m_entry;
-};
-
-/**
- * AccentEntryDialog - Dialog for adding/editing an accent lexicon entry.
- *
- * Features:
- * - Entry text in the notation of the built-in lexicon
- * - Kind (word or verb) and language (all, hr, sr, bs) selectors
- * - Comment text field, a short reminder of the notation
- * - The entry is checked by the engine's own parser before it is accepted
- */
-class AccentEntryDialog {
-public:
-    AccentEntryDialog();
-    ~AccentEntryDialog();
+    virtual ~EntryDialogBase() = default;
 
     /**
      * Show the entry editor dialog.
@@ -206,26 +143,57 @@ public:
     /** The entry data after the dialog closes with IDOK. */
     const UserDictionaryEntry& GetEntry() const { return m_entry; }
 
-private:
-    static INT_PTR CALLBACK DialogProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
-
-    INT_PTR OnInitDialog(HWND hDlg);
-    INT_PTR OnCommand(HWND hDlg, WPARAM wParam, LPARAM lParam);
-    INT_PTR OnCtlColor(HWND hDlg, UINT msg, HDC hdc, HWND hCtrl);
-
-    void InitializeControls(HWND hDlg);
-    bool ValidateAndCollect(HWND hDlg);
+protected:
+    virtual int DialogResourceId() const = 0;
+    /** Fill the controls from m_entry (title, labels, values). */
+    virtual void InitializeControls(HWND hDlg) = 0;
+    /** Read the controls into m_entry; false (after a message) keeps the dialog open. */
+    virtual bool ValidateAndCollect(HWND hDlg) = 0;
 
     std::wstring LoadLocalizedString(UINT id);
     void SetControlText(HWND hDlg, int ctrlId, UINT stringId);
-
-    void ApplyDarkMode(HWND hDlg);
 
     HINSTANCE m_hInstance = nullptr;
     HWND m_hDlg = nullptr;
     bool m_isEdit = false;
     bool m_darkMode = false;
     UserDictionaryEntry m_entry;
+
+private:
+    static INT_PTR CALLBACK DialogProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+    INT_PTR OnInitDialog(HWND hDlg);
+    INT_PTR OnCommand(HWND hDlg, WPARAM wParam, LPARAM lParam);
+};
+
+/**
+ * DictionaryEntryDialog - Dialog for adding/editing a dictionary entry.
+ *
+ * Features:
+ * - Original and replacement text fields
+ * - Comment text field
+ * - Case sensitive and whole word checkboxes
+ */
+class DictionaryEntryDialog : public EntryDialogBase {
+protected:
+    int DialogResourceId() const override;
+    void InitializeControls(HWND hDlg) override;
+    bool ValidateAndCollect(HWND hDlg) override;
+};
+
+/**
+ * AccentEntryDialog - Dialog for adding/editing an accent lexicon entry.
+ *
+ * Features:
+ * - Entry text in the notation of the built-in lexicon
+ * - Kind (word or verb) and language (all, hr, sr, bs) selectors
+ * - Comment text field, a short reminder of the notation
+ * - The entry is checked by the engine's own parser before it is accepted
+ */
+class AccentEntryDialog : public EntryDialogBase {
+protected:
+    int DialogResourceId() const override;
+    void InitializeControls(HWND hDlg) override;
+    bool ValidateAndCollect(HWND hDlg) override;
 };
 
 } // namespace laprdus

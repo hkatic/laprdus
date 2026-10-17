@@ -33,9 +33,10 @@ enum class DictionaryType(val fileName: String) {
     /**
      * Accent lexicon: word stress, length and tone in the notation of the
      * engine's built-in lexicon (accents.json). Its entries are words or
-     * verbs, not replacements; see [DictionaryEntry.verb].
+     * verbs, not replacements; see [DictionaryEntry.verb]. The engine loads
+     * the file under the same name ([LaprdusStorage.ACCENT_LEXICON_FILE_NAME]).
      */
-    ACCENTS("accents.json")
+    ACCENTS(LaprdusStorage.ACCENT_LEXICON_FILE_NAME)
 }
 
 /**
