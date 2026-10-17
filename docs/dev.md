@@ -614,11 +614,13 @@ Python-based build system with multi-platform support.
 **Platforms:**
 - `windows` - MSVC compiler
 - `linux` - GCC compiler
+- `macos` - Apple clang (library and CLI; the app is built by Xcode)
 - `android` - NDK toolchain
 
 **Architectures:**
 - `x64`, `x86` (Windows/Linux)
 - `arm64`, `arm` (Android)
+- `arm64`, `x64`, `universal` (macOS; `auto` picks the host)
 
 **Build Configurations:**
 - `release` - Optimized, no debug symbols
@@ -634,6 +636,8 @@ Python-based build system with multi-platform support.
 | `config` | Windows configuration GUI |
 | `speechd` | Linux Speech Dispatcher module |
 | `linux-all` | All Linux targets |
+| `macos-all` | macOS library and CLI |
+| `macos-dist` | macOS distribution tarball (CLI, library, headers, voice data, dictionaries) |
 | `voice-data` | Generate voice .bin files |
 | `install` | Linux installation |
 
@@ -668,6 +672,24 @@ scons --platform=linux --arch=x64 --build-config=release linux-all
 ```bash
 cd android
 ./gradlew assembleRelease
+```
+
+**macOS:**
+```bash
+# Library and CLI for the host architecture
+scons --platform=macos --build-config=release macos-all
+
+# Release for distribution outside the Mac App Store: the notarized app DMG and
+# the universal, Developer ID signed command-line tools tarball in dist/macos/.
+# Needs a "Developer ID Application" certificate and notarytool credentials
+# (xcrun notarytool store-credentials laprdus ...); --development checks the
+# pipeline without them, --skip-notarization signs only.
+./scripts/build-macos-release.sh
+
+# The SCons half of it by hand: universal binaries, signed after linking, packed
+# as dist/macos-universal/laprdus-<version>-macos-universal.tar.xz
+scons --platform=macos --arch=universal --build-config=release \
+      --codesign-identity="Developer ID Application: Name (TEAMID)" macos-dist
 ```
 
 ---

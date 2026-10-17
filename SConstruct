@@ -30,9 +30,10 @@ AddOption('--platform',
 AddOption('--arch',
           dest='arch',
           type='choice',
-          choices=['auto', 'x64', 'x86', 'arm64', 'arm'],
+          choices=['auto', 'x64', 'x86', 'arm64', 'arm', 'universal'],
           default='auto',
-          help='Target architecture (auto picks the host architecture)')
+          help='Target architecture (auto picks the host architecture; '
+               'universal = arm64 + x64 in one binary, macOS only)')
 
 AddOption('--build-config',
           dest='build_config',
@@ -71,6 +72,14 @@ AddOption('--prefix',
           default='/usr/local',
           help='Installation prefix (Linux only)')
 
+AddOption('--codesign-identity',
+          dest='codesign_identity',
+          type='string',
+          default=os.environ.get('LAPRDUS_CODESIGN_IDENTITY', ''),
+          help='macOS: sign the library and the CLI after linking with this '
+               'identity ("Developer ID Application: ..." for distribution, '
+               '"-" for an ad hoc signature; default: no signing)')
+
 # =============================================================================
 # Platform Detection
 # =============================================================================
@@ -104,6 +113,10 @@ def detect_arch(for_platform):
 arch = GetOption('arch')
 if arch == 'auto':
     arch = detect_arch(target_platform)
+
+if arch == 'universal' and target_platform != 'macos':
+    print("Error: --arch=universal is only available with --platform=macos")
+    Exit(1)
 
 print(f"Building LaprdusTTS {VERSION_STRING}")
 print(f"  Platform: {target_platform}")
@@ -205,7 +218,14 @@ elif target_platform == 'macos':
     # macOS clang environment (Intel and Apple Silicon)
     env = Environment()
 
-    mac_arch = 'arm64' if arch == 'arm64' else 'x86_64'
+    # 'universal' builds both slices in one pass: clang accepts several -arch
+    # flags and emits fat objects and fat binaries, so nothing has to be lipo'd.
+    if arch == 'universal':
+        arch_flags = ['-arch', 'arm64', '-arch', 'x86_64']
+    elif arch == 'arm64':
+        arch_flags = ['-arch', 'arm64']
+    else:
+        arch_flags = ['-arch', 'x86_64']
     # Matches the Apple app/extension deployment target in Lapplerdus/.
     min_version = '13.0'
 
@@ -217,14 +237,13 @@ elif target_platform == 'macos':
         '-Wpedantic',
         '-fPIC',
         '-fvisibility=hidden',
-        '-arch', mac_arch,
+        *arch_flags,
         f'-mmacosx-version-min={min_version}',
     ]
 
     env.Append(CCFLAGS=common_flags)
     env.Append(CXXFLAGS=['-std=c++17'])
-    env.Append(LINKFLAGS=['-arch', mac_arch,
-                          f'-mmacosx-version-min={min_version}'])
+    env.Append(LINKFLAGS=arch_flags + [f'-mmacosx-version-min={min_version}'])
 
     if build_config == 'debug':
         env.Append(CCFLAGS=['-O0', '-g3', '-D_DEBUG'])
@@ -1078,14 +1097,86 @@ elif target_platform == 'macos':
         source=cli_sources,
         LIBS=cli_env['LIBS'] + ['laprdus'],
         LIBPATH=[build_dir],
-        # Resolve @rpath/liblaprdus.dylib relative to the executable.
-        LINKFLAGS=cli_env['LINKFLAGS'] + ['-Wl,-rpath,@loader_path']
+        # Resolve @rpath/liblaprdus.dylib relative to the executable: next to
+        # it in build/, and in ../lib for the bin/lib layout of the
+        # distribution tarball (installed under /usr/local or run in place).
+        LINKFLAGS=cli_env['LINKFLAGS'] + ['-Wl,-rpath,@loader_path',
+                                          '-Wl,-rpath,@loader_path/../lib']
     )
 
     env.Depends(cli, lib)
 
+    # =========================================================================
+    # Code signing (distribution builds)
+    # =========================================================================
+    # With --codesign-identity the library and the CLI are signed right after
+    # linking, so every later step (tarball, notarization) sees signed code.
+    # The hardened runtime is required by notarization and only applies to
+    # executables. Its library validation lets the CLI load only libraries of
+    # the same team, which the dylib is when both are signed with one real
+    # certificate; an ad hoc signature ("-") has no team, so the CLI would
+    # refuse the dylib. Ad hoc builds therefore get neither the hardened
+    # runtime nor the secure timestamp (which needs a real certificate too).
+    codesign_identity = GetOption('codesign_identity')
+    if codesign_identity:
+        def codesign_command(executable):
+            flags = ['--force', '--sign', f'"{codesign_identity}"']
+            if codesign_identity != '-':
+                flags.append('--timestamp')
+                if executable:
+                    flags += ['--options', 'runtime']
+            return 'codesign ' + ' '.join(flags) + ' $TARGET'
+        env.AddPostAction(lib, codesign_command(executable=False))
+        env.AddPostAction(cli, codesign_command(executable=True))
+        print(f"  Code signing: {codesign_identity}")
+    # The identity is part of what the binaries are built from: a different
+    # one (or none) must relink and re-sign an otherwise up-to-date target.
+    env.Depends(lib, env.Value(codesign_identity))
+    env.Depends(cli, env.Value(codesign_identity))
+
     env.Alias('cli', [cli, lib, phonemes_packed])
     env.Alias('macos-all', [lib, cli, phonemes_packed, voice_data_targets])
+
+    # =========================================================================
+    # macOS distribution tarball (CLI, library, headers, voice data)
+    # =========================================================================
+    # Stages dist/macos-<arch>/laprdus-<version>-macos-<arch>/ with the same
+    # bin/lib/include/share layout as the Linux tarball, plus install.sh and
+    # uninstall.sh from installers/macos/tarball/, and packs it as .tar.xz.
+    # scripts/build-macos-release.sh runs this with --arch=universal and a
+    # Developer ID identity next to the Xcode app build.
+    dist_name = f'laprdus-{VERSION_STRING}-macos-{arch}'
+    dist_root = f'{dist_dir}/{dist_name}'
+    dist_files = []
+    dist_files += env.Install(f'{dist_root}/bin', cli)
+    dist_files += env.Install(f'{dist_root}/lib', lib)
+    dist_files += env.Install(f'{dist_root}/include/laprdus',
+                              Glob('include/laprdus/*'))
+    dist_files += env.Install(f'{dist_root}/share/laprdus',
+                              Flatten(phonemes_packed) + [
+                                  'data/dictionary/internal.json',
+                                  'data/dictionary/spelling.json',
+                                  'data/dictionary/emoji.json',
+                              ])
+    dist_files += env.Install(f'{dist_root}/share/doc/laprdus', [
+        'readme.md',
+        'LICENSE',
+        'docs/changelog-en.md',
+        'docs/changelog-hr.md',
+    ])
+    dist_files += env.Install(dist_root, [
+        'installers/macos/tarball/install.sh',
+        'installers/macos/tarball/uninstall.sh',
+    ])
+
+    # COPYFILE_DISABLE keeps bsdtar from adding ._* AppleDouble entries for
+    # extended attributes; they would show up as junk files on other systems.
+    dist_tarball = env.Command(
+        target=f'{dist_dir}/{dist_name}.tar.xz',
+        source=dist_files,
+        action=f'COPYFILE_DISABLE=1 tar -C {dist_dir} -cJf $TARGET {dist_name}'
+    )
+    env.Alias('macos-dist', dist_tarball)
 
 elif target_platform == 'android':
     # JNI shared library
@@ -1401,6 +1492,7 @@ Targets:
   scons speechd            Build Speech Dispatcher module (Linux only)
   scons linux-all          Build all Linux targets (library, CLI, Speech Dispatcher)
   scons macos-all          Build all macOS targets (library, CLI)
+  scons macos-dist         macOS distribution tarball (CLI, library, headers, voice data)
   scons docs               Generate HTML documentation from Markdown files
   scons install            Install (Linux only)
   scons -c                 Clean build artifacts
@@ -1429,6 +1521,12 @@ macOS Build:
   ./build/macos-arm64-release/laprdus -D build/macos-arm64-release "Dobar dan!"
   ./build/macos-arm64-release/laprdus -D build/macos-arm64-release -o out.wav "Dobar dan!"
 
+  # Distribution build: one binary for Apple Silicon and Intel, signed with a
+  # Developer ID, packed as dist/macos-universal/laprdus-<version>-macos-universal.tar.xz
+  # (scripts/build-macos-release.sh runs this and builds the app DMG as well):
+  scons --platform=macos --arch=universal --build-config=release \\
+        --codesign-identity="Developer ID Application: Name (TEAMID)" macos-dist
+
 NVDA Add-on Build (Windows):
   # First build both architectures:
   scons --platform=windows --arch=x86 --build-config=release sapi5
@@ -1440,4 +1538,6 @@ Options:
   --enable-encryption    Enable phoneme data encryption
   --phoneme-key=KEY      Encryption key (64 hex characters)
   --prefix=PATH          Installation prefix (default: /usr/local, Linux only)
+  --codesign-identity=ID macOS: sign the library and CLI after linking
+                         (env LAPRDUS_CODESIGN_IDENTITY; "-" = ad hoc)
 """)

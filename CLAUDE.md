@@ -1266,7 +1266,55 @@ The dylib records `@rpath/liblaprdus.dylib` as its install name and the CLI is
 linked with `-rpath @loader_path`, so the binary finds the library sitting next
 to it without `DYLD_LIBRARY_PATH`.
 
-Cross-compiling to Intel from Apple Silicon works: `--arch=x64`.
+Cross-compiling to Intel from Apple Silicon works: `--arch=x64`; `--arch=universal`
+(macOS only) builds both slices into one binary.
+
+### macOS release build (distribution outside the Mac App Store)
+
+```bash
+./scripts/build-macos-release.sh                 # = ./scripts/build-all.sh macos-release
+./scripts/build-macos-release.sh --development   # pipeline check without a Developer ID
+```
+
+`scripts/build-macos-release.sh` produces, in `dist/macos/`:
+
+- `Laprdus-<version>-macOS.dmg`: the app with the `LaprdusVoices` extension, archived by
+  `xcodebuild archive` (Release, arm64 + x86_64), exported with the `developer-id`
+  method, notarized with `notarytool`, stapled, in a signed, notarized and stapled
+  drag-to-Applications disk image; plus `Laprdus-<version>-macOS-dSYMs.zip`.
+- `laprdus-<version>-macos-universal.tar.xz`: the CLI, `liblaprdus.dylib`, headers,
+  voice data, dictionaries, `install.sh` / `uninstall.sh` (`installers/macos/tarball/`),
+  built by `scons --platform=macos --arch=universal --codesign-identity=... macos-dist`
+  and submitted for notarization as a zip (a tarball cannot be stapled).
+- `SHA256SUMS.txt`.
+
+It needs the team's Apple Developer Program membership signed in to Xcode: Xcode then
+signs the app with the team's **cloud-managed Developer ID certificate** (the key stays with
+Apple, `-allowProvisioningUpdates` uses it; it never appears in `security find-identity`).
+`codesign` cannot use that certificate, so without a local "Developer ID Application"
+certificate in the login keychain the command-line tools and the DMG stay unsigned and the
+tools are not notarized (the script says so). A local certificate is made from a CSR at
+developer.apple.com > Certificates > + > Developer ID Application and imported into the
+login keychain. Notarization needs credentials stored once with `xcrun notarytool
+store-credentials laprdus` (`--notary-profile` / `LAPRDUS_NOTARY_PROFILE` for another
+name). The distributor's own setup notes live outside the repository. `--skip-notarization` signs without
+notarizing, `--development` signs with Apple Development and exports with the
+`debugging` method for testing the pipeline, `--identity` picks the certificate,
+`--skip-cli`, `--output`, `--clean` (Xcode work directory `build/macos-release/`).
+The script checks that both binaries of the app are universal, that the hardened
+runtime is on (`ENABLE_HARDENED_RUNTIME = YES` in the project's Release configuration,
+required by notarization), verifies the signatures and runs `spctl` on the results.
+The version comes from `MARKETING_VERSION` in the Xcode project (the SCons version names
+the tarball; the script warns when they differ).
+
+SCons options behind it: `--arch=universal`, `--codesign-identity=ID` (env
+`LAPRDUS_CODESIGN_IDENTITY`; the library and the CLI are signed after linking with a
+secure timestamp and, for the CLI, the hardened runtime; `-` is an ad hoc signature
+without either, because library validation would then reject the dylib) and the
+`macos-dist` target, which stages `dist/macos-<arch>/laprdus-<version>-macos-<arch>/`
+with the Linux tarball's `bin/lib/include/share` layout and packs it. The CLI has two
+rpaths, `@loader_path` and `@loader_path/../lib`, so it runs from `build/` and from the
+tarball alike.
 
 **Not built on macOS:** SAPI5, the NVDA addon, the Windows config GUI and the
 Speech Dispatcher module are all platform-specific and remain Windows/Linux only.

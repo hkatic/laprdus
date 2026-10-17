@@ -85,3 +85,6 @@ __pycache__/
 .DS_Store
 xcuserdata/
 DerivedData/
+
+# Distribution packages (macOS release script, scons macos-dist)
+dist/

@@ -575,6 +575,7 @@
 				DEVELOPMENT_TEAM = 3GAM6Z3A2W;
 				LAPRDUS_APP_GROUP = group.com.hrvojekatic.laprdus;
 				"LAPRDUS_APP_GROUP[sdk=macosx*]" = "$(TeamIdentifierPrefix)com.hrvojekatic.laprdus";
+				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;

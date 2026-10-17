@@ -310,6 +310,8 @@ Use the master build script which handles all dependencies automatically:
 ./scripts/build-all.sh nvda         # NVDA addon
 ./scripts/build-all.sh linux        # Linux components
 ./scripts/build-all.sh android      # Android APK
+./scripts/build-all.sh macos        # macOS library and CLI
+./scripts/build-all.sh macos-release # macOS release: notarized app DMG + CLI tarball (needs a Developer ID)
 ./scripts/build-all.sh voice-data   # Generate voice data only
 ```
 

@@ -13,6 +13,7 @@
 #   ./scripts/build-all.sh android            # Build Android APK only
 #   ./scripts/build-all.sh linux              # Build Linux only
 #   ./scripts/build-all.sh macos              # Build macOS only
+#   ./scripts/build-all.sh macos-release      # macOS release: signed, notarized DMG + CLI tarball
 #   ./scripts/build-all.sh voice-data         # Generate voice data only
 #
 # =============================================================================
@@ -200,6 +201,21 @@ build_macos() {
     fi
 }
 
+# macOS release packages for distribution outside the Mac App Store: the
+# notarized app DMG and the universal command-line tools tarball, in dist/macos.
+# Everything is in scripts/build-macos-release.sh; extra arguments are passed
+# through (--development, --skip-notarization, --identity, ...).
+build_macos_release() {
+    log_info "Building the macOS release packages..."
+
+    if [[ "$HOST_PLATFORM" != "macos" ]]; then
+        log_error "The macOS release can only be built on a Mac with Xcode"
+        exit 1
+    fi
+
+    "$PROJECT_ROOT/scripts/build-macos-release.sh" "$@"
+}
+
 # Step 7: Build Android APK
 build_android() {
     log_info "Step 7: Building Android APK..."
@@ -238,6 +254,7 @@ main() {
     log_info "Host platform: $HOST_PLATFORM"
 
     TARGET="${1:-all}"
+    [[ $# -gt 0 ]] && shift
 
     case "$TARGET" in
         voice-data)
@@ -266,6 +283,9 @@ main() {
             generate_voice_data
             build_macos
             ;;
+        macos-release)
+            build_macos_release "$@"
+            ;;
         all)
             # Only build what this host can: the SAPI5/NVDA targets need MSVC,
             # and each of linux/macos needs its own toolchain. Skipping is a
@@ -292,7 +312,7 @@ main() {
             ;;
         *)
             log_error "Unknown target: $TARGET"
-            echo "Usage: $0 [all|sapi5|nvda|android|linux|macos|voice-data]"
+            echo "Usage: $0 [all|sapi5|nvda|android|linux|macos|macos-release|voice-data]"
             exit 1
             ;;
     esac
