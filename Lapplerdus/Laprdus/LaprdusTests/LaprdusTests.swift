@@ -320,7 +320,60 @@ struct DictionaryStoreTests {
         #expect(DictionaryType.main.fileName == "user.json")
         #expect(DictionaryType.spelling.fileName == "spelling.json")
         #expect(DictionaryType.emoji.fileName == "emoji.json")
+        #expect(DictionaryType.accents.fileName == "accents.json")
         #expect(DictionaryStore.accentLexiconFileName == "accents.json")
+    }
+
+    @Test func accentEntriesRoundTripThroughTheirOwnKeys() throws {
+        let (store, dir) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let entries = [
+            DictionaryEntry(grapheme: "kontr'o:l*", comment: "kontróla"),
+            DictionaryEntry(grapheme: "ur'e:d=i<p", isVerb: true, language: "hr"),
+            DictionaryEntry(grapheme: "dir'ektor*", language: "sr"),
+        ]
+        try store.save(entries, type: .accents)
+        #expect(store.accentLexiconURL == store.fileURL(for: .accents))
+
+        // Written as the engine reads it: word/verb, language, comment
+        let data = try Data(contentsOf: store.accentLexiconURL)
+        let root = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let raw = try #require(root["entries"] as? [[String: Any]])
+        #expect(raw.count == 3)
+        #expect(raw[0]["word"] as? String == "kontr'o:l*")
+        #expect(raw[0]["comment"] as? String == "kontróla")
+        #expect(raw[0]["language"] == nil)
+        #expect(raw[0]["grapheme"] == nil)
+        #expect(raw[1]["verb"] as? String == "ur'e:d=i<p")
+        #expect(raw[1]["language"] as? String == "hr")
+        #expect(raw[2]["word"] as? String == "dir'ektor*")
+        #expect(raw[2]["language"] as? String == "sr")
+
+        let loaded = try store.load(.accents)
+        #expect(loaded.map(\.grapheme) == ["kontr'o:l*", "ur'e:d=i<p", "dir'ektor*"])
+        #expect(loaded.map(\.isVerb) == [false, true, false])
+        #expect(loaded.map(\.language) == ["", "hr", "sr"])
+        #expect(loaded[0].comment == "kontróla")
+
+        // The saved file is the accent lexicon the engine loads
+        let state = store.dictionaryState(userDictionariesEnabled: true)
+        #expect(state.accentLexiconURL == store.accentLexiconURL)
+        #expect(state.urls[.accents] == nil)
+    }
+
+    @Test func accentEntriesAreCheckedByTheEngine() {
+        #expect(LaprdusEngine.checkAccentLexicon(
+            DictionaryStore.accentLexicon(of: DictionaryEntry(grapheme: "kontr'o:l*"))) == nil)
+        #expect(LaprdusEngine.checkAccentLexicon(
+            DictionaryStore.accentLexicon(of: DictionaryEntry(grapheme: "ur'e:d=i<p", isVerb: true, language: "bs"))) == nil)
+        // No stress mark: refused, with the entry named in the reason
+        let reason = LaprdusEngine.checkAccentLexicon(
+            DictionaryStore.accentLexicon(of: DictionaryEntry(grapheme: "kontrola")))
+        #expect(reason?.hasPrefix("kontrola") == true)
+        // A word saved as a verb has no class
+        #expect(LaprdusEngine.checkAccentLexicon(
+            DictionaryStore.accentLexicon(of: DictionaryEntry(grapheme: "kontr'o:l*", isVerb: true))) != nil)
     }
 
     @Test func stateIsEmptyWhenUserDictionariesAreDisabled() throws {

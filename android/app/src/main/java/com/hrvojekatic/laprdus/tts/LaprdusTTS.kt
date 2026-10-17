@@ -43,6 +43,19 @@ class LaprdusTTS private constructor() {
         @JvmStatic
         external fun nativeGetVersion(): String
 
+        @JvmStatic
+        private external fun nativeCheckAccentLexicon(json: String): String?
+
+        /**
+         * Check accent lexicon JSON (a whole file or one entry wrapped as
+         * `{"entries":[...]}`) with the engine's own parser, without loading
+         * it anywhere. The dictionary editor calls this before saving.
+         *
+         * @return null when every entry is accepted, otherwise the reason the
+         *   first rejected entry was refused (English, from the engine)
+         */
+        fun checkAccentLexicon(json: String): String? = nativeCheckAccentLexicon(json)
+
         const val DEFAULT_INFLECTION_LEVEL = 0.5f
         const val DEFAULT_ACCELERATION = 1.0f
         val ACCELERATION_RANGE = 0.5f..3.0f

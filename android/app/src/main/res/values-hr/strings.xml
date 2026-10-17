@@ -165,6 +165,18 @@
     <string name="dict_action_duplicate">Dupliciraj</string>
     <string name="dict_action_delete">Izbriši</string>
     <string name="dict_error_empty_fields">Ovo polje je obavezno</string>
+    <!-- Accent dictionary (accents.json) -->
+    <string name="dict_type_accents">Naglasni rječnik</string>
+    <string name="dict_accent_entry">Unos (riječ, osnova, oblici ili glagol s naglaskom)</string>
+    <string name="dict_accent_kind">Vrsta unosa</string>
+    <string name="dict_accent_kind_word">Riječ</string>
+    <string name="dict_accent_kind_verb">Glagol</string>
+    <string name="dict_accent_language">Jezik</string>
+    <string name="dict_accent_language_all">Svi jezici</string>
+    <string name="dict_accent_help">Znakovi: \' ispred naglašenog samoglasnika (ton se bira sam), ^ silazni naglasak, / uzlazni naglasak, : iza dugog samoglasnika, * na kraju osnove (kontr\'o:l* vrijedi za kontróla, kontróle, kontrólom), | između oblika (sign\'a:l|a|u|om). Glagol: cijela osnova, znak = i vrsta (ur\'e:d=i&lt;p za uréditi, urédim), ili korijen s dugim ije (dijel:i za podijeliti).</string>
+    <string name="dict_accent_error_invalid">Unos nije ispravan: %1$s</string>
+    <string name="cd_dict_accent_kind_dropdown_desc">Odabir vrste unosa</string>
+    <string name="cd_dict_accent_language_dropdown_desc">Odabir jezika unosa</string>
 
     <!-- About screen -->
     <string name="category_about">O Laprdusu</string>

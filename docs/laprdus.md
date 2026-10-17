@@ -846,6 +846,7 @@ Laprdus Konfigurator pruža grafičko sučelje za jednostavno upravljanje rječn
    - **Glavni rječnik** - za zamjenu riječi i fraza
    - **Rječnik slovkanja** - za izgovor pojedinačnih znakova
    - **Rječnik emodžija** - za pretvaranje emodžija u tekst
+   - **Naglasni rječnik** - za naglasak, dužinu i ton riječi, za sve njezine oblike odjednom (zapis u [5.11](#511-naglasni-rječnik-accentsjson))
 4. Odaberite željenu vrstu rječnika strelicom dolje
 
 **Dodavanje novog unosa:**
@@ -878,6 +879,17 @@ Laprdus Konfigurator pruža grafičko sučelje za jednostavno upravljanje rječn
 3. Novi unos s kopiranim vrijednostima bit će dodan u popis
 4. Uredite duplicirani unos prema potrebi
 
+**Unos u naglasni rječnik:**
+
+Kad je odabran naglasni rječnik, dijalog za unos ima druga polja:
+
+- **Unos:** riječ, osnova, popis oblika ili glagol s naglasnim znakovima, u zapisu iz [5.11](#511-naglasni-rječnik-accentsjson), npr. `kontr'o:l*` ili `ur'e:d=i<p`
+- **Vrsta unosa:** *Riječ* (riječ, osnova sa `*` ili oblici s `|`) ili *Glagol* (cijela osnova sa znakom `=` i vrstom, ili korijen s dugim *ije*)
+- **Jezik:** *Svi jezici*, ili hrvatski, srpski odnosno bosanski ako unos vrijedi samo za jedan jezik
+- **Komentar:** opcionalna bilješka, npr. oblici koje unos pokriva
+
+Ispod polja stoji kratki podsjetnik na znakove. Unos se provjerava istim pravilima kojima ga Laprdus čita: unos bez naglasnog znaka, s dva naglaska ili s nepoznatom vrstom glagola Konfigurator odbija i kaže što je krivo, pa u datoteku ne može dospjeti unos koji bi se pri učitavanju preskočio. Dupliciranje ne mijenja tekst unosa.
+
 ### 5.7 Uređivanje rječnika na Androidu
 
 Android aplikacija pruža ugrađeno sučelje za upravljanje rječnicima.
@@ -895,6 +907,7 @@ Na vrhu zaslona nalazi se padajući izbornik za odabir vrste rječnika:
 - **Glavni rječnik** - za zamjenu riječi i fraza
 - **Rječnik slovkanja** - za izgovor znakova
 - **Rječnik emodžija** - za pretvaranje emodžija
+- **Naglasni rječnik** - za naglasak riječi (zapis u [5.11](#511-naglasni-rječnik-accentsjson))
 
 Dodirnite padajući izbornik i odaberite željenu vrstu.
 
@@ -908,6 +921,8 @@ Dodirnite padajući izbornik i odaberite željenu vrstu.
    - **Samo cijela riječ:** Uključite ako ne želite zamjenu unutar drugih riječi
    - **Komentar:** Opcionalni opis (npr. "Društvena mreža")
 3. Dodirnite gumb **"Spremi"** na dnu zaslona
+
+Za naglasni rječnik zaslon za unos ima polja **Unos** (riječ, osnova, oblici ili glagol s naglaskom, npr. `kontr'o:l*`), **Vrsta unosa** (riječ ili glagol), **Jezik** (svi jezici ili jedan od tri) i **Komentar**, s podsjetnikom na znakove ispod njih. Unos koji nije ispravan aplikacija odbija i ispisuje razlog ispod polja.
 
 **Korak 4: Uređivanje postojećeg unosa**
 
@@ -1293,7 +1308,7 @@ Neispravan unos (bez naglasnog znaka, s dva naglaska, s nepoznatim slovom ili ne
 laprdus -v zvonko "kontrola, signala, uredio"
 ```
 
-**Android i Apple:** datoteka `accents.json` čita se iz istog direktorija kao ostali rječnici kad su korisnički rječnici uključeni, ali aplikacije za sada nemaju uređivač za nju.
+**Uređivanje:** naglasni rječnik uređuje se kao i ostali rječnici: u Laprdus Konfiguratoru na Windowsu (gumb **Rječnici...**, vrsta rječnika *Naglasni rječnik*, vidi [5.6](#56-uređivanje-rječnika-na-windowsu-laprdus-konfigurator)), u Android aplikaciji ([5.7](#57-uređivanje-rječnika-na-androidu)) i u aplikaciji za iPhone, iPad i Mac (kartica Rječnici, vrsta *Naglasni rječnik*). Svaki unos ima polja Unos, Vrsta unosa (riječ ili glagol), Jezik i Komentar, a uređivač ga provjerava istim pravilima kojima ga Laprdus čita, pa neispravan unos ne može biti spremljen. Datoteku možete i dalje uređivati ručno ([5.8](#58-ručno-uređivanje-json-datoteka-napredno)); aplikacije na Androidu i Appleu čitaju je iz istog direktorija kao ostale rječnike kad su korisnički rječnici uključeni.
 
 ## 6. Glasovi
 

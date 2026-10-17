@@ -122,13 +122,16 @@ class DictionaryViewModel @Inject constructor(
 
     /**
      * Duplicate an entry.
-     * Creates a copy of the entry with a new ID and modified grapheme.
+     * Creates a copy of the entry with a new ID and modified grapheme. An
+     * accent lexicon entry is copied as it is: " (copy)" would make it a
+     * different, unaccented word.
      * @param entry The entry to duplicate
      */
     fun duplicateEntry(entry: DictionaryEntry) {
+        val accents = _uiState.value.selectedType == DictionaryType.ACCENTS
         val duplicate = entry.copy(
             id = UUID.randomUUID().toString(),
-            grapheme = entry.grapheme + " (copy)"
+            grapheme = if (accents) entry.grapheme else entry.grapheme + " (copy)"
         )
         saveEntry(duplicate)
     }

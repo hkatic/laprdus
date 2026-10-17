@@ -15,6 +15,7 @@
 
 #include "../../core/tts_engine.hpp"
 #include "../../core/voice_registry.hpp"
+#include "../../formant/formant_frontend.hpp"
 
 #define LOG_TAG "LaprdusTTS"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -778,6 +779,24 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeLoadAccentLexicon(
     bool ok = engine->load_accent_lexicon_from_memory(content.data(), content.size());
     LOGI("Accent lexicon: %s", engine->accent_lexicon_report().c_str());
     return ok ? JNI_TRUE : JNI_FALSE;
+}
+
+// Checks lexicon JSON without an engine: null when every entry is accepted,
+// otherwise the reason of the first rejection (for the dictionary editor)
+JNIEXPORT jstring JNICALL
+Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeCheckAccentLexicon(
+    JNIEnv* env,
+    jclass clazz,
+    jstring json) {
+
+    (void)clazz;
+    std::string content = jstringToString(env, json);
+    laprdus::formant::UserLexicon::Report report;
+    laprdus::formant::UserLexicon::parse(content, &report);
+    if (report.rejected == 0) {
+        return nullptr;
+    }
+    return env->NewStringUTF(report.first_error.c_str());
 }
 
 JNIEXPORT void JNICALL

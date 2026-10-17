@@ -6,17 +6,30 @@ import Foundation
 
 struct DictionaryEntry: Identifiable, Hashable {
     var id = UUID()
+    /// The text to match; for the accent lexicon, the entry itself.
     var grapheme = ""
     var phoneme = ""
     var caseSensitive = false
     var wholeWord = true
     var comment = ""
+    /// Accent lexicon only: the entry (kept in `grapheme`, with `phoneme`
+    /// empty) is a "verb" (`ur'e:d=i<p`, `dijel:i`) rather than a "word"
+    /// (`kontr'o:l*`, `sign'a:l|a|u|om`).
+    var isVerb = false
+    /// Accent lexicon only: "hr", "sr" or "bs" limits the entry to one
+    /// language; "" is every language.
+    var language = ""
 }
 
 enum DictionaryType: String, CaseIterable, Identifiable {
     case main
     case spelling
     case emoji
+    /// The accent lexicon of the formant voices: word stress, length and
+    /// tone in the notation of the engine's built-in lexicon. Its entries
+    /// are words or verbs, not replacements, and the engine parses the
+    /// file itself.
+    case accents
 
     var id: String { rawValue }
 
@@ -26,6 +39,7 @@ enum DictionaryType: String, CaseIterable, Identifiable {
         case .main: return "user.json"
         case .spelling: return "spelling.json"
         case .emoji: return "emoji.json"
+        case .accents: return DictionaryStore.accentLexiconFileName
         }
     }
 }
@@ -49,10 +63,11 @@ final class DictionaryStore: @unchecked Sendable {
     }
 
     var accentLexiconURL: URL {
-        directory.appendingPathComponent(Self.accentLexiconFileName)
+        fileURL(for: .accents)
     }
 
-    /// A missing file yields an empty list.
+    /// A missing file yields an empty list. An accent lexicon entry with
+    /// neither a word nor a verb is dropped.
     func load(_ type: DictionaryType) throws -> [DictionaryEntry] {
         try queue.sync {
             let url = fileURL(for: type)
@@ -61,6 +76,19 @@ final class DictionaryStore: @unchecked Sendable {
             guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let entries = root["entries"] as? [[String: Any]] else {
                 return []
+            }
+            if type == .accents {
+                return entries.compactMap { raw in
+                    let word = raw["word"] as? String ?? ""
+                    let verb = raw["verb"] as? String ?? ""
+                    guard !word.isEmpty || !verb.isEmpty else { return nil }
+                    return DictionaryEntry(
+                        grapheme: word.isEmpty ? verb : word,
+                        comment: raw["comment"] as? String ?? "",
+                        isVerb: word.isEmpty,
+                        language: raw["language"] as? String ?? ""
+                    )
+                }
             }
             return entries.compactMap { raw in
                 guard let grapheme = raw["grapheme"] as? String, !grapheme.isEmpty else { return nil }
@@ -79,6 +107,10 @@ final class DictionaryStore: @unchecked Sendable {
         try queue.sync {
             var serialized: [[String: Any]] = []
             for entry in entries {
+                if type == .accents {
+                    serialized.append(Self.accentObject(entry))
+                    continue
+                }
                 var raw: [String: Any] = [
                     "grapheme": entry.grapheme,
                     "phoneme": entry.phoneme,
@@ -94,6 +126,29 @@ final class DictionaryStore: @unchecked Sendable {
             let data = try JSONSerialization.data(withJSONObject: root, options: [.prettyPrinted, .sortedKeys])
             try data.write(to: fileURL(for: type), options: .atomic)
         }
+    }
+
+    /// One accent lexicon entry as the engine reads it.
+    static func accentObject(_ entry: DictionaryEntry) -> [String: Any] {
+        var raw: [String: Any] = [entry.isVerb ? "verb" : "word": entry.grapheme]
+        if !entry.language.isEmpty {
+            raw["language"] = entry.language
+        }
+        if !entry.comment.isEmpty {
+            raw["comment"] = entry.comment
+        }
+        return raw
+    }
+
+    /// A one-entry accent lexicon, for the engine's check before an entry
+    /// is saved (`LaprdusEngine.checkAccentLexicon`).
+    static func accentLexicon(of entry: DictionaryEntry) -> String {
+        let root: [String: Any] = ["entries": [accentObject(entry)]]
+        guard let data = try? JSONSerialization.data(withJSONObject: root),
+              let json = String(data: data, encoding: .utf8) else {
+            return "{\"entries\":[]}"
+        }
+        return json
     }
 
     /// Current state of the user dictionaries, used to detect edits made in
@@ -112,7 +167,7 @@ final class DictionaryStore: @unchecked Sendable {
             stamps.append("\(name)-\(modified)-\(size)")
             return true
         }
-        for type in DictionaryType.allCases where stamp(of: fileURL(for: type), as: type.rawValue) {
+        for type in DictionaryType.allCases where type != .accents && stamp(of: fileURL(for: type), as: type.rawValue) {
             urls[type] = fileURL(for: type)
         }
         let accents = accentLexiconURL
@@ -127,7 +182,8 @@ final class DictionaryStore: @unchecked Sendable {
 /// changes whenever one of the files does. Comparing stamps is what lets the
 /// engine reload dictionaries only when they actually changed.
 struct DictionaryState: Equatable, Sendable {
-    /// The user dictionary files that exist on disk.
+    /// The user dictionary files that exist on disk (never `.accents`,
+    /// which is `accentLexiconURL`).
     let urls: [DictionaryType: URL]
     /// The user's accent lexicon, if the file exists.
     let accentLexiconURL: URL?

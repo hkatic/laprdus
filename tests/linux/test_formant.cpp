@@ -1488,6 +1488,30 @@ TEST_CASE("Croatian sat and rad distinguish case accents", "[formant][text]") {
     REQUIRE(speak(engine.handle, u8"o radu") == speak(engine.handle, u8"o rádu"));
 }
 
+TEST_CASE("Accent lexicon entries can be checked without an engine", "[formant][lexicon]") {
+    // What the dictionary editors call before saving an entry: the same
+    // parser as the load, with the reason of the first rejection.
+    char message[256];
+    REQUIRE(laprdus_check_accent_lexicon(R"({"entries":[{"word":"kontr'o:l*"}]})", 0, message, sizeof(message)) == 0);
+    REQUIRE(std::string(message).empty());
+    REQUIRE(laprdus_check_accent_lexicon(R"({"entries":[{"verb":"ur'e:d=i<p"},{"verb":"dijel:i","language":"hr"}]})", 0, message, sizeof(message)) == 0);
+    REQUIRE(laprdus_check_accent_lexicon(R"({"entries":[{"word":"sign'a:l|a|u|om|e|i|ima"}]})", 0, nullptr, 0) == 0);
+
+    // No stress mark at all
+    REQUIRE(laprdus_check_accent_lexicon(R"({"entries":[{"word":"kontrola"}]})", 0, message, sizeof(message)) == 1);
+    REQUIRE(std::string(message).find("kontrola") == 0);
+    // Unknown language, two bad entries counted
+    REQUIRE(laprdus_check_accent_lexicon(R"({"entries":[{"word":"k'ontrola","language":"de"},{"verb":"uredi"}]})", 0, message, sizeof(message)) == 2);
+    REQUIRE(std::string(message).find("language") != std::string::npos);
+    // Neither word nor verb
+    REQUIRE(laprdus_check_accent_lexicon(R"({"entries":[{"comment":"x"}]})", 0, message, sizeof(message)) == 1);
+    // A buffer too small for the reason is cut, never overrun, and stays a string
+    REQUIRE(laprdus_check_accent_lexicon(R"({"entries":[{"word":"kontrola"}]})", 0, message, 4) == 1);
+    REQUIRE(std::strlen(message) == 3);
+    REQUIRE(laprdus_check_accent_lexicon(nullptr, 0, message, sizeof(message)) == -1);
+    REQUIRE(std::string(message).empty());
+}
+
 TEST_CASE("Croatian pobjednik and dvadeset families follow dictionary accents", "[formant][text]") {
     // HJP pòbjednīk/pòbjedničkī; Mrežnik dvádesēt/dvádesētī/dvadesétak;
     // Školski rječnik dvádesetero. Croatian omits unstressed lengths.

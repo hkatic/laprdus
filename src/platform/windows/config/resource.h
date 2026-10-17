@@ -100,6 +100,18 @@
 #define IDC_ENTRY_CASE_SENSITIVE    2107
 #define IDC_ENTRY_WHOLE_WORD        2108
 
+// Accent Lexicon Entry Editor Dialog
+#define IDD_ACCENT_ENTRY_DIALOG     202
+#define IDC_ACCENT_ENTRY_LABEL      2201
+#define IDC_ACCENT_ENTRY_EDIT       2202
+#define IDC_ACCENT_KIND_LABEL       2203
+#define IDC_ACCENT_KIND_COMBO       2204
+#define IDC_ACCENT_LANG_LABEL       2205
+#define IDC_ACCENT_LANG_COMBO       2206
+#define IDC_ACCENT_COMMENT_LABEL    2207
+#define IDC_ACCENT_COMMENT_EDIT     2208
+#define IDC_ACCENT_HELP             2209
+
 // String IDs
 #define IDS_APP_TITLE           1100
 #define IDS_GROUP_VOICE         1101
@@ -177,5 +189,24 @@
 #define IDS_YES                     1234
 #define IDS_NO                      1235
 #define IDS_GROUP_DICTIONARIES      1236
+// Accent lexicon (accents.json)
+#define IDS_DICT_TYPE_ACCENTS       1240
+#define IDS_DICT_COL_ENTRY          1241
+#define IDS_DICT_COL_KIND           1242
+#define IDS_DICT_COL_LANGUAGE       1243
+#define IDS_ACCENT_KIND_WORD        1244
+#define IDS_ACCENT_KIND_VERB        1245
+#define IDS_ACCENT_LANG_ALL         1246
+#define IDS_ACCENT_LANG_HR          1247
+#define IDS_ACCENT_LANG_SR          1248
+#define IDS_ACCENT_LANG_BS          1249
+#define IDS_ACCENT_DIALOG_TITLE_ADD 1250
+#define IDS_ACCENT_DIALOG_TITLE_EDIT 1251
+#define IDS_ACCENT_ENTRY_LABEL      1252
+#define IDS_ACCENT_KIND_LABEL       1253
+#define IDS_ACCENT_LANG_LABEL       1254
+#define IDS_ACCENT_HELP             1255
+#define IDS_ERROR_ACCENT_EMPTY      1256
+#define IDS_ERROR_ACCENT_INVALID    1257  // "%s" = the parser's reason
 
 #endif // LAPRDUS_CONFIG_RESOURCE_H

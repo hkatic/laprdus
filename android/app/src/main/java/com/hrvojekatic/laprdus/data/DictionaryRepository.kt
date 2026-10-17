@@ -29,7 +29,13 @@ enum class DictionaryType(val fileName: String) {
     /** Spelling dictionary for character-by-character reading (spelling.json) */
     SPELLING("spelling.json"),
     /** Emoji dictionary for emoji to text conversion (emoji.json) */
-    EMOJI("emoji.json")
+    EMOJI("emoji.json"),
+    /**
+     * Accent lexicon: word stress, length and tone in the notation of the
+     * engine's built-in lexicon (accents.json). Its entries are words or
+     * verbs, not replacements; see [DictionaryEntry.verb].
+     */
+    ACCENTS("accents.json")
 }
 
 /**
@@ -47,7 +53,15 @@ data class DictionaryEntry(
     /** Whether to match whole words only */
     val wholeWord: Boolean = true,
     /** Optional comment explaining this entry */
-    val comment: String = ""
+    val comment: String = "",
+    /**
+     * Accent lexicon only: the entry (kept in [grapheme], with [phoneme]
+     * empty) is a "verb" (`ur'e:d=i<p`, `dijel:i`) rather than a "word"
+     * (`kontr'o:l*`, `sign'a:l|a|u|om`).
+     */
+    val verb: Boolean = false,
+    /** Accent lexicon only: "hr", "sr" or "bs" limits the entry to one language; "" is every language. */
+    val language: String = ""
 )
 
 /**
@@ -155,7 +169,7 @@ class DictionaryRepository internal constructor(
 
                 try {
                     val json = file.readText(Charsets.UTF_8)
-                    val entries = DictionaryJson.parse(json)
+                    val entries = DictionaryJson.parse(json, type)
                     _entries.value = entries
                     Result.success(entries)
                 } catch (e: CancellationException) {
@@ -231,7 +245,7 @@ class DictionaryRepository internal constructor(
      * Save dictionary entries to file atomically.
      */
     private fun saveDictionary(type: DictionaryType, entries: List<DictionaryEntry>) {
-        AtomicFiles.writeTextAtomically(getDictionaryFile(type), DictionaryJson.generate(entries))
+        AtomicFiles.writeTextAtomically(getDictionaryFile(type), DictionaryJson.generate(entries, type))
         _changes.update { it + 1 }
     }
 }

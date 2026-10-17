@@ -1,5 +1,6 @@
 package com.hrvojekatic.laprdus.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,7 +19,11 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -43,17 +48,25 @@ import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.hrvojekatic.laprdus.R
 import com.hrvojekatic.laprdus.data.DictionaryEntry
+import com.hrvojekatic.laprdus.data.DictionaryJson
+import com.hrvojekatic.laprdus.data.DictionaryType
+import com.hrvojekatic.laprdus.tts.LaprdusTTS
 import java.util.UUID
 
 /**
- * Screen for adding or editing a dictionary entry.
+ * Screen for adding or editing a dictionary entry. The accent lexicon
+ * ([DictionaryType.ACCENTS]) has a form of its own: the entry in the
+ * engine's notation, its kind (word or verb), its language and a comment;
+ * the engine's parser checks the entry before it is saved.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DictionaryEditScreen(
+    type: DictionaryType,
     entry: DictionaryEntry?,
     onNavigateBack: () -> Unit,
     onSave: (DictionaryEntry) -> Unit,
@@ -61,6 +74,7 @@ fun DictionaryEditScreen(
     onDuplicate: (DictionaryEntry) -> Unit
 ) {
     val isEdit = entry != null
+    val isAccents = type == DictionaryType.ACCENTS
 
     // Form state
     var grapheme by remember { mutableStateOf(entry?.grapheme ?: "") }
@@ -68,10 +82,14 @@ fun DictionaryEditScreen(
     var comment by remember { mutableStateOf(entry?.comment ?: "") }
     var caseSensitive by remember { mutableStateOf(entry?.caseSensitive ?: false) }
     var wholeWord by remember { mutableStateOf(entry?.wholeWord ?: true) }
+    var verb by remember { mutableStateOf(entry?.verb ?: false) }
+    var language by remember { mutableStateOf(entry?.language ?: "") }
 
     // Validation state
     var graphemeError by remember { mutableStateOf(false) }
     var phonemeError by remember { mutableStateOf(false) }
+    // The engine's reason for refusing an accent entry, or null
+    var accentError by remember { mutableStateOf<String?>(null) }
 
     // Delete confirmation dialog
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -132,6 +150,63 @@ fun DictionaryEditScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            if (isAccents) {
+                AccentEntryForm(
+                    text = grapheme,
+                    onTextChange = {
+                        grapheme = it
+                        graphemeError = false
+                        accentError = null
+                    },
+                    textError = when {
+                        graphemeError -> stringResource(R.string.dict_error_empty_fields)
+                        accentError != null -> stringResource(R.string.dict_accent_error_invalid, accentError ?: "")
+                        else -> null
+                    },
+                    verb = verb,
+                    onVerbChange = {
+                        verb = it
+                        accentError = null
+                    },
+                    language = language,
+                    onLanguageChange = { language = it },
+                    comment = comment,
+                    onCommentChange = { comment = it }
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                Button(
+                    onClick = {
+                        val text = grapheme.trim()
+                        graphemeError = text.isBlank()
+                        if (graphemeError) return@Button
+                        val newEntry = DictionaryEntry(
+                            id = entry?.id ?: UUID.randomUUID().toString(),
+                            grapheme = text,
+                            phoneme = "",
+                            verb = verb,
+                            language = language,
+                            comment = comment.trim()
+                        )
+                        // The engine's own parser decides whether the entry
+                        // is well formed, so a typo is caught here and not
+                        // silently skipped when the file is loaded.
+                        val reason = LaprdusTTS.checkAccentLexicon(DictionaryJson.accentLexiconOf(newEntry))
+                        if (reason != null) {
+                            accentError = reason
+                            return@Button
+                        }
+                        onSave(newEntry)
+                        onNavigateBack()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.dict_save))
+                }
+                return@Column
+            }
+
             // Original string field
             OutlinedTextField(
                 value = grapheme,
@@ -289,5 +364,134 @@ fun DictionaryEditScreen(
                 }
             }
         )
+    }
+}
+
+/**
+ * The fields of an accent lexicon entry: the entry text, its kind (word or
+ * verb), its language and a comment, with a reminder of the notation.
+ */
+@Composable
+private fun AccentEntryForm(
+    text: String,
+    onTextChange: (String) -> Unit,
+    textError: String?,
+    verb: Boolean,
+    onVerbChange: (Boolean) -> Unit,
+    language: String,
+    onLanguageChange: (String) -> Unit,
+    comment: String,
+    onCommentChange: (String) -> Unit
+) {
+    OutlinedTextField(
+        value = text,
+        onValueChange = onTextChange,
+        label = { Text(stringResource(R.string.dict_accent_entry)) },
+        isError = textError != null,
+        supportingText = if (textError != null) {
+            { Text(textError) }
+        } else null,
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth()
+    )
+
+    val wordLabel = stringResource(R.string.dict_accent_kind_word)
+    val verbLabel = stringResource(R.string.dict_accent_kind_verb)
+    AccentDropdown(
+        label = stringResource(R.string.dict_accent_kind),
+        selectLabel = stringResource(R.string.cd_dict_accent_kind_dropdown_desc),
+        options = listOf(false to wordLabel, true to verbLabel),
+        selected = verb,
+        onSelected = onVerbChange
+    )
+
+    AccentDropdown(
+        label = stringResource(R.string.dict_accent_language),
+        selectLabel = stringResource(R.string.cd_dict_accent_language_dropdown_desc),
+        options = listOf("", "hr", "sr", "bs").map { it to accentLanguageName(it) },
+        selected = language,
+        onSelected = onLanguageChange
+    )
+
+    OutlinedTextField(
+        value = comment,
+        onValueChange = onCommentChange,
+        label = { Text(stringResource(R.string.dict_entry_comment)) },
+        singleLine = false,
+        maxLines = 3,
+        modifier = Modifier.fillMaxWidth()
+    )
+
+    Text(
+        text = stringResource(R.string.dict_accent_help),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+}
+
+/**
+ * A labeled dropdown announced to TalkBack as one control with its label
+ * and current value (the same pattern as the dictionary type selector).
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun <T> AccentDropdown(
+    label: String,
+    selectLabel: String,
+    options: List<Pair<T, String>>,
+    selected: T,
+    onSelected: (T) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedLabel = options.firstOrNull { it.first == selected }?.second ?: ""
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {
+                isTraversalGroup = true
+                contentDescription = label
+                stateDescription = selectedLabel
+            }
+            .clickable(
+                role = Role.DropdownList,
+                onClickLabel = selectLabel
+            ) { expanded = true },
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = it },
+            modifier = Modifier
+                .weight(1f)
+                .clearAndSetSemantics {}
+        ) {
+            OutlinedTextField(
+                value = selectedLabel,
+                onValueChange = {},
+                readOnly = true,
+                singleLine = true,
+                label = { Text(label) },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                    .clearAndSetSemantics {}
+            )
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                options.forEach { (value, text) ->
+                    DropdownMenuItem(
+                        text = { Text(text) },
+                        onClick = {
+                            onSelected(value)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
     }
 }

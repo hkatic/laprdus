@@ -39,8 +39,9 @@ internal object UserDictionaries {
             engine.clearAccentLexicon()
         }
 
-        // Every dictionary type is saved in the same entry format.
+        // The other dictionary types are saved in the same entry format.
         for (type in DictionaryType.entries) {
+            if (type == DictionaryType.ACCENTS) continue
             val file = File(dictionaryDir, type.fileName)
             if (!file.isFile) {
                 if (BuildConfig.DEBUG) Log.d(TAG, "No user ${type.fileName} found")
@@ -58,6 +59,7 @@ internal object UserDictionaries {
                         )
                         DictionaryType.SPELLING -> engine.addSpellingEntry(entry.grapheme, entry.phoneme)
                         DictionaryType.EMOJI -> engine.addEmojiEntry(entry.grapheme, entry.phoneme)
+                        DictionaryType.ACCENTS -> continue
                     }
                     count++
                 }

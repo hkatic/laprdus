@@ -20,6 +20,19 @@ enum LaprdusEngineError: LocalizedError {
 
 final class LaprdusEngine: @unchecked Sendable {
 
+    /// Checks accent lexicon JSON (a whole file or one entry wrapped as
+    /// `{"entries":[...]}`) with the engine's own parser, without loading it
+    /// anywhere; the dictionary editor calls this before saving. Returns nil
+    /// when every entry is accepted, otherwise the reason the first rejected
+    /// entry was refused (English, from the engine).
+    static func checkAccentLexicon(_ json: String) -> String? {
+        var message = [CChar](repeating: 0, count: 512)
+        let rejected = laprdus_check_accent_lexicon(json, 0, &message, message.count)
+        guard rejected != 0 else { return nil }
+        let reason = String(cString: message)
+        return reason.isEmpty ? "rejected" : reason
+    }
+
     struct AudioChunk: Sendable {
         let samples: [Int16]
         let sampleRate: Double

@@ -129,6 +129,28 @@ BEGIN
 END
 
 // =============================================================================
+// Accent Lexicon Entry Editor Dialog
+// =============================================================================
+
+IDD_ACCENT_ENTRY_DIALOG DIALOGEX 0, 0, 300, 226
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Dodaj unos"
+FONT 8, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    LTEXT           "", IDC_ACCENT_ENTRY_LABEL, 7, 10, 286, 8
+    EDITTEXT        IDC_ACCENT_ENTRY_EDIT, 7, 22, 286, 14, ES_AUTOHSCROLL
+    LTEXT           "", IDC_ACCENT_KIND_LABEL, 7, 42, 130, 8
+    COMBOBOX        IDC_ACCENT_KIND_COMBO, 7, 54, 130, 80, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "", IDC_ACCENT_LANG_LABEL, 150, 42, 143, 8
+    COMBOBOX        IDC_ACCENT_LANG_COMBO, 150, 54, 143, 80, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "", IDC_ACCENT_COMMENT_LABEL, 7, 74, 286, 8
+    EDITTEXT        IDC_ACCENT_COMMENT_EDIT, 7, 86, 286, 14, ES_AUTOHSCROLL
+    LTEXT           "", IDC_ACCENT_HELP, 7, 108, 286, 84
+    DEFPUSHBUTTON   "U redu", IDOK, 186, 203, 50, 14, WS_TABSTOP
+    PUSHBUTTON      "Odustani", IDCANCEL, 243, 203, 50, 14, WS_TABSTOP
+END
+
+// =============================================================================
 // Neutral Strings (Default - Croatian)
 // This is the fallback when no language-specific match is found
 // =============================================================================
@@ -206,6 +228,25 @@ BEGIN
     IDS_YES                     "Da"
     IDS_NO                      "Ne"
     IDS_GROUP_DICTIONARIES      "Rječnici"
+    // Accent lexicon (accents.json)
+    IDS_DICT_TYPE_ACCENTS       "Naglasni rječnik"
+    IDS_DICT_COL_ENTRY          "Unos"
+    IDS_DICT_COL_KIND           "Vrsta"
+    IDS_DICT_COL_LANGUAGE       "Jezik"
+    IDS_ACCENT_KIND_WORD        "Riječ"
+    IDS_ACCENT_KIND_VERB        "Glagol"
+    IDS_ACCENT_LANG_ALL         "Svi jezici"
+    IDS_ACCENT_LANG_HR          "Hrvatski"
+    IDS_ACCENT_LANG_SR          "Srpski"
+    IDS_ACCENT_LANG_BS          "Bosanski"
+    IDS_ACCENT_DIALOG_TITLE_ADD "Dodaj unos u naglasni rječnik"
+    IDS_ACCENT_DIALOG_TITLE_EDIT "Uredi unos u naglasnom rječniku"
+    IDS_ACCENT_ENTRY_LABEL      "Unos (riječ, osnova, oblici ili glagol s naglaskom):"
+    IDS_ACCENT_KIND_LABEL       "Vrsta unosa:"
+    IDS_ACCENT_LANG_LABEL       "Jezik:"
+    IDS_ACCENT_HELP             "Znakovi: ' ispred naglašenog samoglasnika (ton se bira sam), ^ silazni naglasak, / uzlazni naglasak, : iza dugog samoglasnika, * na kraju osnove (kontr'o:l* vrijedi za kontróla, kontróle, kontrólom), | između oblika (sign'a:l|a|u|om). Glagol: cijela osnova, znak = i vrsta (ur'e:d=i<p za uréditi, urédim), ili korijen s dugim ije (dijel:i za podijeliti)."
+    IDS_ERROR_ACCENT_EMPTY      "Unos ne smije biti prazan."
+    IDS_ERROR_ACCENT_INVALID    "Unos nije ispravan: %s"
 END
 
 // =============================================================================
@@ -285,6 +326,25 @@ BEGIN
     IDS_YES                     "Da"
     IDS_NO                      "Ne"
     IDS_GROUP_DICTIONARIES      "Rječnici"
+    // Accent lexicon (accents.json)
+    IDS_DICT_TYPE_ACCENTS       "Naglasni rječnik"
+    IDS_DICT_COL_ENTRY          "Unos"
+    IDS_DICT_COL_KIND           "Vrsta"
+    IDS_DICT_COL_LANGUAGE       "Jezik"
+    IDS_ACCENT_KIND_WORD        "Riječ"
+    IDS_ACCENT_KIND_VERB        "Glagol"
+    IDS_ACCENT_LANG_ALL         "Svi jezici"
+    IDS_ACCENT_LANG_HR          "Hrvatski"
+    IDS_ACCENT_LANG_SR          "Srpski"
+    IDS_ACCENT_LANG_BS          "Bosanski"
+    IDS_ACCENT_DIALOG_TITLE_ADD "Dodaj unos u naglasni rječnik"
+    IDS_ACCENT_DIALOG_TITLE_EDIT "Uredi unos u naglasnom rječniku"
+    IDS_ACCENT_ENTRY_LABEL      "Unos (riječ, osnova, oblici ili glagol s naglaskom):"
+    IDS_ACCENT_KIND_LABEL       "Vrsta unosa:"
+    IDS_ACCENT_LANG_LABEL       "Jezik:"
+    IDS_ACCENT_HELP             "Znakovi: ' ispred naglašenog samoglasnika (ton se bira sam), ^ silazni naglasak, / uzlazni naglasak, : iza dugog samoglasnika, * na kraju osnove (kontr'o:l* vrijedi za kontróla, kontróle, kontrólom), | između oblika (sign'a:l|a|u|om). Glagol: cijela osnova, znak = i vrsta (ur'e:d=i<p za uréditi, urédim), ili korijen s dugim ije (dijel:i za podijeliti)."
+    IDS_ERROR_ACCENT_EMPTY      "Unos ne smije biti prazan."
+    IDS_ERROR_ACCENT_INVALID    "Unos nije ispravan: %s"
 END
 
 // =============================================================================
@@ -364,6 +424,25 @@ BEGIN
     IDS_YES                     "Da"
     IDS_NO                      "Ne"
     IDS_GROUP_DICTIONARIES      "Rečnici"
+    // Accent lexicon (accents.json)
+    IDS_DICT_TYPE_ACCENTS       "Naglasni rečnik"
+    IDS_DICT_COL_ENTRY          "Unos"
+    IDS_DICT_COL_KIND           "Vrsta"
+    IDS_DICT_COL_LANGUAGE       "Jezik"
+    IDS_ACCENT_KIND_WORD        "Reč"
+    IDS_ACCENT_KIND_VERB        "Glagol"
+    IDS_ACCENT_LANG_ALL         "Svi jezici"
+    IDS_ACCENT_LANG_HR          "Hrvatski"
+    IDS_ACCENT_LANG_SR          "Srpski"
+    IDS_ACCENT_LANG_BS          "Bosanski"
+    IDS_ACCENT_DIALOG_TITLE_ADD "Dodaj unos u naglasni rečnik"
+    IDS_ACCENT_DIALOG_TITLE_EDIT "Uredi unos u naglasnom rečniku"
+    IDS_ACCENT_ENTRY_LABEL      "Unos (reč, osnova, oblici ili glagol s naglaskom):"
+    IDS_ACCENT_KIND_LABEL       "Vrsta unosa:"
+    IDS_ACCENT_LANG_LABEL       "Jezik:"
+    IDS_ACCENT_HELP             "Znakovi: ' ispred naglašenog samoglasnika (ton se bira sam), ^ silazni naglasak, / uzlazni naglasak, : iza dugog samoglasnika, * na kraju osnove (kontr'o:l* važi za kontróla, kontróle, kontrólom), | između oblika (sign'a:l|a|u|om). Glagol: cela osnova, znak = i vrsta (ur'e:d=i<p za uréditi, urédim), ili koren s dugim ije (dijel:i za podijeliti)."
+    IDS_ERROR_ACCENT_EMPTY      "Unos ne sme biti prazan."
+    IDS_ERROR_ACCENT_INVALID    "Unos nije ispravan: %s"
 END
 
 // =============================================================================
@@ -443,4 +522,23 @@ BEGIN
     IDS_YES                     "Yes"
     IDS_NO                      "No"
     IDS_GROUP_DICTIONARIES      "Dictionaries"
+    // Accent lexicon (accents.json)
+    IDS_DICT_TYPE_ACCENTS       "Accent dictionary"
+    IDS_DICT_COL_ENTRY          "Entry"
+    IDS_DICT_COL_KIND           "Kind"
+    IDS_DICT_COL_LANGUAGE       "Language"
+    IDS_ACCENT_KIND_WORD        "Word"
+    IDS_ACCENT_KIND_VERB        "Verb"
+    IDS_ACCENT_LANG_ALL         "All languages"
+    IDS_ACCENT_LANG_HR          "Croatian"
+    IDS_ACCENT_LANG_SR          "Serbian"
+    IDS_ACCENT_LANG_BS          "Bosnian"
+    IDS_ACCENT_DIALOG_TITLE_ADD "Add accent dictionary entry"
+    IDS_ACCENT_DIALOG_TITLE_EDIT "Edit accent dictionary entry"
+    IDS_ACCENT_ENTRY_LABEL      "Entry (a word, stem, list of forms or verb with its accent):"
+    IDS_ACCENT_KIND_LABEL       "Kind of entry:"
+    IDS_ACCENT_LANG_LABEL       "Language:"
+    IDS_ACCENT_HELP             "Marks: ' before the stressed vowel (the tone is chosen for you), ^ falling accent, / rising accent, : after a long vowel, * at the end of a stem (kontr'o:l* covers kontróla, kontróle, kontrólom), | between forms (sign'a:l|a|u|om). Verb: the whole stem, = and the class (ur'e:d=i<p for uréditi, urédim), or a root with a long ije (dijel:i for podijeliti)."
+    IDS_ERROR_ACCENT_EMPTY      "The entry cannot be empty."
+    IDS_ERROR_ACCENT_INVALID    "The entry is not valid: %s"
 END

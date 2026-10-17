@@ -1763,6 +1763,134 @@
           }
         }
       }
+    },
+    "Accent Dictionary" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Naglasni rječnik"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Naglasni rečnik"
+          }
+        }
+      }
+    },
+    "Entry (a word, stem, list of forms or verb with its accent)" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unos (riječ, osnova, oblici ili glagol s naglaskom)"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unos (reč, osnova, oblici ili glagol s naglaskom)"
+          }
+        }
+      }
+    },
+    "Kind of entry" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrsta unosa"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrsta unosa"
+          }
+        }
+      }
+    },
+    "Word" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Riječ"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reč"
+          }
+        }
+      }
+    },
+    "Verb" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glagol"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glagol"
+          }
+        }
+      }
+    },
+    "All languages" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svi jezici"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svi jezici"
+          }
+        }
+      }
+    },
+    "The entry is not valid: %@" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unos nije ispravan: %@"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unos nije ispravan: %@"
+          }
+        }
+      }
+    },
+    "Marks: ' before the stressed vowel (the tone is chosen for you), ^ falling accent, / rising accent, : after a long vowel, * at the end of a stem (kontr'o:l* covers kontróla, kontróle, kontrólom), | between forms (sign'a:l|a|u|om). Verb: the whole stem, = and the class (ur'e:d=i<p for uréditi, urédim), or a root with a long ije (dijel:i for podijeliti)." : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Znakovi: ' ispred naglašenog samoglasnika (ton se bira sam), ^ silazni naglasak, / uzlazni naglasak, : iza dugog samoglasnika, * na kraju osnove (kontr'o:l* vrijedi za kontróla, kontróle, kontrólom), | između oblika (sign'a:l|a|u|om). Glagol: cijela osnova, znak = i vrsta (ur'e:d=i<p za uréditi, urédim), ili korijen s dugim ije (dijel:i za podijeliti)."
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Znakovi: ' ispred naglašenog samoglasnika (ton se bira sam), ^ silazni naglasak, / uzlazni naglasak, : iza dugog samoglasnika, * na kraju osnove (kontr'o:l* važi za kontróla, kontróle, kontrólom), | između oblika (sign'a:l|a|u|om). Glagol: cela osnova, znak = i vrsta (ur'e:d=i<p za uréditi, urédim), ili koren s dugim ije (dijel:i za podijeliti)."
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

@@ -831,6 +831,27 @@ LAPRDUS_API void LAPRDUS_CALL laprdus_clear_accent_lexicon(LaprdusHandle handle)
 LAPRDUS_API const char* LAPRDUS_CALL laprdus_get_accent_lexicon_report(LaprdusHandle handle);
 
 /**
+ * Check accent lexicon JSON without loading it anywhere, for an editor that
+ * wants to refuse a malformed entry before it is saved. The content is a whole
+ * file or one entry wrapped the same way: {"entries":[{"word":"kontr'o:l*"}]}.
+ * Needs no engine handle.
+ * @param json_content JSON content as a string.
+ * @param length Length of the content (0 for null-terminated).
+ * @param message Receives the reason the first rejected entry was refused
+ *        (UTF-8, as in laprdus_get_accent_lexicon_report()); "" when every
+ *        entry was accepted. May be NULL.
+ * @param message_size Size of the message buffer.
+ * @return The number of rejected entries (0 when every entry was accepted),
+ *         or -1 when json_content is NULL.
+ */
+LAPRDUS_API int LAPRDUS_CALL laprdus_check_accent_lexicon(
+    const char* json_content,
+    size_t length,
+    char* message,
+    size_t message_size
+);
+
+/**
  * Enable or disable emoji processing.
  * When enabled, emojis are converted to their text representations.
  * Disabled by default on all platforms.

@@ -2078,7 +2078,12 @@ verb scan stays short. The lexicon lives in the engine, survives voice
 changes, and is replaced wholesale by the next load, so a removed entry is
 really gone. `laprdus_load_user_config()` and every platform's user-dictionary
 loader pick the file up; the C API is `laprdus_load_accent_lexicon()`,
-`laprdus_load_accent_lexicon_from_memory()`, `laprdus_clear_accent_lexicon()`.
+`laprdus_load_accent_lexicon_from_memory()`, `laprdus_clear_accent_lexicon()`,
+and `laprdus_check_accent_lexicon()` runs the parser over JSON without an
+engine, for the dictionary editors of the Windows Configurator, the Android
+app and the Apple app, which offer the file as the Accent dictionary (entry,
+word or verb, language, comment) and refuse an entry the parser would skip,
+with its reason.
 Suffix rules (the next layer down) remain code: most of what they would say
 can be written as a stem entry.
 

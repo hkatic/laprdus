@@ -19,26 +19,35 @@ namespace laprdus {
 enum class DictionaryType {
     Main = 0,      // Main user pronunciation dictionary (user.json)
     Spelling = 1,  // Spelling dictionary for character pronunciation (spelling.json)
-    Emoji = 2      // Emoji dictionary (emoji.json)
+    Emoji = 2,     // Emoji dictionary (emoji.json)
+    Accents = 3    // Accent lexicon: word stress, length and tone (accents.json)
 };
 
 /**
  * User dictionary entry structure.
  * Matches the JSON format used in dictionary files.
+ *
+ * An entry of the accent lexicon (accents.json) keeps its text (a word, a
+ * stem or a paradigm in the notation of the built-in lexicon, or a verb) in
+ * grapheme, with phoneme empty; verb tells which of the two JSON keys it is
+ * saved under, and language ("hr", "sr", "bs" or "" for every language)
+ * limits it to one language.
  */
 struct UserDictionaryEntry {
-    std::wstring grapheme;      // Original text to match
+    std::wstring grapheme;      // Original text to match (accent lexicon: the entry)
     std::wstring phoneme;       // Replacement/pronunciation
     std::wstring comment;       // Optional comment
     bool caseSensitive = false; // Case-sensitive matching
     bool wholeWord = true;      // Whole word matching only
+    bool verb = false;          // Accent lexicon: a "verb" entry, not a "word"
+    std::wstring language;      // Accent lexicon: "hr", "sr", "bs" or "" (all)
 };
 
 /**
  * DictionaryDialog - Dialog for viewing and managing dictionary entries.
  *
  * Features:
- * - Dictionary type selector (Main, Spelling, Emoji)
+ * - Dictionary type selector (Main, Spelling, Emoji, Accents)
  * - ListView showing all entries
  * - Add, Edit, Duplicate, Delete buttons
  * - Loads/saves JSON files from user config directory
@@ -70,7 +79,9 @@ private:
     void InitializeControls(HWND hDlg);
     void InitializeDictionaryTypeCombo(HWND hDlg);
     void InitializeListView(HWND hDlg);
+    void SetupListViewColumns(HWND hDlg);
     void UpdateButtonStates(HWND hDlg);
+    bool IsAccentLexicon() const { return m_currentType == DictionaryType::Accents; }
 
     // Dictionary operations
     bool LoadDictionary(DictionaryType type);
@@ -86,6 +97,7 @@ private:
 
     // Helpers
     std::wstring GetDictionaryPath(DictionaryType type);
+    std::wstring AccentLanguageName(const std::wstring& code);
     std::wstring LoadLocalizedString(UINT id);
     void SetControlText(HWND hDlg, int ctrlId, UINT stringId);
     int GetSelectedIndex(HWND hListView);
@@ -158,6 +170,57 @@ private:
     bool IsDarkModeEnabled();
 
     // Member variables
+    HINSTANCE m_hInstance = nullptr;
+    HWND m_hDlg = nullptr;
+    bool m_isEdit = false;
+    bool m_darkMode = false;
+    UserDictionaryEntry m_entry;
+};
+
+/**
+ * AccentEntryDialog - Dialog for adding/editing an accent lexicon entry.
+ *
+ * Features:
+ * - Entry text in the notation of the built-in lexicon
+ * - Kind (word or verb) and language (all, hr, sr, bs) selectors
+ * - Comment text field, a short reminder of the notation
+ * - The entry is checked by the engine's own parser before it is accepted
+ */
+class AccentEntryDialog {
+public:
+    AccentEntryDialog();
+    ~AccentEntryDialog();
+
+    /**
+     * Show the entry editor dialog.
+     * @param hInstance Application instance
+     * @param hParent Parent window handle
+     * @param entry Existing entry to edit (nullptr for new entry)
+     * @param isEdit True if editing, false if adding
+     * @return IDOK if entry was saved, IDCANCEL otherwise
+     */
+    INT_PTR Show(HINSTANCE hInstance, HWND hParent,
+                 const UserDictionaryEntry* entry = nullptr,
+                 bool isEdit = false);
+
+    /** The entry data after the dialog closes with IDOK. */
+    const UserDictionaryEntry& GetEntry() const { return m_entry; }
+
+private:
+    static INT_PTR CALLBACK DialogProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+
+    INT_PTR OnInitDialog(HWND hDlg);
+    INT_PTR OnCommand(HWND hDlg, WPARAM wParam, LPARAM lParam);
+    INT_PTR OnCtlColor(HWND hDlg, UINT msg, HDC hdc, HWND hCtrl);
+
+    void InitializeControls(HWND hDlg);
+    bool ValidateAndCollect(HWND hDlg);
+
+    std::wstring LoadLocalizedString(UINT id);
+    void SetControlText(HWND hDlg, int ctrlId, UINT stringId);
+
+    void ApplyDarkMode(HWND hDlg);
+
     HINSTANCE m_hInstance = nullptr;
     HWND m_hDlg = nullptr;
     bool m_isEdit = false;

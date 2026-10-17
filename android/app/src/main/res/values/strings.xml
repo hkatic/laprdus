@@ -165,6 +165,18 @@
     <string name="dict_action_duplicate">Duplicate</string>
     <string name="dict_action_delete">Delete</string>
     <string name="dict_error_empty_fields">This field is required</string>
+    <!-- Accent dictionary (accents.json): word stress, length and tone -->
+    <string name="dict_type_accents">Accent Dictionary</string>
+    <string name="dict_accent_entry">Entry (a word, stem, list of forms or verb with its accent)</string>
+    <string name="dict_accent_kind">Kind of entry</string>
+    <string name="dict_accent_kind_word">Word</string>
+    <string name="dict_accent_kind_verb">Verb</string>
+    <string name="dict_accent_language">Language</string>
+    <string name="dict_accent_language_all">All languages</string>
+    <string name="dict_accent_help">Marks: \' before the stressed vowel (the tone is chosen for you), ^ falling accent, / rising accent, : after a long vowel, * at the end of a stem (kontr\'o:l* covers kontróla, kontróle, kontrólom), | between forms (sign\'a:l|a|u|om). Verb: the whole stem, = and the class (ur\'e:d=i&lt;p for uréditi, urédim), or a root with a long ije (dijel:i for podijeliti).</string>
+    <string name="dict_accent_error_invalid">The entry is not valid: %1$s</string>
+    <string name="cd_dict_accent_kind_dropdown_desc">Select the kind of entry</string>
+    <string name="cd_dict_accent_language_dropdown_desc">Select the language of the entry</string>
 
     <!-- About screen -->
     <string name="category_about">About</string>

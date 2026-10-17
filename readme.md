@@ -232,7 +232,7 @@ Laprdus stores user settings and custom dictionaries in platform-specific locati
 | `user.json` | Custom pronunciation dictionary for words and phrases |
 | `spelling.json` | Character pronunciations for spelling mode |
 | `emoji.json` | Emoji-to-text mappings for emoji reading |
-| `accents.json` | Accent lexicon: word stress, length and tone, as words, stems, paradigms or whole verbs in the notation of the built-in lexicon (`{ "word": "kontr'o:l*" }`, `{ "verb": "ur'e:d=i<p" }`); an optional `"language"` limits an entry to Croatian, Serbian or Bosnian; parsed once at load, so it costs nothing per utterance |
+| `accents.json` | Accent lexicon: word stress, length and tone, as words, stems, paradigms or whole verbs in the notation of the built-in lexicon (`{ "word": "kontr'o:l*" }`, `{ "verb": "ur'e:d=i<p" }`); an optional `"language"` limits an entry to Croatian, Serbian or Bosnian; parsed once at load, so it costs nothing per utterance; edited as the Accent dictionary in the Windows Configurator and the Android and Apple apps |
 
 ### Dictionary Format
 

@@ -164,6 +164,7 @@ fun DictionaryListScreen(
                         ) { entry ->
                             DictionaryEntryItem(
                                 entry = entry,
+                                type = uiState.selectedType,
                                 onClick = { menuEntry = entry }
                             )
                         }
@@ -276,6 +277,7 @@ private fun DictionaryTypeSelector(
         DictionaryType.MAIN -> stringResource(R.string.dict_type_main)
         DictionaryType.SPELLING -> stringResource(R.string.dict_type_spelling)
         DictionaryType.EMOJI -> stringResource(R.string.dict_type_emoji)
+        DictionaryType.ACCENTS -> stringResource(R.string.dict_type_accents)
     }
     val label = stringResource(R.string.dict_type_label)
     val selectTypeLabel = stringResource(R.string.cd_dict_type_dropdown_desc)
@@ -344,25 +346,41 @@ private fun DictionaryTypeSelector(
                         expanded = false
                     }
                 )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.dict_type_accents)) },
+                    onClick = {
+                        onTypeSelected(DictionaryType.ACCENTS)
+                        expanded = false
+                    }
+                )
             }
         }
     }
 }
 
 /**
- * List item for a dictionary entry.
+ * List item for a dictionary entry. An accent lexicon entry shows its kind
+ * and language under the entry instead of a replacement.
  */
 @Composable
 private fun DictionaryEntryItem(
     entry: DictionaryEntry,
+    type: DictionaryType,
     onClick: () -> Unit
 ) {
-    val entryDescription = "${entry.grapheme}, ${entry.phoneme}"
+    val detail = if (type == DictionaryType.ACCENTS) {
+        val kind = stringResource(if (entry.verb) R.string.dict_accent_kind_verb else R.string.dict_accent_kind_word)
+        val language = accentLanguageName(entry.language)
+        if (entry.comment.isEmpty()) "$kind, $language" else "$kind, $language, ${entry.comment}"
+    } else {
+        entry.phoneme
+    }
+    val entryDescription = "${entry.grapheme}, $detail"
     val actionLabel = stringResource(R.string.dict_action_edit)
 
     ListItem(
         headlineContent = { Text(entry.grapheme, modifier = Modifier.clearAndSetSemantics {}) },
-        supportingContent = { Text(entry.phoneme, modifier = Modifier.clearAndSetSemantics {}) },
+        supportingContent = { Text(detail, modifier = Modifier.clearAndSetSemantics {}) },
         modifier = Modifier
             .semantics(mergeDescendants = true) {
                 isTraversalGroup = true
@@ -371,4 +389,14 @@ private fun DictionaryEntryItem(
             .clickable(onClickLabel = actionLabel, onClick = onClick)
     )
     HorizontalDivider()
+}
+
+/** The language of an accent lexicon entry as the user reads it. */
+@Composable
+internal fun accentLanguageName(code: String): String = when (code) {
+    "hr" -> stringResource(R.string.language_croatian)
+    "sr" -> stringResource(R.string.language_serbian)
+    "bs" -> stringResource(R.string.language_bosnian)
+    "" -> stringResource(R.string.dict_accent_language_all)
+    else -> code
 }

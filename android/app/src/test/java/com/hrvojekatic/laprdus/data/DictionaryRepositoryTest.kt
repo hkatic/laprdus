@@ -159,9 +159,63 @@ class DictionaryRepositoryTest {
     // ==========================================================================
 
     @Test
-    fun `DictionaryType enum has three values`() {
+    fun `DictionaryType enum has four values`() {
         val types = DictionaryType.entries
-        assertEquals(3, types.size)
+        assertEquals(4, types.size)
+    }
+
+    @Test
+    fun `DictionaryType ACCENTS is fourth value and accents json`() {
+        assertEquals(DictionaryType.ACCENTS, DictionaryType.entries[3])
+        assertEquals("accents.json", DictionaryType.ACCENTS.fileName)
+    }
+
+    @Test
+    fun `accent lexicon entries round-trip through their own JSON keys`() {
+        val entries = listOf(
+            DictionaryEntry(grapheme = "kontr'o:l*", phoneme = "", comment = "kontróla"),
+            DictionaryEntry(grapheme = "ur'e:d=i<p", phoneme = "", verb = true, language = "hr"),
+            DictionaryEntry(grapheme = "dir'ektor*", phoneme = "", language = "sr")
+        )
+        val json = DictionaryJson.generate(entries, DictionaryType.ACCENTS)
+        assertTrue(json.contains("\"word\": \"kontr'o:l*\""))
+        assertTrue(json.contains("\"verb\": \"ur'e:d=i<p\""))
+        assertTrue(json.contains("\"language\": \"hr\""))
+        assertFalse(json.contains("grapheme"))
+        assertFalse(json.contains("phoneme"))
+
+        val parsed = DictionaryJson.parse(json, DictionaryType.ACCENTS)
+        assertEquals(3, parsed.size)
+        assertEquals("kontr'o:l*", parsed[0].grapheme)
+        assertFalse(parsed[0].verb)
+        assertEquals("", parsed[0].language)
+        assertEquals("kontróla", parsed[0].comment)
+        assertEquals("ur'e:d=i<p", parsed[1].grapheme)
+        assertTrue(parsed[1].verb)
+        assertEquals("hr", parsed[1].language)
+        assertEquals("sr", parsed[2].language)
+    }
+
+    @Test
+    fun `accent lexicon parse skips entries with neither word nor verb`() {
+        val parsed = DictionaryJson.parse(
+            """{"entries":[{"comment":"nothing"},{"word":"p^oruk*"}]}""",
+            DictionaryType.ACCENTS
+        )
+        assertEquals(1, parsed.size)
+        assertEquals("p^oruk*", parsed[0].grapheme)
+    }
+
+    @Test
+    fun `accent lexicon is saved to accents json in the engine's format`() = runTest {
+        val repository = newRepository()
+        repository.loadDictionary(DictionaryType.ACCENTS)
+        repository.saveEntry(DictionaryEntry(grapheme = "sign'a:l|a|u|om", phoneme = "", comment = "signála"))
+        val file = File(dictionaryDir, "accents.json")
+        assertTrue(file.exists())
+        val saved = file.readText()
+        assertTrue(saved.contains("\"word\": \"sign'a:l|a|u|om\""))
+        assertEquals(1, repository.loadDictionary(DictionaryType.ACCENTS).getOrThrow().size)
     }
 
     @Test

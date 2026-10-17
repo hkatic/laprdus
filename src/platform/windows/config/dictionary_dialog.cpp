@@ -7,6 +7,7 @@
 #include "dark_mode.hpp"
 #include "resource.h"
 #include "core/user_config.hpp"
+#include "formant/formant_frontend.hpp"
 #include <fstream>
 #include <sstream>
 #include <filesystem>
@@ -79,13 +80,22 @@ std::string ExtractStringValue(const std::string& json, size_t start, size_t end
     return result;
 }
 
-// Find the value for a key in JSON
-std::string FindJsonStringValue(const std::string& json, const std::string& key) {
+// Find the key's position in a JSON object: a quoted name followed by a
+// colon, so that a value equal to the name ("comment": "word") is skipped
+size_t FindJsonKey(const std::string& json, const std::string& key) {
     std::string search = "\"" + key + "\"";
     size_t pos = json.find(search);
-    if (pos == std::string::npos) return "";
+    while (pos != std::string::npos) {
+        size_t colon = json.find_first_not_of(" \t\n\r", pos + search.length());
+        if (colon != std::string::npos && json[colon] == ':') return colon;
+        pos = json.find(search, pos + search.length());
+    }
+    return std::string::npos;
+}
 
-    pos = json.find(':', pos + search.length());
+// Find the value for a key in JSON
+std::string FindJsonStringValue(const std::string& json, const std::string& key) {
+    size_t pos = FindJsonKey(json, key);
     if (pos == std::string::npos) return "";
 
     pos = json.find_first_not_of(" \t\n\r", pos + 1);
@@ -109,11 +119,7 @@ std::string FindJsonStringValue(const std::string& json, const std::string& key)
 
 // Find boolean value in JSON
 bool FindJsonBoolValue(const std::string& json, const std::string& key, bool defaultValue) {
-    std::string search = "\"" + key + "\"";
-    size_t pos = json.find(search);
-    if (pos == std::string::npos) return defaultValue;
-
-    pos = json.find(':', pos + search.length());
+    size_t pos = FindJsonKey(json, key);
     if (pos == std::string::npos) return defaultValue;
 
     pos = json.find_first_not_of(" \t\n\r", pos + 1);
@@ -125,16 +131,16 @@ bool FindJsonBoolValue(const std::string& json, const std::string& key, bool def
     return defaultValue;
 }
 
-// Parse dictionary JSON file
-std::vector<UserDictionaryEntry> ParseDictionaryJson(const std::string& json) {
-    std::vector<UserDictionaryEntry> entries;
+// The JSON text of every object of the "entries" array
+std::vector<std::string> SplitJsonEntries(const std::string& json) {
+    std::vector<std::string> objects;
 
     // Find entries array
-    size_t entriesPos = json.find("\"entries\"");
-    if (entriesPos == std::string::npos) return entries;
+    size_t entriesPos = FindJsonKey(json, "entries");
+    if (entriesPos == std::string::npos) return objects;
 
     size_t arrayStart = json.find('[', entriesPos);
-    if (arrayStart == std::string::npos) return entries;
+    if (arrayStart == std::string::npos) return objects;
 
     // Find each entry object
     size_t pos = arrayStart + 1;
@@ -154,9 +160,18 @@ std::vector<UserDictionaryEntry> ParseDictionaryJson(const std::string& json) {
 
         if (braceCount != 0) break;
 
-        // Extract this entry's JSON
-        std::string entryJson = json.substr(objStart, objEnd - objStart);
+        objects.push_back(json.substr(objStart, objEnd - objStart));
+        pos = objEnd;
+    }
 
+    return objects;
+}
+
+// Parse dictionary JSON file
+std::vector<UserDictionaryEntry> ParseDictionaryJson(const std::string& json) {
+    std::vector<UserDictionaryEntry> entries;
+
+    for (const std::string& entryJson : SplitJsonEntries(json)) {
         // Parse entry
         UserDictionaryEntry entry;
         entry.grapheme = Utf8ToWide(FindJsonStringValue(entryJson, "grapheme"));
@@ -168,12 +183,69 @@ std::vector<UserDictionaryEntry> ParseDictionaryJson(const std::string& json) {
         if (!entry.grapheme.empty()) {
             entries.push_back(entry);
         }
-
-        pos = objEnd;
     }
 
     return entries;
 }
+
+// Parse the accent lexicon (accents.json): { "word": .. } or { "verb": .. },
+// an optional "language" and "comment". Entries with neither key are dropped.
+std::vector<UserDictionaryEntry> ParseAccentJson(const std::string& json) {
+    std::vector<UserDictionaryEntry> entries;
+
+    for (const std::string& entryJson : SplitJsonEntries(json)) {
+        UserDictionaryEntry entry;
+        std::string word = FindJsonStringValue(entryJson, "word");
+        std::string verb = FindJsonStringValue(entryJson, "verb");
+        if (word.empty() && verb.empty()) continue;
+        entry.verb = word.empty();
+        entry.grapheme = Utf8ToWide(entry.verb ? verb : word);
+        entry.language = Utf8ToWide(FindJsonStringValue(entryJson, "language"));
+        entry.comment = Utf8ToWide(FindJsonStringValue(entryJson, "comment"));
+        entries.push_back(entry);
+    }
+
+    return entries;
+}
+
+// One accent lexicon entry as a JSON object (also what the parser checks)
+std::string AccentEntryJson(const UserDictionaryEntry& entry, const std::string& indent) {
+    std::ostringstream json;
+    json << indent << "{\n";
+    json << indent << "    \"" << (entry.verb ? "verb" : "word") << "\": \""
+         << EscapeJsonString(WideToUtf8(entry.grapheme)) << "\"";
+    if (!entry.language.empty()) {
+        json << ",\n" << indent << "    \"language\": \"" << EscapeJsonString(WideToUtf8(entry.language)) << "\"";
+    }
+    if (!entry.comment.empty()) {
+        json << ",\n" << indent << "    \"comment\": \"" << EscapeJsonString(WideToUtf8(entry.comment)) << "\"";
+    }
+    json << "\n" << indent << "}";
+    return json.str();
+}
+
+// Generate accent lexicon JSON from entries
+std::string GenerateAccentJson(const std::vector<UserDictionaryEntry>& entries) {
+    std::ostringstream json;
+    json << "{\n";
+    json << "    \"version\": \"1.0\",\n";
+    json << "    \"entries\": [\n";
+
+    for (size_t i = 0; i < entries.size(); i++) {
+        json << AccentEntryJson(entries[i], "        ");
+        if (i < entries.size() - 1) {
+            json << ",";
+        }
+        json << "\n";
+    }
+
+    json << "    ]\n";
+    json << "}\n";
+    return json.str();
+}
+
+// Language codes of the accent entry dialog's language combo box, in its order
+const char* const ACCENT_LANGUAGES[] = {"", "hr", "sr", "bs"};
 
 // Generate dictionary JSON from entries
 std::string GenerateDictionaryJson(const std::vector<UserDictionaryEntry>& entries) {
@@ -331,6 +403,7 @@ void DictionaryDialog::InitializeDictionaryTypeCombo(HWND hDlg) {
     SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_DICT_TYPE_MAIN).c_str());
     SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_DICT_TYPE_SPELLING).c_str());
     SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_DICT_TYPE_EMOJI).c_str());
+    SendMessageW(hCombo, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_DICT_TYPE_ACCENTS).c_str());
 
     SendMessageW(hCombo, CB_SETCURSEL, static_cast<int>(m_currentType), 0);
 }
@@ -343,9 +416,43 @@ void DictionaryDialog::InitializeListView(HWND hDlg) {
     ListView_SetExtendedListViewStyle(hListView,
         LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES | LVS_EX_DOUBLEBUFFER);
 
-    // Add columns
+    SetupListViewColumns(hDlg);
+}
+
+void DictionaryDialog::SetupListViewColumns(HWND hDlg) {
+    HWND hListView = GetDlgItem(hDlg, IDC_DICT_LISTVIEW);
+    if (!hListView) return;
+
+    // The columns depend on the dictionary: remove the previous ones
+    while (ListView_DeleteColumn(hListView, 0)) {
+    }
+
     LVCOLUMNW col = {};
     col.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
+
+    if (IsAccentLexicon()) {
+        // Entry, Kind, Language, Comment
+        col.pszText = const_cast<LPWSTR>(LoadLocalizedString(IDS_DICT_COL_ENTRY).c_str());
+        col.cx = 160;
+        col.iSubItem = 0;
+        ListView_InsertColumn(hListView, 0, &col);
+
+        col.pszText = const_cast<LPWSTR>(LoadLocalizedString(IDS_DICT_COL_KIND).c_str());
+        col.cx = 60;
+        col.iSubItem = 1;
+        ListView_InsertColumn(hListView, 1, &col);
+
+        col.pszText = const_cast<LPWSTR>(LoadLocalizedString(IDS_DICT_COL_LANGUAGE).c_str());
+        col.cx = 80;
+        col.iSubItem = 2;
+        ListView_InsertColumn(hListView, 2, &col);
+
+        col.pszText = const_cast<LPWSTR>(LoadLocalizedString(IDS_DICT_COL_COMMENT).c_str());
+        col.cx = 150;
+        col.iSubItem = 3;
+        ListView_InsertColumn(hListView, 3, &col);
+        return;
+    }
 
     // Column 0: Original
     col.pszText = const_cast<LPWSTR>(LoadLocalizedString(IDS_DICT_COL_ORIGINAL).c_str());
@@ -392,6 +499,25 @@ void DictionaryDialog::PopulateListView(HWND hDlg) {
     // Add entries
     LVITEMW item = {};
     item.mask = LVIF_TEXT;
+
+    if (IsAccentLexicon()) {
+        std::wstring wordStr = LoadLocalizedString(IDS_ACCENT_KIND_WORD);
+        std::wstring verbStr = LoadLocalizedString(IDS_ACCENT_KIND_VERB);
+        for (size_t i = 0; i < m_entries.size(); i++) {
+            const auto& entry = m_entries[i];
+            item.iItem = static_cast<int>(i);
+            item.iSubItem = 0;
+            item.pszText = const_cast<LPWSTR>(entry.grapheme.c_str());
+            ListView_InsertItem(hListView, &item);
+            ListView_SetItemText(hListView, static_cast<int>(i), 1,
+                const_cast<LPWSTR>(entry.verb ? verbStr.c_str() : wordStr.c_str()));
+            ListView_SetItemText(hListView, static_cast<int>(i), 2,
+                const_cast<LPWSTR>(AccentLanguageName(entry.language).c_str()));
+            ListView_SetItemText(hListView, static_cast<int>(i), 3,
+                const_cast<LPWSTR>(entry.comment.c_str()));
+        }
+        return;
+    }
 
     for (size_t i = 0; i < m_entries.size(); i++) {
         const auto& entry = m_entries[i];
@@ -454,7 +580,8 @@ bool DictionaryDialog::LoadDictionary(DictionaryType type) {
     file.close();
 
     // Parse JSON
-    m_entries = ParseDictionaryJson(buffer.str());
+    m_entries = IsAccentLexicon() ? ParseAccentJson(buffer.str())
+                                  : ParseDictionaryJson(buffer.str());
 
     return true;
 }
@@ -468,7 +595,8 @@ bool DictionaryDialog::SaveDictionary() {
     config.ensure_config_directory();
 
     // Generate JSON
-    std::string json = GenerateDictionaryJson(m_entries);
+    std::string json = IsAccentLexicon() ? GenerateAccentJson(m_entries)
+                                         : GenerateDictionaryJson(m_entries);
 
     // Write file
     std::ofstream file(path, std::ios::binary);
@@ -498,7 +626,8 @@ void DictionaryDialog::OnDictionaryTypeChanged(HWND hDlg) {
     DictionaryType newType = static_cast<DictionaryType>(sel);
     LoadDictionary(newType);
 
-    // Refresh list view
+    // Refresh list view (the accent lexicon has columns of its own)
+    SetupListViewColumns(hDlg);
     PopulateListView(hDlg);
 
     // Select the first item by default
@@ -622,9 +751,21 @@ void DictionaryDialog::OnAddEntry(HWND hDlg) {
     HWND hListView = GetDlgItem(hDlg, IDC_DICT_LISTVIEW);
     int currentIndex = GetSelectedIndex(hListView);
 
-    DictionaryEntryDialog entryDlg;
-    if (entryDlg.Show(m_hInstance, hDlg, nullptr, false) == IDOK) {
-        m_entries.push_back(entryDlg.GetEntry());
+    bool added = false;
+    if (IsAccentLexicon()) {
+        AccentEntryDialog entryDlg;
+        if (entryDlg.Show(m_hInstance, hDlg, nullptr, false) == IDOK) {
+            m_entries.push_back(entryDlg.GetEntry());
+            added = true;
+        }
+    } else {
+        DictionaryEntryDialog entryDlg;
+        if (entryDlg.Show(m_hInstance, hDlg, nullptr, false) == IDOK) {
+            m_entries.push_back(entryDlg.GetEntry());
+            added = true;
+        }
+    }
+    if (added) {
         m_modified = true;
         PopulateListView(hDlg);
 
@@ -650,9 +791,21 @@ void DictionaryDialog::OnEditEntry(HWND hDlg) {
     int index = GetSelectedIndex(hListView);
     if (index < 0 || index >= static_cast<int>(m_entries.size())) return;
 
-    DictionaryEntryDialog entryDlg;
-    if (entryDlg.Show(m_hInstance, hDlg, &m_entries[index], true) == IDOK) {
-        m_entries[index] = entryDlg.GetEntry();
+    bool edited = false;
+    if (IsAccentLexicon()) {
+        AccentEntryDialog entryDlg;
+        if (entryDlg.Show(m_hInstance, hDlg, &m_entries[index], true) == IDOK) {
+            m_entries[index] = entryDlg.GetEntry();
+            edited = true;
+        }
+    } else {
+        DictionaryEntryDialog entryDlg;
+        if (entryDlg.Show(m_hInstance, hDlg, &m_entries[index], true) == IDOK) {
+            m_entries[index] = entryDlg.GetEntry();
+            edited = true;
+        }
+    }
+    if (edited) {
         m_modified = true;
         PopulateListView(hDlg);
     }
@@ -669,9 +822,12 @@ void DictionaryDialog::OnDuplicateEntry(HWND hDlg) {
     int index = GetSelectedIndex(hListView);
     if (index < 0 || index >= static_cast<int>(m_entries.size())) return;
 
-    // Create a copy
+    // Create a copy. An accent entry is kept as it is: " (copy)" would make
+    // it a different, unaccented word.
     UserDictionaryEntry copy = m_entries[index];
-    copy.grapheme += L" (copy)";
+    if (!IsAccentLexicon()) {
+        copy.grapheme += L" (copy)";
+    }
 
     m_entries.push_back(copy);
     m_modified = true;
@@ -726,8 +882,18 @@ std::wstring DictionaryDialog::GetDictionaryPath(DictionaryType type) {
         return Utf8ToWide(config.get_user_spelling_dictionary_path());
     case DictionaryType::Emoji:
         return Utf8ToWide(config.get_user_emoji_dictionary_path());
+    case DictionaryType::Accents:
+        return Utf8ToWide(config.get_user_accent_lexicon_path());
     }
     return L"";
+}
+
+std::wstring DictionaryDialog::AccentLanguageName(const std::wstring& code) {
+    if (code == L"hr") return LoadLocalizedString(IDS_ACCENT_LANG_HR);
+    if (code == L"sr") return LoadLocalizedString(IDS_ACCENT_LANG_SR);
+    if (code == L"bs") return LoadLocalizedString(IDS_ACCENT_LANG_BS);
+    if (code.empty()) return LoadLocalizedString(IDS_ACCENT_LANG_ALL);
+    return code;
 }
 
 int DictionaryDialog::GetSelectedIndex(HWND hListView) {
@@ -994,6 +1160,257 @@ std::wstring DictionaryEntryDialog::LoadLocalizedString(UINT id) {
 }
 
 void DictionaryEntryDialog::SetControlText(HWND hDlg, int ctrlId, UINT stringId) {
+    std::wstring text = LoadLocalizedString(stringId);
+    if (!text.empty()) {
+        SetDlgItemTextW(hDlg, ctrlId, text.c_str());
+    }
+}
+
+// =============================================================================
+// AccentEntryDialog Implementation
+// =============================================================================
+
+AccentEntryDialog::AccentEntryDialog() {
+}
+
+AccentEntryDialog::~AccentEntryDialog() {
+}
+
+INT_PTR AccentEntryDialog::Show(HINSTANCE hInstance, HWND hParent,
+    const UserDictionaryEntry* entry, bool isEdit) {
+    m_hInstance = hInstance;
+    m_isEdit = isEdit;
+    m_darkMode = IsSystemDarkMode();
+
+    if (entry) {
+        m_entry = *entry;
+    } else {
+        m_entry = UserDictionaryEntry();
+    }
+
+    return DialogBoxParamW(
+        hInstance,
+        MAKEINTRESOURCEW(IDD_ACCENT_ENTRY_DIALOG),
+        hParent,
+        DialogProc,
+        reinterpret_cast<LPARAM>(this)
+    );
+}
+
+INT_PTR CALLBACK AccentEntryDialog::DialogProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
+    AccentEntryDialog* pThis = nullptr;
+
+    if (msg == WM_INITDIALOG) {
+        pThis = reinterpret_cast<AccentEntryDialog*>(lParam);
+        SetWindowLongPtrW(hDlg, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pThis));
+        pThis->m_hDlg = hDlg;
+        return pThis->OnInitDialog(hDlg);
+    }
+
+    pThis = reinterpret_cast<AccentEntryDialog*>(GetWindowLongPtrW(hDlg, GWLP_USERDATA));
+    if (!pThis) {
+        return FALSE;
+    }
+
+    switch (msg) {
+    case WM_COMMAND:
+        return pThis->OnCommand(hDlg, wParam, lParam);
+
+    case WM_CTLCOLORSTATIC:
+    case WM_CTLCOLORBTN:
+    case WM_CTLCOLOREDIT:
+    case WM_CTLCOLORLISTBOX:
+        return pThis->OnCtlColor(hDlg, msg, (HDC)wParam, (HWND)lParam);
+
+    case WM_CTLCOLORDLG:
+        return pThis->OnCtlColor(hDlg, msg, (HDC)wParam, hDlg);
+
+    case WM_CLOSE:
+        EndDialog(hDlg, IDCANCEL);
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+INT_PTR AccentEntryDialog::OnInitDialog(HWND hDlg) {
+    SetWindowTextW(hDlg, LoadLocalizedString(
+        m_isEdit ? IDS_ACCENT_DIALOG_TITLE_EDIT : IDS_ACCENT_DIALOG_TITLE_ADD).c_str());
+
+    InitializeControls(hDlg);
+
+    SetDlgItemTextW(hDlg, IDC_ACCENT_ENTRY_EDIT, m_entry.grapheme.c_str());
+    SetDlgItemTextW(hDlg, IDC_ACCENT_COMMENT_EDIT, m_entry.comment.c_str());
+
+    // Kind: word or verb
+    HWND hKind = GetDlgItem(hDlg, IDC_ACCENT_KIND_COMBO);
+    if (hKind) {
+        SendMessageW(hKind, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_ACCENT_KIND_WORD).c_str());
+        SendMessageW(hKind, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_ACCENT_KIND_VERB).c_str());
+        SendMessageW(hKind, CB_SETCURSEL, m_entry.verb ? 1 : 0, 0);
+    }
+
+    // Language: all, Croatian, Serbian, Bosnian (the order of ACCENT_LANGUAGES)
+    HWND hLang = GetDlgItem(hDlg, IDC_ACCENT_LANG_COMBO);
+    if (hLang) {
+        SendMessageW(hLang, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_ACCENT_LANG_ALL).c_str());
+        SendMessageW(hLang, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_ACCENT_LANG_HR).c_str());
+        SendMessageW(hLang, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_ACCENT_LANG_SR).c_str());
+        SendMessageW(hLang, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_ACCENT_LANG_BS).c_str());
+        int sel = 0;
+        std::string code = WideToUtf8(m_entry.language);
+        for (int i = 0; i < 4; i++) {
+            if (code == ACCENT_LANGUAGES[i]) sel = i;
+        }
+        SendMessageW(hLang, CB_SETCURSEL, sel, 0);
+    }
+
+    ApplyDarkMode(hDlg);
+
+    // Center dialog on parent
+    HWND hParent = GetParent(hDlg);
+    if (!hParent) hParent = GetDesktopWindow();
+
+    RECT rcDlg, rcParent;
+    GetWindowRect(hDlg, &rcDlg);
+    GetWindowRect(hParent, &rcParent);
+
+    int x = rcParent.left + (rcParent.right - rcParent.left - (rcDlg.right - rcDlg.left)) / 2;
+    int y = rcParent.top + (rcParent.bottom - rcParent.top - (rcDlg.bottom - rcDlg.top)) / 2;
+
+    SetWindowPos(hDlg, nullptr, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+
+    return TRUE;
+}
+
+void AccentEntryDialog::InitializeControls(HWND hDlg) {
+    SetControlText(hDlg, IDC_ACCENT_ENTRY_LABEL, IDS_ACCENT_ENTRY_LABEL);
+    SetControlText(hDlg, IDC_ACCENT_KIND_LABEL, IDS_ACCENT_KIND_LABEL);
+    SetControlText(hDlg, IDC_ACCENT_LANG_LABEL, IDS_ACCENT_LANG_LABEL);
+    SetControlText(hDlg, IDC_ACCENT_COMMENT_LABEL, IDS_ENTRY_COMMENT_LABEL);
+    SetControlText(hDlg, IDC_ACCENT_HELP, IDS_ACCENT_HELP);
+    SetControlText(hDlg, IDOK, IDS_OK);
+    SetControlText(hDlg, IDCANCEL, IDS_CANCEL);
+}
+
+INT_PTR AccentEntryDialog::OnCommand(HWND hDlg, WPARAM wParam, LPARAM lParam) {
+    (void)lParam;
+
+    switch (LOWORD(wParam)) {
+    case IDOK:
+        if (ValidateAndCollect(hDlg)) {
+            EndDialog(hDlg, IDOK);
+        }
+        return TRUE;
+
+    case IDCANCEL:
+        EndDialog(hDlg, IDCANCEL);
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+INT_PTR AccentEntryDialog::OnCtlColor(HWND hDlg, UINT msg, HDC hdc, HWND hCtrl) {
+    (void)hDlg;
+    (void)hCtrl;
+
+    if (!m_darkMode) {
+        return FALSE;
+    }
+
+    switch (msg) {
+    case WM_CTLCOLORSTATIC:
+    case WM_CTLCOLORBTN: {
+        HBRUSH hBrush = OnCtlColorStatic(hdc, true);
+        if (hBrush) {
+            return (INT_PTR)hBrush;
+        }
+        break;
+    }
+    case WM_CTLCOLOREDIT:
+    case WM_CTLCOLORLISTBOX: {
+        HBRUSH hBrush = OnCtlColorEdit(hdc, true);
+        if (hBrush) {
+            return (INT_PTR)hBrush;
+        }
+        break;
+    }
+    case WM_CTLCOLORDLG: {
+        HBRUSH hBrush = OnCtlColorDlg(true);
+        if (hBrush) {
+            return (INT_PTR)hBrush;
+        }
+        break;
+    }
+    }
+
+    return FALSE;
+}
+
+bool AccentEntryDialog::ValidateAndCollect(HWND hDlg) {
+    wchar_t buffer[1024];
+
+    GetDlgItemTextW(hDlg, IDC_ACCENT_ENTRY_EDIT, buffer, 1024);
+    std::wstring text = buffer;
+    // Trim surrounding whitespace
+    size_t first = text.find_first_not_of(L" \t\r\n");
+    size_t last = text.find_last_not_of(L" \t\r\n");
+    text = first == std::wstring::npos ? L"" : text.substr(first, last - first + 1);
+
+    if (text.empty()) {
+        std::wstring msg = LoadLocalizedString(IDS_ERROR_ACCENT_EMPTY);
+        MessageBoxW(hDlg, msg.c_str(), L"Error", MB_OK | MB_ICONWARNING);
+        SetFocus(GetDlgItem(hDlg, IDC_ACCENT_ENTRY_EDIT));
+        return false;
+    }
+
+    UserDictionaryEntry entry;
+    entry.grapheme = text;
+    entry.verb = SendMessageW(GetDlgItem(hDlg, IDC_ACCENT_KIND_COMBO), CB_GETCURSEL, 0, 0) == 1;
+    int lang = static_cast<int>(SendMessageW(GetDlgItem(hDlg, IDC_ACCENT_LANG_COMBO), CB_GETCURSEL, 0, 0));
+    if (lang < 0 || lang > 3) lang = 0;
+    entry.language = Utf8ToWide(ACCENT_LANGUAGES[lang]);
+
+    GetDlgItemTextW(hDlg, IDC_ACCENT_COMMENT_EDIT, buffer, 1024);
+    entry.comment = buffer;
+
+    // The engine's own parser decides whether the entry is well formed, so
+    // a typo is caught here and not silently skipped at load time
+    formant::UserLexicon::Report report;
+    formant::UserLexicon::parse("{\"entries\":[" + AccentEntryJson(entry, "") + "]}", &report);
+    if (report.rejected > 0) {
+        std::wstring format = LoadLocalizedString(IDS_ERROR_ACCENT_INVALID);
+        std::wstring reason = Utf8ToWide(report.first_error);
+        wchar_t msg[1024];
+        swprintf_s(msg, format.c_str(), reason.c_str());
+        MessageBoxW(hDlg, msg, L"Error", MB_OK | MB_ICONWARNING);
+        SetFocus(GetDlgItem(hDlg, IDC_ACCENT_ENTRY_EDIT));
+        return false;
+    }
+
+    m_entry = entry;
+    return true;
+}
+
+void AccentEntryDialog::ApplyDarkMode(HWND hDlg) {
+    if (!m_darkMode) return;
+
+    ApplyDarkTitleBar(hDlg, true);
+    ApplyDarkModeToAllControls(hDlg, true);
+    InvalidateRect(hDlg, nullptr, TRUE);
+}
+
+std::wstring AccentEntryDialog::LoadLocalizedString(UINT id) {
+    wchar_t buffer[512];
+    int len = ::LoadStringW(m_hInstance, id, buffer, 512);
+    if (len > 0) {
+        return std::wstring(buffer, len);
+    }
+    return L"";
+}
+
+void AccentEntryDialog::SetControlText(HWND hDlg, int ctrlId, UINT stringId) {
     std::wstring text = LoadLocalizedString(stringId);
     if (!text.empty()) {
         SetDlgItemTextW(hDlg, ctrlId, text.c_str());

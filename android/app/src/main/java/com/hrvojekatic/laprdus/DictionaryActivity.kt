@@ -61,6 +61,7 @@ class DictionaryActivity : ComponentActivity() {
                     }
                     composable("edit") {
                         DictionaryEditScreen(
+                            type = uiState.selectedType,
                             entry = uiState.editingEntry,
                             onNavigateBack = { navController.popBackStack() },
                             onSave = { entry ->

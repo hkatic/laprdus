@@ -5,6 +5,7 @@
 #include "../core/tts_engine.hpp"
 #include "../core/voice_registry.hpp"
 #include "../core/user_config.hpp"
+#include "../formant/formant_frontend.hpp"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -1268,6 +1269,33 @@ LAPRDUS_API const char* LAPRDUS_CALL laprdus_get_accent_lexicon_report(LaprdusHa
     thread_local std::string report_copy;
     report_copy = handle->engine.accent_lexicon_report();
     return report_copy.c_str();
+}
+
+LAPRDUS_API int LAPRDUS_CALL laprdus_check_accent_lexicon(
+    const char* json_content,
+    size_t length,
+    char* message,
+    size_t message_size) {
+
+    if (message && message_size > 0) {
+        message[0] = '\0';
+    }
+    if (!json_content) {
+        return -1;
+    }
+    std::string json = length > 0 ? std::string(json_content, length) : std::string(json_content);
+    laprdus::formant::UserLexicon::Report report;
+    laprdus::formant::UserLexicon::parse(json, &report);
+    if (report.rejected > 0 && message && message_size > 0) {
+        // Cut at the buffer, never inside a UTF-8 sequence
+        size_t n = std::min(report.first_error.size(), message_size - 1);
+        while (n > 0 && (static_cast<unsigned char>(report.first_error[n]) & 0xC0) == 0x80) {
+            --n;
+        }
+        std::memcpy(message, report.first_error.data(), n);
+        message[n] = '\0';
+    }
+    return static_cast<int>(report.rejected);
 }
 
 LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_emoji_enabled(

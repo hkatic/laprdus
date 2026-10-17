@@ -1,5 +1,5 @@
 // DictionaryListView.swift - Dictionaries tab: dictionary selection and
-// entry management (main/spelling/emoji).
+// entry management (main/spelling/emoji/accents).
 
 import SwiftUI
 
@@ -25,6 +25,7 @@ struct DictionaryListView: View {
                     Text("Main Dictionary").tag(DictionaryType.main)
                     Text("Spelling Dictionary").tag(DictionaryType.spelling)
                     Text("Emoji Dictionary").tag(DictionaryType.emoji)
+                    Text("Accent Dictionary").tag(DictionaryType.accents)
                 }
                 .accessibilityHint(Text("Select dictionary type"))
             }
@@ -45,7 +46,7 @@ struct DictionaryListView: View {
                             HStack {
                                 VStack(alignment: .leading) {
                                     Text(entry.grapheme)
-                                    Text(entry.phoneme)
+                                    Text(detail(of: entry))
                                         .font(.footnote)
                                         .foregroundStyle(.secondary)
                                 }
@@ -60,7 +61,7 @@ struct DictionaryListView: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel("\(entry.grapheme), \(entry.phoneme)")
+                        .accessibilityLabel("\(entry.grapheme), \(detail(of: entry))")
                         .accessibilityHint(Text("Edit"))
                         .swipeActions(edge: .trailing) {
                             Button(role: .destructive) {
@@ -124,6 +125,7 @@ struct DictionaryListView: View {
         .sheet(item: $editorRoute) { route in
             NavigationStack {
                 DictionaryEditView(
+                    type: selectedType,
                     entry: route.entry,
                     onSave: { upsert($0) },
                     onDelete: { delete($0) }
@@ -203,9 +205,33 @@ struct DictionaryListView: View {
     private func duplicate(_ entry: DictionaryEntry) {
         var copy = entry
         copy.id = UUID()
-        copy.grapheme = String(localized: "\(entry.grapheme) (copy)")
+        // An accent entry is copied as it is: " (copy)" would make it a
+        // different, unaccented word.
+        if selectedType != .accents {
+            copy.grapheme = String(localized: "\(entry.grapheme) (copy)")
+        }
         entries.append(copy)
         persist()
+    }
+
+    /// The second line of a row: the replacement, or for the accent lexicon
+    /// the entry's kind, language and comment.
+    private func detail(of entry: DictionaryEntry) -> String {
+        guard selectedType == .accents else { return entry.phoneme }
+        let kind = entry.isVerb ? String(localized: "Verb") : String(localized: "Word")
+        let language = accentLanguageName(entry.language)
+        return entry.comment.isEmpty ? "\(kind), \(language)" : "\(kind), \(language), \(entry.comment)"
+    }
+}
+
+/// The language of an accent lexicon entry as the user reads it.
+func accentLanguageName(_ code: String) -> String {
+    switch code {
+    case "hr": return String(localized: "Croatian")
+    case "sr": return String(localized: "Serbian")
+    case "bs": return String(localized: "Bosnian")
+    case "": return String(localized: "All languages")
+    default: return code
     }
 }
 
