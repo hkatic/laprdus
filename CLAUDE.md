@@ -1373,6 +1373,19 @@ xcodebuild -scheme Laprdus -destination 'generic/platform=iOS Simulator' build
 xcodebuild test -scheme Laprdus -destination 'platform=macOS'
 ```
 
+### App icons
+
+`Laprdus/Assets.xcassets/AppIcon.appiconset` contains checked-in opaque RGB PNGs
+for iPhone, iPad, the App Store (1024px), and macOS (16–1024px). They are copies
+of `images/laprdus_icon_1024x1024.png`, the same source used for Android, without
+Android's rounded mask. Regenerate them from the repository root with
+`swift scripts/generate_apple_icons.swift` (macOS/Xcode only, no extra packages).
+Keep every `Contents.json` slot connected to its PNG. Both build configurations
+already select `AppIcon`; Xcode compiles the icons and generates the corresponding
+`CFBundleIcons` / `CFBundleIconName` metadata and the macOS `AppIcon.icns`.
+When checking distribution builds, inspect the Release archive's compiled icons
+and Info.plist, not just the source catalog or a device-thinned Debug build.
+
 ### Testing the system voices
 
 After installing/running the app once, the `LaprdusVoices` extension registers with the system. Voices appear under:
