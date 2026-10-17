@@ -353,7 +353,6 @@ HRESULT LaprdusSAPIDriver::InitializeEngine() {
         params.speed = settings.speed;
         params.user_pitch = settings.user_pitch;
         params.volume = settings.volume;
-        params.inflection_enabled = settings.inflection_enabled;
         params.inflection_level = settings.inflection_level;
         params.acceleration = settings.acceleration;
         params.emoji_enabled = settings.emoji_enabled;

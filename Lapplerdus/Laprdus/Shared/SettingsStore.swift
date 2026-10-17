@@ -14,7 +14,6 @@ enum SettingsKey {
     static let forcePitch = "force_pitch"
     static let forceVolume = "force_volume"
     static let emojiEnabled = "emoji_enabled"
-    static let inflectionEnabled = "inflection_enabled"
     static let inflectionLevel = "inflection_level"
     static let acceleration = "acceleration"
     static let sentencePause = "sentence_pause"
@@ -40,7 +39,6 @@ struct SettingsSnapshot: Sendable {
     var forcePitch = false
     var forceVolume = false
     var emojiEnabled = false
-    var inflectionEnabled = true
     /// Size of the pitch movements, 0 (monotone) to 1, 0.5 as measured.
     var inflectionLevel: Float = SettingsSnapshot.defaultInflectionLevel
     /// Multiplier on the speech rate, 0.5 to 3.0.
@@ -73,9 +71,6 @@ struct SettingsSnapshot: Sendable {
         snapshot.forcePitch = defaults.bool(forKey: SettingsKey.forcePitch)
         snapshot.forceVolume = defaults.bool(forKey: SettingsKey.forceVolume)
         snapshot.emojiEnabled = defaults.bool(forKey: SettingsKey.emojiEnabled)
-        if defaults.object(forKey: SettingsKey.inflectionEnabled) != nil {
-            snapshot.inflectionEnabled = defaults.bool(forKey: SettingsKey.inflectionEnabled)
-        }
         if defaults.object(forKey: SettingsKey.inflectionLevel) != nil {
             snapshot.inflectionLevel = defaults.float(forKey: SettingsKey.inflectionLevel)
         }
@@ -144,7 +139,6 @@ final class SettingsStore: ObservableObject {
     @Published var forcePitch: Bool { didSet { defaults.set(forcePitch, forKey: SettingsKey.forcePitch) } }
     @Published var forceVolume: Bool { didSet { defaults.set(forceVolume, forKey: SettingsKey.forceVolume) } }
     @Published var emojiEnabled: Bool { didSet { defaults.set(emojiEnabled, forKey: SettingsKey.emojiEnabled) } }
-    @Published var inflectionEnabled: Bool { didSet { defaults.set(inflectionEnabled, forKey: SettingsKey.inflectionEnabled) } }
     @Published var inflectionLevel: Float { didSet { defaults.set(inflectionLevel, forKey: SettingsKey.inflectionLevel) } }
     @Published var acceleration: Float { didSet { defaults.set(acceleration, forKey: SettingsKey.acceleration) } }
     @Published var sentencePause: Int { didSet { defaults.set(sentencePause, forKey: SettingsKey.sentencePause) } }
@@ -167,7 +161,6 @@ final class SettingsStore: ObservableObject {
         forcePitch = snapshot.forcePitch
         forceVolume = snapshot.forceVolume
         emojiEnabled = snapshot.emojiEnabled
-        inflectionEnabled = snapshot.inflectionEnabled
         inflectionLevel = snapshot.inflectionLevel
         acceleration = snapshot.acceleration
         sentencePause = snapshot.sentencePause
@@ -190,7 +183,6 @@ final class SettingsStore: ObservableObject {
             forcePitch: forcePitch,
             forceVolume: forceVolume,
             emojiEnabled: emojiEnabled,
-            inflectionEnabled: inflectionEnabled,
             inflectionLevel: inflectionLevel,
             acceleration: acceleration,
             sentencePause: sentencePause,

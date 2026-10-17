@@ -1733,9 +1733,8 @@ private:
         for (size_t j = count - 1; j-- > 0;) st[j] = a * st[j + 1] + (1.0f - a) * st[j];
 
         // Vibrato: the inflection slider sets its depth, 0 switches it off.
-        const float depth = m_params.inflection_enabled
-            ? m_style->vibrato_cents * (std::clamp(m_params.inflection_level, 0.0f, 1.0f) / INFLECTION_LEVEL_DEFAULT)
-            : 0.0f;
+        const float depth = m_style->vibrato_cents
+            * (std::clamp(m_params.inflection_level, 0.0f, 1.0f) / INFLECTION_LEVEL_DEFAULT);
         const float base = m_params.pitch * m_params.user_pitch;
         float phase = 0.0f;
         for (size_t j = 0; j < count; ++j) {
@@ -1783,7 +1782,7 @@ private:
         std::vector<float> st(count, 0.0f);
 
         const Intonation intonation(m_utt, collect_syllables(), m_total_ms,
-                                    m_voice.pitch_range, m_params.inflection_enabled);
+                                    m_voice.pitch_range);
         for (size_t j = 0; j < count; ++j) {
             float t = (static_cast<float>(static_cast<int>(j) - m_lead) + 0.5f) * FRAME_MS;
             st[j] = intonation.at(t);

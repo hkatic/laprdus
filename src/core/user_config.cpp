@@ -28,7 +28,6 @@ VoiceParams UserSettings::to_voice_params() const {
     params.pitch = 1.0f;  // Voice character pitch is set by voice definition
     params.user_pitch = user_pitch;
     params.volume = volume;
-    params.inflection_enabled = inflection_enabled;
     params.inflection_level = inflection_level;
     params.acceleration = acceleration;
     params.emoji_enabled = emoji_enabled;
@@ -44,7 +43,6 @@ void UserSettings::from_voice_params(const VoiceParams& params) {
     speed = params.speed;
     user_pitch = params.user_pitch;
     volume = params.volume;
-    inflection_enabled = params.inflection_enabled;
     inflection_level = params.inflection_level;
     acceleration = params.acceleration;
     emoji_enabled = params.emoji_enabled;
@@ -205,7 +203,7 @@ std::string escape_json_string(const std::string& str) {
 std::string generate_settings_json(const UserSettings& settings) {
     std::ostringstream json;
     json << "{\n";
-    json << "    \"version\": \"1.0\",\n";
+    json << "    \"version\": \"2.0\",\n";
     json << "    \"description\": \"LaprdusTTS user settings\",\n";
     json << "\n";
     json << "    \"_help\": {\n";
@@ -213,7 +211,6 @@ std::string generate_settings_json(const UserSettings& settings) {
     json << "        \"speech.speed\": \"Speech rate from 0.5 (slow) to 2.0 (fast), default 1.0; formant voices accept 0.25 to 4.0\",\n";
     json << "        \"speech.pitch\": \"Voice pitch from 0.5 (low) to 2.0 (high), default 1.0; formant voices accept 0.25 to 4.0\",\n";
     json << "        \"speech.volume\": \"Volume from 0.0 (silent) to 1.0 (full), default 1.0\",\n";
-    json << "        \"speech.inflection\": \"Enable natural pitch variation based on punctuation (true/false)\",\n";
     json << "        \"speech.inflection_level\": \"Size of the pitch movements: 0.0 (monotone) to 1.0 (maximum), default 0.5\",\n";
     json << "        \"speech.acceleration\": \"Rate multiplier from 0.5 to 3.0, default 1.0 (2.0 doubles the rate the rate slider reaches)\",\n";
     json << "        \"speech.emoji\": \"Convert emoji to spoken text descriptions (true/false)\",\n";
@@ -238,7 +235,6 @@ std::string generate_settings_json(const UserSettings& settings) {
     json << "        \"speed\": " << settings.speed << ",\n";
     json << "        \"pitch\": " << settings.user_pitch << ",\n";
     json << "        \"volume\": " << settings.volume << ",\n";
-    json << "        \"inflection\": " << (settings.inflection_enabled ? "true" : "false") << ",\n";
     json << "        \"inflection_level\": " << settings.inflection_level << ",\n";
     json << "        \"acceleration\": " << settings.acceleration << ",\n";
     json << "        \"emoji\": " << (settings.emoji_enabled ? "true" : "false") << "\n";
@@ -288,7 +284,6 @@ bool parse_settings_json(const std::string& json, UserSettings& settings) {
     settings.speed = static_cast<float>(extract_number_value(json, "speed", 1.0));
     settings.user_pitch = static_cast<float>(extract_number_value(json, "pitch", 1.0));
     settings.volume = static_cast<float>(extract_number_value(json, "volume", 1.0));
-    settings.inflection_enabled = extract_bool_value(json, "inflection", true);
     settings.inflection_level = static_cast<float>(
         extract_number_value(json, "inflection_level", INFLECTION_LEVEL_DEFAULT));
     settings.acceleration = static_cast<float>(
@@ -371,16 +366,13 @@ bool parse_settings_json(const std::string& json, UserSettings& settings) {
     }
 
     // A file of version 1.0 (written before the inflection level existed)
-    // means something else in two places. Its inflection switch is gone from
-    // every settings screen, so "off" becomes the level 0, the monotone the
-    // user can raise again. Its speed and pitch were ignored unless forced,
-    // while now they scale the host's rate and pitch, so unforced ones go
-    // back to normal instead of changing the rate after the upgrade.
+    // meant something else by its speed and pitch: they were ignored unless
+    // forced, while now they scale the host's rate and pitch, so unforced
+    // ones go back to normal instead of changing the rate after the upgrade.
+    // Its "inflection" switch controlled a different effect (a pitch jump at
+    // the punctuation) and is not read: the inflection level starts at its
+    // default, the natural melody.
     if (json.find("\"inflection_level\"") == std::string::npos) {
-        if (!settings.inflection_enabled) {
-            settings.inflection_enabled = true;
-            settings.inflection_level = 0.0f;
-        }
         if (!settings.force_speed) settings.speed = 1.0f;
         if (!settings.force_pitch) settings.user_pitch = 1.0f;
     }

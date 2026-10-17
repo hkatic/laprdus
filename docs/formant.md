@@ -3275,8 +3275,7 @@ their tempo (`VoiceRegistry::nominal_wpm()`), so the top of a 2.0 slider is
 - small segmental effects (high vowels slightly higher, a dip in voiced
   obstruents, a raised onset after voiceless ones).
 
-The contour is smoothed in both directions. With inflection switched off only
-the segmental effects remain.
+The contour is smoothed in both directions.
 
 The **inflection level** setting (0 to 1, default 0.5) scales the finished
 contour, in semitones, by `level / 0.5` just before it is turned into hertz:

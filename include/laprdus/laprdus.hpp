@@ -134,18 +134,6 @@ public:
     float volume() const;
 
     /**
-     * Enable or disable voice inflection.
-     * @param enabled true to enable inflection.
-     */
-    void setInflectionEnabled(bool enabled);
-
-    /**
-     * Check if inflection is enabled.
-     * @return true if enabled.
-     */
-    bool inflectionEnabled() const;
-
-    /**
      * Set the inflection level (every voice).
      * @param level 0.0 (monotone) to 1.0 (maximum), 0.5 as measured.
      */

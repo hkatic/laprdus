@@ -904,12 +904,11 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         """Apply the inflection level (size of the pitch movements).
 
         NVDA's inflection slider alone sets it (50 = the measured movements,
-        0 = monotone); speech.inflection and speech.inflection_level from
-        settings.json are not used under NVDA.
+        0 = monotone); speech.inflection_level from settings.json is not
+        used under NVDA.
         """
         if not self._engine:
             return
-        self._engine.set_inflection(True)
         self._engine.set_inflection_level(_nvda_to_inflection_level(self._inflection))
 
     def _loadSharedSettings(self):
@@ -988,9 +987,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                 self._engine.set_volume(laprdus_volume)
                 _debug_log("_loadSharedSettings: forced volume=%.2f" % laprdus_volume)
 
-            # NVDA's inflection slider sets the intonation (speech.inflection
-            # of an old settings.json would otherwise switch it off with no
-            # control left to switch it on)
+            # NVDA's inflection slider sets the intonation, not settings.json
             self._applyInflection()
 
             # Apply emoji setting

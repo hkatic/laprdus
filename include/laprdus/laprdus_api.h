@@ -266,17 +266,6 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_volume(
 );
 
 /**
- * Enable or disable punctuation-based voice inflection.
- * @param handle Engine handle.
- * @param enabled Non-zero to enable, zero to disable.
- * @return LAPRDUS_OK on success, error code on failure.
- */
-LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_inflection_enabled(
-    LaprdusHandle handle,
-    int enabled
-);
-
-/**
  * Set the inflection level of every voice (on the singing presets it sets
  * the depth of the vibrato, 0 switches it off): how large the pitch
  * movements are. 0.0 is a monotone, 0.5 (the default) the movements as

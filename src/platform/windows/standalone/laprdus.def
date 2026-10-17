@@ -19,7 +19,6 @@ EXPORTS
     laprdus_set_speed
     laprdus_set_pitch
     laprdus_set_volume
-    laprdus_set_inflection_enabled
 
     ; Synthesis
     laprdus_synthesize

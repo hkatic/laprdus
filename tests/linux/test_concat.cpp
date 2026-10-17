@@ -219,7 +219,7 @@ TEST_CASE("User pitch moves the pitch and keeps the duration", "[concat][pitch]"
     if (!dir) return;
     Engine engine;
     REQUIRE(laprdus_set_voice(engine.handle, "josip", dir) == LAPRDUS_OK);
-    REQUIRE(laprdus_set_inflection_enabled(engine.handle, 0) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_inflection_level(engine.handle, 0.0f) == LAPRDUS_OK);
     const char* text = "Mama ima lala.";
     std::vector<int16_t> normal = speak(engine.handle, text);
     REQUIRE(laprdus_set_user_pitch(engine.handle, 1.5f) == LAPRDUS_OK);
@@ -240,7 +240,7 @@ TEST_CASE("Derived voices differ from their base voice in pitch", "[concat][pitc
     const char* dir = data_dir();
     if (!dir) return;
     Engine engine;
-    REQUIRE(laprdus_set_inflection_enabled(engine.handle, 0) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_inflection_level(engine.handle, 0.0f) == LAPRDUS_OK);
     const char* text = "Mama ima lala.";
     REQUIRE(laprdus_set_voice(engine.handle, "josip", dir) == LAPRDUS_OK);
     double josip = median_pitch(speak(engine.handle, text));
@@ -266,8 +266,8 @@ TEST_CASE("A question ends higher than a statement", "[concat][intonation]") {
     REQUIRE(statement > 0.0);
     REQUIRE(question > statement * 1.15);
 
-    // Without inflection both end at the voice's own pitch
-    REQUIRE(laprdus_set_inflection_enabled(engine.handle, 0) == LAPRDUS_OK);
+    // At inflection level 0 both end at the voice's own pitch
+    REQUIRE(laprdus_set_inflection_level(engine.handle, 0.0f) == LAPRDUS_OK);
     double flat_statement = final_pitch(speak(engine.handle, "Ona ima novi auto."));
     double flat_question = final_pitch(speak(engine.handle, "Ona ima novi auto?"));
     REQUIRE(close_to(flat_statement, flat_question, 0.05));

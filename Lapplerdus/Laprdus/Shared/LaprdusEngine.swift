@@ -185,7 +185,6 @@ final class LaprdusEngine: @unchecked Sendable {
             _ = laprdus_set_user_pitch(handle, settings.pitch)
             _ = laprdus_set_volume(handle, settings.volume)
             _ = laprdus_set_emoji_enabled(handle, settings.emojiEnabled ? 1 : 0)
-            _ = laprdus_set_inflection_enabled(handle, settings.inflectionEnabled ? 1 : 0)
             _ = laprdus_set_inflection_level(handle, settings.inflectionLevel)
             _ = laprdus_set_acceleration(handle, settings.acceleration)
             _ = laprdus_set_sentence_pause(handle, UInt32(max(0, min(settings.sentencePause, 2000))))

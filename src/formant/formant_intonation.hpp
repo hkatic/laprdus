@@ -62,20 +62,16 @@ public:
      * @param syls Its syllables with nucleus timing.
      * @param total_ms Length of the clause's sound.
      * @param pitch_range Size of the movements (1.0 = as measured).
-     * @param enabled false gives a monotone (at() returns 0).
      */
     Intonation(const Utterance& utt, const std::vector<Syllable>& syls,
-               float total_ms, float pitch_range, bool enabled);
+               float total_ms, float pitch_range);
 
     float at(float t_ms) const;
-
-    bool enabled() const { return m_enabled; }
 
 private:
     std::vector<Bump> m_bumps;
     float m_total = 1.0f;
     float m_drop = 0.0f;
-    bool m_enabled = false;
 };
 
 } // namespace formant

@@ -38,7 +38,6 @@ data class SettingsUiState(
     val forceLanguage: Boolean = SettingsRepository.DEFAULT_FORCE_LANGUAGE,
     // Advanced settings
     val emojiEnabled: Boolean = SettingsRepository.DEFAULT_EMOJI_ENABLED,
-    val inflectionEnabled: Boolean = SettingsRepository.DEFAULT_INFLECTION_ENABLED,
     val inflectionLevel: Float = SettingsRepository.DEFAULT_INFLECTION_LEVEL,
     val acceleration: Float = SettingsRepository.DEFAULT_ACCELERATION,
     /** Words per minute of the selected voice at speed 1.0 and acceleration 1.0. */
@@ -128,7 +127,6 @@ class SettingsViewModel @Inject constructor(
                             forceVolume = allSettings.forceVolume,
                             forceLanguage = allSettings.forceLanguage,
                             emojiEnabled = allSettings.emojiEnabled,
-                            inflectionEnabled = allSettings.inflectionEnabled,
                             inflectionLevel = allSettings.inflectionLevel,
                             acceleration = allSettings.acceleration,
                             nominalWpm = tts.getNominalWpm(allSettings.defaultVoice),

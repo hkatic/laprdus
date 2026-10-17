@@ -348,7 +348,7 @@ ClausePlan plan_clause(const formant::Utterance& utt, const UnitBank& bank,
     // Pitch contour
     // ---------------------------------------------------------------------
     const float total_ms = cursor / samples_per_ms;
-    const formant::Intonation intonation(utt, syls, total_ms, 1.0f, params.inflection_enabled);
+    const formant::Intonation intonation(utt, syls, total_ms, 1.0f);
 
     const size_t points = static_cast<size_t>(std::ceil(total_ms / CONTOUR_STEP_MS)) + 2;
     std::vector<float> st(points, 0.0f);
@@ -358,18 +358,17 @@ ClausePlan plan_clause(const formant::Utterance& utt, const UnitBank& bank,
     }
 
     // Pitch starts higher after a voiceless consonant and settles quickly
-    if (params.inflection_enabled) {
-        for (size_t si = 1; si < plan.segments.size(); ++si) {
-            const Segment& seg = plan.segments[si];
-            const Segment& before = plan.segments[si - 1];
-            if (!seg.unit || !seg.unit->has_voicing()) continue;
-            if (!before.unit || before.unit->has_voicing()) continue;
-            const float start_ms = seg.start / samples_per_ms;
-            const size_t k0 = static_cast<size_t>(start_ms / CONTOUR_STEP_MS);
-            for (size_t k = k0; k < points && k < k0 + 150; ++k) {
-                const float t = static_cast<float>(k - k0) * CONTOUR_STEP_MS;
-                st[k] += 0.9f * std::exp(-t / 18.0f);
-            }
+    // (the inflection level scales this away with the rest of the contour)
+    for (size_t si = 1; si < plan.segments.size(); ++si) {
+        const Segment& seg = plan.segments[si];
+        const Segment& before = plan.segments[si - 1];
+        if (!seg.unit || !seg.unit->has_voicing()) continue;
+        if (!before.unit || before.unit->has_voicing()) continue;
+        const float start_ms = seg.start / samples_per_ms;
+        const size_t k0 = static_cast<size_t>(start_ms / CONTOUR_STEP_MS);
+        for (size_t k = k0; k < points && k < k0 + 150; ++k) {
+            const float t = static_cast<float>(k - k0) * CONTOUR_STEP_MS;
+            st[k] += 0.9f * std::exp(-t / 18.0f);
         }
     }
 

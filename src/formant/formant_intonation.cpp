@@ -13,9 +13,8 @@ namespace laprdus {
 namespace formant {
 
 Intonation::Intonation(const Utterance& utt, const std::vector<Syllable>& syls,
-                       float total_ms, float pitch_range, bool enabled)
-    : m_total(std::max(total_ms, 1.0f)), m_enabled(enabled) {
-    if (!enabled) return;
+                       float total_ms, float pitch_range)
+    : m_total(std::max(total_ms, 1.0f)) {
     const float total = m_total;
     std::vector<int> accents;
     for (size_t s = 0; s < syls.size(); ++s) {
@@ -249,7 +248,6 @@ Intonation::Intonation(const Utterance& utt, const std::vector<Syllable>& syls,
 }
 
 float Intonation::at(float t) const {
-    if (!m_enabled) return 0.0f;
     float x = std::clamp(t / m_total, 0.0f, 1.0f);
     float value = m_drop * (0.37f - x);
     for (const Bump& bump : m_bumps) {

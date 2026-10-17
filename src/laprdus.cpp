@@ -122,21 +122,6 @@ float Laprdus::volume() const {
     return 1.0f;
 }
 
-void Laprdus::setInflectionEnabled(bool enabled) {
-    if (m_engine) {
-        VoiceParams params = m_engine->voice_params();
-        params.inflection_enabled = enabled;
-        m_engine->set_voice_params(params);
-    }
-}
-
-bool Laprdus::inflectionEnabled() const {
-    if (m_engine) {
-        return m_engine->voice_params().inflection_enabled;
-    }
-    return true;
-}
-
 void Laprdus::setInflectionLevel(float level) {
     if (m_engine) {
         VoiceParams params = m_engine->voice_params();

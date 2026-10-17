@@ -445,7 +445,7 @@ TEST_CASE("The three formant voices are different speakers", "[formant][synthesi
     for (int i = 0; i < 3; ++i) {
         Engine engine;
         REQUIRE(laprdus_set_voice(engine.handle, FORMANT_VOICES[i], NO_DATA) == LAPRDUS_OK);
-        REQUIRE(laprdus_set_inflection_enabled(engine.handle, 0) == LAPRDUS_OK);
+        REQUIRE(laprdus_set_inflection_level(engine.handle, 0.0f) == LAPRDUS_OK);
         pitch[i] = pitch_hz(speak(engine.handle, "aaa"));
         REQUIRE(pitch[i] > 70.0);
         REQUIRE(pitch[i] < 180.0);
@@ -3280,7 +3280,7 @@ TEST_CASE("Word-class rules place the accent of loans, derived nouns and prefixe
 TEST_CASE("Speech rate changes duration, not pitch", "[formant][params]") {
     Engine engine;
     REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
-    REQUIRE(laprdus_set_inflection_enabled(engine.handle, 0) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_inflection_level(engine.handle, 0.0f) == LAPRDUS_OK);
 
     const char* text = "mama ima malu nanu";
     std::vector<int16_t> normal = speak(engine.handle, text);
@@ -3300,7 +3300,7 @@ TEST_CASE("Speech rate changes duration, not pitch", "[formant][params]") {
 TEST_CASE("Pitch settings change pitch, not duration", "[formant][params]") {
     Engine engine;
     REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
-    REQUIRE(laprdus_set_inflection_enabled(engine.handle, 0) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_inflection_level(engine.handle, 0.0f) == LAPRDUS_OK);
 
     std::vector<int16_t> normal = speak(engine.handle, "aaa");
     double base = pitch_hz(normal);
@@ -3422,7 +3422,7 @@ TEST_CASE("The speech rate still changes the rate under an acceleration", "[form
 TEST_CASE("Formant voices accept the wider rate and pitch ranges", "[formant][params]") {
     Engine engine;
     REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
-    REQUIRE(laprdus_set_inflection_enabled(engine.handle, 0) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_inflection_level(engine.handle, 0.0f) == LAPRDUS_OK);
 
     const char* text = "mama ima malu nanu";
     REQUIRE(laprdus_set_speed(engine.handle, 0.5f) == LAPRDUS_OK);
@@ -3471,7 +3471,8 @@ TEST_CASE("A settings.json of version 1.0 keeps its meaning", "[formant][params]
         "force": { "speed": false, "pitch": false, "volume": false } })");
     REQUIRE(v1[0] == Catch::Approx(1.0f));
     REQUIRE(v1[1] == Catch::Approx(1.0f));
-    REQUIRE(v1[2] == Catch::Approx(0.0f));
+    // The 1.0 switch controlled another effect; it does not set the level
+    REQUIRE(v1[2] == Catch::Approx(0.5f));
 
     std::vector<float> forced = load(R"({ "version": "1.0",
         "speech": { "speed": 1.6, "pitch": 1.3, "volume": 1, "inflection": true },
@@ -3480,8 +3481,8 @@ TEST_CASE("A settings.json of version 1.0 keeps its meaning", "[formant][params]
     REQUIRE(forced[1] == Catch::Approx(1.3f));
     REQUIRE(forced[2] == Catch::Approx(0.5f));
 
-    std::vector<float> v2 = load(R"({ "version": "1.0",
-        "speech": { "speed": 1.6, "pitch": 1.3, "volume": 1, "inflection": true,
+    std::vector<float> v2 = load(R"({ "version": "2.0",
+        "speech": { "speed": 1.6, "pitch": 1.3, "volume": 1,
                     "inflection_level": 0.7, "acceleration": 1 },
         "force": { "speed": false, "pitch": false, "volume": false } })");
     REQUIRE(v2[0] == Catch::Approx(1.6f));
@@ -3533,8 +3534,8 @@ TEST_CASE("Punctuation selects intonation", "[formant][prosody]") {
     REQUIRE(statement_end > 50.0);
     REQUIRE(question_end > statement_end * 1.25);
 
-    // With inflection off both stay on the same flat pitch.
-    REQUIRE(laprdus_set_inflection_enabled(engine.handle, 0) == LAPRDUS_OK);
+    // At inflection level 0 both stay on the same flat pitch.
+    REQUIRE(laprdus_set_inflection_level(engine.handle, 0.0f) == LAPRDUS_OK);
     statement_end = pitch_hz(speak(engine.handle, statement), 0.82, 1.0);
     question_end = pitch_hz(speak(engine.handle, question), 0.82, 1.0);
     REQUIRE(close_to(question_end, statement_end, 0.05));

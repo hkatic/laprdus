@@ -64,7 +64,6 @@ class SettingsRepository internal constructor(
 
         // Advanced settings keys
         private val KEY_EMOJI_ENABLED = booleanPreferencesKey("emoji_enabled")
-        private val KEY_INFLECTION_ENABLED = booleanPreferencesKey("inflection_enabled")
         private val KEY_INFLECTION_LEVEL = floatPreferencesKey("inflection_level")
         private val KEY_ACCELERATION = floatPreferencesKey("acceleration")
         private val KEY_SENTENCE_PAUSE = intPreferencesKey("sentence_pause")
@@ -98,7 +97,6 @@ class SettingsRepository internal constructor(
 
         // Advanced settings defaults
         const val DEFAULT_EMOJI_ENABLED = false
-        const val DEFAULT_INFLECTION_ENABLED = true
         const val DEFAULT_INFLECTION_LEVEL = 0.5f
         const val DEFAULT_ACCELERATION = 1.0f
         val ACCELERATION_RANGE = 0.5f..3.0f
@@ -467,27 +465,6 @@ class SettingsRepository internal constructor(
     // ==========================================================================
 
     /**
-     * Flow of the inflection enabled setting.
-     * When enabled, pitch varies based on punctuation (questions rise, exclamations emphasize).
-     * Enabled by default.
-     */
-    val inflectionEnabled: Flow<Boolean> = prefs
-        .map { preferences ->
-            preferences[KEY_INFLECTION_ENABLED] ?: DEFAULT_INFLECTION_ENABLED
-        }
-
-    /**
-     * Set whether voice inflection is enabled.
-     * @param enabled True to enable pitch variation for questions, exclamations, and pauses
-     */
-    suspend fun setInflectionEnabled(enabled: Boolean) {
-        ensureMigrated()
-        dataStore.edit { preferences ->
-            preferences[KEY_INFLECTION_ENABLED] = enabled
-        }
-    }
-
-    /**
      * Flow of the inflection level of the formant voices (0.0 - 1.0).
      * 0.0 is a monotone, 0.5 (default) the measured pitch movements, 1.0
      * twice those movements. The recorded voices ignore it.
@@ -764,7 +741,6 @@ class SettingsRepository internal constructor(
         val forceLanguage: Boolean = DEFAULT_FORCE_LANGUAGE,
         // Advanced settings
         val emojiEnabled: Boolean = DEFAULT_EMOJI_ENABLED,
-        val inflectionEnabled: Boolean = DEFAULT_INFLECTION_ENABLED,
         val inflectionLevel: Float = DEFAULT_INFLECTION_LEVEL,
         val acceleration: Float = DEFAULT_ACCELERATION,
         val sentencePause: Int = DEFAULT_SENTENCE_PAUSE,
@@ -805,7 +781,6 @@ class SettingsRepository internal constructor(
         forceVolume = this[KEY_FORCE_VOLUME] ?: DEFAULT_FORCE_VOLUME,
         forceLanguage = this[KEY_FORCE_LANGUAGE] ?: DEFAULT_FORCE_LANGUAGE,
         emojiEnabled = this[KEY_EMOJI_ENABLED] ?: DEFAULT_EMOJI_ENABLED,
-        inflectionEnabled = this[KEY_INFLECTION_ENABLED] ?: DEFAULT_INFLECTION_ENABLED,
         inflectionLevel = this[KEY_INFLECTION_LEVEL] ?: DEFAULT_INFLECTION_LEVEL,
         acceleration = this[KEY_ACCELERATION] ?: DEFAULT_ACCELERATION,
         sentencePause = this[KEY_SENTENCE_PAUSE] ?: DEFAULT_SENTENCE_PAUSE,

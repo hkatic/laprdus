@@ -20,7 +20,6 @@ struct UserSettings {
     float speed = 1.0f;               // Speech rate (0.5 - 2.0; formant voices 0.25 - 4.0)
     float user_pitch = 1.0f;          // User pitch preference (0.5 - 2.0; formant voices 0.25 - 4.0)
     float volume = 1.0f;              // Volume (0.0 - 1.0)
-    bool inflection_enabled = true;   // Enable punctuation inflection
     float inflection_level = INFLECTION_LEVEL_DEFAULT;  // Size of pitch movements (0.0 - 1.0)
     float acceleration = ACCELERATION_DEFAULT;          // Rate multiplier (0.5 - 3.0)
     bool emoji_enabled = false;       // Enable emoji to text conversion

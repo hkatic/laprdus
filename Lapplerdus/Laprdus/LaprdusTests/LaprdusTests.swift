@@ -705,7 +705,6 @@ struct SettingsTests {
         #expect(snapshot.volume == 1.0)
         #expect(snapshot.forceSpeed == false)
         #expect(snapshot.emojiEnabled == false)
-        #expect(snapshot.inflectionEnabled == true)
         #expect(snapshot.inflectionLevel == 0.5)
         #expect(snapshot.acceleration == 1.0)
         #expect(snapshot.sentencePause == 100)
@@ -722,13 +721,13 @@ struct SettingsTests {
 
         let store = SettingsStore(defaults: defaults)
         store.speed = 1.7
-        store.inflectionEnabled = false
+        store.inflectionLevel = 0.2
         store.defaultVoice = "vlado"
         store.language = "bs-BA"
 
         let reloaded = SettingsSnapshot.load(from: defaults)
         #expect(reloaded.speed == 1.7)
-        #expect(reloaded.inflectionEnabled == false)
+        #expect(reloaded.inflectionLevel == 0.2)
         #expect(reloaded.defaultVoice == "vlado")
         #expect(reloaded.language == "bs-BA")
         #expect(defaults.string(forKey: "language") == "bs-BA")

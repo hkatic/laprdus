@@ -95,7 +95,6 @@ class LaprdusTTS private constructor() {
     private external fun nativeSetPitch(handle: Long, pitch: Float)
     private external fun nativeSetUserPitch(handle: Long, pitch: Float)
     private external fun nativeSetVolume(handle: Long, volume: Float)
-    private external fun nativeSetInflectionEnabled(handle: Long, enabled: Boolean)
     private external fun nativeSetInflectionLevel(handle: Long, level: Float)
     private external fun nativeSetAcceleration(handle: Long, acceleration: Float)
     private external fun nativeGetNominalWpm(voiceId: String): Float
@@ -250,16 +249,6 @@ class LaprdusTTS private constructor() {
         }
 
     /**
-     * Enable/disable punctuation-based inflection
-     * When enabled, applies pitch contours based on punctuation marks
-     */
-    var inflectionEnabled: Boolean = true
-        set(value) {
-            field = value
-            nativeSetInflectionEnabled(handle, value)
-        }
-
-    /**
      * Inflection level of the formant voices (0.0 - 1.0, default 0.5):
      * 0.0 is a monotone, 0.5 the measured pitch movements, 1.0 twice those.
      * The recorded voices ignore it.
@@ -405,7 +394,6 @@ class LaprdusTTS private constructor() {
      */
     fun applySettings(settings: SettingsRepository.TTSSettings) {
         emojiEnabled = settings.emojiEnabled
-        inflectionEnabled = settings.inflectionEnabled
         inflectionLevel = settings.inflectionLevel
         acceleration = settings.acceleration
         sentencePause = settings.sentencePause

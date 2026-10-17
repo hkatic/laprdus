@@ -187,7 +187,6 @@ samples (`tests/linux/test_concat.cpp`).
 | acceleration | 0.5 - 3.0 | multiplies the speed (`VoiceParams::effective_speed()`), the product narrowed to 0.5 - 4.0 |
 | pitch (voice character) | 0.25 - 4.0 | spectrum warp `sqrt(pitch)` at analysis, pitch × `pitch` at rendering |
 | user_pitch | 0.5 - 2.0 | pitch × `user_pitch` at rendering, formants unchanged |
-| inflection_enabled | | off: a flat contour at the voice's pitch (durations unchanged) |
 | inflection_level | 0 - 1 | scales the whole contour, as for the formant voices |
 | volume | 0 - 1 | gain before the limiter |
 

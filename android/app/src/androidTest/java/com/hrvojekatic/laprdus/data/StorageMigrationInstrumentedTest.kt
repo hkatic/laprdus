@@ -363,7 +363,6 @@ class StorageMigrationInstrumentedTest {
         assertEquals(LEGACY_SETTINGS[KEY_FORCE_VOLUME], settings.forceVolume)
         assertEquals(LEGACY_SETTINGS[KEY_FORCE_LANGUAGE], settings.forceLanguage)
         assertEquals(LEGACY_SETTINGS[KEY_EMOJI_ENABLED], settings.emojiEnabled)
-        assertEquals(LEGACY_SETTINGS[KEY_INFLECTION_ENABLED], settings.inflectionEnabled)
         assertEquals(LEGACY_SETTINGS[KEY_SENTENCE_PAUSE], settings.sentencePause)
         assertEquals(LEGACY_SETTINGS[KEY_COMMA_PAUSE], settings.commaPause)
         assertEquals(LEGACY_SETTINGS[KEY_NEWLINE_PAUSE], settings.newlinePause)

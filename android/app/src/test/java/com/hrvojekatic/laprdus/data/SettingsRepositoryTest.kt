@@ -409,31 +409,6 @@ class SettingsRepositoryTest {
     }
 
     // ==========================================================================
-    // Inflection Enabled Settings Tests
-    // ==========================================================================
-
-    @Test
-    fun `inflectionEnabled returns true when not set`() = runTest {
-        val inflection = repository.inflectionEnabled.first()
-        assertTrue(inflection)  // Default is true
-    }
-
-    @Test
-    fun `setInflectionEnabled persists false value`() = runTest {
-        repository.setInflectionEnabled(false)
-        val inflection = repository.inflectionEnabled.first()
-        assertFalse(inflection)
-    }
-
-    @Test
-    fun `setInflectionEnabled persists true value after toggling`() = runTest {
-        repository.setInflectionEnabled(false)
-        repository.setInflectionEnabled(true)
-        val inflection = repository.inflectionEnabled.first()
-        assertTrue(inflection)
-    }
-
-    // ==========================================================================
     // Formant Voice Settings Tests (inflection level, acceleration)
     // ==========================================================================
 
@@ -678,7 +653,7 @@ class SettingsRepositoryTest {
     @Test
     fun `allSettings includes advanced and dictionary settings`() = runTest {
         repository.setEmojiEnabled(true)
-        repository.setInflectionEnabled(false)
+        repository.setInflectionLevel(0.2f)
         repository.setSentencePause(250)
         repository.setCommaPause(150)
         repository.setNewlinePause(300)
@@ -688,7 +663,7 @@ class SettingsRepositoryTest {
         val settings = repository.allSettings.first()
 
         assertTrue(settings.emojiEnabled)
-        assertFalse(settings.inflectionEnabled)
+        assertEquals(0.2f, settings.inflectionLevel)
         assertEquals(250, settings.sentencePause)
         assertEquals(150, settings.commaPause)
         assertEquals(300, settings.newlinePause)
@@ -701,7 +676,7 @@ class SettingsRepositoryTest {
         val settings = repository.allSettings.first()
 
         assertEquals(SettingsRepository.DEFAULT_EMOJI_ENABLED, settings.emojiEnabled)
-        assertEquals(SettingsRepository.DEFAULT_INFLECTION_ENABLED, settings.inflectionEnabled)
+        assertEquals(SettingsRepository.DEFAULT_INFLECTION_LEVEL, settings.inflectionLevel)
         assertEquals(SettingsRepository.DEFAULT_SENTENCE_PAUSE, settings.sentencePause)
         assertEquals(SettingsRepository.DEFAULT_COMMA_PAUSE, settings.commaPause)
         assertEquals(SettingsRepository.DEFAULT_NEWLINE_PAUSE, settings.newlinePause)

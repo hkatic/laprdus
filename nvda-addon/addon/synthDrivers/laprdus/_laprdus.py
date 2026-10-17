@@ -147,10 +147,7 @@ def _configure_functions(lib):
     lib.laprdus_set_volume.argtypes = [LaprdusHandle, ctypes.c_float]
     lib.laprdus_set_volume.restype = LaprdusError
 
-    lib.laprdus_set_inflection_enabled.argtypes = [LaprdusHandle, ctypes.c_int]
-    lib.laprdus_set_inflection_enabled.restype = LaprdusError
-
-    # Formant voices only: size of the pitch movements and rate multiplier
+    # Size of the pitch movements and rate multiplier (every voice)
     lib.laprdus_set_inflection_level.argtypes = [LaprdusHandle, ctypes.c_float]
     lib.laprdus_set_inflection_level.restype = LaprdusError
 
@@ -646,14 +643,6 @@ class LaprdusEngine(object):
     def set_volume(self, volume):
         """Set volume (0.0 to 1.0, default 1.0)."""
         result = self._lib.laprdus_set_volume(self._handle, ctypes.c_float(volume))
-        return result == LAPRDUS_OK
-
-    def set_inflection(self, enabled):
-        """Enable or disable punctuation-based inflection."""
-        result = self._lib.laprdus_set_inflection_enabled(
-            self._handle,
-            1 if enabled else 0
-        )
         return result == LAPRDUS_OK
 
     def set_inflection_level(self, level):
