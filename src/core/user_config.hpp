@@ -34,7 +34,7 @@ struct UserSettings {
     uint32_t spelling_pause_ms = 200;   // Pause between spelled characters
 
     // Spelling
-    SpellingMode spelling_mode = SpellingMode::LetterNames;  // Letter names or sounds
+    SpellingMode spelling_mode = SpellingMode::LetterSounds; // Letter sounds (default) or names
     int spelling_speed = SPELLING_SPEED_DEFAULT;             // Rate of spelled characters (0-100)
 
     // The voice (empty = Zvonko). Every voice speaks every language; the

@@ -220,7 +220,7 @@ std::string generate_settings_json(const UserSettings& settings) {
     json << "        \"pauses.newline\": \"Pause at newlines in milliseconds, 0-2000\",\n";
     json << "        \"pauses.spelling\": \"Pause between spelled characters in milliseconds, 0-2000\",\n";
     json << "        \"spelling.speed\": \"Lower values add longer pauses after each character. Characters always use the normal speech rate. 100% adds no extra pause; default 50%.\",\n";
-    json << "        \"spelling.mode\": \"How letters are spelled: 'names' (be, ce, de) or 'sounds' (the sound of each letter)\",\n";
+    json << "        \"spelling.mode\": \"How letters are spelled: 'sounds' (the sound of each letter; default) or 'names' (be, ce, de)\",\n";
     json << "        \"force.speed\": \"Use Laprdus speed setting instead of system/SAPI5 (true/false)\",\n";
     json << "        \"force.pitch\": \"Use Laprdus pitch setting instead of system/SAPI5 (true/false)\",\n";
     json << "        \"force.volume\": \"Use Laprdus volume setting instead of system/SAPI5 (true/false)\",\n";
@@ -317,7 +317,7 @@ bool parse_settings_json(const std::string& json, UserSettings& settings) {
     // Extract spelling settings from the "spelling" section (its "speed"
     // must not be confused with the speech speed, so the section is cut out)
     settings.spelling_speed = SPELLING_SPEED_DEFAULT;
-    settings.spelling_mode = SpellingMode::LetterNames;
+    settings.spelling_mode = SpellingMode::LetterSounds;   // the default: a file without the key
     size_t spelling_pos = json.find("\"spelling\": {");
     if (spelling_pos == std::string::npos) spelling_pos = json.find("\"spelling\":{");
     if (spelling_pos != std::string::npos) {
@@ -329,8 +329,10 @@ bool parse_settings_json(const std::string& json, UserSettings& settings) {
                 settings.spelling_speed = std::clamp(
                     extract_int_value(section, "speed", SPELLING_SPEED_DEFAULT),
                     SPELLING_SPEED_MIN, SPELLING_SPEED_MAX);
-                settings.spelling_mode = extract_string_value(section, "mode") == "sounds"
-                    ? SpellingMode::LetterSounds : SpellingMode::LetterNames;
+                // Only an explicit "names" turns the sounds off
+                if (extract_string_value(section, "mode") == "names") {
+                    settings.spelling_mode = SpellingMode::LetterNames;
+                }
             }
         }
     }

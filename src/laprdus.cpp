@@ -159,7 +159,7 @@ void Laprdus::setSpellingMode(SpellingMode mode) {
 }
 
 SpellingMode Laprdus::spellingMode() const {
-    return m_engine ? m_engine->spelling_mode() : SpellingMode::LetterNames;
+    return m_engine ? m_engine->spelling_mode() : SpellingMode::LetterSounds;
 }
 
 void Laprdus::setSpellingSpeed(int percent) {

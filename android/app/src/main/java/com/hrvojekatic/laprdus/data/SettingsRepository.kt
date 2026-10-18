@@ -111,7 +111,7 @@ class SettingsRepository internal constructor(
         /** Spelling modes: letter names ("be", "ce") or the sound of each letter. */
         const val SPELLING_MODE_NAMES = "names"
         const val SPELLING_MODE_SOUNDS = "sounds"
-        const val DEFAULT_SPELLING_MODE = SPELLING_MODE_NAMES
+        const val DEFAULT_SPELLING_MODE = SPELLING_MODE_SOUNDS
 
         // Default TTS dialog defaults
         const val DEFAULT_DONT_ASK_DEFAULT_TTS = false

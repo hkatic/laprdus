@@ -664,7 +664,7 @@ void TTSEngine::set_spelling_mode(SpellingMode mode) {
 }
 
 SpellingMode TTSEngine::spelling_mode() const {
-    return m_impl ? m_impl->voice_params.spelling_mode : SpellingMode::LetterNames;
+    return m_impl ? m_impl->voice_params.spelling_mode : SpellingMode::LetterSounds;
 }
 
 void TTSEngine::set_spelling_speed(int percent) {

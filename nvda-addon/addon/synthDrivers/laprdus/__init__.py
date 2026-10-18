@@ -138,6 +138,73 @@ except ImportError:
         BreakCommand = None
         LangChangeCommand = None
 
+# The prosody commands: NVDA raises the pitch of a capital letter it spells
+# with PitchCommand(offset=capPitchChange) before the letter and PitchCommand()
+# after it, and only when the synthesizer lists PitchCommand among its
+# supported commands (speech.getSpellingSpeech sets the change to 0
+# otherwise). RateCommand and VolumeCommand work the same way.
+try:
+    from speech.commands import PitchCommand, RateCommand, VolumeCommand
+except ImportError:
+    try:
+        from speech import PitchCommand, RateCommand, VolumeCommand
+    except ImportError:
+        PitchCommand = None
+        RateCommand = None
+        VolumeCommand = None
+
+# Prosody command class -> the setting it changes
+_PROSODY_SETTINGS = dict(
+    (cls, name)
+    for cls, name in ((PitchCommand, "pitch"), (RateCommand, "rate"), (VolumeCommand, "volume"))
+    if cls is not None
+)
+
+
+def _prosody_setting(item):
+    """The setting ("pitch", "rate", "volume") a prosody command changes, or None."""
+    for cls, name in _PROSODY_SETTINGS.items():
+        if isinstance(item, cls):
+            return name
+    return None
+
+
+def _prosody_change(item):
+    """The change a prosody command asks for, as (offset, multiplier) on
+    NVDA's 0-100 scale, or None when it returns to the default.
+
+    NVDA builds the command with either an offset (the capital pitch change
+    is PitchCommand(offset=30)) or a multiplier (SSML-like prosody), never
+    both; its newValue property would resolve them against the saved
+    setting, but the driver resolves them itself against the slider it
+    actually applies, so forced Laprdus values get the change too.
+    """
+    if getattr(item, "isDefault", False):
+        return None
+    offset = getattr(item, "_offset", None)
+    multiplier = getattr(item, "_multiplier", None)
+    if offset is None or multiplier is None:
+        try:
+            offset = item.offset
+            multiplier = 1 if offset else item.multiplier
+        except Exception:
+            return None
+    if not offset and multiplier == 1:
+        return None
+    return (offset, multiplier)
+
+
+def _apply_prosody_change(value, change):
+    """Apply an (offset, multiplier) change to a 0-100 slider value."""
+    if not change:
+        return value
+    offset, multiplier = change
+    if offset:
+        value = value + offset
+    else:
+        value = value * multiplier
+    return max(0, min(100, value))
+
 # The entries of the Language combo: id plus display name
 try:
     from autoSettingsUtils.utils import StringParameterInfo
@@ -271,11 +338,18 @@ class SynthDriver(synthDriverHandler.SynthDriver):
     # (NVDA's automatic language switching) switches among Croatian,
     # Serbian and Bosnian for the text that follows it; other languages
     # fall back to the Language setting. The voice never changes.
+    # PitchCommand makes NVDA send its capital pitch change (the "Capital
+    # pitch change percentage" of the voice settings) around a spelled
+    # capital letter; without it NVDA sets that change to zero for this
+    # synthesizer and capitals sound like small letters.
     supportedCommands = {
         IndexCommand,
         CharacterModeCommand,
         BreakCommand,
         LangChangeCommand,
+        PitchCommand,
+        RateCommand,
+        VolumeCommand,
     } - {None}  # Remove None if any imports failed
 
     # Supported notifications - MUST include both per NVDA docs
@@ -331,6 +405,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         # which NVDA's sliders scale
         self._laprdusSpeed = 1.0
         self._laprdusPitch = 1.0
+        self._laprdusVolume = 1.0  # used when the Laprdus volume is forced
 
         # Force flags - when True, Laprdus config values override NVDA sliders
         self._forceSpeed = False
@@ -403,15 +478,20 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                 # Poison pill - exit thread
                 break
 
-            text, index, useSpelledSynthesis, isSpellingItem, breakMs, lang = item
-            self._synthesizeAndPlay(text, index, useSpelledSynthesis, isSpellingItem, breakMs, lang)
+            text, index, useSpelledSynthesis, isSpellingItem, breakMs, lang, prosody = item
+            self._synthesizeAndPlay(text, index, useSpelledSynthesis, isSpellingItem, breakMs, lang,
+                                    prosody)
 
-    def _queueItem(self, text, index, spelled=False, isSpelling=False, breakMs=0, lang=None):
+    def _queueItem(self, text, index, spelled=False, isSpelling=False, breakMs=0, lang=None,
+                   prosody=None):
         """Queue one item for the speech thread: text to speak (spelled when
         `spelled`), or, with breakMs > 0, silence of that length (NVDA's
         BreakCommand). `lang` is the language ("hr", "sr", "bs") a
-        LangChangeCommand asked for, or None for the Language setting."""
-        self._speakQueue.put((text, index, spelled, isSpelling, breakMs, lang))
+        LangChangeCommand asked for, or None for the Language setting.
+        `prosody` holds the changes the PitchCommand, RateCommand and
+        VolumeCommand in force for this text ask for ({"pitch": (offset,
+        multiplier), ...}), or None for the sliders as they are."""
+        self._speakQueue.put((text, index, spelled, isSpelling, breakMs, lang, prosody))
 
     def _applyLanguage(self, lang):
         """Make the engine speak `lang` ("hr", "sr" or "bs"; None for the
@@ -478,7 +558,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             self._feedSilence(player, remaining)
 
     def _synthesizeAndPlay(self, text, index, useSpelledSynthesis=False, isSpellingItem=False,
-                           breakMs=0, lang=None):
+                           breakMs=0, lang=None, prosody=None):
         """Synthesize and play audio in the background thread.
 
         IMPORTANT for Say All: The synthIndexReached notification must be sent
@@ -496,6 +576,9 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         `lang` is the language a LangChangeCommand chose for this text
         ("hr", "sr", "bs"), or None for the Language setting; the engine is
         switched to it here, in the speech thread, just before synthesis.
+        `prosody` holds the pitch, rate and volume changes NVDA's prosody
+        commands ask for this text (a capital letter is spelled with the
+        pitch raised by the capital pitch change), applied here the same way.
         """
         if self._shouldStop.is_set():
             if isSpellingItem:
@@ -507,6 +590,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             self._checkConfigChanged()
         except Exception as e:
             _debug_log("_synthesizeAndPlay: config check error: %s" % str(e))
+            log.warning("LaprdusTTS: could not reload the changed settings: %s" % str(e))
 
         self._isSpeaking = True
 
@@ -552,6 +636,9 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             owedPauseMs = 0
             # The language of this text: the LangChangeCommand's or the setting's
             self._applyLanguage(lang)
+            # Its pitch, rate and volume: the sliders, changed as NVDA's
+            # prosody commands for this text ask (the capital pitch change)
+            self._applyProsody(prosody)
             # Use spelled synthesis for single characters or when explicitly requested
             if is_single_char or useSpelledSynthesis:
                 # For single characters, use the stripped text
@@ -652,97 +739,114 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                 _debug_log("  [%d] BreakCommand(time=%s)" % (i, item.time))
             elif LangChangeCommand is not None and isinstance(item, LangChangeCommand):
                 _debug_log("  [%d] LangChangeCommand(lang=%s)" % (i, item.lang))
+            elif _prosody_setting(item):
+                _debug_log("  [%d] %s(%s)" % (i, type(item).__name__,
+                                               "default" if _prosody_change(item) is None
+                                               else "offset=%s, multiplier=%s" % _prosody_change(item)))
             else:
                 _debug_log("  [%d] Unknown: %s" % (i, type(item).__name__))
 
         # Unified single-pass processing of the speech sequence
         # Tracks CharacterModeCommand state to correctly handle spelling vs normal speech
-        char_mode = False
-        pendingIndex = None  # Index that will be associated with the NEXT text
+        state = {
+            "char_mode": False,
+            "pendingIndex": None,  # Index that will be associated with the NEXT text
+            # Language of the text from here on: None is the Language
+            # setting; a LangChangeCommand for Croatian, Serbian or Bosnian
+            # sets it for the rest of the utterance (the next utterance
+            # starts from the setting again), one for any other language,
+            # or with None, returns to the setting, as the eSpeak driver does
+            "lang": None,
+        }
         textParts = []
-        # Language of the text from here on: None is the Language setting;
-        # a LangChangeCommand for Croatian, Serbian or Bosnian sets it for
-        # the rest of the utterance (the next utterance starts from the
-        # setting again), one for any other language, or with None, returns
-        # to the setting, as the eSpeak driver does
-        utteranceLang = None
+        # The prosody changes in force: setting -> (offset, multiplier).
+        # NVDA sends PitchCommand(offset=capPitchChange) before a spelled
+        # capital letter and PitchCommand() after it, and repeats the
+        # changes still in force at the start of every sequence it pushes,
+        # so each speak() call starts from the sliders.
+        prosody = {}
+
+        def prosodyItem():
+            return dict(prosody) if prosody else None
+
+        def flush():
+            """Queue the text accumulated so far with the pending index."""
+            if textParts:
+                text = " ".join(textParts)
+                if text.strip():
+                    self._queueItem(text, state["pendingIndex"], lang=state["lang"],
+                                    prosody=prosodyItem())
+                    state["pendingIndex"] = None
+                del textParts[:]
 
         for item in speechSequence:
             if CharacterModeCommand is not None and isinstance(item, CharacterModeCommand):
                 # Flush accumulated text before mode change
-                if textParts:
-                    text = " ".join(textParts)
-                    if text.strip():
-                        self._queueItem(text, pendingIndex, lang=utteranceLang)
-                        pendingIndex = None
-                    textParts = []
-                char_mode = item.state
-                _debug_log("CharacterMode changed to %s" % char_mode)
+                flush()
+                state["char_mode"] = item.state
+                _debug_log("CharacterMode changed to %s" % item.state)
 
             elif isinstance(item, string_types):
-                if char_mode:
+                if state["char_mode"]:
                     # In character mode: spell single chars, speak multi-char normally
                     stripped = item.strip()
                     if stripped:
                         if len(stripped) == 1:
                             _debug_log("Queue char-mode single char: '%s'" % stripped)
-                            self._queueItem(stripped, pendingIndex, spelled=True, lang=utteranceLang)
+                            self._queueItem(stripped, state["pendingIndex"], spelled=True,
+                                            lang=state["lang"], prosody=prosodyItem())
                         else:
                             _debug_log("Queue char-mode multi-char: '%s'" % stripped[:50])
-                            self._queueItem(stripped, pendingIndex, lang=utteranceLang)
-                        pendingIndex = None
+                            self._queueItem(stripped, state["pendingIndex"],
+                                            lang=state["lang"], prosody=prosodyItem())
+                        state["pendingIndex"] = None
                 else:
                     textParts.append(item)
 
             elif LangChangeCommand is not None and isinstance(item, LangChangeCommand):
                 # The text so far keeps its language; what follows gets the
                 # new one. The voice does not change.
-                if textParts:
-                    text = " ".join(textParts)
-                    if text.strip():
-                        self._queueItem(text, pendingIndex, lang=utteranceLang)
-                        pendingIndex = None
-                    textParts = []
-                utteranceLang = _language_from_tag(item.lang)
+                flush()
+                state["lang"] = _language_from_tag(item.lang)
                 _debug_log("Language changed to %s (requested %s)" % (
-                    utteranceLang or "setting (%s)" % self._language, item.lang))
+                    state["lang"] or "setting (%s)" % self._language, item.lang))
+
+            elif _prosody_setting(item):
+                # The text so far keeps its pitch, rate and volume; what
+                # follows gets the change, until the command that returns
+                # to the default
+                flush()
+                setting = _prosody_setting(item)
+                change = _prosody_change(item)
+                if change is None:
+                    prosody.pop(setting, None)
+                else:
+                    prosody[setting] = change
+                _debug_log("Prosody %s: %s" % (setting, change if change else "default"))
 
             elif IndexCommand is not None and isinstance(item, IndexCommand):
                 # Flush any accumulated text with the pending index
-                if textParts:
-                    text = " ".join(textParts)
-                    if text.strip():
-                        self._queueItem(text, pendingIndex, lang=utteranceLang)
-                        pendingIndex = None
-                    textParts = []
+                flush()
                 # Report orphaned pending index (consecutive IndexCommands)
                 # NVDA tracks every index in _indexesSpeaking; unreported ones
                 # make _synthStillSpeaking() return True, blocking Say All
-                if pendingIndex is not None:
-                    self._queueItem("", pendingIndex)
+                if state["pendingIndex"] is not None:
+                    self._queueItem("", state["pendingIndex"])
                 # Store this index for the NEXT text segment
-                pendingIndex = item.index
-                _debug_log("IndexCommand: pendingIndex=%s" % pendingIndex)
+                state["pendingIndex"] = item.index
+                _debug_log("IndexCommand: pendingIndex=%s" % item.index)
 
             elif BreakCommand is not None and isinstance(item, BreakCommand):
                 # Silence of the given length after the text so far. NVDA's
                 # delayed character descriptions send one, of a second,
                 # before the description that follows a spelled character.
-                if textParts:
-                    text = " ".join(textParts)
-                    if text.strip():
-                        self._queueItem(text, pendingIndex, lang=utteranceLang)
-                        pendingIndex = None
-                    textParts = []
+                flush()
                 if item.time > 0:
                     self._queueItem("", None, breakMs=int(item.time))
 
         # Flush remaining text with the last pending index
-        if textParts:
-            text = " ".join(textParts)
-            if text.strip():
-                self._queueItem(text, pendingIndex, lang=utteranceLang)
-                pendingIndex = None
+        flush()
+        pendingIndex = state["pendingIndex"]
 
         # Handle orphaned trailing index - CRITICAL for Say All
         # NVDA's speech manager adds IndexCommand at end of every utterance
@@ -861,44 +965,73 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             # set_pitch(1.0) → effective_pitch = voice_base_pitch * 1.0
             # This ensures derived voices (Detence, Baba, Đedo) sound correct
             self._engine.set_pitch(1.0)
-            # Apply volume (unless forced by Laprdus config)
-            if not self._forceVolume:
-                self._engine.set_volume(_nvda_to_laprdus_volume(self._volume))
+            self._applyVolume()
             self._applyPitch()
             self._applyRate()
             self._applyInflection()
 
-    def _applyRate(self):
+    def _applyProsody(self, prosody):
+        """Apply the pitch, rate and volume for one queued item: the sliders,
+        changed as the item's prosody commands ask (`prosody` maps "pitch",
+        "rate", "volume" to (offset, multiplier); None or an empty dict is
+        the sliders alone). Called in the speech thread before every
+        synthesis, so the item after a raised capital letter comes back down.
+        """
+        prosody = prosody or {}
+        self._applyPitch(prosody.get("pitch"))
+        self._applyRate(prosody.get("rate"))
+        self._applyVolume(prosody.get("volume"))
+
+    def _applyRate(self, change=None):
         """Apply the speech rate (segment durations, the pitch stays).
 
         The Laprdus rate from settings.json is the voice's normal and NVDA's
         rate slider (50 = 1.0x) scales it, and rate boost multiplies the
-        result by RATE_BOOST; a forced Laprdus rate ignores both.
+        result by RATE_BOOST; a forced Laprdus rate ignores both. `change`
+        is a RateCommand's (offset, multiplier) on the slider's scale: with
+        a forced rate it applies to the slider's middle, so the command
+        still has its relative effect.
         """
         if not self._engine:
             return
-        speed = self._laprdusSpeed
-        boost = 1.0
-        if not self._forceSpeed:
-            speed *= _nvda_to_rate_factor(self._rate)
-            if self._rateBoost:
-                boost = RATE_BOOST
+        value = 50 if self._forceSpeed else self._rate
+        value = _apply_prosody_change(value, change)
+        speed = self._laprdusSpeed * _nvda_to_rate_factor(value)
+        boost = RATE_BOOST if self._rateBoost and not self._forceSpeed else 1.0
         self._engine.set_speed(speed)
         self._engine.set_acceleration(boost)
 
-    def _applyPitch(self):
+    def _applyPitch(self, change=None):
         """Apply the user pitch (formant-preserving, no chipmunk effect).
 
         The Laprdus pitch from settings.json scaled by NVDA's pitch slider
         (50 = 1.0x), or the Laprdus pitch alone when forced. The voice
         character pitch of the derived voices is separate (set_pitch).
+        `change` is a PitchCommand's (offset, multiplier) on the slider's
+        scale, NVDA's capital pitch change above all: it raises the slider
+        value (or the middle of the scale when the Laprdus pitch is forced)
+        for the capital letter, so a change of 30 at the default slider
+        position gives 80, about 1.6 times the pitch.
         """
         if not self._engine:
             return
-        pitch = self._laprdusPitch
-        if not self._forcePitch:
-            pitch *= _nvda_to_laprdus_pitch(self._pitch)
+        value = 50 if self._forcePitch else self._pitch
+        value = _apply_prosody_change(value, change)
+        pitch = self._laprdusPitch * _nvda_to_laprdus_pitch(value)
         self._engine.set_user_pitch(pitch)
+
+    def _applyVolume(self, change=None):
+        """Apply the volume: NVDA's slider, or the Laprdus volume from
+        settings.json alone when forced; `change` is a VolumeCommand's
+        (offset, multiplier) on the slider's scale."""
+        if not self._engine:
+            return
+        value = 100 if self._forceVolume else self._volume
+        value = _apply_prosody_change(value, change)
+        volume = _nvda_to_laprdus_volume(value)
+        if self._forceVolume:
+            volume *= self._laprdusVolume
+        self._engine.set_volume(volume)
 
     def _applyInflection(self):
         """Apply the inflection level (size of the pitch movements).
@@ -923,7 +1056,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         - numbers.mode: 'words' or 'digits'
         - pauses.sentence, pauses.comma, pauses.newline, pauses.spelling
         - spelling.speed: spelling cadence, 0-100; lower adds longer pauses
-        - spelling.mode: 'names' (be, ce, de) or 'sounds' (b, c, d)
+        - spelling.mode: 'sounds' (b, c, d; the default) or 'names' (be, ce, de)
         - force.speed, force.pitch, force.volume: override NVDA slider values
         - dictionaries.user_enabled: whether to load user dictionaries
         """
@@ -982,10 +1115,10 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             _debug_log("_loadSharedSettings: speed=%.2f pitch=%.2f" % (
                 self._laprdusSpeed, self._laprdusPitch))
 
+            self._laprdusVolume = float(speech.get('volume', 1.0))
+            self._applyVolume()
             if self._forceVolume:
-                laprdus_volume = speech.get('volume', 1.0)
-                self._engine.set_volume(laprdus_volume)
-                _debug_log("_loadSharedSettings: forced volume=%.2f" % laprdus_volume)
+                _debug_log("_loadSharedSettings: forced volume=%.2f" % self._laprdusVolume)
 
             # NVDA's inflection slider sets the intonation, not settings.json
             self._applyInflection()
@@ -1016,7 +1149,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             # Spelling: the speed of spelled characters and whether letters
             # are read by their names or by their sounds
             spelling_speed = int(spelling.get('speed', 50))
-            spelling_mode = spelling.get('mode', 'names')
+            spelling_mode = spelling.get('mode', 'sounds')
             self._engine.set_spelling_speed(spelling_speed)
             self._engine.set_spelling_mode(spelling_mode == 'sounds')
             _debug_log("_loadSharedSettings: spelling speed=%d mode=%s" % (
@@ -1198,11 +1331,8 @@ class SynthDriver(synthDriverHandler.SynthDriver):
 
     def _set_volume(self, value):
         self._volume = value
-        # If force volume is enabled, ignore NVDA slider - keep Laprdus config value
-        if self._forceVolume:
-            return
-        if self._engine:
-            self._engine.set_volume(_nvda_to_laprdus_volume(value))
+        # With force volume on, the Laprdus volume stays whatever the slider says
+        self._applyVolume()
 
     # =========================================================================
     # Voice property

@@ -63,7 +63,7 @@ struct Options {
     bool numbers_as_digits = false;
     bool spell = false;              /* spell the text character by character */
     int spelling_speed = 50;         /* spelling cadence, lower adds silence, 0 .. 100 */
-    bool letter_sounds = false;      /* spell letters by their sounds, not names */
+    bool letter_sounds = true;       /* spell letters by their sounds (default), not names */
     uint32_t comma_pause = 40;
     uint32_t period_pause = 80;
     uint32_t exclamation_pause = 70;
@@ -153,8 +153,8 @@ void print_help(const char *program_name)
               << "  -S, --spelling-speed PERCENT\n"
               << "                             Spelling cadence 0-100 (default: 50); lower\n"
               << "                             adds longer pauses, speech rate unchanged\n"
-              << "  -m, --spelling-mode MODE   How letters are spelled: names (be, ce, de;\n"
-              << "                             default) or sounds (b, c, d)\n"
+              << "  -m, --spelling-mode MODE   How letters are spelled: sounds (b, c, d;\n"
+              << "                             default) or names (be, ce, de)\n"
               << "  -c, --comma-pauses MS      Pause duration for commas (default: 40)\n"
               << "  -e, --period-pauses MS     Pause duration for periods (default: 80)\n"
               << "  -x, --exclamationmark-pauses MS\n"

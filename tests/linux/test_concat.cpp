@@ -399,7 +399,8 @@ TEST_CASE("Letter sounds work with a recorded voice", "[concat][spelling]") {
         return audio;
     };
 
-    // Names at the speech rate are the names spoken
+    // Names at the speech rate are the names spoken (sounds are the default)
+    REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_NAMES) == LAPRDUS_OK);
     REQUIRE(laprdus_set_spelling_speed(engine.handle, 100) == LAPRDUS_OK);
     std::vector<int16_t> name = spell("b");
     REQUIRE(name == speak(engine.handle, "be"));

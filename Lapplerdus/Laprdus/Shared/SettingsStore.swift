@@ -49,8 +49,8 @@ struct SettingsSnapshot: Sendable {
     var numberMode = 0
     /// Spelling cadence, 0 to 100; lower values add longer pauses after characters.
     var spellingSpeed = SettingsSnapshot.defaultSpellingSpeed
-    /// How letters are spelled: "names" (be, ce, de) or "sounds" (b, c, d).
-    var spellingMode = SettingsSnapshot.spellingModeNames
+    /// How letters are spelled: "sounds" (b, c, d; the default) or "names" (be, ce, de).
+    var spellingMode = SettingsSnapshot.spellingModeSounds
     var userDictionariesEnabled = true
 
     static let defaultSpellingSpeed = 50

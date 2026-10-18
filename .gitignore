@@ -88,3 +88,6 @@ DerivedData/
 
 # Distribution packages (macOS release script, scons macos-dist)
 dist/
+
+# Scratch settings written by tests/nvda/test_driver.py
+tests/nvda/_appdata/

@@ -3948,6 +3948,7 @@ TEST_CASE("Spelling mode works with formant voices", "[formant][spelling]") {
 TEST_CASE("Letters are spelled by their names in the language of the voice", "[formant][spelling]") {
     Engine engine;
     REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_NAMES) == LAPRDUS_OK);
     REQUIRE(laprdus_set_spelling_speed(engine.handle, 100) == LAPRDUS_OK);
     REQUIRE(laprdus_set_spelling_pause(engine.handle, 0) == LAPRDUS_OK);
 
@@ -3981,6 +3982,7 @@ TEST_CASE("Letters are spelled by their names in the chosen language", "[formant
     // speaking Serbian says ša and lje, Stojan speaking Croatian eš and el.
     Engine engine;
     REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_NAMES) == LAPRDUS_OK);
     REQUIRE(laprdus_set_spelling_speed(engine.handle, 100) == LAPRDUS_OK);
     REQUIRE(laprdus_set_spelling_pause(engine.handle, 0) == LAPRDUS_OK);
     REQUIRE(spell(engine.handle, "\xC5\xA1") == speak(engine.handle, "e\xC5\xA1"));
@@ -4013,7 +4015,8 @@ TEST_CASE("Letters are spelled by their names in the chosen language", "[formant
 TEST_CASE("Letters are spelled by their sounds when asked", "[formant][spelling]") {
     Engine engine;
     REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
-    REQUIRE(laprdus_get_spelling_mode(engine.handle) == LAPRDUS_SPELLING_LETTER_NAMES);
+    REQUIRE(laprdus_get_spelling_mode(engine.handle) == LAPRDUS_SPELLING_LETTER_SOUNDS);   // the default
+    REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_NAMES) == LAPRDUS_OK);
     REQUIRE(laprdus_set_spelling_pause(engine.handle, 0) == LAPRDUS_OK);
 
     std::vector<int16_t> name = spell(engine.handle, "f");

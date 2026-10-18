@@ -328,7 +328,7 @@ struct VoiceParams {
     bool emoji_enabled = false;      // Enable emoji to text conversion (disabled by default)
     NumberMode number_mode = NumberMode::WholeNumbers;  // Number processing mode
     PauseSettings pause_settings;    // Pause duration settings
-    SpellingMode spelling_mode = SpellingMode::LetterNames;  // Letter names or sounds when spelling
+    SpellingMode spelling_mode = SpellingMode::LetterSounds; // Letter sounds (default) or names when spelling
     int spelling_speed = SPELLING_SPEED_DEFAULT;        // Spelling cadence (0-100); lower adds more silence
 
     void clamp() {
