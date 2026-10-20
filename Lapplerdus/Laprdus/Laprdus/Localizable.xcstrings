@@ -736,6 +736,22 @@
         }
       }
     },
+    "Boost speech volume" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pojačaj glasnoću govora"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pojačaj jačinu govora"
+          }
+        }
+      }
+    },
     "Force Laprdus speech volume" : {
       "localizations" : {
         "hr" : {
@@ -748,6 +764,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Prinudno koristi Laprdus jačinu"
+          }
+        }
+      }
+    },
+    "Louder speech for noisy places and the phone's earpiece. Much louder; the strongest peaks are rounded off so the sound never breaks up" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glasniji govor za bučna mjesta i slušalicu telefona. Znatno glasnije; najjači vrhovi se zaobljuju pa se zvuk ne lomi"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glasniji govor za bučna mesta i slušalicu telefona. Znatno glasnije; najjači vrhovi se zaobljuju pa se zvuk ne lomi"
           }
         }
       }

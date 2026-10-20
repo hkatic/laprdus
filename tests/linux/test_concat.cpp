@@ -451,6 +451,30 @@ TEST_CASE("Volume scales the output", "[concat][volume]") {
     REQUIRE(rms(quiet) < rms(loud) * 0.4);
 }
 
+TEST_CASE("The volume boost makes the recorded voices louder without clipping", "[concat][volume]") {
+    // The recordings already touch full scale, so the boost gains less here
+    // than on the formant voices, but the level still rises and nothing clips.
+    const char* dir = data_dir();
+    if (!dir) return;
+    Engine engine;
+    for (const char* voice : {"josip", "baba"}) {
+        REQUIRE(laprdus_set_voice(engine.handle, voice, dir) == LAPRDUS_OK);
+        REQUIRE(laprdus_set_volume_boost(engine.handle, 0) == LAPRDUS_OK);
+        std::vector<int16_t> plain = speak(engine.handle, "Pozivam Marka na mobitel.");
+        REQUIRE(laprdus_set_volume_boost(engine.handle, 1) == LAPRDUS_OK);
+        std::vector<int16_t> boosted = speak(engine.handle, "Pozivam Marka na mobitel.");
+        REQUIRE(boosted.size() == plain.size());
+        REQUIRE(rms(boosted) > rms(plain) * 1.15);
+        REQUIRE(peak(boosted) <= 32000);
+        REQUIRE(speak(engine.handle, "Pozivam Marka na mobitel.") == boosted);
+        // The volume scales the boosted output
+        REQUIRE(laprdus_set_volume(engine.handle, 0.5f) == LAPRDUS_OK);
+        std::vector<int16_t> half = speak(engine.handle, "Pozivam Marka na mobitel.");
+        REQUIRE(rms(half) < rms(boosted) * 0.6);
+        REQUIRE(laprdus_set_volume(engine.handle, 1.0f) == LAPRDUS_OK);
+    }
+}
+
 TEST_CASE("Recorded voices share surname stress and vowel length", "[concat][text]") {
     const char* dir = data_dir();
     if (!dir) SKIP("Set LAPRDUS_DATA to test the recorded surname accents");

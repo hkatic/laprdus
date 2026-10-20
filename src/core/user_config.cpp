@@ -28,6 +28,7 @@ VoiceParams UserSettings::to_voice_params() const {
     params.pitch = 1.0f;  // Voice character pitch is set by voice definition
     params.user_pitch = user_pitch;
     params.volume = volume;
+    params.volume_boost = volume_boost;
     params.inflection_level = inflection_level;
     params.acceleration = acceleration;
     params.emoji_enabled = emoji_enabled;
@@ -43,6 +44,7 @@ void UserSettings::from_voice_params(const VoiceParams& params) {
     speed = params.speed;
     user_pitch = params.user_pitch;
     volume = params.volume;
+    volume_boost = params.volume_boost;
     inflection_level = params.inflection_level;
     acceleration = params.acceleration;
     emoji_enabled = params.emoji_enabled;
@@ -211,6 +213,7 @@ std::string generate_settings_json(const UserSettings& settings) {
     json << "        \"speech.speed\": \"Speech rate from 0.5 (slow) to 2.0 (fast), default 1.0; formant voices accept 0.25 to 4.0\",\n";
     json << "        \"speech.pitch\": \"Voice pitch from 0.5 (low) to 2.0 (high), default 1.0; formant voices accept 0.25 to 4.0\",\n";
     json << "        \"speech.volume\": \"Volume from 0.0 (silent) to 1.0 (full), default 1.0\",\n";
+    json << "        \"speech.volume_boost\": \"Louder speech through a peak limiter, for noisy places and a phone's earpiece (true/false, default false)\",\n";
     json << "        \"speech.inflection_level\": \"Size of the pitch movements: 0.0 (monotone) to 1.0 (maximum), default 0.5\",\n";
     json << "        \"speech.acceleration\": \"Rate multiplier from 0.5 to 3.0, default 1.0 (2.0 doubles the rate the rate slider reaches)\",\n";
     json << "        \"speech.emoji\": \"Convert emoji to spoken text descriptions (true/false)\",\n";
@@ -235,6 +238,7 @@ std::string generate_settings_json(const UserSettings& settings) {
     json << "        \"speed\": " << settings.speed << ",\n";
     json << "        \"pitch\": " << settings.user_pitch << ",\n";
     json << "        \"volume\": " << settings.volume << ",\n";
+    json << "        \"volume_boost\": " << (settings.volume_boost ? "true" : "false") << ",\n";
     json << "        \"inflection_level\": " << settings.inflection_level << ",\n";
     json << "        \"acceleration\": " << settings.acceleration << ",\n";
     json << "        \"emoji\": " << (settings.emoji_enabled ? "true" : "false") << "\n";
@@ -284,6 +288,7 @@ bool parse_settings_json(const std::string& json, UserSettings& settings) {
     settings.speed = static_cast<float>(extract_number_value(json, "speed", 1.0));
     settings.user_pitch = static_cast<float>(extract_number_value(json, "pitch", 1.0));
     settings.volume = static_cast<float>(extract_number_value(json, "volume", 1.0));
+    settings.volume_boost = extract_bool_value(json, "volume_boost", false);
     settings.inflection_level = static_cast<float>(
         extract_number_value(json, "inflection_level", INFLECTION_LEVEL_DEFAULT));
     settings.acceleration = static_cast<float>(

@@ -296,6 +296,27 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_volume(
     return LAPRDUS_OK;
 }
 
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_volume_boost(
+    LaprdusHandle handle,
+    int enabled) {
+
+    if (!handle) {
+        return LAPRDUS_ERROR_INVALID_HANDLE;
+    }
+
+    laprdus::VoiceParams vp = handle->engine.voice_params();
+    vp.volume_boost = enabled != 0;
+    handle->engine.set_voice_params(vp);
+    return LAPRDUS_OK;
+}
+
+LAPRDUS_API int LAPRDUS_CALL laprdus_get_volume_boost(LaprdusHandle handle) {
+    if (!handle) {
+        return 0;
+    }
+    return handle->engine.voice_params().volume_boost ? 1 : 0;
+}
+
 LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_inflection_level(
     LaprdusHandle handle,
     float level) {
@@ -1512,6 +1533,7 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_load_user_config(LaprdusHandle han
     params.speed = settings.speed;
     params.user_pitch = settings.user_pitch;
     params.volume = settings.volume;
+    params.volume_boost = settings.volume_boost;
     params.inflection_level = settings.inflection_level;
     params.acceleration = settings.acceleration;
     params.emoji_enabled = settings.emoji_enabled;

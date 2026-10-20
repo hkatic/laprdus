@@ -139,8 +139,11 @@ public class LaprdusAudioUnit: AVSpeechSynthesisProviderAudioUnit {
                     // Rate/pitch: the host's value scales the Laprdus setting
                     // (its normal) unless the setting is forced; the
                     // acceleration multiplies the rate on top of that.
-                    // Without force, volume is pinned to 1.0 and the system
-                    // output volume governs.
+                    // Without force, the volume is the host's: VoiceOver
+                    // puts its own volume setting in the request's
+                    // <prosody volume>, and the system output volume
+                    // governs on top of that. It used to be pinned to 1.0,
+                    // so VoiceOver's volume did nothing.
                     engine.setTransientParameters(
                         speed: VoiceCatalog.requestValue(
                             setting: settings.speed, requested: speech.rate,
@@ -148,7 +151,7 @@ public class LaprdusAudioUnit: AVSpeechSynthesisProviderAudioUnit {
                         userPitch: VoiceCatalog.requestValue(
                             setting: settings.pitch, requested: speech.pitch,
                             forced: settings.forcePitch, voice: voiceID),
-                        volume: settings.forceVolume ? settings.volume : 1.0
+                        volume: settings.forceVolume ? settings.volume : speech.volume
                     )
                     // A part the engine has nothing to say for (a lone
                     // symbol) must not silence the parts around it.

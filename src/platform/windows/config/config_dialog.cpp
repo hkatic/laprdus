@@ -163,6 +163,7 @@ INT_PTR ConfigDialog::OnInitDialog(HWND hDlg) {
     SetControlText(hDlg, IDC_FORCE_PITCH, IDS_FORCE_PITCH);
     SetControlText(hDlg, IDC_VOLUME_LABEL, IDS_VOLUME_LABEL);
     SetControlText(hDlg, IDC_FORCE_VOLUME, IDS_FORCE_VOLUME);
+    SetControlText(hDlg, IDC_VOLUME_BOOST_CHECK, IDS_VOLUME_BOOST);
     SetControlText(hDlg, IDC_COMMA_LABEL, IDS_COMMA_LABEL);
     SetControlText(hDlg, IDC_SENTENCE_LABEL, IDS_SENTENCE_LABEL);
     SetControlText(hDlg, IDC_NEWLINE_LABEL, IDS_NEWLINE_LABEL);
@@ -383,6 +384,7 @@ void ConfigDialog::LoadSettingsToControls(HWND hDlg) {
     CheckDlgButton(hDlg, IDC_FORCE_SPEED, m_settings.force_speed ? BST_CHECKED : BST_UNCHECKED);
     CheckDlgButton(hDlg, IDC_FORCE_PITCH, m_settings.force_pitch ? BST_CHECKED : BST_UNCHECKED);
     CheckDlgButton(hDlg, IDC_FORCE_VOLUME, m_settings.force_volume ? BST_CHECKED : BST_UNCHECKED);
+    CheckDlgButton(hDlg, IDC_VOLUME_BOOST_CHECK, m_settings.volume_boost ? BST_CHECKED : BST_UNCHECKED);
 
     // The top rate shown with the acceleration needs the rate and its force
     UpdateAccelerationValue(hDlg);
@@ -478,6 +480,7 @@ void ConfigDialog::CollectSettingsFromControls(HWND hDlg) {
     m_settings.force_speed = (IsDlgButtonChecked(hDlg, IDC_FORCE_SPEED) == BST_CHECKED);
     m_settings.force_pitch = (IsDlgButtonChecked(hDlg, IDC_FORCE_PITCH) == BST_CHECKED);
     m_settings.force_volume = (IsDlgButtonChecked(hDlg, IDC_FORCE_VOLUME) == BST_CHECKED);
+    m_settings.volume_boost = (IsDlgButtonChecked(hDlg, IDC_VOLUME_BOOST_CHECK) == BST_CHECKED);
 
     // Pause settings
     m_settings.comma_pause_ms = static_cast<uint32_t>(SendDlgItemMessageW(hDlg, IDC_COMMA_SLIDER, TBM_GETPOS, 0, 0));
@@ -535,6 +538,7 @@ INT_PTR ConfigDialog::OnCommand(HWND hDlg, WPARAM wParam, LPARAM lParam) {
     // Mark settings as changed for checkboxes and combo
     case IDC_FORCE_PITCH:
     case IDC_FORCE_VOLUME:
+    case IDC_VOLUME_BOOST_CHECK:
     case IDC_EMOJI_CHECK:
     case IDC_DIGITS_CHECK:
     case IDC_SPELLING_SOUNDS_CHECK:

@@ -4,6 +4,7 @@
 #include "audio_synthesizer.hpp"
 #include "concat_prosody.hpp"
 #include "psola.hpp"
+#include "volume_boost.hpp"
 #include <algorithm>
 #include <cmath>
 
@@ -129,6 +130,9 @@ AudioBuffer AudioSynthesizer::render_utterance(const formant::Utterance& utt) {
     while (last > end && std::abs(wave[last - 1]) < 1e-4f) --last;
     wave.resize(std::max(end, last));
 
+    // The volume boost raises the level before the volume and limits the
+    // peaks (volume_boost.hpp); to_sample's soft knee stays as the safety net.
+    if (m_voice_params.volume_boost) boost_volume(wave, fs);
     const float volume = m_voice_params.volume;
     result.sample_rate = fs;
     result.samples.resize(wave.size());

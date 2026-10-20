@@ -147,6 +147,13 @@ def _configure_functions(lib):
     lib.laprdus_set_volume.argtypes = [LaprdusHandle, ctypes.c_float]
     lib.laprdus_set_volume.restype = LaprdusError
 
+    # Louder output through a peak limiter (every voice)
+    lib.laprdus_set_volume_boost.argtypes = [LaprdusHandle, ctypes.c_int]
+    lib.laprdus_set_volume_boost.restype = LaprdusError
+
+    lib.laprdus_get_volume_boost.argtypes = [LaprdusHandle]
+    lib.laprdus_get_volume_boost.restype = ctypes.c_int
+
     # Size of the pitch movements and rate multiplier (every voice)
     lib.laprdus_set_inflection_level.argtypes = [LaprdusHandle, ctypes.c_float]
     lib.laprdus_set_inflection_level.restype = LaprdusError
@@ -644,6 +651,16 @@ class LaprdusEngine(object):
         """Set volume (0.0 to 1.0, default 1.0)."""
         result = self._lib.laprdus_set_volume(self._handle, ctypes.c_float(volume))
         return result == LAPRDUS_OK
+
+    def set_volume_boost(self, enabled):
+        """Switch the volume boost (louder speech through a peak limiter,
+        every voice) on or off. The volume still scales the result."""
+        result = self._lib.laprdus_set_volume_boost(self._handle, ctypes.c_int(1 if enabled else 0))
+        return result == LAPRDUS_OK
+
+    def get_volume_boost(self):
+        """Whether the volume boost is on."""
+        return bool(self._lib.laprdus_get_volume_boost(self._handle))
 
     def set_inflection_level(self, level):
         """Set the inflection level (0.0 to 1.0) of every voice.

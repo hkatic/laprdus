@@ -306,6 +306,25 @@ class SettingsRepositoryTest {
     }
 
     // ==========================================================================
+    // Volume Boost Tests
+    // ==========================================================================
+
+    @Test
+    fun `volumeBoost is off when not set`() = runTest {
+        assertFalse(repository.volumeBoost.first())
+        assertFalse(repository.allSettings.first().volumeBoost)
+    }
+
+    @Test
+    fun `setVolumeBoost persists value`() = runTest {
+        repository.setVolumeBoost(true)
+        assertTrue(repository.volumeBoost.first())
+        assertTrue(repository.allSettings.first().volumeBoost)
+        repository.setVolumeBoost(false)
+        assertFalse(repository.volumeBoost.first())
+    }
+
+    // ==========================================================================
     // Force Volume Settings Tests
     // ==========================================================================
 

@@ -95,6 +95,7 @@ class LaprdusTTS private constructor() {
     private external fun nativeSetPitch(handle: Long, pitch: Float)
     private external fun nativeSetUserPitch(handle: Long, pitch: Float)
     private external fun nativeSetVolume(handle: Long, volume: Float)
+    private external fun nativeSetVolumeBoost(handle: Long, enabled: Boolean)
     private external fun nativeSetInflectionLevel(handle: Long, level: Float)
     private external fun nativeSetAcceleration(handle: Long, acceleration: Float)
     private external fun nativeGetNominalWpm(voiceId: String): Float
@@ -249,6 +250,16 @@ class LaprdusTTS private constructor() {
         }
 
     /**
+     * Volume boost (default off): louder speech through a peak limiter, for
+     * noisy places and the phone's earpiece. [volume] still scales the result.
+     */
+    var volumeBoost: Boolean = false
+        set(value) {
+            field = value
+            nativeSetVolumeBoost(handle, field)
+        }
+
+    /**
      * Inflection level of the formant voices (0.0 - 1.0, default 0.5):
      * 0.0 is a monotone, 0.5 the measured pitch movements, 1.0 twice those.
      * The recorded voices ignore it.
@@ -393,6 +404,7 @@ class LaprdusTTS private constructor() {
      * [setVoice] or [reloadDictionaries].
      */
     fun applySettings(settings: SettingsRepository.TTSSettings) {
+        volumeBoost = settings.volumeBoost
         emojiEnabled = settings.emojiEnabled
         inflectionLevel = settings.inflectionLevel
         acceleration = settings.acceleration

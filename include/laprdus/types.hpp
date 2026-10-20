@@ -315,6 +315,20 @@ inline float spelling_rate_factor(int spelling_speed) {
     return std::pow(2.0f, (static_cast<float>(s) - 100.0f) / 100.0f);
 }
 
+// Volume boost (VoiceParams::volume_boost): a loudness maximizer for a phone's
+// earpiece in traffic, after Google TTS's "amplify speech volume". The speech
+// of the formant voices peaks near full scale but sits around -20 dBFS (median
+// RMS), so a plain gain would clip hard. src/audio/volume_boost.hpp drives the
+// clause with VOLUME_BOOST_GAIN (+14 dB), holds the peaks under
+// VOLUME_BOOST_CEILING with a fast peak limiter (the ceiling is above full
+// scale on purpose) and rounds what is left above VOLUME_BOOST_KNEE off with a
+// soft clipper, so the output stays under full scale: the loud stretches come
+// up by about 8 dB, the quieter ones by about 11 dB, at the price of a mild,
+// deliberate saturation of the strongest vowel peaks.
+constexpr float VOLUME_BOOST_GAIN = 5.0f;
+constexpr float VOLUME_BOOST_CEILING = 1.4f;
+constexpr float VOLUME_BOOST_KNEE = 0.6f;
+
 struct VoiceParams {
     // Both kinds of voices apply these at the source: durations and the
     // pitch contour (PSOLA for the recorded voices, the Klatt source for the
@@ -323,6 +337,7 @@ struct VoiceParams {
     float pitch = 1.0f;       // Voice character pitch (0.25 - 4.0)
     float user_pitch = 1.0f;  // User pitch preference (0.5 - 2.0; formant voices 0.25 - 4.0)
     float volume = 1.0f;      // Volume (0.0 - 1.0)
+    bool volume_boost = false; // Much louder output: gain, peak limiter and soft clipper (see volume_boost.hpp)
     float inflection_level = INFLECTION_LEVEL_DEFAULT;  // Size of the pitch movements (0.0 - 1.0)
     float acceleration = ACCELERATION_DEFAULT;          // Rate multiplier (0.5 - 3.0)
     bool emoji_enabled = false;      // Enable emoji to text conversion (disabled by default)

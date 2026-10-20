@@ -308,6 +308,23 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetVolume(
 }
 
 JNIEXPORT void JNICALL
+Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetVolumeBoost(
+    JNIEnv* env,
+    jobject thiz,
+    jlong handle,
+    jboolean enabled) {
+
+    (void)env;
+    (void)thiz;
+    LockedEngine engine(handle);
+    if (!engine) return;
+
+    laprdus::VoiceParams params = engine->voice_params();
+    params.volume_boost = enabled == JNI_TRUE;
+    engine->set_voice_params(params);
+}
+
+JNIEXPORT void JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetInflectionLevel(
     JNIEnv* env,
     jobject thiz,

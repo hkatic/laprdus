@@ -83,6 +83,7 @@ fun SettingsScreen(
     onForceSpeedChange: (Boolean) -> Unit,
     onForcePitchChange: (Boolean) -> Unit,
     onForceVolumeChange: (Boolean) -> Unit,
+    onVolumeBoostChange: (Boolean) -> Unit,
     onForceLanguageChange: (Boolean) -> Unit,
     onRestoreDefaultSpeed: () -> Unit,
     onRestoreDefaultPitch: () -> Unit,
@@ -327,6 +328,16 @@ fun SettingsScreen(
                         subtitle = stringResource(R.string.setting_force_volume_subtitle),
                         checked = uiState.forceVolume,
                         onCheckedChange = onForceVolumeChange
+                    )
+                }
+
+                // Volume Boost Toggle
+                item {
+                    SwitchSettingItem(
+                        title = stringResource(R.string.setting_volume_boost_title),
+                        subtitle = stringResource(R.string.setting_volume_boost_subtitle),
+                        checked = uiState.volumeBoost,
+                        onCheckedChange = onVolumeBoostChange
                     )
                 }
 

@@ -3392,6 +3392,52 @@ TEST_CASE("Acceleration multiplies the speech rate", "[formant][params]") {
     REQUIRE(laprdus_get_acceleration(engine.handle) == Catch::Approx(3.0f));
 }
 
+TEST_CASE("The volume boost makes the speech louder without clipping", "[formant][params][volume]") {
+    // The formant voices peak near full scale with a median level near
+    // -20 dBFS; the boost drives them through a peak limiter, so the level
+    // comes up while the peaks stay under the ceiling. The volume still
+    // scales the boosted output, so a host's volume control keeps working.
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(laprdus_get_volume_boost(engine.handle) == 0);
+
+    const char* text = "Pozivam Marka na mobitel. Uključi zvučnik!";
+    std::vector<int16_t> plain = speak(engine.handle, text);
+
+    REQUIRE(laprdus_set_volume_boost(engine.handle, 1) == LAPRDUS_OK);
+    REQUIRE(laprdus_get_volume_boost(engine.handle) == 1);
+    std::vector<int16_t> boosted = speak(engine.handle, text);
+    REQUIRE(boosted.size() == plain.size());
+    REQUIRE(rms(boosted) > rms(plain) * 1.5);
+    REQUIRE(peak(boosted) < 32000);                       // held under the ceiling
+    REQUIRE(peak(boosted) > 32000 * 0.8);                 // and close to it
+    REQUIRE(speak(engine.handle, text) == boosted);       // deterministic
+
+    // Half volume with the boost is about the plain level: the boost is
+    // applied before the volume.
+    REQUIRE(laprdus_set_volume(engine.handle, 0.5f) == LAPRDUS_OK);
+    std::vector<int16_t> half = speak(engine.handle, text);
+    REQUIRE(rms(half) < rms(boosted) * 0.6);
+    REQUIRE(rms(half) > rms(plain) * 0.7);
+
+    // Off again: the plain samples.
+    REQUIRE(laprdus_set_volume(engine.handle, 1.0f) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_volume_boost(engine.handle, 0) == LAPRDUS_OK);
+    REQUIRE(speak(engine.handle, text) == plain);
+
+    // The singing presets and the other formant voices take it too.
+    for (const char* voice : {"stojan", "mirsad", "lika_velebit"}) {
+        REQUIRE(laprdus_set_voice(engine.handle, voice, NO_DATA) == LAPRDUS_OK);
+        REQUIRE(laprdus_get_volume_boost(engine.handle) == 0);
+        std::vector<int16_t> quiet = speak(engine.handle, text);
+        REQUIRE(laprdus_set_volume_boost(engine.handle, 1) == LAPRDUS_OK);
+        std::vector<int16_t> loud = speak(engine.handle, text);
+        REQUIRE(rms(loud) > rms(quiet) * 1.2);
+        REQUIRE(peak(loud) < 32000);
+        REQUIRE(laprdus_set_volume_boost(engine.handle, 0) == LAPRDUS_OK);
+    }
+}
+
 TEST_CASE("The speech rate still changes the rate under an acceleration", "[formant][params]") {
     // Hosts scale the user's own rate and pitch, which they read back with
     // the getters after laprdus_load_user_config(); the acceleration
@@ -4090,6 +4136,8 @@ TEST_CASE("Spelling speed defaults and limits", "[formant][spelling]") {
 TEST_CASE("The user's spelling entries win, except a letter name in sound mode", "[formant][spelling]") {
     Engine engine;
     REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    // The first block checks the names; sounds are the default since 2026-10-18
+    REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_NAMES) == LAPRDUS_OK);
     REQUIRE(laprdus_set_spelling_speed(engine.handle, 100) == LAPRDUS_OK);
     REQUIRE(laprdus_set_spelling_pause(engine.handle, 0) == LAPRDUS_OK);
 

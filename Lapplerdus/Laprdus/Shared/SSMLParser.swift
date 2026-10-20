@@ -15,6 +15,9 @@ struct SSMLSpeech: Equatable {
     var rate: Float = 1.0
     /// Pitch multiplier (1.0 = normal) from the <prosody pitch="..."> around it.
     var pitch: Float = 1.0
+    /// Volume (1.0 = full) from the <prosody volume="..."> around it: the
+    /// host's volume, VoiceOver's own volume setting among others.
+    var volume: Float = 1.0
     /// The host asked for this text to be spelled out
     /// (<say-as interpret-as="characters">).
     var spellOut = false
@@ -52,7 +55,7 @@ struct SSMLUtterance {
             switch part {
             case .speech(let speech):
                 return "\(speech.spellOut ? "spell" : "text") \(speech.text.count)"
-                    + " rate \(speech.rate) pitch \(speech.pitch)"
+                    + " rate \(speech.rate) pitch \(speech.pitch) volume \(speech.volume)"
             case .pause(let seconds):
                 return "pause \(Int((seconds * 1000).rounded())) ms"
             case .phraseBoundary:
@@ -141,6 +144,9 @@ enum SSMLParser {
                     }
                     if let pitch = firstAttribute("pitch", inTags: [tag]) {
                         level.pitch = clamp(level.pitch * pitchMultiplier(from: pitch))
+                    }
+                    if let volume = firstAttribute("volume", inTags: [tag]) {
+                        level.volume = volumeLevel(from: volume, outer: level.volume)
                     }
                     prosody.append(level)
                 }
@@ -270,6 +276,46 @@ enum SSMLParser {
             return clamp(numeric)
         }
         return 1.0
+    }
+
+    /// The volume a <prosody volume="..."> asks for, 0 to 1, with 1 the
+    /// full level. An absolute value replaces the one around it ("50%",
+    /// "50" and "0.5" are all half the full level, as are the SSML keywords;
+    /// AVSpeechUtterance's volume of 0 to 1 arrives as one of these), a
+    /// relative one ("+6dB", "-50%") changes it. Not a multiplier like the
+    /// rate and the pitch: the engine's volume has a ceiling.
+    static func volumeLevel(from value: String, outer: Float) -> Float {
+        let lowered = value.lowercased().trimmingCharacters(in: .whitespaces)
+        switch lowered {
+        case "silent": return 0
+        case "x-soft": return 0.2
+        case "soft": return 0.4
+        case "medium": return 0.7
+        case "loud": return 0.9
+        case "x-loud", "default": return 1.0
+        default: break
+        }
+        let relative = lowered.hasPrefix("+") || lowered.hasPrefix("-")
+        if lowered.hasSuffix("db") {
+            guard let decibels = Float(lowered.dropLast(2)), decibels.isFinite else { return outer }
+            return clampVolume(outer * powf(10, decibels / 20))
+        }
+        if lowered.hasSuffix("%") {
+            guard let percent = Float(lowered.dropLast()), percent.isFinite else { return outer }
+            return clampVolume(relative ? outer * (1 + percent / 100) : percent / 100)
+        }
+        guard let number = Float(lowered), number.isFinite else { return outer }
+        if relative {
+            // A bare signed number is a change on the 0 to 100 scale.
+            return clampVolume(outer + number / 100)
+        }
+        // 0 to 1 (an AVSpeechUtterance volume) or 0 to 100 (the SSML scale).
+        return clampVolume(number > 1 ? number / 100 : number)
+    }
+
+    private static func clampVolume(_ value: Float) -> Float {
+        guard value.isFinite else { return 1.0 }
+        return min(max(value, 0), 1)
     }
 
     /// The widest range any voice takes (the formant voices'); the engine

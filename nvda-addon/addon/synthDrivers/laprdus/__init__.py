@@ -1120,6 +1120,12 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             if self._forceVolume:
                 _debug_log("_loadSharedSettings: forced volume=%.2f" % self._laprdusVolume)
 
+            # The volume boost (louder speech through a peak limiter) is a
+            # Laprdus setting alone; NVDA's volume slider still scales it
+            volume_boost = bool(speech.get('volume_boost', False))
+            self._engine.set_volume_boost(volume_boost)
+            _debug_log("_loadSharedSettings: volume_boost=%s" % volume_boost)
+
             # NVDA's inflection slider sets the intonation, not settings.json
             self._applyInflection()
 

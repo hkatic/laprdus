@@ -213,6 +213,11 @@ struct SettingsView: View {
                 subtitle: String(localized: "Use Laprdus volume settings instead of application settings"),
                 isOn: $settings.forceVolume
             )
+            ToggleRow(
+                title: String(localized: "Boost speech volume"),
+                subtitle: String(localized: "Louder speech for noisy places and the phone's earpiece. Much louder; the strongest peaks are rounded off so the sound never breaks up"),
+                isOn: $settings.volumeBoost
+            )
         }
     }
 

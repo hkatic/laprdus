@@ -196,6 +196,7 @@ laprdus -l
 | `-I, --inflection` | Inflection of the formant voices, 0-100% (default: 50; 0 is a monotone, 100 the widest melody) |
 | `-a, --acceleration` | Rate multiplier of the formant voices, 0.5-3.0 (default: 1.0) |
 | `-V, --speech-volume` | Volume (0.0-1.0, default: 1.0) |
+| `-B, --volume-boost` | Louder speech through a peak limiter, for noisy places |
 | `-d, --numbers-digits` | Read numbers digit-by-digit |
 | `-c, --comma-pauses` | Comma pause duration in ms |
 | `-e, --period-pauses` | Period pause duration in ms |

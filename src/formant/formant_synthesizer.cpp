@@ -3,6 +3,7 @@
 
 #include "formant_synthesizer.hpp"
 #include "formant_intonation.hpp"
+#include "../audio/volume_boost.hpp"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -2052,7 +2053,14 @@ void FormantSynthesizer::render_utterance(const Utterance& utt, const VoiceParam
     m_synth.reset();
     m_synth.render(frames.data(), frames.size(), pcm);
 
-    const float gain = OUTPUT_GAIN * std::clamp(params.volume, 0.0f, 1.0f);
+    // The volume boost raises the level before the volume and limits the
+    // peaks (volume_boost.hpp); the soft knee below stays as the safety net.
+    float gain = OUTPUT_GAIN * std::clamp(params.volume, 0.0f, 1.0f);
+    if (params.volume_boost) {
+        for (float& sample : pcm) sample *= OUTPUT_GAIN;
+        boost_volume(pcm, SAMPLE_RATE);
+        gain = std::clamp(params.volume, 0.0f, 1.0f);
+    }
     audio.samples.reserve(audio.samples.size() + pcm.size());
     for (float sample : pcm) {
         float x = sample * gain;

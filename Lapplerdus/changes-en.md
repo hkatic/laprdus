@@ -1,6 +1,6 @@
 # Laprdus for iPhone, iPad and Mac — What's New
 
-## Version 2.0.0 (build 10) — in development
+## Version 2.0.0 (build 14) — in development
 
 - Three new voices synthesized entirely by rule, with no recordings: Zvonko, Stojan and Mirsad. They stay clear and intelligible at very high speech rates. Zvonko is the default voice; a voice you have chosen yourself is never replaced. Josip, Vlado, Detence, Baba and Đedo remain available.
 - Every voice speaks every language. Croatian, Serbian and Bosnian are chosen separately from the voice: in the system voice list (Settings → Accessibility → Spoken Content → Voices on iPhone and iPad, System Settings → Accessibility → Spoken Content on Mac) every Laprdus voice is listed under Croatian, under Serbian and under Bosnian, 54 system voices in all, and the entry you pick for VoiceOver or Spoken Content sets both the voice and the language. The language selects the pronunciation rules, the word stress dictionary, the letter names when spelling and the number words (*tisuća*, *milijun* in Croatian; *hiljada*, *milion* in Serbian and Bosnian) for every voice, Josip and Vlado included. Bosnian is now a supported language.
@@ -18,6 +18,8 @@
 - The accent dictionary is read from the app's dictionary folder, together with the other user dictionaries.
 - Fixed: when VoiceOver read an item that contains a single character to be spelled out, such as a button with a badge count, the whole item was spelled letter by letter, and the name and the type of a control ran together into one phrase. Each part is now read as VoiceOver asks: text as text, the character spelled, pauses as pauses.
 - VoiceOver's pitch change for capital letters is now heard, and a request that VoiceOver cancels is no longer spoken.
+- Volume boost: a new switch under the volume, off by default, makes the speech louder than the volume slider at 100% allows, for noisy places (traffic, the street) and the phone's earpiece with the speakerphone off: to hear whom you are calling while the call is being set up, or to find the speakerphone button during a call. The speech goes through a strong gain, a peak limiter and a soft clipper that rounds off the strongest peaks, as Google's "Amplify speech volume" does: the quiet parts come up by about 11 dB and the loud ones by about 8 dB, and the sound never breaks up, although the loudest vowels are slightly compressed. Your volume setting, and the screen reader's or the app's, still scale the boosted speech. Every voice has it.
+- VoiceOver's volume now works with the Laprdus voices: the volume VoiceOver asks for (its own volume setting) was ignored unless "Force Laprdus speech volume" was on, so the voices always spoke at full volume. Now, with the force switch off, VoiceOver's volume is followed; with it on, the Laprdus volume alone.
 
 ## Version 1.0.0 (build 9) — 28 August 2026
 

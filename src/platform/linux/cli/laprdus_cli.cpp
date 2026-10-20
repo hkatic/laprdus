@@ -63,6 +63,7 @@ struct Options {
     float speech_rate = 1.0f;
     float speech_pitch = 1.0f;
     float speech_volume = 1.0f;
+    bool volume_boost = false;       /* louder output through a peak limiter */
     float inflection_level = 0.5f;   /* 0.0 monotone .. 1.0 maximum */
     float acceleration = 1.0f;       /* rate multiplier 0.5 .. 3.0 */
     bool numbers_as_digits = false;
@@ -84,7 +85,7 @@ struct Options {
 };
 
 /* Short options */
-static const char *short_options = "v:L:r:p:V:I:a:dsS:m:c:e:x:q:n:o:i:D:hlw";
+static const char *short_options = "v:L:r:p:V:BI:a:dsS:m:c:e:x:q:n:o:i:D:hlw";
 
 /* Long options */
 static struct option long_options[] = {
@@ -93,6 +94,7 @@ static struct option long_options[] = {
     {"speech-rate",         required_argument, nullptr, 'r'},
     {"speech-pitch",        required_argument, nullptr, 'p'},
     {"speech-volume",       required_argument, nullptr, 'V'},
+    {"volume-boost",        no_argument,       nullptr, 'B'},
     {"inflection",          required_argument, nullptr, 'I'},
     {"acceleration",        required_argument, nullptr, 'a'},
     {"numbers-digits",      no_argument,       nullptr, 'd'},
@@ -139,6 +141,7 @@ void print_help(const char *program_name)
               << "  -p, --speech-pitch PITCH   Speech pitch 0.5-2.0 (default: 1.0);\n"
               << "                             formant voices accept 0.25-4.0\n"
               << "  -V, --speech-volume VOL    Volume 0.0-1.0 (default: 1.0)\n"
+              << "  -B, --volume-boost         Louder speech (peak limiter), for noisy places\n"
               << "  -I, --inflection PERCENT   Inflection 0-100 (default: 50; 0 is a monotone)\n"
               << "  -a, --acceleration FACTOR  Rate multiplier 0.5-3.0 (default: 1.0)\n"
               << "  -d, --numbers-digits       Speak numbers as digits (jedan-dva-tri)\n"
@@ -263,6 +266,9 @@ bool parse_args(int argc, char *argv[], Options &opts)
                 opts.speech_volume = std::stof(optarg);
                 if (opts.speech_volume < 0.0f) opts.speech_volume = 0.0f;
                 if (opts.speech_volume > 1.0f) opts.speech_volume = 1.0f;
+                break;
+            case 'B':
+                opts.volume_boost = true;
                 break;
             case 'd':
                 opts.numbers_as_digits = true;
@@ -611,6 +617,7 @@ int main(int argc, char *argv[])
         opts.speech_rate = settings.speed;
         opts.speech_pitch = settings.user_pitch;
         opts.speech_volume = settings.volume;
+        opts.volume_boost = settings.volume_boost;
         opts.inflection_level = settings.inflection_level;
         opts.acceleration = settings.acceleration;
         opts.numbers_as_digits = (settings.number_mode == laprdus::NumberMode::DigitByDigit);
@@ -664,7 +671,7 @@ int main(int argc, char *argv[])
         std::cout << "Voice: " << opts.voice << "\n";
         std::cout << "Rate: " << opts.speech_rate << "\n";
         std::cout << "Pitch: " << opts.speech_pitch << "\n";
-        std::cout << "Volume: " << opts.speech_volume << "\n";
+        std::cout << "Volume: " << opts.speech_volume << (opts.volume_boost ? " (boosted)" : "") << "\n";
         std::cout << "Inflection: " << static_cast<int>(opts.inflection_level * 100.0f + 0.5f) << "%\n";
         std::cout << "Acceleration: " << opts.acceleration << "\n";
         std::cout << "Text length: " << opts.text.length() << " characters\n";
@@ -766,6 +773,7 @@ int main(int argc, char *argv[])
     laprdus_set_speed(engine, opts.speech_rate);
     laprdus_set_user_pitch(engine, opts.speech_pitch);
     laprdus_set_volume(engine, opts.speech_volume);
+    laprdus_set_volume_boost(engine, opts.volume_boost ? 1 : 0);
     laprdus_set_inflection_level(engine, opts.inflection_level);
     laprdus_set_acceleration(engine, opts.acceleration);
 

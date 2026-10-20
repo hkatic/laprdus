@@ -219,6 +219,31 @@ struct EngineTests {
         #expect(chunk.samples.count > 0)
     }
 
+    /// The volume boost makes the same text louder without clipping, for
+    /// both kinds of voices, and the volume still scales the result.
+    @Test func volumeBoostRaisesTheLevelWithoutClipping() throws {
+        let engine = try LaprdusEngine()
+        for voice in ["zvonko", "josip"] {
+            try engine.loadVoice(voice, dictionaries: .bundledOnly)
+            var snapshot = SettingsSnapshot()
+            engine.apply(snapshot)
+            let plain = try engine.synthesize("Pozivam Marka na mobitel.")
+            snapshot.volumeBoost = true
+            engine.apply(snapshot)
+            let boosted = try engine.synthesize("Pozivam Marka na mobitel.")
+            engine.setTransientParameters(speed: 1.0, userPitch: 1.0, volume: 0.5)
+            let half = try engine.synthesize("Pozivam Marka na mobitel.")
+            func rms(_ s: [Int16]) -> Double {
+                let sum = s.reduce(0.0) { $0 + Double($1) * Double($1) }
+                return (sum / Double(max(s.count, 1))).squareRoot()
+            }
+            #expect(boosted.samples.count == plain.samples.count)
+            #expect(rms(boosted.samples) > rms(plain.samples) * 1.15, "boost is louder for \(voice)")
+            #expect(boosted.samples.allSatisfy { abs(Int($0)) <= 32000 }, "no clipping for \(voice)")
+            #expect(rms(half.samples) < rms(boosted.samples) * 0.6, "volume scales the boost for \(voice)")
+        }
+    }
+
     @Test func formantSettingsChangeTheFormantVoices() throws {
         let engine = try LaprdusEngine()
         try engine.loadVoice("zvonko", dictionaries: .bundledOnly)
@@ -511,8 +536,25 @@ struct DictionaryStoreTests {
 /// Content and VoiceOver actually send, plus the prosody-scoping rules.
 struct SSMLParserTests {
 
-    private func text(_ text: String, rate: Float = 1.0, pitch: Float = 1.0, spellOut: Bool = false) -> SSMLPart {
-        .speech(SSMLSpeech(text: text, rate: rate, pitch: pitch, spellOut: spellOut))
+    private func text(_ text: String, rate: Float = 1.0, pitch: Float = 1.0, volume: Float = 1.0, spellOut: Bool = false) -> SSMLPart {
+        .speech(SSMLSpeech(text: text, rate: rate, pitch: pitch, volume: volume, spellOut: spellOut))
+    }
+
+    /// VoiceOver's volume setting arrives as <prosody volume="...dB">; the
+    /// extension used to pin the volume to 1.0 and ignore it.
+    @Test func readsProsodyVolume() {
+        let full = SSMLParser.parse("<speak><prosody pitch=\"+0.0%\" rate=\"100.0%\" volume=\"+0.0dB\">Test</prosody></speak>")
+        #expect(full.parts == [text("Test")])
+        let half = SSMLParser.parse("<speak><prosody volume=\"-6.02dB\">Test</prosody></speak>")
+        #expect(abs((half.speech.first?.volume ?? 0) - 0.5) < 0.01)
+        #expect(SSMLParser.parse("<speak><prosody volume=\"50%\">Test</prosody></speak>").speech.first?.volume == 0.5)
+        #expect(SSMLParser.parse("<speak><prosody volume=\"0.25\">Test</prosody></speak>").speech.first?.volume == 0.25)
+        #expect(SSMLParser.parse("<speak><prosody volume=\"25\">Test</prosody></speak>").speech.first?.volume == 0.25)
+        #expect(SSMLParser.parse("<speak><prosody volume=\"silent\">Test</prosody></speak>").speech.first?.volume == 0)
+        #expect(SSMLParser.parse("<speak><prosody volume=\"+20dB\">Test</prosody></speak>").speech.first?.volume == 1.0)
+        // Nested: the inner one changes the outer one.
+        let nested = SSMLParser.parse("<speak><prosody volume=\"50%\"><prosody volume=\"-50%\">Test</prosody></prosody></speak>")
+        #expect(abs((nested.speech.first?.volume ?? 0) - 0.25) < 0.001)
     }
 
     @Test func readsProsodyRateAndPitch() {
@@ -658,7 +700,7 @@ struct SSMLParserTests {
             + "<break time=\"60ms\"/></voice></speak>"
         )
         #expect(utterance.summary
-            == "text 5 rate 1.0 pitch 1.0 | boundary | spell 1 rate 1.0 pitch 1.0 | pause 60 ms")
+            == "text 5 rate 1.0 pitch 1.0 volume 1.0 | boundary | spell 1 rate 1.0 pitch 1.0 volume 1.0 | pause 60 ms")
     }
 }
 

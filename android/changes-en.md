@@ -1,6 +1,6 @@
 # Laprdus for Android — What's New
 
-## Version 2.0.0 (build 12) — in development
+## Version 2.0.0 (build 14) — in development
 
 - Three new voices synthesized entirely by rule, with no recordings: Zvonko, Stojan and Mirsad. They stay clear and intelligible at very high speech rates. Zvonko is the default voice, for every language. Josip, Vlado, Detence, Baba and Đedo remain available.
 - Every voice speaks every language. The language (Croatian, Serbian or Bosnian) is chosen separately from the voice, as in eSpeak or Eloquence: a new Language setting under the voice chooses the language of the Speak button, and TalkBack and other apps choose the language of their own speech while the voice stays the one you picked. The language sets the pronunciation rules, the word stress, the names of the letters when spelling and the number words (*tisuća* and *milijun* in Croatian, *hiljada* and *milion* in Serbian and Bosnian, *dvjesto* / *dvesta*). The system now lists each voice in all three languages, 54 voices in all, named like `zvonko-hr`, `zvonko-sr` or `josip-bs`.
@@ -20,6 +20,7 @@
 - Fixed: the spelling and emoji dictionaries edited in the app were not used by the speech service; all three user dictionaries now take effect as soon as a voice is loaded. The accent dictionary is read from the same folder.
 - Fixed: the app and the speech service shared one engine, so the Speak button spoke at the rate, pitch and volume of TalkBack's last request, and choosing a voice in the app left TalkBack without your dictionary entries until a voice was loaded again. Each now has an engine of its own: the Speak button speaks with your settings and your dictionaries, and TalkBack switches to the voice you choose with your dictionaries in place.
 - A dictionary entry you add, change or delete in the app, and switching the user dictionaries on or off, now take effect in TalkBack at once. Before, they waited until a voice was loaded again.
+- Volume boost: a new switch under the volume, off by default, makes the speech louder than the volume slider at 100% allows, for noisy places (traffic, the street) and the phone's earpiece with the speakerphone off: to hear whom you are calling while the call is being set up, or to find the speakerphone button during a call. The speech goes through a strong gain, a peak limiter and a soft clipper that rounds off the strongest peaks, as Google's "Amplify speech volume" does: the quiet parts come up by about 11 dB and the loud ones by about 8 dB, and the sound never breaks up, although the loudest vowels are slightly compressed. Your volume setting, and the screen reader's or the app's, still scale the boosted speech. Every voice has it.
 
 ## Version 1.0.0 (build 11) — 2 September 2026
 

@@ -137,6 +137,21 @@ float Laprdus::inflectionLevel() const {
     return INFLECTION_LEVEL_DEFAULT;
 }
 
+void Laprdus::setVolumeBoost(bool enabled) {
+    if (m_engine) {
+        VoiceParams params = m_engine->voice_params();
+        params.volume_boost = enabled;
+        m_engine->set_voice_params(params);
+    }
+}
+
+bool Laprdus::volumeBoost() const {
+    if (m_engine) {
+        return m_engine->voice_params().volume_boost;
+    }
+    return false;
+}
+
 void Laprdus::setAcceleration(float acceleration) {
     if (m_engine) {
         VoiceParams params = m_engine->voice_params();

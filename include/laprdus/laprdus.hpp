@@ -146,6 +146,17 @@ public:
     float inflectionLevel() const;
 
     /**
+     * Switch the volume boost (louder output through a peak limiter,
+     * every voice) on or off.
+     */
+    void setVolumeBoost(bool enabled);
+
+    /**
+     * Whether the volume boost is on.
+     */
+    bool volumeBoost() const;
+
+    /**
      * Set the acceleration (rate multiplier, every voice).
      * @param acceleration 0.5 - 3.0, 1.0 leaves the rate alone.
      */

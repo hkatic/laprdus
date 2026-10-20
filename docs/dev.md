@@ -492,7 +492,26 @@ the setting alone. The acceleration then multiplies the rate inside the
 engine. Speech Dispatcher has no force flags and reads the setting back
 with `laprdus_get_speed()` / `laprdus_get_user_pitch()` after
 `laprdus_load_user_config()`. Volume is not scaled: without force the host's
-volume is used (Android and Apple: 1.0, the system volume governs).
+volume is used (Android: 1.0, the system volume governs; Apple: the volume
+VoiceOver puts in the request's `<prosody volume>`, in dB).
+
+**Volume boost** (`VoiceParams::volume_boost`, `laprdus_set_volume_boost()`,
+`speech.volume_boost` in settings.json, key `volume_boost` on Android and
+Apple, CLI `-B`): a loudness maximizer after Google TTS's "amplify speech
+volume". Both renderers drive the clause through `src/audio/volume_boost.hpp`
+before the volume is applied: a gain of `VOLUME_BOOST_GAIN` (5.0, +14 dB), a
+lookahead peak limiter (5 ms lookahead, 1 ms attack, 30 ms release) with
+its ceiling `VOLUME_BOOST_CEILING` at 1.4, above full scale on purpose, and
+a tanh soft clipper from `VOLUME_BOOST_KNEE` 0.6 up that keeps the result
+under full scale. A limiter alone stalls at about -8 dBFS on speech (its
+peaks stand 12 dB above its level), which was not a noticeable boost; the
+soft clipper trades a mild saturation of the strongest vowel peaks (about
+-20 dB of distortion energy on the formant voices, -17 dB on the recorded
+ones) for the rest. Measured: Zvonko's median speech level -19.9 → -8.8
+dBFS, loud stretches -13.6 → -6.0; Josip -11.6 → -6.2 and -8.0 → -4.3. The
+output is still deterministic, and a host at half volume with the boost on
+is louder than without it. Tests: `[volume]` in `test_formant.cpp` and
+`test_concat.cpp`, `test_volume_boost` in `tests/nvda/test_driver.py`.
 
 **Thread Safety:**
 - Error messages use thread-local storage with mutex protection

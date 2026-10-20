@@ -266,6 +266,30 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_volume(
 );
 
 /**
+ * Switch the volume boost on or off (off by default), for every voice.
+ * With the boost on, the speech is driven through a gain of +14 dB, a
+ * peak limiter and a soft clipper (a loudness maximizer), so it comes out
+ * much louder, about 8 to 11 dB on the formant voices, without clipping
+ * hard: for a phone's earpiece in traffic, or a quiet laptop speaker. The volume
+ * (laprdus_set_volume) still scales the result, so a host's volume
+ * control keeps working with the boost on.
+ * @param handle Engine handle.
+ * @param enabled 1 to boost, 0 for the normal level.
+ * @return LAPRDUS_OK on success, error code on failure.
+ */
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_volume_boost(
+    LaprdusHandle handle,
+    int enabled
+);
+
+/**
+ * Get the volume boost switch (see laprdus_set_volume_boost).
+ * @param handle Engine handle.
+ * @return 1 when the boost is on, 0 when off or for an invalid handle.
+ */
+LAPRDUS_API int LAPRDUS_CALL laprdus_get_volume_boost(LaprdusHandle handle);
+
+/**
  * Set the inflection level of every voice (on the singing presets it sets
  * the depth of the vibrato, 0 switches it off): how large the pitch
  * movements are. 0.0 is a monotone, 0.5 (the default) the movements as

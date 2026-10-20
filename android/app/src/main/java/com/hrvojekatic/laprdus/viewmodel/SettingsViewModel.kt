@@ -32,6 +32,8 @@ data class SettingsUiState(
     val speed: Float = SettingsRepository.DEFAULT_SPEED,
     val pitch: Float = SettingsRepository.DEFAULT_PITCH,
     val volume: Float = SettingsRepository.DEFAULT_VOLUME,
+    /** Louder speech through a peak limiter. */
+    val volumeBoost: Boolean = SettingsRepository.DEFAULT_VOLUME_BOOST,
     val forceSpeed: Boolean = SettingsRepository.DEFAULT_FORCE_SPEED,
     val forcePitch: Boolean = SettingsRepository.DEFAULT_FORCE_PITCH,
     val forceVolume: Boolean = SettingsRepository.DEFAULT_FORCE_VOLUME,
@@ -122,6 +124,7 @@ class SettingsViewModel @Inject constructor(
                             speed = allSettings.speed,
                             pitch = allSettings.pitch,
                             volume = allSettings.volume,
+                            volumeBoost = allSettings.volumeBoost,
                             forceSpeed = allSettings.forceSpeed,
                             forcePitch = allSettings.forcePitch,
                             forceVolume = allSettings.forceVolume,
@@ -314,6 +317,18 @@ class SettingsViewModel @Inject constructor(
             tts.volume = clampedVolume
             settings.setVolume(clampedVolume)
             _uiState.update { it.copy(volume = clampedVolume) }
+        }
+    }
+
+    /**
+     * Switch the volume boost (louder speech through a peak limiter) on or
+     * off, for the app's own playback at once and persisted for the service.
+     */
+    fun setVolumeBoost(enabled: Boolean) {
+        viewModelScope.launch {
+            tts.volumeBoost = enabled
+            settings.setVolumeBoost(enabled)
+            _uiState.update { it.copy(volumeBoost = enabled) }
         }
     }
 

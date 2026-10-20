@@ -15,13 +15,13 @@
 // Dialog Template
 // =============================================================================
 
-IDD_CONFIG_DIALOG DIALOGEX 0, 0, 320, 467
+IDD_CONFIG_DIALOG DIALOGEX 0, 0, 320, 482
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "LaprdusTTS Settings"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     // Voice Settings Group: rate and acceleration, pitch and inflection, volume
-    GROUPBOX        "", IDC_GROUP_VOICE, 7, 7, 306, 192
+    GROUPBOX        "", IDC_GROUP_VOICE, 7, 7, 306, 207
 
     LTEXT           "Voice:", IDC_VOICE_LABEL, 14, 22, 50, 8
     COMBOBOX        IDC_VOICE_COMBO, 70, 20, 180, 100, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
@@ -48,44 +48,45 @@ BEGIN
     CONTROL         "", IDC_VOLUME_SLIDER, TRACKBAR_CLASS, TBS_HORZ | TBS_AUTOTICKS | WS_TABSTOP, 70, 152, 180, 18
     LTEXT           "100%", IDC_VOLUME_VALUE, 260, 154, 40, 8
     AUTOCHECKBOX    "", IDC_FORCE_VOLUME, 14, 170, 290, 10, WS_TABSTOP
+    AUTOCHECKBOX    "", IDC_VOLUME_BOOST_CHECK, 14, 185, 290, 10, WS_TABSTOP
 
     // Pause Settings Group
-    GROUPBOX        "", IDC_GROUP_PAUSES, 7, 204, 306, 113
+    GROUPBOX        "", IDC_GROUP_PAUSES, 7, 219, 306, 113
 
-    LTEXT           "Comma pause:", IDC_COMMA_LABEL, 14, 219, 80, 8
-    CONTROL         "", IDC_COMMA_SLIDER, TRACKBAR_CLASS, TBS_HORZ | TBS_AUTOTICKS | WS_TABSTOP, 100, 217, 150, 18
-    LTEXT           "100 ms", IDC_COMMA_VALUE, 260, 219, 40, 8
+    LTEXT           "Comma pause:", IDC_COMMA_LABEL, 14, 234, 80, 8
+    CONTROL         "", IDC_COMMA_SLIDER, TRACKBAR_CLASS, TBS_HORZ | TBS_AUTOTICKS | WS_TABSTOP, 100, 232, 150, 18
+    LTEXT           "100 ms", IDC_COMMA_VALUE, 260, 234, 40, 8
 
-    LTEXT           "Sentence pause:", IDC_SENTENCE_LABEL, 14, 242, 80, 8
-    CONTROL         "", IDC_SENTENCE_SLIDER, TRACKBAR_CLASS, TBS_HORZ | TBS_AUTOTICKS | WS_TABSTOP, 100, 240, 150, 18
-    LTEXT           "100 ms", IDC_SENTENCE_VALUE, 260, 242, 40, 8
+    LTEXT           "Sentence pause:", IDC_SENTENCE_LABEL, 14, 257, 80, 8
+    CONTROL         "", IDC_SENTENCE_SLIDER, TRACKBAR_CLASS, TBS_HORZ | TBS_AUTOTICKS | WS_TABSTOP, 100, 255, 150, 18
+    LTEXT           "100 ms", IDC_SENTENCE_VALUE, 260, 257, 40, 8
 
-    LTEXT           "Newline pause:", IDC_NEWLINE_LABEL, 14, 265, 80, 8
-    CONTROL         "", IDC_NEWLINE_SLIDER, TRACKBAR_CLASS, TBS_HORZ | TBS_AUTOTICKS | WS_TABSTOP, 100, 263, 150, 18
-    LTEXT           "100 ms", IDC_NEWLINE_VALUE, 260, 265, 40, 8
+    LTEXT           "Newline pause:", IDC_NEWLINE_LABEL, 14, 280, 80, 8
+    CONTROL         "", IDC_NEWLINE_SLIDER, TRACKBAR_CLASS, TBS_HORZ | TBS_AUTOTICKS | WS_TABSTOP, 100, 278, 150, 18
+    LTEXT           "100 ms", IDC_NEWLINE_VALUE, 260, 280, 40, 8
 
-    LTEXT           "Spelling speed:", IDC_SPELLING_SPEED_LABEL, 14, 288, 80, 8
-    CONTROL         "", IDC_SPELLING_SPEED_SLIDER, TRACKBAR_CLASS, TBS_HORZ | TBS_AUTOTICKS | WS_TABSTOP, 100, 286, 150, 18
-    LTEXT           "50%", IDC_SPELLING_SPEED_VALUE, 260, 288, 40, 8
+    LTEXT           "Spelling speed:", IDC_SPELLING_SPEED_LABEL, 14, 303, 80, 8
+    CONTROL         "", IDC_SPELLING_SPEED_SLIDER, TRACKBAR_CLASS, TBS_HORZ | TBS_AUTOTICKS | WS_TABSTOP, 100, 301, 150, 18
+    LTEXT           "50%", IDC_SPELLING_SPEED_VALUE, 260, 303, 40, 8
 
     // Options Group
-    GROUPBOX        "", IDC_GROUP_OPTIONS, 7, 322, 306, 61
+    GROUPBOX        "", IDC_GROUP_OPTIONS, 7, 337, 306, 61
 
-    AUTOCHECKBOX    "", IDC_EMOJI_CHECK, 14, 337, 290, 10, WS_TABSTOP
-    AUTOCHECKBOX    "", IDC_DIGITS_CHECK, 14, 352, 290, 10, WS_TABSTOP
-    AUTOCHECKBOX    "", IDC_SPELLING_SOUNDS_CHECK, 14, 367, 290, 10, WS_TABSTOP
+    AUTOCHECKBOX    "", IDC_EMOJI_CHECK, 14, 352, 290, 10, WS_TABSTOP
+    AUTOCHECKBOX    "", IDC_DIGITS_CHECK, 14, 367, 290, 10, WS_TABSTOP
+    AUTOCHECKBOX    "", IDC_SPELLING_SOUNDS_CHECK, 14, 382, 290, 10, WS_TABSTOP
 
     // Dictionaries Group
-    GROUPBOX        "", IDC_GROUP_DICTIONARIES, 7, 388, 306, 40
+    GROUPBOX        "", IDC_GROUP_DICTIONARIES, 7, 403, 306, 40
 
-    AUTOCHECKBOX    "", IDC_USER_DICT_CHECK, 14, 403, 170, 10, WS_TABSTOP
-    PUSHBUTTON      "", IDC_DICT_BUTTON, 213, 401, 90, 14, WS_TABSTOP
+    AUTOCHECKBOX    "", IDC_USER_DICT_CHECK, 14, 418, 170, 10, WS_TABSTOP
+    PUSHBUTTON      "", IDC_DICT_BUTTON, 213, 416, 90, 14, WS_TABSTOP
 
     // Buttons
-    PUSHBUTTON      "Test", IDC_TEST_BUTTON, 7, 446, 60, 14, WS_TABSTOP
-    DEFPUSHBUTTON   "OK", IDOK, 140, 446, 50, 14, WS_TABSTOP
-    PUSHBUTTON      "Cancel", IDCANCEL, 196, 446, 50, 14, WS_TABSTOP
-    PUSHBUTTON      "Apply", IDC_APPLY_BUTTON, 252, 446, 50, 14, WS_TABSTOP
+    PUSHBUTTON      "Test", IDC_TEST_BUTTON, 7, 461, 60, 14, WS_TABSTOP
+    DEFPUSHBUTTON   "OK", IDOK, 140, 461, 50, 14, WS_TABSTOP
+    PUSHBUTTON      "Cancel", IDCANCEL, 196, 461, 50, 14, WS_TABSTOP
+    PUSHBUTTON      "Apply", IDC_APPLY_BUTTON, 252, 461, 50, 14, WS_TABSTOP
 END
 
 // =============================================================================
@@ -168,6 +169,7 @@ BEGIN
     IDS_FORCE_PITCH         "Prisili Laprdusovu visinu govora za sve aplikacije"
     IDS_VOLUME_LABEL        "Glasnoća:"
     IDS_FORCE_VOLUME        "Prisili Laprdusovu glasnoću govora za sve aplikacije"
+    IDS_VOLUME_BOOST        "Pojačaj glasnoću govora (za bučna mjesta)"
     IDS_GROUP_PAUSES        "Postavke pauza"
     IDS_COMMA_LABEL         "Pauza kod zareza:"
     IDS_SENTENCE_LABEL      "Pauza kod rečenice:"
@@ -266,6 +268,7 @@ BEGIN
     IDS_FORCE_PITCH         "Prisili Laprdusovu visinu govora za sve aplikacije"
     IDS_VOLUME_LABEL        "Glasnoća:"
     IDS_FORCE_VOLUME        "Prisili Laprdusovu glasnoću govora za sve aplikacije"
+    IDS_VOLUME_BOOST        "Pojačaj glasnoću govora (za bučna mjesta)"
     IDS_GROUP_PAUSES        "Postavke pauza"
     IDS_COMMA_LABEL         "Pauza kod zareza:"
     IDS_SENTENCE_LABEL      "Pauza kod rečenice:"
@@ -364,6 +367,7 @@ BEGIN
     IDS_FORCE_PITCH         "Prisili Laprdusovu visinu govora za sve aplikacije"
     IDS_VOLUME_LABEL        "Jačina:"
     IDS_FORCE_VOLUME        "Prisili Laprdusovu jačinu govora za sve aplikacije"
+    IDS_VOLUME_BOOST        "Pojačaj jačinu govora (za bučna mesta)"
     IDS_GROUP_PAUSES        "Podešavanja pauza"
     IDS_COMMA_LABEL         "Pauza kod zareza:"
     IDS_SENTENCE_LABEL      "Pauza kod rečenice:"
@@ -462,6 +466,7 @@ BEGIN
     IDS_FORCE_PITCH         "Force Laprdus speech pitch for all applications"
     IDS_VOLUME_LABEL        "Volume:"
     IDS_FORCE_VOLUME        "Force Laprdus speech volume for all applications"
+    IDS_VOLUME_BOOST        "Boost speech volume (for noisy places)"
     IDS_GROUP_PAUSES        "Pause Settings"
     IDS_COMMA_LABEL         "Comma pause:"
     IDS_SENTENCE_LABEL      "Sentence pause:"

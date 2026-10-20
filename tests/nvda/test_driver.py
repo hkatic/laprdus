@@ -56,14 +56,15 @@ def check(name, ok):
         failures.append(name)
 
 
-def write_settings(mode="names", force_pitch=False, force_volume=False, volume=1.0):
+def write_settings(mode="names", force_pitch=False, force_volume=False, volume=1.0, volume_boost=None):
     path = os.path.join(APPDATA, "Laprdus", "settings.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump({
             "version": "1.0",
             "voice": {"default": "zvonko"},
-            "speech": {"speed": 1.0, "pitch": 1.0, "volume": volume, "inflection": True,
-                       "inflection_level": 0.5, "acceleration": 1.0, "emoji": False},
+            "speech": dict({"speed": 1.0, "pitch": 1.0, "volume": volume, "inflection": True,
+                            "inflection_level": 0.5, "acceleration": 1.0, "emoji": False},
+                           **({} if volume_boost is None else {"volume_boost": volume_boost})),
             "spelling": {"speed": 50, "mode": mode},
             "force": {"speed": False, "pitch": force_pitch, "volume": force_volume},
         }, f)
@@ -198,6 +199,32 @@ def test_rate_and_volume():
     synth.terminate()
 
 
+def test_volume_boost():
+    # speech.volume_boost from settings.json switches the engine's boost on;
+    # a file without the key leaves it off; the slider still scales it
+    write_settings("names")
+    synth = new_synth()
+    check("a settings.json without volume_boost leaves the boost off",
+          not synth._engine.get_volume_boost())
+    plain = run(synth, ["glasno", IndexCommand(1)])
+    write_settings("names", volume_boost=True)
+    synth._checkConfigChanged()
+    check("speech.volume_boost switches the boost on when the file changes",
+          synth._engine.get_volume_boost())
+    boosted = run(synth, ["glasno", IndexCommand(2)])
+    import struct
+    def rms(data):
+        samples = struct.unpack("<%dh" % (len(data) // 2), data)
+        return (sum(s * s for s in samples) / max(1, len(samples))) ** 0.5
+    check("the boost makes the speech louder",
+          len(plain) == 1 and len(boosted) == 1 and rms(boosted[0]) > rms(plain[0]) * 1.3)
+    synth._set_volume(50)
+    half = run(synth, ["glasno", IndexCommand(3)])
+    check("NVDA's volume slider still scales the boosted speech",
+          len(half) == 1 and rms(half[0]) < rms(boosted[0]) * 0.6)
+    synth.terminate()
+
+
 def test_delayed_description():
     write_settings("sounds")
     synth = new_synth()
@@ -219,6 +246,7 @@ if __name__ == "__main__":
     test_capital_pitch(force_pitch=False)
     test_capital_pitch(force_pitch=True)
     test_rate_and_volume()
+    test_volume_boost()
     test_delayed_description()
     print("%d failed" % len(failures))
     sys.exit(1 if failures else 0)

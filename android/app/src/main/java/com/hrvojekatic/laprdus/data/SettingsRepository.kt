@@ -55,6 +55,7 @@ class SettingsRepository internal constructor(
         private val KEY_SPEED = floatPreferencesKey("speed")
         private val KEY_PITCH = floatPreferencesKey("pitch")
         private val KEY_VOLUME = floatPreferencesKey("volume")
+        private val KEY_VOLUME_BOOST = booleanPreferencesKey("volume_boost")
 
         // Force settings keys
         private val KEY_FORCE_SPEED = booleanPreferencesKey("force_speed")
@@ -90,6 +91,7 @@ class SettingsRepository internal constructor(
         const val DEFAULT_SPEED = 1.0f
         const val DEFAULT_PITCH = 1.0f
         const val DEFAULT_VOLUME = 1.0f
+        const val DEFAULT_VOLUME_BOOST = false
         const val DEFAULT_FORCE_SPEED = false
         const val DEFAULT_FORCE_PITCH = false
         const val DEFAULT_FORCE_VOLUME = false
@@ -382,6 +384,29 @@ class SettingsRepository internal constructor(
         ensureMigrated()
         dataStore.edit { preferences ->
             preferences[KEY_FORCE_PITCH] = enabled
+        }
+    }
+
+    // ==========================================================================
+    // Volume Boost
+    // ==========================================================================
+
+    /**
+     * Flow of the volume boost switch: louder speech through a peak limiter,
+     * for noisy places and the phone's earpiece. The volume still scales it.
+     */
+    val volumeBoost: Flow<Boolean> = prefs
+        .map { preferences ->
+            preferences[KEY_VOLUME_BOOST] ?: DEFAULT_VOLUME_BOOST
+        }
+
+    /**
+     * Switch the volume boost on or off.
+     */
+    suspend fun setVolumeBoost(enabled: Boolean) {
+        ensureMigrated()
+        dataStore.edit { preferences ->
+            preferences[KEY_VOLUME_BOOST] = enabled
         }
     }
 
@@ -735,6 +760,8 @@ class SettingsRepository internal constructor(
         val speed: Float = DEFAULT_SPEED,
         val pitch: Float = DEFAULT_PITCH,
         val volume: Float = DEFAULT_VOLUME,
+        /** Louder speech through a peak limiter; the volume still scales it. */
+        val volumeBoost: Boolean = DEFAULT_VOLUME_BOOST,
         val forceSpeed: Boolean = DEFAULT_FORCE_SPEED,
         val forcePitch: Boolean = DEFAULT_FORCE_PITCH,
         val forceVolume: Boolean = DEFAULT_FORCE_VOLUME,
@@ -776,6 +803,7 @@ class SettingsRepository internal constructor(
         speed = this[KEY_SPEED] ?: DEFAULT_SPEED,
         pitch = this[KEY_PITCH] ?: DEFAULT_PITCH,
         volume = this[KEY_VOLUME] ?: DEFAULT_VOLUME,
+        volumeBoost = this[KEY_VOLUME_BOOST] ?: DEFAULT_VOLUME_BOOST,
         forceSpeed = this[KEY_FORCE_SPEED] ?: DEFAULT_FORCE_SPEED,
         forcePitch = this[KEY_FORCE_PITCH] ?: DEFAULT_FORCE_PITCH,
         forceVolume = this[KEY_FORCE_VOLUME] ?: DEFAULT_FORCE_VOLUME,

@@ -47,6 +47,8 @@
     <string name="setting_force_pitch_subtitle">Zanemari visinu koju traži aplikacija. Inače visina aplikacije podiže ili spušta Laprdus visinu</string>
     <string name="setting_force_volume_title">Prisilno koristi Laprdus glasnoću</string>
     <string name="setting_force_volume_subtitle">Koristi Laprdus postavke glasnoće umjesto postavki aplikacije</string>
+    <string name="setting_volume_boost_title">Pojačaj glasnoću govora</string>
+    <string name="setting_volume_boost_subtitle">Glasniji govor za bučna mjesta i slušalicu telefona. Znatno glasnije; najjači vrhovi se zaobljuju pa se zvuk ne lomi</string>
     <string name="setting_force_language_title">Prisilno koristi jezik</string>
     <string name="setting_force_language_subtitle">Uvijek govori gore odabranim jezikom, bez obzira na jezik koji aplikacije traže</string>
 

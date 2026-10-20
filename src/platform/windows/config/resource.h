@@ -37,6 +37,7 @@
 #define IDC_VOLUME_SLIDER       1041
 #define IDC_VOLUME_VALUE        1042
 #define IDC_FORCE_VOLUME        1043
+#define IDC_VOLUME_BOOST_CHECK  1087   // louder speech through a peak limiter
 
 // Pause controls
 #define IDC_COMMA_LABEL         1050
@@ -141,6 +142,7 @@
 #define IDS_VALUE_WPM           1127  // "%.1fx (%d WPM)"
 #define IDS_SPELLING_SPEED_LABEL 1128
 #define IDS_SPELLING_SOUNDS     1129
+#define IDS_VOLUME_BOOST        1258
 
 // Voice names for combo box
 // Voice kinds shown after the voice's name in the combo box; the names

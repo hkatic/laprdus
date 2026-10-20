@@ -44,6 +44,7 @@ class SettingsActivity : ComponentActivity() {
                     onForceSpeedChange = viewModel::setForceSpeed,
                     onForcePitchChange = viewModel::setForcePitch,
                     onForceVolumeChange = viewModel::setForceVolume,
+                    onVolumeBoostChange = viewModel::setVolumeBoost,
                     onForceLanguageChange = viewModel::setForceLanguage,
                     onRestoreDefaultSpeed = viewModel::restoreDefaultSpeed,
                     onRestoreDefaultPitch = viewModel::restoreDefaultPitch,

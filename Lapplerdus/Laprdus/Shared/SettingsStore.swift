@@ -13,6 +13,7 @@ enum SettingsKey {
     static let forceSpeed = "force_speed"
     static let forcePitch = "force_pitch"
     static let forceVolume = "force_volume"
+    static let volumeBoost = "volume_boost"
     static let emojiEnabled = "emoji_enabled"
     static let inflectionLevel = "inflection_level"
     static let acceleration = "acceleration"
@@ -38,6 +39,8 @@ struct SettingsSnapshot: Sendable {
     var forceSpeed = false
     var forcePitch = false
     var forceVolume = false
+    /// Louder speech through a peak limiter, for noisy places and the phone's earpiece.
+    var volumeBoost = false
     var emojiEnabled = false
     /// Size of the pitch movements, 0 (monotone) to 1, 0.5 as measured.
     var inflectionLevel: Float = SettingsSnapshot.defaultInflectionLevel
@@ -70,6 +73,7 @@ struct SettingsSnapshot: Sendable {
         snapshot.forceSpeed = defaults.bool(forKey: SettingsKey.forceSpeed)
         snapshot.forcePitch = defaults.bool(forKey: SettingsKey.forcePitch)
         snapshot.forceVolume = defaults.bool(forKey: SettingsKey.forceVolume)
+        snapshot.volumeBoost = defaults.bool(forKey: SettingsKey.volumeBoost)
         snapshot.emojiEnabled = defaults.bool(forKey: SettingsKey.emojiEnabled)
         if defaults.object(forKey: SettingsKey.inflectionLevel) != nil {
             snapshot.inflectionLevel = defaults.float(forKey: SettingsKey.inflectionLevel)
@@ -138,6 +142,7 @@ final class SettingsStore: ObservableObject {
     @Published var forceSpeed: Bool { didSet { defaults.set(forceSpeed, forKey: SettingsKey.forceSpeed) } }
     @Published var forcePitch: Bool { didSet { defaults.set(forcePitch, forKey: SettingsKey.forcePitch) } }
     @Published var forceVolume: Bool { didSet { defaults.set(forceVolume, forKey: SettingsKey.forceVolume) } }
+    @Published var volumeBoost: Bool { didSet { defaults.set(volumeBoost, forKey: SettingsKey.volumeBoost) } }
     @Published var emojiEnabled: Bool { didSet { defaults.set(emojiEnabled, forKey: SettingsKey.emojiEnabled) } }
     @Published var inflectionLevel: Float { didSet { defaults.set(inflectionLevel, forKey: SettingsKey.inflectionLevel) } }
     @Published var acceleration: Float { didSet { defaults.set(acceleration, forKey: SettingsKey.acceleration) } }
@@ -160,6 +165,7 @@ final class SettingsStore: ObservableObject {
         forceSpeed = snapshot.forceSpeed
         forcePitch = snapshot.forcePitch
         forceVolume = snapshot.forceVolume
+        volumeBoost = snapshot.volumeBoost
         emojiEnabled = snapshot.emojiEnabled
         inflectionLevel = snapshot.inflectionLevel
         acceleration = snapshot.acceleration
@@ -182,6 +188,7 @@ final class SettingsStore: ObservableObject {
             forceSpeed: forceSpeed,
             forcePitch: forcePitch,
             forceVolume: forceVolume,
+            volumeBoost: volumeBoost,
             emojiEnabled: emojiEnabled,
             inflectionLevel: inflectionLevel,
             acceleration: acceleration,

@@ -355,6 +355,7 @@ echo "Tekst" | laprdus
 | `-I, --inflection` | Razina infleksije, 0-100 (zadano: 50; 0 je monotono) |
 | `-a, --acceleration` | Ubrzanje, množitelj brzine 0.5-3.0 (zadano: 1.0) |
 | `-V, --speech-volume` | Glasnoća (0.0-1.0, zadano: 1.0) |
+| `-B, --volume-boost` | Pojačanje glasnoće: glasniji govor kroz ograničivač vrhova, za bučna mjesta |
 | `-d, --numbers-digits` | Čitaj brojeve znamenka po znamenka |
 | `-s, --spell` | Slovkaj tekst znak po znak |
 | `-S, --spelling-speed` | Brzina slovkanja, 0-100; niže vrijednosti produljuju pauze (zadano: 50) |
@@ -444,6 +445,10 @@ Glasnoća određuje koliko će govor biti glasan. Raspon je od 0.0 (tiho) do 1.0
 - **0.0** - Tiho (nema zvuka)
 - **0.5** - Umjerena glasnoća
 - **1.0** - Maksimalna glasnoća
+
+#### Pojačanje glasnoće
+
+Prekidač **Pojačaj glasnoću govora** u Laprdus Konfiguratoru čini govor glasnijim nego što to dopušta klizač glasnoće na 100 %. Namijenjen je bučnim mjestima (promet, ulica) i slušalici telefona kad je zvučnik isključen: na primjer da čujete koga zovete dok se poziv uspostavlja ili da pronađete tipku za uključenje zvučnika tijekom poziva. Govor se vodi kroz jako pojačanje, ograničivač vrhova i meko odrezivanje najjačih vrhova, kao kod Googleova pojačanja glasnoće govora: tihi dijelovi postaju glasniji za oko 11 dB, glasni za oko 8 dB, a zvuk se ne lomi, iako su najglasniji samoglasnici blago sabijeni. NVDA-ov klizač glasnoće i dalje mijenja pojačani govor. Prekidač je po zadanom isključen i vrijedi za sve glasove.
 
 ### 4.4 Pauze
 
