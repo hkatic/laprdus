@@ -1,5 +1,6 @@
 // -*- coding: utf-8 -*-
-// formant_phonemes.cpp - Acoustic targets for Croatian/Serbian/Bosnian phones
+// formant_phonemes.cpp - Acoustic targets for Croatian/Serbian/Bosnian and
+// Slovenian phones
 //
 // Vowel formants follow the measurements of adult male speakers of standard
 // Croatian (Bakran & Stamenković 1990; Bakran 1996, "Zvučna slika hrvatskoga
@@ -143,6 +144,27 @@ Table::Table() {
     t[Ph::SCHWA].tgt_coart = 0.10f;
     t[Ph::SCHWA].min_dur = 12.0f;
 
+    // ---- Slovenian ----
+    // The eight vowels of standard Slovenian: the close e and o are always
+    // long and stressed, the open ones stand for every unstressed and short
+    // stressed e and o (Slovenski pravopis 2001, § 618). Targets are the
+    // means of Tivadar's trained male speakers (Slavistična revija 52/1,
+    // 2004, table 4: i 351/2218, e 397/2169, ɛ 526/1821, a 603/1324,
+    // ɔ 551/1000, o 397/872, u 385/754 Hz), the open vowels moved a little
+    // towards Toporišič's (1978) more peripheral ɛ 585/1849 and ɔ 565/993,
+    // F3 from Toporišič; see "Slovenian" in docs/formant.md.
+    vowel(t[Ph::EH], 560.0f, 1830.0f, 2600.0f, 3600.0f, 100.0f, 115.0f, 150.0f, 0.96f, 74.0f);
+    vowel(t[Ph::OH], 560.0f, 1000.0f, 2580.0f, 3400.0f, 100.0f, 110.0f, 150.0f, 0.96f, 74.0f);
+    vowel(t[Ph::EE], 400.0f, 2120.0f, 2760.0f, 3550.0f, 85.0f, 110.0f, 160.0f, 0.88f, 76.0f);
+    vowel(t[Ph::OO], 400.0f, 860.0f, 2550.0f, 3300.0f, 90.0f, 105.0f, 150.0f, 0.88f, 76.0f);
+    // The schwa as a syllable of its own (pes, sem, veter, the ər of prst):
+    // a short mid-central vowel (Toporišič 539/1376/2487, Petek, Šuštaršič
+    // and Komar 1996: 456/1370/2121), always short, stressed or not
+    // (Slovenian has no long schwa), coloured a little by its neighbours.
+    vowel(t[Ph::AX], 500.0f, 1380.0f, 2500.0f, 3450.0f, 100.0f, 120.0f, 160.0f, 0.86f, 52.0f);
+    t[Ph::AX].tgt_coart = 0.20f;
+    t[Ph::AX].min_dur = 20.0f;
+
     // ---- Glides and liquids ----
     // /j/ is a true constriction, not a weak /i/: F1 low (250-300 Hz in
     // Eloquence and in the recordings at a word start), F2 about 2000 Hz
@@ -182,6 +204,14 @@ Table::Table() {
     // little higher and F3 sharper (2600 / 3000 Hz, between the recorded
     // speaker's 2500 / 2900 and eSpeak's and DECtalk's 2700-2900 Hz) an l
     // next to e and i is no longer heard as n or m.
+    // Slovenian [w] (the u̯ of bil, vse, nov, polno): a labiovelar glide,
+    // a brief close back vocoid with F2 well below the u's (Šuštaršič,
+    // Komar and Petek, JIPA 1995, describe it as a bilabial approximant),
+    // fully voiced and without the friction of v. Shorter than a vowel, and
+    // it imposes its low F2 on the vowel next to it the way u does.
+    sonorant(t[Ph::W], PhClass::Glide, 300.0f, 720.0f, 2250.0f,
+             70.0f, 110.0f, 170.0f, 0.82f, 56.0f, 0.25f, 50.0f, 3, 0.10f);
+    t[Ph::W].f4 = 3300.0f;
     sonorant(t[Ph::L], PhClass::Liquid, 330.0f, 1100.0f, 2600.0f,
              60.0f, 100.0f, 60.0f, 0.85f, 62.0f, 0.25f, 40.0f, 4, 0.15f);
     t[Ph::L].f4 = 3000.0f;

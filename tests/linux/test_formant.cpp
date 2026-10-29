@@ -369,13 +369,13 @@ TEST_CASE("Old voice ids load the renamed voices", "[formant][registry]") {
     REQUIRE(laprdus_get_voice_info_by_id(nullptr, &djedo) != LAPRDUS_OK);
 }
 
-TEST_CASE("The three languages are listed and Zvonko is the default voice", "[formant][registry]") {
+TEST_CASE("The four languages are listed and Zvonko is the default voice", "[formant][registry]") {
     REQUIRE(std::string(laprdus_get_default_voice()) == "zvonko");
     LaprdusVoiceInfo zvonko;
     REQUIRE(laprdus_get_voice_info_by_id(laprdus_get_default_voice(), &zvonko) == LAPRDUS_OK);
     REQUIRE(zvonko.data_filename == nullptr);
 
-    REQUIRE(laprdus_get_language_count() == 3);
+    REQUIRE(laprdus_get_language_count() == 4);
     struct Expected {
         const char* code; const char* short_code; uint16_t lcid;
         const char* english; const char* native;
@@ -384,8 +384,9 @@ TEST_CASE("The three languages are listed and Zvonko is the default voice", "[fo
         {"hr-HR", "hr", 0x041A, "Croatian", "Hrvatski"},
         {"sr-RS", "sr", 0x081A, "Serbian", "Srpski"},
         {"bs-BA", "bs", 0x141A, "Bosnian", "Bosanski"},
+        {"sl-SI", "sl", 0x0424, "Slovenian", "Sloven\xC5\xA1\xC4\x8Dina"},
     };
-    for (uint32_t i = 0; i < 3; ++i) {
+    for (uint32_t i = 0; i < 4; ++i) {
         INFO(expected[i].code);
         LaprdusLanguageInfo info;
         REQUIRE(laprdus_get_language_info(i, &info) == LAPRDUS_OK);
@@ -396,15 +397,15 @@ TEST_CASE("The three languages are listed and Zvonko is the default voice", "[fo
         REQUIRE(std::string(info.native_name) == expected[i].native);
     }
     LaprdusLanguageInfo info;
-    REQUIRE(laprdus_get_language_info(3, &info) == LAPRDUS_ERROR_INVALID_PARAMETER);
+    REQUIRE(laprdus_get_language_info(4, &info) == LAPRDUS_ERROR_INVALID_PARAMETER);
     REQUIRE(laprdus_get_language_info(0, nullptr) == LAPRDUS_ERROR_INVALID_PARAMETER);
 
-    // Every voice's native language is one of the three
+    // Every voice's native language is one of the four
     for (uint32_t i = 0; i < laprdus_get_voice_count(); ++i) {
         LaprdusVoiceInfo voice;
         REQUIRE(laprdus_get_voice_info(i, &voice) == LAPRDUS_OK);
         std::string code = voice.language_code;
-        REQUIRE((code == "hr-HR" || code == "sr-RS" || code == "bs-BA"));
+        REQUIRE((code == "hr-HR" || code == "sr-RS" || code == "bs-BA" || code == "sl-SI"));
     }
 }
 
@@ -541,6 +542,14 @@ TEST_CASE("The language is chosen apart from the voice", "[formant][language]") 
     REQUIRE(speak(engine.handle, "2000") == speak(engine.handle, "dve hiljade"));
     REQUIRE(speak(engine.handle, "1000") != croatian);
 
+    // Slovenian from Zvonko: tisoč, which does not change (dva tisoč)
+    REQUIRE(laprdus_set_language(engine.handle, "sl") == LAPRDUS_OK);
+    REQUIRE(std::string(laprdus_get_language(engine.handle)) == "sl-SI");
+    REQUIRE(std::string(laprdus_get_current_voice(engine.handle)) == "zvonko");
+    REQUIRE(speak(engine.handle, "1000") == speak(engine.handle, "tiso\xC4\x8D"));
+    REQUIRE(speak(engine.handle, "2000") == speak(engine.handle, "dva tiso\xC4\x8D"));
+    REQUIRE(speak(engine.handle, "1000") != croatian);
+
     // Bosnian from Zvonko
     REQUIRE(laprdus_set_language(engine.handle, "bs") == LAPRDUS_OK);
     REQUIRE(std::string(laprdus_get_language(engine.handle)) == "bs-BA");
@@ -569,6 +578,12 @@ TEST_CASE("The language is chosen apart from the voice", "[formant][language]") 
         REQUIRE(laprdus_set_language(engine.handle, tag) == LAPRDUS_OK);
         REQUIRE(std::string(laprdus_get_language(engine.handle)) == "bs-BA");
     }
+    for (const char* tag : {"sl", "sl-SI", "SL_si", "slv", "Slovenian", "Slovene", "sloven\xC5\xA1\xC4\x8Dina"}) {
+        INFO(tag);
+        REQUIRE(laprdus_set_language(engine.handle, tag) == LAPRDUS_OK);
+        REQUIRE(std::string(laprdus_get_language(engine.handle)) == "sl-SI");
+    }
+    REQUIRE(laprdus_set_language(engine.handle, "bs") == LAPRDUS_OK);
     REQUIRE(laprdus_set_language(engine.handle, "de") == LAPRDUS_ERROR_INVALID_PARAMETER);
     REQUIRE(laprdus_set_language(engine.handle, "english") == LAPRDUS_ERROR_INVALID_PARAMETER);
     REQUIRE(std::string(laprdus_get_language(engine.handle)) == "bs-BA");
@@ -619,6 +634,56 @@ TEST_CASE("A chosen language stays across voice changes until it is cleared", "[
     REQUIRE(std::string(laprdus_get_language(fresh.handle)) == "bs-BA");
     REQUIRE(laprdus_set_language(fresh.handle, nullptr) == LAPRDUS_OK);
     REQUIRE(std::string(laprdus_get_language(fresh.handle)) == "hr-HR");
+}
+
+TEST_CASE("Slovenian spelling uses Slovenian names and preserves user overrides", "[formant][spelling]") {
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    check_slovenian_spelling(engine.handle);
+}
+
+TEST_CASE("Slovenian is spoken by every voice", "[formant][language]") {
+    // No voice has Slovenian as its native language: every one of them
+    // speaks it when asked, formant and recorded alike, with a front end of
+    // its own, so the same sentence does not sound as it does in Croatian.
+    const char* text = "Dober dan, kako ste? Bil sem v Ljubljani.";
+    Engine zvonko;
+    REQUIRE(laprdus_set_voice(zvonko.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    std::vector<int16_t> croatian = speak(zvonko.handle, text);
+    REQUIRE(!croatian.empty());
+    REQUIRE(laprdus_set_language(zvonko.handle, "sl") == LAPRDUS_OK);
+    REQUIRE(std::string(laprdus_get_language(zvonko.handle)) == "sl-SI");
+    std::vector<int16_t> slovenian = speak(zvonko.handle, text);
+    REQUIRE(!slovenian.empty());
+    REQUIRE(slovenian != croatian);
+    // Deterministic, like the other languages
+    REQUIRE(speak(zvonko.handle, text) == slovenian);
+    // Numbers in Slovenian words: the ones before the tens as one word,
+    // the dual of milijon, the "cela" of a decimal
+    REQUIRE(speak(zvonko.handle, "21") == speak(zvonko.handle, "enaindvajset"));
+    REQUIRE(speak(zvonko.handle, "2000000") == speak(zvonko.handle, "dva milijona"));
+    REQUIRE(speak(zvonko.handle, "3,14") == speak(zvonko.handle, "tri cele \xC5\xA1tirinajst"));
+    // The other formant voices and the singing presets speak it too
+    for (const char* voice : {"stojan", "mirsad", "lika_velebit"}) {
+        INFO(voice);
+        REQUIRE(laprdus_set_voice(zvonko.handle, voice, NO_DATA) == LAPRDUS_OK);
+        REQUIRE(std::string(laprdus_get_language(zvonko.handle)) == "sl-SI");
+        REQUIRE(!speak(zvonko.handle, text).empty());
+    }
+
+    // A recorded voice, when its data is at hand
+    const char* data = std::getenv("LAPRDUS_DATA");
+    if (!data || !*data) return;
+    Engine josip;
+    REQUIRE(laprdus_set_voice(josip.handle, "josip", data) == LAPRDUS_OK);
+    std::vector<int16_t> josip_croatian = speak(josip.handle, text);
+    REQUIRE(!josip_croatian.empty());
+    REQUIRE(laprdus_set_language(josip.handle, "sl") == LAPRDUS_OK);
+    REQUIRE(std::string(laprdus_get_language(josip.handle)) == "sl-SI");
+    std::vector<int16_t> josip_slovenian = speak(josip.handle, text);
+    REQUIRE(!josip_slovenian.empty());
+    REQUIRE(josip_slovenian != josip_croatian);
+    REQUIRE(speak(josip.handle, "1000") == speak(josip.handle, "tiso\xC4\x8D"));
 }
 
 TEST_CASE("Lexicon accents cover the whole paradigm", "[formant][text]") {

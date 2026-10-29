@@ -57,7 +57,7 @@ Inačica 2.0
 
 ### 1.1 Što je Laprdus?
 
-Laprdus je sintetizator govora (TTS - Text-to-Speech) za hrvatski, srpski i bosanski jezik. Njegovi izvorni glasovi koriste tehnologiju konkatenativne sinteze, spajajući unaprijed snimljene fonemske jedinice za proizvodnju govora, a formantni glasovi govor u cijelosti računaju pravilima, bez snimaka. Svaki glas govori sva tri jezika. Iako ne doseže kvalitetu modernih neuronskih TTS sustava, Laprdus nudi visoke performanse i minimalnu potrošnju memorije.
+Laprdus je sintetizator govora (TTS - Text-to-Speech) za hrvatski, srpski, bosanski i slovenski jezik. Njegovi izvorni glasovi koriste tehnologiju konkatenativne sinteze, spajajući unaprijed snimljene fonemske jedinice za proizvodnju govora, a formantni glasovi govor u cijelosti računaju pravilima, bez snimaka. Svaki glas govori sva četiri jezika. Iako ne doseže kvalitetu modernih neuronskih TTS sustava, Laprdus nudi visoke performanse i minimalnu potrošnju memorije.
 
 Laprdus je razvijen kako bi korisnicima čitača ekrana pružio jednostavan i brz pristup računalima i mobilnim uređajima na njihovom materinjem jeziku, besplatno.
 
@@ -85,7 +85,7 @@ Laprdus je dostupan na sljedećim platformama:
 Laprdus nudi sljedeće mogućnosti:
 
 - Govor na hrvatskom, srpskom i bosanskom jeziku (podržano latinično i ćirilično pismo)
-- Osamnaest glasova (dva osnovna, tri izvedena, tri formantna i deset pjevajućih), od kojih svaki govori sva tri jezika; jezik se bira odvojeno od glasa
+- Osamnaest glasova (dva osnovna, tri izvedena, tri formantna i deset pjevajućih), od kojih svaki govori sva četiri jezika (hrvatski, srpski, bosanski i slovenski); jezik se bira odvojeno od glasa
 - Podešavanje brzine govora
 - Podešavanje visine glasa
 - Podešavanje glasnoće
@@ -133,12 +133,13 @@ Da biste instalirali Laprdus na Windows sustavu, slijedite ove korake:
    - Upišite "Upravljačka ploča" i pritisnite Enter
 2. Odaberite "Olakšani pristup" > "Prepoznavanje govora"
 3. Tipkom Tab pronađite "Tekst u govor" i pritisnite Enter
-4. U padajućem izborniku "Odabir glasa" trebali biste vidjeti tri Laprdus glasa:
+4. U padajućem izborniku "Odabir glasa" trebali biste vidjeti četiri Laprdus glasa:
    - Laprdus Croatian (hrvatski)
    - Laprdus Serbian (srpski)
    - Laprdus Bosnian (bosanski)
+   - Laprdus Slovenian (slovenski)
 
-   SAPI5 glas bira samo jezik. Sva tri govore glasom koji odaberete u Laprdus Konfiguratoru (Zvonko dok ga ne promijenite): Josipom, Vladom, Detencetom, Babom, Đedom, Zvonkom, Stojanom, Mirsadom ili jednim od deset pjevajućih glasova (vidi [6.1](#61-dostupni-glasovi)). Instalacijski program pri instalaciji, nadogradnji i popravku uklanja glasove koje su registrirale prijašnje inačice (po jedan za svaki Laprdusov glas).
+   SAPI5 glas bira samo jezik. Sva četiri govore glasom koji odaberete u Laprdus Konfiguratoru (Zvonko dok ga ne promijenite): Josipom, Vladom, Detencetom, Babom, Đedom, Zvonkom, Stojanom, Mirsadom ili jednim od deset pjevajućih glasova (vidi [6.1](#61-dostupni-glasovi)). Instalacijski program pri instalaciji, nadogradnji i popravku uklanja glasove koje su registrirale prijašnje inačice (po jedan za svaki Laprdusov glas).
 
 ### 2.2 NVDA dodatak
 
@@ -244,7 +245,7 @@ Nakon instalacije, Laprdus se automatski konfigurira za Speech Dispatcher. Za ko
 3. Tipkom Tab ili Shift + Tab pozicionirajte se na kartice postavki, strelicom desno pronađite karticu "Voice" (Glas), a zatim ponavljanjem pritiska na tipku Tab odaberite:
    - Speech system: Pritisnite Razmaknicu za proširenje padajućeg izbornika, Strelicom dolje odaberite Speech Dispatcher ukoliko već nije tako namješteno i pritisnite Enter
    - Speech synthesizer: Pritisnite Razmaknicu za proširenje padajućeg izbornika, Strelicom dolje odaberite Laprdus pa zatim Enter
-   - Voice: Pritisnite Razmaknicu za proširenje padajućeg izbornika, Strelicom dolje odaberite željeni glas (Zvonko, Josip, Vlado itd.; svaki je glas naveden za hrvatski, srpski i bosanski, a jezik koji Orca traži određuje kojim će jezikom govoriti) i pritisnite Enter
+   - Voice: Pritisnite Razmaknicu za proširenje padajućeg izbornika, Strelicom dolje odaberite željeni glas (Zvonko, Josip, Vlado itd.; svaki je glas naveden za hrvatski, srpski, bosanski i slovenski, a jezik koji Orca traži određuje kojim će jezikom govoriti) i pritisnite Enter
 
 4. Tipkom Tab pronađite "Apply" (Primijeni) i zatvorite postavke
 
@@ -349,7 +350,7 @@ echo "Tekst" | laprdus
 | Opcija | Opis |
 |--------|------|
 | `-v, --voice` | Odabir glasa (zvonko (zadano), stojan, mirsad, josip, vlado, detence, baba, djedo ili pjevajući glas: orguljas, dalmacija_klapa, trubac, harmonikas, sevdalija, sazlija, lika_velebit, solunac, sarajevo_bembasa, becarac) |
-| `-L, --language` | Jezik: `hr`, `sr` ili `bs`. Svaki glas govori svaki jezik; bez ove opcije glas govori svoj izvorni jezik |
+| `-L, --language` | Jezik: `hr`, `sr`, `bs` ili `sl`. Svaki glas govori svaki jezik; bez ove opcije glas govori svoj izvorni jezik |
 | `-r, --speech-rate` | Brzina govora (0.5-2.0, zadano: 1.0; formantni glasovi 0.25-4.0) |
 | `-p, --speech-pitch` | Visina glasa (0.5-2.0, zadano: 1.0; formantni glasovi 0.25-4.0) |
 | `-I, --inflection` | Razina infleksije, 0-100 (zadano: 50; 0 je monotono) |
@@ -380,23 +381,23 @@ Kada koristite Laprdus s NVDA čitačem ekrana, postavke glasa možete promijeni
 2. Odaberite Opcije podizbornik pa zatim Postavke > kategorija Govor
 3. U dijalogu možete podesiti:
    - Glas (popis sadrži svih 18 Laprdus glasova, pod imenima iz [6.1](#61-dostupni-glasovi); zadani je Zvonko)
-   - Jezik (hrvatski, srpski ili bosanski)
+   - Jezik (hrvatski, srpski, bosanski ili slovenski)
    - Brzinu govora
    - Visinu glasa
    - Infleksiju (razinu rečenične melodije, vidi [4.6](#46-infleksija))
    - Glasnoću
    - Dodatnu brzinu ili Rate Boost (svaki položaj klizača brzine čini tri puta bržim)
 
-**Jezik je odvojen od glasa.** Svaki Laprdus glas govori sva tri jezika, pa je popis glasova isti za svaki jezik, a jezik birate u zasebnom padajućem izborniku „Jezik”, kao kod eSpeaka. Jezik određuje pravila izgovora, rječnik naglasaka, nazive slova pri slovkanju i riječi za brojeve (*tisuća*, *milijun* na hrvatskom; *hiljada*, *milion* na srpskom i bosanskom): Josip tako može govoriti srpski, a Stojan hrvatski. Nova instalacija počinje na jeziku NVDA-a ako je to hrvatski, srpski ili bosanski, inače na hrvatskom; jezik koji sami odaberete NVDA pamti kao i ostale postavke. Jezik se nalazi i u prstenu postavki sintetizatora (Control + NVDA tipka + strelice).
+**Jezik je odvojen od glasa.** Svaki Laprdus glas govori sva četiri jezika, pa je popis glasova isti za svaki jezik, a jezik birate u zasebnom padajućem izborniku „Jezik”, kao kod eSpeaka. Jezik određuje pravila izgovora, rječnik naglasaka, nazive slova pri slovkanju i riječi za brojeve (*tisuća*, *milijun* na hrvatskom; *hiljada*, *milion* na srpskom i bosanskom; *tisoč*, *milijon* na slovenskom): Josip tako može govoriti srpski, a Stojan hrvatski ili slovenski. Nova instalacija počinje na jeziku NVDA-a ako je to hrvatski, srpski, bosanski ili slovenski, inače na hrvatskom; jezik koji sami odaberete NVDA pamti kao i ostale postavke. Jezik se nalazi i u prstenu postavki sintetizatora (Control + NVDA tipka + strelice).
 
-**Automatska promjena jezika.** Kad je u NVDA postavkama govora uključena opcija „Automatski mijenjaj jezik”, tekst označen kao hrvatski, srpski ili bosanski Laprdus izgovara na tom jeziku, istim glasom; tekst na bilo kojem drugom jeziku izgovara na jeziku koji ste odabrali. Glas se pritom nikad ne mijenja.
+**Automatska promjena jezika.** Kad je u NVDA postavkama govora uključena opcija „Automatski mijenjaj jezik”, tekst označen kao hrvatski, srpski, bosanski ili slovenski Laprdus izgovara na tom jeziku, istim glasom; tekst na bilo kojem drugom jeziku izgovara na jeziku koji ste odabrali. Glas se pritom nikad ne mijenja.
 
 ### 3.4 Android aplikacija
 
 Laprdus Android aplikacija uključuje zaslon s postavkama gdje možete:
 
 1. Odabrati glas
-2. Odabrati jezik (hrvatski, srpski ili bosanski) za govor u samoj aplikaciji; govor koji traže druge aplikacije i TalkBack ide na jeziku koji one zatraže, osim uz uključeno prisilno korištenje jezika
+2. Odabrati jezik (hrvatski, srpski, bosanski ili slovenski) za govor u samoj aplikaciji; govor koji traže druge aplikacije i TalkBack ide na jeziku koji one zatraže, osim uz uključeno prisilno korištenje jezika
 3. Podesiti brzinu govora
 4. Podesiti visinu glasa
 5. Podesiti glasnoću
@@ -871,7 +872,7 @@ Kad je odabran naglasni rječnik, dijalog za unos ima druga polja:
 
 - **Unos:** riječ, osnova, popis oblika ili glagol s naglasnim znakovima, u zapisu iz [5.11](#511-naglasni-rječnik-accentsjson), npr. `kontr'o:l*` ili `ur'e:d=i<p`
 - **Vrsta unosa:** *Riječ* (riječ, osnova sa `*` ili oblici s `|`) ili *Glagol* (cijela osnova sa znakom `=` i vrstom, ili korijen s dugim *ije*)
-- **Jezik:** *Svi jezici*, ili hrvatski, srpski odnosno bosanski ako unos vrijedi samo za jedan jezik
+- **Jezik:** *Svi jezici*, ili hrvatski, srpski, bosanski odnosno slovenski ako unos vrijedi samo za jedan jezik
 - **Komentar:** opcionalna bilješka, npr. oblici koje unos pokriva
 
 Ispod polja stoji kratki podsjetnik na znakove. Unos se provjerava istim pravilima kojima ga Laprdus čita: unos bez naglasnog znaka, s dva naglaska ili s nepoznatom vrstom glagola Konfigurator odbija i kaže što je krivo, pa u datoteku ne može dospjeti unos koji bi se pri učitavanju preskočio. Dupliciranje ne mijenja tekst unosa.
@@ -1283,7 +1284,7 @@ Primjer datoteke:
 
 - `word`: riječ, osnova (`*`) ili popis oblika (`|`).
 - `verb`: glagol. Piše se cijela osnova s naglaskom infinitiva, znak `=` i vrsta: `i` za glagole na -iti/-im, `a` na -ati/-am, `u` na -nuti/-nem, `t` na -ati s drugom osnovom u prezentu i `e` za tu osnovu (`pok'a:z=t` i `pok'a:ž=e`). Iza vrste mogu stajati oznake: `<` pomiče naglasak jedan slog unatrag u prezentu, `p` i u trpnom pridjevu (tako govore Stojan i Mirsad, Zvonko zadržava naglasak infinitiva), `n` kad je imperativ jednak obliku neke imenice (potvrdi, uredi), pa se čita kao glagol samo na početku rečenice. Glagol s dugim *ije* u korijenu piše se kao `korijen:vrsta` i vrijedi sa svakim prefiksom.
-- `language`: `hr`, `sr` ili `bs` ograničava unos na taj jezik, kojim god glasom se govori; bez toga vrijedi za sva tri.
+- `language`: `hr`, `sr`, `bs` ili `sl` ograničava unos na taj jezik, kojim god glasom se govori; bez toga vrijedi za sve jezike. Slovenski unos piše se u zapisu slovenskih rječnika (`mésto`, `člôvek`, `p'əs`, `d'é:la*`): ostrivec za dugi naglašeni samoglasnik (é, ó uski), strešica za dugi široki ê, ô, krativec za kratki naglašeni, `ə` za polglasnik i `w` za l koji se izgovara kao u (bíw).
 - `comment`: bilješka za vas, Laprdus je ne čita.
 
 Točan oblik ima prednost pred osnovom, dulja osnova pred kraćom, a vaš unos pred ugrađenim. Naglasni znakovi napisani u samom tekstu, ili u zamjeni glavnog rječnika (`telèfon`), imaju prednost pred svime.
@@ -1300,7 +1301,7 @@ laprdus -v zvonko "kontrola, signala, uredio"
 
 ### 6.1 Dostupni glasovi
 
-Laprdus uključuje osamnaest glasova - dva osnovna, tri izvedena, tri formantna i deset pjevajućih. **Svaki glas govori svaki jezik.** Glas određuje samo zvuk; jezik (hrvatski, srpski ili bosanski) određuje pravila izgovora, naglasni rječnik, brojevne riječi (*tisuća* / *hiljada*) i nazive slova pri slovkanju, a bira se odvojeno od glasa, na svakoj platformi na svoj način (vidi [6.3](#63-odabir-glasa)). *Izvorni jezik* u tablici jezik je kojim glas govori kad se ništa drugo ne zatraži. **Zadani glas je Zvonko**, na svim platformama i za sve jezike. Oznaka glasa (u stupcu Oznaka) piše se bez dijakritičkih znakova namjerno, da se glasovi sigurno registriraju na svakoj platformi; oznake iz prijašnjih inačica (`djed`, `klapa`, `pjevac`, `pevac`, `solist`) i dalje vrijede u spremljenim postavkama i skriptama.
+Laprdus uključuje osamnaest glasova - dva osnovna, tri izvedena, tri formantna i deset pjevajućih. **Svaki glas govori svaki jezik.** Glas određuje samo zvuk; jezik (hrvatski, srpski, bosanski ili slovenski) određuje pravila izgovora, naglasni rječnik, brojevne riječi (*tisuća* / *hiljada* / *tisoč*) i nazive slova pri slovkanju, a bira se odvojeno od glasa, na svakoj platformi na svoj način (vidi [6.3](#63-odabir-glasa)). *Izvorni jezik* u tablici jezik je kojim glas govori kad se ništa drugo ne zatraži. **Zadani glas je Zvonko**, na svim platformama i za sve jezike. Oznaka glasa (u stupcu Oznaka) piše se bez dijakritičkih znakova namjerno, da se glasovi sigurno registriraju na svakoj platformi; oznake iz prijašnjih inačica (`djed`, `klapa`, `pjevac`, `pevac`, `solist`) i dalje vrijede u spremljenim postavkama i skriptama.
 
 | Glas | Oznaka | Vrsta | Izvorni jezik | Opis |
 |------|--------|-------|---------------|------|
@@ -1333,14 +1334,14 @@ Laprdus uključuje osamnaest glasova - dva osnovna, tri izvedena, tri formantna 
 - **Baba** koristi Josipove foneme s visinom 1.2x (blago viši glas)
 - **Đedo** koristi Vladove foneme s visinom 0.75x (niži glas)
 
-Osnovni i izvedeni glasovi, kao i svi ostali, govore sva tri jezika: Josip na srpskom kaže *hiljada* i slovka *lje*, Vlado na hrvatskom *tisuća* i *elj*.
+Osnovni i izvedeni glasovi, kao i svi ostali, govore sva četiri jezika: Josip na srpskom kaže *hiljada* i slovka *lje*, Vlado na hrvatskom *tisuća* i *elj*, a na slovenskom *tisoč*.
 
 **Formantni glasovi** (Zvonko, Stojan, Mirsad) ne koriste snimke. Govor se u cijelosti računa pravilima, kao kod sintetizatora Eloquence i DECtalk: iz teksta se određuju glasovi, naglasak i rečenična intonacija, a zatim se zvuk stvara formantnim sintetizatorom. Zato ovi glasovi:
 
 - ne trebaju datoteke s glasovnim podacima
 - ostaju čisti i razumljivi pri vrlo velikim brzinama, jer se brzina i visina ne dobivaju naknadnom obradom zvuka
 - imaju rečeničnu intonaciju (izjava, pitanje, zarez, usklik)
-- brojeve izgovaraju, kao i svi glasovi, prema odabranom jeziku (hrvatski: *tisuća*, *milijun*; srpski: *hiljada*, *milion*, *dvesta*; bosanski: *hiljada*, *milion*, *dvjesto*)
+- brojeve izgovaraju, kao i svi glasovi, prema odabranom jeziku (hrvatski: *tisuća*, *milijun*; srpski: *hiljada*, *milion*, *dvesta*; bosanski: *hiljada*, *milion*, *dvjesto*; slovenski: *tisoč*, *milijon*, *enaindvajset*)
 
 Ako formantni glas neku riječ naglasi na pogrešnom slogu, naglasak možete zadati u rječniku izgovora uobičajenim naglasnim znakovima, na primjer `telèfon`, `gláva`, `kȕća` ili `grȃd`.
 
@@ -1350,12 +1351,12 @@ Ako formantni glas neku riječ naglasi na pogrešnom slogu, naglasak možete zad
 
 #### Windows SAPI5
 
-SAPI5 nudi tri glasa, po jedan za svaki jezik: Laprdus Croatian, Laprdus Serbian i Laprdus Bosnian. Oni biraju jezik; kojim će glasom govoriti, bira se u Laprdus Konfiguratoru i vrijedi za sva tri (u `settings.json` to je `voice.default`; ključa za jezik nema, jer jezik bira program koji govori). Zadani glas je Zvonko.
+SAPI5 nudi četiri glasa, po jedan za svaki jezik: Laprdus Croatian, Laprdus Serbian, Laprdus Bosnian i Laprdus Slovenian. Oni biraju jezik; kojim će glasom govoriti, bira se u Laprdus Konfiguratoru i vrijedi za sva četiri (u `settings.json` to je `voice.default`; ključa za jezik nema, jer jezik bira program koji govori). Zadani glas je Zvonko.
 
 1. Otvorite Laprdus Konfigurator i u skupini Glas odaberite željeni glas (Josip, Vlado, Detence, Baba, Đedo, Zvonko, Stojan, Mirsad ili pjevajući glas), pa spremite
 2. Otvorite Upravljačku ploču
 3. Odaberite "Olakšani pristup" > "Prepoznavanje govora" > "Tekst u govor"
-4. U padajućem izborniku "Odabir glasa" odaberite jezik: Laprdus Croatian, Laprdus Serbian ili Laprdus Bosnian
+4. U padajućem izborniku "Odabir glasa" odaberite jezik: Laprdus Croatian, Laprdus Serbian, Laprdus Bosnian ili Laprdus Slovenian
 5. Kliknite "Primijeni"
 
 #### NVDA
@@ -1366,18 +1367,18 @@ U NVDA-u su svi Laprdus glasovi dostupni za svaki jezik: glas i jezik biraju se 
 1. Otvorite NVDA izbornik (NVDA tipka + N)
 2. Odaberite Opcije > Postavke > Govor
 3. U padajućem izborniku "Glas" odaberite željeni glas (popis sadrži svih 18 glasova)
-4. U padajućem izborniku "Jezik" odaberite hrvatski, srpski ili bosanski
+4. U padajućem izborniku "Jezik" odaberite hrvatski, srpski, bosanski ili slovenski
 5. Pritisnite "U redu" ili "Primijeni"
 
 **Metoda 2: Brzi prsten postavki**
 1. Pritisnite Control + NVDA tipka + strelica lijevo/desno dok ne dođete do postavke "Glas" ili "Jezik", pa strelicom gore/dolje promijenite vrijednost
 2. Ili koristite Control + NVDA tipka + V za otvaranje dijaloga za odabir glasa
 
-Ako je uključena NVDA opcija „Automatski mijenjaj jezik”, Laprdus među hrvatskim, srpskim i bosanskim prelazi sam prema jeziku teksta, ne mijenjajući glas.
+Ako je uključena NVDA opcija „Automatski mijenjaj jezik”, Laprdus među hrvatskim, srpskim, bosanskim i slovenskim prelazi sam prema jeziku teksta, ne mijenjajući glas.
 
 #### Linux (Speech Dispatcher)
 
-Speech Dispatcher svaki glas navodi za svaki jezik. Jezik zahtjeva (`-l`) određuje jezik, a glas (`-y`) ostaje onaj koji ste odabrali; bez odabranog glasa govori Zvonko, na sva tri jezika. Simbolički glasovi isti su za sve jezike: MALE1 je Zvonko, MALE2 Josip, MALE3 Đedo, FEMALE1 Baba, CHILD_MALE Detence.
+Speech Dispatcher svaki glas navodi za svaki jezik. Jezik zahtjeva (`-l`) određuje jezik, a glas (`-y`) ostaje onaj koji ste odabrali; bez odabranog glasa govori Zvonko, na sva četiri jezika. Simbolički glasovi isti su za sve jezike: MALE1 je Zvonko, MALE2 Josip, MALE3 Đedo, FEMALE1 Baba, CHILD_MALE Detence.
 
 ```bash
 # Lista dostupnih glasova
@@ -1391,6 +1392,7 @@ spd-say -o laprdus -y Vlado "Tekst na srpskom"
 spd-say -o laprdus -l sr -y Zvonko "Zvonko govori srpski"
 spd-say -o laprdus -l hr -y Vlado "Vlado govori hrvatski"
 spd-say -o laprdus -l bs "Zvonko govori bosanski"
+spd-say -o laprdus -l sl "Zvonko govori slovensko"
 ```
 
 Za trajnu promjenu u Orca čitaču ekrana:
@@ -1399,7 +1401,7 @@ Za trajnu promjenu u Orca čitaču ekrana:
 
 #### Android
 
-Laprdus sustavu nudi svaki glas pod hrvatskim, srpskim i bosanskim (54 glasa sustava). Jezik koji zatraži TalkBack ili druga aplikacija određuje jezik, a glas ostaje onaj odabran u aplikaciji; zadani je Zvonko.
+Laprdus sustavu nudi svaki glas pod hrvatskim, srpskim, bosanskim i slovenskim (72 glasa sustava). Jezik koji zatraži TalkBack ili druga aplikacija određuje jezik, a glas ostaje onaj odabran u aplikaciji; zadani je Zvonko.
 
 1. Otvorite Laprdus aplikaciju
 2. Dodirnite "Laprdus postavke"
@@ -1414,7 +1416,7 @@ Za promjenu zadanog glasa u sustavu:
 
 #### Apple (iPhone, iPad i Mac)
 
-U Izgovorenom sadržaju (iOS: Postavke > Pristupačnost > Izgovoreni sadržaj > Glasovi; macOS: Postavke sustava > Pristupačnost > Izgovoreni sadržaj > Glas sustava > Upravljaj glasovima) i u VoiceOverovim postavkama glasa svaki je Laprdusov glas naveden pod hrvatskim, srpskim i bosanskim; stavka koju odaberete bira i glas i jezik. U aplikaciji Laprdus izbornik "Glas" bira glas, a izbornik "Jezik" jezik za govor u samoj aplikaciji. Zadani glas je Zvonko.
+U Izgovorenom sadržaju (iOS: Postavke > Pristupačnost > Izgovoreni sadržaj > Glasovi; macOS: Postavke sustava > Pristupačnost > Izgovoreni sadržaj > Glas sustava > Upravljaj glasovima) i u VoiceOverovim postavkama glasa svaki je Laprdusov glas naveden pod hrvatskim, srpskim, bosanskim i slovenskim; stavka koju odaberete bira i glas i jezik. U aplikaciji Laprdus izbornik "Glas" bira glas, a izbornik "Jezik" jezik za govor u samoj aplikaciji. Zadani glas je Zvonko.
 
 ---
 

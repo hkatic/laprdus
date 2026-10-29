@@ -1,7 +1,7 @@
 // VoiceCatalog.swift - Voice and language lists sourced from the native engine.
 //
 // Every voice speaks every language: the language (Croatian, Serbian,
-// Bosnian) is chosen separately from the voice, and a voice's languageCode
+// Bosnian, Slovenian) is chosen separately from the voice, and a voice's languageCode
 // is only its native language, spoken when nothing else was asked for.
 
 import Foundation
@@ -10,7 +10,7 @@ struct Voice: Identifiable, Hashable {
     let id: String
     /// Name from the registry, shown as it is: "Josip", "Đedo", "Dalmacija Klapa".
     let displayName: String
-    /// Native language ("hr-HR", "sr-RS" or "bs-BA").
+    /// Native language ("hr-HR", "sr-RS", "bs-BA" or "sl-SI").
     let languageCode: String
     let gender: String
     let age: String
@@ -76,25 +76,38 @@ struct Voice: Identifiable, Hashable {
 
 /// One of the languages every voice speaks.
 struct Language: Identifiable, Hashable {
-    /// BCP-47 code: "hr-HR", "sr-RS", "bs-BA". Stored in the settings.
+    /// BCP-47 code: "hr-HR", "sr-RS", "bs-BA", "sl-SI". Stored in the settings.
     let code: String
-    /// "hr", "sr", "bs": the suffix of a system voice identifier.
+    /// "hr", "sr", "bs", "sl": the suffix of a system voice identifier.
     let shortCode: String
-    /// "Croatian", "Serbian", "Bosnian".
+    /// "Croatian", "Serbian", "Bosnian", "Slovenian".
     let englishName: String
 
     var id: String { code }
+
+    /// Demo text follows the speech language, independently of the UI locale.
+    var sampleText: String {
+        switch shortCode {
+        case "sl":
+            return "Dober dan. Sem Laprdus, rojen sem bil leta 2026 in veseli me, da se lahko spoznava! 😁\nKako si? ❤\n"
+        case "sr":
+            return "Dobar dan. Ja sam Laprdus, rođen sam 2026. godine, i drago mi je da možemo da se upoznamo! 😁\nKako si ti? ❤\n"
+        default:
+            return "Dobar dan. Ja sam Laprdus, rođen sam 2026. godine, i drago mi je da se možemo upoznati! 😁\nKako si ti? ❤\n"
+        }
+    }
 
     /// Name in the app's language, from the string catalog.
     var localizedName: String {
         switch shortCode {
         case "sr": return String(localized: "Serbian")
         case "bs": return String(localized: "Bosnian")
+        case "sl": return String(localized: "Slovenian")
         default: return String(localized: "Croatian")
         }
     }
 
-    /// The languages in the engine's order: Croatian, Serbian, Bosnian.
+    /// The languages in the engine's order: Croatian, Serbian, Bosnian, Slovenian.
     static let all: [Language] = {
         var languages: [Language] = []
         for index in 0..<laprdus_get_language_count() {
@@ -110,7 +123,7 @@ struct Language: Identifiable, Hashable {
     }()
 
     /// Croatian: the language of a new installation when the device prefers
-    /// none of the three.
+    /// none of the four.
     static var croatian: Language {
         all.first ?? Language(code: "hr-HR", shortCode: "hr", englishName: "Croatian")
     }
@@ -234,7 +247,7 @@ enum VoiceCatalog {
     // MARK: System voices
 
     /// The system voices: every voice in every language, grouped by
-    /// language (all voices in Croatian, then in Serbian, then in Bosnian).
+    /// language (all voices in Croatian, then in Serbian, Bosnian and Slovenian).
     static let providerVoices: [ProviderVoice] = {
         Language.all.flatMap { language in
             all.map { ProviderVoice(voice: $0, language: language) }

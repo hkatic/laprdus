@@ -1,6 +1,6 @@
 // -*- coding: utf-8 -*-
 // formant_phonemes.hpp - Phoneme inventory and acoustic targets for the
-// formant voices (Croatian, Serbian, Bosnian)
+// formant voices (Croatian, Serbian, Bosnian, Slovenian)
 
 #ifndef LAPRDUS_FORMANT_PHONEMES_HPP
 #define LAPRDUS_FORMANT_PHONEMES_HPP
@@ -13,12 +13,21 @@ namespace formant {
 
 /**
  * Phones of standard Croatian/Serbian/Bosnian, including the allophones the
- * synthesizer produces on its own ([ŋ], [ɕ], [ʑ], [ɣ], [dz], schwa).
+ * synthesizer produces on its own ([ŋ], [ɕ], [ʑ], [ɣ], [dz], schwa), and
+ * the sounds Slovenian adds to them: the open e and o, the schwa as a vowel
+ * of its own (pes, veter) and the [w] that l and v become before a
+ * consonant and at the end of a word (bil, vse).
  */
 enum class Ph : uint8_t {
     SIL = 0,
     A, E, I, O, U,
     SCHWA,          // vocalic element of syllabic r, letter names
+    EH,             // Slovenian open e [ɛ] (unstressed e, short stressed è, long ê)
+    OH,             // Slovenian open o [ɔ] (unstressed o, short stressed ò, long ô)
+    EE,             // Slovenian close e [eː] (long stressed é only)
+    OO,             // Slovenian close o [oː] (long stressed ó only)
+    AX,             // Slovenian schwa [ə] as a syllable of its own (pes, sem, veter)
+    W,              // Slovenian [w] ([u̯]): l and v before a consonant or at a word end
     J,              // j
     V,              // v - labiodental approximant [ʋ]
     L,              // l

@@ -3,7 +3,9 @@
 Zvonko (Croatian), Stojan (Serbian) and Mirsad (Bosnian) are synthesized by
 rule. Nothing is recorded: the text is turned into sounds, the sounds into
 control tracks (formants, amplitudes, pitch), and the tracks into audio by a
-formant synthesizer. This is the approach of DECtalk and Eloquence.
+formant synthesizer. This is the approach of DECtalk and Eloquence. Every
+voice also speaks Slovenian, which has a text front end of its own
+(section 4a).
 
 This document explains how the pieces fit together, where the numbers come
 from, and how to check a change. Code lives in `src/formant/`.
@@ -883,7 +885,8 @@ python3 tools/formant/sibilants.py assa.wav asha.wav
   (*predsjednik* → [pretsjednik], *s bratom* → [zbratom]), s/z before
   postalveolars (*s čim* → [ščim]), n before k/g, merging of identical
   consonants (*bez zuba*). /v/ and the sonorants neither cause nor undergo
-  voicing assimilation, and there is no final devoicing.
+  voicing assimilation, and there is no final devoicing (Slovenian has it:
+  section 4a).
 - **Abbreviations** with no vowel and short all-caps tokens are spelled out
   (HR, USB, NVDA). None is expanded (since October 2026; *dr.* was *doktor*,
   *npr.* *na primjer*, *km* *kilometara* before): they are read as written,
@@ -3201,6 +3204,184 @@ that lexicon. The test "English words are stressed where English stresses
 them" checks the pitch peak of *Croatian, Ableton, Eleven* and the reading
 of words with inner capitals.
 
+## 4a. Slovenian (`formant_slovenian.cpp`)
+
+Slovenian was added in October 2026 as a fourth language of every voice
+(`VoiceLanguage::Slovenian`, "sl-SI", LCID 0x0424). It shares the tokenizer,
+the clause structure, the clitic grouping and the flattening into one phone
+string with the other three languages (`Frontend::process_slovenian()` in
+`formant_frontend.cpp`), but its letters, its stress and its function words
+are different enough that the rules and the lexicon live in a module of
+their own. The sources are the normative ones: the Slovenski pravopis 2001
+(Pravila, "Glasoslovje", §§ 615-744 on the vowels, l, v, the schwa and the
+assimilations, §§ 896-911 on stress, § 7-9 on the letter names, § 536 and
+§ 253 on numbers), Toporišič's Slovenska slovnica (the clitics), SSKJ and
+the Pravopis dictionary on Fran.si for the accents of individual words, the
+Jezikovna svetovalnica of ZRC SAZU for dates and decimals, and the Sloleks
+3.1 lexicon (CJVT, CLARIN.SI) for the generated pronunciation table. The
+measurements are Tivadar's (2004), Toporišič's (1978) and Petek,
+Šuštaršič and Komar's (1996).
+
+### Sounds
+
+Standard Slovenian has eight vowels. The close *e* and *o* occur only long
+and stressed (*mésto*, *góra*); every unstressed *e* and *o* and every short
+stressed one is open (*člôvek*, *otròk*, *vôda*); the schwa is always short
+(Pravopis § 618). Four phones were added for them: `EH` [ɛ] and `OH` [ɔ],
+`EE` [eː] and `OO` [oː] (the shared `E` and `O` of the other languages lie
+between the two qualities), and `AX`, the schwa as a syllable of its own
+(the `SCHWA` of the syllabic r stays the brief vocoid it was). Their
+targets are the means of Tivadar's adult male speakers (i 351/2218, e
+397/2169, ɛ 526/1821, a 603/1324, ɔ 551/1000, o 397/872, u 385/754 Hz),
+the open vowels moved a little towards Toporišič's more peripheral values
+(ɛ 585/1849, ɔ 565/993); the schwa is Toporišič's 539/1376 and Petek's
+456/1370 averaged. Jurgec (2006) measured the unstressed *e* and *o* as mid,
+closer before the stress and opener after it; the open target is a
+compromise the listener can judge. A fifth phone, `W`, is the [w] ([u̯])
+that *l* and *v* become.
+
+- **l** (Pravopis § 648-658) is [w] at the end of a word in the *-l*
+  participle (*bil*, *delal*, *videl*), after a schwa (*rekel*, *misel*,
+  *topel*), and in the nouns and adjectives the rules list (*stol*, *sol*,
+  *pol*, *bel*, *gol*, *cel*, *vesel*, *žal* ...); before a consonant only
+  in the roots with *-ol-* that § 650 enumerates (*dolg*, *volk*, *polž*,
+  *solza*, *poln*, *jabolko*, *molčati* ...) and in the *-lc-*, *-lk-*,
+  *-lsk-*, *-lstv-* of agent nouns (*bralec*, *igralka*). Everywhere else it
+  is [l], loanwords included (*kultura*, *film*, *hotél*, *kanál*): Čibej
+  (2023) found [l] in 71% of the pre-consonantal cases of the Sloleks
+  lexicon, so [l] is the safe default and the lexicon marks the [w] words.
+- **v** (§ 642-645) is [v] only before a vowel of the same word (*voda*,
+  *vrt* [vərt]); after a vowel, before a consonant and at the end it is
+  the glide [u̯] (*nov*, *avto*, *pravljica*); at the head of a word before
+  a consonant it is [w] or, before an obstruent, the vowel [u] (*vlak*
+  [wlák], *vsak* [usák], *vzeti*), which the rules allow and which a formant
+  voice is understood by: that syllable never takes the stress. The
+  preposition *v* is [w] before a vowel and [u] before a consonant (*v
+  šoli*).
+- **lj, nj** are the two sounds l + j, n + j before a vowel (*Ljubljana*,
+  *polje*) and a plain [l], [n] before a consonant and at the end (*konj*,
+  *Kranj*, *cilj*, *manjši*: § 664-666).
+- **Syllabic r** is [ər] wherever r has no vowel next to it, including
+  before j (*prst*, *vrt*, *Trst*, *rdeč*, *rjav*, *četrtek*); *i* before
+  another vowel is [ij] (*pacient*, *radio*, *socialen*: § 701).
+- **The schwa** written *e* (§ 703-744): the fleeting vowel of an
+  unstressed final *-er, -el, -en, -ek, -ec* after a consonant (*veter*,
+  *misel*, *lačen*, *petek*, *konec*), of *-ev* after k or t (*cerkev*,
+  *molitev*) and of *-em* after z or t (*absolutizem*, *algoritem*); the
+  instrumental *-em* and the genitive plural *-ev* keep their [ɛ]
+  (*delavcem*, *delavcev*). Everything else (*pes*, *sem*, *vendar*, *megla*)
+  comes from the lexicon.
+- **Sandhi** (§ 668-696): regressive voicing assimilation between
+  obstruents inside words and across clitic boundaries (*odkod* [otkot],
+  *k bratu* [gbratu], *kdo* [gdo]); final devoicing before a pause and
+  before a word that begins with anything but a voiced obstruent (*grad*
+  [grat], *sad ostane* [sat]), except for a preposition, which is spoken as
+  part of the word after it (*od orača*, *iz okna*); *s, z* before *š, ž, č*
+  (*s časom* [ščasom]); *n* before k, g, h is [ŋ]; identical consonants
+  across a clitic boundary merge.
+
+### Stress
+
+Slovenian stress is dynamic: a stressed vowel is long or short, there are
+no tones (the tonemic standard is an alternative the dictionaries give in
+brackets), and short stressed vowels stand almost only in the last or only
+syllable. Every Slovenian word gets the plain (neutral) accent, the same
+one English words get: a peak inside the stressed vowel and a fall after
+it. Length follows the dictionary mark: acute and circumflex long, grave
+short, the schwa always short.
+
+The place of the stress is lexical. Hand-written rules get about half of
+the words wrong (Šef, Škrjanc and Gams 2002: 47.9% word error for
+Toporišič's rules), so the lexicon carries most of the load:
+
+1. **Marks in the text**, in the notation of the dictionaries: acute =
+   long, close *e*/*o* (*mésto*), circumflex = long, open (*člôvek*), grave =
+   short (*otròk*). A word with two accents (*nàjlépši*) has its main stress
+   on the last of them.
+2. **The lexicon.** `formant_slovenian.inc` is generated by
+   `tools/formant/slovenian_words.py` from Sloleks 3.1 (CJVT, University of
+   Ljubljana; CLARIN.SI, http://hdl.handle.net/11356/2080; CC BY-SA 4.0):
+   the word forms of the 25,000 most frequent lemmas (Gigafida 2.0 lemma
+   frequency 1,000 and up for the 100,000 entries whose accents were
+   corrected by hand, 30,000 and up for the neural-net accented rest),
+   74,000 entries in all, a stem for a paradigm whose forms the rules of
+   unstressed endings read correctly (*déla\**: délam, délal, délala), the
+   forms themselves otherwise (*jêzik*, *jezíka*; *člôvek*, *človéka*). The
+   tables are sorted by spelling and searched in place, so the lexicon costs
+   nothing at start and about 1.3 MB in the binary. The accented form gives
+   the stress, the length and the quality; the IPA of Sloleks (an automatic
+   grapheme-to-phoneme system) is used only for what the accented form does
+   not show, which *e* is a schwa and which *l* is [w]. Two hundred
+   hand-written entries (`HAND_ENTRIES`: the numbers, the days and months,
+   the forms of *biti*, *imeti*, *iti*, *hoteti*, *moči*, the commonest
+   adverbs and pronouns, the names of the neighbouring countries and towns)
+   win over the table. The notation of an entry (`slovenian::Lexicon` in
+   `formant_slovenian.hpp`) is the word spelled as it is pronounced: the
+   accented letters of SSKJ, *ə* for the schwa, *w* for an *l* that is [w],
+   `*` for a stem, `|` for a list of forms, `spelling=pronunciation` where
+   the two cannot be matched letter by letter; `'` and `:` are accepted as
+   the ASCII marks. Users write the same notation in `accents.json` with
+   `"language": "sl"`.
+3. **Rules**, from the counts over the manually accented lemmas of Sloleks
+   and from Pravopis §§ 897-901: the suffixes that always carry the stress
+   (*-írati, -ováti, -ávati, -eváti, -éti; -íšče, -ílo, -ízem, -átor, -úra,
+   -étje, -ína, -álen, -ljív, -íst, -áč*), the syllable before a suffix where
+   that is the rule (*-ščina*, *-ica*, *-ičen*, *-niti*; *-cija, -zija,
+   -sija*; a comparative in *-ejši*), *-íja* on the i, a verb in *-ati* of
+   four or more syllables on its stem (*poslúšati*), and otherwise the
+   second-last syllable, the commonest position (57% of the lemmas and of
+   the running text; Gros 2000 gives the same picture for word forms). A
+   stressed *e* or *o* placed by rule is long and close, the quality of
+   most long stressed *e*, *o* and of every loanword (§ 222).
+
+Clitics (Toporišič: the monosyllabic prepositions and conjunctions, *ne*,
+*naj*, the forms of *biti* and the future auxiliary, *bi*, the short
+pronouns) lose their stress and length; *ti* and *mi* at the head or the end
+of a clause, or after a conjunction, are the pronouns. An acronym spelled
+letter by letter is stressed only on its last letter (*SP* [espé], *RTV*
+[ertevé]: § 1022). The letter names are those of Pravopis § 7: *á é í ó ú*,
+*bé cé čé dé ef gé há jé ká èl èm èn pé èr ès èš té vé zé žé*, *kú, dvojni
+vé, íks, ípsilon*, *mehki čé* and *mehki džé* for ć and đ.
+
+### Numbers, dates, symbols
+
+The number converter has a Slovenian dialect (Pravopis § 11 and § 536):
+*nič, ena, dve, tri, štiri ...* for the digits (the counting *dva* only in
+the compounds), *enaindvajset* and *štiriinštirideset* as one word,
+*dvesto*, the invariable *tisoč* (*dva tisoč*, *tristo en tisoč*), the dual
+and plural of the scale words (*en milijon, dva milijona, trije milijoni,
+štirje milijoni, pet milijonov, enaindvajset milijonov; ena milijarda, dve
+milijardi, tri milijarde, pet milijard*), a decimal comma as *cela* agreeing
+with the whole part (*tri cele štirinajst, ena cela pet, nič celih pet*: SSKJ),
+a period between groups of three digits as the thousands separator (*132.457*
+is *sto dvaintrideset tisoč štiristo sedeminpetdeset*: § 253; *3.14* stays
+*tri pika štirinajst*), and a numeric date in the genitive, which does not
+depend on the sentence (*7. 10. 2026* is *sedmega desetega dva tisoč
+šestindvajset*, *7. oktobra* *sedmega oktobra*; Jezikovna svetovalnica).
+Symbols inside a clause are *pika, dvopičje, klicaj, odstotkov, evrov,
+afna*; the spelled names of digits, punctuation and symbols (*ena, pika,
+vejica, podpičje, vprašaj, oklepaj, zaklepaj, poševnica, afna, lojtra,
+zvezdica, enačaj ...*) are a table of the module (`spelled_name()`), which
+`TTSEngine::spell_character()` uses instead of the Croatian spelling
+dictionary when Slovenian is spoken.
+
+### Checking
+
+`tests/linux/test_frontend.cpp` ("[slovenian]") checks the sounds of some
+forty words against the Pravopis, the clitics and sandhi, the clause types,
+the marks in the text and the user's entries. The generator is run with
+
+```bash
+python3 tools/formant/slovenian_words.py extract /path/to/Sloleks.3.1 forms.tsv
+python3 tools/formant/slovenian_words.py generate forms.tsv src/formant/formant_slovenian.inc \
+    --manual-min 1000 --auto-min 30000 --form-min 10
+```
+
+(the first step streams 13 GB of XML once). The words-printing scratch tool
+of section 7, built with `formant_slovenian.cpp` added, shows the phones a
+Slovenian text gets; a Whisper run on twenty everyday sentences (section 7)
+is the rough intelligibility check used when the language was added.
+
 ## 5. Timing and melody (`formant_synthesizer.cpp`)
 
 **Durations** start from the inherent value and are scaled by context:
@@ -3590,13 +3771,13 @@ LAPRDUS_DATA=$B $B/test_formant
 clang++ -std=c++17 -I include -I src -I tests/linux \
     tests/linux/test_frontend.cpp src/formant/formant_frontend.cpp \
     src/formant/formant_lexicon.cpp src/formant/formant_phonemes.cpp \
-    src/core/phoneme_mapper.cpp -o $B/test_frontend
+    src/formant/formant_slovenian.cpp src/core/phoneme_mapper.cpp -o $B/test_frontend
 $B/test_frontend
 ```
 
 `test_frontend` checks the number and position of accents, component
 boundaries and override precedence without synthesizing audio. It compiles
-the four implementation files directly because these internal C++ types
+the five implementation files directly because these internal C++ types
 are not exported by the shared library. On Linux, use `g++` and the Linux
 build directory for this command; it needs no voice data or library link.
 
@@ -3632,8 +3813,16 @@ Croatian speaker 11.1%; eSpeak NG Croatian 23.2%; Josip 33.1%.
 - Foreign words are read by Croatian letter-to-sound rules (*croatian* is
   *kro-a-ti-an*); English words get only their English stress (see
   "English words"). Other languages' words get the native rules.
+- Slovenian stress outside the lexicon is guessed (the second-last syllable
+  and the suffix rules of section 4a); the quality of a stressed *e* or *o*
+  placed by rule is always close, and the open, mid and close shades of the
+  unstressed *e* and *o* that Jurgec measured are one open target. The [w]
+  of *l* follows the Pravopis lists, not the freer usage. No Slovenian
+  voice of its own exists: Zvonko, Stojan and Mirsad speak it with their
+  Croatian, Serbian and Bosnian colour.
 - The spelling dictionary (`data/dictionary/spelling.json`) names digits,
-  punctuation and symbols in Croatian for all voices (*točka*, not *tačka*).
+  punctuation and symbols in Croatian for all voices (*točka*, not *tačka*);
+  Slovenian has its own names (*pika*, *vejica*; section 4a).
   Letters are named by the front end in the language being spoken, which
   any voice can switch (`formant::letter_name`), or spelled by their sounds
   (`Frontend::letter_sound`: an `Utterance` with `isolated_sound` set, whose
@@ -3673,3 +3862,27 @@ Croatian speaker 11.1%; eSpeak NG Croatian 23.2%; Josip 33.1%.
   towns and nouns in -ina), consulted October 2026; N. Anđić, *Naglasne
   osobitosti imena i prezimena*, Osijek 2021 (on the variation in personal
   names).
+- Slovenian: *Slovenski pravopis 2001, Pravila* (SAZU and ZRC SAZU; the
+  PDF on Fran.si), §§ 7-11 (letter names, number names), 253 and 536
+  (numbers), 615-744 (vowels, l, v, the schwa, assimilation), 896-911 and
+  1026-1046 (stress), 1016-1025 (abbreviations); J. Toporišič, *Slovenska
+  slovnica*, 4th ed., Maribor 2000 (clitics, stress types); *Slovar
+  slovenskega knjižnega jezika* and the Pravopis dictionary on
+  https://fran.si (accents of individual words, the readings of numbers);
+  Jezikovna svetovalnica, ZRC SAZU (dates, decimals, telephone numbers,
+  *predvsem*); J. Čibej et al., *Sloleks 3.1*, CJVT and CLARIN.SI 2024,
+  http://hdl.handle.net/11356/2080, CC BY-SA 4.0 (the generated lexicon);
+  L. Krsnik, *Napovedovanje naglasa slovenskih besed z metodami strojnega
+  učenja*, Ljubljana 2017 (its automatic accents); H. Tivadar,
+  "Fonetično-fonološke lastnosti samoglasnikov v sodobnem knjižnem jeziku",
+  Slavistična revija 52/1 (2004); J. Toporišič, *Glasovna in naglasna podoba
+  slovenskega jezika*, Maribor 1978 (formants); B. Petek, R. Šuštaršič, S.
+  Komar, "An acoustic analysis of contemporary vowels of the Standard
+  Slovenian language", ICSLP 1996; R. Šuštaršič, S. Komar, B. Petek,
+  "Slovene", Journal of the IPA 25 (1995); P. Jurgec, "O nenaglašenih /e/ in
+  /o/ v standardni slovenščini", Slavistična revija 54/2 (2006); J. Žganec
+  Gros, *Samodejno tvorjenje govora iz besedil*, ZRC SAZU 2000 (stress
+  statistics); T. Šef, M. Škrjanc, M. Gams, "Automatic lexical stress
+  assignment of unknown words for highly inflected Slovenian language", TSD
+  2002; J. Čibej, "Statistična analiza izgovora črke l v slovenskem
+  oblikoslovnem leksikonu", Jezikoslovni zapiski 2023.

@@ -1,0 +1,163 @@
+<resources>
+    <string name="app_name">Laprdus TTS</string>
+    <string name="tts_service_name">Laprdus</string>
+
+    <!-- Main screen and language selection -->
+    <string name="voice_label">Glas</string>
+    <string name="text_input_label">Besedilo za branje</string>
+    <string name="text_input_placeholder">Vnesite besedilo, ki ga želite slišati…</string>
+    <string name="speak_button">Preberi</string>
+    <string name="stop_button">Ustavi</string>
+    <string name="loading">Nalaganje…</string>
+    <string name="select_voice">Izberite glas</string>
+    <string name="language_label">Jezik</string>
+    <string name="language_croatian">Hrvaščina</string>
+    <string name="language_serbian">Srbščina</string>
+    <string name="language_bosnian">Bosanščina</string>
+    <string name="language_slovenian">Slovenščina</string>
+
+    <!-- Voice attributes -->
+    <string name="gender_male">Moški</string>
+    <string name="gender_female">Ženski</string>
+    <string name="age_child">Otrok</string>
+    <string name="age_adult">Odrasel</string>
+    <string name="age_senior">Starejši</string>
+    <string name="voice_kind_recorded">posneti glas</string>
+    <string name="voice_kind_formant">sintetiziran po pravilih</string>
+    <string name="voice_kind_singing">pojoči glas</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Nastavitve</string>
+    <string name="category_voice">Glas</string>
+    <string name="category_advanced">Napredno</string>
+    <string name="setting_speech_rate">Hitrost govora</string>
+    <string name="setting_speech_pitch">Višina glasu</string>
+    <string name="setting_speech_volume">Glasnost govora</string>
+    <string name="setting_force_speed_title">Vsili hitrost govora v Laprdusu</string>
+    <string name="setting_force_speed_subtitle">Prezri hitrost, ki jo zahteva aplikacija. Sicer hitrost aplikacije pospeši ali upočasni hitrost govora v Laprdusu</string>
+    <string name="setting_force_pitch_title">Vsili višino glasu v Laprdusu</string>
+    <string name="setting_force_pitch_subtitle">Prezri višino glasu, ki jo zahteva aplikacija. Sicer višina glasu aplikacije zviša ali zniža višino glasu v Laprdusu</string>
+    <string name="setting_force_volume_title">Vsili glasnost govora v Laprdusu</string>
+    <string name="setting_force_volume_subtitle">Uporabi nastavitve glasnosti v Laprdusu namesto nastavitev aplikacije</string>
+    <string name="setting_volume_boost_title">Povečaj glasnost govora</string>
+    <string name="setting_volume_boost_subtitle">Glasnejši govor za hrupno okolje in telefonsko slušalko. Govor je občutno glasnejši; najmočnejši vrhovi so zglajeni, da se zvok ne popači</string>
+    <string name="setting_force_language_title">Vsili izbrani jezik</string>
+    <string name="setting_force_language_subtitle">Vedno govori v zgoraj izbranem jeziku, ne glede na jezik sistema in jezik, ki ga zahtevajo aplikacije</string>
+    <string name="language_follows_system">Uporablja jezik sistema (%1$s). Za izbiro drugega jezika spodaj vklopite možnost Vsili izbrani jezik.</string>
+    <string name="setting_emoji_enabled_title">Omogoči branje emodžijev</string>
+    <string name="setting_emoji_enabled_subtitle">Pretvori emodžije v besedilne opise</string>
+    <string name="setting_inflection_level">Intonacija</string>
+    <string name="setting_inflection_level_desc">Obseg spreminjanja višine glasu: 0% pomeni enoličen govor, 50% naravno spreminjanje, 100% največje spreminjanje</string>
+    <string name="setting_acceleration">Pospešek</string>
+    <string name="setting_acceleration_desc">Pomnoži hitrost govora, tako da zgornja meja razpona doseže višjo ali nižjo hitrost</string>
+    <string name="acceleration_value">%1$.1fx (do %2$d besed/min)</string>
+    <string name="restore_default_inflection_level">Obnovi privzeto intonacijo</string>
+    <string name="restore_default_acceleration">Obnovi privzeti pospešek</string>
+    <string name="cd_restore_inflection_level_desc">Nastavi intonacijo na 50%</string>
+    <string name="cd_restore_acceleration_desc">Nastavi pospešek na 1,0x</string>
+    <string name="setting_number_mode_title">Branje števil po števkah</string>
+    <string name="setting_number_mode_subtitle">Beri števila kot posamezne števke (123 → ena dva tri)</string>
+    <string name="setting_spelling_mode">Črkovanje</string>
+    <string name="setting_spelling_mode_subtitle">Pri črkovanju in tipkanju beri glasove črk (b, c, d) namesto njihovih imen (be, ce, de)</string>
+    <string name="setting_spelling_speed">Hitrost črkovanja</string>
+    <string name="setting_spelling_speed_desc">Nižje vrednosti dodajo daljše premore za vsakim znakom. Znaki se vedno izgovarjajo z običajno hitrostjo govora. 100% ne doda premora; privzeto je 50%.</string>
+    <string name="restore_default_spelling_speed">Obnovi privzeto hitrost črkovanja</string>
+    <string name="cd_restore_spelling_speed_desc">Nastavi hitrost črkovanja na 50%</string>
+    <string name="category_pause_settings">Premori med branjem</string>
+    <string name="setting_sentence_pause">Premor za povedmi</string>
+    <string name="setting_sentence_pause_desc">Trajanje tišine za pikami, klicaji in vprašaji</string>
+    <string name="setting_comma_pause">Premor za vejicami</string>
+    <string name="setting_comma_pause_desc">Trajanje tišine za vejicami za naraven ritem govora</string>
+    <string name="setting_newline_pause">Premor ob novi vrstici</string>
+    <string name="setting_newline_pause_desc">Trajanje tišine ob prehodu v novo vrstico ali odstavek</string>
+    <string name="restore_default_speed">Obnovi privzeto hitrost govora</string>
+    <string name="restore_default_pitch">Obnovi privzeto višino glasu</string>
+    <string name="restore_default_volume">Obnovi privzeto glasnost govora</string>
+
+    <!-- Accessibility labels and hints -->
+    <string name="cd_voice_dropdown_desc">Izberite glas za sintezo govora</string>
+    <string name="cd_language_dropdown_desc">Izberite jezik govora</string>
+    <string name="cd_dict_type_dropdown_desc">Izberite vrsto slovarja</string>
+    <string name="cd_restore_speed_desc">Nastavi hitrost govora na privzeto vrednost</string>
+    <string name="cd_restore_pitch_desc">Nastavi višino glasu na privzeto vrednost</string>
+    <string name="cd_restore_volume_desc">Nastavi glasnost govora na privzeto vrednost</string>
+    <string name="cd_speak_desc">Prebere vneseno besedilo</string>
+    <string name="cd_stop_desc">Ustavi trenutni govor</string>
+    <string name="cd_laprdus_settings_desc">Odpre nastavitve govornega sintetizatorja Laprdus</string>
+    <string name="cd_android_tts_settings_desc">Odpre sistemske nastavitve pretvorbe besedila v govor v Androidu</string>
+    <string name="button_laprdus_settings">Nastavitve Laprdusa</string>
+    <string name="button_android_tts_settings">Nastavitve govora v Androidu</string>
+    <string name="cd_slider_adjust">Podrsajte za prilagoditev</string>
+    <string name="cd_text_input">Polje za vnos besedila, ki bo prebrano</string>
+    <string name="cd_back_button">Nazaj</string>
+
+    <!-- Errors and default engine dialog -->
+    <string name="error_init_failed">Napaka pri zagonu govornega sintetizatorja</string>
+    <string name="error_synthesis_failed">Napaka pri sintezi govora</string>
+    <string name="error_voice_failed">Napaka pri izbiri glasu</string>
+    <string name="error_prefix">Napaka: %1$s</string>
+    <string name="error_storage_migration">Nastavitev, shranjenih s prejšnjo različico, ni bilo mogoče premakniti na novo mesto shranjevanja. Do naslednjega uspešnega poskusa se uporabljajo privzete nastavitve.</string>
+    <string name="error_dictionary_migration">Slovarjev, shranjenih s prejšnjo različico, ni bilo mogoče premakniti na novo mesto shranjevanja. Poskus se bo samodejno ponovil.</string>
+    <string name="dialog_default_tts_title">Nastavi kot privzeti govorni sintetizator</string>
+    <string name="dialog_default_tts_message">Laprdus TTS ni nastavljen kot privzeti govorni sintetizator. Ali ga želite nastaviti kot privzetega?</string>
+    <string name="dialog_open_tts_settings">Odpri nastavitve</string>
+    <string name="dialog_not_now">Ne zdaj</string>
+    <string name="dialog_dont_ask_again">Ne sprašuj več</string>
+
+    <!-- Dictionaries -->
+    <string name="category_dictionaries">Slovarji</string>
+    <string name="setting_user_dict_enabled_title">Uporabi uporabniške slovarje</string>
+    <string name="setting_user_dict_enabled_subtitle">Uporabi prilagojeno izgovarjavo besed iz uporabniških slovarjev</string>
+    <string name="setting_manage_dictionaries">Upravljanje slovarjev</string>
+    <string name="setting_manage_dictionaries_desc">Dodajanje, urejanje in brisanje vnosov v slovarjih</string>
+    <string name="dict_screen_title">Slovarji</string>
+    <string name="dict_type_main">Glavni slovar</string>
+    <string name="dict_type_spelling">Slovar črkovanja</string>
+    <string name="dict_type_emoji">Slovar emodžijev</string>
+    <string name="dict_type_label">Vrsta slovarja</string>
+    <string name="dict_empty_list">Ni še vnosov. Za dodajanje tapnite +.</string>
+    <string name="dict_add_entry">Dodaj vnos</string>
+    <string name="dict_entry_title_add">Dodaj vnos</string>
+    <string name="dict_entry_title_edit">Uredi vnos</string>
+    <string name="dict_entry_original">Izvirno besedilo</string>
+    <string name="dict_entry_replacement">Nadomestna izgovarjava</string>
+    <string name="dict_entry_comment">Komentar (neobvezno)</string>
+    <string name="dict_entry_case_sensitive">Razlikuj velike in male črke</string>
+    <string name="dict_entry_whole_word">Ujemanje samo s celo besedo</string>
+    <string name="dict_save">Shrani</string>
+    <string name="dict_delete">Izbriši</string>
+    <string name="dict_duplicate">Podvoji</string>
+    <string name="dict_delete_confirm_title">Želite izbrisati vnos?</string>
+    <string name="dict_delete_confirm_message">Ali ste prepričani, da želite izbrisati ta vnos iz slovarja?</string>
+    <string name="cancel">Prekliči</string>
+    <string name="dict_action_edit">Uredi</string>
+    <string name="dict_action_duplicate">Podvoji</string>
+    <string name="dict_action_delete">Izbriši</string>
+    <string name="dict_error_empty_fields">To polje je obvezno</string>
+    <string name="dict_type_accents">Naglasni slovar</string>
+    <string name="dict_accent_entry">Vnos (beseda, osnova, seznam oblik ali glagol z naglasom)</string>
+    <string name="dict_accent_kind">Vrsta vnosa</string>
+    <string name="dict_accent_kind_word">Beseda</string>
+    <string name="dict_accent_kind_verb">Glagol</string>
+    <string name="dict_accent_language">Jezik</string>
+    <string name="dict_accent_language_all">Vsi jeziki</string>
+    <string name="dict_accent_help">Oznake: \' pred naglašenim samoglasnikom (ton se izbere samodejno), ^ padajoči naglas, / rastoči naglas, : za dolgim samoglasnikom, * na koncu osnove (kontr\'o:l* zajame kontróla, kontróle, kontrólom), | med oblikami (sign\'a:l|a|u|om). Glagol: celotna osnova, = in razred (ur\'e:d=i&lt;p za uréditi, urédim) ali koren z dolgim ije (dijel:i za podijeliti).</string>
+    <string name="dict_accent_error_invalid">Vnos ni veljaven: %1$s</string>
+    <string name="cd_dict_accent_kind_dropdown_desc">Izberite vrsto vnosa</string>
+    <string name="cd_dict_accent_language_dropdown_desc">Izberite jezik vnosa</string>
+
+    <!-- About -->
+    <string name="category_about">O aplikaciji</string>
+    <string name="setting_about">O Laprdusu</string>
+    <string name="setting_about_desc">Informacije o aplikaciji, pravne informacije in podpora</string>
+    <string name="about_title">O Laprdusu</string>
+    <string name="about_app_name">Laprdus Retro TTS (pretvorba besedila v govor)</string>
+    <string name="about_version">Različica: %1$s (gradnja %2$d)</string>
+    <string name="about_copyright">Avtorske pravice \u00A9 2026, Hrvoje Katić</string>
+    <string name="about_heading_app_info">Informacije o aplikaciji</string>
+    <string name="about_heading_legal">Pravne informacije</string>
+    <string name="about_heading_support">Podpora</string>
+    <string name="about_privacy_policy">Preberite pravilnik o zasebnosti na spletu</string>
+    <string name="about_license">Preberite licenco GPL 3.0 na spletu</string>
+    <string name="about_contact_email">Pišite avtorju po e-pošti</string>
+</resources>

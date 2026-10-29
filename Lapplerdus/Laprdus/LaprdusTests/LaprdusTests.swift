@@ -35,6 +35,7 @@ struct EngineTests {
         #expect(VoiceCatalog.defaultVoiceID(forLanguage: "hr-HR") == "zvonko")
         #expect(VoiceCatalog.defaultVoiceID(forLanguage: "sr-RS") == "zvonko")
         #expect(VoiceCatalog.defaultVoiceID(forLanguage: "bs-BA") == "zvonko")
+        #expect(VoiceCatalog.defaultVoiceID(forLanguage: "sl-SI") == "zvonko")
         #expect(LaprdusEngine.defaultVoiceID == "zvonko")
     }
 
@@ -58,12 +59,14 @@ struct EngineTests {
     }
 
     @Test func languagesComeFromTheEngine() throws {
-        #expect(Language.all.map(\.code) == ["hr-HR", "sr-RS", "bs-BA"])
-        #expect(Language.all.map(\.shortCode) == ["hr", "sr", "bs"])
-        #expect(Language.all.map(\.englishName) == ["Croatian", "Serbian", "Bosnian"])
-        #expect(LaprdusEngine.languages.count == 3)
+        #expect(Language.all.map(\.code) == ["hr-HR", "sr-RS", "bs-BA", "sl-SI"])
+        #expect(Language.all.map(\.shortCode) == ["hr", "sr", "bs", "sl"])
+        #expect(Language.all.map(\.englishName) == ["Croatian", "Serbian", "Bosnian", "Slovenian"])
+        #expect(LaprdusEngine.languages.count == 4)
         #expect(Language.language(matching: "sr")?.code == "sr-RS")
         #expect(Language.language(matching: "bs_BA")?.code == "bs-BA")
+        #expect(Language.language(matching: "sl")?.code == "sl-SI")
+        #expect(Language.language(matching: "sl-SI")?.code == "sl-SI")
         #expect(Language.language(matching: "sr-Latn-RS")?.code == "sr-RS")
         #expect(Language.language(matching: "HR-hr")?.code == "hr-HR")
         #expect(Language.language(matching: "en-US") == nil)
@@ -97,6 +100,10 @@ struct EngineTests {
 
         try engine.setLanguage("bs")
         #expect(engine.currentLanguage == "bs-BA")
+        try engine.setLanguage("sl")
+        #expect(engine.currentLanguage == "sl-SI")
+        #expect(try engine.synthesize("Dober dan, kako ste?").samples.count > 0)
+        try engine.setLanguage("bs")
         #expect(throws: LaprdusEngineError.self) {
             try engine.setLanguage("xx-YY")
         }
@@ -107,14 +114,16 @@ struct EngineTests {
     /// naming both, and the identifiers map back to what they name.
     @Test func providerVoicesCoverEveryVoiceInEveryLanguage() throws {
         let entries = VoiceCatalog.providerVoices
-        #expect(entries.count == 54)
-        #expect(Set(entries.map(\.identifier)).count == 54)
+        #expect(entries.count == 72)
+        #expect(Set(entries.map(\.identifier)).count == 72)
         for language in Language.all {
             #expect(entries.filter { $0.language == language }.count == 18)
         }
         #expect(entries.first?.identifier == "com.hrvojekatic.laprdus.josip.hr")
         #expect(entries.contains { $0.identifier == "com.hrvojekatic.laprdus.zvonko.sr" })
         #expect(entries.contains { $0.identifier == "com.hrvojekatic.laprdus.sarajevo_bembasa.bs" })
+        #expect(entries.contains { $0.identifier == "com.hrvojekatic.laprdus.zvonko.sl" })
+        #expect(VoiceCatalog.providerVoice(forIdentifier: "com.hrvojekatic.laprdus.josip.sl")?.language.code == "sl-SI")
 
         for entry in entries {
             let resolved = try #require(VoiceCatalog.providerVoice(forIdentifier: entry.identifier))

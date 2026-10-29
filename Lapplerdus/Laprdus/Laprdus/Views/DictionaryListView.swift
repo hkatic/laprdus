@@ -230,6 +230,7 @@ func accentLanguageName(_ code: String) -> String {
     case "hr": return String(localized: "Croatian")
     case "sr": return String(localized: "Serbian")
     case "bs": return String(localized: "Bosnian")
+    case "sl": return String(localized: "Slovenian")
     case "": return String(localized: "All languages")
     default: return code
     }

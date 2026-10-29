@@ -4,9 +4,11 @@ laprdus (2.0.0-1) unstable; urgency=medium
   * New voices synthesized by rule, clear at any rate: Zvonko (the default
     voice), Stojan and Mirsad; Bosnian is now supported, also under Speech
     Dispatcher.
-  * Every voice speaks every language: Croatian, Serbian and Bosnian are
-    chosen apart from the voice (CLI -L / --language; Speech Dispatcher
-    SET LANGUAGE keeps the voice and lists every voice for every language).
+  * Every voice speaks every language: Croatian, Serbian, Bosnian and
+    Slovenian are chosen apart from the voice (CLI -L / --language; Speech
+    Dispatcher SET LANGUAGE keeps the voice and lists every voice for every
+    language). Slovenian is new: Pravopis pronunciation, a 25,000-word
+    stress lexicon from Sloleks, Slovenian numbers, dates and letter names.
   * Word stress and natural sentence melody for every voice. Josip and Vlado
     have a new engine: no clicks, natural tempo, rate and pitch independent.
   * Ten singing voices (orguljas, dalmacija_klapa, lika_velebit, becarac,

@@ -14,7 +14,7 @@ package com.hrvojekatic.laprdus.tts
  *   "sarajevo_bembasa", "becarac"
  * @property displayName The name shown to the user, from the registry:
  *   "Josip", "Đedo", "Dalmacija Klapa"
- * @property languageCode BCP-47 tag of the native language: "hr-HR", "sr-RS" or "bs-BA"
+ * @property languageCode BCP-47 tag of the native language: "hr-HR", "sr-RS", "bs-BA" or "sl-SI"
  * @property gender Voice gender: "Male" or "Female"
  * @property age Voice age category: "Child", "Adult", or "Senior"
  * @property basePitch Base pitch multiplier for derived voices (1.0 for physical voices)
@@ -55,7 +55,7 @@ data class VoiceInfo(
     val isSingingVoice: Boolean
         get() = isFormant && baseVoiceId != null
 
-    /** Short code of the voice's native language: "hr", "sr" or "bs". */
+    /** Short code of the voice's native language: "hr", "sr", "bs" or "sl". */
     val nativeLanguage: String
         get() = Language.fromTag(languageCode) ?: Language.DEFAULT
 

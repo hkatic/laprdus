@@ -10,7 +10,7 @@
 			<array>
 				<dict>
 					<key>description</key>
-					<string>Laprdus Croatian/Serbian/Bosnian speech synthesizer</string>
+					<string>Laprdus Croatian/Serbian/Bosnian/Slovenian speech synthesizer</string>
 					<key>manufacturer</key>
 					<string>HKTC</string>
 					<key>name</key>
@@ -33,7 +33,7 @@
 					     so without this an update keeps serving old names.
 					     The value is major << 16 | minor << 8 | patch
 					     (131072 = 2.0.0; 131073 = 2.0.1: one system
-					     voice per voice and language, 54 in all). -->
+					     voice per voice and language, 72 in all). -->
 					<key>version</key>
 					<integer>131073</integer>
 				</dict>

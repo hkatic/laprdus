@@ -41,8 +41,8 @@ namespace laprdus {
  *
  * Registry entries required (written by the installer):
  * - one voice token per language, HKLM\SOFTWARE\Microsoft\Speech\Voices\
- *   Tokens\LaprdusCroatian, LaprdusSerbian, LaprdusBosnian, each with a
- *   "Language" value ("hr", "sr", "bs") and the usual Attributes; the voice
+ *   Tokens\LaprdusCroatian, LaprdusSerbian, LaprdusBosnian, LaprdusSlovenian,
+ *   each with a "Language" value ("hr", "sr", "bs", "sl") and the usual Attributes; the voice
  *   that speaks is the one chosen in the Laprdus Configurator
  *   (settings.json "voice.default", Zvonko by default)
  * - COM registration for CLSID_LaprdusTTS

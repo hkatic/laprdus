@@ -210,5 +210,6 @@
 #define IDS_ACCENT_HELP             1255
 #define IDS_ERROR_ACCENT_EMPTY      1256
 #define IDS_ERROR_ACCENT_INVALID    1257  // "%s" = the parser's reason
+#define IDS_ACCENT_LANG_SL          1259
 
 #endif // LAPRDUS_CONFIG_RESOURCE_H

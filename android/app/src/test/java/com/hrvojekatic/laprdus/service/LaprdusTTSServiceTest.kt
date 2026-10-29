@@ -8,6 +8,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.Locale
 
 /**
  * Unit tests for LaprdusTTSService.
@@ -151,6 +152,12 @@ class LaprdusTTSServiceTest {
     }
 
     @Test
+    fun `Slovenian codes sl and slv are recognized`() {
+        assertEquals("sl", Language.fromTag("sl"))
+        assertEquals("sl", Language.fromTag("slv"))
+    }
+
+    @Test
     fun `English language code en is not a native language`() {
         assertNull(Language.fromTag("en"))
     }
@@ -201,13 +208,14 @@ class LaprdusTTSServiceTest {
     @Test
     fun `there is one system voice per voice and language`() {
         val names = VoiceName.all(VOICES).map { it.name }
-        assertEquals(VOICES.size * 3, names.size)
-        assertEquals(54, names.size)
+        assertEquals(VOICES.size * 4, names.size)
+        assertEquals(72, names.size)
         assertTrue("zvonko-hr" in names)
         assertTrue("zvonko-sr" in names)
         assertTrue("zvonko-bs" in names)
         assertTrue("djedo-sr" in names)
         assertTrue("lika_velebit-bs" in names)
+        assertTrue("zvonko-sl" in names)
         assertEquals("no duplicates", names.size, names.toSet().size)
     }
 
@@ -255,8 +263,11 @@ class LaprdusTTSServiceTest {
         assertEquals("zvonko-hr", selection.defaultVoiceNameFor("hr"))
         assertEquals("zvonko-sr", selection.defaultVoiceNameFor("srp"))
         assertEquals("zvonko-bs", selection.defaultVoiceNameFor("bos"))
-        // An unspoken language gets the voice in Croatian
-        assertEquals("zvonko-hr", selection.defaultVoiceNameFor("en"))
+        assertEquals("zvonko-sl", selection.defaultVoiceNameFor("slv"))
+        // An unsupported system locale must not turn the saved Slovenian
+        // fallback into a Croatian voice when Android initializes a client.
+        assertEquals("zvonko-sl", selection.defaultVoiceNameFor("en", "sl"))
+        assertEquals("zvonko-hr", selection.defaultVoiceNameFor("en", "hr"))
 
         selection.setConfiguredVoice("josip")
         assertEquals("josip-sr", selection.defaultVoiceNameFor("sr"))
@@ -300,10 +311,22 @@ class LaprdusTTSServiceTest {
         val selection = SpeechSelection("zvonko", "hr")
         assertEquals("sr", selection.languageFor("srp", forceLanguage = false, forcedLanguage = "bs"))
         assertEquals("bs", selection.languageFor("bos", forceLanguage = false, forcedLanguage = "hr"))
-        // A request without a spoken locale gets the last requested language
+        assertEquals("sl", selection.languageFor("slv", forceLanguage = false, forcedLanguage = "hr"))
+    }
+
+    @Test
+    fun `requests without a supported locale follow the system and saved fallback`() {
+        val selection = SpeechSelection("zvonko", "hr")
+        // A different client's language must not leak into these requests.
         selection.requestLanguage("sr")
-        assertEquals("sr", selection.languageFor("eng", forceLanguage = false, forcedLanguage = "bs"))
-        assertEquals("sr", selection.languageFor(null, forceLanguage = false, forcedLanguage = "bs"))
+        for (tag in listOf(null, "", "eng")) {
+            assertEquals("sl", selection.languageFor(tag, false, "hr", Locale("sl", "SI")))
+            assertEquals("hr", selection.languageFor(tag, false, "sl", Locale("hr", "HR")))
+            assertEquals("sl", selection.languageFor(tag, false, "sl", Locale.US))
+            assertEquals("sl", selection.languageFor(tag, true, "sl", Locale("hr", "HR")))
+        }
+        // Re-evaluate the system locale for each request, without restarting.
+        assertEquals("bs", selection.languageFor(null, false, "sl", Locale("bs", "BA")))
     }
 
     @Test
@@ -311,6 +334,7 @@ class LaprdusTTSServiceTest {
         val selection = SpeechSelection("zvonko", "hr")
         assertEquals("bs", selection.languageFor("srp", forceLanguage = true, forcedLanguage = "bs"))
         assertEquals("bs", selection.languageFor("hrv", forceLanguage = true, forcedLanguage = "bs"))
+        assertEquals("sl", selection.languageFor("hrv", forceLanguage = true, forcedLanguage = "sl"))
         assertEquals("bs", selection.currentLanguage(forceLanguage = true, forcedLanguage = "bs"))
         assertEquals("hr", selection.currentLanguage(forceLanguage = false, forcedLanguage = "bs"))
         // A broken setting falls back to Croatian rather than to the app's language

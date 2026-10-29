@@ -56,7 +56,7 @@
 struct Options {
     std::string text;
     std::string voice = "zvonko";
-    std::string language;            /* hr, sr or bs; empty: the voice's native language */
+    std::string language;            /* hr, sr, bs or sl; empty: the voice's native language */
     float speech_rate = 1.0f;
     float speech_pitch = 1.0f;
     float speech_volume = 1.0f;
@@ -130,7 +130,7 @@ void print_help(const char *program_name)
 {
     std::string default_data_dir = get_exe_directory();
 
-    std::cout << "LaprdusTTS - Croatian/Serbian/Bosnian Text-to-Speech Engine\n"
+    std::cout << "LaprdusTTS - Croatian/Serbian/Bosnian/Slovenian Text-to-Speech Engine\n"
               << "Version " << CLI_VERSION << "\n\n"
               << "Usage:\n"
               << "  " << program_name << " [OPTIONS] \"Text to speak\"\n"
@@ -141,8 +141,9 @@ void print_help(const char *program_name)
               << "                             Available: zvonko, stojan, mirsad, josip,\n"
               << "                             vlado, detence, baba, djedo, and the singing\n"
               << "                             presets listed below\n"
-              << "  -L, --language CODE        Language to speak: hr (Croatian), sr (Serbian)\n"
-              << "                             or bs (Bosnian); hr-HR and the like are accepted.\n"
+              << "  -L, --language CODE        Language to speak: hr (Croatian), sr (Serbian),\n"
+              << "                             bs (Bosnian) or sl (Slovenian); hr-HR and the\n"
+              << "                             like are accepted.\n"
               << "                             Every voice speaks every language; without -L\n"
               << "                             the voice speaks its native language\n"
               << "  -r, --speech-rate RATE     Speech rate 0.5-2.0 (default: 1.0)\n"
@@ -172,6 +173,7 @@ void print_help(const char *program_name)
               << "  " << program_name << " \"Dobar dan!\"\n"
               << "  " << program_name << " -v vlado -L sr -r 1.5 \"Zdravo svete!\"\n"
               << "  " << program_name << " -v zvonko -L bs \"Dobar dan, kako ste?\"\n"
+              << "  " << program_name << " -L sl \"Dober dan, kako ste?\"\n"
               << "  " << program_name << " -i document.txt -o speech.wav\n"
               << "  echo \"Jedan, dva, tri\" | " << program_name << "\n\n"
               << "Voices (every voice speaks every language; the language named is\n"
@@ -223,7 +225,7 @@ void list_voices()
                    info.display_name);
         }
     }
-    printf("\nEvery voice speaks every language: choose it with -L hr|sr|bs.\n");
+    printf("\nEvery voice speaks every language: choose it with -L hr|sr|bs|sl.\n");
 }
 
 /**
@@ -564,7 +566,7 @@ int main(int argc, char *argv[])
     if (!opts.language.empty() &&
         laprdus_set_language(engine, opts.language.c_str()) != LAPRDUS_OK) {
         std::cerr << "Error: Unknown language '" << opts.language
-                  << "' (use hr, sr or bs)\n";
+                  << "' (use hr, sr, bs or sl)\n";
         laprdus_destroy(engine);
         return 1;
     }

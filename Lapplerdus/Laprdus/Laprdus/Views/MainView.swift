@@ -7,7 +7,8 @@ struct MainView: View {
 
     /// Default demo text (not persisted). Kept as view state so typing does
     /// not republish the app-wide model on every keystroke.
-    @State private var inputText = "Dobar dan. Ja sam Laprdus, rođen sam 2026. godine, i drago mi je da se možemo upoznati! 😁\nKako si ti? ❤\n"
+    @State private var inputText = ""
+    @State private var inputTextEdited = false
 
     var body: some View {
         Group {
@@ -20,12 +21,19 @@ struct MainView: View {
         }
         .navigationTitle("Laprdus TTS")
         .inlineNavigationBarTitle()
+        .onReceive(model.settings.$language) { code in
+            guard !inputTextEdited else { return }
+            inputText = (Language.language(matching: code) ?? Language.croatian).sampleText
+        }
     }
 
     @ViewBuilder
     private var content: some View {
         VStack(spacing: 16) {
-            TextEditor(text: $inputText)
+            TextEditor(text: Binding(
+                get: { inputText },
+                set: { inputText = $0; inputTextEdited = true }
+            ))
                 .font(.body)
                 .scrollContentBackground(.hidden)
                 .padding(8)

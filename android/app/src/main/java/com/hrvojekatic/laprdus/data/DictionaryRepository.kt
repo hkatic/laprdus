@@ -61,7 +61,7 @@ data class DictionaryEntry(
      * (`kontr'o:l*`, `sign'a:l|a|u|om`).
      */
     val verb: Boolean = false,
-    /** Accent lexicon only: "hr", "sr" or "bs" limits the entry to one language; "" is every language. */
+    /** Accent lexicon only: "hr", "sr", "bs" or "sl" limits the entry to one language; "" is every language. */
     val language: String = ""
 )
 

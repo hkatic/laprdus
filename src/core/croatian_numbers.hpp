@@ -33,12 +33,24 @@ public:
     ~CroatianNumbers() = default;
 
     /**
-     * Regional number words.
-     * Croatian: tisuća, milijun, dvjesto
-     * Serbian:  hiljada, milion, dvesta
-     * Bosnian:  hiljada, milion, dvjesto
+     * Number words of the language.
+     * Croatian:  tisuća, milijun, dvjesto
+     * Serbian:   hiljada, milion, dvesta
+     * Bosnian:   hiljada, milion, dvjesto
+     * Slovenian: its own system (Slovenski pravopis 2001, § 11 and § 536):
+     *            nič, ena, dve, tri, štiri, pet, šest, sedem, osem, devet;
+     *            enajst, dvajset; the ones before the tens as one word
+     *            (enaindvajset, štiriinštirideset); dvesto, štiristo; the
+     *            invariable tisoč (dva tisoč, pet tisoč, tristo en tisoč);
+     *            milijon with the dual (dva milijona), nominative plural
+     *            (trije milijoni, štirje milijoni) and genitive plural (pet
+     *            milijonov, enaindvajset milijonov); milijarda, dve
+     *            milijardi, tri milijarde, pet milijard; the decimal comma
+     *            as "cela" (tri cele štirinajst, ena cela pet, pet celih
+     *            tri); a date's day and month as genitive ordinals
+     *            (sedmega oktobra, sedmega desetega dva tisoč šestindvajset)
      */
-    enum class Dialect { Croatian, Serbian, Bosnian };
+    enum class Dialect { Croatian, Serbian, Bosnian, Slovenian };
 
     void set_dialect(Dialect dialect) { m_dialect = dialect; }
 
@@ -87,10 +99,17 @@ private:
     std::string get_milliard_variant(std::string_view prefix, char last_digit);
     std::string get_large_number_suffix(int group_index, char last_digit);
     bool is_feminine_scale(int group_index);
+    std::string_view zero_word() const;
+    bool slovenian() const { return m_dialect == Dialect::Slovenian; }
+    // Slovenian: the unit of a compound numeral (dva- of dvaindvajset), the
+    // genitive ordinal of a day or month (sedmega), the "cela" of a decimal
+    static std::string_view slovenian_compound_unit(char digit);
+    std::string slovenian_ordinal_genitive(std::string_view number);
+    std::string slovenian_decimal(std::string_view whole, std::string_view fraction);
 
     // Digits after a decimal mark or inside a dotted identifier
     std::string digit_group_to_words(std::string_view group);
-    static std::string separator_words(char separator);
+    std::string separator_words(char separator) const;
 
     // Clock times and dates ("12:30", "7.10.2026")
     size_t convert_time_or_date(const std::string& text, size_t i, std::string& result);

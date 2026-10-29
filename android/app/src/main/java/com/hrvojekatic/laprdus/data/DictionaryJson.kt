@@ -13,7 +13,7 @@ import org.json.JSONObject
  *
  * The accent lexicon ([DictionaryType.ACCENTS]) has entries of its own, read
  * by the engine itself: `{"word":"kontr'o:l*"}` or `{"verb":"ur'e:d=i<p"}`,
- * with an optional `"language"` ("hr", "sr", "bs") and `"comment"`. The
+ * with an optional `"language"` ("hr", "sr", "bs", "sl") and `"comment"`. The
  * entry's text is kept in [DictionaryEntry.grapheme].
  */
 internal object DictionaryJson {

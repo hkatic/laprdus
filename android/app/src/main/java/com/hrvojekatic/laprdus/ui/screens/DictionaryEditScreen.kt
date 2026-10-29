@@ -51,6 +51,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.hrvojekatic.laprdus.R
+import com.hrvojekatic.laprdus.tts.Language
 import com.hrvojekatic.laprdus.data.DictionaryEntry
 import com.hrvojekatic.laprdus.data.DictionaryJson
 import com.hrvojekatic.laprdus.data.DictionaryType
@@ -408,7 +409,7 @@ private fun AccentEntryForm(
     AccentDropdown(
         label = stringResource(R.string.dict_accent_language),
         selectLabel = stringResource(R.string.cd_dict_accent_language_dropdown_desc),
-        options = listOf("", "hr", "sr", "bs").map { it to accentLanguageName(it) },
+        options = (listOf("") + Language.ALL).map { it to accentLanguageName(it) },
         selected = language,
         onSelected = onLanguageChange
     )

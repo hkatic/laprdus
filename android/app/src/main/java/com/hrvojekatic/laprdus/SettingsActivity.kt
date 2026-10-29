@@ -6,6 +6,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalConfiguration
+import com.hrvojekatic.laprdus.tts.Language
+import com.hrvojekatic.laprdus.tts.SystemLanguage
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.hrvojekatic.laprdus.ui.screens.SettingsScreen
 import com.hrvojekatic.laprdus.ui.theme.LaprdusTheme
@@ -32,9 +35,14 @@ class SettingsActivity : ComponentActivity() {
             LaprdusTheme {
                 val viewModel: SettingsViewModel = hiltViewModel()
                 val uiState by viewModel.uiState.collectAsState()
+                // Re-read after a configuration change even when the ViewModel
+                // survives it and no saved preference has changed.
+                val systemLocale = androidx.compose.runtime.remember(LocalConfiguration.current) {
+                    SystemLanguage.locale(this@SettingsActivity)
+                }
 
                 SettingsScreen(
-                    uiState = uiState,
+                    uiState = uiState.copy(systemLanguage = Language.deviceLanguage(systemLocale)),
                     onNavigateBack = { finish() },
                     onVoiceSelected = viewModel::selectVoice,
                     onLanguageSelected = viewModel::selectLanguage,

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # LaprdusTTS NVDA SynthDriver
-# Croatian/Serbian/Bosnian text-to-speech synthesizer for NVDA
+# Croatian/Serbian/Bosnian/Slovenian text-to-speech synthesizer for NVDA
 # Compatible with NVDA 2019.3 to 2026.1
 
 import queue as Queue
@@ -34,6 +34,7 @@ LANGUAGES = OrderedDict([
     ("hr", "Hrvatski"),
     ("sr", "Srpski"),
     ("bs", "Bosanski"),
+    ("sl", "Slovenščina"),
 ])
 DEFAULT_LANGUAGE = "hr"
 
@@ -42,6 +43,7 @@ _LANGUAGE_ALIASES = {
     "hrv": "hr",
     "srp": "sr",
     "bos": "bs",
+    "slv": "sl",
 }
 
 # Voice ids of earlier versions and the ids that replaced them. The DLL
@@ -68,11 +70,11 @@ def _default_voice():
 
 
 def _language_from_tag(tag):
-    """The Laprdus language ("hr", "sr", "bs") a language tag asks for,
+    """The Laprdus language ("hr", "sr", "bs", "sl") a language tag asks for,
     or None when it is empty or one Laprdus does not speak.
 
-    Accepts NVDA's forms ("hr", "hr_HR", "sr_Latn", "bs_BA"), BCP 47 ones
-    ("hr-HR", "sr-Latn-RS") and ISO 639-2 codes ("hrv", "srp", "bos").
+    Accepts NVDA's forms ("hr", "hr_HR", "sr_Latn", "bs_BA", "sl_SI"), BCP 47
+    ones ("hr-HR", "sr-Latn-RS") and ISO 639-2 codes ("hrv", "srp", "bos", "slv").
     """
     if not tag:
         return None
@@ -86,7 +88,7 @@ def _language_from_tag(tag):
 
 def _default_language():
     """Language of a new installation: NVDA's language when Laprdus speaks
-    it (Croatian, Serbian or Bosnian), otherwise Croatian.
+    it (Croatian, Serbian, Bosnian or Slovenian), otherwise Croatian.
 
     NVDA saves the language the user picks, so this only applies until then.
     """
@@ -319,7 +321,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
 
     # Supported settings - MUST be a tuple
     # Base settings always available. The language (Croatian, Serbian,
-    # Bosnian) is chosen separately from the voice: every voice speaks
+    # Bosnian, Slovenian) is chosen separately from the voice: every voice speaks
     # every language.
     _baseSettings = [
         synthDriverHandler.SynthDriver.VoiceSetting(),
@@ -336,7 +338,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
 
     # Supported speech commands - use set literal. LangChangeCommand
     # (NVDA's automatic language switching) switches among Croatian,
-    # Serbian and Bosnian for the text that follows it; other languages
+    # Serbian, Bosnian and Slovenian for the text that follows it; other languages
     # fall back to the Language setting. The voice never changes.
     # PitchCommand makes NVDA send its capital pitch change (the "Capital
     # pitch change percentage" of the voice settings) around a spelled
@@ -486,7 +488,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                    prosody=None):
         """Queue one item for the speech thread: text to speak (spelled when
         `spelled`), or, with breakMs > 0, silence of that length (NVDA's
-        BreakCommand). `lang` is the language ("hr", "sr", "bs") a
+        BreakCommand). `lang` is the language ("hr", "sr", "bs", "sl") a
         LangChangeCommand asked for, or None for the Language setting.
         `prosody` holds the changes the PitchCommand, RateCommand and
         VolumeCommand in force for this text ask for ({"pitch": (offset,
@@ -494,7 +496,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         self._speakQueue.put((text, index, spelled, isSpelling, breakMs, lang, prosody))
 
     def _applyLanguage(self, lang):
-        """Make the engine speak `lang` ("hr", "sr" or "bs"; None for the
+        """Make the engine speak `lang` ("hr", "sr", "bs" or "sl"; None for the
         Language setting), unless it already does.
 
         Called from the speech thread before every synthesis and from the
@@ -574,7 +576,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         the Laprdus spelling speed.
 
         `lang` is the language a LangChangeCommand chose for this text
-        ("hr", "sr", "bs"), or None for the Language setting; the engine is
+        ("hr", "sr", "bs", "sl"), or None for the Language setting; the engine is
         switched to it here, in the speech thread, just before synthesis.
         `prosody` holds the pitch, rate and volume changes NVDA's prosody
         commands ask for this text (a capital letter is spelled with the
@@ -752,7 +754,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             "char_mode": False,
             "pendingIndex": None,  # Index that will be associated with the NEXT text
             # Language of the text from here on: None is the Language
-            # setting; a LangChangeCommand for Croatian, Serbian or Bosnian
+            # setting; a LangChangeCommand for Croatian, Serbian, Bosnian or Slovenian
             # sets it for the rest of the utterance (the next utterance
             # starts from the setting again), one for any other language,
             # or with None, returns to the setting, as the eSpeak driver does
@@ -1426,7 +1428,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
 
     def _get_language(self):
         """The language the voice speaks when the text asks for none:
-        "hr", "sr" or "bs" (NVDA saves it as speechSynths.laprdus.language)."""
+        "hr", "sr", "bs" or "sl" (NVDA saves it as speechSynths.laprdus.language)."""
         return self._language
 
     def _set_language(self, value):

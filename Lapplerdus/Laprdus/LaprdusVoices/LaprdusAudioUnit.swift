@@ -50,8 +50,8 @@ public class LaprdusAudioUnit: AVSpeechSynthesisProviderAudioUnit {
 
     // MARK: - Voices
 
-    /// One system voice per voice and language (18 x 3 = 54): every voice
-    /// is listed under Croatian, Serbian and Bosnian, and the entry the host
+    /// One system voice per voice and language (18 x 4 = 72): every voice
+    /// is listed under Croatian, Serbian, Bosnian and Slovenian, and the entry the host
     /// picks names both. The system shows the language itself, so the name
     /// is the bare display name from the registry.
     public override var speechVoices: [AVSpeechSynthesisProviderVoice] {

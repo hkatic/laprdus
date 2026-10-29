@@ -19,6 +19,7 @@
     <string name="language_croatian">Croatian</string>
     <string name="language_serbian">Serbian</string>
     <string name="language_bosnian">Bosnian</string>
+    <string name="language_slovenian">Slovenian</string>
 
     <!-- Voice attributes -->
     <string name="gender_male">Male</string>
@@ -50,7 +51,8 @@
     <string name="setting_volume_boost_title">Boost speech volume</string>
     <string name="setting_volume_boost_subtitle">Louder speech for noisy places and the phone\'s earpiece. Much louder; the strongest peaks are rounded off so the sound never breaks up</string>
     <string name="setting_force_language_title">Force language</string>
-    <string name="setting_force_language_subtitle">Always speak the language chosen above, ignoring the language apps request</string>
+    <string name="setting_force_language_subtitle">Always speak the language chosen above, ignoring the system language and the language apps request</string>
+    <string name="language_follows_system">Follows the system language (%1$s). Turn on Force language below to choose another.</string>
 
     <!-- Emoji settings -->
     <string name="setting_emoji_enabled_title">Enable emoji reading</string>
@@ -195,9 +197,15 @@
     <string name="about_license">Read the GPL 3.0 License Online</string>
     <string name="about_contact_email">Contact author via E-Mail</string>
 
-    <!-- Sample text returned to TTS settings ("Listen to an example").
-         Always in the voice's own language, so not translatable. -->
+    <!-- Speech samples follow the spoken language, independently of the UI locale. -->
+    <string name="preview_sample_text_hr" translatable="false">Dobar dan. Ja sam Laprdus, rođen sam 2026. godine, i drago mi je da se možemo upoznati! 😁\nKako si ti? ❤\n</string>
+    <string name="preview_sample_text_sr" translatable="false">Dobar dan. Ja sam Laprdus, rođen sam 2026. godine, i drago mi je da možemo da se upoznamo! 😁\nKako si ti? ❤\n</string>
+    <string name="preview_sample_text_bs" translatable="false">Dobar dan. Ja sam Laprdus, rođen sam 2026. godine, i drago mi je da se možemo upoznati! 😁\nKako si ti? ❤\n</string>
+    <string name="preview_sample_text_sl" translatable="false">Dober dan. Sem Laprdus, rojen sem bil leta 2026 in veseli me, da se lahko spoznava! 😁\nKako si? ❤\n</string>
+
+    <!-- Short samples returned to system TTS settings ("Listen to an example"). -->
     <string name="tts_sample_text_hr" translatable="false">Ovo je primjer govora na hrvatskom jeziku.</string>
     <string name="tts_sample_text_sr" translatable="false">Ovo je primer govora na srpskom jeziku.</string>
     <string name="tts_sample_text_bs" translatable="false">Ovo je primjer govora na bosanskom jeziku.</string>
+    <string name="tts_sample_text_sl" translatable="false">To je primer govora v slovenskem jeziku.</string>
 </resources>

@@ -43,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -190,10 +191,13 @@ fun SettingsScreen(
                     )
                 }
 
-                // Language Selector (every voice speaks every language)
+                // Language Selector (every voice speaks every language). With
+                // "Force language" off, the system language is spoken when
+                // Laprdus speaks it, and the selector shows that instead.
                 item {
                     LanguageSettingItem(
                         selectedLanguage = uiState.language,
+                        systemLanguage = if (uiState.forceLanguage) null else uiState.systemLanguage,
                         onLanguageSelected = onLanguageSelected
                     )
                 }
@@ -668,8 +672,13 @@ private fun getVoiceDescription(voice: VoiceInfo): String {
 }
 
 /**
- * Language selector dropdown for settings: Croatian, Serbian or Bosnian,
- * spoken by whichever voice is selected.
+ * Language selector dropdown for settings: Croatian, Serbian, Bosnian or
+ * Slovenian, spoken by whichever voice is selected.
+ *
+ * [systemLanguage] is the system language when Laprdus speaks it and the
+ * language is not forced: that language is spoken then, so the selector
+ * shows it, disabled, with a note that "Force language" makes the choice
+ * count; null shows the chosen language, enabled.
  *
  * Accessibility for TalkBack: the same pattern as [VoiceSettingItem].
  */
@@ -677,36 +686,50 @@ private fun getVoiceDescription(voice: VoiceInfo): String {
 @Composable
 fun LanguageSettingItem(
     selectedLanguage: String,
+    systemLanguage: String?,
     onLanguageSelected: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
     val languageSelectorLabel = stringResource(R.string.language_label)
-    val selectedLanguageName = languageName(selectedLanguage)
+    val enabled = systemLanguage == null
+    val shownLanguageName = languageName(systemLanguage ?: selectedLanguage)
+    val followsSystem = if (systemLanguage == null) null
+        else stringResource(R.string.language_follows_system, shownLanguageName)
     val dropdownDesc = stringResource(R.string.cd_language_dropdown_desc)
 
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
             .semantics(mergeDescendants = true) {
                 isTraversalGroup = true
                 contentDescription = languageSelectorLabel
-                stateDescription = selectedLanguageName
+                stateDescription = followsSystem ?: shownLanguageName
+                if (!enabled) disabled()
             }
             .clickable(
+                enabled = enabled,
                 role = Role.DropdownList,
                 onClickLabel = dropdownDesc
             ) { expanded = true }
     ) {
+        if (followsSystem != null) {
+            Text(
+                text = followsSystem,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(bottom = 4.dp).clearAndSetSemantics { }
+            )
+        }
         ExposedDropdownMenuBox(
             expanded = expanded,
             onExpandedChange = { expanded = it },
             modifier = Modifier.clearAndSetSemantics { }
         ) {
             OutlinedTextField(
-                value = selectedLanguageName,
+                value = shownLanguageName,
                 onValueChange = {},
                 readOnly = true,
+                enabled = enabled,
                 label = {
                     Text(
                         text = languageSelectorLabel,
@@ -719,12 +742,12 @@ fun LanguageSettingItem(
                 colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled)
                     .clearAndSetSemantics { }
             )
 
             ExposedDropdownMenu(
-                expanded = expanded,
+                expanded = expanded && enabled,
                 onDismissRequest = { expanded = false }
             ) {
                 Language.ALL.forEach { language ->
@@ -750,11 +773,12 @@ fun LanguageSettingItem(
     }
 }
 
-/** The localized name of a language code ("hr", "sr", "bs"). */
+/** The localized name of a language code ("hr", "sr", "bs", "sl"). */
 @Composable
 private fun languageName(language: String): String = when (language) {
     Language.SERBIAN -> stringResource(R.string.language_serbian)
     Language.BOSNIAN -> stringResource(R.string.language_bosnian)
+    Language.SLOVENIAN -> stringResource(R.string.language_slovenian)
     else -> stringResource(R.string.language_croatian)
 }
 

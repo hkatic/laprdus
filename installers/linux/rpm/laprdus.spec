@@ -3,7 +3,7 @@
 Name:           laprdus
 Version:        2.0.0
 Release:        1%{?dist}
-Summary:        Croatian/Serbian/Bosnian Text-to-Speech Engine
+Summary:        Croatian/Serbian/Bosnian/Slovenian Text-to-Speech Engine
 
 License:        GPL-3.0-or-later
 URL:            https://hrvojekatic.com/laprdus
@@ -19,14 +19,15 @@ BuildRequires:  glib2-devel
 Requires:       speech-dispatcher
 
 %description
-LaprdusTTS is a text-to-speech engine for Croatian, Serbian and Bosnian,
+LaprdusTTS is a text-to-speech engine for Croatian, Serbian, Bosnian and
+Slovenian,
 with voices synthesized by rule (formant synthesis) and voices rendered
 from pre-recorded phoneme samples.
 
 Features:
 * Voices: Josip, Vlado, Detence, Baba, Đedo, Zvonko (default), Stojan,
-  Mirsad and ten singing voices; every voice speaks Croatian, Serbian
-  and Bosnian
+  Mirsad and ten singing voices; every voice speaks Croatian, Serbian,
+  Bosnian and Slovenian
 * Speech Dispatcher integration for use with Orca screen reader
 * Command-line utility for terminal-based speech synthesis
 * Adjustable speech rate, pitch, and volume
@@ -39,7 +40,7 @@ Requires:       %{name}%{?_isa} = %{version}-%{release}
 
 %description devel
 This package provides the development headers for LaprdusTTS,
-allowing developers to integrate Croatian, Serbian and Bosnian
+allowing developers to integrate Croatian, Serbian, Bosnian and Slovenian
 text-to-speech into their applications.
 
 %prep
@@ -96,10 +97,10 @@ MARKER_START="# BEGIN LAPRDUS TTS"
 MARKER_END="# END LAPRDUS TTS"
 
 if [ -f "$SPEECHD_CONF" ]; then
-    # A block written by a version that did not know Bosnian yet is removed
-    # here and written again below.
+    # A block written by a version that did not know Slovenian (or Bosnian)
+    # yet is removed here and written again below.
     if grep -q "$MARKER_START" "$SPEECHD_CONF" 2>/dev/null && \
-       ! grep -q 'LanguageDefaultModule "bs" "laprdus"' "$SPEECHD_CONF" 2>/dev/null; then
+       ! grep -q 'LanguageDefaultModule "sl" "laprdus"' "$SPEECHD_CONF" 2>/dev/null; then
         sed -i "/$MARKER_START/,/$MARKER_END/d" "$SPEECHD_CONF"
     fi
     # Check if already configured
@@ -114,7 +115,7 @@ if [ -f "$SPEECHD_CONF" ]; then
                 cat >> "$SPEECHD_CONF" << 'EOF'
 
 # BEGIN LAPRDUS TTS
-# LaprdusTTS - Croatian/Serbian/Bosnian Text-to-Speech
+# LaprdusTTS - Croatian/Serbian/Bosnian/Slovenian Text-to-Speech
 AddModule "laprdus" "sd_laprdus" "laprdus.conf"
 LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
@@ -122,6 +123,8 @@ LanguageDefaultModule "hr-HR" "laprdus"
 LanguageDefaultModule "sr-RS" "laprdus"
 LanguageDefaultModule "bs" "laprdus"
 LanguageDefaultModule "bs-BA" "laprdus"
+LanguageDefaultModule "sl" "laprdus"
+LanguageDefaultModule "sl-SI" "laprdus"
 # END LAPRDUS TTS
 EOF
             else
@@ -129,13 +132,15 @@ EOF
                 cat >> "$SPEECHD_CONF" << 'EOF'
 
 # BEGIN LAPRDUS TTS
-# LaprdusTTS - Croatian/Serbian/Bosnian Text-to-Speech
+# LaprdusTTS - Croatian/Serbian/Bosnian/Slovenian Text-to-Speech
 LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"
 LanguageDefaultModule "sr-RS" "laprdus"
 LanguageDefaultModule "bs" "laprdus"
 LanguageDefaultModule "bs-BA" "laprdus"
+LanguageDefaultModule "sl" "laprdus"
+LanguageDefaultModule "sl-SI" "laprdus"
 # END LAPRDUS TTS
 EOF
             fi

@@ -62,6 +62,12 @@ Phoneme unit_for(Ph ph) {
         case Ph::O: return Phoneme::O;
         case Ph::U: return Phoneme::U;
         case Ph::SCHWA: return Phoneme::COUNT;
+        // Slovenian: the open vowels on the recorded e and o, the schwa on a
+        // short e, the [w] on the u
+        case Ph::EH: case Ph::EE: return Phoneme::E;
+        case Ph::OH: case Ph::OO: return Phoneme::O;
+        case Ph::AX: return Phoneme::E;
+        case Ph::W: return Phoneme::U;
         case Ph::J: return Phoneme::J;
         case Ph::V: return Phoneme::V;
         case Ph::L: return Phoneme::L;

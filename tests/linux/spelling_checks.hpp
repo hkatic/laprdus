@@ -6,6 +6,41 @@
 #include <vector>
 #include <laprdus/laprdus_api.h>
 
+// A typed character must use the selected language even with the Croatian
+// bundled dictionary loaded. Run this for both synthesis backends.
+inline void check_slovenian_spelling(LaprdusHandle engine) {
+    REQUIRE(laprdus_load_spelling_dictionary(engine, "data/dictionary/spelling.json") == LAPRDUS_OK);
+    REQUIRE(laprdus_set_language(engine, "sl") == LAPRDUS_OK);
+    REQUIRE(laprdus_set_spelling_pause(engine, 0) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_spelling_speed(engine, 100) == LAPRDUS_OK);
+    auto render = [&](const char* text, bool spelled) {
+        int16_t* samples = nullptr;
+        LaprdusAudioFormat format;
+        const int32_t count = spelled
+            ? laprdus_synthesize_spelled(engine, text, &samples, &format)
+            : laprdus_synthesize(engine, text, &samples, &format);
+        REQUIRE(count > 0);
+        std::vector<int16_t> audio(samples, samples + count);
+        laprdus_free_buffer(samples);
+        return audio;
+    };
+    for (auto mode : {LAPRDUS_SPELLING_LETTER_NAMES, LAPRDUS_SPELLING_LETTER_SOUNDS}) {
+        REQUIRE(laprdus_set_spelling_mode(engine, mode) == LAPRDUS_OK);
+        for (auto [character, name] : {std::pair{"1", "ena"}, {"7", "sedem"},
+                {"8", "osem"}, {".", "pika"}, {",", "vejica"}, {"@", "afna"}, {" ", "presledek"}}) {
+            INFO(character);
+            REQUIRE(render(character, true) == render(name, false));
+        }
+        REQUIRE(render("w", true) == render("dvojni ve", false));
+    }
+    REQUIRE(laprdus_add_spelling_entry(engine, "@", "moj znak") == LAPRDUS_OK);
+    REQUIRE(render("@", true) == render("moj znak", false));
+    REQUIRE(laprdus_set_language(engine, "hr") == LAPRDUS_OK);
+    REQUIRE(render(".", true) == render(u8"točka", false));
+    REQUIRE(render("7", true) == render("sedam", false));
+    REQUIRE(render("@", true) == render("moj znak", false));
+}
+
 // Shared PCM regression checks for formant and recorded voices. In particular,
 // a longer buffer alone must not let slowed-down speech pass as a longer pause.
 inline void check_spelling_pauses(LaprdusHandle engine) {

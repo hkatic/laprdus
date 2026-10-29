@@ -1,12 +1,12 @@
 # Laprdus
 
-A Retro-type speech synthesizer for Croatian, Serbian and Bosnian languages using concatenative and formant synthesis.
+A Retro-type speech synthesizer for Croatian, Serbian, Bosnian and Slovenian languages using concatenative and formant synthesis.
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 ## About
 
-Laprdus is a text-to-speech (TTS) synthesizer for Croatian, Serbian and Bosnian languages. Its original voices use concatenative synthesis technology, joining pre-recorded phoneme units to produce speech output. Its formant voices are synthesized entirely by rule, in the tradition of Eloquence and DECtalk, and need no recordings at all. While not matching modern neural TTS quality, Laprdus offers high performance and minimal memory usage.
+Laprdus is a text-to-speech (TTS) synthesizer for Croatian, Serbian, Bosnian and Slovenian languages. Its original voices use concatenative synthesis technology, joining pre-recorded phoneme units to produce speech output. Its formant voices are synthesized entirely by rule, in the tradition of Eloquence and DECtalk, and need no recordings at all. While not matching modern neural TTS quality, Laprdus offers high performance and minimal memory usage.
 
 Laprdus was developed to provide screen reader users with simple and fast access to computers and mobile devices in their native language, for free.
 
@@ -30,8 +30,8 @@ In short: modern synthesizers offer quality at the cost of resources; Laprdus of
 
 ## Features
 
-- Croatian, Serbian and Bosnian speech synthesis (Latin and Cyrillic scripts)
-- Eighteen voices (two recorded, three derived from them, three formant, ten singing presets), every one of them speaking all three languages
+- Croatian, Serbian, Bosnian and Slovenian speech synthesis (Latin and Cyrillic scripts)
+- Eighteen voices (two recorded, three derived from them, three formant, ten singing presets), every one of them speaking all four languages
 - Adjustable speech rate, pitch, and volume
 - Natural inflection based on punctuation
 - Number reading as words (up to centillions) or digit-by-digit
@@ -40,7 +40,7 @@ In short: modern synthesizers offer quality at the cost of resources; Laprdus of
 
 ## Voices
 
-Every voice speaks every language. The voice chooses the sound; the language (Croatian, Serbian or Bosnian) chooses the pronunciation rules, the accent lexicon, the number words (*tisuća* / *hiljada*) and the letter names used for spelling, and is set separately on each platform: the **Language** setting of the NVDA add-on (which also follows NVDA's automatic language switching), one of the three SAPI5 voices *Laprdus Croatian*, *Laprdus Serbian* and *Laprdus Bosnian* (all of them speaking with the voice chosen in the Laprdus Configurator), the language of the system voice on Android and Apple (every voice is listed under all three languages), `-L hr|sr|bs` on the command line and `spd-say -l` with Speech Dispatcher. A voice's *native language* in the table is what it speaks when nothing else is asked for. **Zvonko is the default voice** on every platform and for every language.
+Every voice speaks every language. The voice chooses the sound; the language (Croatian, Serbian, Bosnian or Slovenian) chooses the pronunciation rules, the accent lexicon, the number words (*tisuća* / *hiljada* / *tisoč*) and the letter names used for spelling, and is set separately on each platform: the **Language** setting of the NVDA add-on (which also follows NVDA's automatic language switching), one of the four SAPI5 voices *Laprdus Croatian*, *Laprdus Serbian*, *Laprdus Bosnian* and *Laprdus Slovenian* (all of them speaking with the voice chosen in the Laprdus Configurator), the language of the system voice on Android and Apple (every voice is listed under all four languages), `-L hr|sr|bs|sl` on the command line and `spd-say -l` with Speech Dispatcher. A voice's *native language* in the table is what it speaks when nothing else is asked for; no voice is natively Slovenian, every voice speaks it when asked. **Zvonko is the default voice** on every platform and for every language.
 
 | Voice | ID | Type | Native language | Description |
 |-------|----|------|-----------------|-------------|
@@ -90,7 +90,7 @@ In the tradition of the singing voices of DECtalk and of the Macintosh (Pipe Org
 | Sarajevo Bembaša | `sarajevo_bembasa` | Mirsad's own voice | Kad ja pođoh na Bembašu |
 | Bećarac | `becarac` | Zvonko's own voice | the bećarac tune (traditional, Slavonia); any ten-syllable couplet fits |
 
-The rate slider sets the tempo, the pitch slider transposes the song, and the inflection setting sets the depth of the vibrato (0% switches it off). Like every other voice, a preset sings in whichever of the three languages is chosen; its native language is that of its song.
+The rate slider sets the tempo, the pitch slider transposes the song, and the inflection setting sets the depth of the vibrato (0% switches it off). Like every other voice, a preset sings in whichever of the four languages is chosen; its native language is that of its song.
 
 ```bash
 laprdus -v dalmacija_klapa "Oj ti vilo, vilo Velebita, ti našeg roda diko, tvoja slava jeste nama sveta, tebi Hrvat kliko."
@@ -109,14 +109,14 @@ Tuning notes and the measurements the voices are based on are in [docs/formant.m
 
 1. Download `Laprdus_SAPI5_Setup.exe` from the [releases page](https://github.com/hkatic/laprdus/releases)
 2. Run the installer (recommended: Run as Administrator)
-3. Three voices appear in Windows TTS settings: **Laprdus Croatian**, **Laprdus Serbian** and **Laprdus Bosnian**. They choose the language; all three speak with the voice chosen in the Laprdus Configurator (Zvonko until you change it). The installer removes the per-voice registrations of earlier versions on install, upgrade and repair.
+3. Four voices appear in Windows TTS settings: **Laprdus Croatian**, **Laprdus Serbian**, **Laprdus Bosnian** and **Laprdus Slovenian**. They choose the language; all four speak with the voice chosen in the Laprdus Configurator (Zvonko until you change it). The installer removes the per-voice registrations of earlier versions on install, upgrade and repair.
 
 ### NVDA Addon
 
 1. Download `laprdus-*.nvda-addon` from the [releases page](https://github.com/hkatic/laprdus/releases)
 2. Double-click the file to install
 3. Restart NVDA when prompted
-4. Select Laprdus in NVDA Settings > Speech; the **Voice** list holds all eighteen voices and the **Language** list chooses Croatian, Serbian or Bosnian for whichever voice is selected (NVDA's automatic language switching also switches among the three)
+4. Select Laprdus in NVDA Settings > Speech; the **Voice** list holds all eighteen voices and the **Language** list chooses Croatian, Serbian, Bosnian or Slovenian for whichever voice is selected (NVDA's automatic language switching also switches among the four)
 
 ### Linux
 
@@ -233,7 +233,7 @@ Laprdus stores user settings and custom dictionaries in platform-specific locati
 | `user.json` | Custom pronunciation dictionary for words and phrases |
 | `spelling.json` | Character pronunciations for spelling mode |
 | `emoji.json` | Emoji-to-text mappings for emoji reading |
-| `accents.json` | Accent lexicon: word stress, length and tone, as words, stems, paradigms or whole verbs in the notation of the built-in lexicon (`{ "word": "kontr'o:l*" }`, `{ "verb": "ur'e:d=i<p" }`); an optional `"language"` limits an entry to Croatian, Serbian or Bosnian; parsed once at load, so it costs nothing per utterance; edited as the Accent dictionary in the Windows Configurator and the Android and Apple apps |
+| `accents.json` | Accent lexicon: word stress, length and tone, as words, stems, paradigms or whole verbs in the notation of the built-in lexicon (`{ "word": "kontr'o:l*" }`, `{ "verb": "ur'e:d=i<p" }`); an optional `"language"` limits an entry to Croatian, Serbian, Bosnian or Slovenian (a Slovenian entry is the word spelled as pronounced with the dictionaries' accent marks: `{ "word": "člôvek", "language": "sl" }`); parsed once at load, so it costs nothing per utterance; edited as the Accent dictionary in the Windows Configurator and the Android and Apple apps |
 
 ### Dictionary Format
 
@@ -489,7 +489,7 @@ xcodebuild -scheme Laprdus -destination 'generic/platform=iOS' build -allowProvi
 ##### Testing checklist for Apple
 
 - [ ] App builds and launches on macOS and on a physical iPhone/iPad
-- [ ] Speak/Stop works on the main screen with each voice and in each of the three languages
+- [ ] Speak/Stop works on the main screen with each voice and in each of the four languages
 - [ ] Settings changes (rate, pitch, volume, pauses) are audible in the app
 - [ ] Dictionary entries affect pronunciation
 - [ ] Laprdus voices appear in the system voice list after the first app launch

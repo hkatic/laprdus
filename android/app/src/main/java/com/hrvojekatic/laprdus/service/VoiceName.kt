@@ -6,7 +6,7 @@ import com.hrvojekatic.laprdus.tts.VoiceInfo
 /**
  * The name of a system voice: `<voice id>-<language>`, as in `zvonko-hr`,
  * `djedo-sr`, `lika_velebit-bs`. The system sees one voice per (voice x
- * language), 54 in all, since every Laprdus voice speaks every language.
+ * language), 72 in all, since every Laprdus voice speaks every language.
  */
 data class VoiceName(val voiceId: String, val language: String) {
 

@@ -681,7 +681,7 @@ void ConfigDialog::OnApply(HWND hDlg) {
 }
 
 // The SAPI5 voice tokens are one per language ("Laprdus Croatian",
-// "Laprdus Serbian", "Laprdus Bosnian"); the voice they speak with is the
+// "Laprdus Serbian", "Laprdus Bosnian", "Laprdus Slovenian"); the voice they speak with is the
 // one saved in settings.json. The test therefore saves the settings first
 // and then speaks through the token of the configurator's own language.
 static const wchar_t* TestTokenLanguage() {
@@ -689,6 +689,8 @@ static const wchar_t* TestTokenLanguage() {
     switch (id) {
         case 0x141A: case 0x201A: case 0x641A: case 0x681A:   // Bosnian
             return L"bs";
+        case 0x0424:                                           // Slovenian
+            return L"sl";
         case 0x081A: case 0x0C1A: case 0x181A: case 0x1C1A: case 0x2C1A: case 0x301A: case 0x7C1A:
             return L"sr";
         default:

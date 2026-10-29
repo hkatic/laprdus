@@ -26,7 +26,7 @@ class CheckVoiceDataActivity : Activity() {
         val returnData = Intent().apply {
             putStringArrayListExtra(
                 TextToSpeech.Engine.EXTRA_AVAILABLE_VOICES,
-                arrayListOf("hrv-HRV", "srp-SRB", "bos-BIH")
+                arrayListOf("hrv-HRV", "srp-SRB", "bos-BIH", "slv-SVN")
             )
             putStringArrayListExtra(
                 TextToSpeech.Engine.EXTRA_UNAVAILABLE_VOICES,

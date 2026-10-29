@@ -24,6 +24,7 @@
 		FA0000000000000000000026 /* formant_phonemes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000026 /* formant_phonemes.cpp */; };
 		FA0000000000000000000027 /* formant_lexicon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000027 /* formant_lexicon.cpp */; };
 		FA0000000000000000000028 /* formant_frontend.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000028 /* formant_frontend.cpp */; };
+		FA0000000000000000000042 /* formant_slovenian.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000042 /* formant_slovenian.cpp */; };
 		FA0000000000000000000029 /* formant_synthesizer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000029 /* formant_synthesizer.cpp */; };
 		FA000000000000000000000E /* concat_prosody.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000E /* concat_prosody.cpp */; };
 		FA000000000000000000002A /* formant_intonation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000002A /* formant_intonation.cpp */; };
@@ -51,6 +52,7 @@
 		FB0000000000000000000026 /* formant_phonemes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000026 /* formant_phonemes.cpp */; };
 		FB0000000000000000000027 /* formant_lexicon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000027 /* formant_lexicon.cpp */; };
 		FB0000000000000000000028 /* formant_frontend.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000028 /* formant_frontend.cpp */; };
+		FB0000000000000000000042 /* formant_slovenian.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000042 /* formant_slovenian.cpp */; };
 		FB0000000000000000000029 /* formant_synthesizer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC0000000000000000000029 /* formant_synthesizer.cpp */; };
 		FB000000000000000000000E /* concat_prosody.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000000E /* concat_prosody.cpp */; };
 		FB000000000000000000002A /* formant_intonation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC000000000000000000002A /* formant_intonation.cpp */; };
@@ -113,6 +115,7 @@
 		FC0000000000000000000026 /* formant_phonemes.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = formant_phonemes.cpp; path = ../../src/formant/formant_phonemes.cpp; sourceTree = "<group>"; };
 		FC0000000000000000000027 /* formant_lexicon.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = formant_lexicon.cpp; path = ../../src/formant/formant_lexicon.cpp; sourceTree = "<group>"; };
 		FC0000000000000000000028 /* formant_frontend.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = formant_frontend.cpp; path = ../../src/formant/formant_frontend.cpp; sourceTree = "<group>"; };
+		FC0000000000000000000042 /* formant_slovenian.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = formant_slovenian.cpp; path = ../../src/formant/formant_slovenian.cpp; sourceTree = "<group>"; };
 		FC0000000000000000000029 /* formant_synthesizer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = formant_synthesizer.cpp; path = ../../src/formant/formant_synthesizer.cpp; sourceTree = "<group>"; };
 		FC000000000000000000000E /* concat_prosody.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = concat_prosody.cpp; path = ../../src/audio/concat_prosody.cpp; sourceTree = "<group>"; };
 		FC000000000000000000002A /* formant_intonation.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = formant_intonation.cpp; path = ../../src/formant/formant_intonation.cpp; sourceTree = "<group>"; };
@@ -216,6 +219,7 @@
 				FC0000000000000000000026 /* formant_phonemes.cpp */,
 				FC0000000000000000000027 /* formant_lexicon.cpp */,
 				FC0000000000000000000028 /* formant_frontend.cpp */,
+				FC0000000000000000000042 /* formant_slovenian.cpp */,
 				FC0000000000000000000029 /* formant_synthesizer.cpp */,
 				FC000000000000000000000E /* concat_prosody.cpp */,
 				FC000000000000000000002A /* formant_intonation.cpp */,
@@ -339,6 +343,7 @@
 				en,
 				hr,
 				sr,
+				sl,
 				Base,
 			);
 			mainGroup = EE8A57CB301DD71100716E81;
@@ -411,6 +416,7 @@
 				FA0000000000000000000026 /* formant_phonemes.cpp in Sources */,
 				FA0000000000000000000027 /* formant_lexicon.cpp in Sources */,
 				FA0000000000000000000028 /* formant_frontend.cpp in Sources */,
+				FA0000000000000000000042 /* formant_slovenian.cpp in Sources */,
 				FA0000000000000000000029 /* formant_synthesizer.cpp in Sources */,
 				FA000000000000000000000E /* concat_prosody.cpp in Sources */,
 				FA000000000000000000002A /* formant_intonation.cpp in Sources */,
@@ -446,6 +452,7 @@
 				FB0000000000000000000026 /* formant_phonemes.cpp in Sources */,
 				FB0000000000000000000027 /* formant_lexicon.cpp in Sources */,
 				FB0000000000000000000028 /* formant_frontend.cpp in Sources */,
+				FB0000000000000000000042 /* formant_slovenian.cpp in Sources */,
 				FB0000000000000000000029 /* formant_synthesizer.cpp in Sources */,
 				FB000000000000000000000E /* concat_prosody.cpp in Sources */,
 				FB000000000000000000002A /* formant_intonation.cpp in Sources */,

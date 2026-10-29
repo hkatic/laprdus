@@ -180,7 +180,7 @@ class LaprdusTTS private constructor() {
         private set
 
     /**
-     * The language chosen with [setLanguage] ("hr", "sr" or "bs"), or null
+     * The language chosen with [setLanguage] ("hr", "sr", "bs" or "sl"), or null
      * when every voice speaks its native language. [spokenLanguage] is what
      * the engine speaks at the moment.
      */
@@ -343,7 +343,7 @@ class LaprdusTTS private constructor() {
 
     /**
      * Choose the language every voice speaks from now on, independently of
-     * the voice: "hr", "sr" or "bs" (a tag such as "hr-HR", "hrv" or "srp"
+     * the voice: "hr", "sr", "bs" or "sl" (a tag such as "hr-HR", "hrv" or "srp"
      * is accepted too). It sticks across [setVoice] calls. Null goes back
      * to each voice's native language.
      *
@@ -358,7 +358,7 @@ class LaprdusTTS private constructor() {
     }
 
     /**
-     * The language the engine speaks at the moment ("hr", "sr" or "bs"):
+     * The language the engine speaks at the moment ("hr", "sr", "bs" or "sl"):
      * the chosen one, else the loaded voice's native one.
      */
     val spokenLanguage: String

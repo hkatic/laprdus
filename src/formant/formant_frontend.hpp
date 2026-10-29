@@ -1,13 +1,15 @@
 // -*- coding: utf-8 -*-
 // formant_frontend.hpp - Text to phone conversion for the formant voices
 // Letter-to-sound rules, stress placement and clitic handling for
-// Croatian, Serbian and Bosnian
+// Croatian, Serbian and Bosnian; Slovenian has its rules and lexicon in
+// formant_slovenian.cpp and shares the tokenizer and the clause structure
 
 #ifndef LAPRDUS_FORMANT_FRONTEND_HPP
 #define LAPRDUS_FORMANT_FRONTEND_HPP
 
 #include "laprdus/types.hpp"
 #include "formant_phonemes.hpp"
+#include "formant_slovenian.hpp"
 #include <memory>
 #include <string>
 #include <vector>
@@ -57,7 +59,8 @@ bool is_foreign_letter(const std::u32string& letter);
  * če, će, de, dže, đe, e, ef, ge, ha, i, je, ka, el, elj, em, en, enj, o,
  * pe, er, es, eš, te, u, ve, ze, že), the Serbian ones decision 41 of the
  * Board for the Standardization of the Serbian Language (lje, nje, ša; the
- * rest the same for Cyrillic and Latin).
+ * rest the same for Cyrillic and Latin), the Slovenian ones the Slovenski
+ * pravopis (the same names for its 25 letters; dvojni ve for w).
  */
 std::u32string letter_name(const std::u32string& letter, VoiceLanguage language);
 
@@ -88,7 +91,10 @@ struct VerbRoot;    // a verb's root or stem with its conjugation (formant_front
  *
  * "word" is a word, a stem ("*") or a paradigm ("|"); "verb" a whole stem
  * ("st'e:m=classes") or a root with a long ije ("root:classes[:prefixes]");
- * "language" ("hr", "sr", "bs") limits an entry to one language.
+ * "language" ("hr", "sr", "bs", "sl") limits an entry to one language. A
+ * Slovenian "word" is written in the notation of slovenian::Lexicon
+ * (mésto, člôvek, p'əs, d'é:la*); an entry without a language is used for
+ * Slovenian too when it reads in that notation.
  * Every entry is checked when the file is parsed, and a malformed one is
  * skipped and counted, so a typo can neither crash the engine nor silently
  * produce a word without stress. The lexicon is parsed once; synthesis
@@ -113,7 +119,7 @@ public:
 
     ~UserLexicon();
 
-    bool empty() const { return m_words.empty() && m_verbs.empty(); }
+    bool empty() const { return m_words.empty() && m_verbs.empty() && m_slovenian.empty(); }
 
 private:
     friend class Frontend;
@@ -129,6 +135,7 @@ private:
 
     std::vector<WordEntry> m_words;
     std::vector<VerbEntry> m_verbs;
+    slovenian::Lexicon m_slovenian;     // the entries for Slovenian, in its notation
 };
 
 /**
@@ -179,6 +186,9 @@ private:
     std::unordered_map<std::u32string, LexEntry> m_user_exact;
     std::unordered_map<std::u32string, LexEntry> m_user_stems;
     std::shared_ptr<const std::vector<VerbRoot>> m_user_verbs;
+    std::shared_ptr<const slovenian::Lexicon> m_user_slovenian;   // Slovenian only
+
+    Utterance process_slovenian(const std::u32string& text, Punctuation punct) const;
 };
 
 // Built-in accent lexicon (formant_lexicon.cpp). Entries are UTF-8 words with

@@ -22,7 +22,7 @@ addon_info = AddonInfo(
     # Add-on description
     # Translators: Long description to be shown for this add-on
     addon_description=_("""Text-to-speech synthesizer for NVDA.
-Laprdus speaks Croatian, Serbian and Bosnian with every one of its voices: the rule-based voices Zvonko (the default), Stojan and Mirsad,
+Laprdus speaks Croatian, Serbian, Bosnian and Slovenian with every one of its voices: the rule-based voices Zvonko (the default), Stojan and Mirsad,
 the recorded voices Josip and Vlado, the presets Detence, Baba and Đedo, and the ten singing voices Orguljaš, Dalmacija Klapa,
 Trubač, Harmonikaš, Sevdalija, Sazlija, Lika Velebit, Solunac, Sarajevo Bembaša and Bećarac.
 The language is a separate setting, with word stress and natural sentence melody in every voice."""),

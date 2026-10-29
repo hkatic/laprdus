@@ -352,6 +352,7 @@ core_sources = [
     'src/formant/formant_phonemes.cpp',
     'src/formant/formant_lexicon.cpp',
     'src/formant/formant_frontend.cpp',
+    'src/formant/formant_slovenian.cpp',
     'src/formant/formant_intonation.cpp',
     'src/formant/formant_synthesizer.cpp',
     'src/c_api/laprdus_api.cpp',
@@ -525,6 +526,7 @@ if target_platform == 'windows':
         'src/formant/formant_phonemes.cpp',
         'src/formant/formant_lexicon.cpp',
         'src/formant/formant_frontend.cpp',
+        'src/formant/formant_slovenian.cpp',
         'src/formant/formant_intonation.cpp',
         'src/formant/formant_synthesizer.cpp',
         # C API for NVDA and other consumers
@@ -604,6 +606,7 @@ if target_platform == 'windows':
             'src/formant/formant_phonemes.cpp',
             'src/formant/formant_lexicon.cpp',
             'src/formant/formant_frontend.cpp',
+            'src/formant/formant_slovenian.cpp',
             'src/formant/formant_intonation.cpp',
             'src/formant/formant_synthesizer.cpp',
             # C API
@@ -730,6 +733,7 @@ if target_platform == 'windows':
         'src/formant/formant_phonemes.cpp',
         'src/formant/formant_lexicon.cpp',
         'src/formant/formant_frontend.cpp',
+        'src/formant/formant_slovenian.cpp',
         'src/formant/formant_intonation.cpp',
         'src/formant/formant_synthesizer.cpp',
         # Config GUI
@@ -997,7 +1001,7 @@ elif target_platform == 'linux':
         if has_explicit_modules:
             config_block = '''
 # BEGIN LAPRDUS TTS
-# LaprdusTTS - Croatian/Serbian Text-to-Speech
+# LaprdusTTS - Croatian/Serbian/Bosnian/Slovenian Text-to-Speech
 AddModule "laprdus" "sd_laprdus" "laprdus.conf"
 LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
@@ -1005,18 +1009,22 @@ LanguageDefaultModule "hr-HR" "laprdus"
 LanguageDefaultModule "sr-RS" "laprdus"
 LanguageDefaultModule "bs" "laprdus"
 LanguageDefaultModule "bs-BA" "laprdus"
+LanguageDefaultModule "sl" "laprdus"
+LanguageDefaultModule "sl-SI" "laprdus"
 # END LAPRDUS TTS
 '''
         else:
             config_block = '''
 # BEGIN LAPRDUS TTS
-# LaprdusTTS - Croatian/Serbian Text-to-Speech
+# LaprdusTTS - Croatian/Serbian/Bosnian/Slovenian Text-to-Speech
 LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"
 LanguageDefaultModule "sr-RS" "laprdus"
 LanguageDefaultModule "bs" "laprdus"
 LanguageDefaultModule "bs-BA" "laprdus"
+LanguageDefaultModule "sl" "laprdus"
+LanguageDefaultModule "sl-SI" "laprdus"
 # END LAPRDUS TTS
 '''
         try:

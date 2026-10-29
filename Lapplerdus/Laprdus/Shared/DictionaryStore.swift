@@ -16,7 +16,7 @@ struct DictionaryEntry: Identifiable, Hashable {
     /// empty) is a "verb" (`ur'e:d=i<p`, `dijel:i`) rather than a "word"
     /// (`kontr'o:l*`, `sign'a:l|a|u|om`).
     var isVerb = false
-    /// Accent lexicon only: "hr", "sr" or "bs" limits the entry to one
+    /// Accent lexicon only: "hr", "sr", "bs" or "sl" limits the entry to one
     /// language; "" is every language.
     var language = ""
 }

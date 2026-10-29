@@ -24,15 +24,15 @@
 /*
  * LaprdusTTS Speech Dispatcher Module
  *
- * This module provides Croatian/Serbian/Bosnian text-to-speech synthesis through
+ * This module provides Croatian/Serbian/Bosnian/Slovenian text-to-speech synthesis through
  * Speech Dispatcher, enabling TTS functionality in applications like Orca,
  * Emacspeak, and other SSIP clients.
  *
  * Features:
- * - Every voice speaks every language (Croatian, Serbian, Bosnian): the
- *   voice list has one entry per voice and language, SET LANGUAGE changes
- *   the language and keeps the voice, SET VOICE MALE1 is Zvonko for all
- *   three languages
+ * - Every voice speaks every language (Croatian, Serbian, Bosnian,
+ *   Slovenian): the voice list has one entry per voice and language, SET
+ *   LANGUAGE changes the language and keeps the voice, SET VOICE MALE1 is
+ *   Zvonko for all four languages
  * - 3 formant voices (Zvonko, the default; Stojan; Mirsad) and ten singing
  *   presets of theirs
  * - 5 recorded voices (Josip, Vlado, Detence, Baba, Đedo)
@@ -216,7 +216,7 @@ static void apply_parameters(void)
  * Build the voice list from the Laprdus API: one SPDVoice per voice and
  * language, since every voice speaks every language. The name is the
  * registry's display name (what Orca shows), the language one of hr-HR,
- * sr-RS, bs-BA, and the variant the voice id, which SET SYNTHESIS_VOICE
+ * sr-RS, bs-BA, sl-SI, and the variant the voice id, which SET SYNTHESIS_VOICE
  * accepts back.
  */
 static void build_voice_list(void)
@@ -511,8 +511,8 @@ int module_set(const char *var, const char *val)
     }
     else if (strcmp(var, "language") == 0) {
         /* Every voice speaks every language: switch the language and keep
-         * the voice. Croatian, Serbian and Bosnian in any spelling (hr,
-         * sr-RS, bs_BA, ...) are accepted; other languages are ignored and
+         * the voice. Croatian, Serbian, Bosnian and Slovenian in any spelling
+         * (hr, sr-RS, bs_BA, sl, ...) are accepted; other languages are ignored and
          * the current language continues. */
         if (strcmp(val, "NULL") == 0 || strlen(val) == 0) {
             return 0;

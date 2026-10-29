@@ -346,6 +346,7 @@ class SettingsScreenAccessibilityTest {
         composeTestRule.setContent {
             LanguageSettingItem(
                 selectedLanguage = "sr",
+                systemLanguage = null,
                 onLanguageSelected = {}
             )
         }
@@ -363,6 +364,7 @@ class SettingsScreenAccessibilityTest {
         composeTestRule.setContent {
             LanguageSettingItem(
                 selectedLanguage = "sr",
+                systemLanguage = null,
                 onLanguageSelected = {}
             )
         }
@@ -376,6 +378,7 @@ class SettingsScreenAccessibilityTest {
         composeTestRule.setContent {
             LanguageSettingItem(
                 selectedLanguage = "hr",
+                systemLanguage = null,
                 onLanguageSelected = {}
             )
         }

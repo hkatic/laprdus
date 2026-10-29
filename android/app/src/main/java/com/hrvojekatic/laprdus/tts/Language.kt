@@ -5,17 +5,18 @@ import java.util.Locale
 /**
  * The languages Laprdus speaks. Every voice speaks every one of them; the
  * language (letter-to-sound rules, accent lexicon, letter names, number
- * words) is chosen separately from the voice, as a short code: "hr", "sr"
- * or "bs". These codes are what the settings store and the engine's
+ * words) is chosen separately from the voice, as a short code: "hr", "sr",
+ * "bs" or "sl". These codes are what the settings store and the engine's
  * [LaprdusTTS.setLanguage] take.
  */
 object Language {
     const val CROATIAN = "hr"
     const val SERBIAN = "sr"
     const val BOSNIAN = "bs"
+    const val SLOVENIAN = "sl"
 
     /** Every language, in the engine's order. */
-    val ALL: List<String> = listOf(CROATIAN, SERBIAN, BOSNIAN)
+    val ALL: List<String> = listOf(CROATIAN, SERBIAN, BOSNIAN, SLOVENIAN)
 
     /** The language spoken when nothing else is asked for. */
     const val DEFAULT = CROATIAN
@@ -24,7 +25,7 @@ object Language {
      * The short code of a language tag or name, or null for any other
      * language: "hr", "hr-HR", "hr_HR", "hrv" (the ISO3 code the Android
      * framework passes on the engine boundary), "sr-Latn-RS", "srp", "bs",
-     * "bos", "Croatian", "hrvatski", in any case. Only the first subtag counts.
+     * "bos", "sl", "slv", "Croatian", "hrvatski", "Slovenian", in any case. Only the first subtag counts.
      */
     fun fromTag(tag: String?): String? {
         if (tag.isNullOrBlank()) return null
@@ -33,17 +34,19 @@ object Language {
             "hr", "hrv", "croatian", "hrvatski" -> CROATIAN
             "sr", "srp", "serbian", "srpski" -> SERBIAN
             "bs", "bos", "bosnian", "bosanski" -> BOSNIAN
+            "sl", "slv", "slovenian", "slovene", "slovenščina", "slovenscina", "slovenski" -> SLOVENIAN
             else -> null
         }
     }
 
-    /** Whether [code] is one of the three short codes. */
+    /** Whether [code] is one of the four short codes. */
     fun isValid(code: String?): Boolean = code in ALL
 
-    /** The BCP-47 tag of a language: "hr-HR", "sr-RS", "bs-BA". */
+    /** The BCP-47 tag of a language: "hr-HR", "sr-RS", "bs-BA", "sl-SI". */
     fun bcp47(code: String): String = when (code) {
         SERBIAN -> "sr-RS"
         BOSNIAN -> "bs-BA"
+        SLOVENIAN -> "sl-SI"
         else -> "hr-HR"
     }
 
@@ -57,6 +60,7 @@ object Language {
     fun iso3(code: String): Array<String> = when (code) {
         SERBIAN -> arrayOf("srp", "SRB", "")
         BOSNIAN -> arrayOf("bos", "BIH", "")
+        SLOVENIAN -> arrayOf("slv", "SVN", "")
         else -> arrayOf("hrv", "HRV", "")
     }
 
@@ -66,4 +70,20 @@ object Language {
      */
     fun deviceDefault(locale: Locale = Locale.getDefault()): String =
         fromTag(locale.language) ?: DEFAULT
+
+    /** The language of the device when Laprdus speaks it, else null. */
+    fun deviceLanguage(locale: Locale = Locale.getDefault()): String? = fromTag(locale.language)
+
+    /**
+     * The language spoken when no app asks for one (the in-app Speak button,
+     * a request without a locale): the system language when Laprdus speaks
+     * it, unless "Force language" is on, which makes the chosen language
+     * speak everywhere. An unsupported system language falls back to the
+     * chosen one.
+     */
+    fun effective(forceLanguage: Boolean, chosen: String, locale: Locale = Locale.getDefault()): String {
+        val wanted = fromTag(chosen) ?: DEFAULT
+        if (forceLanguage) return wanted
+        return deviceLanguage(locale) ?: wanted
+    }
 }

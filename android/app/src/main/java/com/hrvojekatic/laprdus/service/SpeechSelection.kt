@@ -2,6 +2,7 @@ package com.hrvojekatic.laprdus.service
 
 import com.hrvojekatic.laprdus.tts.Language
 import com.hrvojekatic.laprdus.tts.VoiceInfo
+import java.util.Locale
 
 /**
  * Which voice and which language the speech service speaks with.
@@ -57,23 +58,28 @@ class SpeechSelection(
     }
 
     /**
-     * The language to speak a request with: the request's own locale (an
-     * app that set none gets the last requested language), unless the
-     * language is forced, in which case the Laprdus setting.
+     * The language to speak a request with: its own supported locale, else
+     * the current system language (or the saved language if unsupported).
+     * Never borrow another client's last language for an unspecified request.
+     * Forcing the language overrides all of these with the Laprdus setting.
      */
-    fun languageFor(requestTag: String?, forceLanguage: Boolean, forcedLanguage: String): String {
-        if (forceLanguage) return Language.fromTag(forcedLanguage) ?: Language.DEFAULT
-        return Language.fromTag(requestTag) ?: requestedLanguage
+    fun languageFor(
+        requestTag: String?, forceLanguage: Boolean, forcedLanguage: String,
+        locale: Locale = Locale.getDefault()
+    ): String {
+        if (!forceLanguage) Language.fromTag(requestTag)?.let { return it }
+        return Language.effective(forceLanguage, forcedLanguage, locale)
     }
 
     /** The language reported to the system (onGetLanguage). */
     fun currentLanguage(forceLanguage: Boolean, forcedLanguage: String): String =
-        languageFor(null, forceLanguage, forcedLanguage)
+        if (forceLanguage) Language.fromTag(forcedLanguage) ?: Language.DEFAULT else requestedLanguage
 
     /**
      * The default system voice of a language (onGetDefaultVoiceNameFor): the
-     * configured voice in that language, in Croatian for any other language.
+     * configured voice in that language, or in the effective language when
+     * the requested language is unsupported.
      */
-    fun defaultVoiceNameFor(tag: String?): String =
-        VoiceName(voiceId, Language.fromTag(tag) ?: Language.DEFAULT).name
+    fun defaultVoiceNameFor(tag: String?, fallbackLanguage: String = Language.deviceDefault()): String =
+        VoiceName(voiceId, Language.fromTag(tag) ?: Language.fromTag(fallbackLanguage) ?: Language.DEFAULT).name
 }

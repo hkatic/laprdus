@@ -10,6 +10,8 @@ import com.hrvojekatic.laprdus.audio.AudioPlayer
 import com.hrvojekatic.laprdus.data.DictionaryRepository
 import com.hrvojekatic.laprdus.data.SettingsRepository
 import com.hrvojekatic.laprdus.tts.Language
+import com.hrvojekatic.laprdus.tts.SystemLanguage
+import com.hrvojekatic.laprdus.tts.SpeechSamples
 import com.hrvojekatic.laprdus.tts.LaprdusTTS
 import com.hrvojekatic.laprdus.tts.VoiceInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -33,9 +35,13 @@ import javax.inject.Inject
 data class TTSUiState(
     val isInitialized: Boolean = false,
     val isPlaying: Boolean = false,
-    val inputText: String = "Dobar dan. Ja sam Laprdus, rođen sam 2026. godine, i drago mi je da se možemo upoznati! 😁\nKako si ti? ❤\n",
+    val inputText: String = "",
     val selectedVoiceId: String = SettingsRepository.DEFAULT_VOICE,
-    /** The language the preview speaks ("hr", "sr" or "bs"), from the settings. */
+    /**
+     * The language the preview speaks ("hr", "sr", "bs" or "sl"): the system
+     * language when Laprdus speaks it, the chosen one when the language is
+     * forced or the system language is not spoken (Language.effective).
+     */
     val language: String = SettingsRepository.DEFAULT_LANGUAGE,
     val availableVoices: List<VoiceInfo> = emptyList(),
     val speed: Float = 1.0f,
@@ -76,6 +82,7 @@ class TTSViewModel @Inject constructor(
     val uiState: StateFlow<TTSUiState> = _uiState.asStateFlow()
 
     private var playbackJob: Job? = null
+    private var inputTextEdited = false
 
     // Flag to ensure we only check default TTS once per app session
     // This prevents the dialog from showing when returning from Settings or on config changes
@@ -111,8 +118,9 @@ class TTSViewModel @Inject constructor(
 
             // Apply advanced settings
             tts.applySettings(savedSettings)
-            // The chosen language, whatever the voice
-            tts.setLanguage(savedSettings.language)
+            // The language, whatever the voice: the system's unless forced
+            val language = Language.effective(savedSettings.forceLanguage, savedSettings.language, SystemLanguage.locale(context))
+            tts.setLanguage(language)
 
             // If voice changed, reload it (unless the settings screen already
             // loaded it into this engine)
@@ -133,7 +141,8 @@ class TTSViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     selectedVoiceId = savedSettings.defaultVoice,
-                    language = savedSettings.language,
+                    inputText = if (inputTextEdited) it.inputText else SpeechSamples.preview(context, language),
+                    language = language,
                     speed = savedSettings.speed,
                     pitch = savedSettings.pitch,
                     volume = savedSettings.volume
@@ -170,7 +179,8 @@ class TTSViewModel @Inject constructor(
             // decides what setVoice() loads on top of the bundled dictionaries.
             tts.applySettings(savedSettings)
             // The language sticks across voice loads
-            tts.setLanguage(savedSettings.language)
+            val language = Language.effective(savedSettings.forceLanguage, savedSettings.language, SystemLanguage.locale(context))
+            tts.setLanguage(language)
 
             // Initialize TTS with default voice using setVoice()
             // This ensures proper loading of voice data AND dictionaries
@@ -191,7 +201,8 @@ class TTSViewModel @Inject constructor(
                         isLoading = false,
                         availableVoices = voices,
                         selectedVoiceId = defaultVoiceId,
-                        language = savedSettings.language,
+                        inputText = if (inputTextEdited) it.inputText else SpeechSamples.preview(context, language),
+                        language = language,
                         speed = savedSettings.speed,
                         pitch = savedSettings.pitch,
                         volume = savedSettings.volume
@@ -210,7 +221,8 @@ class TTSViewModel @Inject constructor(
                         isLoading = false,
                         availableVoices = voices,
                         selectedVoiceId = defaultVoiceId,
-                        language = savedSettings.language,
+                        inputText = if (inputTextEdited) it.inputText else SpeechSamples.preview(context, language),
+                        language = language,
                         speed = savedSettings.speed,
                         pitch = savedSettings.pitch,
                         volume = savedSettings.volume,
@@ -243,6 +255,7 @@ class TTSViewModel @Inject constructor(
      * Update the input text
      */
     fun updateInputText(text: String) {
+        inputTextEdited = true
         _uiState.update { it.copy(inputText = text) }
     }
 
@@ -276,13 +289,13 @@ class TTSViewModel @Inject constructor(
     }
 
     /**
-     * Choose the language of the preview (and of the settings), persisting it.
-     * The voice stays: every voice speaks every language.
+     * Choose the language setting, persisting it. The voice stays: every
+     * voice speaks every language. The preview follows the settings
+     * observer, which speaks the chosen language only when it is forced or
+     * the system language is not one Laprdus speaks.
      */
     fun selectLanguage(language: String) {
         if (!Language.isValid(language)) return
-        tts.setLanguage(language)
-        _uiState.update { it.copy(language = language) }
         viewModelScope.launch {
             settings.setLanguage(language)
         }
@@ -357,13 +370,19 @@ class TTSViewModel @Inject constructor(
                 // The app's screens share this engine (the settings sliders set
                 // it as they move): the preview speaks with the saved settings.
                 val state = _uiState.value
+                val savedSettings = settings.readSettingsNow()
+                val language = Language.effective(
+                    savedSettings.forceLanguage, savedSettings.language, SystemLanguage.locale(context)
+                )
+                val spokenText = if (inputTextEdited) text else SpeechSamples.preview(context, language)
+                _uiState.update { it.copy(language = language, inputText = spokenText) }
                 val samples = withContext(Dispatchers.Default) {
                     tts.exclusive {
-                        tts.setLanguage(state.language)
+                        tts.setLanguage(language)
                         tts.speed = state.speed
                         tts.pitch = state.pitch
                         tts.volume = state.volume
-                        tts.synthesize(text)
+                        tts.synthesize(spokenText)
                     }
                 }
 

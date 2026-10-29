@@ -1707,3 +1707,124 @@ TEST_CASE("Collected accent corrections respect explicit and user choices", "[fr
     REQUIRE(nuclei(read(Frontend(VoiceLanguage::Serbian), U"mnom"))[0].is_long);
     REQUIRE(nuclei(read(Frontend(VoiceLanguage::Bosnian), U"mnom"))[0].is_long);
 }
+
+// =============================================================================
+// Slovenian
+// =============================================================================
+
+namespace {
+
+std::string phones_of(const Utterance& utterance) {
+    static const char* const NAMES[] = {
+        "_", "a", "e", "i", "o", "u", "@", "E", "O", "é", "ó", "ə", "w", "j", "v", "l", "lj",
+        "m", "n", "nj", "ŋ", "r", "p", "b", "t", "d", "k", "g", "c", "dz", "č", "dž", "ć", "đ",
+        "f", "s", "z", "š", "ž", "ś", "ź", "h", "ɣ"};
+    std::string out;
+    int word = -1;
+    for (const auto& phone : utterance.phones) {
+        if (phone.word != word) {
+            if (word >= 0) out += " ";
+            word = phone.word;
+        }
+        if (phone.nucleus && phone.stressed) out += "'";
+        out += NAMES[static_cast<size_t>(phone.ph)];
+        if (phone.nucleus && phone.is_long) out += ":";
+    }
+    return out;
+}
+
+} // namespace
+
+TEST_CASE("Slovenian letters become the sounds of the Pravopis", "[frontend][slovenian]") {
+    Frontend frontend(VoiceLanguage::Slovenian);
+    struct Case { const char32_t* text; const char* phones; };
+    const Case cases[] = {
+        // Open and close e, o, the schwa and the final devoicing, from the lexicon
+        {U"mesto", "m'é:stO"},
+        {U"človek", "čl'O:vEk"},
+        {U"človeka", "čl'O:vEka"},
+        {U"otrok", "Otr'Ok"},
+        {U"otroka", "Otr'ó:ka"},
+        {U"veter", "v'é:tər"},
+        {U"vetra", "v'é:tra"},
+        {U"pes", "p'əs"},
+        {U"grad", "gr'a:t"},
+        // l: [w] in participles, after a schwa and in the listed words, [l] otherwise
+        {U"bil", "b'i:w"},
+        {U"delal", "d'é:law"},
+        {U"delala", "d'é:lala"},
+        {U"rekel", "r'é:kəw"},
+        {U"stol", "st'Ow"},
+        {U"volk", "v'O:wk"},
+        {U"kultura", "kult'u:ra"},
+        {U"film", "f'i:lm"},
+        {U"polje", "p'ó:ljE"},
+        {U"konj", "k'On"},
+        // v: [v] before a vowel, [w] before a consonant and at the end, [u] at the head
+        {U"voda", "v'O:da"},
+        {U"nov", "n'O:w"},
+        {U"avto", "'a:wtO"},
+        {U"vlak", "wl'a:k"},
+        {U"vsak", "us'a:k"},
+        {U"vrt", "v'ərt"},
+        // Syllabic r, i before a vowel
+        {U"prst", "p'ərst"},
+        {U"Trst", "t'ərst"},
+        {U"pacient", "pacij'Ent"},
+        // Compound numerals and the words of the number converter
+        {U"enaindvajset", "Enaindv'a:jsEt"},
+        {U"tisoč", "t'i:sOč"},
+        {U"milijonov", "milij'ó:nOw"},
+    };
+    for (const Case& c : cases) {
+        DYNAMIC_SECTION(PhonemeMapper::utf32_to_utf8(c.text)) {
+            REQUIRE(phones_of(read(frontend, c.text)) == c.phones);
+        }
+    }
+}
+
+TEST_CASE("Slovenian clitics, sandhi and clause types", "[frontend][slovenian]") {
+    Frontend frontend(VoiceLanguage::Slovenian);
+    // Proclitics and enclitics lose their stress and length; v before a
+    // consonant is the vowel u; the final d of a preposition stays voiced
+    REQUIRE(phones_of(read(frontend, U"Bil sem v šoli")) == "b'i:w səm u š'ó:li");
+    REQUIRE(phones_of(read(frontend, U"v Ameriki")) == "w am'é:riki");
+    REQUIRE(phones_of(read(frontend, U"od orača")) == "Od Or'a:ča");
+    // Regressive voicing assimilation across a clitic boundary and inside a word
+    REQUIRE(phones_of(read(frontend, U"k bratu")) == "g br'a:tu");
+    REQUIRE(phones_of(read(frontend, U"s časom")) == "š č'a:sOm");
+    REQUIRE(phones_of(read(frontend, U"kdo")) == "gd'ó:");
+    // An acronym is stressed on its last letter
+    REQUIRE(phones_of(read(frontend, U"SP")) == "Esp'é:");
+    // Clause types: a question word, a yes/no question, an exclamation
+    REQUIRE(frontend.process(U"Kdo je to", Punctuation::QUESTION).kind == ClauseKind::WhQuestion);
+    REQUIRE(frontend.process(U"Ali greš domov", Punctuation::QUESTION).kind == ClauseKind::YesNoQuestion);
+    REQUIRE(frontend.process(U"Pojdi", Punctuation::EXCLAMATION).kind == ClauseKind::Exclamation);
+    // Every Slovenian word has the plain accent, never a tone
+    for (const auto& phone : read(frontend, U"Dober dan, kako ste").phones) {
+        if (phone.stressed) REQUIRE(phone.accent == Accent::Neutral);
+    }
+}
+
+TEST_CASE("Slovenian accents written in the text and in the user's lexicon win", "[frontend][slovenian]") {
+    Frontend frontend(VoiceLanguage::Slovenian);
+    // Dictionary marks typed in the text: acute = long close, circumflex =
+    // long open, grave = short
+    REQUIRE(phones_of(read(frontend, U"mésto")) == "m'é:stO");
+    REQUIRE(phones_of(read(frontend, U"mêsto")) == "m'E:stO");
+    REQUIRE(phones_of(read(frontend, U"mèsto")) == "m'EstO");
+    REQUIRE(phones_of(read(frontend, U"mestó")) == "mEst'ó:");
+    // A word the lexicon does not know: the second-last syllable, long and close
+    REQUIRE(phones_of(read(frontend, U"bruhoberko")) == "bruhOb'é:rkO");
+    // The user's entries, in the Slovenian notation, before the built-in ones
+    frontend.set_user_lexicon(UserLexicon::parse(
+        R"({"entries":[{"word":"bruhobêrk*","language":"sl"},{"word":"mestó","language":"sl"},{"word":"p'əs","language":"sl"}]})"));
+    REQUIRE(phones_of(read(frontend, U"bruhoberko")) == "bruhOb'E:rkO");
+    REQUIRE(phones_of(read(frontend, U"bruhoberkom")) == "bruhOb'E:rkOm");
+    REQUIRE(phones_of(read(frontend, U"mesto")) == "mEst'ó:");
+    // A malformed entry is counted and skipped
+    UserLexicon::Report report;
+    UserLexicon::parse(R"({"entries":[{"word":"mesto","language":"sl"},{"verb":"ur'e:d=i","language":"sl"}]})", &report);
+    REQUIRE(report.rejected == 2);
+    REQUIRE(report.words == 0);
+}

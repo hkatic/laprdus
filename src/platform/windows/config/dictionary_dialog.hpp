@@ -30,7 +30,7 @@ enum class DictionaryType {
  * An entry of the accent lexicon (accents.json) keeps its text (a word, a
  * stem or a paradigm in the notation of the built-in lexicon, or a verb) in
  * grapheme, with phoneme empty; verb tells which of the two JSON keys it is
- * saved under, and language ("hr", "sr", "bs" or "" for every language)
+ * saved under, and language ("hr", "sr", "bs", "sl" or "" for every language)
  * limits it to one language.
  */
 struct UserDictionaryEntry {
@@ -40,7 +40,7 @@ struct UserDictionaryEntry {
     bool caseSensitive = false; // Case-sensitive matching
     bool wholeWord = true;      // Whole word matching only
     bool verb = false;          // Accent lexicon: a "verb" entry, not a "word"
-    std::wstring language;      // Accent lexicon: "hr", "sr", "bs" or "" (all)
+    std::wstring language;      // Accent lexicon: "hr", "sr", "bs", "sl" or "" (all)
 };
 
 /**

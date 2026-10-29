@@ -175,6 +175,7 @@ CroatianNumbers::Dialect TTSEngine::number_dialect(VoiceLanguage language) {
     switch (language) {
         case VoiceLanguage::Serbian: return CroatianNumbers::Dialect::Serbian;
         case VoiceLanguage::Bosnian: return CroatianNumbers::Dialect::Bosnian;
+        case VoiceLanguage::Slovenian: return CroatianNumbers::Dialect::Slovenian;
         case VoiceLanguage::Croatian:
         default: return CroatianNumbers::Dialect::Croatian;
     }
@@ -709,6 +710,11 @@ SynthesisResult TTSEngine::spell_character(const std::string& character) {
         }
     } else if (user) {
         text = *user;
+    } else if (const char* name = current_language() == VoiceLanguage::Slovenian
+                   ? formant::slovenian::spelled_name(character) : nullptr) {
+        // The bundled spelling dictionary has Croatian names. Slovenian
+        // names take precedence, while the user's own entries still win.
+        text = name;
     } else if (const std::string* bundled = m_impl->spelling_dictionary.find(character)) {
         text = *bundled;
     } else {

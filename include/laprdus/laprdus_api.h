@@ -81,8 +81,8 @@ typedef struct LaprdusVoiceParams {
 typedef struct LaprdusVoiceInfo {
     const char* id;              // Internal ID, plain ASCII: "josip", "djedo", "lika_velebit"
     const char* display_name;    // Name shown to the user: "Josip", "Đedo", "Dalmacija Klapa"
-    const char* language_code;   // Native language: "hr-HR", "sr-RS" or "bs-BA" (every voice speaks all three; see laprdus_set_language)
-    uint16_t language_lcid;      // Windows LCID of the native language: 0x041A, 0x081A or 0x141A
+    const char* language_code;   // Native language: "hr-HR", "sr-RS", "bs-BA" or "sl-SI" (every voice speaks all four; see laprdus_set_language)
+    uint16_t language_lcid;      // Windows LCID of the native language: 0x041A, 0x081A, 0x141A or 0x0424
     const char* gender;          // "Male" or "Female"
     const char* age;             // "Child", "Adult", or "Senior"
     float base_pitch;            // Base pitch multiplier (1.0 for normal)
@@ -95,11 +95,11 @@ typedef struct LaprdusVoiceInfo {
 // =============================================================================
 
 typedef struct LaprdusLanguageInfo {
-    const char* code;            // "hr-HR", "sr-RS", "bs-BA"
-    const char* short_code;      // "hr", "sr", "bs"
-    uint16_t lcid;               // Windows LCID: 0x041A, 0x081A, 0x141A
-    const char* english_name;    // "Croatian", "Serbian", "Bosnian"
-    const char* native_name;     // "Hrvatski", "Srpski", "Bosanski"
+    const char* code;            // "hr-HR", "sr-RS", "bs-BA", "sl-SI"
+    const char* short_code;      // "hr", "sr", "bs", "sl"
+    uint16_t lcid;               // Windows LCID: 0x041A, 0x081A, 0x141A, 0x0424
+    const char* english_name;    // "Croatian", "Serbian", "Bosnian", "Slovenian"
+    const char* native_name;     // "Hrvatski", "Srpski", "Bosanski", "Slovenščina"
 } LaprdusLanguageInfo;
 
 // =============================================================================
@@ -408,19 +408,19 @@ LAPRDUS_API const char* LAPRDUS_CALL laprdus_get_default_voice(void);
 //
 // Every voice speaks every language. The language chooses the text front
 // end (letter-to-sound rules, accent lexicon, letter names) and the number
-// words (tisuća / hiljada); the voice chooses the sound. A voice speaks
+// words (tisuća / hiljada / tisoč); the voice chooses the sound. A voice speaks
 // its native language (LaprdusVoiceInfo.language_code) until
 // laprdus_set_language() asks for another; the chosen language then stays
 // across laprdus_set_voice() calls.
 
 /**
- * Number of languages (3: Croatian, Serbian, Bosnian).
+ * Number of languages (4: Croatian, Serbian, Bosnian, Slovenian).
  */
 LAPRDUS_API uint32_t LAPRDUS_CALL laprdus_get_language_count(void);
 
 /**
  * Information about a language by index (0 = Croatian, 1 = Serbian,
- * 2 = Bosnian).
+ * 2 = Bosnian, 3 = Slovenian).
  * @param index Language index (0 to count-1).
  * @param out_info Pointer to receive the language information.
  * @return LAPRDUS_OK on success, error code on failure.
@@ -436,7 +436,8 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_get_language_info(
  * @param handle Engine handle.
  * @param language Language tag or name, in any case: "hr", "hr-HR",
  *        "hr_HR", "hrv", "sr", "sr-Latn-RS", "srp", "bs", "bs-BA", "bos",
- *        "Croatian", "hrvatski", ... NULL or "" returns to the voice's
+ *        "sl", "sl-SI", "slv", "Croatian", "hrvatski", "Slovenian",
+ *        "slovenščina", ... NULL or "" returns to the voice's
  *        native language, now and after every later voice change.
  * @return LAPRDUS_OK, or LAPRDUS_ERROR_INVALID_PARAMETER for an unknown tag.
  */
@@ -446,7 +447,7 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_language(
 );
 
 /**
- * Language spoken at the moment, as "hr-HR", "sr-RS" or "bs-BA".
+ * Language spoken at the moment, as "hr-HR", "sr-RS", "bs-BA" or "sl-SI".
  * @param handle Engine handle.
  * @return Language code, or NULL for an invalid handle.
  */
@@ -802,7 +803,8 @@ LAPRDUS_API void LAPRDUS_CALL laprdus_clear_emoji_dictionary(LaprdusHandle handl
  *   { "entries": [ { "word": "kontr'o:l*" }, { "word": "sign'a:l|a|u|om" },
  *                  { "verb": "ur'e:d=i<p" }, { "verb": "dijel:i", "language": "hr" } ] }
  * "word" is a word, a stem (*) or a paradigm (|); "verb" a whole stem or a
- * root with a long ije; "language" (hr, sr, bs) limits an entry to one language (laprdus_set_language).
+ * root with a long ije; "language" (hr, sr, bs, sl) limits an entry to one language (laprdus_set_language).
+ * A Slovenian "word" is written in the notation of the Slovenian lexicon (mésto, člôvek, p'əs, d'é:la*).
  * Only the formant voices (Zvonko, Stojan, Mirsad and the singing presets)
  * use it; it is kept across voice changes. The file is parsed once; a bad
  * entry is skipped, and laprdus_get_accent_lexicon_report() tells what was

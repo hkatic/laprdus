@@ -21,6 +21,7 @@ import com.hrvojekatic.laprdus.data.migration.MigrationResult
 import com.hrvojekatic.laprdus.data.migration.SimulatedMigrationCrashException
 import com.hrvojekatic.laprdus.data.storage.LaprdusStorage
 import com.hrvojekatic.laprdus.tts.Language
+import com.hrvojekatic.laprdus.tts.SystemLanguage
 import com.hrvojekatic.laprdus.tts.LaprdusTTS
 import com.hrvojekatic.laprdus.tts.VoiceInfo
 import kotlinx.coroutines.CancellationException
@@ -40,7 +41,7 @@ import java.text.BreakIterator
 
 /**
  * Android TextToSpeechService implementation for system-wide TTS.
- * Speaks Croatian (hr-HR), Serbian (sr-RS) and Bosnian (bs-BA) with every
+ * Speaks Croatian (hr-HR), Serbian (sr-RS), Bosnian (bs-BA) and Slovenian (sl-SI) with every
  * voice: the system sees one voice per (voice x language), named
  * `<id>-<language>` (`zvonko-hr`, `djedo-sr`, `lika_velebit-bs`).
  *
@@ -88,7 +89,7 @@ class LaprdusTTSService : TextToSpeechService() {
     private var tts: LaprdusTTS? = null
 
     /** The configured voice and the language apps asked for. */
-    private val selection = SpeechSelection(FALLBACK_VOICE, Language.deviceDefault())
+    private val selection = SpeechSelection(FALLBACK_VOICE)
 
     /** The configured voice (canonical id); what the engine should have loaded. */
     private var currentVoiceId: String
@@ -142,6 +143,9 @@ class LaprdusTTSService : TextToSpeechService() {
         val startupSettings = readSettingsBlocking()
         cachedSettings = startupSettings
         currentVoiceId = startupSettings.defaultVoice
+        selection.requestLanguage(Language.effective(
+            startupSettings.forceLanguage, startupSettings.language, SystemLanguage.locale(this)
+        ))
         // Every voice the engine loads gets the user dictionaries from here.
         engine.userDictionaryDir = dictionaryDir
         applyEngineSettings(startupSettings)
@@ -472,10 +476,10 @@ class LaprdusTTSService : TextToSpeechService() {
 
     /**
      * Check if a language is supported.
-     * Supports Croatian (hr), Serbian (sr) and Bosnian (bs).
+     * Supports Croatian (hr), Serbian (sr), Bosnian (bs) and Slovenian (sl).
      *
      * The Android framework passes ISO3 codes on this boundary ("hrv"/"HRV",
-     * "srp"/"SRB", "bos"/"BIH"), while apps may pass ISO2 ("hr"/"HR"), so both
+     * "srp"/"SRB", "bos"/"BIH", "slv"/"SVN"), while apps may pass ISO2 ("hr"/"HR"), so both
      * are accepted.
      *
      * For any other language this deliberately still reports LANG_AVAILABLE
@@ -506,6 +510,13 @@ class LaprdusTTSService : TextToSpeechService() {
             }
             "bs", "bos" -> {
                 if (normalizedCountry == "ba" || normalizedCountry == "bih") {
+                    TextToSpeech.LANG_COUNTRY_AVAILABLE
+                } else {
+                    TextToSpeech.LANG_AVAILABLE
+                }
+            }
+            "sl", "slv" -> {
+                if (normalizedCountry == "si" || normalizedCountry == "svn") {
                     TextToSpeech.LANG_COUNTRY_AVAILABLE
                 } else {
                     TextToSpeech.LANG_AVAILABLE
@@ -564,7 +575,7 @@ class LaprdusTTSService : TextToSpeechService() {
 
     /**
      * Get all available voices: every Laprdus voice in every language,
-     * named `<id>-<language>` with that language's locale (54 in all).
+     * named `<id>-<language>` with that language's locale (72 in all).
      */
     override fun onGetVoices(): List<Voice> {
         val voices = mutableListOf<Voice>()
@@ -640,14 +651,17 @@ class LaprdusTTSService : TextToSpeechService() {
 
     /**
      * Get the default voice name for a language: the configured voice in
-     * that language (`<voice>-hr` for a language Laprdus does not speak).
+     * that language (the effective language for one Laprdus does not speak).
      */
     override fun onGetDefaultVoiceNameFor(
         lang: String,
         country: String?,
         variant: String?
     ): String {
-        return selection.defaultVoiceNameFor(lang)
+        val settings = cachedSettings ?: SettingsRepository.TTSSettings()
+        return selection.defaultVoiceNameFor(
+            lang, Language.effective(settings.forceLanguage, settings.language, SystemLanguage.locale(this))
+        )
     }
 
     /**
@@ -753,7 +767,7 @@ class LaprdusTTSService : TextToSpeechService() {
                 // The language: the request's locale, or the Laprdus setting
                 // when the language is forced. Every voice speaks every one.
                 val language = selection.languageFor(
-                    request.language, settings.forceLanguage, settings.language
+                    request.language, settings.forceLanguage, settings.language, SystemLanguage.locale(this)
                 )
                 engine.setLanguage(language)
 

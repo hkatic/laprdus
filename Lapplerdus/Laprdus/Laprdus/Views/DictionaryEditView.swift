@@ -170,6 +170,7 @@ struct DictionaryEditView: View {
                 Text("Croatian").tag("hr")
                 Text("Serbian").tag("sr")
                 Text("Bosnian").tag("bs")
+                Text("Slovenian").tag("sl")
             }
             LabeledField(label: String(localized: "Comment (optional)"), isMissing: false) {
                 TextField("", text: $comment, axis: .vertical)

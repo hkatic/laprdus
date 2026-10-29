@@ -80,10 +80,10 @@ class LaprdusTTSEngineEndToEndTest {
         val voices = engine.voices
         assertNotNull("getVoices() must not fail for the connected engine", voices)
         val names = voices!!.map { it.name }
-        // One system voice per (voice x language): 18 voices in hr, sr and bs
-        assertEquals("54 system voices expected, got $names", 54, names.size)
+        // One system voice per (voice x language): 18 voices in hr, sr, bs and sl
+        assertEquals("72 system voices expected, got $names", 72, names.size)
         for (id in VOICE_IDS) {
-            for (language in listOf("hr", "sr", "bs")) {
+            for (language in listOf("hr", "sr", "bs", "sl")) {
                 assertTrue("voice '$id-$language' missing from $names", names.contains("$id-$language"))
             }
         }

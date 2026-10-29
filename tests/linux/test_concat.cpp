@@ -22,6 +22,15 @@
 #include <laprdus/laprdus_api.h>
 #include "spelling_checks.hpp"
 
+TEST_CASE("Recorded Slovenian spelling uses Slovenian names", "[concat][spelling]") {
+    const char* data = std::getenv("LAPRDUS_DATA");
+    if (!data || !*data) return;
+    LaprdusHandle engine = laprdus_create();
+    REQUIRE(laprdus_set_voice(engine, "josip", data) == LAPRDUS_OK);
+    check_slovenian_spelling(engine);
+    laprdus_destroy(engine);
+}
+
 namespace {
 
 const char* data_dir() {

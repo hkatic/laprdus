@@ -559,9 +559,9 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetVoice(
 
 /**
  * Chooses the language every voice speaks from now on: "hr", "sr", "bs",
- * "hr-HR", "hrv", "srp", "bos", "Croatian", ... (see parse_voice_language).
+ * "hr-HR", "hrv", "srp", "bos", "sl", "slv", "Croatian", ... (see parse_voice_language).
  * Null or an empty tag goes back to each voice's native language. Returns
- * false for a tag that is not one of the three languages.
+ * false for a tag that is not one of the four languages.
  */
 JNIEXPORT jboolean JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetLanguage(
@@ -597,7 +597,7 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetLanguage(
 }
 
 /**
- * The language spoken now, as "hr-HR", "sr-RS" or "bs-BA": the chosen one,
+ * The language spoken now, as "hr-HR", "sr-RS", "bs-BA" or "sl-SI": the chosen one,
  * else the loaded voice's native one, else Croatian.
  */
 JNIEXPORT jstring JNICALL

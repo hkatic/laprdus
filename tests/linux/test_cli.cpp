@@ -118,12 +118,13 @@ TEST_CASE("CLI lists voices with -l", "[cli][voices]") {
     REQUIRE(output.find("hr-HR") != std::string::npos);
     REQUIRE(output.find("sr-RS") != std::string::npos);
     REQUIRE(output.find("bs-BA") != std::string::npos);
+    // No voice is natively Slovenian: the language is chosen with -L
     // Display names from the registry, UTF-8
     REQUIRE(output.find("\xC4\x90" "edo") != std::string::npos);
     REQUIRE(output.find("Dalmacija Klapa") != std::string::npos);
     // ... and the note that the language is chosen apart from the voice
     REQUIRE(output.find("Every voice speaks every language") != std::string::npos);
-    REQUIRE(output.find("-L hr|sr|bs") != std::string::npos);
+    REQUIRE(output.find("-L hr|sr|bs|sl") != std::string::npos);
     // --list is the same listing; -L is the language now
     auto [list_code, list_output] = run_cli("--list");
     REQUIRE(list_code == 0);
@@ -135,7 +136,7 @@ TEST_CASE("CLI chooses the language with -L", "[cli][language]") {
     std::remove(output_file);
 
     SECTION("Every language with the default voice") {
-        for (const char* language : {"hr", "sr", "bs", "sr-RS", "HR_HR", "bos"}) {
+        for (const char* language : {"hr", "sr", "bs", "sl", "sr-RS", "HR_HR", "bos", "slv", "sl-SI"}) {
             CAPTURE(language);
             auto [exit_code, output] = run_cli(std::string("-L ") + language +
                                                " -o " + output_file + " \"1000\"");
@@ -156,6 +157,9 @@ TEST_CASE("CLI chooses the language with -L", "[cli][language]") {
         // tisuću and hiljadu differ; Vlado's native language is Serbian
         REQUIRE(croatian != serbian);
         REQUIRE(file_size(output_file) == serbian);
+        auto [sl_code, sl_output] = run_cli(std::string("-v vlado -L sl -o ") + output_file + " \"1000\"");
+        REQUIRE(sl_code == 0);
+        REQUIRE(file_size(output_file) != serbian);       // tisoč
     }
 
     SECTION("Verbose output names the language in use") {
@@ -382,7 +386,7 @@ TEST_CASE("C API lists voices", "[api]") {
     REQUIRE(info.language_code != nullptr);
 
     REQUIRE(std::string(laprdus_get_default_voice()) == "zvonko");
-    REQUIRE(laprdus_get_language_count() == 3);
+    REQUIRE(laprdus_get_language_count() == 4);
 }
 
 TEST_CASE("C API initializes with voice", "[api]") {

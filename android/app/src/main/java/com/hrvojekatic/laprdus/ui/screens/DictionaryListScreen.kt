@@ -397,6 +397,7 @@ internal fun accentLanguageName(code: String): String = when (code) {
     "hr" -> stringResource(R.string.language_croatian)
     "sr" -> stringResource(R.string.language_serbian)
     "bs" -> stringResource(R.string.language_bosnian)
+    "sl" -> stringResource(R.string.language_slovenian)
     "" -> stringResource(R.string.dict_accent_language_all)
     else -> code
 }

@@ -18,11 +18,7 @@ namespace {
 // =============================================================================
 
 constexpr size_t MAX_WORD_LETTERS = 48;
-
-constexpr uint8_t MARK_STRESS = 1;
-constexpr uint8_t MARK_LONG = 2;
-constexpr uint8_t MARK_FALL = 4;
-constexpr uint8_t MARK_RISE = 8;
+// MARK_STRESS, MARK_LONG, MARK_FALL and MARK_RISE: formant_slovenian.hpp
 
 constexpr char32_t C_CARON = U'č';   // č
 constexpr char32_t C_ACUTE = U'ć';   // ć
@@ -380,8 +376,13 @@ const char32_t* letter_name(const std::u32string& letter, bool eastern) {
     return U"";
 }
 
-const char32_t* letter_name(char32_t c, bool eastern) {
-    return letter_name(std::u32string(1, c), eastern);
+const char32_t* letter_name_in(const std::u32string& letter, VoiceLanguage language) {
+    if (language == VoiceLanguage::Slovenian) return slovenian::letter_name(letter);
+    return letter_name(letter, language == VoiceLanguage::Serbian);
+}
+
+const char32_t* letter_name_in(char32_t c, VoiceLanguage language) {
+    return letter_name_in(std::u32string(1, c), language);
 }
 
 // =============================================================================
@@ -400,7 +401,8 @@ void split_words(const std::u32string& text, std::vector<Word>& out) {
     }
 }
 
-std::vector<Word> tokenize(const std::u32string& text, bool eastern) {
+std::vector<Word> tokenize(const std::u32string& text, VoiceLanguage language) {
+    const bool eastern = language != VoiceLanguage::Croatian;
     std::vector<Word> words;
     Word current;
     size_t upper_count = 0;
@@ -528,6 +530,10 @@ std::vector<Word> tokenize(const std::u32string& text, bool eastern) {
         if (c == U':' && pos + 2 < text.size() && text[pos + 1] == U'/' && text[pos + 2] == U'/') {
             continue;
         }
+        if (language == VoiceLanguage::Slovenian) {
+            if (const char32_t* name = slovenian::symbol_name(c)) split_words(name, words);
+            continue;
+        }
         for (const auto& symbol : SYMBOLS) {
             if (symbol.symbol == c) {
                 const char32_t* name = (eastern && symbol.eastern) ? symbol.eastern
@@ -550,6 +556,10 @@ bool needs_spelling(const Word& word) {
     const std::u32string& w = word.w;
     bool vowel = has_vowel(w);
     if (!vowel && !has_inner_syllabic_r(w)) return true;
+    // RTV, RTL, RTS: capitals without a vowel that open with r and two more
+    // consonants are an acronym; a word's syllabic r at the head has one
+    // consonant after it (rt, rž)
+    if (!vowel && word.all_caps && w.size() >= 3 && w[0] == U'r') return true;
     if (!word.all_caps || w.size() > 5) return false;
     if (w.size() == 1) return !is_vowel_letter(w[0]);
 
@@ -622,15 +632,21 @@ bool stressed_pronoun(const std::vector<Word>& words, size_t i) {
 // a host joined two lines with a space): no letter S stands before one.
 // Never before a hyphen ("S-klasa", "k-pop"), a single letter ("S i M") or a
 // word no preposition is followed by ("S je slovo").
-bool leaning_preposition(const std::vector<Word>& tokens, size_t t) {
+bool leaning_preposition(const std::vector<Word>& tokens, size_t t, VoiceLanguage language) {
     const Word& token = tokens[t];
-    if ((token.w != U"s" && token.w != U"k") || token.before_hyphen ||
-        t + 1 >= tokens.size()) {
+    const bool slovene = language == VoiceLanguage::Slovenian;
+    // Slovenian has v, s, z, k and h (Pravopis: v šoli, s hiše, z oreha,
+    // k bratu, h godu)
+    const bool preposition = slovene
+        ? (token.w == U"v" || token.w == U"s" || token.w == U"z" || token.w == U"k" || token.w == U"h")
+        : (token.w == U"s" || token.w == U"k");
+    if (!preposition || token.before_hyphen || t + 1 >= tokens.size()) {
         return false;
     }
     const Word& next = tokens[t + 1];
-    if (next.w.size() == 1 || enclitics().count(next.w) != 0 ||
-        (proclitics().count(next.w) != 0 && next.w != U"ne")) {     // s ne malo truda
+    const bool next_enclitic = slovene ? slovenian::is_enclitic(next.w) : enclitics().count(next.w) != 0;
+    const bool next_proclitic = slovene ? slovenian::is_proclitic(next.w) : proclitics().count(next.w) != 0;
+    if (next.w.size() == 1 || next_enclitic || (next_proclitic && next.w != U"ne")) {  // s ne malo truda
         return false;
     }
     if (!token.all_caps || t == 0 || token.after_opening) return true;
@@ -645,10 +661,10 @@ bool leaning_preposition(const std::vector<Word>& tokens, size_t t) {
     return caps_word(next) || (next.all_caps && caps_word(tokens[t - 1]));  // S USB KABELOM
 }
 
-std::vector<Word> expand_words(std::vector<Word> tokens, bool serbian) {
+std::vector<Word> expand_words(std::vector<Word> tokens, VoiceLanguage language) {
     // Decided before the loop below moves the tokens away.
     std::vector<bool> leaning(tokens.size());
-    for (size_t t = 0; t < tokens.size(); ++t) leaning[t] = leaning_preposition(tokens, t);
+    for (size_t t = 0; t < tokens.size(); ++t) leaning[t] = leaning_preposition(tokens, t, language);
 
     std::vector<Word> words;
     for (size_t t = 0; t < tokens.size(); ++t) {
@@ -658,7 +674,7 @@ std::vector<Word> expand_words(std::vector<Word> tokens, bool serbian) {
 
         if (token.spell) {
             size_t first = words.size();
-            split_words(letter_name(token.w[0], serbian), words);
+            split_words(letter_name_in(token.w[0], language), words);
             for (size_t i = first; i < words.size(); ++i) words[i].letter_name = true;
             continue;
         }
@@ -669,7 +685,7 @@ std::vector<Word> expand_words(std::vector<Word> tokens, bool serbian) {
             if (!leaning[t] && needs_spelling(token)) {
                 for (char32_t c : token.w) {
                     size_t first = words.size();
-                    split_words(letter_name(c, serbian), words);
+                    split_words(letter_name_in(c, language), words);
                     for (size_t i = first; i < words.size(); ++i) {
                         words[i].letter_name = true;
                     }
@@ -2795,11 +2811,34 @@ std::shared_ptr<const UserLexicon> UserLexicon::parse(const std::string& json, R
         if (language == "hr") languages = language_bit(VoiceLanguage::Croatian);
         else if (language == "sr") languages = language_bit(VoiceLanguage::Serbian);
         else if (language == "bs") languages = language_bit(VoiceLanguage::Bosnian);
-        else if (!language.empty()) { reject(language, "unknown language (hr, sr, bs)"); continue; }
+        else if (language == "sl") languages = language_bit(VoiceLanguage::Slovenian);
+        else if (!language.empty()) { reject(language, "unknown language (hr, sr, bs, sl)"); continue; }
 
         std::string word = json_string(object, "word");
         std::string verb = json_string(object, "verb");
         if (!word.empty() && !verb.empty()) { reject(word, "both word and verb"); continue; }
+
+        // A Slovenian entry is in the notation of its own lexicon
+        if (language == "sl") {
+            if (word.empty()) { reject(verb, "Slovenian has word entries only"); continue; }
+            std::u32string marked = PhonemeMapper::utf8_to_utf32(word);
+            std::u32string key, pron;
+            bool stem = false;
+            std::string why;
+            if (marked.find(U'|') == std::u32string::npos &&
+                !slovenian::Lexicon::parse(marked, key, pron, stem, &why)) {
+                reject(word, why.c_str());
+                continue;
+            }
+            if (lexicon->m_slovenian.add(marked)) ++r.words;
+            else reject(word, "malformed form list");
+            continue;
+        }
+        if (!word.empty() && language.empty()) {
+            // Without a language the entry counts for Slovenian too when it
+            // reads in that notation (kontr'o:l*: stress and length)
+            lexicon->m_slovenian.add(PhonemeMapper::utf8_to_utf32(word));
+        }
 
         if (!word.empty()) {
             std::u32string marked = PhonemeMapper::utf8_to_utf32(word);
@@ -2882,6 +2921,120 @@ bool is_postalveolar(Ph ph) {
            ph == Ph::TJ || ph == Ph::DJ;
 }
 
+// The clause type from the punctuation and the words, then the words
+// flattened into one phone string with word, syllable and stress
+// information: shared by every language. `li_particle` is the Croatian
+// question particle li, whose host carries the peak of a yes/no question.
+void finish_utterance(std::vector<Word>& words, Punctuation punct, const WordSet& questions,
+                      bool li_particle, Utterance& utt, std::vector<bool>& word_is_clitic) {
+    const size_t count = words.size();
+
+    // ---- Clause type ----
+    switch (punct) {
+        case Punctuation::QUESTION: {
+            utt.kind = ClauseKind::YesNoQuestion;
+            size_t checked = 0;
+            for (size_t i = 0; i < count && checked < 2; ++i) {
+                if (questions.count(words[i].w)) {
+                    utt.kind = ClauseKind::WhQuestion;
+                    break;
+                }
+                if (!words[i].clitic) ++checked;
+            }
+            if (utt.kind == ClauseKind::YesNoQuestion && li_particle) {
+                // "Znaš li...", "Je li...", "Da li...": the peak sits on the
+                // word the particle leans on.
+                for (size_t i = 1; i < count; ++i) {
+                    if (words[i].w == U"li" && !words[i - 1].nuclei.empty()) {
+                        Word& host = words[i - 1];
+                        host.clitic = false;
+                        if (host.prominence < 2) host.prominence = 2;
+                        utt.focus_word = static_cast<int>(i - 1);
+                        break;
+                    }
+                }
+            }
+            break;
+        }
+        case Punctuation::EXCLAMATION:
+            utt.kind = ClauseKind::Exclamation;
+            break;
+        case Punctuation::COMMA:
+        case Punctuation::SEMICOLON:
+        case Punctuation::COLON:
+            utt.kind = ClauseKind::Continuation;
+            break;
+        default:
+            utt.kind = ClauseKind::Statement;
+            break;
+    }
+
+    // ---- Flatten into one phone string ----
+    // A joined word counts as part of the one before it.
+    std::vector<size_t> group(count);
+    std::vector<int> group_syllables(count, 0);
+    for (size_t wi = 0; wi < count; ++wi) {
+        group[wi] = (wi > 0 && words[wi].joined) ? group[wi - 1] : wi;
+        group_syllables[group[wi]] += static_cast<int>(words[wi].nuclei.size());
+    }
+
+    word_is_clitic.clear();
+    int syllable = 0;
+    for (size_t wi = 0; wi < count; ++wi) {
+        Word& word = words[wi];
+        word_is_clitic.push_back(word.clitic && !word.joined);
+        const int n = static_cast<int>(word.nuclei.size());
+
+        int current = syllable;     // consonants before the first vowel
+        for (size_t pi = 0; pi < word.phones.size(); ++pi) {
+            Phone phone = word.phones[pi];
+            phone.word = static_cast<uint16_t>(group[wi]);
+            phone.word_start = pi == 0 && !word.joined;
+            phone.prominence = word.prominence;
+            phone.word_syllables =
+                static_cast<uint8_t>(std::min(group_syllables[group[wi]], 255));
+
+            if (phone.nucleus) {
+                int k = static_cast<int>(
+                    std::find(word.nuclei.begin(), word.nuclei.end(),
+                              static_cast<int>(pi)) - word.nuclei.begin());
+                current = syllable + k;
+                if (!word.clitic && k == word.stress) {
+                    phone.stressed = true;
+                    phone.accent = word.accent;
+                }
+            } else if (!phone.nucleus_tail && n > 0) {
+                // Onset consonants belong to the following vowel.
+                for (int k = 0; k < n; ++k) {
+                    if (word.nuclei[static_cast<size_t>(k)] > static_cast<int>(pi)) {
+                        current = syllable + k;
+                        break;
+                    }
+                }
+            }
+            phone.syllable = static_cast<int16_t>(current);
+            // The conjunctions i and a and the prepositions u and o are a
+            // syllable each: the synthesizers give them their full vowel.
+            phone.vowel_word = word.phones.size() == 1 && phone.nucleus &&
+                               is_vowel(phone.ph) && !phone.stressed && !word.joined;
+            utt.phones.push_back(phone);
+        }
+        syllable += n;
+    }
+    utt.syllable_count = syllable;
+
+    // Stress and length of a syllabic r belong to all its parts (three in
+    // Croatian, Serbian and Bosnian: vocoid, tap, vocoid; two in Slovenian).
+    for (size_t i = 0; i + 1 < utt.phones.size(); ++i) {
+        if (!utt.phones[i].nucleus) continue;
+        for (size_t k = i + 1; k < utt.phones.size() && utt.phones[k].nucleus_tail; ++k) {
+            utt.phones[k].stressed = utt.phones[i].stressed;
+            utt.phones[k].is_long = utt.phones[i].is_long;
+        }
+    }
+
+}
+
 } // namespace
 
 // =============================================================================
@@ -2889,6 +3042,10 @@ bool is_postalveolar(Ph ph) {
 // =============================================================================
 
 Frontend::Frontend(VoiceLanguage language) : m_language(language) {
+    // Slovenian has its own lexicon (slovenian::builtin_lexicon()); the
+    // tables below are those of Croatian, Serbian and Bosnian
+    if (language == VoiceLanguage::Slovenian) return;
+
     size_t count = 0;
     const char* const* entries = lexicon_common(count);
     add_entries(entries, count);
@@ -2970,7 +3127,14 @@ void Frontend::set_user_lexicon(const std::shared_ptr<const UserLexicon>& lexico
     m_user_exact.clear();
     m_user_stems.clear();
     m_user_verbs.reset();
+    m_user_slovenian.reset();
     if (!lexicon) return;
+    if (m_language == VoiceLanguage::Slovenian) {
+        if (!lexicon->m_slovenian.empty()) {
+            m_user_slovenian = std::shared_ptr<const slovenian::Lexicon>(lexicon, &lexicon->m_slovenian);
+        }
+        return;
+    }
 
     const uint8_t mine = language_bit(m_language);
     for (const UserLexicon::WordEntry& word : lexicon->m_words) {
@@ -3032,8 +3196,8 @@ bool is_foreign_letter(const std::u32string& letter) {
 }
 
 std::u32string letter_name(const std::u32string& letter, VoiceLanguage language) {
-    // Bosnian names the letters as Croatian does; only Serbian differs
-    return letter_name(letter, language == VoiceLanguage::Serbian);
+    // Bosnian names the letters as Croatian does; Serbian and Slovenian differ
+    return letter_name_in(letter, language);
 }
 
 bool is_letter_name(const std::u32string& letter, const std::u32string& text) {
@@ -3043,7 +3207,10 @@ bool is_letter_name(const std::u32string& letter, const std::u32string& text) {
     size_t b = lower.find_first_not_of(U" "), e = lower.find_last_not_of(U" ");
     if (b == std::u32string::npos) return false;
     lower = lower.substr(b, e - b + 1);
-    if (lower == letter_name(letter, false) || lower == letter_name(letter, true)) return true;
+    if (lower == letter_name(letter, false) || lower == letter_name(letter, true) ||
+        lower == slovenian::letter_name(letter)) {
+        return true;
+    }
     // The name the bundled dictionary used to give j
     return letter == U"j" && lower == U"jot";
 }
@@ -3069,7 +3236,14 @@ Utterance Frontend::letter_sound(const std::u32string& letter) const {
     } else if (letter.size() == 1 && !is_foreign_letter(letter)) {
         char32_t c = letter[0];
         if (is_vowel_letter(c)) {
-            phones.push_back(vowel_phone(c));
+            Ph ph = vowel_phone(c);
+            // The Slovenian letters e and o are named é and ó, with the
+            // close vowel (Slovenski pravopis 2001, § 7)
+            if (m_language == VoiceLanguage::Slovenian) {
+                if (c == U'e') ph = Ph::EE;
+                if (c == U'o') ph = Ph::OO;
+            }
+            phones.push_back(ph);
             vowel = true;
         } else {
             Ph ph = consonant_phone(c);
@@ -3100,10 +3274,10 @@ Utterance Frontend::letter_sound(const std::u32string& letter) const {
 }
 
 Utterance Frontend::process(const std::u32string& text, Punctuation punct) const {
-    Utterance utt;
-    const bool eastern = m_language != VoiceLanguage::Croatian;
+    if (m_language == VoiceLanguage::Slovenian) return process_slovenian(text, punct);
 
-    std::vector<Word> tokens = tokenize(cyrillic::to_latin(text), eastern);
+    Utterance utt;
+    std::vector<Word> tokens = tokenize(cyrillic::to_latin(text), m_language);
     // A name with inner capitals that a lexicon knows as one word stays one
     // word: TikTok and TikToka (the built-in lexicon's Tȉktok), PowerPoint
     // and JavaScript (the English table), or the user's own entry.
@@ -3117,7 +3291,7 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
         int letter = -1;
         return english_word(spelled, english_spelling(spelled), letter);
     });
-    std::vector<Word> words = expand_words(std::move(tokens), m_language == VoiceLanguage::Serbian);
+    std::vector<Word> words = expand_words(std::move(tokens), m_language);
     // Listener preference: every Croatian tiflo- compound has an accent on
     // tiflo and one on its second component, including established loans.
     // Analyze the components independently, but join their phones into one
@@ -3795,107 +3969,8 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
         only->prominence = 2;
     }
 
-    // ---- Clause type ----
-    switch (punct) {
-        case Punctuation::QUESTION: {
-            utt.kind = ClauseKind::YesNoQuestion;
-            size_t checked = 0;
-            for (size_t i = 0; i < count && checked < 2; ++i) {
-                if (question_words().count(words[i].w)) {
-                    utt.kind = ClauseKind::WhQuestion;
-                    break;
-                }
-                if (!words[i].clitic) ++checked;
-            }
-            if (utt.kind == ClauseKind::YesNoQuestion) {
-                // "Znaš li...", "Je li...", "Da li...": the peak sits on the
-                // word the particle leans on.
-                for (size_t i = 1; i < count; ++i) {
-                    if (words[i].w == U"li" && !words[i - 1].nuclei.empty()) {
-                        Word& host = words[i - 1];
-                        host.clitic = false;
-                        if (host.prominence < 2) host.prominence = 2;
-                        utt.focus_word = static_cast<int>(i - 1);
-                        break;
-                    }
-                }
-            }
-            break;
-        }
-        case Punctuation::EXCLAMATION:
-            utt.kind = ClauseKind::Exclamation;
-            break;
-        case Punctuation::COMMA:
-        case Punctuation::SEMICOLON:
-        case Punctuation::COLON:
-            utt.kind = ClauseKind::Continuation;
-            break;
-        default:
-            utt.kind = ClauseKind::Statement;
-            break;
-    }
-
-    // ---- Flatten into one phone string ----
-    // A joined word counts as part of the one before it.
-    std::vector<size_t> group(count);
-    std::vector<int> group_syllables(count, 0);
-    for (size_t wi = 0; wi < count; ++wi) {
-        group[wi] = (wi > 0 && words[wi].joined) ? group[wi - 1] : wi;
-        group_syllables[group[wi]] += static_cast<int>(words[wi].nuclei.size());
-    }
-
     std::vector<bool> word_is_clitic;
-    int syllable = 0;
-    for (size_t wi = 0; wi < count; ++wi) {
-        Word& word = words[wi];
-        word_is_clitic.push_back(word.clitic && !word.joined);
-        const int n = static_cast<int>(word.nuclei.size());
-
-        int current = syllable;     // consonants before the first vowel
-        for (size_t pi = 0; pi < word.phones.size(); ++pi) {
-            Phone phone = word.phones[pi];
-            phone.word = static_cast<uint16_t>(group[wi]);
-            phone.word_start = pi == 0 && !word.joined;
-            phone.prominence = word.prominence;
-            phone.word_syllables =
-                static_cast<uint8_t>(std::min(group_syllables[group[wi]], 255));
-
-            if (phone.nucleus) {
-                int k = static_cast<int>(
-                    std::find(word.nuclei.begin(), word.nuclei.end(),
-                              static_cast<int>(pi)) - word.nuclei.begin());
-                current = syllable + k;
-                if (!word.clitic && k == word.stress) {
-                    phone.stressed = true;
-                    phone.accent = word.accent;
-                }
-            } else if (!phone.nucleus_tail && n > 0) {
-                // Onset consonants belong to the following vowel.
-                for (int k = 0; k < n; ++k) {
-                    if (word.nuclei[static_cast<size_t>(k)] > static_cast<int>(pi)) {
-                        current = syllable + k;
-                        break;
-                    }
-                }
-            }
-            phone.syllable = static_cast<int16_t>(current);
-            // The conjunctions i and a and the prepositions u and o are a
-            // syllable each: the synthesizers give them their full vowel.
-            phone.vowel_word = word.phones.size() == 1 && phone.nucleus &&
-                               is_vowel(phone.ph) && !phone.stressed && !word.joined;
-            utt.phones.push_back(phone);
-        }
-        syllable += n;
-    }
-    utt.syllable_count = syllable;
-
-    // Stress and length of a syllabic r belong to all three of its parts.
-    for (size_t i = 0; i + 2 < utt.phones.size(); ++i) {
-        if (utt.phones[i].nucleus && utt.phones[i + 1].nucleus_tail) {
-            utt.phones[i + 1].stressed = utt.phones[i + 2].stressed = utt.phones[i].stressed;
-            utt.phones[i + 1].is_long = utt.phones[i + 2].is_long = utt.phones[i].is_long;
-        }
-    }
+    finish_utterance(words, punct, question_words(), true, utt, word_is_clitic);
 
     // ---- Assimilation inside words and clitic groups ----
     std::vector<Phone>& ph = utt.phones;
@@ -3947,6 +4022,140 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
         }
     }
 
+    return utt;
+}
+
+// =============================================================================
+// Slovenian
+// =============================================================================
+
+// The Slovenian clause: the shared tokenizer and clause structure, with the
+// letter-to-sound rules, the lexicon, the clitics and the sound changes of
+// formant_slovenian.cpp. Every word has a plain (neutral) accent: Slovenian
+// stress is dynamic, with long and short stressed vowels and no tones.
+Utterance Frontend::process_slovenian(const std::u32string& text, Punctuation punct) const {
+    Utterance utt;
+    std::vector<Word> tokens = tokenize(cyrillic::to_latin(text), m_language);
+    const slovenian::Lexicon* user = m_user_slovenian.get();
+    join_camel(tokens, [&](const std::u32string& spelled) {
+        Word probe(spelled);
+        rewrite_foreign(probe);
+        std::u32string pron;
+        return (user && user->find_exact(probe.w, pron)) ||
+               slovenian::builtin_lexicon().find_exact(probe.w, pron);
+    });
+    std::vector<Word> words = expand_words(std::move(tokens), m_language);
+    if (words.empty()) return utt;
+
+    // ---- Per-word analysis: phones and stress ----
+    for (Word& word : words) {
+        rewrite_foreign(word);
+        word.explicit_stress = std::any_of(word.marks.begin(), word.marks.end(),
+                                           [](uint8_t m) { return (m & MARK_STRESS) != 0; });
+        slovenian::WordPhones wp;
+        slovenian::phonemize(word.w, word.marks, user, word.letter_name, wp);
+        word.phones = std::move(wp.phones);
+        word.letter = std::move(wp.letter);
+        word.nuclei = std::move(wp.nuclei);
+        word.stress = wp.stress;
+        word.accent = Accent::Neutral;
+        if (word.nuclei.empty()) {
+            word.clitic = true;
+            word.prominence = 0;
+        }
+    }
+
+    const size_t count = words.size();
+
+    // The preposition v: [w] before a vowel (v igri), the vowel [u] before a
+    // consonant (v šoli [u šoli]: Slovenski pravopis 2001, § 643-645),
+    // which is a syllable, never stressed
+    for (size_t i = 0; i + 1 < count; ++i) {
+        Word& word = words[i];
+        const Word& next = words[i + 1];
+        if (word.w != U"v" || word.letter_name || next.phones.empty() || word.phones.size() != 1) continue;
+        if (!is_vowel(next.phones.front().ph)) {
+            word.phones.front().ph = Ph::U;
+            word.phones.front().nucleus = true;
+            word.nuclei = {0};
+            word.stress = 0;
+        }
+    }
+
+    // An acronym spelled letter by letter has one stress, on its last
+    // letter (SP [espé], RTV [ertevé]: Slovenski pravopis 2001, § 1022):
+    // the names before it lean on it
+    for (size_t i = 0; i < count;) {
+        if (!words[i].letter_name) { ++i; continue; }
+        size_t end = i;
+        while (end < count && words[end].letter_name) ++end;
+        for (size_t k = i; k + 1 < end; ++k) {
+            if (words[k].nuclei.empty()) continue;
+            words[k].clitic = true;
+            words[k].prominence = 0;
+            for (Phone& phone : words[k].phones) phone.is_long = false;
+            words[k + 1].joined = true;
+        }
+        i = end;
+    }
+
+    // ---- Clitics ----
+    for (size_t i = 0; i < count; ++i) {
+        Word& word = words[i];
+        if (word.nuclei.empty() || word.explicit_stress || word.letter_name || word.joined) continue;
+        const bool proclitic = slovenian::is_proclitic(word.w);
+        bool enclitic = slovenian::is_enclitic(word.w);
+        // ti and mi are the dative clitics (Dam ti, Reci mi) or the pronouns
+        // tí, mí: those at the head or the end of a clause, or after a
+        // conjunction ("in ti", "pa mi", "tudi ti")
+        if (enclitic && (word.w == U"ti" || word.w == U"mi")) {
+            static const WordSet before_pronoun = {U"in", U"a", U"pa", U"ali", U"tudi", U"samo",
+                                                   U"le", U"niti", U"ne", U"kot", U"kakor"};
+            if (i == 0 || i + 1 == count || before_pronoun.count(words[i - 1].w)) enclitic = false;
+        }
+        if ((proclitic && i + 1 < count) || (enclitic && i > 0)) {
+            word.clitic = true;
+        } else if (proclitic || enclitic || slovenian::is_function_word(word.w)) {
+            word.prominence = 1;
+        }
+        if (word.clitic) {
+            // Unstressed: short, and its e and o open (od [ɔt], je [jɛ])
+            word.prominence = 0;
+            for (Phone& phone : word.phones) {
+                phone.is_long = false;
+                if (phone.ph == Ph::EE) phone.ph = Ph::EH;
+                if (phone.ph == Ph::OO) phone.ph = Ph::OH;
+            }
+        }
+    }
+
+    // A clause needs at least one accent.
+    bool any_stress = std::any_of(words.begin(), words.end(), [](const Word& w) {
+        return !w.clitic && !w.nuclei.empty();
+    });
+    if (!any_stress) {
+        for (size_t i = count; i-- > 0;) {
+            if (!words[i].nuclei.empty()) {
+                words[i].clitic = false;
+                words[i].prominence = 2;
+                break;
+            }
+        }
+    }
+    // A lone function word ("Ne.", "Ja.", "To:") is the whole message.
+    Word* only = nullptr;
+    size_t accented = 0;
+    for (Word& word : words) {
+        if (!word.clitic && !word.nuclei.empty()) {
+            only = &word;
+            ++accented;
+        }
+    }
+    if (accented == 1) only->prominence = 2;
+
+    std::vector<bool> word_is_clitic;
+    finish_utterance(words, punct, slovenian::question_word_set(), false, utt, word_is_clitic);
+    slovenian::assimilate(utt.phones, word_is_clitic);
     return utt;
 }
 

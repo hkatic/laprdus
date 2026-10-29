@@ -69,7 +69,7 @@ final class LaprdusEngine: @unchecked Sendable {
         laprdus_get_version().map { String(cString: $0) } ?? "unknown"
     }
 
-    /// The languages every voice speaks: Croatian, Serbian, Bosnian.
+    /// The languages every voice speaks: Croatian, Serbian, Bosnian, Slovenian.
     static var languages: [Language] { Language.all }
 
     /// Voice of a new installation: Zvonko, for every language.
@@ -89,7 +89,7 @@ final class LaprdusEngine: @unchecked Sendable {
         queue.sync { currentVoiceID }
     }
 
-    /// Language spoken at the moment ("hr-HR", "sr-RS" or "bs-BA"): the one
+    /// Language spoken at the moment ("hr-HR", "sr-RS", "bs-BA" or "sl-SI"): the one
     /// chosen with setLanguage, else the voice's native language.
     var currentLanguage: String {
         queue.sync { laprdus_get_language(handle).map { String(cString: $0) } ?? "hr-HR" }
@@ -103,7 +103,7 @@ final class LaprdusEngine: @unchecked Sendable {
 
     /// Chooses the language every voice speaks from now on, across voice
     /// changes: the engine keeps it itself after loadVoice. Any tag the
-    /// engine understands is accepted ("hr", "sr-RS", "bs_BA").
+    /// engine understands is accepted ("hr", "sr-RS", "bs_BA", "sl").
     func setLanguage(_ code: String) throws {
         try queue.sync {
             guard code != chosenLanguageCode else { return }

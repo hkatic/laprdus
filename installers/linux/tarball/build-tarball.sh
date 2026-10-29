@@ -325,9 +325,9 @@ configure_speechd() {
 
     # Check if already configured
     if grep -q "$MARKER_START" "$SPEECHD_CONF" 2>/dev/null; then
-        # A block written by a version that did not know Bosnian yet is
-        # removed here and written again below.
-        if grep -q 'LanguageDefaultModule "bs" "laprdus"' "$SPEECHD_CONF" 2>/dev/null; then
+        # A block written by a version that did not know Slovenian (or
+        # Bosnian) yet is removed here and written again below.
+        if grep -q 'LanguageDefaultModule "sl" "laprdus"' "$SPEECHD_CONF" 2>/dev/null; then
             echo "LaprdusTTS already configured in Speech Dispatcher."
             return 0
         fi
@@ -350,17 +350,19 @@ configure_speechd() {
         cat >> "$SPEECHD_CONF" << 'SPEECHD_EOF'
 
 # BEGIN LAPRDUS TTS
-# LaprdusTTS - Croatian/Serbian/Bosnian Text-to-Speech
+# LaprdusTTS - Croatian/Serbian/Bosnian/Slovenian Text-to-Speech
 # Added automatically by package installation
 AddModule "laprdus" "sd_laprdus" "laprdus.conf"
 
-# Set LaprdusTTS as default for Croatian, Serbian and Bosnian
+# Set LaprdusTTS as default for Croatian, Serbian, Bosnian and Slovenian
 LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"
 LanguageDefaultModule "sr-RS" "laprdus"
 LanguageDefaultModule "bs" "laprdus"
 LanguageDefaultModule "bs-BA" "laprdus"
+LanguageDefaultModule "sl" "laprdus"
+LanguageDefaultModule "sl-SI" "laprdus"
 # END LAPRDUS TTS
 SPEECHD_EOF
     else
@@ -368,16 +370,18 @@ SPEECHD_EOF
         cat >> "$SPEECHD_CONF" << 'SPEECHD_EOF'
 
 # BEGIN LAPRDUS TTS
-# LaprdusTTS - Croatian/Serbian/Bosnian Text-to-Speech
+# LaprdusTTS - Croatian/Serbian/Bosnian/Slovenian Text-to-Speech
 # Module is auto-detected by Speech Dispatcher (no AddModule needed)
 
-# Set LaprdusTTS as default for Croatian, Serbian and Bosnian
+# Set LaprdusTTS as default for Croatian, Serbian, Bosnian and Slovenian
 LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"
 LanguageDefaultModule "sr-RS" "laprdus"
 LanguageDefaultModule "bs" "laprdus"
 LanguageDefaultModule "bs-BA" "laprdus"
+LanguageDefaultModule "sl" "laprdus"
+LanguageDefaultModule "sl-SI" "laprdus"
 # END LAPRDUS TTS
 SPEECHD_EOF
     fi
@@ -514,11 +518,11 @@ chmod +x "${PKG}/uninstall.sh"
 
 # Create README
 cat > "${PKG}/README" << 'README_EOF'
-LaprdusTTS - Croatian/Serbian/Bosnian Text-to-Speech Engine
-============================================================
+LaprdusTTS - Croatian/Serbian/Bosnian/Slovenian Text-to-Speech Engine
+======================================================================
 
 This package contains LaprdusTTS, a text-to-speech engine for Croatian,
-Serbian and Bosnian. Every voice speaks every language.
+Serbian, Bosnian and Slovenian. Every voice speaks every language.
 
 Installation
 ------------
@@ -540,6 +544,7 @@ Command-line:
   laprdus "Dobar dan!"
   laprdus -v vlado -L sr -r 1.5 "Zdravo svete!"
   laprdus -v zvonko -L bs "Dobar dan, kako ste?"
+  laprdus -L sl "Dober dan, kako ste?"
   laprdus -i document.txt -o speech.wav
   laprdus -l                      (list the voices)
 
@@ -551,8 +556,8 @@ Speech Dispatcher (for Orca):
 Voices
 ------
 
-Every voice speaks Croatian, Serbian and Bosnian; choose the language
-with -L hr|sr|bs (without -L a voice speaks its native language, named
+Every voice speaks Croatian, Serbian, Bosnian and Slovenian; choose the
+language with -L hr|sr|bs|sl (without -L a voice speaks its native language, named
 here). Zvonko is the default voice.
 
   zvonko   - Zvonko, Croatian male adult (formant synthesis, default)

@@ -41,6 +41,7 @@ set(CORE_SOURCES
     ${LAPRDUS_ROOT}/src/formant/formant_phonemes.cpp
     ${LAPRDUS_ROOT}/src/formant/formant_lexicon.cpp
     ${LAPRDUS_ROOT}/src/formant/formant_frontend.cpp
+    ${LAPRDUS_ROOT}/src/formant/formant_slovenian.cpp
     ${LAPRDUS_ROOT}/src/formant/formant_intonation.cpp
     ${LAPRDUS_ROOT}/src/formant/formant_synthesizer.cpp
     ${LAPRDUS_ROOT}/src/c_api/laprdus_api.cpp

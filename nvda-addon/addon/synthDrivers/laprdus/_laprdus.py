@@ -77,11 +77,11 @@ class LaprdusVoiceInfo(ctypes.Structure):
 class LaprdusLanguageInfo(ctypes.Structure):
     """Language information structure (laprdus_get_language_info)."""
     _fields_ = [
-        ("code", ctypes.c_char_p),          # "hr-HR", "sr-RS", "bs-BA"
-        ("short_code", ctypes.c_char_p),    # "hr", "sr", "bs"
+        ("code", ctypes.c_char_p),          # "hr-HR", "sr-RS", "bs-BA", "sl-SI"
+        ("short_code", ctypes.c_char_p),    # "hr", "sr", "bs", "sl"
         ("lcid", ctypes.c_uint16),          # 0x041A, 0x081A, 0x141A
-        ("english_name", ctypes.c_char_p),  # "Croatian", "Serbian", "Bosnian"
-        ("native_name", ctypes.c_char_p),   # "Hrvatski", "Srpski", "Bosanski"
+        ("english_name", ctypes.c_char_p),  # "Croatian", "Serbian", "Bosnian", "Slovenian"
+        ("native_name", ctypes.c_char_p),   # "Hrvatski", "Srpski", "Bosanski", "Slovenščina"
     ]
 
 
@@ -511,7 +511,7 @@ def get_language_count():
 
 def get_language_info(index):
     """
-    Get language information by index (0 Croatian, 1 Serbian, 2 Bosnian).
+    Get language information by index (0 Croatian, 1 Serbian, 2 Bosnian, 3 Slovenian).
 
     Returns:
         dict with keys code ("hr-HR"), short_code ("hr"), lcid,
@@ -807,7 +807,7 @@ class LaprdusEngine(object):
 
         Args:
             language: A tag or name in any case ("hr", "hr-HR", "hr_HR",
-                "sr", "sr-Latn", "bs", "Croatian", ...). None or "" returns
+                "sr", "sr-Latn", "bs", "sl", "Croatian", ...). None or "" returns
                 to the voice's native language, now and after later voice
                 changes.
 
@@ -829,7 +829,7 @@ class LaprdusEngine(object):
         Language spoken at the moment.
 
         Returns:
-            "hr-HR", "sr-RS" or "bs-BA", or None for an invalid handle
+            "hr-HR", "sr-RS", "bs-BA" or "sl-SI", or None for an invalid handle
         """
         return _decode_str(self._lib.laprdus_get_language(self._handle))
 

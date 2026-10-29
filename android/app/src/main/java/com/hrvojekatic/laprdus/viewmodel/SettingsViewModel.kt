@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hrvojekatic.laprdus.data.SettingsRepository
 import com.hrvojekatic.laprdus.tts.Language
+import com.hrvojekatic.laprdus.tts.SystemLanguage
 import com.hrvojekatic.laprdus.tts.LaprdusTTS
 import com.hrvojekatic.laprdus.tts.VoiceInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,8 +28,10 @@ data class SettingsUiState(
     val isLoading: Boolean = true,
     val availableVoices: List<VoiceInfo> = emptyList(),
     val selectedVoiceId: String = SettingsRepository.DEFAULT_VOICE,
-    /** The language spoken ("hr", "sr" or "bs"); every voice speaks every language. */
+    /** The chosen language ("hr", "sr", "bs" or "sl"); every voice speaks every language. */
     val language: String = SettingsRepository.DEFAULT_LANGUAGE,
+    /** The system language when Laprdus speaks it, else null: spoken unless the language is forced. */
+    val systemLanguage: String? = Language.deviceLanguage(),
     val speed: Float = SettingsRepository.DEFAULT_SPEED,
     val pitch: Float = SettingsRepository.DEFAULT_PITCH,
     val volume: Float = SettingsRepository.DEFAULT_VOLUME,
@@ -113,14 +116,16 @@ class SettingsViewModel @Inject constructor(
 
                 // Collect all settings from repository
                 settings.allSettings.collect { allSettings ->
-                    // The app's engine speaks the chosen language
-                    tts.setLanguage(allSettings.language)
+                    // The app's engine speaks the system language, or the
+                    // chosen one when that is forced
+                    tts.setLanguage(Language.effective(allSettings.forceLanguage, allSettings.language, SystemLanguage.locale(context)))
                     _uiState.update { state ->
                         state.copy(
                             isLoading = false,
                             availableVoices = voices,
                             selectedVoiceId = allSettings.defaultVoice,
                             language = allSettings.language,
+                            systemLanguage = Language.deviceLanguage(SystemLanguage.locale(context)),
                             speed = allSettings.speed,
                             pitch = allSettings.pitch,
                             volume = allSettings.volume,
@@ -212,14 +217,16 @@ class SettingsViewModel @Inject constructor(
 
     /**
      * Choose the language and persist it. Every voice speaks every language:
-     * the voice stays, the app's engine switches at once, and the speech
-     * service follows when the language is forced.
-     * @param language "hr", "sr" or "bs"
+     * the voice stays. The chosen language is spoken, by the app and by the
+     * speech service, when "Force language" is on or the system language is
+     * not one Laprdus speaks; otherwise the system language is spoken
+     * (Language.effective).
+     * @param language "hr", "sr", "bs" or "sl"
      */
     fun selectLanguage(language: String) {
         if (!Language.isValid(language)) return
         viewModelScope.launch {
-            tts.setLanguage(language)
+            tts.setLanguage(Language.effective(_uiState.value.forceLanguage, language, SystemLanguage.locale(context)))
             settings.setLanguage(language)
             _uiState.update { it.copy(language = language) }
         }
@@ -359,12 +366,14 @@ class SettingsViewModel @Inject constructor(
     // ==========================================================================
 
     /**
-     * Set whether every app is spoken in the language chosen above,
-     * ignoring the language apps request.
+     * Set whether the language chosen above is spoken everywhere, ignoring
+     * the system language and the language apps request. Off, the system
+     * language is spoken when Laprdus speaks it.
      * @param enabled True to force the chosen language
      */
     fun setForceLanguage(enabled: Boolean) {
         viewModelScope.launch {
+            tts.setLanguage(Language.effective(enabled, _uiState.value.language, SystemLanguage.locale(context)))
             settings.setForceLanguage(enabled)
             _uiState.update { it.copy(forceLanguage = enabled) }
         }

@@ -16,6 +16,8 @@ import com.hrvojekatic.laprdus.data.migration.SimulatedMigrationCrashException
 import com.hrvojekatic.laprdus.data.storage.LaprdusStorage
 import com.hrvojekatic.laprdus.data.storage.StorageLogger
 import com.hrvojekatic.laprdus.tts.Language
+import com.hrvojekatic.laprdus.tts.SystemLanguage
+import java.util.Locale
 import com.hrvojekatic.laprdus.tts.VoiceInfo
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -46,6 +48,7 @@ class SettingsRepository internal constructor(
     private val dataStore: DataStore<Preferences>,
     private val migrator: LegacyMigrator? = null,
     private val logger: StorageLogger = StorageLogger.None,
+    private val deviceLocale: () -> Locale = { Locale.getDefault() },
 ) {
 
     companion object {
@@ -84,7 +87,7 @@ class SettingsRepository internal constructor(
         /** The default voice of every language: Zvonko. */
         const val DEFAULT_VOICE = "zvonko"
         /**
-         * The default of the Language setting ("hr", "sr" or "bs"): the
+         * The default of the Language setting ("hr", "sr", "bs" or "sl"): the
          * device's language when Laprdus speaks it, else Croatian.
          */
         val DEFAULT_LANGUAGE: String get() = Language.deviceDefault()
@@ -136,7 +139,8 @@ class SettingsRepository internal constructor(
                 return SettingsRepository(
                     dataStore = LaprdusStorage.settingsDataStore(context),
                     migrator = LaprdusStorage.settingsMigrator(context),
-                    logger = LaprdusStorage.logger("SettingsRepository")
+                    logger = LaprdusStorage.logger("SettingsRepository"),
+                    deviceLocale = { SystemLanguage.locale(context.applicationContext) }
                 ).also { instance = it }
             }
         }
@@ -250,7 +254,7 @@ class SettingsRepository internal constructor(
     // ==========================================================================
 
     /**
-     * Flow of the language setting ("hr", "sr" or "bs"): the language of the
+     * Flow of the language setting ("hr", "sr", "bs" or "sl"): the language of the
      * in-app playback, and of every app when the language is forced. Every
      * voice speaks every language.
      */
@@ -259,7 +263,7 @@ class SettingsRepository internal constructor(
 
     /**
      * Set the language.
-     * @param language "hr", "sr" or "bs" (a tag such as "hr-HR" or "srp" is
+     * @param language "hr", "sr", "bs" or "sl" (a tag such as "hr-HR" or "srp" is
      *   accepted); anything else is ignored
      */
     suspend fun setLanguage(language: String) {
@@ -755,7 +759,7 @@ class SettingsRepository internal constructor(
      */
     data class TTSSettings(
         val defaultVoice: String = DEFAULT_VOICE,
-        /** The language spoken in the app and, when forced, everywhere: "hr", "sr" or "bs". */
+        /** The language spoken in the app and, when forced, everywhere: "hr", "sr", "bs" or "sl". */
         val language: String = DEFAULT_LANGUAGE,
         val speed: Float = DEFAULT_SPEED,
         val pitch: Float = DEFAULT_PITCH,
@@ -795,7 +799,7 @@ class SettingsRepository internal constructor(
 
     /** The saved language; a value that is not a language reads as the default. */
     private fun Preferences.language(): String =
-        Language.fromTag(this[KEY_LANGUAGE]) ?: DEFAULT_LANGUAGE
+        Language.fromTag(this[KEY_LANGUAGE]) ?: Language.deviceDefault(deviceLocale())
 
     private fun Preferences.toSettings(): TTSSettings = TTSSettings(
         defaultVoice = defaultVoice(),

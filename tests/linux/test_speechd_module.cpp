@@ -292,6 +292,11 @@ TEST_CASE("Speech Dispatcher language selection", "[speechd][integration]") {
         REQUIRE(code == 0);
     }
 
+    SECTION("Slovenian") {
+        auto [code, output] = run_spd_say("-o laprdus -l sl -w \"Sloven\xC5\xA1\xC4\x8Dina\"");
+        REQUIRE(code == 0);
+    }
+
     SECTION("Another language keeps speaking") {
         auto [code, output] = run_spd_say("-o laprdus -l de -w \"Guten Tag\"");
         REQUIRE(code == 0);
@@ -305,7 +310,7 @@ TEST_CASE("Speech Dispatcher language selection", "[speechd][integration]") {
 namespace {
 
 // One entry of the module's voice list: name = display name, language =
-// one of the three language codes, variant = the voice id.
+// one of the four language codes, variant = the voice id.
 struct ModuleVoice { std::string name; std::string language; std::string variant; };
 
 // The list the module builds in build_voice_list(): every voice for every
@@ -365,19 +370,19 @@ std::string find_voice_id(const std::string& name) {
 
 TEST_CASE("Module voice list has every voice for every language", "[speechd][voices]") {
     REQUIRE(laprdus_get_voice_count() == 18);
-    REQUIRE(laprdus_get_language_count() == 3);
+    REQUIRE(laprdus_get_language_count() == 4);
 
     std::vector<ModuleVoice> list = module_voice_list();
-    REQUIRE(list.size() == 54);
+    REQUIRE(list.size() == 72);
 
-    // Every voice id appears with hr-HR, sr-RS and bs-BA
+    // Every voice id appears with hr-HR, sr-RS, bs-BA and sl-SI
     const char* const ids[] = {"josip", "vlado", "detence", "baba", "djedo",
                                "zvonko", "stojan", "mirsad",
                                "orguljas", "dalmacija_klapa", "trubac", "harmonikas",
                                "sevdalija", "sazlija", "lika_velebit", "solunac",
                                "sarajevo_bembasa", "becarac"};
     for (const char* id : ids) {
-        for (const char* language : {"hr-HR", "sr-RS", "bs-BA"}) {
+        for (const char* language : {"hr-HR", "sr-RS", "bs-BA", "sl-SI"}) {
             INFO(std::string(id) + " " + language);
             auto it = std::find_if(list.begin(), list.end(), [&](const ModuleVoice& v) {
                 return v.variant == id && v.language == language;
@@ -429,7 +434,7 @@ TEST_CASE("Module resolves voices by id, old id, name and folded name", "[speech
 }
 
 TEST_CASE("Module symbolic voices are the same for every language", "[speechd][voices]") {
-    // SET VOICE MALE1 is Zvonko, the default voice, for hr, sr and bs alike;
+    // SET VOICE MALE1 is Zvonko, the default voice, for hr, sr, bs and sl alike;
     // the others are Josip, Đedo, Baba and Detence.
     REQUIRE(std::string(laprdus_get_default_voice()) == "zvonko");
     struct Symbolic { const char* type; const char* id; };
@@ -459,6 +464,9 @@ TEST_CASE("Module language switch keeps the voice", "[speechd][voices]") {
         REQUIRE(std::string(laprdus_get_language(engine)) == "sr-RS");
         REQUIRE(std::string(laprdus_get_current_voice(engine)) == "zvonko");
     }
+    REQUIRE(laprdus_set_language(engine, "sl-SI") == LAPRDUS_OK);
+    REQUIRE(std::string(laprdus_get_language(engine)) == "sl-SI");
+    REQUIRE(std::string(laprdus_get_current_voice(engine)) == "zvonko");
     REQUIRE(laprdus_set_language(engine, "bs-BA") == LAPRDUS_OK);
     REQUIRE(std::string(laprdus_get_language(engine)) == "bs-BA");
     REQUIRE(laprdus_set_language(engine, "de") != LAPRDUS_OK);

@@ -217,7 +217,7 @@ HRESULT LaprdusSAPIDriver::InitializeEngine() {
     }
 
     // The language comes from the token: a "Language" value ("hr", "sr",
-    // "bs") on the tokens of this version, the LCID in Attributes\Language
+    // "bs", "sl") on the tokens of this version, the LCID in Attributes\Language
     // on any other.
     m_language = VoiceLanguage::Croatian;
     CSpDynamicString languageTag;

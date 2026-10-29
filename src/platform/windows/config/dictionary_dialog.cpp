@@ -308,7 +308,7 @@ std::string GenerateAccentJson(const std::vector<UserDictionaryEntry>& entries) 
 }
 
 // Language codes of the accent entry dialog's language combo box, in its order
-const char* const ACCENT_LANGUAGES[] = {"", "hr", "sr", "bs"};
+const char* const ACCENT_LANGUAGES[] = {"", "hr", "sr", "bs", "sl"};
 
 // Generate dictionary JSON from entries
 std::string GenerateDictionaryJson(const std::vector<UserDictionaryEntry>& entries) {
@@ -885,6 +885,7 @@ std::wstring DictionaryDialog::AccentLanguageName(const std::wstring& code) {
     if (code == L"hr") return LoadLocalizedString(IDS_ACCENT_LANG_HR);
     if (code == L"sr") return LoadLocalizedString(IDS_ACCENT_LANG_SR);
     if (code == L"bs") return LoadLocalizedString(IDS_ACCENT_LANG_BS);
+    if (code == L"sl") return LoadLocalizedString(IDS_ACCENT_LANG_SL);
     if (code.empty()) return LoadLocalizedString(IDS_ACCENT_LANG_ALL);
     return code;
 }
@@ -1086,11 +1087,11 @@ bool DictionaryEntryDialog::ValidateAndCollect(HWND hDlg) {
 
 namespace {
 
-// The language combo: all, Croatian, Serbian, Bosnian (the order of
+// The language combo: all, Croatian, Serbian, Bosnian, Slovenian (the order of
 // ACCENT_LANGUAGES); a code the engine does not know (a hand-edited file)
-// is shown as itself in a fifth item, so that OK keeps it and the engine's
+// is shown as itself in a sixth item, so that OK keeps it and the engine's
 // check names it instead of the dialog silently saving "all languages".
-constexpr int ACCENT_LANGUAGE_COUNT = 4;
+constexpr int ACCENT_LANGUAGE_COUNT = 5;
 constexpr int ACCENT_LANGUAGE_UNKNOWN = ACCENT_LANGUAGE_COUNT;
 
 } // namespace
@@ -1128,6 +1129,7 @@ void AccentEntryDialog::InitializeControls(HWND hDlg) {
         SendMessageW(hLang, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_ACCENT_LANG_HR).c_str());
         SendMessageW(hLang, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_ACCENT_LANG_SR).c_str());
         SendMessageW(hLang, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_ACCENT_LANG_BS).c_str());
+        SendMessageW(hLang, CB_ADDSTRING, 0, (LPARAM)LoadLocalizedString(IDS_ACCENT_LANG_SL).c_str());
         int sel = -1;
         std::string code = WideToUtf8(m_entry.language);
         for (int i = 0; i < ACCENT_LANGUAGE_COUNT; i++) {

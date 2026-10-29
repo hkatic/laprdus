@@ -20,9 +20,9 @@ configure_speechd() {
 
     # Check if already configured
     if grep -q "$MARKER_START" "$SPEECHD_CONF" 2>/dev/null; then
-        # A block written by a version that did not know Bosnian yet is
-        # removed here and written again below.
-        if grep -q 'LanguageDefaultModule "bs" "laprdus"' "$SPEECHD_CONF" 2>/dev/null; then
+        # A block written by a version that did not know Slovenian (or
+        # Bosnian) yet is removed here and written again below.
+        if grep -q 'LanguageDefaultModule "sl" "laprdus"' "$SPEECHD_CONF" 2>/dev/null; then
             echo "LaprdusTTS already configured in Speech Dispatcher."
             restart_speechd
             return 0
@@ -48,36 +48,40 @@ configure_speechd() {
         cat >> "$SPEECHD_CONF" << 'EOF'
 
 # BEGIN LAPRDUS TTS
-# LaprdusTTS - Croatian/Serbian/Bosnian Text-to-Speech
+# LaprdusTTS - Croatian/Serbian/Bosnian/Slovenian Text-to-Speech
 # Added automatically by package installation
 AddModule "laprdus" "sd_laprdus" "laprdus.conf"
 
-# Set LaprdusTTS as default for Croatian, Serbian and Bosnian
+# Set LaprdusTTS as default for Croatian, Serbian, Bosnian and Slovenian
 LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"
 LanguageDefaultModule "sr-RS" "laprdus"
 LanguageDefaultModule "bs" "laprdus"
 LanguageDefaultModule "bs-BA" "laprdus"
+LanguageDefaultModule "sl" "laprdus"
+LanguageDefaultModule "sl-SI" "laprdus"
 # END LAPRDUS TTS
 EOF
     else
         # Autodetection mode (SD 0.12+): do NOT add AddModule (it would
         # disable autodetection for all other modules). Just add language
-        # defaults so Laprdus is used for Croatian, Serbian and Bosnian.
+        # defaults so Laprdus is used for Croatian, Serbian, Bosnian and Slovenian.
         cat >> "$SPEECHD_CONF" << 'EOF'
 
 # BEGIN LAPRDUS TTS
-# LaprdusTTS - Croatian/Serbian/Bosnian Text-to-Speech
+# LaprdusTTS - Croatian/Serbian/Bosnian/Slovenian Text-to-Speech
 # Module is auto-detected by Speech Dispatcher (no AddModule needed)
 
-# Set LaprdusTTS as default for Croatian, Serbian and Bosnian
+# Set LaprdusTTS as default for Croatian, Serbian, Bosnian and Slovenian
 LanguageDefaultModule "hr" "laprdus"
 LanguageDefaultModule "sr" "laprdus"
 LanguageDefaultModule "hr-HR" "laprdus"
 LanguageDefaultModule "sr-RS" "laprdus"
 LanguageDefaultModule "bs" "laprdus"
 LanguageDefaultModule "bs-BA" "laprdus"
+LanguageDefaultModule "sl" "laprdus"
+LanguageDefaultModule "sl-SI" "laprdus"
 # END LAPRDUS TTS
 EOF
     fi

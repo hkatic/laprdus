@@ -190,7 +190,10 @@ Converts numeric strings to words in the current language: `set_dialect()`
 is called by `TTSEngine::set_language()` for every voice (Croatian
 *tisuća / milijun / dvjesto*, Serbian *hiljada / milion / dvesta*, Bosnian
 *hiljada / milion / dvjesto*; one and two agree with the feminine scale
-words: *dvije tisuće*, *dve hiljade*).
+words: *dvije tisuće*, *dve hiljade*). Slovenian has a system of its own
+(*nič, ena, dve, tri; enaindvajset; dva tisoč; dva milijona, trije
+milijoni, pet milijonov; dve milijardi; tri cele štirinajst; 132.457 read as
+one number; dates in the genitive, sedmega oktobra*).
 
 **Features:**
 - Supports numbers from 0 to 10^303 (centillions)
@@ -230,7 +233,7 @@ struct PauseSettings {
 Manages voice definitions including physical, derived and formant voices.
 
 **Voices and languages are separate.** Every voice speaks every language
-(Croatian `hr-HR`, Serbian `sr-RS`, Bosnian `bs-BA`); the registry's
+(Croatian `hr-HR`, Serbian `sr-RS`, Bosnian `bs-BA`, Slovenian `sl-SI`); the registry's
 `language` of a voice is only its *native* language, spoken when the host
 asks for nothing else. `TTSEngine::set_language()` switches the language of
 any voice (letter-to-sound rules, accent lexicon, letter names, number
@@ -295,7 +298,7 @@ saved id against the voice list should normalize it first.
 typedef struct LaprdusVoiceInfo {
     const char* id;              // Plain ASCII: "josip", "djedo", "lika_velebit"
     const char* display_name;    // Shown to the user: "Josip", "Đedo", "Dalmacija Klapa"
-    const char* language_code;   // Native language: "hr-HR", "sr-RS" or "bs-BA"
+    const char* language_code;   // Native language: "hr-HR", "sr-RS" or "bs-BA" (no voice is natively Slovenian)
                                  // (every voice speaks all three; see laprdus_set_language)
     uint16_t language_lcid;      // Windows LCID of the native language: 0x041A, 0x081A, 0x141A
     const char* gender;          // "Male" or "Female"
@@ -315,6 +318,7 @@ in `types.hpp`; `laprdus::parse_voice_language()` parses tags and names):
 | 0 | hr-HR | hr | 0x041A | Croatian | Hrvatski |
 | 1 | sr-RS | sr | 0x081A | Serbian | Srpski |
 | 2 | bs-BA | bs | 0x141A | Bosnian | Bosanski |
+| 3 | sl-SI | sl | 0x0424 | Slovenian | Slovenščina |
 
 ### 2.6 Dictionary System (`src/core/`)
 
@@ -446,7 +450,7 @@ const char* laprdus_get_default_voice(void);                       // "zvonko"
 uint32_t laprdus_get_language_count(void);                         // 3
 LaprdusError laprdus_get_language_info(index, &info);              // LaprdusLanguageInfo: code, short_code, lcid, english_name, native_name
 LaprdusError laprdus_set_language(handle, "sr");                   // "hr", "hr-HR", "hr_HR", "hrv", "sr-Latn-RS", "srp", "bs", "bos", "Croatian", "hrvatski"...
-const char* laprdus_get_language(handle);                          // "hr-HR" | "sr-RS" | "bs-BA"
+const char* laprdus_get_language(handle);                          // "hr-HR" | "sr-RS" | "bs-BA" | "sl-SI"
 
 // Synthesis
 int32_t laprdus_synthesize(handle, text, &samples, &format);
@@ -536,6 +540,7 @@ Three voice tokens, one per language, instead of one per Laprdus voice:
 - "Laprdus Croatian" - LCID 0x041A (hr-HR)
 - "Laprdus Serbian" - LCID 0x081A (sr-RS)
 - "Laprdus Bosnian" - LCID 0x141A (bs-BA)
+- "Laprdus Slovenian" - LCID 0x0424 (sl-SI)
 
 The token sets the language (`TTSEngine::set_language()`); the voice comes
 from `settings.json` (`voice.default`, empty = `zvonko`, old ids accepted),

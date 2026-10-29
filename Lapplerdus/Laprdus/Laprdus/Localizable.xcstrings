@@ -1,9 +1,7 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "" : {
-
-    },
+    "" : {},
     "%@ (copy)" : {
       "localizations" : {
         "hr" : {
@@ -13,6 +11,12 @@
           }
         },
         "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ (kopija)"
+          }
+        },
+        "sl" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ (kopija)"
@@ -29,6 +33,12 @@
             "state" : "new",
             "value" : "%1$@, %2$@"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$@"
+          }
         }
       }
     },
@@ -41,6 +51,12 @@
           }
         },
         "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld ms"
+          }
+        },
+        "sl" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld ms"
@@ -61,6 +77,12 @@
             "state" : "translated",
             "value" : "O aplikaciji"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O aplikaciji"
+          }
         }
       }
     },
@@ -73,6 +95,12 @@
           }
         },
         "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Laprdusu"
+          }
+        },
+        "sl" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "O Laprdusu"
@@ -93,6 +121,12 @@
             "state" : "translated",
             "value" : "Dodaj unos"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dodaj vnos"
+          }
         }
       }
     },
@@ -108,6 +142,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dodaj unos"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dodaj vnos"
           }
         }
       }
@@ -125,6 +165,12 @@
             "state" : "translated",
             "value" : "Odrasli"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odrasel"
+          }
         }
       }
     },
@@ -137,6 +183,12 @@
           }
         },
         "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Napredno"
+          }
+        },
+        "sl" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Napredno"
@@ -157,6 +209,12 @@
             "state" : "translated",
             "value" : "Informacije o aplikaciji"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Informacije o aplikaciji"
+          }
         }
       }
     },
@@ -172,6 +230,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nadjačavanje podešavanja aplikacije"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prednost nastavitev Laprdusa"
           }
         }
       }
@@ -189,6 +253,12 @@
             "state" : "translated",
             "value" : "Primena korisničkih rečnika"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uporabi uporabniške slovarje"
+          }
         }
       }
     },
@@ -204,6 +274,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Da li ste sigurni da želite da izbrišete ovaj unos iz rečnika?"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ali ste prepričani, da želite izbrisati ta vnos iz slovarja?"
           }
         }
       }
@@ -221,6 +297,34 @@
             "state" : "translated",
             "value" : "Bosanski"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bosanščina"
+          }
+        }
+      }
+    },
+    "Slovenian" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slovenski"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slovenski"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slovenščina"
+          }
         }
       }
     },
@@ -236,6 +340,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Otkaži"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prekliči"
           }
         }
       }
@@ -253,6 +363,12 @@
             "state" : "translated",
             "value" : "Razlikuj velika i mala slova"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Razlikuj velike in male črke"
+          }
         }
       }
     },
@@ -268,6 +384,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dete"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Otrok"
           }
         }
       }
@@ -285,6 +407,12 @@
             "state" : "translated",
             "value" : "Komentar (opciono)"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Komentar (neobvezno)"
+          }
         }
       }
     },
@@ -300,6 +428,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kontaktirajte autora putem e-pošte"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pišite avtorju po e-pošti"
           }
         }
       }
@@ -317,6 +451,12 @@
             "state" : "translated",
             "value" : "Pretvori emodžije u njihove tekstualne opise"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pretvori emodžije v besedilne opise"
+          }
         }
       }
     },
@@ -332,6 +472,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Autorska prava © 2026., Hrvoje Katić"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avtorske pravice © 2026, Hrvoje Katić"
           }
         }
       }
@@ -349,6 +495,12 @@
             "state" : "translated",
             "value" : "Hrvatski"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hrvaščina"
+          }
         }
       }
     },
@@ -361,6 +513,12 @@
           }
         },
         "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Izbriši"
+          }
+        },
+        "sl" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Izbriši"
@@ -381,6 +539,12 @@
             "state" : "translated",
             "value" : "Izbriši unos"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Izbriši vnos"
+          }
         }
       }
     },
@@ -396,6 +560,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Izbrisati unos?"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Želite izbrisati vnos?"
           }
         }
       }
@@ -413,6 +583,12 @@
             "state" : "translated",
             "value" : "Dijagnostika"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagnostika"
+          }
         }
       }
     },
@@ -428,6 +604,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rečnici"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slovarji"
           }
         }
       }
@@ -445,6 +627,12 @@
             "state" : "translated",
             "value" : "Vrsta rečnika"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrsta slovarja"
+          }
         }
       }
     },
@@ -460,6 +648,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Čitaj brojeve cifru po cifru"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Branje števil po števkah"
           }
         }
       }
@@ -477,6 +671,12 @@
             "state" : "translated",
             "value" : "Dupliciraj"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Podvoji"
+          }
         }
       }
     },
@@ -492,6 +692,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Trajanje tišine posle zareza za prirodni ritam govora"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trajanje tišine za vejicami za naraven ritem govora"
           }
         }
       }
@@ -509,6 +715,12 @@
             "state" : "translated",
             "value" : "Trajanje tišine posle tačke, uzvičnika i upitnika"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trajanje tišine za pikami, klicaji in vprašaji"
+          }
         }
       }
     },
@@ -525,6 +737,12 @@
             "state" : "translated",
             "value" : "Trajanje tišine prilikom prelaska u novi red ili pasus"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trajanje tišine ob prehodu v novo vrstico ali odstavek"
+          }
         }
       }
     },
@@ -537,6 +755,12 @@
           }
         },
         "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uredi"
+          }
+        },
+        "sl" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Uredi"
@@ -557,6 +781,12 @@
             "state" : "translated",
             "value" : "Uredi unos"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uredi vnos"
+          }
         }
       }
     },
@@ -572,6 +802,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rečnik emodžija"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slovar emodžijev"
           }
         }
       }
@@ -589,6 +825,12 @@
             "state" : "translated",
             "value" : "Omogući čitanje emodžija"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Omogoči branje emodžijev"
+          }
         }
       }
     },
@@ -604,6 +846,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Unesite tekst koji želite da čujete…"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vnesite besedilo, ki ga želite slišati…"
           }
         }
       }
@@ -621,6 +869,12 @@
             "state" : "translated",
             "value" : "Greška pri sintezi govora"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Napaka pri sintezi govora"
+          }
         }
       }
     },
@@ -636,6 +890,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Greška pri izboru jezika"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Napaka pri izbiri jezika"
           }
         }
       }
@@ -653,6 +913,12 @@
             "state" : "translated",
             "value" : "Greška pri izboru glasa"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Napaka pri izbiri glasu"
+          }
         }
       }
     },
@@ -668,6 +934,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Greška pri pokretanju TTS motora"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Napaka pri zagonu govornega sintetizatorja"
           }
         }
       }
@@ -685,6 +957,12 @@
             "state" : "translated",
             "value" : "Greška: %@"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Napaka: %@"
+          }
         }
       }
     },
@@ -697,6 +975,12 @@
           }
         },
         "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ženski"
+          }
+        },
+        "sl" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ženski"
@@ -717,6 +1001,12 @@
             "state" : "translated",
             "value" : "Prinudno koristi Laprdus visinu"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vsili višino glasu v Laprdusu"
+          }
         }
       }
     },
@@ -732,6 +1022,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Prinudno koristi Laprdus brzinu"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vsili hitrost govora v Laprdusu"
           }
         }
       }
@@ -749,6 +1045,12 @@
             "state" : "translated",
             "value" : "Pojačaj jačinu govora"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Povečaj glasnost govora"
+          }
         }
       }
     },
@@ -764,6 +1066,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Prinudno koristi Laprdus jačinu"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vsili glasnost govora v Laprdusu"
           }
         }
       }
@@ -781,6 +1089,12 @@
             "state" : "translated",
             "value" : "Glasniji govor za bučna mesta i slušalicu telefona. Znatno glasnije; najjači vrhovi se zaobljuju pa se zvuk ne lomi"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glasnejši govor za hrupno okolje in telefonsko slušalko. Govor je občutno glasnejši; najmočnejši vrhovi so zglajeni, da se zvok ne popači"
+          }
         }
       }
     },
@@ -793,6 +1107,12 @@
           }
         },
         "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Formantni glas"
+          }
+        },
+        "sl" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Formantni glas"
@@ -813,6 +1133,12 @@
             "state" : "translated",
             "value" : "Jezik"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jezik"
+          }
         }
       }
     },
@@ -829,12 +1155,26 @@
             "state" : "translated",
             "value" : "Laprdus Retro TTS (Text-To-Speech)"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Laprdus Retro TTS (pretvorba besedila v govor)"
+          }
         }
       }
     },
     "Laprdus TTS" : {
       "comment" : "The name of the app.",
-      "isCommentAutoGenerated" : true
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Laprdus TTS"
+          }
+        }
+      }
     },
     "Legal" : {
       "localizations" : {
@@ -845,6 +1185,12 @@
           }
         },
         "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pravne informacije"
+          }
+        },
+        "sl" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pravne informacije"
@@ -865,6 +1211,12 @@
             "state" : "translated",
             "value" : "Učitavanje…"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nalaganje…"
+          }
         }
       }
     },
@@ -877,6 +1229,12 @@
           }
         },
         "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glavno"
+          }
+        },
+        "sl" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Glavno"
@@ -897,6 +1255,12 @@
             "state" : "translated",
             "value" : "Glavni rečnik"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glavni slovar"
+          }
         }
       }
     },
@@ -912,6 +1276,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Muški"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moški"
           }
         }
       }
@@ -929,6 +1299,12 @@
             "state" : "translated",
             "value" : "Samo cela reč"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ujemanje samo s celo besedo"
+          }
         }
       }
     },
@@ -944,6 +1320,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nema unosa. Dodirnite + za dodavanje."
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ni še vnosov. Za dodajanje tapnite +."
           }
         }
       }
@@ -961,6 +1343,12 @@
             "state" : "translated",
             "value" : "Izvorni tekst"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Izvirno besedilo"
+          }
         }
       }
     },
@@ -976,6 +1364,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pauza posle zareza"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premor za vejicami"
           }
         }
       }
@@ -993,6 +1387,12 @@
             "state" : "translated",
             "value" : "Pauza posle rečenice"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premor za povedmi"
+          }
         }
       }
     },
@@ -1008,6 +1408,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pauza kod novog reda"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premor ob novi vrstici"
           }
         }
       }
@@ -1025,6 +1431,12 @@
             "state" : "translated",
             "value" : "Čitaj brojeve kao pojedinačne cifre (123 → jedan dva tri)"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beri števila kot posamezne števke (123 → ena dva tri)"
+          }
         }
       }
     },
@@ -1040,6 +1452,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pročitajte GPL 3.0 licencu na mreži"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preberite licenco GPL 3.0 na spletu"
           }
         }
       }
@@ -1057,6 +1475,12 @@
             "state" : "translated",
             "value" : "Pročitajte Pravila privatnosti na mreži"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preberite pravilnik o zasebnosti na spletu"
+          }
         }
       }
     },
@@ -1072,6 +1496,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pauze prilikom čitanja"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premori med branjem"
           }
         }
       }
@@ -1089,6 +1519,12 @@
             "state" : "translated",
             "value" : "Snimljeni glas"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Posneti glas"
+          }
         }
       }
     },
@@ -1104,6 +1540,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zamenski izgovor"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nadomestna izgovarjava"
           }
         }
       }
@@ -1121,6 +1563,12 @@
             "state" : "translated",
             "value" : "Vrati podrazumevanu visinu"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obnovi privzeto višino glasu"
+          }
         }
       }
     },
@@ -1136,6 +1584,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vrati podrazumevanu brzinu"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obnovi privzeto hitrost govora"
           }
         }
       }
@@ -1153,6 +1607,12 @@
             "state" : "translated",
             "value" : "Vrati podrazumevanu jačinu"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obnovi privzeto glasnost govora"
+          }
         }
       }
     },
@@ -1168,6 +1628,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vrati podrazumevanu brzinu sricanja"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obnovi privzeto hitrost črkovanja"
           }
         }
       }
@@ -1185,6 +1651,12 @@
             "state" : "translated",
             "value" : "Sačuvaj"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shrani"
+          }
         }
       }
     },
@@ -1200,6 +1672,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Izbor vrste rečnika"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Izberite vrsto slovarja"
           }
         }
       }
@@ -1217,6 +1695,12 @@
             "state" : "translated",
             "value" : "Izbor jezika kojim govore svi glasovi"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Izberite jezik, v katerem govorijo vsi glasovi"
+          }
         }
       }
     },
@@ -1232,6 +1716,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Izbor glasa za sintezu govora"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Izberite glas za sintezo govora"
           }
         }
       }
@@ -1249,6 +1739,12 @@
             "state" : "translated",
             "value" : "Stariji"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Starejši"
+          }
         }
       }
     },
@@ -1264,6 +1760,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Srpski"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Srbščina"
           }
         }
       }
@@ -1281,6 +1783,12 @@
             "state" : "translated",
             "value" : "Podešavanja"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nastavitve"
+          }
         }
       }
     },
@@ -1296,6 +1804,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Podešavanja i rečnici ne dele se sa glasovima sistema. Ponovna instalacija Laprdusa trebalo bi da to reši."
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nastavitve in slovarji niso v skupni rabi s sistemskimi glasovi. Ponovna namestitev Laprdusa bi morala odpraviti težavo."
           }
         }
       }
@@ -1313,6 +1827,12 @@
             "state" : "translated",
             "value" : "Pevajući glas"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pojoči glas"
+          }
         }
       }
     },
@@ -1328,6 +1848,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Laprdaj!"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preberi"
           }
         }
       }
@@ -1345,6 +1871,12 @@
             "state" : "translated",
             "value" : "Izgovara uneseni tekst"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prebere vneseno besedilo"
+          }
         }
       }
     },
@@ -1357,6 +1889,12 @@
           }
         },
         "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Govor"
+          }
+        },
+        "sl" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Govor"
@@ -1377,6 +1915,12 @@
             "state" : "translated",
             "value" : "Visina govora"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Višina glasu"
+          }
         }
       }
     },
@@ -1392,6 +1936,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Brzina govora"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hitrost govora"
           }
         }
       }
@@ -1409,6 +1959,12 @@
             "state" : "translated",
             "value" : "Jačina govora"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glasnost govora"
+          }
         }
       }
     },
@@ -1424,6 +1980,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Niže vrednosti produžavaju pauze posle svakog znaka. Znakovi se uvek izgovaraju uobičajenom brzinom govora. 100% ne dodaje pauzu; podrazumevano je 50%."
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nižje vrednosti dodajo daljše premore za vsakim znakom. Znaki se vedno izgovarjajo z običajno hitrostjo govora. 100% ne doda premora; privzeto je 50%."
           }
         }
       }
@@ -1441,6 +2003,12 @@
             "state" : "translated",
             "value" : "Rečnik slovkanja"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slovar črkovanja"
+          }
         }
       }
     },
@@ -1456,6 +2024,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sriči slova glasovima"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Črkuj z glasovi črk"
           }
         }
       }
@@ -1473,6 +2047,12 @@
             "state" : "translated",
             "value" : "Isključeno: nazivi slova (be, ce, de). Uključeno: glasovi slova (b, c, d), pri sricanju i kucanju"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Izklopljeno: imena črk (be, ce, de). Vklopljeno: glasovi črk (b, c, d) pri črkovanju in tipkanju"
+          }
         }
       }
     },
@@ -1488,6 +2068,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Brzina sricanja"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hitrost črkovanja"
           }
         }
       }
@@ -1505,6 +2091,12 @@
             "state" : "translated",
             "value" : "Zaustavi"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ustavi"
+          }
         }
       }
     },
@@ -1520,6 +2112,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zaustavlja trenutni govor"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ustavi trenutni govor"
           }
         }
       }
@@ -1537,6 +2135,12 @@
             "state" : "translated",
             "value" : "Podrška"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Podpora"
+          }
         }
       }
     },
@@ -1552,6 +2156,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Polje za unos teksta koji će biti izgovoren"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Polje za vnos besedila, ki bo prebrano"
           }
         }
       }
@@ -1569,6 +2179,12 @@
             "state" : "translated",
             "value" : "Tekst za izgovaranje"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Besedilo za branje"
+          }
         }
       }
     },
@@ -1584,6 +2200,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ovo polje je obavezno"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To polje je obvezno"
           }
         }
       }
@@ -1601,6 +2223,12 @@
             "state" : "translated",
             "value" : "Koristi prilagođene izgovore reči iz korisničkih rečnika"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uporabi prilagojeno izgovarjavo besed iz uporabniških slovarjev"
+          }
         }
       }
     },
@@ -1616,6 +2244,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Zanemari visinu koju traži aplikacija. Inače visina aplikacije podiže ili spušta Laprdus visinu"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prezri višino glasu, ki jo zahteva aplikacija. Sicer višina glasu aplikacije zviša ali zniža višino glasu v Laprdusu"
           }
         }
       }
@@ -1633,6 +2267,12 @@
             "state" : "translated",
             "value" : "Zanemari brzinu koju traži aplikacija. Inače brzina aplikacije ubrzava ili usporava Laprdus brzinu"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prezri hitrost, ki jo zahteva aplikacija. Sicer hitrost aplikacije pospeši ali upočasni hitrost govora v Laprdusu"
+          }
         }
       }
     },
@@ -1648,6 +2288,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Koristi Laprdus podešavanja jačine umesto podešavanja aplikacije"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uporabi nastavitve glasnosti v Laprdusu namesto nastavitev aplikacije"
           }
         }
       }
@@ -1665,6 +2311,12 @@
             "state" : "translated",
             "value" : "Verzija: %1$@ (Build %2$@)"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Različica: %1$@ (gradnja %2$@)"
+          }
         }
       }
     },
@@ -1677,6 +2329,12 @@
           }
         },
         "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glas"
+          }
+        },
+        "sl" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Glas"
@@ -1697,6 +2355,12 @@
             "state" : "translated",
             "value" : "Intonacija"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intonacija"
+          }
         }
       }
     },
@@ -1712,6 +2376,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Veličina pokreta visine glasa: 0% je monotono, 50% prirodni pokreti, 100% najveći"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obseg spreminjanja višine glasu: 0% pomeni enoličen govor, 50% naravno spreminjanje, 100% največje spreminjanje"
           }
         }
       }
@@ -1729,6 +2399,12 @@
             "state" : "translated",
             "value" : "Ubrzanje"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pospešek"
+          }
         }
       }
     },
@@ -1744,6 +2420,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Množi brzinu govora, pa vrh opsega brzine dostiže veću ili manju brzinu"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pomnoži hitrost govora, tako da zgornja meja razpona doseže višjo ali nižjo hitrost"
           }
         }
       }
@@ -1761,6 +2443,12 @@
             "state" : "translated",
             "value" : "%@ (do %lld reči/min)"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ (do %2$lld besed/min)"
+          }
         }
       }
     },
@@ -1776,6 +2464,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vrati podrazumevanu intonaciju"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obnovi privzeto intonacijo"
           }
         }
       }
@@ -1793,6 +2487,12 @@
             "state" : "translated",
             "value" : "Vrati podrazumevano ubrzanje"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obnovi privzeti pospešek"
+          }
         }
       }
     },
@@ -1808,6 +2508,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Naglasni rečnik"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Naglasni slovar"
           }
         }
       }
@@ -1825,6 +2531,12 @@
             "state" : "translated",
             "value" : "Unos (reč, osnova, oblici ili glagol s naglaskom)"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vnos (beseda, osnova, seznam oblik ali glagol z naglasom)"
+          }
         }
       }
     },
@@ -1840,6 +2552,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vrsta unosa"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrsta vnosa"
           }
         }
       }
@@ -1857,6 +2575,12 @@
             "state" : "translated",
             "value" : "Reč"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beseda"
+          }
         }
       }
     },
@@ -1869,6 +2593,12 @@
           }
         },
         "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glagol"
+          }
+        },
+        "sl" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Glagol"
@@ -1889,6 +2619,12 @@
             "state" : "translated",
             "value" : "Svi jezici"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vsi jeziki"
+          }
         }
       }
     },
@@ -1905,6 +2641,12 @@
             "state" : "translated",
             "value" : "Unos nije ispravan: %@"
           }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vnos ni veljaven: %@"
+          }
         }
       }
     },
@@ -1920,6 +2662,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Znakovi: ' ispred naglašenog samoglasnika (ton se bira sam), ^ silazni naglasak, / uzlazni naglasak, : iza dugog samoglasnika, * na kraju osnove (kontr'o:l* važi za kontróla, kontróle, kontrólom), | između oblika (sign'a:l|a|u|om). Glagol: cela osnova, znak = i vrsta (ur'e:d=i<p za uréditi, urédim), ili koren s dugim ije (dijel:i za podijeliti)."
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oznake: ' pred naglašenim samoglasnikom (ton se izbere samodejno), ^ padajoči naglas, / rastoči naglas, : za dolgim samoglasnikom, * na koncu osnove (kontr'o:l* zajame kontróla, kontróle, kontrólom), | med oblikami (sign'a:l|a|u|om). Glagol: celotna osnova, = in razred (ur'e:d=i<p za uréditi, urédim) ali koren z dolgim ije (dijel:i za podijeliti)."
           }
         }
       }

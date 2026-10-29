@@ -61,6 +61,26 @@ class SeparateEnginesInstrumentedTest {
     }
 
     @Test
+    fun slovenianIsSpokenDifferentlyFromCroatian() {
+        val app = LaprdusTTS.app
+        try {
+            assertTrue(app.setVoice("zvonko", assets))
+            val text = "Dober dan, kako ste? Bil sem v Ljubljani."
+            assertTrue(app.setLanguage("hr"))
+            val croatian = app.synthesize(text)
+            assertTrue(app.setLanguage("sl"))
+            assertEquals("sl", app.spokenLanguage)
+            val slovenian = app.synthesize(text)
+            assertNotNull(croatian)
+            assertNotNull(slovenian)
+            assertTrue("the Slovenian front end gives other sounds",
+                !croatian!!.contentEquals(slovenian!!))
+        } finally {
+            app.setLanguage(null)
+        }
+    }
+
+    @Test
     fun aLanguageChosenOnOneEngineDoesNotChangeTheOther() {
         val app = LaprdusTTS.app
         val service = LaprdusTTS.service

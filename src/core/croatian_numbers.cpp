@@ -5,6 +5,7 @@
 #include "croatian_numbers.hpp"
 #include <algorithm>
 #include <cctype>
+#include <cstring>
 #include <string_view>
 #include <vector>
 
@@ -15,6 +16,25 @@ namespace laprdus {
 // =============================================================================
 
 std::string_view CroatianNumbers::digit_to_word(char digit) {
+    if (slovenian()) {
+        // The names of the numbers (Slovenski pravopis 2001, § 11: nič, ena,
+        // dve, tri, štiri ...; the counting "ena, dva, tri" uses the
+        // masculine dva); en/ena and dva/dve agree with a scale word in
+        // process_number_groups, and the compounds have dva- (dvaindvajset)
+        switch (digit) {
+            case '0': return u8"nič";
+            case '1': return "ena";
+            case '2': return "dve";
+            case '3': return "tri";
+            case '4': return u8"štiri";
+            case '5': return "pet";
+            case '6': return u8"šest";
+            case '7': return "sedem";
+            case '8': return "osem";
+            case '9': return "devet";
+            default: return "";
+        }
+    }
     switch (digit) {
         case '0': return "nula";
         case '1': return "jedan";
@@ -35,6 +55,20 @@ std::string_view CroatianNumbers::digit_to_word(char digit) {
 // =============================================================================
 
 std::string CroatianNumbers::tens_to_words(char tens_digit) {
+    if (slovenian()) {
+        switch (tens_digit) {
+            case '1': return "deset";
+            case '2': return "dvajset";
+            case '3': return "trideset";
+            case '4': return u8"štirideset";
+            case '5': return "petdeset";
+            case '6': return u8"šestdeset";
+            case '7': return "sedemdeset";
+            case '8': return "osemdeset";
+            case '9': return "devetdeset";
+            default: return "";
+        }
+    }
     switch (tens_digit) {
         case '1': return "deset";
         case '2': return "dvadeset";
@@ -54,6 +88,20 @@ std::string CroatianNumbers::tens_to_words(char tens_digit) {
 // =============================================================================
 
 std::string CroatianNumbers::teens_to_words(char ones_digit) {
+    if (slovenian()) {
+        switch (ones_digit) {
+            case '1': return "enajst";
+            case '2': return "dvanajst";
+            case '3': return "trinajst";
+            case '4': return u8"štirinajst";
+            case '5': return "petnajst";
+            case '6': return u8"šestnajst";
+            case '7': return "sedemnajst";
+            case '8': return "osemnajst";
+            case '9': return "devetnajst";
+            default: return "";
+        }
+    }
     switch (ones_digit) {
         case '1': return "jedanaest";
         case '2': return "dvanaest";
@@ -96,12 +144,15 @@ std::string CroatianNumbers::two_digit_to_words(std::string_view two_digits) {
         return std::string(digit_to_word(ones));
     }
 
-    // Handle 21-99 (excluding teens)
+    // Handle 21-99 (excluding teens). Slovenian puts the ones first and
+    // writes the whole as one word: enaindvajset, štiriinštirideset.
     std::string result = tens_to_words(tens);
-    if (!result.empty()) {
-        result += " ";
-        result += digit_to_word(ones);
+    if (result.empty()) return result;
+    if (slovenian()) {
+        return std::string(slovenian_compound_unit(ones)) + "in" + result;
     }
+    result += " ";
+    result += digit_to_word(ones);
     return result;
 }
 
@@ -110,6 +161,20 @@ std::string CroatianNumbers::two_digit_to_words(std::string_view two_digits) {
 // =============================================================================
 
 std::string CroatianNumbers::hundreds_word(char digit) {
+    if (slovenian()) {
+        switch (digit) {
+            case '1': return "sto";
+            case '2': return "dvesto";
+            case '3': return "tristo";
+            case '4': return u8"štiristo";
+            case '5': return "petsto";
+            case '6': return u8"šeststo";
+            case '7': return "sedemsto";
+            case '8': return "osemsto";
+            case '9': return "devetsto";
+            default: return "";
+        }
+    }
     switch (digit) {
         case '1': return "sto";
         case '2': return m_dialect == Dialect::Serbian ? "dvesta" : "dvjesto";
@@ -177,6 +242,8 @@ std::string CroatianNumbers::group_to_words(std::string_view group) {
 // =============================================================================
 
 std::string_view CroatianNumbers::get_thousand_variant(char last_digit) {
+    // Slovenian tisoč does not change: tisoč, dva tisoč, pet tisoč
+    if (slovenian()) return u8"tisoč";
     if (m_dialect != Dialect::Croatian) {
         switch (last_digit) {
             case '1':
@@ -208,6 +275,19 @@ std::string_view CroatianNumbers::get_thousand_variant(char last_digit) {
 
 std::string CroatianNumbers::get_million_variant(std::string_view prefix, char last_digit) {
     std::string result(prefix);
+    if (slovenian()) {
+        // en milijon, dva milijona (dual), trije/štirje milijoni, pet
+        // milijonov; last_digit '0' is the genitive plural of 5-9, 11-19
+        // and every compound (enaindvajset milijonov)
+        switch (last_digit) {
+            case '1': result += "lijon"; break;
+            case '2': result += "lijona"; break;
+            case '3':
+            case '4': result += "lijoni"; break;
+            default: result += "lijonov"; break;
+        }
+        return result;
+    }
     const bool eastern = m_dialect != Dialect::Croatian;
     switch (last_digit) {
         case '1':
@@ -226,6 +306,17 @@ std::string CroatianNumbers::get_million_variant(std::string_view prefix, char l
 
 std::string CroatianNumbers::get_milliard_variant(std::string_view prefix, char last_digit) {
     std::string result(prefix);
+    if (slovenian()) {
+        // ena milijarda, dve milijardi (dual), tri/štiri milijarde, pet milijard
+        switch (last_digit) {
+            case '1': result += "lijarda"; break;
+            case '2': result += "lijardi"; break;
+            case '3':
+            case '4': result += "lijarde"; break;
+            default: result += "lijard"; break;
+        }
+        return result;
+    }
     switch (last_digit) {
         case '1':
             result += "lijarda";
@@ -298,9 +389,73 @@ std::string CroatianNumbers::get_large_number_suffix(int group_index, char last_
 
 bool CroatianNumbers::is_feminine_scale(int group_index) {
     // tisuća/hiljada and the words in -ilijarda are feminine, the words in
-    // -ilijun/-ilion masculine (see get_large_number_suffix)
-    return group_index == 0 ||
-           (group_index >= 2 && group_index <= 10 && group_index % 2 == 0);
+    // -ilijun/-ilion masculine (see get_large_number_suffix). Slovenian
+    // tisoč is masculine (en tisoč, dva tisoč).
+    if (group_index == 0) return !slovenian();
+    return group_index >= 2 && group_index <= 10 && group_index % 2 == 0;
+}
+
+std::string_view CroatianNumbers::zero_word() const {
+    return slovenian() ? std::string_view(u8"nič") : std::string_view("nula");
+}
+
+// The unit of a Slovenian compound numeral: enaindvajset, dvaindvajset,
+// triindvajset, štiriindvajset ... (Slovenski pravopis 2001, § 536)
+std::string_view CroatianNumbers::slovenian_compound_unit(char digit) {
+    switch (digit) {
+        case '1': return "ena";
+        case '2': return "dva";
+        case '3': return "tri";
+        case '4': return u8"štiri";
+        case '5': return "pet";
+        case '6': return u8"šest";
+        case '7': return "sedem";
+        case '8': return "osem";
+        case '9': return "devet";
+        default: return "";
+    }
+}
+
+// The genitive of a Slovenian ordinal of 1 to 99, as a date is read
+// (sedmega oktobra, enaintridesetega): the cardinal's stem and -ega, with
+// the stems prv-, drug-, tretj-, četrt-, sedm-, osm- and stot- of their own
+std::string CroatianNumbers::slovenian_ordinal_genitive(std::string_view number) {
+    number = remove_leading_zeros(number);
+    if (number.empty() || number.size() > 2) return "";
+    if (number.size() == 1) {
+        switch (number[0]) {
+            case '1': return "prvega";
+            case '2': return "drugega";
+            case '3': return "tretjega";
+            case '4': return u8"četrtega";
+            case '7': return "sedmega";
+            case '8': return "osmega";
+            default: break;
+        }
+        return std::string(digit_to_word(number[0])) + "ega";
+    }
+    if (number[1] == '0') return tens_to_words(number[0]) + "ega";
+    if (number[0] == '1') return teens_to_words(number[1]) + "ega";
+    return std::string(slovenian_compound_unit(number[1])) + "in" + tens_to_words(number[0]) + "ega";
+}
+
+// A Slovenian decimal: the whole part, "cela" agreeing with it (ena cela,
+// dve celi, tri cele, štiri cele, pet celih, nič celih, enaindvajset celih:
+// SSKJ "ena cela, pet stotink"; the compounds like every number from five
+// up), then the digits after the comma as one number, leading zeros each
+// as nič (nič celih nič ena: SSKJ)
+std::string CroatianNumbers::slovenian_decimal(std::string_view whole, std::string_view fraction) {
+    std::string words = number_to_words(whole);
+    std::string_view clean = remove_leading_zeros(whole);
+    const bool ones_alone = clean.size() == 1 || clean[clean.size() - 2] == '0';
+    const char last = clean.back();
+    if (ones_alone && last == '1') words += " cela";
+    else if (ones_alone && last == '2') words += " celi";
+    else if (ones_alone && (last == '3' || last == '4')) words += " cele";
+    else words += " celih";
+    words += ' ';
+    words += digit_group_to_words(fraction);
+    return words;
 }
 
 // =============================================================================
@@ -339,7 +494,7 @@ std::string CroatianNumbers::process_number_groups(std::string_view number) {
 
     // Handle zero
     if (number == "0") {
-        return "nula";
+        return std::string(zero_word());
     }
 
     size_t length = number.size();
@@ -374,6 +529,11 @@ std::string CroatianNumbers::process_number_groups(std::string_view number) {
         char last_digit = group_clean.back();
         // 11-19 have no "one" or "two" of their own: jedanaest tisuća
         bool is_teen = group_clean.size() >= 2 && group_clean[group_clean.size() - 2] == '1';
+        // In Slovenian the ones are a word of their own only after a zero
+        // tens digit (sto en milijon, tisoč dva milijona); from 21 up they
+        // are one word with the tens (enaindvajset), which takes the
+        // genitive plural like every compound: enaindvajset milijonov.
+        const bool ones_alone = group_clean.size() == 1 || group_clean[group_clean.size() - 2] == '0';
 
         // Special case: group is exactly "1" for thousands and higher
         // In Croatian, you say "tisuću" not "jedan tisuću" for 1000
@@ -385,10 +545,27 @@ std::string CroatianNumbers::process_number_groups(std::string_view number) {
                 result += " ";
             }
             std::string words = group_to_words(group_clean);
-            // The numbers one and two agree with a feminine scale word:
-            // dvije tisuće, dve hiljade, dvadeset jedna tisuća, dvije milijarde
-            if (groups_from_end > 0 && is_feminine_scale(groups_from_end - 1) && !is_teen &&
-                (last_digit == '1' || last_digit == '2')) {
+            if (slovenian()) {
+                // One to four agree with the scale word: en milijon, dva
+                // milijona, trije milijoni, štirje milijoni; ena milijarda,
+                // dve milijardi, tri milijarde, štiri milijarde; en tisoč,
+                // dva tisoč, tri tisoč, štiri tisoč
+                if (groups_from_end > 0 && ones_alone && last_digit >= '1' && last_digit <= '4') {
+                    const bool feminine = is_feminine_scale(groups_from_end - 1);
+                    std::string_view counting = digit_to_word(last_digit);
+                    words.resize(words.size() - counting.size());
+                    const bool thousand = groups_from_end == 1;
+                    switch (last_digit) {
+                        case '1': words += feminine ? "ena" : "en"; break;
+                        case '2': words += feminine ? "dve" : "dva"; break;
+                        case '3': words += (feminine || thousand) ? "tri" : "trije"; break;
+                        default: words += (feminine || thousand) ? u8"štiri" : u8"štirje"; break;
+                    }
+                }
+            } else if (groups_from_end > 0 && is_feminine_scale(groups_from_end - 1) && !is_teen &&
+                       (last_digit == '1' || last_digit == '2')) {
+                // The numbers one and two agree with a feminine scale word:
+                // dvije tisuće, dve hiljade, dvadeset jedna tisuća, dvije milijarde
                 std::string_view masculine = digit_to_word(last_digit);
                 words.resize(words.size() - masculine.size());
                 words += last_digit == '1' ? "jedna"
@@ -408,6 +585,9 @@ std::string CroatianNumbers::process_number_groups(std::string_view number) {
             char plural_digit = last_digit;
             if (is_teen || (!is_one && last_digit == '1' && groups_from_end == 1)) {
                 plural_digit = '0';
+            }
+            if (slovenian() && !ones_alone) {
+                plural_digit = '0';     // enaindvajset milijonov, dvainštirideset milijard
             }
 
             std::string suffix = get_large_number_suffix(groups_from_end - 1, plural_digit);
@@ -575,8 +755,15 @@ std::string CroatianNumbers::time_to_words(const std::vector<std::string_view>& 
 }
 
 // "7.10.2026" -> sedam deset dvije tisuće dvadeset šest. The day and month
-// are cardinals for the same reason as "7. listopada" above.
+// are cardinals for the same reason as "7. listopada" above. Slovenian
+// reads a date in the genitive, which does not depend on the sentence:
+// sedmega desetega dva tisoč šestindvajset (Jezikovna svetovalnica, ZRC
+// SAZU: "šestega julija dva tisoč deset").
 std::string CroatianNumbers::date_to_words(const std::vector<std::string_view>& groups) {
+    if (slovenian()) {
+        return slovenian_ordinal_genitive(groups[0]) + ' ' + slovenian_ordinal_genitive(groups[1]) +
+               ' ' + number_to_words(groups[2]);
+    }
     return number_to_words(groups[0]) + ' ' + number_to_words(groups[1]) + ' ' +
            number_to_words(groups[2]);
 }
@@ -601,7 +788,8 @@ size_t CroatianNumbers::convert_time_or_date(const std::string& text, size_t i, 
 std::string CroatianNumbers::digit_group_to_words(std::string_view group) {
     std::string words;
     while (group.size() > 1 && group[0] == '0') {
-        words += "nula ";
+        words += zero_word();
+        words += ' ';
         group.remove_prefix(1);
     }
     words += number_to_words(group);
@@ -616,9 +804,11 @@ std::string CroatianNumbers::digit_group_to_words(std::string_view group) {
 // period in the text that is not a decimal point or part of a file name
 // now is. The decimal comma is "zarez" in every language, so the word is
 // written here; a comma in the text would otherwise be a clause
-// break.
-std::string CroatianNumbers::separator_words(char separator) {
-    return separator == '.' ? "\xE2\x80\xA4" : " zarez ";
+// break. Slovenian reads the decimal comma as "vejica" (and the front end
+// names the dot leader "pika").
+std::string CroatianNumbers::separator_words(char separator) const {
+    if (separator == '.') return "\xE2\x80\xA4";
+    return slovenian() ? " vejica " : " zarez ";
 }
 
 namespace {
@@ -717,6 +907,32 @@ std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
             continue;
         }
 
+        // Slovenian writes a period between the groups of three digits of a
+        // large number (132.457: sto dvaintrideset tisoč štiristo
+        // sedeminpetdeset; Slovenski pravopis 2001, § 253), so such a
+        // number is read whole. A period before fewer digits (3.14) is the
+        // decimal point, read by name, as below.
+        if (slovenian() && text[i] != '0') {
+            size_t first_end = digits_end(text, i);
+            size_t end = first_end;
+            int groups = 0;
+            while (end + 3 < length + 0 && end < length && text[end] == '.' &&
+                   digits_end(text, end + 1) == end + 4) {
+                end += 4;
+                ++groups;
+            }
+            if (groups > 0 && first_end - i <= 3 && !is_separator_between_digits(text, end) &&
+                !(end < length && text[end] == ':')) {
+                std::string digits;
+                for (size_t k = i; k < end; ++k) {
+                    if (is_digit(text[k])) digits += text[k];
+                }
+                result += number_to_words(digits);
+                i = end;
+                continue;
+            }
+        }
+
         // Handle leading zeros specially
         // Each leading zero becomes "nula ", set off from a preceding letter
         // but glued to a separator ("25:00" must stay one token)
@@ -727,7 +943,8 @@ std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
                     unsigned char back = static_cast<unsigned char>(result.back());
                     if (std::isalnum(back) || back >= 0x80) result += ' ';
                 }
-                result += "nula ";
+                result += zero_word();
+                result += ' ';
                 i++;
             } else {
                 // This is the last digit (either standalone 0 or end of number)
@@ -739,9 +956,27 @@ std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
         size_t num_start = i;
         i = digits_end(text, i);
 
-        // "7. listopada", "1990. godine": the period is silent
+        // "7. listopada", "1990. godine": the period is silent. Slovenian
+        // "7. oktobra" is the date's genitive ordinal, sedmega oktobra.
         if (size_t end = silent_dot_end(text, num_start, i)) {
-            result += number_to_words(std::string_view(text.data() + num_start, i - num_start));
+            std::string_view number(text.data() + num_start, i - num_start);
+            std::string ordinal;
+            if (slovenian() && number.size() <= 2) {
+                static const char* const MONTHS[] = {
+                    "januarja", "februarja", "marca", "aprila", "maja", "junija", "julija",
+                    "avgusta", "septembra", "oktobra", "novembra", "decembra",
+                };
+                size_t word = end;
+                while (word < length && (text[word] == ' ' || text[word] == '\t')) ++word;
+                for (const char* month : MONTHS) {
+                    size_t n = std::strlen(month);
+                    if (text.compare(word, n, month) == 0 && (word + n >= length || !is_word_byte(text[word + n]))) {
+                        ordinal = slovenian_ordinal_genitive(number);
+                        break;
+                    }
+                }
+            }
+            result += ordinal.empty() ? number_to_words(number) : ordinal;
             if (text[end] != ' ' && text[end] != '\t') result += ' ';   // "7.listopada"
             i = end;
             continue;
@@ -781,17 +1016,27 @@ std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
 
         while (is_separator_between_digits(text, i)) {
             char separator = text[i];
-            result += separator_words(separator);
             size_t group_start = i + 1;
             size_t group_end = digits_end(text, group_start);
             std::string_view group(text.data() + group_start, group_end - group_start);
+            if (slovenian() && separator == ',' && separators == 1 && i > num_start) {
+                // tri cele štirinajst: the whole part was already written
+                std::string_view whole(text.data() + num_start, i - num_start);
+                std::string words = number_to_words(whole);
+                result.resize(result.size() - words.size());
+                result += slovenian_decimal(whole, group);
+                i = group_end;
+                continue;
+            }
+            result += separator_words(separator);
             if (separator == '.' || separators >= 2) {
                 result += digit_group_to_words(group);
             } else {
                 std::string_view rest = group;
                 bool first = true;
                 while (rest.size() > 1 && rest[0] == '0') {
-                    result += first ? "nula" : " nula";
+                    if (!first) result += ' ';
+                    result += zero_word();
                     rest.remove_prefix(1);
                     first = false;
                 }

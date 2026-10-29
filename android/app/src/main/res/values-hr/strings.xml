@@ -19,6 +19,7 @@
     <string name="language_croatian">Hrvatski</string>
     <string name="language_serbian">Srpski</string>
     <string name="language_bosnian">Bosanski</string>
+    <string name="language_slovenian">Slovenski</string>
 
     <!-- Voice attributes -->
     <string name="gender_male">Muški</string>
@@ -50,7 +51,8 @@
     <string name="setting_volume_boost_title">Pojačaj glasnoću govora</string>
     <string name="setting_volume_boost_subtitle">Glasniji govor za bučna mjesta i slušalicu telefona. Znatno glasnije; najjači vrhovi se zaobljuju pa se zvuk ne lomi</string>
     <string name="setting_force_language_title">Prisilno koristi jezik</string>
-    <string name="setting_force_language_subtitle">Uvijek govori gore odabranim jezikom, bez obzira na jezik koji aplikacije traže</string>
+    <string name="setting_force_language_subtitle">Uvijek govori gore odabranim jezikom, bez obzira na jezik sustava i jezik koji aplikacije traže</string>
+    <string name="language_follows_system">Slijedi jezik sustava (%1$s). Za drugi jezik uključite „Prisilno koristi jezik” niže.</string>
 
     <!-- Emoji settings -->
     <string name="setting_emoji_enabled_title">Omogući čitanje emojija</string>

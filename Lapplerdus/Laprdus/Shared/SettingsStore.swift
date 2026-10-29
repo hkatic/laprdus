@@ -30,7 +30,7 @@ enum SettingsKey {
 /// by the speech extension (which has no UI and no observation needs).
 struct SettingsSnapshot: Sendable {
     var defaultVoice = VoiceCatalog.defaultVoiceID
-    /// Language every voice speaks in the app: "hr-HR", "sr-RS" or "bs-BA".
+    /// Language every voice speaks in the app: "hr-HR", "sr-RS", "bs-BA" or "sl-SI".
     /// The system voices take their language from the voice the host picked.
     var language = VoiceCatalog.defaultLanguageCode
     var speed: Float = 1.0

@@ -3,7 +3,7 @@
 ; Installs both 32-bit and 64-bit DLLs in a single directory
 ; Voice data is shared between architectures to avoid duplication
 ; Registers one SAPI5 voice per language (Laprdus Croatian, Laprdus Serbian,
-; Laprdus Bosnian); each speaks with the voice chosen in the Laprdus
+; Laprdus Bosnian, Laprdus Slovenian); each speaks with the voice chosen in the Laprdus
 ; Configurator (Zvonko unless changed). Every Laprdus voice speaks every
 ; language. Tokens of earlier versions (one per voice) are removed on
 ; install, upgrade and repair.
@@ -21,6 +21,7 @@
 #define LANG_CROATIAN "41A"
 #define LANG_SERBIAN "81A"
 #define LANG_BOSNIAN "141A"
+#define LANG_SLOVENIAN "424"
 
 [Setup]
 AppId={{{#CLSID}}
@@ -273,6 +274,32 @@ Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusBosnian\Attr
 Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusBosnian\Attributes"; ValueType: string; ValueName: "Vendor"; ValueData: "Laprdus"; Check: Is64BitInstallMode
 Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusBosnian\Attributes"; ValueType: string; ValueName: "Name"; ValueData: "Laprdus Bosnian"; Check: Is64BitInstallMode
 
+; ============================================================================
+; LANGUAGE 4: Laprdus Slovenian - 32-bit
+; Speaks with the voice from settings.json (voice.default, Zvonko by default)
+; ============================================================================
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusSlovenian"; ValueType: string; ValueName: ""; ValueData: "Laprdus Slovenian"; Flags: uninsdeletekey
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusSlovenian"; ValueType: string; ValueName: "CLSID"; ValueData: "{{{#CLSID}}"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusSlovenian"; ValueType: string; ValueName: "Language"; ValueData: "sl"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusSlovenian\Attributes"; ValueType: string; ValueName: "Language"; ValueData: "{#LANG_SLOVENIAN}"; Flags: uninsdeletekey
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusSlovenian\Attributes"; ValueType: string; ValueName: "Gender"; ValueData: "Male"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusSlovenian\Attributes"; ValueType: string; ValueName: "Age"; ValueData: "Adult"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusSlovenian\Attributes"; ValueType: string; ValueName: "Vendor"; ValueData: "Laprdus"
+Root: HKLM32; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusSlovenian\Attributes"; ValueType: string; ValueName: "Name"; ValueData: "Laprdus Slovenian"
+
+; ============================================================================
+; LANGUAGE 4: Laprdus Slovenian - 64-bit
+; Speaks with the voice from settings.json (voice.default, Zvonko by default)
+; ============================================================================
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusSlovenian"; ValueType: string; ValueName: ""; ValueData: "Laprdus Slovenian"; Flags: uninsdeletekey; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusSlovenian"; ValueType: string; ValueName: "CLSID"; ValueData: "{{{#CLSID}}"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusSlovenian"; ValueType: string; ValueName: "Language"; ValueData: "sl"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusSlovenian\Attributes"; ValueType: string; ValueName: "Language"; ValueData: "{#LANG_SLOVENIAN}"; Flags: uninsdeletekey; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusSlovenian\Attributes"; ValueType: string; ValueName: "Gender"; ValueData: "Male"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusSlovenian\Attributes"; ValueType: string; ValueName: "Age"; ValueData: "Adult"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusSlovenian\Attributes"; ValueType: string; ValueName: "Vendor"; ValueData: "Laprdus"; Check: Is64BitInstallMode
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Speech\Voices\Tokens\LaprdusSlovenian\Attributes"; ValueType: string; ValueName: "Name"; ValueData: "Laprdus Slovenian"; Check: Is64BitInstallMode
+
 [Tasks]
 ; Optional desktop shortcut
 Name: "desktopicon"; Description: "{cm:LaprdusDesktopShortcut}"; GroupDescription: "{cm:LaprdusAdditionalOptions}"; Flags: unchecked
@@ -333,7 +360,8 @@ function IsCurrentToken(const Name: String): Boolean;
 begin
   Result := (CompareText(Name, 'LaprdusCroatian') = 0) or
             (CompareText(Name, 'LaprdusSerbian') = 0) or
-            (CompareText(Name, 'LaprdusBosnian') = 0);
+            (CompareText(Name, 'LaprdusBosnian') = 0) or
+            (CompareText(Name, 'LaprdusSlovenian') = 0);
 end;
 
 // Remove every SAPI5 voice token under RootKey that points at our CLSID and
@@ -376,7 +404,7 @@ end;
 
 // Before the files and registry entries are written (install, upgrade and
 // repair alike): drop the voice tokens of earlier versions, so that only
-// the three language tokens remain registered afterwards.
+// the four language tokens remain registered afterwards.
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssInstall then
