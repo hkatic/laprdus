@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -658,9 +659,11 @@ TEST_CASE("Slovenian is spoken by every voice", "[formant][language]") {
     REQUIRE(slovenian != croatian);
     // Deterministic, like the other languages
     REQUIRE(speak(zvonko.handle, text) == slovenian);
-    // Numbers in Slovenian words: the ones before the tens as one word,
-    // the dual of milijon, the "cela" of a decimal
+    // Numbers in Slovenian words: the ones before the tens (written as one
+    // word, read with an accent on each part), the dual of milijon, the
+    // "cela" of a decimal
     REQUIRE(speak(zvonko.handle, "21") == speak(zvonko.handle, "enaindvajset"));
+    REQUIRE(speak(zvonko.handle, "55") == speak(zvonko.handle, "petinpetdeset"));
     REQUIRE(speak(zvonko.handle, "2000000") == speak(zvonko.handle, "dva milijona"));
     REQUIRE(speak(zvonko.handle, "3,14") == speak(zvonko.handle, "tri cele \xC5\xA1tirinajst"));
     // The other formant voices and the singing presets speak it too
@@ -3038,6 +3041,41 @@ TEST_CASE("Personal names follow the dictionaries in their case forms", "[forman
     REQUIRE(speak(engine.handle, u8"Tihomira") != speak(engine.handle, u8"Tihomíra"));
     REQUIRE(speak(engine.handle, u8"gospodar") == speak(engine.handle, u8"gospòdar"));
     REQUIRE(speak(engine.handle, u8"Deprimira me.") == speak(engine.handle, u8"deprimira me."));
+}
+
+TEST_CASE("Slovenian names its emoji from emoji_sl.json", "[formant][text][dictionary][slovenian]") {
+    // Run from the repository root, or set LAPRDUS_EMOJI to emoji.json; the
+    // Slovenian file is found next to it.
+    const char* path = std::getenv("LAPRDUS_EMOJI");
+    Engine engine, bare;
+    REQUIRE(laprdus_load_emoji_dictionary(engine.handle,
+        path ? path : "data/dictionary/emoji.json") == LAPRDUS_OK);
+    REQUIRE(laprdus_set_emoji_enabled(engine.handle, 1) == LAPRDUS_OK);
+    // Croatian: the bundled names
+    REQUIRE(speak(engine.handle, u8"\U0001F600") == speak(bare.handle, "nasmijano lice"));
+    // Slovenian: the names of the Unicode CLDR for sl
+    REQUIRE(laprdus_set_language(engine.handle, "sl") == LAPRDUS_OK);
+    REQUIRE(laprdus_set_language(bare.handle, "sl") == LAPRDUS_OK);
+    REQUIRE(speak(engine.handle, u8"\U0001F600") == speak(bare.handle, u8"režeči obraz"));
+    REQUIRE(speak(engine.handle, u8"Živijo \U0001F44B") == speak(bare.handle, u8"Živijo mahajoča dlan"));
+    // The user's entry wins in every language, and a bundled reload drops it
+    const std::string user_file = (std::filesystem::temp_directory_path() / "laprdus_emoji_user_test.json").string();
+    {
+        std::ofstream out(user_file, std::ios::binary);
+        out << u8"{ \"entries\": [ { \"grapheme\": \"\U0001F600\", \"phoneme\": \"nasmeh\" } ] }";
+    }
+    REQUIRE(laprdus_append_emoji_dictionary(engine.handle, user_file.c_str()) == LAPRDUS_OK);
+    std::filesystem::remove(user_file);
+    REQUIRE(speak(engine.handle, u8"\U0001F600") == speak(bare.handle, "nasmeh"));
+    REQUIRE(laprdus_set_language(engine.handle, "hr") == LAPRDUS_OK);
+    REQUIRE(laprdus_set_language(bare.handle, "hr") == LAPRDUS_OK);
+    REQUIRE(speak(engine.handle, u8"\U0001F600") == speak(bare.handle, "nasmeh"));
+    REQUIRE(laprdus_load_emoji_dictionary(engine.handle,
+        path ? path : "data/dictionary/emoji.json") == LAPRDUS_OK);
+    REQUIRE(speak(engine.handle, u8"\U0001F600") == speak(bare.handle, "nasmijano lice"));
+    REQUIRE(laprdus_set_language(engine.handle, "sl") == LAPRDUS_OK);
+    REQUIRE(laprdus_set_language(bare.handle, "sl") == LAPRDUS_OK);
+    REQUIRE(speak(engine.handle, u8"\U0001F600") == speak(bare.handle, u8"režeči obraz"));
 }
 
 TEST_CASE("Bundled OK and NLO replacements are case insensitive whole words", "[formant][text][dictionary][oct14]") {

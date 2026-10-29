@@ -46,6 +46,8 @@ package() {
         "$pkgdir/usr/share/laprdus/spelling.json"
     install -Dm644 data/dictionary/emoji.json \
         "$pkgdir/usr/share/laprdus/emoji.json"
+    install -Dm644 data/dictionary/emoji_sl.json \
+        "$pkgdir/usr/share/laprdus/emoji_sl.json"
 
     # Install Speech Dispatcher module
     install -Dm755 build/linux-x64-release/sd_laprdus \

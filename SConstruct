@@ -953,6 +953,7 @@ elif target_platform == 'linux':
         env.Install(data_dir, 'data/dictionary/internal.json'),
         env.Install(data_dir, 'data/dictionary/spelling.json'),
         env.Install(data_dir, 'data/dictionary/emoji.json'),
+        env.Install(data_dir, 'data/dictionary/emoji_sl.json'),
     ]
 
     # Install Speech Dispatcher module and config
@@ -1165,6 +1166,7 @@ elif target_platform == 'macos':
                                   'data/dictionary/internal.json',
                                   'data/dictionary/spelling.json',
                                   'data/dictionary/emoji.json',
+                                  'data/dictionary/emoji_sl.json',
                               ])
     dist_files += env.Install(f'{dist_root}/share/doc/laprdus', [
         'readme.md',
@@ -1256,6 +1258,7 @@ if target_platform == 'windows':
             'data/dictionary/internal.json',
             'data/dictionary/spelling.json',
             'data/dictionary/emoji.json',
+            'data/dictionary/emoji_sl.json',
         ],
         action=copy_nvda_addon_files
     )

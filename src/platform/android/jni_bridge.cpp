@@ -1008,6 +1008,64 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeLoadEmojiDictionaryFromAssets(
     return success ? JNI_TRUE : JNI_FALSE;
 }
 
+// The emoji dictionary of one language (dictionaries/emoji_sl.json for
+// Slovenian), consulted before the bundled one while that language is
+// spoken. Loaded after the bundled dictionary, which clears the languages.
+JNIEXPORT jboolean JNICALL
+Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeLoadLanguageEmojiDictionaryFromAssets(
+    JNIEnv* env,
+    jobject thiz,
+    jlong handle,
+    jobject assetManager,
+    jstring languageTag,
+    jstring assetPath) {
+
+    (void)thiz;
+
+    LockedEngine engine(handle);
+    if (!engine.initialized()) {
+        LOGE("Engine not initialized - cannot load emoji dictionary");
+        return JNI_FALSE;
+    }
+
+    AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
+    if (!mgr) {
+        LOGE("Failed to get AAssetManager");
+        return JNI_FALSE;
+    }
+
+    std::string tag = jstringToString(env, languageTag);
+    laprdus::VoiceLanguage language;
+    if (!laprdus::parse_voice_language(tag.c_str(), &language)) {
+        LOGE("Unknown language for the emoji dictionary: %s", tag.c_str());
+        return JNI_FALSE;
+    }
+
+    std::string path = jstringToString(env, assetPath);
+    AAsset* asset = path.empty() ? nullptr : AAssetManager_open(mgr, path.c_str(), AASSET_MODE_BUFFER);
+    if (!asset) {
+        LOGI("Emoji dictionary asset not found: %s (this is optional)", path.c_str());
+        return JNI_FALSE;
+    }
+
+    size_t size = AAsset_getLength(asset);
+    const char* data = static_cast<const char*>(AAsset_getBuffer(asset));
+    if (!data || size == 0) {
+        AAsset_close(asset);
+        LOGE("Emoji dictionary asset is empty: %s", path.c_str());
+        return JNI_FALSE;
+    }
+
+    bool success = engine->load_language_emoji_dictionary_from_memory(language, data, size);
+    AAsset_close(asset);
+    if (success) {
+        LOGI("Emoji dictionary of %s loaded from: %s", tag.c_str(), path.c_str());
+    } else {
+        LOGE("Failed to parse emoji dictionary: %s", path.c_str());
+    }
+    return success ? JNI_TRUE : JNI_FALSE;
+}
+
 JNIEXPORT void JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetEmojiEnabled(
     JNIEnv* env,

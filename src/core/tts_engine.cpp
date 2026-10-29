@@ -4,6 +4,7 @@
 #include "tts_engine.hpp"
 #include "spelling_dict.hpp"
 #include "emoji_dict.hpp"
+#include <map>
 #include "phoneme_mapper.hpp"
 #include "../formant/formant_synthesizer.hpp"
 #include <algorithm>
@@ -26,7 +27,9 @@ struct TTSEngine::Impl {
     PronunciationDictionary dictionary;
     SpellingDictionary spelling_dictionary;         // bundled: digits, punctuation, symbols
     SpellingDictionary user_spelling_dictionary;    // the user's: wins over everything
-    EmojiDictionary emoji_dictionary;
+    EmojiDictionary emoji_dictionary;                       // bundled: hr, sr, bs
+    std::map<VoiceLanguage, EmojiDictionary> emoji_by_language;   // bundled, one language (sl)
+    EmojiDictionary emoji_user;                             // the user's entries, every language
     VoiceParams voice_params;
     bool initialized = false;
 
@@ -478,9 +481,14 @@ size_t TTSEngine::memory_usage() const {
 std::string TTSEngine::preprocess_text(const std::string& text) {
     std::string result = text;
 
-    // Step 1: Apply emoji dictionary (if enabled)
-    if (m_impl->voice_params.emoji_enabled && !m_impl->emoji_dictionary.empty()) {
-        result = m_impl->emoji_dictionary.replace_emojis(result);
+    // Step 1: Apply emoji dictionary (if enabled): the user's entries, then
+    // the dictionary of the language spoken, then the bundled one
+    if (m_impl->voice_params.emoji_enabled) {
+        const EmojiDictionary* of_language = nullptr;
+        auto it = m_impl->emoji_by_language.find(language());
+        if (it != m_impl->emoji_by_language.end()) of_language = &it->second;
+        result = EmojiDictionary::replace_emojis(
+            result, {&m_impl->emoji_user, of_language, &m_impl->emoji_dictionary});
     }
 
     // Step 2: Apply pronunciation dictionary (word-level replacements)
@@ -613,7 +621,7 @@ void TTSEngine::add_spelling_entry(const std::string& character, const std::stri
 
 void TTSEngine::add_emoji_entry(const std::string& emoji, const std::string& text) {
     if (m_impl) {
-        m_impl->emoji_dictionary.add_entry(emoji, text);
+        m_impl->emoji_user.add_entry(emoji, text);
     }
 }
 
@@ -809,26 +817,65 @@ bool TTSEngine::load_emoji_dictionary(const std::string& path) {
     if (!m_impl) {
         return false;
     }
-    return m_impl->emoji_dictionary.load_from_file(path);
+    m_impl->emoji_by_language.clear();
+    m_impl->emoji_user.clear();
+    const bool ok = m_impl->emoji_dictionary.load_from_file(path);
+    // The dictionaries of the other languages lie next to the bundled one:
+    // emoji_sl.json next to emoji.json
+    const size_t dot = path.rfind('.');
+    const size_t slash = path.find_last_of("/\\");
+    const std::string stem = (dot != std::string::npos && (slash == std::string::npos || dot > slash))
+        ? path.substr(0, dot) : path;
+    const std::string extension = stem.size() < path.size() ? path.substr(stem.size()) : std::string();
+    for (VoiceLanguage language : {VoiceLanguage::Slovenian}) {
+        load_language_emoji_dictionary(language,
+                                       stem + "_" + voice_language_short_code(language) + extension);
+    }
+    return ok;
 }
 
 bool TTSEngine::load_emoji_dictionary_from_memory(const char* json_content, size_t length) {
     if (!m_impl) {
         return false;
     }
+    m_impl->emoji_by_language.clear();
+    m_impl->emoji_user.clear();
     return m_impl->emoji_dictionary.load_from_memory(json_content, length);
+}
+
+bool TTSEngine::load_language_emoji_dictionary(VoiceLanguage language, const std::string& path) {
+    if (!m_impl) {
+        return false;
+    }
+    EmojiDictionary dictionary;
+    if (!dictionary.load_from_file(path)) return false;
+    m_impl->emoji_by_language[language] = std::move(dictionary);
+    return true;
+}
+
+bool TTSEngine::load_language_emoji_dictionary_from_memory(VoiceLanguage language,
+                                                           const char* json_content, size_t length) {
+    if (!m_impl) {
+        return false;
+    }
+    EmojiDictionary dictionary;
+    if (!dictionary.load_from_memory(json_content, length)) return false;
+    m_impl->emoji_by_language[language] = std::move(dictionary);
+    return true;
 }
 
 bool TTSEngine::append_emoji_dictionary(const std::string& path) {
     if (!m_impl) {
         return false;
     }
-    return m_impl->emoji_dictionary.append_from_file(path);
+    return m_impl->emoji_user.append_from_file(path);
 }
 
 void TTSEngine::clear_emoji_dictionary() {
     if (m_impl) {
         m_impl->emoji_dictionary.clear();
+        m_impl->emoji_by_language.clear();
+        m_impl->emoji_user.clear();
     }
 }
 

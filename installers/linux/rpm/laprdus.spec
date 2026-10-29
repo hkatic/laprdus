@@ -73,6 +73,8 @@ install -D -m 644 data/dictionary/spelling.json \
     %{buildroot}%{_datadir}/laprdus/spelling.json
 install -D -m 644 data/dictionary/emoji.json \
     %{buildroot}%{_datadir}/laprdus/emoji.json
+install -D -m 644 data/dictionary/emoji_sl.json \
+    %{buildroot}%{_datadir}/laprdus/emoji_sl.json
 
 # Install Speech Dispatcher module and config
 install -D -m 755 build/linux-x64-release/sd_laprdus \

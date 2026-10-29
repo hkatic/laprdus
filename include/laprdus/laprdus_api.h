@@ -752,7 +752,11 @@ LAPRDUS_API int32_t LAPRDUS_CALL laprdus_synthesize_spelled_ex(
 
 /**
  * Load an emoji dictionary from a JSON file.
- * The emoji dictionary maps emoji characters to their spoken text.
+ * The emoji dictionary maps emoji characters to their spoken text. A
+ * dictionary of another language lying next to it, named after the
+ * language's short code (emoji_sl.json next to emoji.json, the Slovenian
+ * names), is loaded with it and used while that language is spoken; the
+ * user's entries (laprdus_append_emoji_dictionary) win in every language.
  * @param handle Engine handle.
  * @param dictionary_path Path to the emoji dictionary JSON file.
  * @return LAPRDUS_OK on success, error code on failure.

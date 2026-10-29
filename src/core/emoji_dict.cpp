@@ -240,11 +240,34 @@ bool EmojiDictionary::append_from_memory(const char* json_content, size_t length
 // Replace Emojis
 // =============================================================================
 
+const std::string* EmojiDictionary::find(const std::string& emoji) const {
+    auto it = m_impl->entries.find(emoji);
+    if (it != m_impl->entries.end()) return &it->second;
+    // The input may carry variation selectors the entry lacks (or the
+    // other way round, which the loader covers by storing both forms)
+    std::string normalized = Impl::remove_variation_selectors(emoji);
+    if (normalized != emoji && !normalized.empty()) {
+        it = m_impl->entries.find(normalized);
+        if (it != m_impl->entries.end()) return &it->second;
+    }
+    return nullptr;
+}
+
 std::string EmojiDictionary::replace_emojis(const std::string& text) const {
     // If disabled or empty dictionary, return text as-is
     if (!m_impl->enabled || m_impl->entries.empty()) {
         return text;
     }
+    return replace_emojis(text, {this});
+}
+
+std::string EmojiDictionary::replace_emojis(const std::string& text,
+                                            const std::vector<const EmojiDictionary*>& layers) {
+    std::vector<const EmojiDictionary*> active;
+    for (const EmojiDictionary* layer : layers) {
+        if (layer && !layer->empty()) active.push_back(layer);
+    }
+    if (active.empty()) return text;
 
     std::string result;
     result.reserve(text.size() * 2);  // Reserve extra space for replacements
@@ -260,37 +283,18 @@ std::string EmojiDictionary::replace_emojis(const std::string& text) const {
             if (pos + len > text.size()) continue;
 
             std::string candidate = text.substr(pos, len);
-
-            // First try exact match
-            auto it = m_impl->entries.find(candidate);
-            if (it != m_impl->entries.end()) {
+            for (const EmojiDictionary* layer : active) {
+                const std::string* spoken = layer->find(candidate);
+                if (!spoken) continue;
                 // Found match - add space before/after if needed
                 if (!result.empty() && result.back() != ' ') {
                     result += ' ';
                 }
-                result += it->second;
+                result += *spoken;
                 result += ' ';
                 pos += len;
                 found = true;
                 break;
-            }
-
-            // If no exact match, try with variation selectors removed from candidate
-            // This handles cases where the input text has variation selectors
-            // but our dictionary entry doesn't (or vice versa - handled during load)
-            std::string normalized = Impl::remove_variation_selectors(candidate);
-            if (normalized != candidate && !normalized.empty()) {
-                it = m_impl->entries.find(normalized);
-                if (it != m_impl->entries.end()) {
-                    if (!result.empty() && result.back() != ' ') {
-                        result += ' ';
-                    }
-                    result += it->second;
-                    result += ' ';
-                    pos += len;
-                    found = true;
-                    break;
-                }
             }
         }
 

@@ -34,6 +34,8 @@ override_dh_auto_install:
 		debian/laprdus/usr/share/laprdus/spelling.json
 	install -D -m 644 data/dictionary/emoji.json \
 		debian/laprdus/usr/share/laprdus/emoji.json
+	install -D -m 644 data/dictionary/emoji_sl.json \
+		debian/laprdus/usr/share/laprdus/emoji_sl.json
 
 	# Install Speech Dispatcher module (if built) - into main package
 	if [ -f build/linux-x64-release/sd_laprdus ]; then \

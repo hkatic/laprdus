@@ -108,6 +108,7 @@ Source: "..\..\data\voices\Vlado.bin"; DestDir: "{app}\voices"; Flags: ignorever
 Source: "..\..\data\dictionary\internal.json"; DestDir: "{app}\dictionaries"; DestName: "dictionary.json"; Flags: ignoreversion
 Source: "..\..\data\dictionary\spelling.json"; DestDir: "{app}\dictionaries"; Flags: ignoreversion
 Source: "..\..\data\dictionary\emoji.json"; DestDir: "{app}\dictionaries"; Flags: ignoreversion
+Source: "..\..\data\dictionary\emoji_sl.json"; DestDir: "{app}\dictionaries"; Flags: ignoreversion
 
 [InstallDelete]
 ; Remove old voice data files from root directory (pre-1.0.0 structure)

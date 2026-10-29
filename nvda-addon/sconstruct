@@ -215,6 +215,7 @@ dictFiles = [
     ("internal.json", "internal.json"),
     ("spelling.json", "spelling.json"),
     ("emoji.json", "emoji.json"),
+    ("emoji_sl.json", "emoji_sl.json"),
 ]
 for srcFile, destFile in dictFiles:
     srcPath = Path("../data/dictionary") / srcFile

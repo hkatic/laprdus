@@ -22,6 +22,9 @@ class LaprdusTTS private constructor() {
         private const val DICTIONARY_ASSET_PATH = "dictionaries/internal.json"
         private const val SPELLING_DICTIONARY_ASSET_PATH = "dictionaries/spelling.json"
         private const val EMOJI_DICTIONARY_ASSET_PATH = "dictionaries/emoji.json"
+        // The emoji dictionaries of the languages that name emoji differently
+        // from the bundled one (Croatian, Serbian and Bosnian share it)
+        private val LANGUAGE_EMOJI_DICTIONARY_ASSETS = mapOf("sl" to "dictionaries/emoji_sl.json")
 
         // Number mode constants (matches C++ enum)
         const val NUMBER_MODE_WHOLE = 0
@@ -117,6 +120,7 @@ class LaprdusTTS private constructor() {
 
     // Emoji dictionary methods
     private external fun nativeLoadEmojiDictionaryFromAssets(handle: Long, assetManager: AssetManager, assetPath: String): Boolean
+    private external fun nativeLoadLanguageEmojiDictionaryFromAssets(handle: Long, assetManager: AssetManager, languageTag: String, assetPath: String): Boolean
     private external fun nativeSetEmojiEnabled(handle: Long, enabled: Boolean)
     private external fun nativeIsEmojiEnabled(handle: Long): Boolean
 
@@ -540,6 +544,13 @@ class LaprdusTTS private constructor() {
             Log.i(TAG, "Emoji dictionary loaded successfully")
         } else {
             Log.e(TAG, "Failed to load emoji dictionary from: $EMOJI_DICTIONARY_ASSET_PATH")
+        }
+        // The languages with emoji names of their own, after the bundled
+        // dictionary (loading the bundled one drops them)
+        for ((language, asset) in LANGUAGE_EMOJI_DICTIONARY_ASSETS) {
+            if (!nativeLoadLanguageEmojiDictionaryFromAssets(handle, assetManager, language, asset)) {
+                Log.e(TAG, "Failed to load the $language emoji dictionary from: $asset")
+            }
         }
         return result
     }

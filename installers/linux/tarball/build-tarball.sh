@@ -59,6 +59,7 @@ cp build/linux-x64-release/Vlado.bin "${PKG}/share/laprdus/"
 cp data/dictionary/internal.json "${PKG}/share/laprdus/"
 cp data/dictionary/spelling.json "${PKG}/share/laprdus/"
 cp data/dictionary/emoji.json "${PKG}/share/laprdus/"
+cp data/dictionary/emoji_sl.json "${PKG}/share/laprdus/"
 
 # Speech Dispatcher module (if built)
 if [ -f build/linux-x64-release/sd_laprdus ]; then

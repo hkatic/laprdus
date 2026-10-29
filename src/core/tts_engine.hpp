@@ -302,14 +302,20 @@ public:
     // =========================================================================
 
     /**
-     * Load emoji dictionary from file (replaces existing entries).
+     * Load the bundled emoji dictionary from file (replaces the bundled
+     * entries, the per-language ones and the user's). The file names the
+     * emoji in Croatian, Serbian and Bosnian; a dictionary of another
+     * language lying next to it, named after the language's short code
+     * ("emoji_sl.json" next to "emoji.json"), is loaded with it and used
+     * while that language is spoken (load_language_emoji_dictionary()).
      * @param path Path to emoji dictionary JSON file.
      * @return true on success.
      */
     bool load_emoji_dictionary(const std::string& path);
 
     /**
-     * Load emoji dictionary from memory (replaces existing entries).
+     * Load the bundled emoji dictionary from memory (replaces the bundled
+     * entries, the per-language ones and the user's).
      * @param json_content JSON content.
      * @param length Length of content (0 for null-terminated).
      * @return true on success.
@@ -317,7 +323,21 @@ public:
     bool load_emoji_dictionary_from_memory(const char* json_content, size_t length = 0);
 
     /**
-     * Append emoji dictionary entries from file (keeps existing entries).
+     * Load the emoji dictionary of one language, consulted before the
+     * bundled one while that language is spoken (Slovenian names its
+     * emoji differently from Croatian). Replaces the entries of that
+     * language only. Hosts that keep their dictionaries in memory
+     * (Android assets) load it with the from-memory variant after the
+     * bundled dictionary.
+     */
+    bool load_language_emoji_dictionary(VoiceLanguage language, const std::string& path);
+    bool load_language_emoji_dictionary_from_memory(VoiceLanguage language, const char* json_content,
+                                                    size_t length = 0);
+
+    /**
+     * Append the user's emoji entries from file. They win over the bundled
+     * dictionaries in every language, and stay until the bundled
+     * dictionary is loaded again or the dictionary is cleared.
      * @param path Path to emoji dictionary JSON file.
      * @return true on success.
      */

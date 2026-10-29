@@ -4044,16 +4044,67 @@ Utterance Frontend::process_slovenian(const std::u32string& text, Punctuation pu
         return (user && user->find_exact(probe.w, pron)) ||
                slovenian::builtin_lexicon().find_exact(probe.w, pron);
     });
-    std::vector<Word> words = expand_words(std::move(tokens), m_language);
-    if (words.empty()) return utt;
+    std::vector<Word> expanded = expand_words(std::move(tokens), m_language);
+    if (expanded.empty()) return utt;
+
+    // A compound numeral is read as its parts, ena in dvajset, with an
+    // accent on the ones and on the tens (SP 2001: ênaindvájset,
+    // pétindvájset) and no pause between them; the "in" is a clitic. Read
+    // as one word with one accent the ones were swallowed ("enaindvajset"
+    // was heard as "dvajset" with a mumble before it). An accent written
+    // in the text and an entry of the user's for the whole word win.
+    std::vector<Word> words;
+    words.reserve(expanded.size());
+    for (Word& word : expanded) {
+        std::u32string ones, tens, pron;
+        const bool marked = std::any_of(word.marks.begin(), word.marks.end(),
+                                        [](uint8_t m) { return m != 0; });
+        if (!word.letter_name && !marked && !(user && user->find_exact(word.w, pron)) &&
+            slovenian::split_compound_numeral(word.w, ones, tens)) {
+            Word first(ones);
+            first.capitalized = word.capitalized;
+            first.all_caps = word.all_caps;
+            Word conjunction(U"in");
+            conjunction.joined = true;
+            conjunction.clitic = true;
+            conjunction.prominence = 0;
+            Word rest(tens);
+            rest.joined = true;
+            rest.before_hyphen = word.before_hyphen;
+            words.push_back(std::move(first));
+            words.push_back(std::move(conjunction));
+            words.push_back(std::move(rest));
+        } else {
+            words.push_back(std::move(word));
+        }
+    }
 
     // ---- Per-word analysis: phones and stress ----
-    for (Word& word : words) {
+    // The first word of the clause, and one after a conjunction or an
+    // adverb that opens a request, is the greeting or the imperative where
+    // the spelling has two readings (Živijo!, Naredi to, Zdaj naredi to);
+    // elsewhere it is the verb's present (oni živijo, program naredi).
+    static const WordSet before_imperative = {U"in", U"pa", U"ter", U"zdaj", U"sedaj", U"potem",
+                                              U"nato", U"prosim", U"samo", U"le", U"raje",
+                                              U"kar", U"no", U"daj"};
+    for (size_t i = 0; i < words.size(); ++i) {
+        Word& word = words[i];
         rewrite_foreign(word);
         word.explicit_stress = std::any_of(word.marks.begin(), word.marks.end(),
                                            [](uint8_t m) { return (m & MARK_STRESS) != 0; });
+        std::u32string head_pron;
+        const std::u32string* override = nullptr;
+        if (!word.letter_name && !word.joined) {
+            if (const char32_t* head = slovenian::head_reading(word.w)) {
+                const bool at_head = i == 0 || before_imperative.count(words[i - 1].w) != 0;
+                if (at_head) {
+                    head_pron = head;
+                    override = &head_pron;
+                }
+            }
+        }
         slovenian::WordPhones wp;
-        slovenian::phonemize(word.w, word.marks, user, word.letter_name, wp);
+        slovenian::phonemize(word.w, word.marks, user, word.letter_name, wp, override);
         word.phones = std::move(wp.phones);
         word.letter = std::move(wp.letter);
         word.nuclei = std::move(wp.nuclei);
@@ -4062,6 +4113,14 @@ Utterance Frontend::process_slovenian(const std::u32string& text, Punctuation pu
         if (word.nuclei.empty()) {
             word.clitic = true;
             word.prominence = 0;
+        }
+        if (word.clitic) {
+            // The "in" of a compound numeral: unstressed, short, open
+            for (Phone& phone : word.phones) {
+                phone.is_long = false;
+                if (phone.ph == Ph::EE) phone.ph = Ph::EH;
+                if (phone.ph == Ph::OO) phone.ph = Ph::OH;
+            }
         }
     }
 

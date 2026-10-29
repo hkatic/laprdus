@@ -141,10 +141,30 @@ struct WordPhones {
  * Letters to phones for one word: the marks written in the text, then the
  * user's lexicon, then the built-in one, then the rules. `user` may be
  * nullptr. `letter_name` marks the name of a letter ("be", "eš"), which
- * the rules read with a long close vowel.
+ * the rules read with a long close vowel. `pron_override`, when given, is
+ * a pronunciation in the notation used in place of the built-in lexicon's
+ * (the user's entries still win): the reading of a word that depends on
+ * its place in the clause (head_reading()).
  */
 void phonemize(const std::u32string& word, const std::vector<uint8_t>& marks,
-               const Lexicon* user, bool letter_name, WordPhones& out);
+               const Lexicon* user, bool letter_name, WordPhones& out,
+               const std::u32string* pron_override = nullptr);
+
+/**
+ * The reading of a spelling at the head of a clause, where it is the
+ * greeting or the imperative (žívijo, narêdi, govôri); nullptr for a word
+ * that reads the same everywhere. Elsewhere the lexicon's reading holds
+ * (živíjo, naredí "they live", "he makes").
+ */
+const char32_t* head_reading(const std::u32string& w);
+
+/**
+ * A compound numeral (enaindvajset, štiriinštirideset) split into its
+ * ones and tens; false for any other word. The front end reads it as
+ * three words, ena in dvajset, with an accent on the ones and on the tens
+ * (SP 2001: ênaindvájset, pétindvájset) and no pause between them.
+ */
+bool split_compound_numeral(const std::u32string& w, std::u32string& ones, std::u32string& tens);
 
 /**
  * Sound changes across a clause: regressive voicing assimilation, final

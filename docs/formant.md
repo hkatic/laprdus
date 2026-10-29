@@ -3315,7 +3315,27 @@ Toporišič's rules), so the lexicon carries most of the load:
    hand-written entries (`HAND_ENTRIES`: the numbers, the days and months,
    the forms of *biti*, *imeti*, *iti*, *hoteti*, *moči*, the commonest
    adverbs and pronouns, the names of the neighbouring countries and towns)
-   win over the table. The notation of an entry (`slovenian::Lexicon` in
+   win over the table. They are kept to what the table lacks or gets wrong
+   (a schwa Sloleks writes as *e*: *sédəm*, *tédən*, *dánəs*; a word the
+   table has in another sense: *domôv* the adverb, *stráni* the locative),
+   and otherwise agree with it: the first version of the list was written
+   from memory, and when the first Slovenian user reported wrong accents
+   (*seznam*, *način*, *velika*, *ena*, *naredi*; 2026-10-29) a comparison
+   found 281 of its 1,605 forms contradicting Sloleks, and SSKJ and the
+   Pravopis on Fran.si sided with Sloleks in every case checked (*načín*,
+   *velíka*, *seznàm* [səznàm], *èn êna êno*, *céna*,
+   *hitróst*, *ávtobus*, *strán*, *premòr*, *rêči rêčem*, *glédati*,
+   *prosíti*, *zapustíti*, *lahkó*, *védno*, *potém*, *káj*, *nihčè*, the
+   open *ô* of *môja*, *tvôja*, *svôja*, *otrôka*, *visôka*, *zelêna*). A
+   hand entry that differs from the table now needs a reason in the
+   dictionaries; `tools/formant/slovenian_words.py` cannot check it, so
+   compare the two by hand (strip the accents of the `u8"..."` strings of
+   both files) before adding one. The teens are the one place the hand
+   list overrides Sloleks on purpose: SSKJ² gives *dvánajst in dvanájst*,
+   *pétnajst in petnájst* with the first syllable first, SP 2001 only
+   *-nájst*, Sloleks *dvanájst* but the ordinals *dvánajsti*; the user
+   heard *-nájst* as strange, so the cardinals and ordinals are stems on
+   the first syllable (*enájst* alone has one form). The notation of an entry (`slovenian::Lexicon` in
    `formant_slovenian.hpp`) is the word spelled as it is pronounced: the
    accented letters of SSKJ, *ə* for the schwa, *w* for an *l* that is [w],
    `*` for a stem, `|` for a list of forms, `spelling=pronunciation` where
@@ -3332,7 +3352,36 @@ Toporišič's rules), so the lexicon carries most of the load:
    second-last syllable, the commonest position (57% of the lemmas and of
    the running text; Gros 2000 gives the same picture for word forms). A
    stressed *e* or *o* placed by rule is long and close, the quality of
-   most long stressed *e*, *o* and of every loanword (§ 222).
+   most long stressed *e*, *o* and of every loanword (§ 222). In *-ováti*,
+   *-ovánje*, *-eváti* and *-evánje* the accent is on the *a* (*kupováti*,
+   *črkovánje*, *izpolnjeváti*, *poučevánje*; until 2026-10-29 the rule put
+   it on the *o*, *črkóvanje*), in *-ávati* and in the *-évati* whose *e*
+   belongs to the stem, after a non-palatal consonant, on the first vowel
+   (*predávati*, *zahtévati*, *ogrévati*). A stem of the lexicon followed
+   by a derivational suffix that begins with *l* before a consonant does
+   not keep the stem's accent: in *-lec, -lka, -lnik, -lnica, -lski,
+   -lstvo* the stress moves to the vowel before the *l* (*zagánjati* but
+   *zaganjálnik*, *napajálnik*, *brálec*, *gledálec*, *poslušálec*,
+   *učílnica*, *spálnica*: SSKJ), and before *-lišče* to its *í*
+   (*gledalíšče*); `stress_derived_l_suffix()`. Before that, *zaganjalnik*
+   was read with the accent of *zagánja\**. At the end of a word of one
+   syllable after a vowel, *l* is [w] (*bil*, *stol*, *sol*) except in
+   *dél* (SSKJ: "[tudi deu̯]", the [l] first) and the loans *šál*, *bál*,
+   *gél*, *mól*.
+
+A few spellings read differently by their place in the clause
+(`HEAD_READINGS`, `slovenian::head_reading()`): at the head of the clause,
+or after a conjunction or an adverb that opens a request (*in, pa, zdaj,
+potem, prosim, samo, raje ...*), *živijo* is the greeting *žívijo* and
+*naredi*, *govori*, *odgovori*, *dobi*, *zapusti*, *spusti*, *stori*,
+*deli*, *uredi*, *ponovi*, *obnovi*, *naloži*, *osveži* are the
+imperatives of the dictionaries (*narêdi*, *govôri*, *dôbi*, *zapústi*,
+*dêli*, *urêdi*, *ponôvi*, *obnôvi*, *nalôži*, *osvéži*: SP 2001), the
+labels of buttons; elsewhere they are the present tense (*oni živíjo*,
+*program naredí kopijo*, *uporabnik zapustí skupino*) or the other word
+spelled the same (*déli* "parts"). *Meni* at the head is the menu, *mení*
+(SSKJ), elsewhere the dative *méni*. The reading is passed to
+`phonemize()` as `pron_override`; the user's entries still win.
 
 Clitics (Toporišič: the monosyllabic prepositions and conjunctions, *ne*,
 *naj*, the forms of *biti* and the future auxiliary, *bi*, the short
@@ -3347,8 +3396,14 @@ vé, íks, ípsilon*, *mehki čé* and *mehki džé* for ć and đ.
 
 The number converter has a Slovenian dialect (Pravopis § 11 and § 536):
 *nič, ena, dve, tri, štiri ...* for the digits (the counting *dva* only in
-the compounds), *enaindvajset* and *štiriinštirideset* as one word,
-*dvesto*, the invariable *tisoč* (*dva tisoč*, *tristo en tisoč*), the dual
+the compounds), *enaindvajset* and *štiriinštirideset* written as one word
+and read as three, *ena in dvajset*, with an accent on the ones and on the
+tens and the *in* a clitic between them, without a pause (SP 2001:
+*ênaindvájset*, *pétindvájset*; `slovenian::split_compound_numeral()` in
+`process_slovenian()`; read as one word with one accent, as until
+2026-10-29, the ones were swallowed and *25* was heard as *dvajset* with a
+mumble before it), *dvesto*, the invariable *tisoč* (*dva tisoč*, *tristo
+en tisoč*), the dual
 and plural of the scale words (*en milijon, dva milijona, trije milijoni,
 štirje milijoni, pet milijonov, enaindvajset milijonov; ena milijarda, dve
 milijardi, tri milijarde, pet milijard*), a decimal comma as *cela* agreeing
@@ -3365,11 +3420,23 @@ zvezdica, enačaj ...*) are a table of the module (`spelled_name()`), which
 `TTSEngine::spell_character()` uses instead of the Croatian spelling
 dictionary when Slovenian is spoken.
 
+Emoji are named in Slovenian from `data/dictionary/emoji_sl.json`, the
+`tts` annotations of the Unicode CLDR for *sl* (*režeči obraz*, *mahajoča
+dlan*, *rdeče srce*) for the same 1,121 emoji as the Croatian `emoji.json`
+(which is CLDR *hr*, edited). The engine loads it by itself next to the
+bundled dictionary (`TTSEngine::load_emoji_dictionary()` looks for
+`emoji_<short code>.json` beside the file it is given; Android loads the
+asset through `load_language_emoji_dictionary_from_memory()`) and consults
+it before the bundled one while Slovenian is spoken; the user's emoji
+entries win in every language. Serbian and Bosnian share the Croatian file.
+
 ### Checking
 
 `tests/linux/test_frontend.cpp` ("[slovenian]") checks the sounds of some
 forty words against the Pravopis, the clitics and sandhi, the clause types,
-the marks in the text and the user's entries. The generator is run with
+the marks in the text and the user's entries, and the words of the first
+user reports with their head-of-clause readings; `test_formant.cpp` checks
+the Slovenian emoji names and the compound numerals. The generator is run with
 
 ```bash
 python3 tools/formant/slovenian_words.py extract /path/to/Sloleks.3.1 forms.tsv

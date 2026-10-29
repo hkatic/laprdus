@@ -1742,9 +1742,9 @@ TEST_CASE("Slovenian letters become the sounds of the Pravopis", "[frontend][slo
         // Open and close e, o, the schwa and the final devoicing, from the lexicon
         {U"mesto", "m'é:stO"},
         {U"človek", "čl'O:vEk"},
-        {U"človeka", "čl'O:vEka"},
+        {U"človeka", "člOv'é:ka"},
         {U"otrok", "Otr'Ok"},
-        {U"otroka", "Otr'ó:ka"},
+        {U"otroka", "Otr'O:ka"},
         {U"veter", "v'é:tər"},
         {U"vetra", "v'é:tra"},
         {U"pes", "p'əs"},
@@ -1762,7 +1762,7 @@ TEST_CASE("Slovenian letters become the sounds of the Pravopis", "[frontend][slo
         {U"konj", "k'On"},
         // v: [v] before a vowel, [w] before a consonant and at the end, [u] at the head
         {U"voda", "v'O:da"},
-        {U"nov", "n'O:w"},
+        {U"nov", "n'Ow"},                 // nòv nôva: short
         {U"avto", "'a:wtO"},
         {U"vlak", "wl'a:k"},
         {U"vsak", "us'a:k"},
@@ -1771,8 +1771,11 @@ TEST_CASE("Slovenian letters become the sounds of the Pravopis", "[frontend][slo
         {U"prst", "p'ərst"},
         {U"Trst", "t'ərst"},
         {U"pacient", "pacij'Ent"},
-        // Compound numerals and the words of the number converter
-        {U"enaindvajset", "Enaindv'a:jsEt"},
+        // Compound numerals (an accent on the ones and on the tens, the
+        // "in" a clitic, no boundary: SP 2001 ênaindvájset) and the words
+        // of the number converter
+        {U"enaindvajset", "'E:naindv'a:jsEt"},
+        {U"petinpetdeset", "p'é:tinp'é:ddEsEt"},
         {U"tisoč", "t'i:sOč"},
         {U"milijonov", "milij'ó:nOw"},
     };
@@ -1783,12 +1786,62 @@ TEST_CASE("Slovenian letters become the sounds of the Pravopis", "[frontend][slo
     }
 }
 
+TEST_CASE("Slovenian words reported by the first users (October 2026)", "[frontend][slovenian]") {
+    Frontend frontend(VoiceLanguage::Slovenian);
+    struct Case { const char32_t* text; const char* phones; };
+    const Case cases[] = {
+        // SSKJ, SP 2001 on Fran.si: the accents the reports were checked against
+        {U"napajalnik", "napaj'a:lnik"},
+        {U"zaganjalnik", "zaganj'a:lnik"},       // was zagánjalnik from the verb's stem
+        {U"otoplitev", "OtOpl'i:təw"},
+        {U"črkovanje", "čərkOv'a:njE"},          // was črkóvanje: the -ovanje rule
+        {U"kupovati", "kupOv'a:ti"},
+        {U"zahtevati", "zaht'é:vati"},
+        {U"nadlegovanje", "nadlEgOv'a:njE"},
+        {U"nadležen", "nadl'é:žən"},
+        {U"seznam", "səzn'am"},                  // seznàm [səznam], was séznam
+        {U"seznama", "səzn'a:ma"},
+        {U"način", "nač'i:n"},                   // načín, was náčin
+        {U"počiščeno", "pOč'i:ščEnO"},
+        {U"ena", "'E:na"},                       // êna, open; was éna
+        {U"en", "'En"},
+        {U"tapnite", "t'a:pnitE"},
+        {U"velika", "vEl'i:ka"},                 // vêlik, velíka
+        {U"velik", "v'E:lik"},
+        {U"del", "d'é:l"},                       // dél [tudi deu̯]: the [l] first
+        {U"dvanajst", "dv'a:najst"},             // SSKJ²: dvánajst in dvanájst, the first
+        {U"ob dvanajstih", "Ob dv'a:najstih"},    // and the ordinal with it (Sloleks dvánajsti)
+        {U"sedemnajst", "s'é:dəmnajst"},
+        {U"bralec", "br'a:ləc"},                 // the stress moves before -lec, -lnik, -lišče
+        {U"gledališče", "glEdal'i:ščE"},
+        {U"domov", "dOm'O:w"},
+    };
+    for (const Case& c : cases) {
+        DYNAMIC_SECTION(PhonemeMapper::utf32_to_utf8(c.text)) {
+            REQUIRE(phones_of(read(frontend, c.text)) == c.phones);
+        }
+    }
+    // A spelling with two readings: the greeting or the imperative at the
+    // head of the clause (and after a conjunction or an adverb that opens
+    // a request), the verb's present elsewhere
+    REQUIRE(phones_of(read(frontend, U"živijo")) == "ž'i:vijO");
+    REQUIRE(phones_of(read(frontend, U"Živijo, kako si")) == "ž'i:vijO kak'ó: si");
+    REQUIRE(phones_of(read(frontend, U"Oni živijo tukaj")) == "'O:ni živ'i:jO t'u:kaj");
+    REQUIRE(phones_of(read(frontend, U"Naredi to")) == "nar'E:di t'ó:");
+    REQUIRE(phones_of(read(frontend, U"Zdaj naredi to")) == "zd'aj nar'E:di t'ó:");
+    REQUIRE(phones_of(read(frontend, U"Program naredi kopijo")) == "prOgr'a:m narEd'i: k'ó:pijO");
+    REQUIRE(phones_of(read(frontend, U"Uredi")) == "ur'E:di");
+    REQUIRE(phones_of(read(frontend, U"Meni")) == "mEn'i:");
+    // The number converter's words: the ones keep their accent before the tens
+    REQUIRE(phones_of(read(frontend, U"sto enaindvajset")) == "st'ó: 'E:naindv'a:jsEt");
+}
+
 TEST_CASE("Slovenian clitics, sandhi and clause types", "[frontend][slovenian]") {
     Frontend frontend(VoiceLanguage::Slovenian);
     // Proclitics and enclitics lose their stress and length; v before a
     // consonant is the vowel u; the final d of a preposition stays voiced
     REQUIRE(phones_of(read(frontend, U"Bil sem v šoli")) == "b'i:w səm u š'ó:li");
-    REQUIRE(phones_of(read(frontend, U"v Ameriki")) == "w am'é:riki");
+    REQUIRE(phones_of(read(frontend, U"v Ameriki")) == "w am'E:riki");
     REQUIRE(phones_of(read(frontend, U"od orača")) == "Od Or'a:ča");
     // Regressive voicing assimilation across a clitic boundary and inside a word
     REQUIRE(phones_of(read(frontend, U"k bratu")) == "g br'a:tu");

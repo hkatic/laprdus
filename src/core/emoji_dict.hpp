@@ -7,6 +7,7 @@
 
 #include <string>
 #include <memory>
+#include <vector>
 
 namespace laprdus {
 
@@ -75,6 +76,22 @@ public:
      * @return Text with emojis replaced by words.
      */
     std::string replace_emojis(const std::string& text) const;
+
+    /**
+     * Replace the emojis of the text using several dictionaries in order of
+     * precedence: the first layer that knows an emoji names it (the user's
+     * entries, then the dictionary of the language spoken, then the base
+     * dictionary). Layers that are null or empty are skipped; the enabled
+     * flag of the layers is not consulted.
+     */
+    static std::string replace_emojis(const std::string& text,
+                                      const std::vector<const EmojiDictionary*>& layers);
+
+    /**
+     * The text of one emoji, with or without its variation selectors;
+     * nullptr when the dictionary has none.
+     */
+    const std::string* find(const std::string& emoji) const;
 
     /**
      * Add a single emoji entry.
