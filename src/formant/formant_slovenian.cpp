@@ -70,6 +70,86 @@ bool starts_with(const std::u32string& s, const std::u32string& prefix) {
     return s.size() >= prefix.size() && s.compare(0, prefix.size(), prefix) == 0;
 }
 
+// A surname in -ović, -ević (-ovič, -evič, -ovic, -evic) in any of its
+// forms (Petrović, Petrovića, Petrovićem, Petrovićeva): where the suffix
+// begins, or npos. tools/formant/slovenian_words.py, vic_surname(),
+// mirrors it.
+size_t vic_surname(const std::u32string& w) {
+    static const char32_t* const ENDINGS[] = {
+        U"evimi", U"evega", U"evemu", U"evem", U"evih", U"evim", U"ema", U"ama", U"eva", U"evo",
+        U"evi", U"eve", U"em", U"om", U"ev", U"ih", U"a", U"u", U"i", U"e", U""};
+    for (const char32_t* ending : ENDINGS) {
+        const std::u32string e(ending);
+        if (!ends_with(w, e)) continue;
+        const size_t core = w.size() - e.size();
+        if (core < 5) continue;
+        const char32_t last = w[core - 1];
+        if ((last == C_ACUTE || last == C_CARON || last == U'c') && w[core - 2] == U'i' &&
+            w[core - 3] == U'v' && (w[core - 4] == U'o' || w[core - 4] == U'e')) {
+            return core - 4;
+        }
+    }
+    return std::u32string::npos;
+}
+
+// A word read by the rules of names: written with a capital, or with a
+// letter of Croatian, Serbian and Bosnian names (ć, đ) that no Slovenian
+// common word has
+bool has_name_letter(const std::u32string& w) {
+    return w.find(C_ACUTE) != std::u32string::npos || w.find(D_STROKE) != std::u32string::npos;
+}
+
+// An ending of the declension of nouns and adjectives or of a possessive
+// adjective, also after one consonant: the j or t that names in -r and -e
+// take (Cánkarja, Cánkarjev; Jóžeta, Jóžetov) and the consonant after a
+// fleeting e (Koróšca of Koróš*ec, Júpitrov, Štúkljem): a name inside a
+// clause takes a stem of the lexicon only with one of these, not another
+// word's beginning (Ferdolenc: férd* of Ferdo + olenc; Pirnatčič).
+// tools/formant/slovenian_words.py, declension_ending(), mirrors it.
+bool declension_ending(const std::u32string& e);
+
+// A name as base + an ending of the declension of nouns and adjectives or
+// of a possessive adjective, the base ending with `suffix` (Albína: albin
+// + a; Dolénca: dolenc + a; Gorénjskega: gorenjsk + ega; Kováčičeva:
+// kovačič + eva): the base's length, or 0. Used by the rules of names
+// only (default_stress()); the generator does not simulate them.
+size_t name_base(const std::u32string& w, const char32_t* suffix) {
+    static const char32_t* const ENDINGS[] = {
+        U"evimi", U"ovimi", U"inimi", U"evega", U"ovega", U"inega", U"evemu", U"ovemu", U"inemu",
+        U"evem", U"ovem", U"inem", U"evih", U"ovih", U"inih", U"evim", U"ovim", U"inim",
+        U"eva", U"evo", U"evi", U"eve", U"ova", U"ovo", U"ovi", U"ove", U"ina", U"ino", U"ini", U"ine",
+        U"ega", U"emu", U"imi", U"ima",
+        U"ama", U"ami", U"ema", U"oma", U"ah", U"am", U"em", U"om", U"ih", U"im", U"ov", U"ev", U"in",
+        U"a", U"e", U"i", U"o", U"u", U""};
+    const std::u32string suf(suffix);
+    for (const char32_t* ending : ENDINGS) {
+        const std::u32string e(ending);
+        if (!ends_with(w, e) || w.size() < e.size() + suf.size()) continue;
+        const size_t base = w.size() - e.size();
+        if (w.compare(base - suf.size(), suf.size(), suf) == 0) return base;
+    }
+    return 0;
+}
+
+bool declension_ending(const std::u32string& e) {
+    static const std::unordered_set<std::u32string> ENDINGS = [] {
+        std::unordered_set<std::u32string> set;
+        for (const char32_t* ending : {
+                 U"evimi", U"ovimi", U"inimi", U"evega", U"ovega", U"inega", U"evemu", U"ovemu", U"inemu",
+                 U"evem", U"ovem", U"inem", U"evih", U"ovih", U"inih", U"evim", U"ovim", U"inim",
+                 U"eva", U"evo", U"evi", U"eve", U"ova", U"ovo", U"ovi", U"ove", U"ina", U"ino", U"ini",
+                 U"ine", U"ega", U"emu", U"imi", U"ima", U"ama", U"ami", U"ema", U"oma", U"ah", U"am",
+                 U"em", U"om", U"ih", U"im", U"ov", U"ev", U"in", U"ijo", U"jo", U"a", U"e", U"i", U"o",
+                 U"u", U""}) {
+            set.insert(ending);
+        }
+        return set;
+    }();
+    if (ENDINGS.count(e)) return true;
+    const size_t consonants = starts_with(e, U"lj") || starts_with(e, U"nj") ? 2 : 1;
+    return e.size() > consonants && !is_vowel_letter(e[0]) && ENDINGS.count(e.substr(consonants));
+}
+
 using WordSet = std::unordered_set<std::u32string>;
 
 // =============================================================================
@@ -258,9 +338,12 @@ const char* const HAND_ENTRIES[] = {
     // the commoner word: otròk (SSKJ² nom. otròk, gen. pl. otrók), dní
     // (SSKJ² rod. mn. dní), gôzda (gòzd gôzda tudi gózd), glasú (glás -ú
     // tudi -a), naglàs the accent (the adverb naglás "aloud" is commoner in
-    // the corpus), sobóta (Múrska Sóbota is the town), ôno ône (the
-    // personal pronoun, óno ône the demonstrative), dà (the particle) ----
-    u8"otròk", u8"dní", u8"gôzda", u8"glasú", u8"naglàs", u8"sobóta", u8"sobót*",
+    // the corpus), ôno ône (the personal pronoun, óno ône the
+    // demonstrative), dà (the particle). (Sobóta, here until 2026-10-30
+    // against the town Múrska Sóbota, is the table's: a name no longer
+    // wins over a common word there, and a capital reads the name from
+    // the tables of names, name_reading().) ----
+    u8"otròk", u8"dní", u8"gôzda", u8"glasú", u8"naglàs",
     u8"ôno", u8"ône", u8"dà",
     // ---- Verbs: the first variant of SSKJ² where Sloleks has the second
     // (písati in pisáti, potrdíti in potŕditi, shraníti in shrániti), the
@@ -794,11 +877,13 @@ bool Lexicon::find_exact(const std::u32string& word, std::u32string& pron) const
     return false;
 }
 
-bool Lexicon::find_stem(const std::u32string& word, size_t& stem_length, std::u32string& pron) const {
+bool Lexicon::find_stem(const std::u32string& word, size_t& stem_length, std::u32string& pron,
+                        bool (*accept)(const std::u32string& ending)) const {
     if (m_stems.empty() && !m_stem_table.count) return false;
     const size_t min_len = word.size() > MAX_ENDING ? word.size() - MAX_ENDING : 1;
     std::string entry;
     for (size_t len = word.size(); len >= min_len && len >= 2; --len) {
+        if (accept && !accept(word.substr(len))) continue;
         const std::u32string stem = word.substr(0, len);
         auto it = m_stems.find(stem);
         if (it != m_stems.end()) {
@@ -908,6 +993,22 @@ const Lexicon& builtin_lexicon() {
         return lex;
     }();
     return lexicon;
+}
+
+bool name_reading(const std::u32string& w, bool clause_head, std::u32string& pron) {
+    auto table_of = [](const char* const* blocks, size_t count) {
+        Lexicon lex;
+        Lexicon::Table forms;
+        forms.blocks = blocks;
+        forms.count = count;
+        forms.block = SLOVENIAN_BLOCK;
+        lex.set_tables(forms, Lexicon::Table());
+        return lex;
+    };
+    static const Lexicon names = table_of(SLOVENIAN_NAMES, SLOVENIAN_NAMES_COUNT);
+    static const Lexicon inside = table_of(SLOVENIAN_NAMES_INSIDE, SLOVENIAN_NAMES_INSIDE_COUNT);
+    if (names.find_exact(w, pron)) return true;
+    return !clause_head && inside.find_exact(w, pron);
 }
 
 bool verb_noun_readings(const std::u32string& w, VerbNounReadings& out) {
@@ -1106,13 +1207,145 @@ namespace {
 // Slovenian word classes whose accent is regular, then the second-last
 // syllable, the commonest place in the language. Returns the index into
 // `nuclei` (the prothetic u of vsak, vzeti excluded).
-int default_stress(const std::u32string& w, const WordPhones& wp, const std::vector<bool>& prothetic) {
+int default_stress(const std::u32string& w, const WordPhones& wp, const std::vector<bool>& prothetic,
+                   Capital capital) {
+    const bool foreign_letter = has_name_letter(w);
+    const bool surname = capital != Capital::None || foreign_letter;
+    const bool name = capital == Capital::Head || capital == Capital::Inside || foreign_letter;
     std::vector<int> candidates;     // nucleus indexes that may carry the stress
     for (size_t k = 0; k < wp.nuclei.size(); ++k) {
         if (!prothetic[k]) candidates.push_back(static_cast<int>(k));
     }
     if (candidates.empty()) return -1;
     if (candidates.size() == 1) return candidates[0];
+    auto letter_of = [&](int candidate) {
+        return static_cast<size_t>(wp.letter[static_cast<size_t>(wp.nuclei[static_cast<size_t>(candidate)])]);
+    };
+
+    // Surnames in -ović, -ević: the syllable before the suffix, which is
+    // the first syllable of the three-syllable ones (Pétrović, Pópovič,
+    // Túrković, Srébrović) and the second of four (Stojánović, Kováčević,
+    // Milóšević), as in the hand-accented names of Sloleks (63 of 65 with
+    // three syllables, 69 of 72 with four, 12 of 13 with five); before
+    // -ijević the syllable before that (Antónijević, Dimítrijević); an i
+    // after a vowel stands for j (Mihailović as Mihájlović); without a
+    // vowel before the suffix, its o (Kôvič, Nóvič). The lexicon's
+    // hand-accented forms still win, the stems of common words do not
+    // (phonemize()).
+    if (surname) {
+        size_t end = vic_surname(w);
+        if (end != std::u32string::npos) {
+            if (end >= 3 && w[end - 2] == U'i' && w[end - 1] == U'j') end -= 2;
+            int before = -1;
+            for (size_t c = 0; c < candidates.size(); ++c) {
+                if (letter_of(candidates[c]) < end) before = static_cast<int>(c);
+            }
+            if (before < 0) return candidates[0];
+            const size_t letter = letter_of(candidates[static_cast<size_t>(before)]);
+            if (before > 0 && w[letter] == U'i' && letter > 0 && is_vowel_letter(w[letter - 1])) --before;
+            return candidates[static_cast<size_t>(before)];
+        }
+    }
+
+    // The other names the lexicon does not know, in any case form: the
+    // patterns of the hand-accented names of Sloleks that the rules of
+    // common words miss (on its 5,000 names written as one word they
+    // raise the rules from 74 to 80 %; the counts are of names right by
+    // the pattern against those right by the common rules)
+    if (name) {
+        auto nuclei_before = [&](size_t letter) {      // candidate positions before a letter
+            std::vector<int> out;
+            for (size_t c = 0; c < candidates.size(); ++c) {
+                if (letter_of(candidates[c]) < letter) out.push_back(static_cast<int>(c));
+            }
+            return out;
+        };
+        auto at_letter = [&](size_t letter) {
+            for (size_t c = 0; c < candidates.size(); ++c) {
+                if (letter_of(candidates[c]) == letter) return candidates[c];
+            }
+            return -1;
+        };
+        size_t b;
+        // -ič, -ić of three syllables and more (not -ović, above): before
+        // -čič after a consonant the second-last syllable (Zupánčič,
+        // Miklávčič, Gregórčič), otherwise the third-last (Gólobič,
+        // Tómažič, Míhelič; Kóstelić, Níkolić, Káradžić): 117 and 76
+        // against 64 and 67
+        if ((b = name_base(w, U"ič")) != 0 || (b = name_base(w, U"ić")) != 0) {
+            const std::vector<int> base = nuclei_before(b);
+            if (base.size() >= 3) {
+                const bool cic = w[b - 1] == C_CARON && b >= 4 && w[b - 3] == C_CARON &&
+                                 !is_vowel_letter(w[b - 4]);
+                return candidates[static_cast<size_t>(base[base.size() - (cic ? 2 : 3)])];
+            }
+        }
+        // -ovec, -evec, and the oblique cases -ovca, -evcu ...: the syllable
+        // before (Ájdovec, Búkovec, Gábrovca): 34 against 6, the oblique
+        // forms of the names of Sloleks 226 against 100 (Debévca of the
+        // contracted Debévc is the rest)
+        if (ends_with(w, U"ovec") || ends_with(w, U"evec")) {
+            const std::vector<int> base = nuclei_before(w.size() - 4);
+            if (base.size() >= 1 && nuclei_before(w.size()).size() >= 3) {
+                return candidates[static_cast<size_t>(base.back())];
+            }
+        } else if (((b = name_base(w, U"ovc")) != 0 || (b = name_base(w, U"evc")) != 0) && b < w.size()) {
+            const std::vector<int> base = nuclei_before(b - 3);
+            if (!base.empty()) return candidates[static_cast<size_t>(base.back())];
+        }
+        // -ec without its e after n, v, j, l, r, m: the last syllable
+        // (Dolénc, Bohínc, Debévc, Dobrájc): 39 against 13
+        if ((b = name_base(w, U"c")) != 0 && b >= 3 && is_vowel_letter(w[b - 3]) &&
+            std::u32string(U"nvjlrm").find(w[b - 2]) != std::u32string::npos && nuclei_before(b).size() >= 2) {
+            const int k = at_letter(b - 3);
+            if (k >= 0) return k;
+        }
+        // Slavic names in -mir, -bor, -slav, -dar, -gor after a vowel: the
+        // first syllable (Bógomir, Dálibor, Ljúbomir, Bránimir): 23 against 1
+        for (const char32_t* suffix : {U"mir", U"bor", U"slav", U"dar", U"gor"}) {
+            if ((b = name_base(w, suffix)) != 0) {
+                const size_t len = std::char_traits<char32_t>::length(suffix);
+                if (b > len && is_vowel_letter(w[b - len - 1]) && nuclei_before(b).size() >= 3) {
+                    return candidates[0];
+                }
+            }
+        }
+        // -iel, -ael: the first syllable (Gábriel, Dániel, Ízrael)
+        if (ends_with(w, U"iel") || ends_with(w, U"ael")) return candidates[0];
+        // -in: its i (Albín, Avguštín, Albína, Martína): 56 against 21
+        if ((b = name_base(w, U"in")) != 0 && nuclei_before(b).size() >= 2) {
+            const int k = at_letter(b - 2);
+            if (k >= 0) return k;
+        }
+        // -ak of three syllables and more: its a (Cerkvenják, Gorenják): 18
+        // against 0
+        if ((b = name_base(w, U"ak")) != 0 && nuclei_before(b).size() >= 3) {
+            const int k = at_letter(b - 2);
+            if (k >= 0) return k;
+        }
+        // -ij, -ija: the syllable before (Júrij, Antónij, Albánija,
+        // Bolgárija, Ávstrija): 18 against 3, 85 against 30. A feminine
+        // only inside a clause: at its head the word may be a common noun
+        // the lexicon lacks, stressed on the i (biologíja)
+        if ((b = name_base(w, U"ij")) != 0 && (b == w.size() || capital == Capital::Inside)) {
+            const std::vector<int> base = nuclei_before(b - 2);
+            if (!base.empty() && nuclei_before(b).size() >= 2) return candidates[static_cast<size_t>(base.back())];
+        }
+        // -aj, -ej, -oj, -uj: that vowel (Andréj, Jernéj, Cigój): 29
+        // against 14; -al, -il, -ul of two syllables: its vowel (Abdúl,
+        // Kanál, Ciríl): 19 against 3 (-el and -ol are as often on the
+        // first syllable: Pável, Kárel, Bártol)
+        if ((b = name_base(w, U"j")) != 0 && b >= 2 && w[b - 2] != U'i' && is_vowel_letter(w[b - 2]) &&
+            nuclei_before(b).size() >= 2) {
+            const int k = at_letter(b - 2);
+            if (k >= 0) return k;
+        }
+        if ((b = name_base(w, U"l")) != 0 && b >= 2 &&
+            (w[b - 2] == U'a' || w[b - 2] == U'i' || w[b - 2] == U'u') && nuclei_before(b).size() == 2) {
+            const int k = at_letter(b - 2);
+            if (k >= 0) return k;
+        }
+    }
 
     auto nucleus_of_letter = [&](size_t letter) {
         for (size_t k = 0; k < wp.nuclei.size(); ++k) {
@@ -1362,7 +1595,7 @@ void stress_derived_l_suffix(const std::u32string& ending, Analysis& a) {
     const size_t stem = a.notation_letters;
     if (stem == 0 || !is_vowel_letter(a.plain[stem - 1])) return;
     size_t target;
-    if (starts_with(ending, U"išč")) {
+    if (starts_with(ending, U"lišč")) {     // gledalíšče, igríšče
         target = stem + 1;
     } else if (ending[1] == U'c' || ending[1] == U'k' || ending[1] == U'n' || ending[1] == U's' ||
                ending[1] == U't') {
@@ -1377,8 +1610,9 @@ void stress_derived_l_suffix(const std::u32string& ending, Analysis& a) {
 
 void phonemize(const std::u32string& word, const std::vector<uint8_t>& marks,
                const Lexicon* user, bool letter_name, WordPhones& out,
-               const std::u32string* pron_override) {
+               const std::u32string* pron_override, Capital capital) {
     out = WordPhones();
+    const bool surname = capital != Capital::None || has_name_letter(word);
     Analysis a;
     a.letter_name = letter_name;
     std::vector<bool> prothetic;
@@ -1410,7 +1644,7 @@ void phonemize(const std::u32string& word, const std::vector<uint8_t>& marks,
                 out.stress = static_cast<int>(k);
             }
         }
-        if (out.stress < 0) out.stress = default_stress(a.plain, out, prothetic);
+        if (out.stress < 0) out.stress = default_stress(a.plain, out, prothetic, capital);
         out.from_lexicon = true;
         finish_word(a, out);
     } else {
@@ -1430,9 +1664,19 @@ void phonemize(const std::u32string& word, const std::vector<uint8_t>& marks,
             stem_length = word.size();
         }
         if (!found && (!letter_name || word.size() > 2)) {
+            // A surname in -ović is read by its rule (default_stress()),
+            // not as a common word's stem followed by an ending (petr*,
+            // turk*): only a whole form of the lexicon decides it. A name
+            // inside a clause takes a stem only with an ending of the
+            // declension (Kovačiča: kováčič* + a), not another word's
+            // beginning (Ferdolenc: férd* of Ferdo + olenc)
             stem_length = word.size();
             found = builtin_lexicon().find_exact(word, pron) ||
-                    builtin_lexicon().find_stem(word, stem_length, pron);
+                    (!(surname && vic_surname(word) != std::u32string::npos) &&
+                     builtin_lexicon().find_stem(word, stem_length, pron,
+                                                 capital == Capital::Inside || has_name_letter(word)
+                                                     ? declension_ending : nullptr));
+            if (!found) stem_length = word.size();
         }
         if (!found && !letter_name) {
             std::u32string ones, tens, tens_pron;
@@ -1458,7 +1702,7 @@ void phonemize(const std::u32string& word, const std::vector<uint8_t>& marks,
             }
         }
         if (out.stress < 0) {
-            out.stress = default_stress(a.plain, out, prothetic);
+            out.stress = default_stress(a.plain, out, prothetic, capital);
             if (!found) out.from_lexicon = false;
         }
         finish_word(a, out);

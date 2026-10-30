@@ -3306,9 +3306,10 @@ Toporišič's rules), so the lexicon carries most of the load:
    Gigafida 2.0 lemma frequency of 100 (`--manual-min 0 --auto-min 100
    --form-min 1`; until 2026-10-30 only the 25,000 most frequent lemmas,
    which left *karambol*, *zobobol* and their like to the rules). It holds
-   69,000 stems, each for a paradigm whose forms the rules of unstressed
-   endings read correctly (*déla\**: délam, délal, délala), and 93,000
-   whole forms for the rest (*jêzik*, *jezíka*; *člôvek*, *človéka*). The
+   80,000 stems, each for a paradigm whose forms the rules of unstressed
+   endings read correctly (*déla\**: délam, délal, délala), and 96,000
+   whole forms for the rest (*jêzik*, *jezíka*; *člôvek*, *človéka*), and
+   the tables of names (see "Names" below). The
    tables are sorted by spelling, front-coded in blocks of sixteen (an
    entry after the first of its block starts with a byte that says how
    many leading bytes it shares with the one before) and searched in
@@ -3327,8 +3328,11 @@ Toporišič's rules), so the lexicon carries most of the load:
      but *veselím* "I look forward" is eight times as frequent as its
      *vesélim*. One spelling may be two forms of one word (*lásti* the
      dative, *lastí* the genitive of *lást*), each counted. A proper name
-     counts a tenth, because the lexicon is looked up without the capital
-     (*sobóta*, not *Múrska Sóbota*).
+     is read only where no common word is spelled like it, because the
+     lexicon is looked up without the capital (*sobóta*, not *Múrska
+     Sóbota*; *jeléna*, not *Jêlena*); a capital reads the name from the
+     tables of names (until 2026-10-30 a name counted a tenth of a common
+     word, so the commoner names still won).
    - **A form with two spellings** (*mesca* and *meseca*) lists the accents
      of both; the generator takes the one that spells the form. It used to
      take the first, which dropped *meseca*, *mesecih* and every other
@@ -3514,6 +3518,143 @@ letter by letter is stressed only on its last letter (*SP* [espé], *RTV*
 *bé cé čé dé ef gé há jé ká èl èm èn pé èr ès èš té vé zé žé*, *kú, dvojni
 vé, íks, ípsilon*, *mehki čé* and *mehki džé* for ć and đ.
 
+### Names
+
+Names of persons and places were the second listener report (2026-10-30:
+"surnames in -vič or -vic are always stressed on the first syllable, not
+the second: Srebrović, Petrović, Turković"). Four things read them now.
+
+**Surnames in -ović, -ević** (-ovič, -evič, -ovic, -evic, in any case and
+as possessives: *Petrović, Petroviću, Petrovićeva*): the syllable before
+the suffix (`vic_surname()` and the first rule of `default_stress()`).
+That is the first syllable of the commonest, three-syllable ones, as the
+listener said (*Pétrović, Túrković, Srébrović, Pópovič*), and the second
+of four (*Stojánović, Kováčević, Milóšević, Jovánović*), as the
+hand-accented names of Sloleks have them: 63 of 65 with three syllables,
+69 of 72 with four, 12 of 13 with five (the exceptions are *Crnkovìč*,
+*Mokrovìč*, *Čáušević*, *Úroševič*, which stay as Sloleks has them).
+Before *-ijević* the syllable before that (*Antónijević*), an *i* after a
+vowel stands for *j* (*Mihailović* as *Mihájlović*), and with no vowel
+before the suffix its *o* (*Kôvič*). The rule applies to a word written
+with a capital and to any word with ć or đ (no Slovenian common word has
+them), and there a stem of the lexicon does not count (*petr\**, *turk\**
+of common words read *Petrović* as *Petróvić* before): only a whole form
+of the table decides. The neural network's accents of Sloleks for these
+names (*Akrapóvič*, *Laškevíč*: 864 lemmas of frequency 100 or more
+marked AUTOMATIC) are not taken; the hand-accented ones stay.
+
+**The tables of names**, consulted only for a word with a capital letter
+(not in text written all in capitals) before the context readings
+(`slovenian::name_reading()`, the tables `SLOVENIAN_NAMES` and
+`SLOVENIAN_NAMES_INSIDE` of the generated `.inc`). The lexicon is looked up
+in small letters, and since 2026-10-30 a name never takes a spelling a
+common word has there (until then a name counted a tenth of a common word
+and could still win: *jelena* read as the name *Jêlena*, not *jeléna* "of
+the deer"). The tables hold the forms whose name differs from the common
+word or that the lexicon reads otherwise:
+
+- from the hand-accented names of Sloleks (persons, places, regions,
+  countries) where a common word is spelled like them: *Sóbota* (*Múrska
+  Sóbota*) and *sobóta*, *Róman* and *román*, *Zóran* and *zorán*. A name
+  at least three times as frequent as the common word (Gigafida
+  frequencies) is read at the head of a clause too (*Zóran*, *Jêlena*,
+  *Angéla*); a rarer one only inside the clause, and so is the second word
+  of a multi-word place (*Sobota je lep dan* is the day); one whose
+  clashing forms are together a hundred times rarer than the common word's
+  not at all (*Kót* and *kòt* "as"). Not where a common adjective more
+  frequent than the name is spelled like it, because adjectives begin many
+  names with their own reading (*Stáre Žále*, *Béla krajína*; *Starè*,
+  *Belè* are surnames), and not the words of God and the Holy Spirit (*v
+  Boga*, *Svetega Duha* are *bogá*, *duhá*, not the names *Bógo*, *Dúh*:
+  `COMMON_CAPITALIZED` in the generator).
+- from Slovenski pravopis 2001, the norm: `tools/formant/slovenian_places.tsv`
+  (1,003 settlements, municipalities, regions, rivers and mountains of the
+  GeoNames list that SP has an entry for) and `slovenian_persons.tsv` (167
+  surnames and given names of Slovenian citizens in Wikidata that Sloleks
+  does not accent), with the genitive and gender of each entry, from which
+  the generator declines every case (`place_forms()`: *Bôhinj -hínja* gives
+  *Bohínja, Bohínju, Bohínjem*; *Trbôvlje -velj* gives *Trbôvelj,
+  Trbôvljah*; *Lescè Lèsc* gives *v Lescáh*; *Nôvo mésto -ega -a*; *Kozár
+  -ja*, *Jóže -ta* append; *Vás -í* gives *vasjó*, *Lókev -kve* *Lókvijo*,
+  *Grád -ú* *grádu*; an indeclinable name, *Mêri --*, only itself). SP
+  replaces Sloleks where they differ (*Bôhinj*, not *Bohínj*; *Litíja*,
+  *Sôlkan*, *Áfrika*), except where SP itself accents the word otherwise in
+  another entry (*Cerkljè na Gorenjskem*, *Cérklje ob Krki*; the surname
+  *Léskovec* and *Leskôvec pri Krškem*) or the spelling is a form of
+  another name in Sloleks (*Koréna* of the surname *Korén*; *Zgórnja
+  Kórena*). A form a common word has is the name only inside a clause (SP
+  gives no frequencies). Of the 735 words of places SP and Sloleks both
+  accent, they agree on 713. SP covers about a sixth of the 5,700
+  settlement names; the rest are left to the lexicon and the rules.
+
+**A stem inside a clause.** A capitalized word inside a clause takes a
+stem of the lexicon only with an ending of the declension or of a
+possessive adjective, also after one consonant (*Koróšca* of *koróš\**,
+*Cánkarjev*, *Jóžetov*: `declension_ending()`), not with another word's
+beginning: *Ferdolenc* was *férd\** of *Ferdo* + *olenc*, and is now read
+by the rules of names.
+
+**The rules of names** (`default_stress()`, for a capitalized word the
+lexicon does not know): the patterns of the 5,000 hand-accented one-word
+names of Sloleks that the rules of common words miss, each kept only where
+it beats them on those names; together they raise the rules alone from
+74 to 80 % on them.
+
+| Pattern | Stress | Right by the pattern / by the common rules |
+|---|---|---|
+| *-ič* of 3+ syllables, after a consonant *-čič* | second-last (*Zupánčič, Miklávčič*) | 117 / 64 (with the next row) |
+| other *-ič*, *-ić* of 3+ syllables | third-last (*Gólobič, Tómažič, Kóstelić*) | 76 / 67 for *-ić* |
+| *-nc, -vc, -jc, -lc, -rc, -mc* | last (*Dolénc, Debévc, Dobrájc*) | 39 / 13 |
+| *-ovec, -evec*; the oblique *-ovca, -evcu* ... | before it (*Ájdovec, Búkovec, Gábrovca*) | 34 / 6; 226 / 100 |
+| *-mir, -bor, -slav, -dar, -gor* after a vowel, 3+ syllables | first (*Bógomir, Dálibor*) | 23 / 1 |
+| *-in* | its *i* (*Albín, Avguštín, Martína*) | 56 / 21 |
+| *-ak* of 3+ syllables | its *a* (*Cerkvenják*) | 18 / 0 |
+| *-ij*; *-ija* inside a clause | before it (*Júrij, Albánija, Ávstrija*) | 18 / 3; 85 / 30 |
+| *-aj, -ej, -oj, -uj* | that vowel (*Andréj, Jernéj, Cigój*) | 29 / 14 |
+| *-al, -il, -ul* of two syllables | that vowel (*Kanál, Ciríl, Abdúl*) | 19 / 3 |
+| *-iel, -ael* | first (*Gábriel, Ízrael*) | 6 / 0 |
+
+A feminine in *-ija* follows its rule only inside a clause: at the head the
+word may be a common noun the lexicon lacks, stressed on the *i*
+(*biologíja*). Patterns that did worse than the common rules were left out:
+*-šek* and *-ček* on the third-last syllable (14 against 47), a final *-e*
+(58 against 88), *-ovnik* before the suffix, *-an*, *-el*, *-ol* and *-r* at
+the end.
+
+**What the sources gave.** On the forms of the hand-accented names of
+Sloleks, written with a capital inside a sentence, the engine had 94.2 %
+of the 40,000 forms (98.7 % weighted by frequency) right before these
+changes and has 97.3 % (99.9 %) now, with SP overriding Sloleks where they
+differ; what is left are the names the tables leave to the common word on
+purpose (adjectives, the words of God, names a hundred times rarer than the
+common word: *Meja*, *Nikoli*) and rare forms of zero frequency. GaMS was
+asked about sixteen names with a dictionary answer, each in a sentence, in
+the setup described under Checking: it got four (*Jeseníce, Kováčič,
+Áfrika, Domžále*) and wrote *Turkóvić*, *Bohínj*, *Lítija*, *Sobóto*,
+*Trbovljé*, *Zúpančič* and unaccented *Petrović*, *Stojanović*, *Golobič*.
+
+The generator also lost forms it should have kept, and these were fixed
+at the same time: a form whose automatic transcription could not be
+aligned with the spelling was dropped although its accent was
+hand-corrected (*Afgánistan*, transcribed [aʋɡ...]: such a form now takes
+its notation from the accent alone, without the schwa and [w] only the
+transcription shows, but a transcription that agrees still chooses between
+two accentuations: *dèžju*, not *dežjù*); a form with two accents was
+dropped whenever the transcription marked the other one as its stress
+(*Bánjalúka*, *Ístrabénz*, *géofízičen*; either now agrees); and the
+spellings with ć and đ were not letters of the notation at all (*Pétrović*,
+*Kóstelić*, *Dónčić* of Sloleks are now in the table). Two older faults
+showed up on the way: the test for comparatives and superlatives, which
+are kept out of an adjective's stem, read the second letter of the JOS tag
+(the type) instead of the third (the degree), so it caught the possessive
+adjectives and let *nàjpopôlnejši* break the stem of *popôln*; and the
+generator's check of every form did not know that a stem before *-lc*,
+*-lk*, *-ln*, *-ls*, *-lt* is stressed on its last vowel
+(`stress_derived_l_suffix()`), so *popôlnoma* read through the stem *popô\**
+came out *popólnoma* unnoticed (`l_suffix_stem()` now mirrors it). On the
+corpus below the stressed syllable stays at 99.40 % and the quality and
+length at 99.84 %; the table has 96,000 forms and 80,000 stems.
+
 ### Numbers, dates, symbols
 
 The number converter has a Slovenian dialect (Pravopis § 11 and § 536):
@@ -3557,19 +3698,32 @@ entries win in every language. Serbian and Bosnian share the Croatian file.
 `tests/linux/test_frontend.cpp` ("[slovenian]") checks the sounds of some
 forty words against the Pravopis, the clitics and sandhi, the clause types,
 the marks in the text and the user's entries, the words of the user
-reports with their head-of-clause readings, and the verb/noun spellings in
-context; `test_formant.cpp` checks the Slovenian emoji names and the
+reports with their head-of-clause readings, the verb/noun spellings in
+context, and the names (the surnames in -ović, the rules of names, the
+tables of names with their head-of-clause limits, the places of SP in
+their cases); `test_formant.cpp` checks the Slovenian emoji names and the
 compound numerals. The generator is run with
 
 ```bash
 python3 tools/formant/slovenian_words.py extract /path/to/Sloleks.3.1 forms.tsv 0
 python3 tools/formant/slovenian_words.py generate forms.tsv src/formant/formant_slovenian.inc \
-    --manual-min 0 --auto-min 100 --form-min 1
+    --manual-min 0 --auto-min 100 --form-min 1 [--names-report names.tsv]
 ```
 
 (the first step streams 13 GB of XML in about four minutes; the 275 MB zip
-is `Sloleks.3.1.zip` at the handle above; `generate` takes a minute and a
-half).
+is `Sloleks.3.1.zip` at the handle above; `generate` takes a minute and
+reads `HAND_ENTRIES` of `formant_slovenian.cpp` and the two SP files of
+names in `tools/formant/`; `--names-report` lists every entry of the
+tables of names with the lexicon's reading and the frequencies of the name
+and the common word, which is how the tables were reviewed). The SP files
+were made from Fran.si: the search page
+`https://fran.si/iskanje?View=1&Query=<name>` of every settlement,
+municipality, region, river and mountain of the GeoNames dump `SI.zip`
+(and of every name of Wikidata's Slovenian citizens that Sloleks lacks),
+the Pravopis entry marked *zem. i.* (*oseb. i.*) whose headword spells the
+name, its headword, genitive and gender; a word another entry accents
+otherwise (Pravopis entries of places and persons, headwords only) is
+listed in the last column and left out.
 
 **Stress measured on a tagged corpus.** SUK 1.1, the training corpus of
 Slovene (CLARIN.SI, http://hdl.handle.net/11356/1959, CC BY-SA 4.0; the
@@ -3592,6 +3746,7 @@ forms cost 0.2 %).
 | 101,000 lemmas, corrections, cleaned hand entries | 99.39 % | 99.83 % |
 | and the verb/noun readings in context | 99.42 % | 99.84 % |
 | and *bilà biló bilí bilè*, *meni* by its clause | 99.43 % | 99.84 % |
+| forms of hand-accented names, two accents, ć/đ, graded forms (2026-10-30) | 99.40 % | 99.84 % |
 
 What is left is almost all homographs no local cue separates: the cases of
 one noun (*straní* the genitive, *stráni* the locative; *póti*, *potí*), an

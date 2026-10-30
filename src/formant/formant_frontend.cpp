@@ -4158,7 +4158,14 @@ Utterance Frontend::process_slovenian(const std::u32string& text, Punctuation pu
             slovenian::VerbNounReadings readings;
             const char32_t* head = slovenian::head_reading(word.w);
             const char32_t* in_clause = slovenian::clause_reading(spellings, i);
-            if (head && (i == 0 || before_imperative.count(words[i - 1].w) != 0)) {
+            // A name spelled like a common word (Múrska Sóbota, sobóta;
+            // Jêlena, jeléna): only with a capital, not in text written all
+            // in capitals, and at the head of a clause only when the name
+            // is the commoner word (slovenian::name_reading())
+            if (word.capitalized && !word.all_caps &&
+                slovenian::name_reading(word.w, i == 0 || word.after_opening, context_pron)) {
+                override = &context_pron;
+            } else if (head && (i == 0 || before_imperative.count(words[i - 1].w) != 0)) {
                 context_pron = head;
                 override = &context_pron;
             } else if (in_clause) {
@@ -4179,7 +4186,12 @@ Utterance Frontend::process_slovenian(const std::u32string& text, Punctuation pu
             continue;
         }
         slovenian::WordPhones wp;
-        slovenian::phonemize(word.w, word.marks, user, word.letter_name, wp, override);
+        const slovenian::Capital capital =
+            !word.capitalized ? slovenian::Capital::None
+            : word.all_caps   ? slovenian::Capital::AllCaps
+            : (i == 0 || word.after_opening) ? slovenian::Capital::Head
+                                             : slovenian::Capital::Inside;
+        slovenian::phonemize(word.w, word.marks, user, word.letter_name, wp, override, capital);
         word.phones = std::move(wp.phones);
         word.letter = std::move(wp.letter);
         word.nuclei = std::move(wp.nuclei);

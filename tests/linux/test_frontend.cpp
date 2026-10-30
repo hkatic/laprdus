@@ -1926,6 +1926,62 @@ TEST_CASE("Slovenian lexicon of every Sloleks lemma and verb/noun spellings (Oct
     REQUIRE(phones_of(read(frontend, U"Brez novih vozil")) == "brEz n'O:vih vOz'i:l");
 }
 
+TEST_CASE("Slovenian names of persons and places (October 2026)", "[frontend][slovenian]") {
+    Frontend frontend(VoiceLanguage::Slovenian);
+    struct Case { const char32_t* text; const char* phones; };
+    const Case cases[] = {
+        // Surnames in -ović, -ević (reported: Srebrović, Petrović, Turković
+        // on the first syllable): the syllable before the suffix, in every
+        // case, spelled with ć or č, in capitals or small letters with ć;
+        // four syllables on the second (Sloleks: Stojánović, Milóšević)
+        {U"Petrović", "p'é:trOvić"},
+        {U"Turković", "t'u:rkOvić"},
+        {U"Srebrović", "sr'é:brOvić"},
+        {U"Pri Petroviću", "pri p'é:trOviću"},
+        {U"petrović", "p'é:trOvić"},
+        {U"PETROVIČ", "p'é:trOvič"},
+        {U"Stojanović", "stOj'a:nOvić"},
+        {U"Milošević", "mil'ó:šEvić"},
+        {U"Antonijević", "ant'ó:nijEvić"},
+        {U"Mihailović", "mih'a:ilOvić"},
+        // Names the lexicon does not know: the patterns of the names of
+        // Sloleks (-Cčič on the second-last syllable, other -ič on the
+        // third-last, -nc at the end, -mir on the first, -ija before);
+        // a feminine in -ija only inside a clause
+        {U"Gospod Ferdolenc", "gOsp'ó:t fErdOl'é:nc"},
+        {U"Gospod Brdolinič", "gOsp'ó:d bərd'ó:linič"},
+        {U"Gospod Pirnatčič", "gOsp'ó:t pirn'a:tčič"},
+        {U"Gospod Zalomir", "gOsp'ó:d z'a:lOmir"},
+        {U"Obiskal je Kvarnelijo", "Obisk'aw jE kvarn'é:lijO"},
+        {U"Kvarnelija je lepa", "kvarnEl'i:ja jE l'é:pa"},
+        // A stem of the lexicon with an ending of the declension
+        {U"Videl je Cankarjev dom", "v'i:dEw jE c'a:ŋkarjEw d'ó:m"},
+        {U"Pri Korošcu", "pri kOr'ó:šcu"},
+        // Names spelled like common words: with a capital inside a clause
+        // (Múrska Sóbota), at its head only the commoner name (Jêlena; but
+        // "Sobota je lep dan" is the day), never the words of God
+        {U"Grem v Mursko Soboto", "gr'é:m u m'u:rskO s'ó:bOtO"},
+        {U"Sobota je lep dan", "sOb'ó:ta jE l'é:p d'a:n"},
+        {U"V soboto", "u sOb'ó:tO"},
+        {U"Jelena je doma", "j'E:lEna jE dOm'a:"},
+        {U"Lov na jelena", "l'Ow na jEl'é:na"},
+        {U"Verujem v Boga", "vEr'u:jEm u bOg'a:"},
+        {U"Stare navade", "st'a:rE nav'a:dE"},
+        // Places of Slovenski pravopis 2001 in their cases (Bôhinj -hínja,
+        // Litíja, Trbôvlje -velj, Domžále)
+        {U"Bohinj", "b'O:hin"},
+        {U"V Bohinju", "u bOh'i:nju"},
+        {U"Litija", "lit'i:ja"},
+        {U"Iz Trbovelj", "is tərb'O:vəl"},
+        {U"Živim v Domžalah", "živ'i:m u dOmž'a:lah"},
+    };
+    for (const Case& c : cases) {
+        DYNAMIC_SECTION(PhonemeMapper::utf32_to_utf8(c.text)) {
+            REQUIRE(phones_of(read(frontend, c.text)) == c.phones);
+        }
+    }
+}
+
 TEST_CASE("Slovenian clitics, sandhi and clause types", "[frontend][slovenian]") {
     Frontend frontend(VoiceLanguage::Slovenian);
     // Proclitics and enclitics lose their stress and length; v before a

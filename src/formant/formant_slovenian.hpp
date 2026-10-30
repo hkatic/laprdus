@@ -99,8 +99,13 @@ public:
 
     /** The pronunciation of an exact form; false when there is none. */
     bool find_exact(const std::u32string& word, std::u32string& pron) const;
-    /** The longest stem the word starts with (ending of up to five letters); false when there is none. */
-    bool find_stem(const std::u32string& word, size_t& stem_length, std::u32string& pron) const;
+    /**
+     * The longest stem the word starts with (ending of up to five letters);
+     * false when there is none. `accept`, when given, passes only the stems
+     * whose ending it accepts.
+     */
+    bool find_stem(const std::u32string& word, size_t& stem_length, std::u32string& pron,
+                   bool (*accept)(const std::u32string& ending) = nullptr) const;
 
     static constexpr size_t MAX_ENDING = 5;
 
@@ -144,17 +149,44 @@ struct WordPhones {
 };
 
 /**
+ * How a word is written, for the rules of names (a word the lexicon does
+ * not know, written with a capital, is most likely a name).
+ */
+enum class Capital : uint8_t {
+    None,       // small letters
+    AllCaps,    // text written all in capitals: only the rule of the surnames in -ović
+    Head,       // a capital at the head of a clause (or after an opening quote)
+    Inside,     // a capital inside a clause: a name
+};
+
+/**
  * Letters to phones for one word: the marks written in the text, then the
  * user's lexicon, then the built-in one, then the rules. `user` may be
  * nullptr. `letter_name` marks the name of a letter ("be", "eš"), which
  * the rules read with a long close vowel. `pron_override`, when given, is
  * a pronunciation in the notation used in place of the built-in lexicon's
  * (the user's entries still win): the reading of a word that depends on
- * its place in the clause (head_reading()).
+ * its place in the clause (head_reading()). `capital` says how the word
+ * is written: a capitalized word the lexicon does not know is read by the
+ * rules of names (a surname in -ović is stressed before the suffix,
+ * Pétrović, Stojánović; Gólobič, Zupánčič, Dolénc, Bógomir); a word with
+ * ć or đ is read by them anyway.
  */
 void phonemize(const std::u32string& word, const std::vector<uint8_t>& marks,
                const Lexicon* user, bool letter_name, WordPhones& out,
-               const std::u32string* pron_override = nullptr);
+               const std::u32string* pron_override = nullptr, Capital capital = Capital::None);
+
+/**
+ * The reading of a word written with a capital letter that is a name (a
+ * person, a place, a region) the lexicon reads otherwise, mostly because a
+ * common word is spelled like it: Sóbota (Múrska Sóbota) and sobóta
+ * "Saturday", Jêlena and jeléna "of the deer". From the hand-accented names
+ * of Sloleks. `w` is lowercase; `clause_head`: the word opens its clause
+ * (or follows an opening quote), where any word has a capital, so only a
+ * name more frequent than the common word is read. False when the
+ * lexicon's reading holds.
+ */
+bool name_reading(const std::u32string& w, bool clause_head, std::u32string& pron);
 
 /**
  * The reading of a spelling at the head of a clause, where it is the

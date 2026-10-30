@@ -1,0 +1,1008 @@
+# Names of Slovenian places and regions with their accents, from the entries of
+# Slovenski pravopis 2001 (ZRC SAZU, on Fran.si) for the settlements, municipalities,
+# regions, rivers and mountains of GeoNames (SI); read by tools/formant/slovenian_words.py,
+# which declines them into the tables of names (formant_slovenian.inc).
+# Columns: name; headword with its accents; genitive as SP writes it (an ending
+# replacing the end of the word from its first letter, or the whole form; one per
+# word, ~ for a word that does not change); gender (m, ž, s) and number (mn.);
+# forms the entry names besides (na Gorenjskem); words that SP accents otherwise
+# in another entry (Cerkljè na Gorenjskem, Cérklje ob Krki; the surname
+# Léskovec, Leskôvec pri Krškem), which are left to the lexicon.
+Ljubljana	Ljubljána	-e	ž		
+Savinjska	Savínjska dolína	-e -e	ž		dolína
+Gorenjska	Gorénjska	-e	ž	Gorenjskem	
+Goriška	Goríška	-e	ž	Goriškem	
+Maribor	Máribor	-a	m		
+Celje	Cêlje	-a	s		
+Kranj	Kránj	-a	m		
+Koper	Kóper	-pra	m		
+Novo Mesto	Nôvo mésto	-ega -a	s		
+Velenje	Velênje	-a	s		
+Ptuj	Ptúj	-a	m		
+Trbovlje	Trbôvlje	-velj	ž mn.		
+Kamnik	Kámnik	-a	m		
+Jesenice	Jeseníce	-íc	ž mn.		
+Domžale	Domžále	-ál	ž mn.		
+Nova Gorica	Nôva Goríca	-e -e	ž		
+Škofja Loka	Škófja Lóka	-e -e	ž		
+Murska Sobota	Múrska Sóbota	-e -e	ž		
+Postojna	Postójna	-e	ž		
+Logatec	Logátec	-tca	m		
+Vrhnika	Vŕhnika	-e	ž		
+Kočevje	Kočévje	-a	s		
+Slovenska Bistrica	Slovénska Bístrica	-e -e	ž		
+Slovenj Gradec	Slovénj Grádec	~ -dca	m		
+Grosuplje	Grosúplje	-ega	s		
+Ravne na Koroškem	Rávne na Koróškem	-ven ~ ~	ž mn.		
+Krško	Kŕško	-ega	s		
+Brežice	Bréžice	-ic	ž mn.		
+Litija	Litíja	-e	ž		
+Zagorje ob Savi	Zagórje ob Sávi	-a ~ ~	s		Zagórje
+Mengeš	Méngeš	-gša	m		
+Lucija	Lucíja	-e	ž		
+Sežana	Sežána	-e	ž		
+Radovljica	Radôvljica	-e	ž		
+Hrastnik	Hrástnik	-a	m		
+Črnomelj	Črnómelj	-mlja	m		
+Komenda	Komênda	-e	ž		
+Medvode	Medvóde	-ód	ž mn.		
+Bled	Bléd	-a	m		
+Rogaška Slatina	Rogáška Slátina	-e -e	ž		
+Žalec	Žálec	-lca	m		
+Šentjur	Šentjúr pri Cêlju	-ja ~ ~	m		
+Slovenske Konjice	Slovénske Konjíce	-ih -íc	ž mn.		
+Sevnica	Sévnica	-e	ž		
+Prevalje	Prévalje	-alj	ž mn.		
+Poljčane	Poljčáne	-án	ž mn.		
+Ilirska Bistrica	Ilírska Bístrica	-e -e	ž		
+Ruše	Rúše	Rúš	ž mn.		
+Piran	Pirán	-a	m		
+Cerknica	Cérknica	-e	ž		
+Trzin	Trzín	-a	m		
+Loška Dolina	Lóška dolína	-e -e	ž		dolína
+Miklavž na Dravskem Polju	Miklávž na Drávskem pólju	-a ~ ~ ~	m		
+Straža	Stráža	-e	ž		
+Šempeter pri Gorici	Šempéter pri Goríci	-tra ~ ~	m		
+Tržič	Tržìč	-íča	m		
+Preddvor	Preddvòr	-ôra	m		
+Ribnica	Ríbnica	-e	ž		
+Žiri	Žirí	-ôv	ž mn.		
+Tolmin	Tolmín	-a	m		
+Trebnje	Trébnje	-ega	s		
+Ljutomer	Ljútomer	-a	m		
+Laško	Láško	-ega	s		
+Dravograd	Drávograd	-a	m		
+Lenart v Slovenskih Goricah	Lénart v Slovénskih gorícah	-a ~ ~ ~	m		
+Ankaran	Ankarán	-a	m		
+Mežica	Mežíca	-e	ž		
+Solkan	Sôlkan	-ána	m		
+Metlika	Metlíka	-e	ž		
+Gornja Radgona	Górnja Rádgona	-e -e	ž		
+Šenčur	Šenčúr	-ja	m		
+Lendava	Léndava	-e	ž		
+Železniki	Želézniki	-ov	m mn.		
+Portorož	Portoróž	-a	m		
+Zreče	Zréče	Zréč	ž mn.		
+Šoštanj	Šóštanj	-a	m		
+Lesce	Lescè	Lèsc	ž mn.		
+Šentrupert	Šentrúpert	-a	m		
+Radlje ob Dravi	Rádlje ob Drávi	-delj ~ ~	ž mn.		
+Rače	Ráče	Ráč	ž mn.		
+Vrtojba	Vrtójba	-e	ž		
+Črna na Koroškem	Čŕna na Koróškem	-e ~ ~	ž		
+Beltinci	Béltinci	-ev	m mn.		
+Polzela	Pôlzela	-e	ž		
+Senovo	Senôvo	-ega	s		
+Muta	Múta	-e	ž		
+Vojnik	Vójnik	-a	m		
+Rečica ob Savinji	Rečíca ob Savínji	-e ~ ~	ž		
+Štore	Štóre	Štór	ž mn.		
+Škofljica	Škófljica	-e	ž		
+Ivančna Gorica	Ivánčna Goríca	-e -e	ž		
+Radenci	Rádenci	-ev	m mn.		
+Radeče	Rádeče	-eč	ž mn.		
+Borovnica	Borovníca	-e	ž		
+Rakek	Rákek	-a	m		
+Središče ob Dravi	Sredíšče ob Drávi	-a ~ ~	s		
+Pivka	Pívka	-e	ž		
+Kromberk	Krómberk	-a	m		
+Mozirje	Mozírje	-a	s		
+Limbuš	Límbuš	-a	m		
+Šempeter v Savinjski Dolini	Šempéter v Savínjski dolíni	-tra ~ ~ ~	m		
+Semič	Sémič	-a	m		
+Lovrenc na Pohorju	Lôvrenc na Póhorju	-a ~ ~	m		
+Notranje Gorice	Nótranje Goríce	-ih -íc	ž mn.		
+Renče	Rénče	Rénč	ž mn.		
+Verd	Vèrd	Vêrda	m		
+Mislinja	Mislínja	-e	ž		
+Kisovec	Kísovec	-vca	m		
+Vipava	Vipáva	-e	ž		
+Bohinjska Bistrica	Bohínjska Bístrica	-e -e	ž		
+Šmarje pri Jelšah	Šmárje pri Jélšah	-a ~ ~	s		
+Hrušica	Hrúšica	-e	ž		
+Naklo	Náklo	-a	s		
+Cerklje na Gorenjskem	Cerkljè na Gorénjskem	-kèlj ~ ~	ž mn.		Cerkljè
+Prebold	Prébold	-a	m		
+Spodnji Duplek	Spódnji Dúplek	-ega -a	m		
+Radomlje	Rádomlje	-melj	ž mn.		
+Kokrica	Kókrica	-e	ž		
+Odranci	Odránci	-ev	m mn.		
+Kamnica	Kámnica	-e	ž		
+Bovec	Bôvec	-vca	m		
+Cerkno	Cérkno	-a	s		
+Vodice	Vodíce	-íc	ž mn.		
+Dekani	Dekáni	-ov	m mn.		
+Mekinje	Mekínje	-ínj	ž mn.		
+Vuzenica	Vuzeníca	-e	ž		
+Dob	Dób	-a	m		
+Rogatec	Rogátec	-tca	m		
+Pekre	Pékre	-ker	ž mn.		
+Turnišče	Túrnišče	-a	s		
+Dol pri Hrastniku	Dôl pri Hrástniku	Dóla ~ ~	m		
+Bakovci	Bákovci	-ev	m mn.		
+Miren	Míren	-rna	m		
+Dragomer	Drágomer	-ja	m		
+Šmartno pri Litiji	Šmártno pri Litíji	-a ~ ~	s		
+Šmarca	Šmárca	-e	ž		
+Kranjska Gora	Kránjska Gôra	-e -e	ž		
+Šentjernej	Šentjêrnej	-êja	m		
+Spodnje Škofije	Spódnje Škofíje	-ih -ij	ž mn.		
+Mirna	Mírna	-e	ž		
+Divača	Diváča	-e	ž		
+Oplotnica	Oplótnica	-e	ž		
+Selnica ob Dravi	Sélnica ob Drávi	-e ~ ~	ž		
+Pameče	Pámeče	Pámeč	ž mn.		
+Horjul	Horjúl	-a	m		
+Topolšica	Topolšica	-e	ž		
+Deskle	Déskle	-kel	ž mn.		
+Kanal	Kanál	-a	m		
+Prvačina	Prváčina	-e	ž		
+Zgornje Pirniče	Zgórnje Pírniče	-ih -ič	ž mn.		
+Dornava	Dórnava	-e	ž		
+Kidričevo	Kídričevo	-ega	s		
+Šmartno pri Slovenj Gradcu	Šmártno pri Slovénj Grádcu	-a ~ ~ ~	s		
+Moste	Móste	Móst	ž mn.		
+Gotovlje	Gotôvlje	-velj	ž mn.		
+Zgornja Polskava	Zgórnja Polskáva	-e -e	ž		
+Gorenja Vas	Gorénja vás	-e -í	ž		
+Bilje	Bílje	Bílj	ž mn.		
+Izlake	Izláke	-ák	ž mn.		
+Črenšovci	Črénšovci	-ev	m mn.		
+Mojstrana	Mójstrana	-e	ž		
+Pragersko	Prágersko	-ega	s		
+Šempas	Šempàs	-ása	m		
+Kobarid	Kobaríd	-a	m		
+Lokavec	Lokávec	-vca	m		
+Rožna Dolina	Róžna dolína	-e -e	ž		dolína
+Ljubno ob Savinji	Ljúbno ob Savínji	-ega ~ ~	s		
+Ravne	Rávne na Koróškem	-ven ~ ~	ž mn.		
+Ljubečna	Ljubéčna	-e	ž		
+Sveti Duh	Svéti Dúh	-ega -á	m		
+Golnik	Golník	-a	m		
+Žužemberk	Žúžemberk	-a	m		
+Gornji Grad	Górnji Grád	-ega -a	m		
+Kotlje	Kôtlje	-telj	ž mn.		
+Fram	Frám	-a	m		
+Leskovec pri Krškem	Leskôvec pri Kŕškem	-vca ~ ~	m		Leskôvec
+Zasip	Zásip	-a	m		
+Šentvid pri Stični	Šentvìd pri Stíčni	-ída ~ ~	m		
+Višnja Gora	Víšnja Gôra	-e -e	ž		
+Podgorje	Podgórje	-a	s		Podgórje
+Brestanica	Bréstanica	-e	ž		
+Mirna Peč	Mírna Péč	-e -í	ž		
+Predoslje	Prédoslje	-selj	ž mn.		
+Begunje na Gorenjskem	Bégunje na Gorénjskem	-unj ~ ~	ž mn.		
+Petrovče	Petrôvče	-ôvč	ž mn.		
+Dobrovnik	Dobrôvnik	-a	m		
+Bertoki	Bertóki	-ov	m mn.		
+Blejska Dobrava	Blêjska Dobráva	-e -e	ž		
+Branik	Braník	-a	m		
+Moravče	Morávče	-ávč	ž mn.		
+Benedikt	Benedíkt	-a	m		
+Spodnja Polskava	Spódnja Polskáva	-e -e	ž		
+Bevke	Bévke	Bévk	ž mn.		
+Dobrova	Dóbrova	-e	ž		
+Rovte	Rôvte	Rôvt	ž mn.		
+Pesnica	Pésnica	-e	ž		
+Pristava	Prístava pri Mestínju	-e ~ ~	ž		
+Pobrežje	Pobréžje	-a	s		
+Veržej	Veržêj	-a	m		
+Dokležovje	Dokléžovje	-a	s		
+Križe	Kríže	Kríž	ž mn.		
+Vogrsko	Vógrsko	-ega	s		
+Dolenjske Toplice	Dolénjske Toplíce	-ih -íc	ž mn.		
+Visoko	Visôko	-ega	s		
+Nazarje	Názarje	-rij	ž mn.		
+Velika Polana	Vélika Pólana	-e -e	ž		
+Otiški Vrh	Otíški Vŕh	-ega -a	m		
+Dragomelj	Dragómelj	-mlja	m		
+Stari Trg pri Ložu	Stári tŕg pri Lóžu	~ega ~a ~ ~	m		
+Vitanje	Vítanje	-a	s		
+Zgornja Hajdina	Zgórnja Hajdína	-e -e	ž		
+Sodražica	Sódražica	-e	ž		
+Stara Loka	Stára Lóka	-e -e	ž		
+Dolga Vas	Dôlga vás	-e -í	ž		
+Andraž nad Polzelo	Andráž nad Pôlzelo	-a ~ ~	m		
+Zgornja Velka	Zgórnja Vélka	-e -e	ž		
+Budanje	Budánje	-ánj	ž mn.		
+Planina	Planína	-e	ž		
+Vransko	Vránsko	-ega	s		
+Kropa	Krópa	-e	ž		
+Homec	Hómec	-mca	m		
+Starše	Stárše	Stárš	ž mn.		
+Stična	Stíčna	-e	ž		
+Dornberk	Dórnberk	-a	m		
+Sladki Vrh	Sládki Vŕh	-ega -a	m		
+Hrpelje	Hrpélje	-élj	ž mn.		
+Zgornja Besnica	Zgórnja Bésnica	-e -e	ž		
+Podbrezje	Podbrézje	-ij	ž mn.		
+Kovor	Kôvor	-ôrja	m		
+Gorišnica	Goríšnica	-e	ž		
+Šmarje	Šmárje	-a	s		
+Ihan	Ihàn	-ána	m		
+Vuhred	Vúhred	-a	m		
+Lokev	Lókev	-kve	ž		
+Rimske Toplice	Rímske Toplíce	-ih -íc	ž mn.		
+Otočec	Otóčec	-čca	m		
+Sečovlje	Sečôvlje	-velj	ž mn.		
+Hotiza	Hotíza	-e	ž		
+Grgar	Gŕgar	-árja	m		
+Korte	Kórte	Kórt	ž mn.		
+Gradišče	Gradíšče	-a	s		
+Kresnice	Kresníce	-íc	ž mn.		
+Dobova	Dóbova	-e	ž		
+Volčja Draga	Vôlčja Drága	-e -e	ž		
+Videm	Vídem	-dma	m		
+Vrhpolje pri Kamniku	Vŕhpolje pri Kámniku	-a ~ ~	s		Vŕhpolje
+Moravske Toplice	Morávske Toplíce	-ih -íc	ž mn.		
+Dolenja Vas	Dolénja vás	-e -í	ž		
+Velike Lašče	Vélike Lášče	-ih Lášč	ž mn.		
+Polica	Políca	-e	ž		
+Dutovlje	Dútovlje	-velj	ž mn.		
+Dvorjane	Dvorjáne	-án	ž mn.		
+Prestranek	Prestránek	-nka	m		
+Krmelj	Krmélj	-a	m		
+Ceršak	Cêršak	-a	m		
+Godovič	Godovíč	-a	m		
+Podbrdo	Podbŕdo	-a	s		
+Kostanjevica na Krki	Kostánjevica na Kŕki	-e ~ ~	ž		
+Bizeljsko	Bizéljsko	-ega	s		
+Grad	Grád	-ú	m		
+Loče	Lóče pri Poljčánah	Lóč ~ ~	ž mn.		
+Rakitna	Rakítna	-e	ž		
+Selca	Sélca	Sélc	s mn.		
+Črneče	Črnéče	-éč	ž mn.		
+Lovrenc na Dravskem Polju	Lôvrenc na Drávskem pólju	-a ~ ~ ~	m		
+Trboje	Trbóje	-ój	ž mn.		
+Begunje pri Cerknici	Bégunje pri Cérknici	-unj ~ ~	ž mn.		
+Griže	Gríže	Gríž	ž mn.		
+Gaj	Gáj nad Máriborom	-a ~ ~	m		
+Komen	Kómen	-mna	m		
+Črni Vrh	Čŕni Vŕh	-ega -a	m		
+Rateče	Ráteče	-eč	ž mn.		
+Šmartno ob Paki	Šmártno ob Páki	-a ~ ~	s		
+Lož	Lóž	-a	m		
+Dovje	Dôvje	-ega	s		
+Mokronog	Mokrónog	-a	m		
+Kozje	Kózje	-ega	s		
+Puconci	Púconci	-ev	m mn.		
+Nova Štifta	Nôva Štífta	-e -e	ž		
+Slivnica pri Mariboru	Slívnica pri Máriboru	-e ~ ~	ž		
+Stari Trg	Stári tŕg	-ega -a	m		
+Gabrje	Gábrje	-a	s		
+Galicija	Galícija	-e	ž		
+Bočna	Bóčna	-e	ž		
+Polhov Gradec	Pôlhov Grádec	-ega -dca	m		
+Zgornja Voličina	Zgórnja Volíčina	-e -e	ž		
+Podgrad	Podgrád	-a	m		
+Cven	Cvén	-a	m		
+Ribno	Ríbno	-ega	s		
+Senožeče	Senožéče	-éč	ž mn.		
+Majšperk	Májšperk	-a	m		
+Žirovnica	Žirôvnica	-e	ž		
+Hotedršica	Hotédršica	-e	ž		
+Dolsko	Dôlsko	-ega	s		
+Volče	Vôlče	Vôlč	ž mn.		
+Leše	Léše	Léš	ž mn.		
+Kanižarica	Kanížarica	-e	ž		
+Šmarješke Toplice	Šmarjéške Toplíce	-ih -ic	ž mn.		
+Podčetrtek	Podčetŕtek	-tka	m		
+Strunjan	Strunján	-a	m		
+Žiče	Žíče	Žíč	ž mn.		
+Zgornje Jezersko	Zgórnje Jezêrsko	-ega -ega	s		
+Trnje	Tŕnje	-a	s		
+Kamna Gorica	Kámna Goríca	-e -e	ž		
+Leskovec	Leskôvec pri Kŕškem	-vca ~ ~	m		Leskôvec
+Gorica pri Slivnici	Goríca pri Slívnici	-e ~ ~	ž		
+Krška Vas	Kŕška vás	-e -í	ž		
+Malečnik	Maléčnik	-a	m		
+Vrhpolje	Vrhpólje	-ólj	ž mn.		Vrhpólje
+Dobrna	Dóbrna	-e	ž		
+Škocjan	Škôcjan	-ána	m		Škôcjan
+Bohinjska Bela	Bohínjska Béla	-e -e	ž		
+Kozina	Kozína	-e	ž		
+Šentjanž pri Dravogradu	Šentjánž pri Drávogradu	-a ~ ~	m		
+Kobilje	Kóbilje	-a	s		
+Martjanci	Martjánci	-ev	m mn.		
+Bogojina	Bogojína	-e	ž		
+Zgornja Kungota	Zgórnja Kúngota	-e -e	ž		
+Podgorci	Podgórci	-ev	m mn.		
+Podpeč	Podpéč	-í	ž		
+Goričane	Goričáne	-án	ž mn.		
+Lokve	Lókve	-kev	ž mn.		
+Brezje	Brézje	-zij	ž mn.		
+Spodnje Duplje	Spódnje Dupljè	-ih -pèlj	ž mn.		Dupljè
+Črešnjevec	Čréšnjevec	-vca	m		
+Srednja Vas v Bohinju	Srédnja vás v Bohínju	-e -í ~ ~	ž		
+Gornji Dolič	Górnji Dólič	-ega -a	m		
+Zgornje Gorje	Zgórnje Gôrje	-ih -ij	ž mn.		
+Smlednik	Smlédnik	-a	m		
+Golo	Gôlo	-ega	s		
+Col	Còl	Cóla	m		
+Markovci	Márkovci	-ev	m mn.		
+Ponikva	Pónikva	-e	ž		
+Ponikve	Poníkve	-kev	ž mn.		
+Križevci pri Ljutomeru	Kríževci pri Ljútomeru	-ev ~ ~	m mn.		
+Loka pri Zidanem Mostu	Lóka pri Zídanem Móstu	-e ~ ~ ~	ž		
+Knežak	Knežák	-a	m		
+Škofja Vas	Škófja vás	-e -í	ž		
+Sveti Jurij	Svéti Júrij	-ega -a	m		
+Podkraj	Podkràj	-ája	m		
+Grahovo	Grahôvo	-ega	s		Grahôvo
+Marezige	Marézige	-ig	ž mn.		
+Ljubno	Ljúbno	-ega	s		
+Radmirje	Radmírje	-a	s		
+Bukovica	Búkovica	-e	ž		
+Videm pri Ptuju	Vídem pri Ptúju	-dma ~ ~	m		
+Breznica	Bréznica	-e	ž		
+Podlipa	Podlípa	-e	ž		
+Rova	Rôva	Rôv	s mn.		
+Preserje	Préserje	-a	s		
+Brezno	Brézno	-a	s		
+Pertoča	Pêrtoča	-e	ž		
+Nova Cerkev	Nôva Cérkev	-e -kve	ž		
+Vipolže	Vípolže	-olž	ž mn.		
+Vurberk	Vúrberk	-a	m		
+Sora	Sóra	-e	ž		
+Cankova	Cánkova	-e	ž		
+Stopiče	Stópiče	-ič	ž mn.		
+Prečna	Préčna	-e	ž		
+Mavčiče	Mávčiče	-ič	ž mn.		
+Hrastovec	Hrástovec	-vca	m		
+Podsmreka	Podsmréka	-e	ž		
+Dobravlje	Dobrávlje	-velj	ž mn.		
+Most na Soči	Móst na Sóči	-a ~ ~	m		
+Cirkulane	Cirkuláne	-án	ž mn.		
+Kozjak	Kozják	-a	m		
+Poljane nad Škofjo Loko	Poljáne nad Škófjo Lóko	-án ~ ~ ~	ž mn.		
+Drnovo	Drnôvo	-ega	s		
+Zalošče	Zálošče	-ošč	ž mn.		
+Orehova Vas	Oréhova vás	-e -í	ž		
+Šalovci	Šálovci	-ev	m mn.		
+Črniče	Črníče	-íč	ž mn.		
+Pečarovci	Pečárovci	-ev	m mn.		
+Slap	Sláp	-a	m		
+Gornji Petrovci	Górnji Petrôvci	-ih -ev	m mn.		
+Zgornja Korena	Zgórnja Kórena	-e -e	ž		
+Cirkovce	Církovce	-ovc	ž mn.		
+Želimlje	Želímlje	-ega	s		
+Pernica	Pérnica	-e	ž		
+Vas	Vás	-í	ž		
+Luče	Lúče ob Savínji	Lúč ~ ~	ž mn.		
+Tišina	Tíšina	-e	ž		
+Laze	Láze v Tuhínju	Láz ~ ~	ž mn.		
+Gradac	Grádac	-dca	m		
+Vavta Vas	Vávta vás	-e -í	ž		
+Sveti Vid	Svéti Vìd	-ega Vída	m		
+Loka pri Žusmu	Lóka pri Žúsmu	-e ~ ~	ž		
+Tabor	Tábor	-a	m		
+Podkoren	Podkóren	-a	m		
+Dramlje	Drámlje	-melj	ž mn.		
+Ribnica na Pohorju	Ríbnica na Póhorju	-e ~ ~	ž		
+Križevci	Kríževci	-ev	m mn.		
+Laporje	Láporje	-a	s		
+Hotavlje	Hotávlje	-velj	ž mn.		
+Velesovo	Velésovo	-ega	s		
+Dvor	Dvòr	Dvôra	m		
+Podnanos	Podnános	-a	m		
+Šentjanž	Šentjánž	-a	m		
+Milje	Mílje	Mílj	ž mn.		
+Žetale	Žetále	-ál	ž mn.		
+Opatje Selo	Opátje sêlo	-ega -a	s		
+Dolič	Dólič	-a	m		
+Mošnje	Móšnje	-šenj	ž mn.		
+Jareninski Dol	Jarenínski Dól	-ega -a	m		
+Kristan Vrh	Krístan Vŕh	~ -a	m		
+Žerjav	Žerjàv	-áva	m		
+Jurovski Dol	Júrovski Dól	-ega -a	m		
+Brje	Bŕje	Bŕij	ž mn.		
+Dragonja	Dragónja	-e	ž		
+Braslovče	Bráslovče	-ovč	ž mn.		
+Volčji Potok	Vôlčji Pôtok	-ega -óka	m		
+Ptujska Gora	Ptújska Gôra	-e -e	ž		
+Kozana	Kozána	-e	ž		
+Juršinci	Júršinci	-ev	m mn.		
+Gorenje	Gorénje Pólje	-ega -a	s		
+Šentjošt nad Horjulom	Šentjóšt nad Horjúlom	-a ~ ~	m		
+Podlehnik	Podléhnik	-a	m		
+Planina pri Sevnici	Planína pri Sévnici	-e ~ ~	ž		
+Trstenik	Trsteník	-a	m		
+Kuzma	Kúzma	-e	ž		
+Ponikva pri Žalcu	Pónikva pri Žálcu	-e ~ ~	ž		
+Zgornji Tuhinj	Zgórnji Tuhínj	-ega -a	m		
+Dobrovlje	Dobrôvlje	-velj	ž mn.		
+Vinska Gora	Vínska Gôra	-e -e	ž		
+Trnovska Vas	Trnôvska vás	-e -í	ž		
+Zgornja Ložnica	Zgórnja Ložníca	-e -e	ž		
+Spodnji Jakobski Dol	Spódnji Jákobski Dól	-ega -ega -a	m		
+Goriče	Goríče	-íč	ž mn.		
+Vače	Váče	Váč	ž mn.		
+Trnovo	Trnôvo	-ega	s		
+Podnart	Podnàrt	-árta	m		
+Loka	Lóka pri Zídanem Móstu	-e ~ ~ ~	ž		
+Krašnja	Krášnja	-e	ž		
+Matenja Vas	Maténja vás	-e -í	ž		
+Zagorje	Zagórje	-a	s		Zagórje
+Štanjel	Štánjel	-a	m		
+Kostanjevica na Krasu	Kostánjevica na Krásu	-e ~ ~	ž		
+Gomilsko	Gomílsko	-ega	s		
+Čepovan	Čépovan	-ána	m		
+Negova	Négova	-e	ž		
+Batuje	Batúje	-új	ž mn.		
+Pišece	Pišéce	-éc	ž mn.		
+Repnje	Répnje	-enj	ž mn.		
+Sveti Primož na Pohorju	Svéti Prímož na Póhorju	-ega -a ~ ~	m		
+Podvelka	Podvélka	-e	ž		
+Koseze	Koséze	-éz	ž mn.		
+Čezsoča	Čezsóča	-e	ž		
+Formin	Formín	-a	m		
+Babno Polje	Bábno Pólje	-ega -a	s		
+Dobrovo	Dóbrovo	-ega	s		
+Jagnjenica	Jágnjenica	-e	ž		
+Žabnica	Žábnica	-e	ž		
+Muljava	Muljáva	-e	ž		
+Dražgoše	Drážgoše	-oš	ž mn.		
+Žalna	Žálna	-e	ž		
+Velike Žablje	Vélike Žáblje	-ih -elj	ž mn.		
+Povir	Povír	-ja	m		
+Vitomarci	Vítomarci	-ev	m mn.		
+Kal nad Kanalom	Kál nad Kanálom	-a ~ ~	m		
+Šmarjeta	Šmarjéta	-e	ž		
+Rakovnik	Rákovnik	-a	m		
+Jelšane	Jelšáne	-án	ž mn.		
+Ročinj	Ročínj	-a	m		
+Globoko	Globôko	-ega	s		
+Čatež ob Savi	Čátež ob Sávi	-a ~ ~	m		
+Veliki Gaber	Véliki Gáber	-ega -bra	m		
+Podbočje	Podbóčje	-a	s		
+Boštanj	Boštánj	-a	m		
+Artiče	Artíče	-íč	ž mn.		
+Šebrelje	Šebrélje	-élj	ž mn.		
+Rodik	Rôdik	-íka	m		
+Raka	Ráka	-e	ž		
+Brest	Brést	-a	m		
+Podsabotin	Podsabotín	-a	m		
+Stara Cerkev	Stára Cérkev	-e -kve	ž		
+Podraga	Podrága	-e	ž		
+Frankolovo	Frankólovo	-ega	s		
+Velika Nedelja	Vélika Nédelja	-e -e	ž		
+Brda	Bŕda	Bŕd	s mn.		
+Davča	Dávča	-e	ž		
+Klanec	Klánec	-nca	m		
+Zavodnje	Závodnje	-a	s		
+Tomišelj	Tomíšelj	-šlja	m		
+Studeno	Studéno	-ega	s		
+Gornje Cerovo	Górnje Cerôvo	-ega -a	s		
+Gorica	Goríca	-e	ž		
+Travnik	Trávnik	-a	m		
+Velika Loka	Vélika Lóka	-e -e	ž		
+Nova Vas	Nôva vás	-e -í	ž		
+Loke	Lóke	Lók	ž mn.		
+Krkavče	Kŕkavče	Kŕkavč	ž mn.		
+Planina pod Golico	Planína pod Golíco	-e ~ ~	ž		
+Zdole	Zdóle	Zdól	ž mn.		
+Teharje	Téharje	-a	s		
+Dolenja Trebuša	Dolénja Trebúša	-e -e	ž		
+Zidani Most	Zídani Móst	-ega -a	m		
+Dobovec pri Rogatcu	Dóbovec pri Rogátcu	-vca ~ ~	m		Dóbovec
+Lokovec	Lokôvec	-vca	m		
+Radovica	Rádovica	-e	ž		
+Tunjice	Túnjice	-ic	ž mn.		
+Šmartno v Rožni Dolini	Šmártno v Róžni dolíni	-a ~ ~ ~	s		
+Laze v Tuhinju	Láze v Tuhínju	Láz ~ ~	ž mn.		
+Bele Vode	Béle Vôde	-ih Vôd	ž mn.		
+Šmihel	Šmihél	-a	m		Šmihél
+Kojsko	Kójsko	-ega	s		
+Harije	Haríje	-íj	ž mn.		
+Šmartno ob Dreti	Šmártno ob Dréti	-a ~ ~	s		
+Kočevska Reka	Kočévska Réka	-e -e	ž		
+Ambrus	Ambrús	-a	m		
+Kapla	Kápla	-e	ž		
+Rašica	Rašíca	-e	ž		Rašíca
+Vinski Vrh	Vínski Vŕh pri Slívnici	-ega -a ~ ~	m		
+Zapoge	Zapóge	-óg	ž mn.		
+Čadram	Čádram	-a	m		
+Kokra	Kókra	-e	ž		
+Gorjansko	Gorjánsko	-ega	s		
+Sava	Sáva	-e	ž		
+Paka	Páka	-e	ž		
+Marija Reka	Maríja Réka	-e -e	ž		
+Sele	Séle	Sél	ž mn.		
+Banjšice	Bánjšice	-ic	ž mn.		
+Podgraje	Podgráje	-áj	ž mn.		
+Zali Log	Záli Lóg	-ega -a	m		
+Zgornji Hotič	Zgórnji Hotìč	-ega -íča	m		
+Razkrižje	Rázkrižje	-a	s		
+Nevlje	Névlje	-velj	ž mn.		
+Ivanjkovci	Ivánjkovci	-ev	m mn.		
+Dragatuš	Dragatúš	-a	m		
+Gabrovka	Gábrovka	-e	ž		
+Plave	Pláve	Pláv	ž mn.		
+Hruševje	Hrúševje	-a	s		
+Dobrina	Dobrína	-e	ž		
+Blanca	Blánca	-e	ž		
+Zagorica	Zagoríca nad Kámnikom	-e ~ ~	ž		
+Olimje	Olímje	-a	s		
+Črnivec	Črnívec	-vca	m		
+Kapelski Vrh	Kápelski Vŕh	-ega -a	m		
+Velika Račna	Vélika Ráčna	-e -e	ž		
+Ravnica	Ravníca	-e	ž		
+Krka	Kŕka	-e	ž		
+Vinica	Vínica	-e	ž		
+Vič	Víč	-a	m		
+Dol pri Ljubljani	Dól pri Ljubljáni	-a ~ ~	m		
+Kapele	Kapéle	-él	ž mn.		
+Žirovski Vrh	Žirôvski Vŕh	-ega -a	m		
+Pleterje	Pléterje	-a	s		
+Dobrava	Dobráva	-e	ž		
+Cezanjevci	Cezánjevci	-ev	m mn.		
+Trbonje	Trbónje	-ónj	ž mn.		
+Spodnji Log	Spódnji Lóg	-ega -a	m		
+Medana	Medána	-e	ž		
+Paški Kozjak	Páški Kozják	-ega -a	m		
+Drbetinci	Drbétinci	-ev	m mn.		
+Kog	Kóg	-a	m		
+Cerklje ob Krki	Cérklje ob Kŕki	-kelj ~ ~	ž mn.		Cérklje
+Ter	Têr	-a	m		
+Skopo	Skópo	-ega	s		
+Pliskovica	Plískovica	-e	ž		
+Čemšenik	Čemšeník	-a	m		
+Mali Lipoglav	Máli Lípoglav	-ega -a	m		
+Koštabona	Koštabóna	-e	ž		
+Drežnica	Dréžnica	-e	ž		
+Hodoš	Hódoš	-a	m		
+Gaj nad Mariborom	Gáj nad Máriborom	-a ~ ~	m		
+Vrhpolje pri Moravčah	Vŕhpolje pri Morávčah	-olj ~ ~	ž mn.		Vŕhpolje
+Vojščica	Vojščíca	-e	ž		
+Remšnik	Rémšnik	-a	m		
+Kamno	Kámno	-a	s		
+Podkum	Podkúm	-a	m		
+Kamnje	Kámnje	-a	s		
+Slavina	Slávina	-e	ž		
+Makole	Mákole	-ol	ž mn.		
+Šmartno v Tuhinju	Šmártno v Tuhínju	-a ~ ~	s		
+Ovsiše	Ovsíše	-íš	ž mn.		
+Kočna	Kóčna	-e	ž		
+Poljče	Póljče	Póljč	ž mn.		
+Brezovica	Brézovica	-e	ž		
+Duplje	Dúplje	-pelj	ž mn.		Dúplje
+Tržišče	Tržíšče	-a	s		
+Solčava	Solčáva	-e	ž		
+Praše	Práše	Práš	ž mn.		
+Stoperce	Stóperce	-erc	ž mn.		
+Peče	Péče	Péč	ž mn.		
+Mačkovci	Mačkôvci	-ev	m mn.		
+Hudinja	Hudínja	-e	ž		
+Loke pri Zagorju	Lóke pri Zagórju	Lók ~ ~	ž mn.		
+Pristava pri Mestinju	Prístava pri Mestínju	-e ~ ~	ž		
+Vojsko	Vójsko	-ega	s		
+Dobeno	Dobêno	-a	s		
+Črni Kal	Čŕni Kál	-ega -a	m		
+Libeliče	Libelíče	-íč	ž mn.		
+Gradež	Grádež	-a	m		
+Sveto	Svéto rímsko cesárstvo	-ega -ega -a	s		
+Dolenci	Dolénci	-ev	m mn.		
+Vrba	Vŕba	-e	ž		
+Hrovača	Hrováča	-e	ž		
+Fokovci	Fókovci	-ev	m mn.		
+Šmartno	Šmártno	-ega	s		
+Orehek	Oréhek	-hka	m		
+Obrov	Obrôv	-a	m		
+Šentvid pri Grobelnem	Šentvìd pri Gróbelnem	-ída ~ ~	m		
+Mozelj	Mózelj	-zlja	m		
+Vipavski Križ	Vipávski Kríž	-ega -a	m		
+Jereka	Jeréka	-e	ž		
+Breginj	Bregínj	-a	m		
+Pregarje	Pregárje	-rij	ž mn.		
+Lozice	Lozíce	-íc	ž mn.		
+Dolina	Dolína	-e	ž		Dolína
+Sela	Séla pri Kámniku	Sél ~ ~	s mn.		
+Hrenovice	Hrénovice	-ic	ž mn.		
+Stranice	Straníce	-íc	ž mn.		
+Šentanel	Šentánel	-éla	m		
+Podsreda	Podsréda	-e	ž		
+Čušperk	Čúšperk	-a	m		
+Turjak	Turják	-a	m		
+Prihova	Príhova	-e	ž		
+Levpa	Lévpa	-e	ž		
+Brestovica pri Komnu	Brestovíca pri Kómnu	-e ~ ~	ž		
+Zibika	Zíbika	-e	ž		
+Javorje	Jávorje	-a	s		
+Srpenica	Srpeníca	-e	ž		
+Špitalič	Špitalìč	-íča	m		Špitalìč
+Skomarje	Skómarje	-a	s		
+Goče	Góče	Góč	ž mn.		
+Gračišče	Gračíšče	-a	s		
+Trška Gora	Tŕška gôra	-e -e	ž		
+Štatenberg	Štátenberg	-a	m		
+Kobjeglava	Kobjegláva	-e	ž		
+Vedrijan	Vedriján	-a	m		
+Donačka Gora	Donáčka gôra	-e -e	ž		
+Sedraž	Sédraž	-a	m		
+Kubed	Kúbed	-a	m		
+Bukovo	Búkovo	-ega	s		
+Tinjan	Tinján	-a	m		
+Stahovica	Stahôvica	-e	ž		
+Prosenjakovci	Prosenjákovci	-ev	m mn.		
+Pomjan	Pomján	-a	m		
+Temenica	Témenica	-e	ž		
+Lučine	Lúčine	-in	ž mn.		
+Kopriva	Kopríva	-e	ž		
+Javor	Jávor	-ja	m		
+Draga	Drága	-e	ž		
+Šmartno na Pohorju	Šmártno na Póhorju	-a ~ ~	s		
+Studenec	Studênec	-nca	m		
+Destrnik	Déstrnik	-a	m		
+Polenšak	Pólenšak	-a	m		
+Razbor	Rázbor	-ja	m		
+Dobovec	Dobôvec	-vca	m		Dobôvec
+Zgornja Kapla	Zgórnja Kápla	-e -e	ž		
+Lesično	Lesíčno	-ega	s		
+Motnik	Motník	-a	m		
+Reka	Réka	-e	ž		
+Svečina	Svečína	-e	ž		
+Sovodenj	Sovódenj	-dnja	m		
+Šenturška Gora	Šentúrška Gôra	-e -e	ž		
+Stara Gora	Stára Gôra	-e -e	ž		
+Ravne pri Cerknem	Rávne pri Cérknem	-ven ~ ~	ž mn.		
+Dole	Dóle pri Litíji	Dól ~ ~	ž mn.		
+Lažiše	Lažíše	-íš	ž mn.		
+Zagorica nad Kamnikom	Zagoríca nad Kámnikom	-e ~ ~	ž		
+Dolane	Doláne	-án	ž mn.		
+Šmihel nad Mozirjem	Šmihél nad Mozírjem	-a ~ ~	m		Šmihél
+Pečine	Péčine	-in	ž		
+Zgornji Leskovec	Zgórnji Léskovec	-ega -vca	m		Léskovec
+Buče	Búče	Búč	ž mn.		
+Prem	Prém	-a	m		
+Blatno	Blátno jézero	-ega -a	s		
+Brinje	Brínje	-a	s		
+Livek	Lívek	-vka	m		
+Kebelj	Kébelj	-blja	m		
+Hrastovlje	Hrastôvlje	-velj	ž mn.		
+Bate	Báte	Bát	ž mn.		
+Temnica	Temníca	-e	ž		
+Soča	Sóča	-e	ž		
+Pregara	Pregára	-e	ž		
+Prežganje	Prežgánje	-ega	s		
+Jurski Vrh	Júrski Vŕh	-ega -a	m		
+Koprivna	Koprívna	-e	ž		
+Gorjuše	Gorjúše	-úš	ž mn.		
+Velika Dolina	Vélika Dólina	-e -e	ž		Dólina
+Veliko Tinje	Véliko Tínje	-ega -a	s		
+Koritnica	Korítnica	-e	ž		
+Gore	Gôre	Gôr	ž mn.		
+Zgornja Kostrivnica	Zgórnja Kostrívnica	-e -e	ž		
+Spodnji Ivanjci	Spódnji Ivánjci	-ih -ev	m mn.		
+Fojana	Fojána	-e	ž		
+Otalež	Otálež	-a	m		
+Bukovščica	Búkovščica	-e	ž		
+Studenice	Studeníce	-íc	ž mn.		
+Poljane	Poljáne nad Škófjo Lóko	-án ~ ~ ~	ž mn.		
+Suha	Súha	-e	ž		
+Šmiklavž	Šmiklávž	-a	m		
+Kolovrat	Kolovrát	-a	m		
+Škrbina	Škrbína	-e	ž		
+Koprivnica	Koprívnica	-e	ž		
+Delnice	Délnice	-ic	ž mn.		
+Sromlje	Srómlje	-melj	ž mn.		
+Rižana	Rižána	-e	ž		
+Podzemelj	Podzémelj	-mlja	m		
+Sveti Štefan	Svéti Štéfan	-ega -a	m		
+Robanov Kot	Robánov kót	-ega -a	m		
+Trnovo ob Soči	Trnôvo ob Sóči	-ega ~ ~	s		
+Grahovo ob Bači	Gráhovo ob Báči	-ega ~ ~	m		Gráhovo
+Pernice	Perníce	-íc	ž mn.		
+Log pod Mangartom	Lóg pod Mángartom	-a ~ ~	m		
+Gozd	Gòzd	Gôzda	m		
+Planica	Planíca	-e	ž		
+Črmošnjice	Črmošnjíce	-íc	ž mn.		
+Mihalovci	Mihálovci	-ev	m mn.		
+Dolge Njive	Dôlge Njíve	-ih Njív	ž mn.		
+Cerkvenjak	Cerkvenják	-a	m		
+Grm	Gŕm	-a	m		
+Srednja Dobrava	Srédnja Dobráva	-e -e	ž		
+Vrh nad Laškim	Vŕh nad Láškim	-a ~ ~	m		
+Sela pri Kamniku	Séla pri Kámniku	Sél ~ ~	s mn.		
+Morava	Mórava	-e	ž		
+Črešnjice	Čréšnjice	-ic	ž mn.		
+Vrsno	Vŕsno	-a	s		
+Puščava	Puščáva	-e	ž		
+Zgornji Razbor	Zgórnji Rázbor	-ega -ja	m		
+Zavratec	Zavrátec	-tca	m		
+Velike Poljane	Vélike Poljáne	-ih -án	ž mn.		
+Strmec	Stŕmec nad Dóbrno	-mca ~ ~	m		
+Veliki Dol	Véliki Dól	-ega -a	m		
+Šentlovrenc	Šentlôvrenc	-a	m		
+Strmec nad Dobrno	Stŕmec nad Dóbrno	-mca ~ ~	m		
+Sela pri Šumberku	Séla pri Šúmberku	Sél ~ ~	s mn.		
+Pilštanj	Pílštanj	-a	m		
+Kred	Kréd	-a	m		
+Doslovče	Dóslovče	-ovč	ž mn.		
+Trenta	Trénta	-e	ž		
+Preloka	Préloka	-e	ž		
+Blagovica	Blagôvica	-e	ž		
+Lig	Líg	-a	m		
+Svetina	Svétina	-e	ž		Svétina
+Bistrica	Bístrica	-e	ž		
+Gabrovica pri Komnu	Gábrovica pri Kómnu	-e ~ ~	ž		
+Bučkovci	Bučkôvci	-ev	m mn.		
+Slivje	Slívje	-a	s		
+Šmihel pri Žužemberku	Šmihél pri Žúžemberku	-a ~ ~	m		Šmihél
+Sveta Trojica	Svéta Trojíca	-e -e	ž		
+Movraž	Movráž	-a	m		
+Zaplana	Zaplána	-e	ž		
+Dobje pri Planini	Dóbje pri Planíni	-a ~ ~	s		
+Šibenik	Šíbenik	-a	m		
+Zagradec	Zagrádec	-dca	m		
+Bučka	Búčka	-e	ž		
+Strojna	Strôjna	-e	ž		
+Podplat	Pôdplat	-áta	m		
+Dole pri Litiji	Dóle pri Litíji	Dól ~ ~	ž mn.		
+Podgorica	Pódgorica	-e	ž		
+Slivnica pri Celju	Slívnica pri Cêlju	-e ~ ~	ž		
+Šentvid pri Planini	Šentvìd pri Planíni	-ída ~ ~	m		
+Pohorje	Póhorje	-a	s		
+Lome	Lomé	-ja	m		
+Šlovrenc	Šlôvrenc	-a	m		
+Stara Vas	Stára vás	-e -í	ž		
+Vrata	Vráta	Vrát	s mn.		
+Trojane	Trojáne	-án	ž mn.		
+Čatež	Čátež ob Sávi	-a ~ ~	m		
+Bela Cerkev	Béla Cérkev	-e -kve	ž		
+Leskovica	Leskôvica	-e	ž		
+Šentjošt	Šentjóšt nad Horjúlom	-a ~ ~	m		
+Predel	Predél	-a	m		
+Logarska Dolina	Lógarska dolína	-e -e	ž		dolína
+Fužine	Fužíne	-ín	ž mn.		
+Velika Štanga	Vélika Štánga	-e -e	ž		
+Gorenja Trebuša	Gorénja Trebúša	-e -e	ž		
+Šentviška Gora	Šentvíška Gôra	-e -e	ž		
+Polšnik	Pôlšnik	-a	m		
+Mala Nedelja	Mála Nédelja	-e -e	ž		
+Brdo	Bŕdo	-a	s		
+Trebelno	Trebélno	-ega	s		
+Ojstrica	Ojstríca	-e	ž		
+Koprivnik	Koprívnik	-a	m		
+Grintovec	Gríntovec	-vca	m		
+Stari Trg ob Kolpi	Stári tŕg ob Kólpi	-ega -a ~ ~	m		
+Dobrnič	Dóbrnič	-a	m		
+Spodnja Sorica	Spódnja Sórica	-e -e	ž		
+Sušak	Súšak	-a	m		
+Podtabor	Podtábor pri Grosúpljem	-a ~ ~	m		
+Šentlambert	Šentlámbert	-a	m		
+Dobje	Dóbje pri Planíni	-a ~ ~	s		
+Rečica	Rečíca ob Savínji	-e ~ ~	ž		
+Osilnica	Osílnica	-e	ž		
+Gorje	Gôrje	-rij	ž mn.		
+Bela	Béla	-e	ž		
+Podmelec	Podmélec	-lca	m		
+Ledine	Ledíne	-ín	ž mn.		
+Jurklošter	Júrklošter	-tra	m		
+Gosteče	Gostéče	-éč	ž mn.		
+Gorenje Polje	Gorénje Pólje	-ega -a	s		
+Kočevske Poljane	Kočévske Poljáne	-ih Polján	ž mn.		
+Zabukovje	Zabúkovje	-a	s		
+Rob	Rób	-a	m		
+Sladka Gora	Sládka Gôra	-e -e	ž		
+Predjama	Predjáma	-e	ž		
+Sedlo	Sêdlo	-a	s		
+Lom	Lòm	Lôma	m		
+Doblar	Dóblar	-árja	m		
+Šentgotard	Šentgótard	-a	m		
+Sinji Vrh	Sínji Vŕh	-ega -a	m		
+Zavrč	Závrč	-a	m		
+Gradin	Grádin	-a	m		
+Verdun	Verdún	-a	m		
+Škedenj	Škédenj	-dnja	m		
+Kalobje	Kálobje	-a	s		
+Hinje	Hínje	Hínj	ž mn.		
+Golac	Gólac	-lca	m		
+Predloka	Prédloka	-e	ž		
+Savica	Savíca	-e	ž		
+Srednja Vas	Srédnja vás v Bohínju	-e -í ~ ~	ž		
+Lipica	Lípica	-e	ž		
+Sočerga	Sočêrga	-e	ž		
+Materija	Materíja	-e	ž		
+Roče	Róče	Róč	ž mn.		
+Suhorje	Suhórje	-a	s		
+Stržišče	Stržíšče	-a	s		
+Kančevci	Kánčevci	-ev	m mn.		
+Topol	Tôpol	-óla	m		
+Štjak	Štják	-a	m		
+Fara	Fára	-e	ž		
+Polje ob Sotli	Pólje ob Sótli	-a ~ ~	s		
+Truške	Trúške	Trúšk	ž mn.		
+Topolovec	Topolôvec	-vca	m		
+Lipnica	Lípnica	-e	ž		
+Vremski Britof	Vrémski Brítof	-ega -a	m		
+Središče	Sredíšče ob Drávi	-a ~ ~	s		
+Golica	Golíca	-e	ž		
+Gradno	Grádno	-ega	s		
+Vrabče	Vrábče	Vrábč	ž mn.		
+Gradec	Grádec	-dca	m		
+Šentožbolt	Šentóžbolt	-a	m		
+Tatre	Tátre	-ter	ž mn.		
+Buje	Búje	Búj	ž mn.		
+Veliki Trn	Véliki Tŕn	-ega -a	m		
+Rožnik	Róžnik	-a	m		
+Crngrob	Crngrób	-a	m		
+Suhor	Súhor	-ôrja	m		
+Rut	Rút	-a	m		
+Rovišče	Rovíšče	-íšč	ž mn.		
+Jeruzalem	Jerúzalem	-a	m		
+Zlato Polje	Zláto Pólje	-ega -a	s		
+Libušnje	Libúšnje	-a	s		
+Jamnik	Jámnik	-a	m		
+Most	Móst na Sóči	-a ~ ~	m		
+Kožbana	Kožbána	-e	ž		
+Dunaj	Dúnaj	-a	m		
+Kostanjevica	Kostánjevica	-e	ž		
+Vranja Peč	Vránja Péč	-e -í	ž		
+Šentjakob	Šentjákob ob Sávi	-a ~ ~	m		
+Dvori	Dvóri nad Ízolo	-ov ~ ~	m mn.		
+Voglajna	Voglájna	-e	ž		
+Nemška Loka	Némška Lóka	-e -e	ž		
+Benečija	Benečíja	-e	ž		
+Krn	Kŕn	-a	m		
+Primskovo	Prímskovo	-ega	s		
+Grmada	Grmáda	-e	ž		
+Rim	Rím	-a	m		
+Visoko pri Poljanah	Visôko pri Poljánah	-ega ~ ~	s		
+Obloke	Oblóke	Oblók	ž mn.		
+Jagršče	Jágršče	Jágršč	ž mn.		
+Kamniška Bistrica	Kámniška Bístrica	-e -e	ž		
+Šmohor	Šmôhor	-ôrja	m		
+Snežnik	Snežník	-a	m		
+Vatovlje	Vátovlje	-velj	ž mn.		
+Janče	Jánče	Jánč	ž mn.		
+Češnjice	Čéšnjice	-ic	ž mn.		
+Stražišče	Stražíšče	-a	s		
+Jarše	Járše	Járš	ž mn.		
+Gradišče pri Divači	Gradíšče pri Diváči	-a ~ ~	s		
+Sveta Gora	Svéta gôra	-e -e	ž		
+Zala	Zála	-e	ž		
+Jelovica	Jelôvica	-e	ž		
+Porezen	Pórezen	-zna	m		
+Rakov Škocjan	Rákov Škocján	-ega -a	m		Škocján
+Nanos	Nános	-a	m		
+Štajer	Štájer	-ja	m		
+Velika Planina	Vélika planína	-e -e	ž		
+Bogenšperk	Bógenšperk	-a	m		
+Gotenica	Goteníca	-e	ž		
+Vurmat	Vúrmat	-a	m		
+Vogel	Vógel	-gla	m		
+Vižmarje	Vížmarje	-rij	ž mn.		
+Vintgar	Víntgar	-ja	m		
+Vevče	Vêvče	Vêvč	ž mn.		
+Triglav	Tríglav	-a	m		Tríglav
+Tirosek	Tírosek	-a	m		
+Tacen	Tácen	-cna	m		
+Stol	Stòl	Stôla	m		
+Sostro	Sóstro	-ega	s		
+Šmartno pod Šmarno Goro	Šmártno pod Šmárno gôro	-a ~ ~ ~	s		
+Šmarna Gora	Šmárna gôra	-e -e	ž		
+Slavnik	Slávnik	-a	m		
+Škrlatica	Škrlatíca	-e	ž		
+Šentvid	Šentvìd	-ída	m		
+Selška Dolina	Sélška dolína	-e -e	ž		dolína
+Ščavnica	Ščávnica	-e	ž		
+Savlje	Sávlje	-velj	ž mn.		
+Savinja	Savínja	-e	ž		
+Sava Dolinka	Sáva Dolínka	-e -e	ž		
+Sava Bohinjka	Sáva Bohínjka	-e -e	ž		
+Rudnik	Rúdnik	-a	m		
+Razor	Rázor	-ja	m		
+Rak	Ràk	Ráka	m		
+Prlekija	Prlekíja	-e	ž		
+Prisojnik	Prisójnik	-a	m		
+Prekmurje	Prekmúrje	-a	s		
+Poljanska Dolina	Poljánska dolína	-e -e	ž		dolína
+Polhograjski Dolomiti	Polhográjski dolomíti	-ih -ov	m mn.		
+Pokljuka	Pokljúka	-e	ž		
+Mokrec	Mókrec	-a	m		
+Močilnik	Močílnik	-a	m		
+Matajur	Matajúr	-ja	m		
+Lubnik	Lubník	-a	m		
+Loški Potok	Lóški Pôtok	-ega -óka	m		
+Ljubljanica	Ljubljánica	-e	ž		
+Lahinja	Lahínja	-e	ž		
+Kum	Kúm	-a	m		
+Krma	Kŕma	-e	ž		
+Krim	Krìm	Kríma	m		
+Kredarica	Krédarica	-e	ž		
+Kočevski Rog	Kočévski róg	-ega -a	m		
+Ježica	Jéžica	-e	ž		
+Jelenov Žleb	Jelénov Žléb	-ega -a	m		
+Jalovec	Jálovec	-vca	m		
+Grobelno	Gróbelno	-a	s		
+Gradaščica	Gradáščica	-e	ž		
+Fjesa	Fjésa	-e	ž		
+Fala	Fála	-e	ž		
+Dravlje	Drávlje	-velj	ž mn.		
+Dravinja	Dravínja	-e	ž		
+Dobrunje	Dobrúnje	-únj	ž mn.		
+Dobrča	Dóbrča	-e	ž		
+Črnuče	Črnúče	-úč	ž mn.		
+Črna Prst	Čŕna pŕst	-e -í	ž		
+Breze	Bréze	Bréz	ž mn.		
+Bohor	Bôhor	-órja	m		
+Bohinj	Bôhinj	-hínja	m		
+Boč	Bóč	-a	m		
+Blegoš	Blégoš	-a	m		
+Begunjščica	Begúnjščica	-e	ž		
+Bača	Báča	-e	ž		
+Vršič	Vršìč	-íča	m		
+Duplica	Duplíca	-e	ž		
+Semedela	Semedéla	-e	ž		
+Groblje	Gróblje	-belj	ž mn.		
+Črna	Čŕna Áfrika	-e -e	ž		
+Gabrovica	Gábrovica pri Kómnu	-e ~ ~	ž		
+Tamar	Támar	-ja	m		
+Hubelj	Húbelj	-blja	m		
+Ptujsko Jezero	Ptújsko jézero	-ega -a	s		
+Velenjsko Jezero	Velênjsko jézero	-ega -a	s		
+Šentilj v Slovenskih goricah	Šentílj v Slovénskih gorícah	-a ~ ~ ~	m		
+Skuta	Skúta	-e	ž		
+Rog	Róg	-a	m		
+Gorenja vas	Gorénja vás	-e -í	ž		
+Sveta Lucija	Svéta Lucíja	-e -e	ž		
+Dolenja vas	Dolénja vás	-e -í	ž		
+Struge	Strúge	Strúg	ž mn.		
+Dolenjska	Dolénjska	-e	ž	Dolenjskem	
+Notranjska	Nótranjska	-e	ž	Notranjskem	
+Štajerska	Štájerska	-e	ž	Štajerskem	
+Koroška	Koróška	-e	ž	Koroškem	
+Primorska	Primórska	-e	ž	Primorskem	
+Brkini	Brkíni	-ov	m mn.		
+Zasavje	Zasávje	-a	s		
+Posavje	Posávje	-a	s		
+Pomurje	Pomúrje	-a	s		
+Podravje	Podrávje	-a	s		
+Haloze	Háloze	-oz	ž mn.		
+Kozjansko	Kozjánsko	-ega	s		
+Posočje	Posóčje	-a	s		
+Cerkljansko	Cerkljánsko	-ega	s		
+Obala	Obála	-e	ž		
+Slovenija	Slovénija	-e	ž		
+Ljubljansko	Ljubljánsko bárje	-ega -a	s	Barju	
+barje	Bárje	-a	s		
+krajina	krájina	-e	ž		
+brda	Bŕda	Bŕd	s mn.		
+Vipavska	Vipávska dolína	-e -e	ž		dolína
+dolina	Dolína	-e	ž		Dolína
+Slovenske	Slovénske goríce	-ih -íc	ž mn.		
+Šaleška	Šaléška dolína	-e -e	ž		dolína
+Zgornja	Zgórnja Bésnica	-e -e	ž		
+Julijske	Júlijske Álpe	-ih Álp	ž mn.		
+Kamniško-Savinjske	Kámniško-Savínjske Álpe	-ih Álp	ž mn.		
+Karavanke	Karavánke	-ánk	ž mn.		
+Drava	Dráva	-e	ž		
+Mura	Múra	-e	ž		
+Kolpa	Kólpa	-e	ž		
+Sotla	Sótla	-e	ž		
+Bela krajina	Béla krájina	-e -e	ž		
+Vipavska dolina	Vipávska dolína	-e -e	ž		dolína
+Slovenske gorice	Slovénske goríce	-ih -íc	ž mn.		
+Šaleška dolina	Šaléška dolína	-e -e	ž		dolína
+Savinjska dolina	Savínjska dolína	-e -e	ž		dolína
+Ljubljansko barje	Ljubljánsko bárje	-ega -a	s	Barju	
