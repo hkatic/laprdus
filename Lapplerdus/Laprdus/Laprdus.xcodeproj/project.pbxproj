@@ -516,7 +516,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 17;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 3GAM6Z3A2W;
 				LAPRDUS_APP_GROUP = group.com.hrvojekatic.laprdus;
@@ -583,7 +583,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 17;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 3GAM6Z3A2W;
 				LAPRDUS_APP_GROUP = group.com.hrvojekatic.laprdus;
@@ -617,7 +617,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "Config/Laprdus.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 17;
 				DEVELOPMENT_TEAM = 3GAM6Z3A2W;
 				LAPRDUS_APP_GROUP = group.com.hrvojekatic.laprdus;
 				"LAPRDUS_APP_GROUP[sdk=macosx*]" = "$(TeamIdentifierPrefix)com.hrvojekatic.laprdus";
@@ -669,7 +669,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "Config/Laprdus.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 17;
 				DEVELOPMENT_TEAM = 3GAM6Z3A2W;
 				LAPRDUS_APP_GROUP = group.com.hrvojekatic.laprdus;
 				"LAPRDUS_APP_GROUP[sdk=macosx*]" = "$(TeamIdentifierPrefix)com.hrvojekatic.laprdus";
@@ -719,7 +719,7 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 17;
 				DEVELOPMENT_TEAM = 3GAM6Z3A2W;
 				LAPRDUS_APP_GROUP = group.com.hrvojekatic.laprdus;
 				"LAPRDUS_APP_GROUP[sdk=macosx*]" = "$(TeamIdentifierPrefix)com.hrvojekatic.laprdus";
@@ -751,7 +751,7 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 17;
 				DEVELOPMENT_TEAM = 3GAM6Z3A2W;
 				LAPRDUS_APP_GROUP = group.com.hrvojekatic.laprdus;
 				"LAPRDUS_APP_GROUP[sdk=macosx*]" = "$(TeamIdentifierPrefix)com.hrvojekatic.laprdus";
@@ -783,7 +783,7 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				CODE_SIGN_ENTITLEMENTS = "Config/LaprdusVoices.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 17;
 				DEVELOPMENT_TEAM = 3GAM6Z3A2W;
 				LAPRDUS_APP_GROUP = group.com.hrvojekatic.laprdus;
 				"LAPRDUS_APP_GROUP[sdk=macosx*]" = "$(TeamIdentifierPrefix)com.hrvojekatic.laprdus";
@@ -829,7 +829,7 @@
 				ALLOW_TARGET_PLATFORM_SPECIALIZATION = YES;
 				CODE_SIGN_ENTITLEMENTS = "Config/LaprdusVoices.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 17;
 				DEVELOPMENT_TEAM = 3GAM6Z3A2W;
 				LAPRDUS_APP_GROUP = group.com.hrvojekatic.laprdus;
 				"LAPRDUS_APP_GROUP[sdk=macosx*]" = "$(TeamIdentifierPrefix)com.hrvojekatic.laprdus";

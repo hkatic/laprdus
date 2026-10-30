@@ -105,20 +105,26 @@ public:
     static constexpr size_t MAX_ENDING = 5;
 
     /**
-     * Generated tables searched in place (formant_slovenian.inc): entries
-     * in the notation, sorted by the spelling they are for. The hand-added
-     * entries win over them.
+     * A generated table searched in place (formant_slovenian.inc): entries
+     * in the notation, sorted by the spelling they are for and front-coded
+     * in blocks of `block` entries (an entry after the first of its block
+     * starts with a byte 1 + n for the n leading bytes it shares with the
+     * one before). Stem entries carry no '*'.
      */
-    void set_tables(const char* const* forms, size_t form_count,
-                    const char* const* stems, size_t stem_count);
+    struct Table {
+        const char* const* blocks = nullptr;
+        size_t count = 0;           // entries
+        size_t block = 1;           // entries per block
+    };
+
+    /** The generated tables; the hand-added entries win over them. */
+    void set_tables(const Table& forms, const Table& stems);
 
 private:
     std::unordered_map<std::u32string, std::u32string> m_exact;
     std::unordered_map<std::u32string, std::u32string> m_stems;
-    const char* const* m_forms = nullptr;
-    size_t m_form_count = 0;
-    const char* const* m_stem_table = nullptr;
-    size_t m_stem_count = 0;
+    Table m_form_table;
+    Table m_stem_table;
 };
 
 /** The built-in lexicon (formant_slovenian.inc plus the hand-written entries). */
@@ -157,6 +163,42 @@ void phonemize(const std::u32string& word, const std::vector<uint8_t>& marks,
  * (živíjo, naredí "they live", "he makes").
  */
 const char32_t* head_reading(const std::u32string& w);
+
+/**
+ * The reading of a word that depends on the other words of its clause,
+ * in the notation, or nullptr to keep the lexicon's. `words` are the
+ * clause's words, lowercase. Meni alone in its clause is the menu, mení;
+ * after a preposition or before se, je, ni the pronoun mêni; elsewhere
+ * the lexicon's méni, the verb.
+ */
+const char32_t* clause_reading(const std::vector<std::u32string>& words, size_t i);
+
+/**
+ * A spelling read one way as a verb's form and another way as a noun, an
+ * adjective or an adverb (veselí "looks forward" and veséli "cheerful",
+ * letí "flies" and léti "two years", vôzil "drove" and vozíl "of
+ * vehicles"): both readings in the notation, from the generated table.
+ * False for any other spelling. The lexicon gives the more frequent
+ * reading; context_reading() says when the words around it ask for the
+ * other.
+ */
+struct VerbNounReadings {
+    std::u32string verb;
+    std::u32string nominal;
+    bool participle = false;    // the verb's reading is the l-participle
+};
+bool verb_noun_readings(const std::u32string& w, VerbNounReadings& out);
+
+enum class VerbOrNoun { Lexicon, Verb, Nominal };
+
+/**
+ * Which reading of a verb/noun spelling (verb_noun_readings()) the clause
+ * asks for: `words` are its words, lowercase, `i` the spelling's place.
+ * A preposition or dve/obe before it make it the noun, ne the verb; veseli
+ * and leti have rules of their own. Lexicon: no cue, the more frequent
+ * reading stays.
+ */
+VerbOrNoun context_reading(const std::vector<std::u32string>& words, size_t i, bool participle);
 
 /**
  * A compound numeral (enaindvajset, štiriinštirideset) split into its

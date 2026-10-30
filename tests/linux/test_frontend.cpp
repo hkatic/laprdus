@@ -1831,9 +1831,73 @@ TEST_CASE("Slovenian words reported by the first users (October 2026)", "[fronte
     REQUIRE(phones_of(read(frontend, U"Zdaj naredi to")) == "zd'aj nar'E:di t'ó:");
     REQUIRE(phones_of(read(frontend, U"Program naredi kopijo")) == "prOgr'a:m narEd'i: k'ó:pijO");
     REQUIRE(phones_of(read(frontend, U"Uredi")) == "ur'E:di");
+    // meni alone is the menu (SSKJ² mení); in a sentence the pronoun mêni
+    // (after a preposition, before se, je, ni) or the verb méni
     REQUIRE(phones_of(read(frontend, U"Meni")) == "mEn'i:");
+    REQUIRE(phones_of(read(frontend, U"Meni je všeč")) == "m'E:ni jE uš'é:č");
+    REQUIRE(phones_of(read(frontend, U"Meni se zdi")) == "m'E:ni sE zd'i:");
+    REQUIRE(phones_of(read(frontend, U"Pridi k meni")) == "pr'i:di k m'E:ni");
+    REQUIRE(phones_of(read(frontend, U"Kaj meni o tem")) == "k'a:j m'é:ni O t'é:m");
+    REQUIRE(phones_of(read(frontend, U"Meni gumb")) == "m'é:ni g'u:mp");
+    // The participle of biti on its last syllable (SSKJ² bilà biló bilí bilè)
+    REQUIRE(phones_of(read(frontend, U"bila je")) == "bil'a jE");
+    REQUIRE(phones_of(read(frontend, U"bilo je lepo")) == "bil'ó: jE lEp'ó:");
+    REQUIRE(phones_of(read(frontend, U"bili so")) == "bil'i: sO");
+    REQUIRE(phones_of(read(frontend, U"bile so")) == "bil'E sO");
     // The number converter's words: the ones keep their accent before the tens
     REQUIRE(phones_of(read(frontend, U"sto enaindvajset")) == "st'ó: 'E:naindv'a:jsEt");
+}
+
+TEST_CASE("Slovenian lexicon of every Sloleks lemma and verb/noun spellings (October 2026)",
+          "[frontend][slovenian]") {
+    Frontend frontend(VoiceLanguage::Slovenian);
+    struct Case { const char32_t* text; const char* phones; };
+    const Case cases[] = {
+        // Reported: SSKJ² karamból, zobobòl -ôla (lemmas below the table's old
+        // frequency threshold, read by the second-last-syllable rule)
+        {U"karambol", "karamb'ó:l"},
+        {U"zobobol", "zObOb'Ol"},
+        // A stem of one word read another: postavít*, of postavítev, gave
+        // postavíti; the table is now checked form by form
+        {U"postaviti", "pOst'a:viti"},
+        {U"preveriti", "prEv'é:riti"},
+        {U"nastavitve", "nastav'i:tvE"},
+        // A homograph by the frequency of the form, not of the lemma:
+        // veselím "I look forward" is eight times the adjective's vesélim
+        {U"veselim", "vEsEl'i:m"},
+        // Forms with two spellings (mesca, meseca) were dropped
+        {U"meseca", "m'é:sEca"},
+        {U"mesecih", "m'é:sEcih"},
+        // The fleeting e is the schwa (rékel rêkla, začétek začétka), and
+        // only then (vídel vídela; črkujem is not črkujmo's)
+        {U"začetek", "zač'é:tək"},
+        {U"videl", "v'i:dEw"},
+        {U"črkujem", "čərk'u:jEm"},
+        // Hand entries written from memory that the dictionaries contradict
+        {U"beseda", "bEs'é:da"},                 // beséda, not béseda
+        {U"višina", "viš'i:na"},
+        {U"sestra", "s'E:stra"},                 // sêstra
+        {U"septembra", "sEpt'E:mbra"},           // septêmber -bra
+    };
+    for (const Case& c : cases) {
+        DYNAMIC_SECTION(PhonemeMapper::utf32_to_utf8(c.text)) {
+            REQUIRE(phones_of(read(frontend, c.text)) == c.phones);
+        }
+    }
+    // veseli: the verb with its se, an object or at the end of the clause,
+    // the adjective after a form of biti and before a noun
+    REQUIRE(phones_of(read(frontend, U"On se zelo veseli")) == "'On sE zEl'ó: vEsEl'i:");
+    REQUIRE(phones_of(read(frontend, U"To me veseli")) == "t'ó: mE vEsEl'i:");
+    REQUIRE(phones_of(read(frontend, U"Otroci so veseli")) == "Otr'O:ci sO vEs'é:li");
+    REQUIRE(phones_of(read(frontend, U"Veseli ljudje")) == "vEs'é:li ljudj'é:");
+    // leti: letí "flies", léti after a number or a preposition
+    REQUIRE(phones_of(read(frontend, U"Letalo leti nad mestom")) == "lEt'a:lO lEt'i: nad m'é:stOm");
+    REQUIRE(phones_of(read(frontend, U"Ptič leti")) == "pt'ič lEt'i:");
+    REQUIRE(phones_of(read(frontend, U"Dve leti")) == "dv'é: l'é:ti");
+    REQUIRE(phones_of(read(frontend, U"Pred dvema leti")) == "prE dv'é:ma l'é:ti");
+    // A participle after its auxiliary, the noun after a preposition
+    REQUIRE(phones_of(read(frontend, U"On je vozil avto")) == "'On jE v'O:ziw 'a:wtO");
+    REQUIRE(phones_of(read(frontend, U"Brez novih vozil")) == "brEz n'O:vih vOz'i:l");
 }
 
 TEST_CASE("Slovenian clitics, sandhi and clause types", "[frontend][slovenian]") {

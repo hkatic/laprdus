@@ -86,7 +86,7 @@ struct LetterName {
 // ès èš té vé zé žé (the rules also allow the sound with a schwa, bə, cə,
 // which is the spelling by sounds). The letters of other alphabets: kú,
 // dvojni vé, íks, ípsilon; ć and đ are mehki čé and mehki džé, dž is trdi
-// džé. The pronunciation of the names is in HAND_ENTRIES.
+// džé. The pronunciation of the names is in the lexicon.
 const LetterName LETTER_NAMES[] = {
     {U"a", U"a"},   {U"b", U"be"},  {U"c", U"ce"},  {U"č", U"če"},  {U"d", U"de"},
     {U"e", U"e"},   {U"f", U"ef"},  {U"g", U"ge"},  {U"h", U"ha"},  {U"i", U"i"},
@@ -230,260 +230,49 @@ const WordSet& question_words() {
 // The built-in lexicon
 // =============================================================================
 
-// Hand-written entries: numbers, the days, months and the words every
-// sentence has, with the accents of SSKJ and the Slovenski pravopis
-// (Fran.si). These win over the generated table below.
+// Hand-written entries. They win over the generated table, which since
+// 2026-10-30 holds every Sloleks lemma with hand-checked accents and is
+// verified form by form, so only two kinds are left: words Sloleks does
+// not list, and readings SSKJ² or the Slovenski pravopis 2001 (Fran.si)
+// give otherwise than Sloleks's first accentuation, or that a listener
+// asked for. A hand-written stem catches the words derived from it too
+// (gôr* read goreti as gôreti), so whole forms are preferred; the
+// readings that differ from Sloleks for every form of a word belong in
+// CORRECTIONS of tools/formant/slovenian_words.py, which writes them into
+// the table. Check a new entry against Fran and the table first
+// (2026-10-29: 281 of 1,605 entries written from memory contradicted
+// Sloleks, and the dictionaries sided with Sloleks every time).
 const char* const HAND_ENTRIES[] = {
-    // ---- Numbers (SSKJ and SP 2001: nìč, èn êna êno, dvá, dvé, tríje, trí,
-    // štírje, štíri, pét, šést, sédem [sédəm], ósem [ósəm], devét, desét,
-    // enájst, dvánajst ... devétnajst (SSKJ² lists the first syllable
-    // first, "dvánajst in dvanájst", SP 2001 only -nájst; the first
-    // syllable is what the Slovenian listener expected, and it is where
-    // Sloleks has the ordinals, dvánajsti: stems, so every form agrees),
-    // dvájset, trídeset, štírideset, pétdeset, šéstdeset,
-    // sédemdeset, ósemdeset, devétdeset, stó, dvésto, trísto, štíristo,
-    // pétsto, šéststo, sédemsto, ósemsto, devétsto, tísoč, milijón,
-    // milijárda; the compounds ênaindvájset, pétindvájset have an accent on
-    // each part: the front end reads them as three words) ----
-    u8"nìč", u8"èn", u8"êna", u8"êno", u8"dvá", u8"dvé", u8"trí", u8"tríje", u8"štíri",
-    u8"štírje", u8"pét", u8"šést", u8"sédəm", u8"ósəm", u8"devét", u8"desét",
-    u8"enájst*", u8"dvánajst*", u8"trínajst*", u8"štírinajst*", u8"pétnajst*", u8"šéstnajst*",
-    u8"sédəmnajst*", u8"ósəmnajst*", u8"devétnajst*",
-    u8"dvájset", u8"trídeset", u8"štírideset", u8"pétdeset", u8"šéstdeset",
-    u8"sédəmdeset", u8"ósəmdeset", u8"devétdeset",
-    u8"stó", u8"dvésto", u8"trísto", u8"štíristo", u8"pétsto", u8"šéststo",
-    u8"sédəmsto", u8"ósəmsto", u8"devétsto", u8"tísoč",
-    u8"milijón|a|i|ov|u|e|om|ih|om|oma|e", u8"milijárd|a|i|e|o|am|ah|ami",
-    u8"bilijón|a|i|ov|u|e|om|ih", u8"bilijárd|a|i|e|o", u8"trilijón|a|i|ov|u|e|om|ih",
+    // ---- Numbers Sloleks does not list ----
+    u8"pétdeset", u8"šéstdeset", u8"devétdeset",
     u8"trilijárd|a|i|e|o", u8"kvadrilijón|a|i|ov", u8"kvintilijón|a|i|ov",
-    // ordinals: pŕvi, drúgi, trétji, četŕti, péti, šésti, sédmi, ósmi, devéti, deséti
-    u8"pŕv*", u8"drúg*", u8"trétj*", u8"četŕt*", u8"pêt|i|a|o|ega|emu|em|im|ih|imi",
-    u8"šêst|i|a|o|ega|emu|em|im|ih|imi", u8"sêdm*", u8"ósm*", u8"devêt|i|a|o|ega|emu|em|im|ih|imi",
-    u8"desêt|i|a|o|ega|emu|em|im|ih|imi", u8"stót*", u8"tísoč|i|a|o|ega|emu|em",
-    u8"obá", u8"obé", u8"dvóje", u8"tróje", u8"pôl", u8"polovíc*", u8"četŕt*",
-    u8"vêjica", u8"píka", u8"céla", u8"cél*", u8"odstótk*", u8"odstótek", u8"évr*", u8"évro",
-    u8"dólar|ja|ji|jev|jem|jih|", u8"stopínj*", u8"stopínja",
-    // ---- Days, months, time ----
-    u8"ponedéljək", u8"ponedéljk*", u8"tôrək", u8"tórk*", u8"sréda", u8"sréd*",
-    u8"četŕtək", u8"četŕtk*", u8"pétək", u8"pétk*", u8"sobóta", u8"sobót*",
-    u8"nedélja", u8"nedélj*",
-    u8"jánuar*", u8"fébruar*", u8"márəc", u8"márc*", u8"apríl*", u8"máj", u8"mája", u8"máju",
-    u8"júnij*", u8"júlij*", u8"avgúst*", u8"septémbər", u8"septémbr*", u8"októbər",
-    u8"októbr*", u8"novémbər", u8"novémbr*", u8"decémbər", u8"decémbr*",
-    u8"dán", u8"dnéva", u8"dnévi", u8"dní", u8"dnévu", u8"dnévom", u8"dnéve", u8"dnévih",
-    u8"úra", u8"úre", u8"úri", u8"úro", u8"úr", u8"úrah", u8"úram", u8"minúta", u8"minút*",
-    u8"sekúnda", u8"sekúnd*", u8"tédən", u8"tédn*", u8"mésec", u8"mésəc", u8"mésec*",
-    u8"léto", u8"léta", u8"létu", u8"létom", u8"lét", u8"létih", u8"létom", u8"létoma",
-    u8"dánəs", u8"včéraj", u8"jútri", u8"zjútraj", u8"zvečér", u8"opôldne",
-    u8"dopôldne", u8"popôldne", u8"ponôči", u8"zdàj", u8"sedàj", u8"potém", u8"nató",
-    u8"kmálu", u8"pôzno", u8"zgódaj", u8"védno", u8"nikóli", u8"vsákokrat",
-    // ---- Greetings and the most frequent words ----
-    u8"dóbər", u8"dôbro", u8"dôbra", u8"dôbri", u8"dôbre", u8"dôbrega", u8"dôbremu",
-    u8"dóbər", u8"jútro", u8"večér", u8"nóč", u8"žívjo", u8"zdrávo", u8"adíjo",
-    u8"nasvídenje", u8"hvála", u8"prósim", u8"oprostíte", u8"oprôsti", u8"izvólite",
-    u8"dobrodôšli", u8"dobrodôšla", u8"dobrodôšəl", u8"prijétno", u8"prijétən", u8"já", u8"dà", u8"nè", u8"sevéda", u8"mordà", u8"mogóče", u8"verjétno",
-    u8"člôvek", u8"človéka", u8"človéku", u8"človékom", u8"ljudjé", u8"ljudí", u8"ljudém",
-    u8"ljudmí", u8"ljudéh", u8"otròk", u8"otrôka", u8"otrôci",
-    u8"žénska", u8"žénsk*", u8"móški", u8"môšk*", u8"déklica", u8"déklic*", u8"fànt",
-    u8"fánt*", u8"máma", u8"mám*", u8"ôče", u8"očéta", u8"očétu", u8"očétom", u8"očéti",
-    u8"bràt", u8"bráta", u8"brátje", u8"séstra", u8"séstr*", u8"sín", u8"sinôvi",
-    u8"hčí", u8"hčére", u8"hčéri", u8"družína", u8"družín*", u8"prijátelj*", u8"prijáteljica",
-    u8"híša", u8"híš*", u8"dóm", u8"domá", u8"dómu", u8"mésto", u8"mésta", u8"méstu",
-    u8"méstom", u8"mêsti", u8"mést", u8"vàs", u8"vasí", u8"dežêla", u8"dežêl*",
-    u8"držáva", u8"držáv*", u8"svét", u8"svetá", u8"svétu", u8"svétom", u8"zêmlja",
-    u8"zêmlj*", u8"vôda", u8"vôd*", u8"zràk", u8"zráka", u8"sónce", u8"sónc*", u8"nebó", u8"lúna", u8"zvézda", u8"zvézd*", u8"gôra", u8"gôr*", u8"mórje",
-    u8"mórj*", u8"réka", u8"rék*", u8"gózd", u8"gôzda", u8"césta", u8"cést*",
-    u8"délo", u8"déla", u8"délu", u8"délom", u8"dél", u8"délati", u8"délam", u8"délaš",
-    u8"déla", u8"délamo", u8"délate", u8"délajo", u8"délaw", u8"délala", u8"délali",
-    u8"délalo", u8"délale", u8"délaj", u8"délajte", u8"šóla", u8"šól*", u8"knjíga",
-    u8"knjíg*", u8"béseda", u8"beséd*", u8"jêzik", u8"jezík*", u8"stávek", u8"stávk*",
-    u8"imé", u8"iména", u8"iménu", u8"iménom", u8"iména", u8"imén",
-    u8"čàs", u8"čása", u8"čásu", u8"čásom", u8"čási", u8"čásov", u8"ljubézen", u8"ljubézn*",
-    u8"življênje", u8"življênj*", u8"smŕt", u8"smŕti", u8"zdrávje", u8"zdrávj*",
-    u8"denár", u8"denárja", u8"denárju", u8"denárjem", u8"céna", u8"cén*", u8"trgovína",
-    u8"trgovín*", u8"ávto", u8"ávta", u8"ávtu", u8"ávtom", u8"ávti", u8"ávtov",
-    u8"avtomobíl", u8"avtomobíl*", u8"vlák", u8"vláka", u8"vláku", u8"letálo", u8"letál*", u8"telefón", u8"telefón*", u8"računálnik",
-    u8"računálnik*", u8"ínternet", u8"ínternet*", u8"sporočílo", u8"sporočíl*", u8"gúmb*", u8"ôkno", u8"ôkn*", u8"okênce", u8"menú", u8"menúj*", u8"səznàm",
-    u8"səznám*", u8"datotéka", u8"datoték*", u8"mápa", u8"máp*",
-    u8"besedílo", u8"besedíl*", u8"strán", u8"stráni", u8"strán*", u8"povezáva", u8"povezáv*",
-    u8"nastavítve", u8"nastavítev", u8"nastavíte", u8"nastavítv*", u8"glás", u8"glasú",
-    u8"glásu", u8"glásovi", u8"hitrôsti", u8"víšina", u8"višín*",
-    u8"glásnost", u8"glasnôsti", u8"jákost", u8"jakôsti", u8"premòr", u8"premôr*",
-    u8"slovár", u8"slovárj*", u8"izgovorjáva", u8"izgovorjáv*", u8"naglàs", u8"naglása", u8"naglás*", u8"čŕk|a|e|i|o||am|ah|ami", u8"črkováti", u8"črkúj*", u8"črkovánj*", u8"črkován*",
-    u8"ločílo", u8"ločíl*", u8"števílka", u8"števílk*", u8"števílo", u8"števíl*",
-    u8"velíko", u8"vêlik", u8"májhən", u8"májhna", u8"májhno", u8"májhni",
-    u8"májhne", u8"májhnega", u8"májhnemu", u8"máli", u8"mála", u8"málo", u8"nòv", u8"nôva",
-    u8"nôvo", u8"nôvi", u8"nôve", u8"nôvega", u8"nôvemu", u8"nôvih", u8"nôvim", u8"stàr",
-    u8"stára", u8"stáro", u8"stári", u8"stáre", u8"stárega", u8"stáremu", u8"mlád",
-    u8"mláda", u8"mládo", u8"mládi", u8"mláde", u8"mládega", u8"lép", u8"lépa", u8"lépo",
-    u8"lépi", u8"lépe", u8"lépega", u8"lépemu", u8"gŕd", u8"gŕda", u8"gŕdo", u8"gŕdi",
-    u8"dôwg", u8"dôwga", u8"dôwgo", u8"dôwgi", u8"dôwge", u8"krátək", u8"krátka", u8"krátko",
-    u8"krátki", u8"krátke", u8"visòk", u8"visôka", u8"visôko", u8"visôki", u8"nízək",
-    u8"nízka", u8"nízko", u8"nízki", u8"tôpel=tôpəw", u8"tôpla", u8"tôplo", u8"hláden=hládən",
-    u8"hládna", u8"hládno", u8"vróč", u8"vróča", u8"vróče", u8"mŕzel=mŕzəw", u8"mŕzla",
-    u8"mŕzlo", u8"hítər", u8"hítra", u8"hítro", u8"hítri", u8"hítre", u8"počásən", u8"počásna",
-    u8"počásno", u8"počási", u8"glásen=glásən", u8"glásno", u8"glásna", u8"tíh", u8"tího",
-    u8"tíha", u8"rdèč", u8"rdéča", u8"rdéče", u8"rdéči", u8"módər", u8"módra", u8"módro",
-    u8"zelèn", u8"zelêna", u8"zelêno", u8"zelêni", u8"rumèn", u8"rumêna", u8"rumêno",
-    u8"čŕn", u8"čŕna", u8"čŕno", u8"čŕni", u8"bél", u8"béla", u8"bélo", u8"béli", u8"béle",
-    u8"sív", u8"síva", u8"sívo", u8"rjàv", u8"rjáva", u8"rjávo",
-    // ---- Verbs: biti, imeti, iti, the modals and the commonest verbs ----
-    u8"bíti", u8"s'əm", u8"sì", u8"jè", u8"svà", u8"stà", u8"smò", u8"stè", u8"sò",
-    u8"nísəm", u8"nísi", u8"ní", u8"nísva", u8"nísta", u8"nísmo", u8"níste", u8"níso",
-    u8"bíw", u8"bíla", u8"bílo", u8"bíli", u8"bíle", u8"bodì", u8"bodíte", u8"bóm",
-    u8"bóš", u8"bó", u8"bóva", u8"bósta", u8"bómo", u8"bóste", u8"bódo", u8"bí",
-    u8"iméti", u8"imám", u8"imáš", u8"imá", u8"imáva", u8"imáta", u8"imámo", u8"imáte",
-    u8"imájo", u8"iméw", u8"iméla", u8"imélo", u8"iméli", u8"iméle", u8"imêj", u8"imêjte",
-    u8"nímam", u8"nímaš", u8"níma", u8"nímava", u8"nímata", u8"nímamo", u8"nímate", u8"nímajo",
-    u8"íti", u8"grém", u8"gréš", u8"gré", u8"gréva", u8"grésta", u8"grémo", u8"gréste",
-    u8"gréjo", u8"gredò", u8"šèw", u8"šlà", u8"šlò", u8"šlì", u8"šlè", u8"pójdi",
-    u8"pójdite", u8"pójdimo", u8"príti", u8"prídem", u8"prídeš", u8"príde", u8"prídemo",
-    u8"prídete", u8"prídejo", u8"prišèw", u8"prišlà", u8"prišlò", u8"prišlì", u8"prídi",
-    u8"prídite", u8"hotéti", u8"hóčem", u8"hóčeš", u8"hóče", u8"hóčemo", u8"hóčete",
-    u8"hóčejo", u8"hôtel=hôtəw", u8"hotéla", u8"hotélo", u8"hotéli", u8"nóčem", u8"nóčeš",
-    u8"nóče", u8"nóčemo", u8"nóčete", u8"nóčejo", u8"môči", u8"mórem", u8"móreš",
-    u8"móre", u8"móremo", u8"mórete", u8"mórejo", u8"mógel=mógəw", u8"môgla",
-    u8"môglo", u8"môgli", u8"lahkó", u8"mórati", u8"móram",
-    u8"móraš", u8"móra", u8"móramo", u8"mórate", u8"mórajo", u8"móral=móraw", u8"mórala",
-    u8"mórali", u8"sméti", u8"smém", u8"sméš", u8"smé", u8"smémo", u8"sméte", u8"smêjo",
-    u8"védeti", u8"vém", u8"véš", u8"vé", u8"véva", u8"vésta", u8"vémo", u8"véste",
-    u8"vêjo", u8"vedó", u8"védel=védəw", u8"védela", u8"védeli", u8"znáti", u8"znám",
-    u8"znáš", u8"zná", u8"známo", u8"znáte", u8"znájo", u8"znàw", u8"znála", u8"ználi",
-    u8"rêči", u8"rêčem", u8"rêčeš", u8"rêče", u8"rêčemo", u8"rêčete", u8"rêčejo",
-    u8"rékel=rékəw", u8"rêkla", u8"rêklo", u8"rêkli", u8"rêci", u8"recíte",
-    u8"govoríti", u8"govorím", u8"govoríš", u8"govorí", u8"govorímo", u8"govoríte",
-    u8"govoríjo", u8"govóril=govóriw", u8"govoríla", u8"govoríli",
-    u8"povédati", u8"povém", u8"povéš", u8"pové", u8"povémo", u8"povéste", u8"povéjo",
-    u8"povédal=povédaw", u8"povédala", u8"povédali", u8"povéj", u8"povéjte",
-    u8"vídeti", u8"vídim", u8"vídiš", u8"vídi", u8"vídimo", u8"vídite", u8"vídijo",
-    u8"vídel=vídəw", u8"vídela", u8"vídeli", u8"slíšati", u8"slíšim", u8"slíšiš", u8"slíši",
-    u8"slíšimo", u8"slíšite", u8"slíšijo", u8"slíšal=slíšaw", u8"slíšala", u8"slíšali",
-    u8"poslúšati", u8"poslúšam", u8"poslúšaš", u8"poslúša", u8"poslúšamo", u8"poslúšate",
-    u8"poslúšajo", u8"poslúšal=poslúšaw", u8"poslúšala", u8"poslúšali", u8"poslúšaj",
-    u8"poslúšajte", u8"glédati", u8"glédam", u8"glédaš", u8"gléda", u8"glédamo",
-    u8"glédate", u8"glédajo", u8"glédal=glédaw", u8"glédala", u8"glédali", u8"glêj",
-    u8"glêjte", u8"bráti", u8"bêrem", u8"bêreš", u8"bêre", u8"bêremo", u8"bêrete",
-    u8"bêrejo", u8"brál=bráw", u8"brála", u8"bráli", u8"bêri", u8"beríte", u8"písati",
-    u8"píšem", u8"píšeš", u8"píše", u8"píšemo", u8"píšete", u8"píšejo", u8"písal=písaw",
-    u8"písala", u8"písali", u8"píši", u8"píšite", u8"mísliti", u8"míslim", u8"mísliš",
-    u8"mísli", u8"míslimo", u8"míslite", u8"míslijo", u8"míslil=mísliw", u8"míslila",
-    u8"míslili", u8"razuméti", u8"razúmem", u8"razúmeš", u8"razúme", u8"razúmemo",
-    u8"razúmete", u8"razúmejo", u8"razúmel=razúməw", u8"razuméla", u8"razuméli",
-    u8"délati", u8"naredíti", u8"naredím", u8"naredíš", u8"naredímo",
-    u8"naredíte", u8"naredíjo", u8"narédil=narédiw", u8"naredíla", u8"naredíli",
-    u8"dáti", u8"dám", u8"dáš", u8"dá", u8"dámo", u8"dáste", u8"dájo", u8"dál=dáw",
-    u8"dála", u8"dáli", u8"dàj", u8"dájte", u8"vzéti", u8"vzámem", u8"vzámeš", u8"vzáme",
-    u8"vzámemo", u8"vzámete", u8"vzámejo", u8"vzél=vzéw", u8"vzéla", u8"vzéli", u8"vzêmi",
-    u8"vzemíte", u8"dobíti", u8"dobím", u8"dobíš", u8"dobí", u8"dobímo", u8"dobíte",
-    u8"dobíjo", u8"dobíw", u8"dobíla", u8"dobíli", u8"najti=nájti", u8"nájdem",
-    u8"nájdeš", u8"nájde", u8"nájdemo", u8"nájdete", u8"nájdejo", u8"nášel=nášəw",
-    u8"nášla", u8"nášli", u8"iskáti", u8"íščem", u8"íščeš", u8"íšče", u8"íščemo", u8"íščete",
-    u8"íščejo", u8"iskàw", u8"iskála", u8"iskáli", u8"íšči", u8"íščite",
-    u8"odpréti", u8"odprèm", u8"odprèš", u8"odprè", u8"odprêmo", u8"odprête", u8"odprêjo",
-    u8"odpŕl=odpŕw", u8"odpŕla", u8"odpŕli", u8"odprì", u8"odpríte", u8"zapréti",
-    u8"zaprèm", u8"zaprèš", u8"zaprè", u8"zaprêmo", u8"zaprête", u8"zaprêjo",
-    u8"zapŕl=zapŕw", u8"zapŕla", u8"zapŕli", u8"zaprì", u8"zapríte", u8"izbráti",
-    u8"izbêrem", u8"izbêreš", u8"izbêre", u8"izbêremo", u8"izbêrete", u8"izbêrejo",
-    u8"izbrál=izbráw", u8"izbrála", u8"izbráli", u8"izbêri", u8"izberíte", u8"pritísniti",
-    u8"pritísnem", u8"pritísneš", u8"pritísne", u8"pritísnemo", u8"pritísnete",
-    u8"pritísnejo", u8"pritísnil=pritísniw", u8"pritísnila", u8"pritísnili", u8"pritísni",
-    u8"pritísnite", u8"klíkniti", u8"klíknem", u8"klíkneš", u8"klíkne", u8"klíkni",
-    u8"klíknite", u8"vnêsti", u8"vnêsem", u8"vnêseš", u8"vnêse", u8"vnêsemo", u8"vnêsete",
-    u8"vnêsejo", u8"vnésel=vnésəw", u8"vnêsla", u8"vnêsli", u8"vnêsi", u8"vnesíte",
-    u8"shraníti", u8"shránim", u8"shrániš", u8"shráni", u8"shránimo", u8"shránite",
-    u8"shránijo", u8"shránil=shrániw", u8"shraníla", u8"shraníli", u8"izbrísati",
-    u8"izbríšem", u8"izbríšeš", u8"izbríše", u8"izbríši", u8"izbríšite", u8"nadaljeváti",
-    u8"nadaljújem", u8"nadaljúješ", u8"nadaljúje", u8"nadaljújemo", u8"nadaljújete",
-    u8"nadaljújejo", u8"nadaljúj", u8"nadaljújte", u8"ustáviti", u8"ustávim", u8"ustáviš",
-    u8"ustávi", u8"ustávite", u8"počákati", u8"počákam", u8"počákaj", u8"počákajte",
-    u8"potrdíti", u8"potŕdim", u8"potŕdiš", u8"potŕdi", u8"potŕdite", u8"preklícati",
-    u8"preklíčem", u8"preklíči", u8"preklíčite", u8"zapustíti", u8"zapustím",
-    u8"zapustíte", u8"vrníti", u8"vŕnem", u8"vŕneš", u8"vŕne", u8"vŕni", u8"vŕnite",
-    u8"státi", u8"stojím", u8"stojíš", u8"stojí", u8"stojímo", u8"stojíte", u8"stojíjo",
-    u8"sedéti", u8"sedím", u8"sedíš", u8"sedí", u8"sedímo", u8"sedíte", u8"sedíjo",
-    u8"ležáti", u8"ležím", u8"ležíš", u8"leží", u8"spáti", u8"spím", u8"spíš", u8"spí",
-    u8"spímo", u8"spíte", u8"spíjo", u8"jésti", u8"jém", u8"jéš", u8"jé", u8"jémo",
-    u8"jéste", u8"jéjo", u8"jédel=jédəw", u8"jédla", u8"jédli", u8"píti", u8"píjem",
-    u8"píješ", u8"píje", u8"píjemo", u8"píjete", u8"píjejo", u8"píl=píw", u8"píla", u8"píli",
-    u8"ljúbiti", u8"ljúbim", u8"ljúbiš", u8"ljúbi", u8"ljúbimo", u8"ljúbite", u8"ljúbijo",
-    u8"ràd", u8"ráda", u8"rádo", u8"rádi", u8"ráde", u8"živím", u8"živíš", u8"živí",
-    u8"živímo", u8"živíte", u8"živíjo", u8"živéti", u8"žível=žívəw", u8"živéla", u8"živéli",
-    u8"iméti", u8"posláti", u8"póšljem", u8"póšlješ", u8"póšlje", u8"póšljemo", u8"póšljete",
-    u8"póšljejo", u8"poslàw", u8"poslála", u8"posláli", u8"pôšlji", u8"pošljíte",
-    u8"kupíti", u8"kúpim", u8"kúpiš", u8"kúpi", u8"kúpimo", u8"kúpite", u8"kúpijo",
-    u8"kúpil=kúpiw", u8"kupíla", u8"kupíli", u8"prodáti", u8"prodám", u8"prodáš", u8"prodá",
-    u8"plačáti", u8"pláčam", u8"pláčaš", u8"pláča", u8"pláčamo", u8"pláčate", u8"pláčajo",
-    u8"pláčal=pláčaw", u8"plačála", u8"plačáli", u8"igráti", u8"igrám", u8"igráš", u8"igrá",
-    u8"igrámo", u8"igráte", u8"igrájo", u8"igràw", u8"igrála", u8"igráli",
-    u8"pomágati", u8"pomágam", u8"pomágaš", u8"pomága", u8"pomágamo", u8"pomágate",
-    u8"pomágajo", u8"pomágal=pomágaw", u8"pomágala", u8"pomágali", u8"pomágaj", u8"pomágajte",
-    u8"učíti", u8"učím", u8"učíš", u8"učí", u8"učímo", u8"učíte", u8"učíjo", u8"učíl=učíw",
-    u8"učíla", u8"učíli", u8"hodíti", u8"hódim", u8"hódiš", u8"hódi", u8"hódimo", u8"hódite",
-    u8"hódijo", u8"hôdiw", u8"hodíla", u8"hodíli", u8"vozíti", u8"vózim", u8"vóziš",
-    u8"vózi", u8"vózimo", u8"vózite", u8"vózijo", u8"vôziw", u8"vozíla", u8"vozíli",
-    u8"čákati", u8"čákam", u8"čákaš", u8"čáka", u8"čákamo", u8"čákate", u8"čákajo",
-    u8"čákal=čákaw", u8"čákala", u8"čákali", u8"čákaj", u8"čákajte", u8"prosíti", u8"prósim",
-    u8"prósiš", u8"prósi", u8"prósimo", u8"prósite", u8"prósijo", u8"prôsiw",
-    u8"prosíla", u8"prosíli", u8"vprášati", u8"vprášam", u8"vprášaš", u8"vpráša", u8"vprášamo",
-    u8"vprášate", u8"vprášajo", u8"vprášal=vprášaw", u8"vprašála", u8"vprašáli", u8"vprášaj",
-    u8"odgovoríti", u8"odgovorím", u8"odgovoríš", u8"odgovorí", u8"odgovorímo", u8"odgovoríte",
-    u8"odgovoríjo", u8"odgovóril=odgovóriw", u8"odgovoríla", u8"odgovoríli",
-    u8"odgôvor", u8"odgôvor*", u8"vprašánje", u8"vprašánj*",
-    // ---- Adverbs, pronouns and particles ----
-    u8"jàz", u8"tí", u8"òn", u8"ôna", u8"ôno", u8"mí", u8"ví", u8"ôni", u8"ône",
-    u8"mídva", u8"vídva", u8"ônadva", u8"tá", u8"tó", u8"tísti", u8"tísta", u8"tísto",
-    u8"téga", u8"tému", u8"tém", u8"téh", u8"têj", u8"tó", u8"mój", u8"môja", u8"môje",
-    u8"tvój", u8"tvôja", u8"tvôje", u8"njegòv", u8"njegôva", u8"njegôvo", u8"njén",
-    u8"njéna", u8"njéno", u8"nàš", u8"náša", u8"náše", u8"vàš", u8"váša", u8"váše",
-    u8"svój", u8"svôja", u8"svôje", u8"njíhov", u8"njíhova", u8"njíhovo",
-    u8"vsè", u8"vsì", u8"vès", u8"vsà", u8"vsák", u8"vsáka", u8"vsáko", u8"vsákdo", u8"nékaj", u8"nekdó", u8"nihčè", u8"nekatéri", u8"nekatére", u8"néki",
-    u8"néka", u8"néko", u8"túdi", u8"sámo", u8"lè", u8"zeló", u8"pràv", u8"takó", u8"tàm",
-    u8"tù", u8"túkaj", u8"túdi", u8"potém", u8"zató", u8"tórej", u8"sícer", u8"àmpak",
-    u8"vèndar", u8"tóda", u8"kájti", u8"zakáj", u8"kdó", u8"káj", u8"kjé", u8"kám", u8"kód",
-    u8"kdáj", u8"kakó", u8"kóliko", u8"katéri", u8"katéra", u8"katéro", u8"katérega",
-    u8"katéremu", u8"katérem", u8"katérih", u8"katérim", u8"katére", u8"čigáv", u8"kákšen",
-    u8"kákšna", u8"kákšno", u8"kákšni", u8"kákšne", u8"odkód", u8"kómu", u8"kóga", u8"čému",
-    u8"čésa", u8"čím", u8"mêne", u8"têbe", u8"sêbe", u8"njêga", u8"njé", u8"njìh", u8"njó",
-    u8"njím", u8"njêmu", u8"njêj", u8"náma", u8"váma", u8"náju", u8"váju",
-    u8"okóli", u8"okróg", u8"póleg", u8"zráven", u8"mímo", u8"blízu", u8"zaràdi", u8"zarádi",
-    u8"gledé", u8"namésto", u8"rázən", u8"kljúb", u8"préko", u8"prék", u8"kót", u8"kàkor",
-    u8"kàdar", u8"doklèr", u8"préden", u8"médtem", u8"čepràv", u8"četúdi", u8"sevéda",
-    u8"zdàj", u8"tedàj", u8"takràt", u8"nekóč", u8"spét", u8"šè", u8"žé",
-    u8"tàm", u8"tjà", u8"gôr", u8"dôl", u8"nótri", u8"zúnaj", u8"znótraj",
-    u8"spôdaj", u8"zgôraj", u8"lévo", u8"désno", u8"naprêj", u8"nazáj", u8"navzgòr",
-    u8"navzdòl", u8"dôbro", u8"slábo", u8"hítro", u8"počási", u8"glásno", u8"tího",
-    u8"dáleč", u8"blízu", u8"vèč", u8"mànj", u8"nájveč", u8"nájmanj", u8"bòlj", u8"nájbolj",
-    u8"zeló", u8"precèj", u8"malce=málce", u8"málo", u8"velíko", u8"dôsti", u8"dovòlj",
-    u8"prevèč", u8"premálo", u8"skôraj", u8"čísto", u8"popôwnoma", u8"načín*",
-    u8"primér", u8"primér*", u8"ozíroma", u8"ítak", u8"pàč",
-    u8"sploh=splòh", u8"résno", u8"resníca", u8"resníc*", u8"sevéda", u8"točno=tóčno",
-    u8"tóčka", u8"tóčk*", u8"kônəc", u8"kônca", u8"kôncu", u8"kôncem", u8"začétek", u8"začétk*",
-    u8"srédina", u8"sredín*", u8"stvár", u8"stvarí", u8"stvár*", u8"réč",
-    u8"ljudjé",
-    // ---- The names of letters of more than one syllable (the names of one
-    // syllable, bé, èl, are read by the rule in finish_word: they would
-    // collide with the words je, en, es) ----
-    u8"dvójni", u8"íks", u8"ípsilon", u8"mêhki", u8"tŕdi",
-    // ---- Place names and nationalities ----
-    u8"slovénija", u8"slovénij*", u8"slovénski", u8"slovénsk*", u8"slovénec", u8"slovénc*",
-    u8"slovénka", u8"slovénk*", u8"slovénščina", u8"slovénščin*", u8"ljubljána", u8"ljublján*",
-    u8"máribor", u8"máribor*", u8"célje", u8"cêlj*", u8"kránj", u8"kránj*", u8"kóper",
-    u8"kópər", u8"kópr*", u8"velénje", u8"velênj*", u8"ptúj",
-    u8"ptúj*", u8"hrvaška=hrváška", u8"hrvášk*", u8"hrvàt", u8"hrvát*", u8"hrvática",
-    u8"hrvatíc*", u8"hrváščina", u8"srbíja", u8"sŕbij*", u8"sŕbski", u8"sŕbsk*", u8"sŕb",
-    u8"sŕb*", u8"bósna", u8"bósn*", u8"bosánski", u8"bosánsk*", u8"ávstrija", u8"ávstrij*",
-    u8"itálija", u8"itálij*", u8"nemčíja", u8"némčij*", u8"némški", u8"némšk*",
-    u8"angléški", u8"anglésk*", u8"angléščina", u8"angléščin*", u8"evrópa", u8"evróp*",
-    u8"evrópski", u8"evrópsk*", u8"madžárska", u8"madžársk*", u8"amérika", u8"amêrik*",
-    u8"ameríški", u8"amêrišk*", u8"zágreb", u8"zágreb*",
-    u8"sarájevo", u8"sárajev*", u8"dúnaj", u8"dúnaj*", u8"tŕst", u8"tŕst*",
+    // ---- s'əm: the stressed sem. The participle of biti is the table's,
+    // bilà biló bilí bilè (SSKJ² bíl bilà biló in bilò bilì in bilí bilè,
+    // "stil. bíla"; SP 2001 bíl -à -ó in -ò, bilí in -ì -è); until
+    // 2026-10-30 the stylistic bíla bílo bíli bíle were listed here ----
+    u8"s'əm",
+    // ---- Where Sloleks's first reading is not the dictionaries' first or
+    // the commoner word: otròk (SSKJ² nom. otròk, gen. pl. otrók), dní
+    // (SSKJ² rod. mn. dní), gôzda (gòzd gôzda tudi gózd), glasú (glás -ú
+    // tudi -a), naglàs the accent (the adverb naglás "aloud" is commoner in
+    // the corpus), sobóta (Múrska Sóbota is the town), ôno ône (the
+    // personal pronoun, óno ône the demonstrative), dà (the particle) ----
+    u8"otròk", u8"dní", u8"gôzda", u8"glasú", u8"naglàs", u8"sobóta", u8"sobót*",
+    u8"ôno", u8"ône", u8"dà",
+    // ---- Verbs: the first variant of SSKJ² where Sloleks has the second
+    // (písati in pisáti, potrdíti in potŕditi, shraníti in shrániti), the
+    // present where Sloleks lists another word of the same spelling
+    // (naredíjo, stojíjo, živíjo "they live"; žívijo the greeting is in
+    // HEAD_READINGS), jé (jésti jém), tŕdi (SP: trdíti in tŕditi -im,
+    // tŕdi), kúpite, vŕnite (SP: kúpi -te, vŕni -te), povéj (SP povèj/
+    // povéj), razúmel (SSKJ² razúmel tudi razumèl in razumél) ----
+    u8"písati", u8"potrdíti", u8"shraníti", u8"shraníla", u8"shraníli",
+    u8"naredíjo", u8"stojíjo", u8"živíjo", u8"jé", u8"tŕdi", u8"kúpite", u8"vŕnite",
+    u8"povéj", u8"razúmel", u8"gréjo", u8"dájo", u8"dobíjo", u8"jéjo", u8"učíjo",
+    // ---- Words of computers and phones, and names ----
+    u8"ínternet", u8"ínternet*", u8"menu=mení",      // SSKJ² mení tudi menu [mení]
+    u8"žívjo", u8"zarádi", u8"médtem", u8"anglésk*",
     u8"laprdus=láprdus*",
-    // ---- Added after the first Slovenian user reports (2026-10-29): seznàm with
-    // its schwa, the participles of (po)čistiti, the touch verb tapniti, the
-    // dual of narediti; the readings that depend on the place in the clause
-    // (žívijo, narêdi) are in HEAD_READINGS ----
-    u8"naredíva", u8"naredíta", u8"počíšč*", u8"očíšč*", u8"číšč*", u8"tápn*",
-    u8"zaganjálnik*", u8"napajálnik*", u8"êden", u8"ênkrat", u8"domôv",
 };
 
 // Spellings whose reading depends on where they stand: at the head of a
@@ -493,9 +282,10 @@ const char* const HAND_ENTRIES[] = {
 // the same (SSKJ, SP 2001: naredíti -ím, imperative narêdi; govoríti -ím,
 // govôri; dobíti -ím, dôbi; zapustíti -ím, zapústi; storíti -ím, stôri;
 // delíti -ím, dêli; uredíti -ím, urêdi; ponovíti -ím, ponôvi; obnovíti
-// -ím, obnôvi; naložíti -ím, nalôži; osvežíti -ím, osvéžil; mení the
-// menu, méni the dative; žívijo the greeting, živíjo "they live"). The
-// head reading is given here; the other comes from the lexicon.
+// -ím, obnôvi; naložíti -ím, nalôži; osvežíti -ím, osvéžil; žívijo the
+// greeting, živíjo "they live"). The head reading is given here; the
+// other comes from the lexicon. Meni has a rule of its own
+// (clause_reading()).
 struct HeadReading {
     const char32_t* spelling;
     const char32_t* head;
@@ -518,7 +308,6 @@ const HeadReading HEAD_READINGS[] = {
     {U"obnovi", U"obnôvi"},
     {U"naloži", U"nalôži"},
     {U"osveži", U"osvéži"},
-    {U"meni", U"mení"},          // the Menu of an app; méni "to me" elsewhere
 };
 
 // The flags a notation letter carries, and the plain letter it stands for.
@@ -899,7 +688,7 @@ const std::unordered_set<std::u32string>& question_word_set() { return question_
 // =============================================================================
 
 namespace {
-const char* find_in_table(const char* const* table, size_t count, const std::u32string& key);
+bool find_in_table(const Lexicon::Table& table, const std::u32string& key, std::string& entry);
 }
 
 bool Lexicon::parse(const std::u32string& marked, std::u32string& key, std::u32string& pron,
@@ -994,18 +783,18 @@ bool Lexicon::find_exact(const std::u32string& word, std::u32string& pron) const
         pron = it->second;
         return true;
     }
-    if (m_forms) {
-        if (const char* entry = find_in_table(m_forms, m_form_count, word)) {
-            pron = PhonemeMapper::utf8_to_utf32(entry);
-            return true;
-        }
+    std::string entry;
+    if (find_in_table(m_form_table, word, entry)) {
+        pron = PhonemeMapper::utf8_to_utf32(entry);
+        return true;
     }
     return false;
 }
 
 bool Lexicon::find_stem(const std::u32string& word, size_t& stem_length, std::u32string& pron) const {
-    if (m_stems.empty() && !m_stem_table) return false;
+    if (m_stems.empty() && !m_stem_table.count) return false;
     const size_t min_len = word.size() > MAX_ENDING ? word.size() - MAX_ENDING : 1;
+    std::string entry;
     for (size_t len = word.size(); len >= min_len && len >= 2; --len) {
         const std::u32string stem = word.substr(0, len);
         auto it = m_stems.find(stem);
@@ -1014,19 +803,22 @@ bool Lexicon::find_stem(const std::u32string& word, size_t& stem_length, std::u3
             pron = it->second;
             return true;
         }
-        if (m_stem_table) {
-            if (const char* entry = find_in_table(m_stem_table, m_stem_count, stem)) {
-                stem_length = len;
-                pron = PhonemeMapper::utf8_to_utf32(entry);
-                pron.pop_back();     // the '*'
-                return true;
-            }
+        if (find_in_table(m_stem_table, stem, entry)) {
+            stem_length = len;
+            pron = PhonemeMapper::utf8_to_utf32(entry);
+            return true;
         }
     }
     return false;
 }
 
 namespace {
+
+struct VerbNoun {
+    const char* verb;           // the verb's reading
+    const char* nominal;        // the noun's, adjective's or adverb's
+    bool participle;            // the verb's reading is the l-participle
+};
 
 #include "formant_slovenian.inc"
 
@@ -1055,16 +847,43 @@ int compare_key(const std::u32string& key, const char* entry) {
     return i == key.size() ? 0 : 1;                 // the key is longer
 }
 
-const char* find_in_table(const char* const* table, size_t count, const std::u32string& key) {
-    size_t lo = 0, hi = count;
+// Reads the entry of a front-coded block that starts at p into `entry`,
+// which holds the entry before it: a leading byte 1 + n keeps its first n
+// bytes, and the bytes that follow are appended. Returns where the next
+// entry starts: a byte of 1 to 64 opens one (the notation's bytes are 0x61
+// and above), 0 ends the block.
+const char* read_entry(const char* p, std::string& entry) {
+    const unsigned char* u = reinterpret_cast<const unsigned char*>(p);
+    if (*u >= 1 && *u <= 64) {
+        entry.resize(*u - 1u);
+        ++u;
+    } else {
+        entry.clear();
+    }
+    while (*u > 64) entry.push_back(static_cast<char>(*u++));
+    return reinterpret_cast<const char*>(u);
+}
+
+bool find_in_table(const Lexicon::Table& table, const std::u32string& key, std::string& entry) {
+    if (!table.count) return false;
+    // The last block whose first entry is not after the key
+    const size_t blocks = (table.count + table.block - 1) / table.block;
+    size_t lo = 0, hi = blocks;
     while (lo < hi) {
         size_t mid = lo + (hi - lo) / 2;
-        int c = compare_key(key, table[mid]);
-        if (c == 0) return table[mid];
-        if (c < 0) hi = mid;
+        read_entry(table.blocks[mid], entry);
+        if (compare_key(key, entry.c_str()) < 0) hi = mid;
         else lo = mid + 1;
     }
-    return nullptr;
+    if (lo == 0) return false;
+    const char* p = table.blocks[lo - 1];
+    while (*p) {
+        p = read_entry(p, entry);
+        int c = compare_key(key, entry.c_str());
+        if (c == 0) return true;
+        if (c < 0) return false;
+    }
+    return false;
 }
 
 } // namespace
@@ -1072,8 +891,14 @@ const char* find_in_table(const char* const* table, size_t count, const std::u32
 const Lexicon& builtin_lexicon() {
     static const Lexicon lexicon = [] {
         Lexicon lex;
-        lex.set_tables(SLOVENIAN_FORMS, sizeof(SLOVENIAN_FORMS) / sizeof(SLOVENIAN_FORMS[0]),
-                       SLOVENIAN_STEMS, sizeof(SLOVENIAN_STEMS) / sizeof(SLOVENIAN_STEMS[0]));
+        Lexicon::Table forms, stems;
+        forms.blocks = SLOVENIAN_FORMS;
+        forms.count = SLOVENIAN_FORM_COUNT;
+        forms.block = SLOVENIAN_BLOCK;
+        stems.blocks = SLOVENIAN_STEMS;
+        stems.count = SLOVENIAN_STEM_COUNT;
+        stems.block = SLOVENIAN_BLOCK;
+        lex.set_tables(forms, stems);
         for (const char* entry : HAND_ENTRIES) {
             lex.add(PhonemeMapper::utf8_to_utf32(entry));
         }
@@ -1082,12 +907,144 @@ const Lexicon& builtin_lexicon() {
     return lexicon;
 }
 
-void Lexicon::set_tables(const char* const* forms, size_t form_count,
-                         const char* const* stems, size_t stem_count) {
-    m_forms = forms;
-    m_form_count = form_count;
+bool verb_noun_readings(const std::u32string& w, VerbNounReadings& out) {
+    size_t lo = 0, hi = sizeof(SLOVENIAN_VERB_NOUN) / sizeof(SLOVENIAN_VERB_NOUN[0]);
+    while (lo < hi) {
+        size_t mid = lo + (hi - lo) / 2;
+        int c = compare_key(w, SLOVENIAN_VERB_NOUN[mid].verb);
+        if (c == 0) {
+            out.verb = PhonemeMapper::utf8_to_utf32(SLOVENIAN_VERB_NOUN[mid].verb);
+            out.nominal = PhonemeMapper::utf8_to_utf32(SLOVENIAN_VERB_NOUN[mid].nominal);
+            out.participle = SLOVENIAN_VERB_NOUN[mid].participle;
+            return true;
+        }
+        if (c < 0) hi = mid;
+        else lo = mid + 1;
+    }
+    return false;
+}
+
+// The readings were chosen on the tagged corpus SUK 1.1 (CLARIN.SI,
+// 11356/1959; 6,863 tokens of these spellings): the more frequent reading
+// alone is right for 93.3 %, these cues for 94.8 %. Cues that look
+// plausible did worse than nothing over all the spellings and were left
+// out: a clause-final word is as often a noun (pred leti, čez dve leti) as
+// a verb, se earlier in the clause belongs to another verb as often as to
+// this one, and a determiner or a copula before it says little.
+namespace {
+
+// The prepositions that decide a reading after them.
+const WordSet& prepositions() {
+    static const WordSet set = {
+        U"v", U"na", U"z", U"s", U"k", U"h", U"o", U"pri", U"po", U"od", U"do", U"iz",
+        U"za", U"pred", U"nad", U"pod", U"med", U"brez", U"ob", U"proti", U"skozi",
+        U"čez", U"zaradi", U"okoli", U"okrog", U"blizu", U"glede", U"poleg", U"razen",
+        U"sredi", U"mimo", U"preko", U"prek", U"kljub", U"zoper", U"izza", U"izpod",
+        U"namesto", U"vzdolž", U"znotraj", U"zunaj", U"nasproti", U"izmed",
+    };
+    return set;
+}
+
+} // namespace
+
+// meni is three words: mení the menu (SSKJ² "mení tudi menu [mení]", SP
+// 2001 mení -ja), mêni the dative and locative of jàz (SSKJ², SP: mêne,
+// mêni), méni the present of méniti "think" (SP: meníti in méniti -im
+// tudi méniti -im). Alone in its clause it is the name of a menu, a
+// button or a screen ("Meni", "Meni, gumb"); in a sentence it is one of
+// the other two. In SUK 1.1 the verb is 200 of 242 occurrences and the
+// pronoun 37: the pronoun is every one after a preposition (k meni, v
+// meni, o meni: 17 of 17) and before se or je (meni se zdi, meni je
+// všeč); the lexicon's méni stays elsewhere (minister meni, kaj meni).
+const char32_t* clause_reading(const std::vector<std::u32string>& words, size_t i) {
+    if (words[i] != U"meni") return nullptr;
+    if (words.size() == 1) return U"mení";
+    if (i > 0 && prepositions().count(words[i - 1])) return U"mêni";
+    if (i + 1 < words.size()) {
+        const std::u32string& next = words[i + 1];
+        if (next == U"se" || next == U"je" || next == U"ni") return U"mêni";
+    }
+    return nullptr;
+}
+
+VerbOrNoun context_reading(const std::vector<std::u32string>& words, size_t i, bool participle) {
+    static const WordSet biti = {
+        U"sem", U"si", U"je", U"sva", U"sta", U"smo", U"ste", U"so", U"nisem", U"nisi",
+        U"ni", U"nisva", U"nista", U"nismo", U"niste", U"niso", U"bi", U"bom", U"boš",
+        U"bo", U"bova", U"bosta", U"bomo", U"boste", U"bodo", U"bil", U"bila", U"bilo",
+        U"bili", U"bile", U"biti",
+    };
+    static const WordSet object_clitics = {
+        U"me", U"te", U"ga", U"jo", U"nas", U"vas", U"jih", U"ju", U"naju", U"vaju",
+        U"mi", U"ti", U"mu", U"ji", U"nam", U"vam", U"jim",
+    };
+    static const WordSet counts = {
+        U"dve", U"dva", U"obe", U"oba", U"tri", U"štiri", U"pet", U"šest", U"sedem",
+        U"osem", U"devet", U"deset", U"nekaj", U"več", U"mnogo", U"veliko",
+    };
+    const std::u32string& w = words[i];
+    const std::u32string* prev = i > 0 ? &words[i - 1] : nullptr;
+    const bool last = i + 1 == words.size();
+    auto ends_with = [](const std::u32string& s, const char32_t* tail) {
+        const std::u32string t(tail);
+        return s.size() >= t.size() && s.compare(s.size() - t.size(), t.size(), t) == 0;
+    };
+
+    // veseli: veselí (se) "looks forward, pleases", veséli "cheerful". The
+    // adjective follows a form of biti (smo veseli, so bili zelo veseli);
+    // the verb has its se, an object (nas veseli), ne, or ends the clause
+    // (On se zelo veseli. To me veseli.)
+    if (w == U"veseli") {
+        for (size_t k = i >= 3 ? i - 3 : 0; k < i; ++k) {
+            if (biti.count(words[k])) return VerbOrNoun::Nominal;
+        }
+        for (size_t k = 0; k < i; ++k) {
+            if (words[k] == U"se" || words[k] == U"si") return VerbOrNoun::Verb;
+        }
+        if ((prev && (object_clitics.count(*prev) || *prev == U"ne")) || last) return VerbOrNoun::Verb;
+        return VerbOrNoun::Lexicon;
+    }
+    // leti: léti is the dual and the instrumental of léto (dve leti, pred
+    // leti, z leti) or the plural of lèt "flight" (leti so odpovedani),
+    // always with a number or a preposition close before it or a form of
+    // biti after it; letí "flies" elsewhere (ptič leti, letalo leti nad
+    // mestom). The noun is 98 % of the corpus, and every one of its
+    // occurrences there has such a word next to it.
+    if (w == U"leti") {
+        for (size_t k = i >= 3 ? i - 3 : 0; k < i; ++k) {
+            const std::u32string& x = words[k];
+            if (prepositions().count(x) || counts.count(x) || ends_with(x, U"imi") || ends_with(x, U"ema")) {
+                return VerbOrNoun::Nominal;
+            }
+        }
+        if (!last && biti.count(words[i + 1])) return VerbOrNoun::Nominal;
+        return VerbOrNoun::Verb;
+    }
+
+    if (prev) {
+        if (prepositions().count(*prev) || *prev == U"dve" || *prev == U"dva" || *prev == U"obe" ||
+            *prev == U"oba") {
+            return VerbOrNoun::Nominal;
+        }
+        // brez novih vozil, teh sporočil: a genitive plural after an adjective
+        if (participle && prev->size() > 3 && ends_with(*prev, U"ih")) return VerbOrNoun::Nominal;
+        if (*prev == U"ne") return VerbOrNoun::Verb;
+        // je vozil, sem pojasnila, so sporočili: the auxiliary right before
+        // a participle that agrees with it (not -lo: to je besedilo, pravilo)
+        if (participle) {
+            static const WordSet singular = {U"sem", U"si", U"je", U"bi", U"ni", U"nisem", U"nisi"};
+            static const WordSet plural = {U"smo", U"ste", U"so", U"sva", U"sta", U"nismo",
+                                           U"niste", U"niso", U"nisva", U"nista"};
+            if (singular.count(*prev) && (ends_with(w, U"l") || ends_with(w, U"la"))) return VerbOrNoun::Verb;
+            if (plural.count(*prev) && (ends_with(w, U"li") || ends_with(w, U"le"))) return VerbOrNoun::Verb;
+        }
+    }
+    return VerbOrNoun::Lexicon;
+}
+
+void Lexicon::set_tables(const Table& forms, const Table& stems) {
+    m_form_table = forms;
     m_stem_table = stems;
-    m_stem_count = stem_count;
 }
 
 // =============================================================================

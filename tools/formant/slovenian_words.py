@@ -15,17 +15,20 @@ Krsnik 2017). The IPA comes from an automatic grapheme-to-phoneme system
 and is used here only for what the accented form does not show: which e is
 a schwa and which l is [w].
 
-Usage:
-    python3 tools/formant/slovenian_words.py extract SLOLEKS_DIR forms.tsv
+Usage (the table in the repository is made with these values):
+    python3 tools/formant/slovenian_words.py extract SLOLEKS_DIR forms.tsv 0
     python3 tools/formant/slovenian_words.py generate forms.tsv \\
-        src/formant/formant_slovenian.inc [--manual-min 50] [--auto-min 2000] [--form-min 3]
+        src/formant/formant_slovenian.inc --manual-min 0 --auto-min 100 --form-min 1
 
-`extract` streams the XML once into a TSV of word forms (slow: 13 GB of
-XML); `generate` writes the table. Entries are in the notation of
+`extract` streams the XML once into a TSV of word forms (13 GB of XML,
+about four minutes; the last argument is the lowest lemma frequency kept);
+`generate` writes the table, reading HAND_ENTRIES from
+src/formant/formant_slovenian.cpp of this repository so that every form is
+checked as the engine will look it up. Entries are in the notation of
 slovenian::Lexicon (formant_slovenian.hpp): the accented letters of the
 dictionaries, ə for the schwa written e, w for an l pronounced [w]; a stem
-ends in `*` and covers its forms whose ending the rules of unstressed
-endings read correctly.
+covers its forms whose ending the rules of unstressed endings read
+correctly. The tables are front-coded (see generate()).
 """
 import glob
 import os
@@ -435,8 +438,159 @@ def compress(lemma_forms):
     return [], [forms[k] for k in keys]
 
 
-def generate(forms_path, out_path, manual_min=50, auto_min=2000, form_min=3):
-    lemmas = {}         # (lemma, cat) -> dict(freq, status, forms[])
+MAX_ENDING = 5      # Lexicon::MAX_ENDING
+BLOCK = 16          # entries per front-coded block (formant_slovenian.cpp)
+
+# Readings the dictionaries give otherwise than Sloleks (SSKJ² and
+# Slovenski pravopis 2001 on Fran.si), per lemma: a spelling's notation for
+# one form, or under '*' the notation of the beginning every form of the
+# lemma shares (the rest of the form loses its marks).
+CORRECTIONS = {
+    # The schwa the dictionaries write and Sloleks's transcription misses
+    'danes': {'danes': 'dánəs'},                    # SSKJ² dánes [danəs]
+    'razen': {'razen': 'rázən'},                    # SSKJ² rázen [razən]
+    'konec': {'konec': 'kônəc'},                    # SSKJ² kônec 3 [konəc]
+    'sedemdeset': {'*': 'sédəmdeset'},              # SP sédemdeset [də]
+    'osemdeset': {'*': 'ósəmdeset'},                # SSKJ² ósemdeset [osəmdeset]
+    'sedemsto': {'*': 'sédəmsto'},
+    'osemsto': {'*': 'ósəmsto'},
+    'seznam': {'*': 'səznám', 'seznam': 'səznàm'},  # SSKJ² seznàm -áma [səznam]
+    # The teens on their first syllable, the first variant of SSKJ²
+    # (dvánajst in dvanájst, pétnajst in petnájst) and the reading users
+    # accepted; SP 2001 and Sloleks put the second first
+    'dvanajst': {'*': 'dvánajst'},
+    'trinajst': {'*': 'trínajst'},
+    'štirinajst': {'*': 'štírinajst'},
+    'petnajst': {'*': 'pétnajst'},
+    'šestnajst': {'*': 'šéstnajst'},
+    'sedemnajst': {'*': 'sédəmnajst'},
+    'osemnajst': {'*': 'ósəmnajst'},
+    'devetnajst': {'*': 'devétnajst'},
+    'sedemnajsti': {'*': 'sédəmnajst'},
+    'osemnajsti': {'*': 'ósəmnajst'},
+}
+
+PLAIN_OF = {'á': 'a', 'à': 'a', 'é': 'e', 'ê': 'e', 'è': 'e', 'í': 'i', 'ì': 'i',
+            'ó': 'o', 'ô': 'o', 'ò': 'o', 'ú': 'u', 'ù': 'u', 'ŕ': 'r'}
+
+
+def letter_spans(note):
+    """The characters of a notation grouped per letter of the spelling (a
+    letter and the grave that may follow it)."""
+    spans = []
+    for ch in note:
+        if ch == GRAVE and spans:
+            spans[-1] += ch
+        else:
+            spans.append(ch)
+    return spans
+
+
+def correct(lemma, orth, note):
+    """A form's notation with CORRECTIONS applied."""
+    fix = CORRECTIONS.get(lemma.lower())
+    if not fix:
+        return note
+    if orth in fix:
+        return fix[orth]
+    if '*' in fix:
+        head = fix['*']
+        plain = strip_key(head)
+        if orth.startswith(plain):
+            rest = letter_spans(note)[len(plain):]
+            return head + ''.join(PLAIN_OF.get(sp[0], sp[0]) for sp in rest)
+    return note
+
+
+def mark_fleeting_e(orth, note, orths, cat):
+    """The e of a last syllable that the other forms of the word (orths)
+    drop (rékel rêkla, začétek začétka, hláden hládna, septêmber
+    septêmbra, cérkev cérkve, vès vsà) is the schwa (SP 2001, § 1061);
+    Sloleks's transcription writes it only for some words. Of a verb only
+    the participle in -el has one (črkujem is not črkujmo's). Returns the
+    notation with that e as ə."""
+    n = len(orth)
+    if cat == 'verb' and not orth.endswith('el'):
+        return note
+    if n >= 3 and orth[-2] == 'e' and orth[-1] not in 'aeiouj' and orth[-3] not in 'aeiou':
+        dropped = orth[:-2] + orth[-1]
+        if any(o.startswith(dropped) and len(o) > len(dropped) and o[len(dropped)] in 'aeiou'
+               for o in orths):
+            spans = letter_spans(note)
+            e = spans[n - 2]
+            if e == 'e':
+                spans[n - 2] = SCHWA
+            elif e in ('è', 'e' + GRAVE):
+                spans[n - 2] = SCHWA + GRAVE
+            note = ''.join(spans)
+    return note
+
+
+def norm(note):
+    """A notation as compared by the check below: an l that the rules read
+    as [w] anyway is not a difference."""
+    return note.replace('w', 'l')
+
+
+def hand_entries(cpp_path):
+    """The hand-written entries of formant_slovenian.cpp (HAND_ENTRIES), as
+    Lexicon::add reads them: (exact, stems), spelling -> notation."""
+    src = open(cpp_path, encoding='utf-8').read()
+    body = src[src.index('const char* const HAND_ENTRIES[] = {'):]
+    body = re.sub(r'//[^\n]*', '', body[:body.index('\n};')])
+    exact, stems = {}, {}
+    for entry in re.findall(r'u8"([^"]*)"', body):
+        entry = unicodedata.normalize('NFC', entry)
+        if '|' in entry:
+            parts = entry.split('|')
+            forms = [parts[0] + p for p in parts[1:]]
+        else:
+            forms = [entry]
+        for form in forms:
+            stem = form.endswith('*')
+            if stem:
+                form = form[:-1]
+            if '=' in form:
+                spelling, form = form.split('=', 1)
+                key = strip_key(spelling)
+            else:
+                key = strip_key(form)
+            (stems if stem else exact)[key] = form
+    return exact, stems
+
+
+class Reader:
+    """Lexicon::find_exact and find_stem of formant_slovenian.cpp: the hand
+    entries, then the table; for stems the longest one the word starts
+    with, the hand's first at each length, followed by an ending of up to
+    five letters read by the rules of unstressed endings."""
+    def __init__(self, hand_exact, hand_stems, exact, stems):
+        self.hand_exact = hand_exact
+        self.hand_stems = hand_stems
+        self.exact = exact
+        self.stems = stems
+
+    def read(self, word):
+        """(notation, decided by a hand entry) or (None, False)."""
+        if word in self.hand_exact:
+            return self.hand_exact[word], True
+        if word in self.exact:
+            return self.exact[word], False
+        n = len(word)
+        shortest = max(n - MAX_ENDING if n > MAX_ENDING else 1, 2)
+        for length in range(n, shortest - 1, -1):
+            for table, hand in ((self.hand_stems, True), (self.stems, False)):
+                stem = table.get(word[:length])
+                if stem is not None:
+                    return stem + ending_by_rule(stem, word[length:]), hand
+        return None, False
+
+
+def build(forms_path, manual_min, auto_min, form_min):
+    """The reading of every spelling (by its most frequent form) and the
+    stems, from the Sloleks forms: (lemma count, truth, stems)."""
+    lemmas = {}         # (lemma, cat) -> dict(freq, forms{orth: [note, ff, graded, proper]})
+    skipped = 0
     with open(forms_path, encoding='utf-8') as f:
         for line in f:
             parts = line.rstrip('\n').split('\t')
@@ -452,69 +606,191 @@ def generate(forms_path, out_path, manual_min=50, auto_min=2000, form_min=3):
                 continue
             if not accs or not ipas:
                 continue
-            # The rare forms (the dual, the rarer cases) are left to the
-            # rules: a stem covers them anyway, and an irregular paradigm
-            # is listed only in the forms that occur
-            if ff < form_min and orth.lower() != lemma.lower():
-                continue
-            # Comparatives and superlatives (najlepši, lepšega) are not part
-            # of the adjective's stem: listed on their own when frequent
-            graded = cat == 'adjective' and len(msd) > 1 and msd[1] in 'rs'
-            key = (lemma, cat)
-            entry = lemmas.setdefault(key, {'freq': freq, 'status': status, 'forms': [], 'graded': []})
-            (entry['graded'] if graded else entry['forms']).append(
-                (orth.lower(), accs.split('|')[0], ipas.split('|')[0], ff))
-    print('lemmas', len(lemmas), file=sys.stderr)
-
-    exact = {}      # key -> (freq, notation)
-    stems = {}
-    skipped = 0
-    for (lemma, cat), entry in lemmas.items():
-        notes = []
-        for orth, acc, ipa, _ff in entry['forms']:
-            note = notation(orth, acc, ipa)
+            orth = orth.lower()
+            # A form with two spellings (mesca, meseca) lists the accents
+            # and transcriptions of both: take the first that spells this one
+            note = None
+            ipa_list = ipas.split('|')
+            for k, acc in enumerate(accs.split('|')):
+                note = notation(orth, acc, ipa_list[min(k, len(ipa_list) - 1)])
+                if note is not None and strip_key(note) == orth:
+                    break
+                note = None
             if note is None:
                 skipped += 1
                 continue
-            notes.append((orth, note))
-        s, e = compress(notes)
-        for orth, acc, ipa, ff in entry['graded']:
-            if ff < 20:
-                continue
-            note = notation(orth, acc, ipa)
-            if note is not None and strip_key(note) == orth:
-                e.append(note)
+            entry = lemmas.setdefault((lemma, cat), {'freq': freq, 'forms': {}})
+            # Comparatives and superlatives (najlepši, lepšega) are not part
+            # of the adjective's stem: listed on their own when frequent
+            graded = cat == 'adjective' and len(msd) > 1 and msd[1] in 'rs'
+            # One spelling may be two forms of the word read differently
+            # (lásti the dative, lastí the genitive of lást). The word class
+            # of the form: V a verb's form other than the participle, P the
+            # l-participle, N a noun, an adjective or an adverb, '' the rest
+            if msd.startswith('Gg'):
+                word_class = 'P' if msd[3:4] == 'd' else 'V'
+            elif msd.startswith(('S', 'P', 'R')) and not msd.startswith('Sl'):
+                word_class = 'N'
+            else:
+                word_class = ''
+            form = entry['forms'].setdefault(orth, {}).setdefault(
+                (note, word_class), [0, graded, msd.startswith('Sl')])
+            form[0] += ff
+    print('lemmas', len(lemmas), 'forms skipped', skipped, file=sys.stderr)
+
+    # The readings of every spelling, weighted by the corpus frequency of
+    # the form (Gigafida 2.0, given by Sloleks for every form): a spelling
+    # shared by two words is read as its more frequent form, not as the
+    # form of the more frequent lemma. The adjective vesél is more frequent
+    # than the verb veselíti, but veselím "I look forward" is eight times
+    # as frequent as the adjective's vesélim. A proper name counts a tenth:
+    # the lexicon is looked up without the capital, and the common word
+    # (sobóta) is the one spelled small (Múrska Sóbota).
+    weight = defaultdict(dict)      # spelling -> notation -> [weight, lemma freq]
+    by_class = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
+    listed = []                     # per lemma: (freq, [(orth, note)]) for the stems
+    for (lemma, cat), entry in lemmas.items():
+        orths = entry['forms'].keys()
+        forms = []
+        for orth, readings in entry['forms'].items():
+            best = None
+            for (note, word_class), (ff, graded, proper) in readings.items():
+                # The rare forms (the dual, the rarer cases) are left to the
+                # stems and the rules
+                if ff < form_min and orth != lemma.lower():
+                    continue
+                if graded and ff < 20:
+                    continue
+                note = correct(lemma, orth, mark_fleeting_e(orth, note, orths, cat))
+                w = weight[orth].setdefault(note, [0.0, 0])
+                w[0] += ff / 10.0 if proper else ff
+                w[1] = max(w[1], entry['freq'])
+                if word_class and not proper:
+                    by_class[orth][word_class][note] += ff
+                if not graded and (best is None or ff > best[0]):
+                    best = (ff, note)
+            if best:
+                forms.append((orth, best[1]))
+        listed.append((entry['freq'], forms))
+    truth = {orth: max(rs.items(), key=lambda kv: (kv[1][0], kv[1][1]))[0]
+             for orth, rs in weight.items()}
+
+    stems = {}          # key -> (lemma freq, notation without the '*')
+    for freq, forms in listed:
+        s, _e = compress(forms)
         for note in s:
             key = strip_key(note)
-            if key not in stems or stems[key][0] < entry['freq']:
-                stems[key] = (entry['freq'], note)
-        for note in e:
-            key = strip_key(note)
-            if key not in exact or exact[key][0] < entry['freq']:
-                exact[key] = (entry['freq'], note)
-    print('forms skipped', skipped, 'exact', len(exact), 'stems', len(stems), file=sys.stderr)
+            if key not in stems or stems[key][0] < freq:
+                stems[key] = (freq, note[:-1])
+    stems = {key: note for key, (_freq, note) in stems.items()}
 
-    def c_string(s):
-        return 'u8"' + s.replace('\\', '\\\\').replace('"', '\\"') + '"'
+    # The spellings that are a verb's form in one reading and a noun's, an
+    # adjective's or an adverb's in another, read differently (veselí and
+    # veséli, letí and léti, vôzil and vozíl), both readings at least 20
+    # times in the corpus: the front end picks one by the words around it.
+    # spelling -> (verb's notation, other notation, participle)
+    verb_noun = {}
+    for orth, classes in by_class.items():
+        if 'N' not in classes:
+            continue
+        nominal, n_weight = max(classes['N'].items(), key=lambda kv: kv[1])
+        best = None
+        for word_class in ('V', 'P'):
+            if word_class not in classes:
+                continue
+            verb, v_weight = max(classes[word_class].items(), key=lambda kv: kv[1])
+            total = sum(classes[word_class].values())
+            if norm(verb) == norm(nominal) or min(total, sum(classes['N'].values())) < 20:
+                continue
+            if best is None or total > best[0]:
+                best = (total, verb, word_class == 'P')
+        if best:
+            verb_noun[orth] = (best[1], nominal, best[2])
+    return len(lemmas), truth, stems, verb_noun
 
+
+def generate(forms_path, out_path, manual_min=50, auto_min=2000, form_min=3, cpp_path=None):
+    lemma_count, truth, stems, verb_noun = build(forms_path, manual_min, auto_min, form_min)
+
+    # Every form must read as it should. The stem of one word catches the
+    # forms of others (postavít*, the stem of postavítev, read postaviti as
+    # postavíti), the stem of a homograph the forms of the other word, and a
+    # hand-written stem the words derived from it: where the lookup gives a
+    # wrong reading or none, the form is listed. A hand-written whole form
+    # is the hand's decision and stays.
+    hand_exact, hand_stems = hand_entries(cpp_path) if cpp_path else ({}, {})
+    exact = {}
+    reader = Reader(hand_exact, hand_stems, exact, stems)
+    for orth, note in truth.items():
+        got, hand = reader.read(orth)
+        if got is None or norm(got) != norm(note):
+            if not (hand and orth in hand_exact):
+                exact[orth] = note
+    print('spellings', len(truth), 'exact', len(exact), 'stems', len(stems),
+          'verb/noun', len(verb_noun), file=sys.stderr)
+
+    def front_coded(table):
+        """Blocks of BLOCK entries in key order: the first entry whole, each
+        later one as a byte 1 + n (an octal escape) for the n leading bytes
+        it shares with the entry before, then the bytes that differ. The
+        entries hold no byte below 0x61, so the next byte of 1 to 64 ends
+        an entry."""
+        keys = sorted(table, key=lambda k: [ord(c) for c in k])
+        blocks = []
+        for b in range(0, len(keys), BLOCK):
+            parts = []
+            prev = ''
+            for i, key in enumerate(keys[b:b + BLOCK]):
+                note = unicodedata.normalize('NFC', table[key])
+                data = note.encode('utf-8')
+                assert all(c >= 0x61 for c in data), note
+                if i == 0:
+                    parts.append(note)
+                else:
+                    shared = 0      # whole characters, so the rest stays UTF-8
+                    while shared < min(len(note), len(prev)) and note[shared] == prev[shared]:
+                        shared += 1
+                    count = len(note[:shared].encode('utf-8'))
+                    assert count < 64
+                    parts.append('\\%03o' % (count + 1) + note[shared:])
+                prev = note
+            blocks.append(''.join(parts))
+        return keys, blocks
+
+    form_keys, form_blocks = front_coded(exact)
+    stem_keys, stem_blocks = front_coded(stems)
     with open(out_path, 'w', encoding='utf-8') as out:
         out.write('// -*- coding: utf-8 -*-\n')
         out.write('// formant_slovenian.inc - Slovenian pronunciation lexicon of the formant\n')
         out.write('// voices. Generated by tools/formant/slovenian_words.py from Sloleks 3.1\n')
         out.write('// (CJVT, University of Ljubljana; CLARIN.SI, http://hdl.handle.net/11356/2080;\n')
-        out.write('// CC BY-SA 4.0): the word forms of the %d most frequent lemmas, in the\n' % len(lemmas))
-        out.write('// notation of slovenian::Lexicon (formant_slovenian.hpp). Do not edit:\n')
-        out.write('// edit the tool and run it. Both tables are sorted by the spelling the\n')
-        out.write('// entry is for (its letters without the marks, ə as e, w as l), as the\n')
-        out.write('// binary search in formant_slovenian.cpp compares them.\n')
+        out.write('// CC BY-SA 4.0): the word forms of %d lemmas, in the notation of\n' % lemma_count)
+        out.write('// slovenian::Lexicon (formant_slovenian.hpp). Do not edit: edit the tool\n')
+        out.write('// and run it. Both tables are sorted by the spelling the entry is for (its\n')
+        out.write('// letters without the marks, ə as e, w as l), as the binary search in\n')
+        out.write('// formant_slovenian.cpp compares them, and front-coded in blocks of %d:\n' % BLOCK)
+        out.write('// an entry after the first of its block begins with a byte 1 + n for the\n')
+        out.write('// n leading bytes it shares with the entry before. Stems have no \'*\'.\n')
         out.write('// clang-format off\n')
+        out.write('const size_t SLOVENIAN_BLOCK = %d;\n' % BLOCK)
+        out.write('const size_t SLOVENIAN_FORM_COUNT = %d;\n' % len(form_keys))
         out.write('const char* const SLOVENIAN_FORMS[] = {\n')
-        for key in sorted(exact, key=lambda k: [ord(c) for c in k]):
-            out.write('    %s,\n' % c_string(exact[key][1]))
+        for block in form_blocks:
+            out.write('    u8"%s",\n' % block)
         out.write('};\n')
+        out.write('const size_t SLOVENIAN_STEM_COUNT = %d;\n' % len(stem_keys))
         out.write('const char* const SLOVENIAN_STEMS[] = {\n')
-        for key in sorted(stems, key=lambda k: [ord(c) for c in k]):
-            out.write('    %s,\n' % c_string(stems[key][1]))
+        for block in stem_blocks:
+            out.write('    u8"%s",\n' % block)
+        out.write('};\n')
+        out.write('// Spellings read as a verb\'s form or as another word: the verb\'s\n')
+        out.write('// reading, the other, and whether the verb\'s is the l-participle\n')
+        out.write('const VerbNoun SLOVENIAN_VERB_NOUN[] = {\n')
+        for key in sorted(verb_noun, key=lambda k: [ord(c) for c in k]):
+            verb, nominal, participle = verb_noun[key]
+            out.write('    {u8"%s", u8"%s", %s},\n' % (unicodedata.normalize('NFC', verb),
+                                                      unicodedata.normalize('NFC', nominal),
+                                                      'true' if participle else 'false'))
         out.write('};\n')
         out.write('// clang-format on\n')
 
@@ -536,7 +812,9 @@ def main(argv):
                 form_min = int(args[1]); args = args[2:]
             else:
                 print('unknown option', args[0], file=sys.stderr); return 2
-        generate(argv[2], argv[3], manual_min, auto_min, form_min)
+        root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        generate(argv[2], argv[3], manual_min, auto_min, form_min,
+                 os.path.join(root, 'src', 'formant', 'formant_slovenian.cpp'))
     else:
         print(__doc__, file=sys.stderr)
         return 2

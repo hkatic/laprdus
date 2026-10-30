@@ -4084,23 +4084,40 @@ Utterance Frontend::process_slovenian(const std::u32string& text, Punctuation pu
     // adverb that opens a request, is the greeting or the imperative where
     // the spelling has two readings (Živijo!, Naredi to, Zdaj naredi to);
     // elsewhere it is the verb's present (oni živijo, program naredi).
+    // A spelling that is a verb's form or another word (veselí/veséli,
+    // letí/léti) is read by the words around it (context_reading()).
     static const WordSet before_imperative = {U"in", U"pa", U"ter", U"zdaj", U"sedaj", U"potem",
                                               U"nato", U"prosim", U"samo", U"le", U"raje",
                                               U"kar", U"no", U"daj"};
+    std::vector<std::u32string> spellings;
+    spellings.reserve(words.size());
+    for (Word& word : words) {
+        rewrite_foreign(word);
+        spellings.push_back(word.w);
+    }
     for (size_t i = 0; i < words.size(); ++i) {
         Word& word = words[i];
-        rewrite_foreign(word);
         word.explicit_stress = std::any_of(word.marks.begin(), word.marks.end(),
                                            [](uint8_t m) { return (m & MARK_STRESS) != 0; });
-        std::u32string head_pron;
+        std::u32string context_pron;
         const std::u32string* override = nullptr;
         if (!word.letter_name && !word.joined) {
-            if (const char32_t* head = slovenian::head_reading(word.w)) {
-                const bool at_head = i == 0 || before_imperative.count(words[i - 1].w) != 0;
-                if (at_head) {
-                    head_pron = head;
-                    override = &head_pron;
+            slovenian::VerbNounReadings readings;
+            const char32_t* head = slovenian::head_reading(word.w);
+            const char32_t* in_clause = slovenian::clause_reading(spellings, i);
+            if (head && (i == 0 || before_imperative.count(words[i - 1].w) != 0)) {
+                context_pron = head;
+                override = &context_pron;
+            } else if (in_clause) {
+                context_pron = in_clause;
+                override = &context_pron;
+            } else if (slovenian::verb_noun_readings(word.w, readings)) {
+                switch (slovenian::context_reading(spellings, i, readings.participle)) {
+                    case slovenian::VerbOrNoun::Verb: context_pron = readings.verb; break;
+                    case slovenian::VerbOrNoun::Nominal: context_pron = readings.nominal; break;
+                    case slovenian::VerbOrNoun::Lexicon: break;
                 }
+                if (!context_pron.empty()) override = &context_pron;
             }
         }
         slovenian::WordPhones wp;
