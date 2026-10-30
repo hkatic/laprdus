@@ -442,8 +442,19 @@ TEST_CASE("Letter sounds work with a recorded voice", "[concat][spelling]") {
     REQUIRE(speak(engine.handle, "veliko N") == capital);
     REQUIRE(speak(engine.handle, "veliko N") != speak(engine.handle, "veliko en"));
 
-    // Vlado spells with Serbian names
+    // A letter alone in running text ("Obrisano B") is its sound too, an
+    // audible syllable; a preposition stays one
+    std::vector<int16_t> deleted = speak(engine.handle, "Obrisano B");
+    REQUIRE(deleted != speak(engine.handle, "Obrisano be"));
+    REQUIRE(deleted.size() > speak(engine.handle, "Obrisano").size() + 22050 / 10);
+    std::vector<int16_t> with = speak(engine.handle, "s njom");
+
+    // In name mode it is the name
     REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_NAMES) == LAPRDUS_OK);
+    REQUIRE(speak(engine.handle, "Obrisano B") == speak(engine.handle, "Obrisano be"));
+    REQUIRE(speak(engine.handle, "s njom") == with);
+
+    // Vlado spells with Serbian names
     REQUIRE(laprdus_set_voice(engine.handle, "vlado", dir) == LAPRDUS_OK);
     REQUIRE(spell("\xC5\xA1") == speak(engine.handle, "\xC5\xA1" "a"));
 }

@@ -1971,3 +1971,36 @@ TEST_CASE("Slovenian accents written in the text and in the user's lexicon win",
     REQUIRE(report.rejected == 2);
     REQUIRE(report.words == 0);
 }
+
+TEST_CASE("A lone consonant letter is its sound in letter-sound mode", "[frontend][spelling]") {
+    auto sounds = [](const Frontend& frontend, const std::u32string& text) {
+        return phones_of(frontend.process(text, Punctuation::PERIOD, true));
+    };
+    Frontend croatian(VoiceLanguage::Croatian);
+    // The consonant and a stressed schwa, a full word of its own
+    REQUIRE(sounds(croatian, U"Obrisano B") == "'obrisano b'ə");
+    REQUIRE(sounds(croatian, U"B obrisano") == "b'ə 'obrisano");
+    REQUIRE(sounds(croatian, U"veliko slovo Č") == "v'eliko sl'ovo č'ə");
+    REQUIRE(sounds(croatian, U"Obrisano s") == "'obrisano s'ə");
+    REQUIRE(sounds(croatian, U"Obrisano nj") == "'obrisano nj'ə");
+    // Names in name mode; a digraph alone is one letter
+    REQUIRE(phones_of(read(croatian, U"Obrisano B")) == "'obrisano b'e");
+    REQUIRE(phones_of(read(croatian, U"Obrisano nj")) == "'obrisano 'enj");
+    // Prepositions, abbreviations, compounds and the foreign letters are
+    // read as in name mode
+    for (const char32_t* text : {U"s njom", U"S tobom", U"k meni", U"USB", U"s.a.r.s.",
+                                 U"S-klasa", U"x", U"Obrisano a"}) {
+        INFO(PhonemeMapper::utf32_to_utf8(text));
+        REQUIRE(sounds(croatian, text) == phones_of(read(croatian, text)));
+    }
+
+    Frontend serbian(VoiceLanguage::Serbian);
+    REQUIRE(sounds(serbian, U"Обрисано Њ") == "'obrisano nj'ə");
+    REQUIRE(phones_of(read(serbian, U"Обрисано Њ")) == "'obrisano nj'e:");
+
+    Frontend slovenian(VoiceLanguage::Slovenian);
+    REQUIRE(sounds(slovenian, U"izbrisano v") == "izbr'i:sanO v'ə");
+    REQUIRE(sounds(slovenian, U"B C") == "b'ə c'ə");
+    REQUIRE(sounds(slovenian, U"v šoli") == phones_of(read(slovenian, U"v šoli")));
+    REQUIRE(sounds(slovenian, U"SP") == phones_of(read(slovenian, U"SP")));
+}

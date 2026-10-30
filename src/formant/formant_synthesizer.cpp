@@ -2031,7 +2031,8 @@ AudioBuffer FormantSynthesizer::synthesize_letter_sound(const std::u32string& le
 void FormantSynthesizer::append_group(const std::u32string& text, Punctuation punct,
                                       const VoiceParams& params, AudioBuffer& audio,
                                       bool sentence_initial) {
-    Utterance utt = m_frontend.process(text, punct);
+    Utterance utt = m_frontend.process(text, punct,
+                                       params.spelling_mode == SpellingMode::LetterSounds);
     utt.sentence_initial = sentence_initial;
     render_utterance(utt, params, audio, m_voice.singing != nullptr);
 }

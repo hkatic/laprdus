@@ -136,6 +136,7 @@ struct Word {
     bool explicit_stress = false;
     bool user_accent = false;       // do not reinterpret a user's lexical accent
     bool letter_name = false;       // part of a spelled-out abbreviation
+    bool letter_sound = false;      // a lone letter spoken by its sound ("Obrisano B")
     bool joined = false;            // one word with the previous ("ne znam", tiflo-)
     bool spell = false;             // a letter of a dotted abbreviation ("s.a.r.s.")
     bool before_hyphen = false;     // a hyphen follows directly ("s-klasa")
@@ -661,7 +662,23 @@ bool leaning_preposition(const std::vector<Word>& tokens, size_t t, VoiceLanguag
     return caps_word(next) || (next.all_caps && caps_word(tokens[t - 1]));  // S USB KABELOM
 }
 
-std::vector<Word> expand_words(std::vector<Word> tokens, VoiceLanguage language) {
+Ph consonant_phone(char32_t c);
+
+// A consonant letter standing alone as a word (b, s, њ): what a screen
+// reader reports as a character ("veliko slovo B", "Obrisano B", "B
+// deleted"). Not one before a hyphen, which is part of a compound
+// (S-klasa, k-pop), and not q, w, x, y, named in both spelling modes.
+bool lone_consonant_letter(const Word& token) {
+    const std::u32string& w = token.w;
+    if (token.before_hyphen) return false;
+    if (w == U"lj" || w == U"nj" || w == U"dž") return true;
+    return w.size() == 1 && consonant_phone(w[0]) != Ph::SIL;
+}
+
+// letter_sounds: a lone consonant letter is spoken by its sound ("bə"), as
+// when it is spelled in that mode, instead of by its name ("be")
+std::vector<Word> expand_words(std::vector<Word> tokens, VoiceLanguage language,
+                               bool letter_sounds) {
     // Decided before the loop below moves the tokens away.
     std::vector<bool> leaning(tokens.size());
     for (size_t t = 0; t < tokens.size(); ++t) leaning[t] = leaning_preposition(tokens, t, language);
@@ -682,6 +699,20 @@ std::vector<Word> expand_words(std::vector<Word> tokens, VoiceLanguage language)
         // Abbreviations are not expanded (dr., npr., km): they are read as
         // written, by the rules for any other word.
         if (!marked) {
+            if (letter_sounds && !leaning[t] && lone_consonant_letter(token)) {
+                // A full word of its own, never a clitic (see letter_name)
+                token.letter_sound = true;
+                token.letter_name = true;
+                words.push_back(std::move(token));
+                continue;
+            }
+            if (token.w.size() == 2 && lone_consonant_letter(token)) {
+                // A digraph alone is one letter (Њ, nj): "nje", not "en je"
+                size_t first = words.size();
+                split_words(letter_name_in(token.w, language), words);
+                for (size_t i = first; i < words.size(); ++i) words[i].letter_name = true;
+                continue;
+            }
             if (!leaning[t] && needs_spelling(token)) {
                 for (char32_t c : token.w) {
                     size_t first = words.size();
@@ -893,7 +924,26 @@ void add_phone(Word& word, Ph ph, int letter, bool nucleus) {
     word.letter.push_back(letter);
 }
 
+// A lone consonant letter in letter-sound mode: the consonant and a
+// stressed neutral vowel, "bə", the syllable Frontend::letter_sound() gives
+// it when it is spelled. The full schwa vowel, which both kinds of voices
+// render inside running speech (the recorded voices by their e).
+void phonemize_letter_sound(Word& word) {
+    const std::u32string& w = word.w;
+    const int last = static_cast<int>(w.size()) - 1;
+    if (w == U"lj") add_phone(word, Ph::LJ, 0, false);
+    else if (w == U"nj") add_phone(word, Ph::NJ, 0, false);
+    else if (w == U"dž") add_phone(word, Ph::DZH, 0, false);
+    else add_phone(word, consonant_phone(w[0]), 0, false);
+    add_phone(word, Ph::AX, last, true);
+    word.stress = 0;
+}
+
 void phonemize(Word& word) {
+    if (word.letter_sound) {
+        phonemize_letter_sound(word);
+        return;
+    }
     rewrite_foreign(word);
     const std::u32string& w = word.w;
 
@@ -3273,8 +3323,9 @@ Utterance Frontend::letter_sound(const std::u32string& letter) const {
     return utt;
 }
 
-Utterance Frontend::process(const std::u32string& text, Punctuation punct) const {
-    if (m_language == VoiceLanguage::Slovenian) return process_slovenian(text, punct);
+Utterance Frontend::process(const std::u32string& text, Punctuation punct,
+                            bool letter_sounds) const {
+    if (m_language == VoiceLanguage::Slovenian) return process_slovenian(text, punct, letter_sounds);
 
     Utterance utt;
     std::vector<Word> tokens = tokenize(cyrillic::to_latin(text), m_language);
@@ -3291,7 +3342,7 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
         int letter = -1;
         return english_word(spelled, english_spelling(spelled), letter);
     });
-    std::vector<Word> words = expand_words(std::move(tokens), m_language);
+    std::vector<Word> words = expand_words(std::move(tokens), m_language, letter_sounds);
     // Listener preference: every Croatian tiflo- compound has an accent on
     // tiflo and one on its second component, including established loans.
     // Analyze the components independently, but join their phones into one
@@ -4033,7 +4084,8 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
 // letter-to-sound rules, the lexicon, the clitics and the sound changes of
 // formant_slovenian.cpp. Every word has a plain (neutral) accent: Slovenian
 // stress is dynamic, with long and short stressed vowels and no tones.
-Utterance Frontend::process_slovenian(const std::u32string& text, Punctuation punct) const {
+Utterance Frontend::process_slovenian(const std::u32string& text, Punctuation punct,
+                                       bool letter_sounds) const {
     Utterance utt;
     utt.slovenian = true;
     std::vector<Word> tokens = tokenize(cyrillic::to_latin(text), m_language);
@@ -4045,7 +4097,7 @@ Utterance Frontend::process_slovenian(const std::u32string& text, Punctuation pu
         return (user && user->find_exact(probe.w, pron)) ||
                slovenian::builtin_lexicon().find_exact(probe.w, pron);
     });
-    std::vector<Word> expanded = expand_words(std::move(tokens), m_language);
+    std::vector<Word> expanded = expand_words(std::move(tokens), m_language, letter_sounds);
     if (expanded.empty()) return utt;
 
     // A compound numeral is read as its parts, ena in dvajset, with an
@@ -4121,6 +4173,11 @@ Utterance Frontend::process_slovenian(const std::u32string& text, Punctuation pu
                 if (!context_pron.empty()) override = &context_pron;
             }
         }
+        if (word.letter_sound) {
+            phonemize_letter_sound(word);
+            word.accent = Accent::Neutral;
+            continue;
+        }
         slovenian::WordPhones wp;
         slovenian::phonemize(word.w, word.marks, user, word.letter_name, wp, override);
         word.phones = std::move(wp.phones);
@@ -4161,11 +4218,13 @@ Utterance Frontend::process_slovenian(const std::u32string& text, Punctuation pu
 
     // An acronym spelled letter by letter has one stress, on its last
     // letter (SP [espé], RTV [ertevé]: Slovenski pravopis 2001, § 1022):
-    // the names before it lean on it
+    // the names before it lean on it; letters spoken by their sounds keep
+    // a stress each
+    auto named = [&](size_t k) { return words[k].letter_name && !words[k].letter_sound; };
     for (size_t i = 0; i < count;) {
-        if (!words[i].letter_name) { ++i; continue; }
+        if (!named(i)) { ++i; continue; }
         size_t end = i;
-        while (end < count && words[end].letter_name) ++end;
+        while (end < count && named(end)) ++end;
         for (size_t k = i; k + 1 < end; ++k) {
             if (words[k].nuclei.empty()) continue;
             words[k].clitic = true;

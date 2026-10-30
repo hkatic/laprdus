@@ -3796,7 +3796,10 @@ TEST_CASE("A mark glued to a word is read by name, not as a clause end", "[forma
     }
     SECTION("The prepositions s and k are words wherever a capital says nothing") {
         // At the head of a sentence and in all-caps text a capital S or K
-        // is the preposition, as a lowercase one is anywhere
+        // is the preposition, as a lowercase one is anywhere. The letter
+        // is compared with its name, so in name mode (in sound mode it is
+        // its sound: "A lone letter in running text follows the spelling mode")
+        REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_NAMES) == LAPRDUS_OK);
         REQUIRE(same("S tobom sam htio sve, ali sam s njom dobio puno vi\xC5\xA1" "e.",
                      "s tobom sam htio sve, ali sam s njom dobio puno vi\xC5\xA1" "e."));
         REQUIRE(same("K meni.", "k meni."));
@@ -3887,7 +3890,7 @@ TEST_CASE("A mark glued to a word is read by name, not as a clause end", "[forma
         REQUIRE(same("7.13.2026", "sedam to\xC4\x8Dka trinaest to\xC4\x8Dka dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "est"));
     }
     SECTION("Colon and exclamation mark inside a word, silent comma and question mark") {
-        REQUIRE(same("a:b", "a dvoto\xC4\x8Dka be"));
+        REQUIRE(same("a:b", "a dvoto\xC4\x8Dka b"));
         // The colon of a web address is silent, like its slashes
         REQUIRE(same("https://www.index.hr", "https www.index.hr"));
         REQUIRE(same("http://example.com", "http example.com"));
@@ -3907,7 +3910,7 @@ TEST_CASE("A mark glued to a word is read by name, not as a clause end", "[forma
         REQUIRE(laprdus_set_voice(engine.handle, "stojan", NO_DATA) == LAPRDUS_OK);
         REQUIRE(same("datoteka.txt", "datoteka ta\xC4\x8Dka txt"));
         REQUIRE(same("3.14", "tri ta\xC4\x8Dka \xC4\x8D" "etrnaest"));
-        REQUIRE(same("a:b", "a dvota\xC4\x8Dka be"));
+        REQUIRE(same("a:b", "a dvota\xC4\x8Dka b"));
         REQUIRE(same("7.10.2026", "sedam deset dve hiljade dvadeset \xC5\xA1" "est"));
         REQUIRE(same("2000. godine", "dve hiljade godine"));
         REQUIRE(same("p.s.", "pe es."));
@@ -4318,10 +4321,10 @@ TEST_CASE("A capital letter announced by a screen reader is spelled", "[formant]
     REQUIRE(speak(engine.handle, "veliko N") != joined("veliko", "en"));
     REQUIRE(speak(engine.handle, "veliko N") != speak(engine.handle, "veliko en"));
 
-    // Running text with a letter in it is not an announcement and does not
-    // depend on the spelling mode
-    const char* texts[] = { "Plan B", "veliko N je slovo", "veliko more", "slovo N",
-                            "veliko NN", "veliko 7" };
+    // Running text with a letter in it is not an announcement; a lone
+    // letter in it follows the spelling mode (see the next test), and text
+    // without one does not depend on the mode
+    const char* texts[] = { "veliko more", "veliko NN", "veliko 7" };
     for (const char* text : texts) {
         INFO(text);
         REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_SOUNDS) == LAPRDUS_OK);
@@ -4343,6 +4346,63 @@ TEST_CASE("A capital letter announced by a screen reader is spelled", "[formant]
     }
     laprdus_stream_destroy(stream);
     REQUIRE(streamed == speak(engine.handle, "veliko N"));
+}
+
+TEST_CASE("A lone letter in running text follows the spelling mode", "[formant][spelling]") {
+    // A screen reader reports a character inside a message ("Obrisano B",
+    // "B obrisano", "Odabrano B", "veliko slovo B" split by the host): in
+    // sound mode the letter is its sound, as when it is spelled, in name
+    // mode its name. A preposition stays one, and the letters of an
+    // abbreviation are named in both modes.
+    Engine engine;
+    auto same = [&](const char* a, const char* b) { return speak(engine.handle, a) == speak(engine.handle, b); };
+    struct Case { const char* voice; const char* text; const char* named; };
+    const Case cases[] = {
+        {"zvonko", "Obrisano B", "Obrisano be"},
+        {"zvonko", "B obrisano", "be obrisano"},
+        {"zvonko", "Plan B je bolji", "Plan be je bolji"},
+        {"zvonko", "Obrisano s", "Obrisano es"},
+        {"zvonko", u8"Obrisano Č", u8"Obrisano če"},
+        {"stojan", u8"Обрисано Б", "Obrisano be"},
+        {"mirsad", "Izbrisano m", "Izbrisano em"},
+    };
+    for (const auto& c : cases) {
+        INFO(c.voice << " " << c.text);
+        REQUIRE(laprdus_set_voice(engine.handle, c.voice, NO_DATA) == LAPRDUS_OK);
+        REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_NAMES) == LAPRDUS_OK);
+        REQUIRE(same(c.text, c.named));
+        REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_SOUNDS) == LAPRDUS_OK);
+        REQUIRE_FALSE(same(c.text, c.named));
+    }
+    // Cyrillic and Latin alike; a digraph alone is one letter in both modes
+    REQUIRE(laprdus_set_voice(engine.handle, "stojan", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(same(u8"Обрисано Б", "Obrisano B"));
+    REQUIRE(same(u8"Обрисано Њ", "Obrisano Nj"));
+    const auto nj_sound = speak(engine.handle, u8"Обрисано Њ");
+    REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_NAMES) == LAPRDUS_OK);
+    REQUIRE(same(u8"Обрисано Њ", "Obrisano Nj"));
+    REQUIRE(speak(engine.handle, u8"Обрисано Њ") != nj_sound);
+    REQUIRE_FALSE(same(u8"Обрисано Њ", "Obrisano en je"));
+
+    // Slovenian, its prepositions included
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_language(engine.handle, "sl") == LAPRDUS_OK);
+    REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_NAMES) == LAPRDUS_OK);
+    const auto sl_named = speak(engine.handle, "Izbrisano v");
+    REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_SOUNDS) == LAPRDUS_OK);
+    REQUIRE(speak(engine.handle, "Izbrisano v") != sl_named);
+    REQUIRE(laprdus_set_language(engine.handle, nullptr) == LAPRDUS_OK);
+
+    // Not a lone consonant letter: the same in both modes
+    const char* texts[] = { "s njom", "S tobom sam htio", "k meni", "USB kabel", "s.a.r.s.",
+                            "S-klasa", "x os", "Obrisano a", "veliko NN" };
+    for (const char* text : texts) {
+        INFO(text);
+        REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_SOUNDS) == LAPRDUS_OK);
+        const auto by_sound = speak(engine.handle, text);
+        REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_NAMES) == LAPRDUS_OK);
+        REQUIRE(speak(engine.handle, text) == by_sound);
+    }
 }
 
 TEST_CASE("Streaming API works with formant voices", "[formant][stream]") {

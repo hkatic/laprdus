@@ -59,10 +59,12 @@ public:
      * @param punct The punctuation that ended it (chooses the melody).
      * @param sentence_initial false when the clause goes on a sentence (the
      *        clause before it ended with a comma, semicolon or colon).
+     * @param letter_sounds a lone letter is spoken by its sound, not its
+     *        name (SpellingMode::LetterSounds; see formant::Frontend::process).
      * @return The clause's sound; no pause is appended.
      */
     AudioBuffer synthesize_clause(const std::u32string& text, Punctuation punct,
-                                  bool sentence_initial = true);
+                                  bool sentence_initial = true, bool letter_sounds = false);
 
     /**
      * The sound of one letter alone, for spelling by sounds (see

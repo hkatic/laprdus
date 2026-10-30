@@ -543,8 +543,9 @@ AudioBuffer TTSEngine::synthesize_segments(const std::vector<TextSegment>& segme
             clause = m_impl->formant->synthesize_clause(
                 segment.text, segment.trailing_punct, m_impl->voice_params, sentence_initial);
         } else if (m_impl->synthesizer) {
-            clause = m_impl->synthesizer->synthesize_clause(segment.text, segment.trailing_punct,
-                                                            sentence_initial);
+            clause = m_impl->synthesizer->synthesize_clause(
+                segment.text, segment.trailing_punct, sentence_initial,
+                m_impl->voice_params.spelling_mode == SpellingMode::LetterSounds);
         }
         sentence_initial = segment.trailing_punct != Punctuation::COMMA &&
                            segment.trailing_punct != Punctuation::SEMICOLON &&

@@ -154,7 +154,15 @@ class Frontend {
 public:
     explicit Frontend(VoiceLanguage language);
 
-    Utterance process(const std::u32string& text, Punctuation punct) const;
+    /**
+     * One clause. With letter_sounds (SpellingMode::LetterSounds), a
+     * consonant letter standing alone as a word ("veliko slovo B",
+     * "Obrisano B") is spoken by its sound, "bə", as when it is spelled;
+     * otherwise by its name, "be". A preposition (s, k) stays one, and
+     * the letters of an abbreviation (USB, s.a.r.s.) are always named.
+     */
+    Utterance process(const std::u32string& text, Punctuation punct,
+                      bool letter_sounds = false) const;
 
     /**
      * The sound of one letter alone, for spelling by sounds: a vowel as a
@@ -189,7 +197,8 @@ private:
     std::shared_ptr<const std::vector<VerbRoot>> m_user_verbs;
     std::shared_ptr<const slovenian::Lexicon> m_user_slovenian;   // Slovenian only
 
-    Utterance process_slovenian(const std::u32string& text, Punctuation punct) const;
+    Utterance process_slovenian(const std::u32string& text, Punctuation punct,
+                                bool letter_sounds) const;
 };
 
 // Built-in accent lexicon (formant_lexicon.cpp). Entries are UTF-8 words with
