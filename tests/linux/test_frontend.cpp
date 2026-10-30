@@ -1844,6 +1844,32 @@ TEST_CASE("Slovenian words reported by the first users (October 2026)", "[fronte
     REQUIRE(phones_of(read(frontend, U"bilo je lepo")) == "bil'ó: jE lEp'ó:");
     REQUIRE(phones_of(read(frontend, U"bili so")) == "bil'i: sO");
     REQUIRE(phones_of(read(frontend, U"bile so")) == "bil'E sO");
+    // ... with the accent of a content word, not a function word's
+    // (2026-10-30: bila was heard on its first syllable)
+    for (const char32_t* text : {U"Bila je doma", U"Ona je bila tukaj"}) {
+        const Utterance u = read(frontend, text);
+        for (const auto& phone : u.phones) {
+            if (phone.nucleus && phone.stressed && phone.ph == Ph::A && phone.word <= 2) {
+                REQUIRE(phone.prominence == 2);
+            }
+        }
+    }
+    // lepo: lepó at the end of the clause, lépo before another word
+    // (a listener, 2026-10-30)
+    REQUIRE(phones_of(read(frontend, U"Hvala lepo")) == "hv'a:la lEp'ó:");
+    REQUIRE(phones_of(read(frontend, U"To je lepo")) == "t'ó: jE lEp'ó:");
+    REQUIRE(phones_of(read(frontend, U"Lepo")) == "lEp'ó:");
+    REQUIRE(phones_of(read(frontend, U"Lepo vreme")) == "l'é:pO wr'E:mE");
+    REQUIRE(phones_of(read(frontend, U"Lepo pozdravljeni")) == "l'é:pO pOzdr'a:wljEni");
+    // ... and so are the other adverbs on -ó with an adjective on the stem
+    REQUIRE(phones_of(read(frontend, U"To je težko")) == "t'ó: jE tEšk'ó:");
+    REQUIRE(phones_of(read(frontend, U"Težko delo")) == "t'E:škO d'é:lO");
+    REQUIRE(phones_of(read(frontend, U"Počutim se slabo")) == "pOč'u:tim sE slab'ó:");
+    REQUIRE(phones_of(read(frontend, U"Slabo vreme")) == "sl'a:bO wr'E:mE");
+    REQUIRE(phones_of(read(frontend, U"Toplo")) == "tOpl'ó:");
+    REQUIRE(phones_of(read(frontend, U"Tenko nit")) == "t'EŋkO n'it");
+    // but not the modal lahkó, which stands before its verb
+    REQUIRE(phones_of(read(frontend, U"Lahko pridem")) == "lahk'ó: pr'i:dEm");
     // The number converter's words: the ones keep their accent before the tens
     REQUIRE(phones_of(read(frontend, U"sto enaindvajset")) == "st'ó: 'E:naindv'a:jsEt");
 }

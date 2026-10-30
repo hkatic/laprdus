@@ -4035,6 +4035,7 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct) const
 // stress is dynamic, with long and short stressed vowels and no tones.
 Utterance Frontend::process_slovenian(const std::u32string& text, Punctuation punct) const {
     Utterance utt;
+    utt.slovenian = true;
     std::vector<Word> tokens = tokenize(cyrillic::to_latin(text), m_language);
     const slovenian::Lexicon* user = m_user_slovenian.get();
     join_camel(tokens, [&](const std::u32string& spelled) {

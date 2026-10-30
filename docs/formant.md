@@ -3365,7 +3365,12 @@ Toporišič's rules), so the lexicon carries most of the load:
    table's *bíl bilà biló bilí bilè*, the standard of SSKJ² ("bíl bilà biló
    in bilò bilì in bilí bilè stil. bilé, stil. bíla") and SP 2001; the
    stylistic *bíla bílo bíli bíle* were hand entries until a listener asked
-   for the last syllable (2026-10-30). The first version of
+   for the last syllable (2026-10-30). The listener still heard *bila* on
+   its first syllable: as a function word it had the small movement of
+   one, which the raised start of a sentence buried under a higher *bi*
+   ("Bila je doma.": *bi* +2, *la* +1 semitones). *Bila*, *bilo*, *bili*,
+   *bile* are no longer function words and move like any verb (*bi* +1.5
+   to +2, *la* +3); the monosyllable *bil* still is. The first version of
    the list was written from memory: on 2026-10-29 a comparison found 281
    of its 1,605 forms contradicting Sloleks, and on 2026-10-30 another 183
    entries, among them *béseda* (SSKJ² *beséda*; *béseda* is the old
@@ -3437,6 +3442,32 @@ verb is 200 of its 242 occurrences and the pronoun 37, every one of them
 after a preposition (17 of 17) or before *se* or *je*. Until 2026-10-30
 *meni* at the head of any clause was the menu, which read *Meni je všeč*
 as *mení*.
+
+*Lepo* is *lepó* at the end of its clause and *lépo* before another word
+(`clause_reading()`, `END_READINGS`), as a listener asked on 2026-10-30:
+*Hvala lepo.*, *To je lepo.*, *Lepo, da si prišel.* but *Lepo vreme*,
+*lepo hišo*, *Lepo pozdravljeni*, *Lepo je.* The same day the listener
+asked for the same rule for the other spellings Sloleks reads as an adverb
+on *-ó* and an adjective on its stem: *težko* (*To je težko.* / *Težko
+delo*, *Težko je*), *močno*, *slabo*, *hudo*, *tesno*, *ostro*, *trdo*,
+*toplo*, *grdo*, *grenko*, *tenko* and their *pre-* forms (*pretežko*,
+*premrzlo*); the readings are Sloleks's, the adverb's *-ó* and the first
+stem variant of the adjective (*óstro*, not *ôstro*). Not *lahko*: the
+modal *lahkó* "can" stands before its verb (*Lahko pridem*), where the
+rule would make it *láhko*; and not *nelepo*, whose adverb Sloleks does not
+accent. The dictionaries have *-ó* for the adverb and the predicative (SP
+2001 *lepó* nač. prisl., *lepó* povdk.: *lepo mi je*, *lepo je, da si
+prišel*) and the stem for the adjective (SP *lép -a -o tudi -ó*), so the
+rule departs from them for the adverb before a word. In SUK 1.1 these
+spellings occur 579 times: the adverb before a word 361 times (*lepo
+uspel*, *močno dežuje*, *težko je*), now on the stem, the adjective before
+a word 158 times (*težko delo*, *slabo vreme*), many of which the lexicon
+read as the adverb, and either at the end of a clause 60 times. Where
+Sloleks gives both accents for the adverb (*močnó* and *môčno*, *topló*
+and *tôplo*) both count as right, so the corpus check loses only 42 tokens
+(99.42 % to 99.41 %). GaMS 9B, asked the same day, gave *lépo* in all six
+test sentences (*Hvala lepo.* included) and *bíla*/*bílo* in all four,
+against both the listener and the dictionaries.
 
 A spelling that is a verb's form in one reading and a noun's, an
 adjective's or an adverb's in another, with a different accent, is read by
@@ -3630,7 +3661,13 @@ their tempo (`VoiceRegistry::nominal_wpm()`), so the top of a 2.0 slider is
   and the *e* after it -0.6, against +1.5 and +0.3 before). The first is the
   largest (4.5 semitones; 3.4 in a clause that goes on a sentence after a
   comma), later ones are 2.6 and shrink slowly (to 80%), words of lower
-  prominence 1.4,
+  prominence 1.4, except a Slovenian word stressed after its first
+  syllable (*potém*, *sevéda*, *zeló*, *lahkó*; `Utterance::slovenian`, so
+  Croatian, Serbian and Bosnian are unchanged): those get 2.4, plus the 1.3 of the raised start when they carry the first accent
+  of a sentence. With 1.4 the syllable before the stress, raised by the
+  start of the sentence, was as high as the stressed one or higher and was
+  heard as stressed (2026-10-30, "Potem smo šli domov.": *po* +2, *tem* +1
+  semitones; now *tem* is 1.5 to 2 semitones above *po*),
 - a boundary movement chosen by the punctuation that ended the clause:
   - statement: a drop of 4.5 semitones completed within 180 ms of the last
     accent, after which the voice stays low,

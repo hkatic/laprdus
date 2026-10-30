@@ -184,7 +184,10 @@ const WordSet& enclitics() {
     return set;
 }
 
-// Stressed, but weaker than content words.
+// Stressed, but weaker than content words. Not bila, bilo, bili, bile:
+// the participle of biti is a verb with an accent of its own on the
+// last syllable (bilà biló bilí bilè), which as a function word's small
+// movement was lost after the higher bi and heard on the first syllable.
 const WordSet& function_words() {
     static const WordSet set = {
         U"jaz", U"ti", U"on", U"ona", U"ono", U"mi", U"vi", U"oni", U"one",
@@ -198,7 +201,7 @@ const WordSet& function_words() {
         U"tudi", U"samo", U"le", U"zelo", U"prav", U"tako", U"tam", U"tu", U"tukaj",
         U"zdaj", U"sedaj", U"potem", U"nato", U"zato", U"torej", U"pa", U"sicer",
         U"ampak", U"vendar", U"toda", U"kajti", U"zakaj",
-        U"bil", U"bila", U"bilo", U"bili", U"bile", U"biti", U"bodi", U"bodite",
+        U"bil", U"biti", U"bodi", U"bodite",
         U"nisem", U"nisi", U"ni", U"nismo", U"niste", U"niso", U"nisva", U"nista",
         U"bova", U"bosta", U"ima", U"imam", U"imaš", U"imamo", U"imate", U"imajo",
         U"nima", U"nimam", U"lahko", U"mora", U"moram", U"treba", U"more", U"morem",
@@ -956,8 +959,54 @@ const WordSet& prepositions() {
 // pronoun 37: the pronoun is every one after a preposition (k meni, v
 // meni, o meni: 17 of 17) and before se or je (meni se zdi, meni je
 // všeč); the lexicon's méni stays elsewhere (minister meni, kaj meni).
+//
+// lepo is lepó at the end of its clause and lépo before another word, as
+// a listener asked on 2026-10-30 (Hvala lepo. To je lepo. Lepo vreme.
+// Lepo pozdravljeni.), and so are the other spellings Sloleks reads as an
+// adverb on -ó and an adjective on its stem (težkó/têžko, slabó/slábo:
+// the listener said yes to them the same day). The dictionaries have -ó
+// for the adverb and the predicative (SP 2001: lepó nač. prisl., lepó
+// povdk.) and the stem for the adjective (SP: lép -a -o tudi -ó), so
+// before a word the adverb (lepo pozdravljeni, močno dežuje, težko je)
+// follows the listener, not them: in SUK 1.1 that is 361 of the 579
+// occurrences of these spellings, and the adjective before a word, which
+// the lexicon read as the adverb (težko delo, slabo vreme), 158. Not
+// lahko: the modal lahkó "can" stands before its verb (Lahko pridem).
+// Not nelepo: Sloleks has no reading of its adverb. The readings are
+// Sloleks's (the adverb's -ó, the adjective's first stem variant).
+namespace {
+
+struct EndReading {
+    const char32_t* spelling;
+    const char32_t* at_end;         // the adverb
+    const char32_t* before_word;    // the adjective
+};
+const EndReading END_READINGS[] = {
+    {U"lepo", U"lepó", U"lépo"}, {U"težko", U"težkó", U"têžko"},
+    {U"močno", U"močnó", U"môčno"}, {U"slabo", U"slabó", U"slábo"},
+    {U"hudo", U"hudó", U"húdo"}, {U"tesno", U"tesnó", U"têsno"},
+    {U"ostro", U"ostró", U"óstro"}, {U"trdo", U"trdó", U"tŕdo"},
+    {U"toplo", U"topló", U"tôplo"}, {U"grdo", U"grdó", U"gŕdo"},
+    {U"grenko", U"grenkó", U"grênko"}, {U"tenko", U"tenkó", U"tènko"},
+    {U"premočno", U"premočnó", U"premôčno"}, {U"preslabo", U"preslabó", U"preslábo"},
+    {U"predrago", U"predragó", U"predrágo"}, {U"prelepo", U"prelepó", U"prelépo"},
+    {U"pretežko", U"pretežkó", U"pretêžko"}, {U"prehudo", U"prehudó", U"prehúdo"},
+    {U"prelahko", U"prelahkó", U"preláhko"}, {U"pretesno", U"pretesnó", U"pretêsno"},
+    {U"pretoplo", U"pretopló", U"pretôplo"}, {U"premrzlo", U"premrzló", U"premŕzlo"},
+    {U"pretrdo", U"pretrdó", U"pretŕdo"}, {U"preostro", U"preostró", U"preóstro"},
+    {U"pretenko", U"pretenkó", U"pretènko"}, {U"pregrdo", U"pregrdó", U"pregŕdo"},
+};
+
+} // namespace
+
 const char32_t* clause_reading(const std::vector<std::u32string>& words, size_t i) {
-    if (words[i] != U"meni") return nullptr;
+    const std::u32string& w = words[i];
+    if (!w.empty() && w.back() == U'o') {
+        for (const EndReading& r : END_READINGS) {
+            if (w == r.spelling) return i + 1 == words.size() ? r.at_end : r.before_word;
+        }
+    }
+    if (w != U"meni") return nullptr;
     if (words.size() == 1) return U"mení";
     if (i > 0 && prepositions().count(words[i - 1])) return U"mêni";
     if (i + 1 < words.size()) {

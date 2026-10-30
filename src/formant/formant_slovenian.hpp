@@ -169,7 +169,10 @@ const char32_t* head_reading(const std::u32string& w);
  * in the notation, or nullptr to keep the lexicon's. `words` are the
  * clause's words, lowercase. Meni alone in its clause is the menu, mení;
  * after a preposition or before se, je, ni the pronoun mêni; elsewhere
- * the lexicon's méni, the verb.
+ * the lexicon's méni, the verb. Lepo, težko, slabo and the other
+ * spellings of an adverb on -ó and an adjective on its stem are the
+ * adverb at the end of the clause (lepó, težkó), the adjective before
+ * another word (lépo, têžko).
  */
 const char32_t* clause_reading(const std::vector<std::u32string>& words, size_t i);
 

@@ -42,6 +42,8 @@ Intonation::Intonation(const Utterance& utt, const std::vector<Syllable>& syls,
     const float brevity =
         std::clamp((9.0f - static_cast<float>(words)) / 4.0f, 0.4f, 1.0f);
     const int final_index = static_cast<int>(syls.size()) - 1;
+    // Whether the stretch before the first accent is raised (see below).
+    const bool sentence_onset = utt.sentence_initial && accents.size() >= 2;
 
     // The syllable that carries a question's rise.
     int question_syl = -1;
@@ -115,6 +117,19 @@ Intonation::Intonation(const Utterance& utt, const std::vector<Syllable>& syls,
         if (syl.prominence >= 2) {
             p = ai == 0 ? (utt.sentence_initial ? 4.5f : 3.4f)
                         : 2.6f * std::max(0.8f, 1.0f - 0.04f * static_cast<float>(ai - 1));
+        } else if (utt.slovenian && s > 0 &&
+                   syls[static_cast<size_t>(s) - 1].word == syl.word &&
+                   syls[static_cast<size_t>(s) - 1].t0 >= 0.0f) {
+            // A weaker Slovenian word stressed after its first syllable
+            // (potém, sevéda, zeló, lahkó): with the small movement of a
+            // function word the syllable before the stress, which the
+            // high start of a sentence raises even more, was as high as
+            // the stressed one or higher and was heard as stressed
+            // (2026-10-30: po +2, tem +1 semitones in "Potem smo šli
+            // domov."). Such a word moves like a content word in the
+            // middle of a sentence, and as the first accent it rises
+            // above the high start as well.
+            p = 2.4f + (ai == 0 && sentence_onset ? 1.3f : 0.0f);
         }
         if (ai == 0 && kind == ClauseKind::WhQuestion) p = 5.5f;
         if (kind == ClauseKind::Exclamation) {
@@ -229,7 +244,7 @@ Intonation::Intonation(const Utterance& utt, const std::vector<Syllable>& syls,
     // raised and comes down into the accent's peak (Lana and the
     // natural voices start a sentence three to four semitones above the
     // level they then keep).
-    if (utt.sentence_initial && accents.size() >= 2) {
+    if (sentence_onset) {
         const Syllable& first = syls[static_cast<size_t>(accents.front())];
         Bump onset;
         onset.add(-1.0f, 1.5f * range);
