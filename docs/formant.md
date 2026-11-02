@@ -3625,9 +3625,16 @@ SSKJ², SP and the Collocations Dictionary of Modern Slovene at CJVT (Kolokacije
   the corpus, and what has a weight, is food or clothes or takes little effort:
   *torbo, obleko, hrano, vino, nalogo, delo, juho, jakno*), alone or after an
   adjective of its own (*lahko rdečo torbo*, *lahko in hladno obleko*), when the
-  noun ends the clause or stands before a preposition, a conjunction or a copula
-  (a verb after it makes *lahko* the modal: *Lahko torbo nosi*, *Lahko delo
-  opravi vsak*). The verb before *lahko* then decides: an imperfective verb that
+  noun ends the clause or stands before a preposition, a conjunction or a copula.
+  A sentence opening with *lahko* and such a noun goes by its end, as the native
+  listener answered: a question asks whether something can be done, *lahkó*
+  (*Lahko delo opravi vsak?*, *Lahko delo?*, also with commas before the question
+  mark, `IN_QUESTION_MARK`), a statement says something of the light thing, *láhko*
+  (*Lahko delo opravi vsak.*, *Lahko torbo nosi.*), unless the verb has a subject of
+  its own in another person (*Lahko hrano kupite v trgovini*, *Lahko hrano kupijo*);
+  the only such sentence of SUK 1.1 is a question, *Lahko kuhinjo prepleskamo
+  drugače, ...?*. Elsewhere a verb after the noun makes it the modal. The verb
+  before *lahko* then decides: an imperfective verb that
   carries, eats or wears such a thing is the adjective in any person (*On nosi
   lahko torbo*, *Nosim lahko torbo*, *Pijem lahko vino*); a perfective present,
   which needs the modal to be a present at all, or any other verb in the first or
@@ -3675,7 +3682,8 @@ SSKJ², SP and the Collocations Dictionary of Modern Slovene at CJVT (Kolokacije
   **Across a comma:** *Meni, da je prav* is the commonest *meni* of the news,
   and alone in its clause it would be the menu (26 of 32 such tokens are followed
   by *da*). `TTSEngine::segment_text()` puts `BEFORE_COMPLEMENT_MARK` (a private use
-  character, consumed by `process_slovenian()`) at the end of a clause whose comma
+  character, consumed by `process_slovenian()`, as is `IN_QUESTION_MARK` for a clause
+  of a sentence that ends in a question mark) at the end of a clause whose comma
   comes before one of *da, naj, kdaj, kako, kje, zakaj, ali, kaj, kdo, koliko, kam,
   če*, and then *meni* last in its clause is the verb, unless the rules made it the
   menu (*Odprite meni, da izberete*, except alone or after *ta*) or a preposition

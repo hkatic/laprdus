@@ -1129,6 +1129,20 @@ const WordSet& short_pronouns() {
     return set;
 }
 
+// A verb in the first or second person, by its ending (poznam, vidiš, kupite)
+bool addressed_verb(const std::u32string& w) {
+    static const WordSet not_verbs = {
+        U"potem", U"zatem", U"nekam", U"drugam", U"nikamor", U"vsem", U"njim", U"njem", U"mojim", U"tvojim",
+        U"svojim", U"našim", U"vašim", U"mojem", U"tvojem", U"svojem", U"našem", U"vašem",
+    };
+    if (w.size() < 4 || not_verbs.count(w)) return false;
+    for (const char32_t* tail : {U"im", U"am", U"em", U"iš", U"aš", U"eš", U"imo", U"amo", U"emo", U"ite",
+                                 U"ate", U"ete"}) {
+        if (word_ends_with(w, tail)) return true;
+    }
+    return false;
+}
+
 // lahko is the modal and the adverb, lahkó (SP 2001), in 2,703 of its 2,718
 // occurrences in SUK 1.1, and láhko, the adjective lahek (SP "láhek -hka -o";
 // a Slovenian listener's Jesti moraš lahko hrano, Prosim daj mi lahko nalogo,
@@ -1145,17 +1159,22 @@ const WordSet& short_pronouns() {
 // under láhek, the Collocations Dictionary of Modern Slovene at CJVT, the
 // corpus's lahko nafto), alone or after an adjective of its own (lahko poletno
 // obleko, lahko in hladno obleko), ending the clause or before a preposition or
-// a conjunction (a verb after it would make lahko the modal: Lahko torbo nosi,
-// Lahko vino kupite), with a verb before lahko that carries such things in the
-// present (nosim, pijem, kuham), or none that would make it the modal.
+// a conjunction (a verb after it would make lahko the modal), with a verb before
+// lahko that carries such things in the present (nosim, pijem, kuham), or none
+// that would make it the modal. A question that opens with lahko and such a noun
+// asks whether something can be done, a statement says something of the light
+// thing, as a native listener answered in November 2026 (Lahko delo opravi vsak?
+// lahkó, Lahko delo opravi vsak. láhko); the only such sentence of SUK 1.1 is a
+// question. A verb in another person than the third has a subject of its own,
+// and is the modal in a statement too (Lahko hrano kupite v trgovini).
 bool lahko_is_adjective(const std::vector<std::u32string>& words, const std::vector<bool>& capitalized,
-                        size_t i) {
+                        size_t i, bool question) {
     static const WordSet nouns = {
         U"aktovko", U"artilerijo", U"atletiko", U"baterijo", U"besedilo", U"blago", U"bluzo", U"bolezen",
         U"branje", U"cev", U"copato", U"delo", U"desko", U"dieto", U"dihanje", U"dostopnost", U"figuro",
         U"folijo", U"gimnastiko", U"glasbo", U"gorivo", U"gripo", U"haljo", U"harmoniko", U"hojo", U"hrano",
         U"hruško", U"igro", U"industrijo", U"izbiro", U"jakno", U"jed", U"jedilo", U"jopico", U"jopo", U"juho",
-        U"kamero", U"kapico", U"kapo", U"kategorijo", U"kavo", U"kitaro", U"klobaso", U"knjigo", U"kolesce",
+        U"kamero", U"kapico", U"kapo", U"kategorijo", U"kitaro", U"klobaso", U"knjigo", U"kolesce",
         U"kolo", U"komedijo", U"konfekcijo", U"konstrukcijo", U"kosilo", U"kost", U"kovino", U"kremo", U"krilce",
         U"krilo", U"križarko", U"krmo", U"kroglo", U"kuhinjo", U"letalo", U"letev", U"letvo", U"literaturo",
         U"litino", U"majico", U"malico", U"nafto", U"nalogo", U"nesrečo", U"nogavico", U"nogo", U"oblačilo",
@@ -1264,14 +1283,27 @@ bool lahko_is_adjective(const std::vector<std::u32string>& words, const std::vec
         }
     }
     if (before && degrees.count(*before)) return true;
+    const bool at_head = !before && k == i;     // Lahko delo, not Se lahko delo
     // What follows it: a verb there makes lahko the modal, but not a copula,
     // whose subject the noun is (Lahko vino je najboljše)
+    bool copula = false;
     if (noun + 1 < n) {
         const std::u32string& after = words[noun + 1];
-        const bool copula = k == i && (after == U"je" || after == U"ni" || after == U"bo");
-        if (!prepositions().count(after) && !joining.count(after) && !copula) return false;
+        copula = k == i && (after == U"je" || after == U"ni" || after == U"bo");
+        if (!prepositions().count(after) && !joining.count(after) && !copula) {
+            // A sentence that opens with it, not a question: Lahko delo opravi
+            // vsak. Lahko torbo nosi. But Lahko hrano kupite, Lahko hrano kupijo.
+            if (!at_head || !capitalized[i] || question) return false;
+            if (word_ends_with(after, U"ajo") || word_ends_with(after, U"ejo") || word_ends_with(after, U"ijo")) {
+                return false;
+            }
+            for (size_t m = noun + 1; m < n; ++m) {
+                if (addressed_verb(words[m])) return false;
+            }
+            return true;
+        }
     }
-    if (!before) return k == i;     // Lahko delo. (not Se lahko delo.)
+    if (!before) return at_head && (!question || copula);   // Lahko delo. Lahko delo?
     if (modal_before.count(*before)) return false;
     if (carrying.count(*before)) return true;
     // An imperative in -jte (Dajte mi lahko nalogo)
@@ -1335,15 +1367,6 @@ bool roka_is_absent_or_object(const std::vector<std::u32string>& words, const st
         U"pokliči", U"pokličite", U"vprašaj", U"vprašajte", U"počakaj", U"počakajte", U"pozdravi", U"pozdravite",
         U"poišči", U"poiščite", U"obvesti", U"obvestite", U"kliči", U"kličite",
     };
-    static const WordSet not_verbs = {U"potem", U"zatem", U"nekam", U"drugam", U"nikamor"};
-    auto addressed = [&](const std::u32string& w) {
-        if (w.size() < 4 || not_verbs.count(w)) return false;
-        for (const char32_t* tail : {U"im", U"am", U"em", U"iš", U"aš", U"eš", U"imo", U"amo", U"emo", U"ite",
-                                     U"ate", U"ete"}) {
-            if (word_ends_with(w, tail)) return true;
-        }
-        return false;
-    };
     if (i > 0 && !openers.count(words[i - 1])) return false;
     const size_t n = words.size();
     size_t k = i + 1;
@@ -1363,9 +1386,9 @@ bool roka_is_absent_or_object(const std::vector<std::u32string>& words, const st
             while (k < n && adverbs.count(words[k])) ++k;
             return k == n;
         }
-        return k < n && addressed(words[k]);
+        return k < n && addressed_verb(words[k]);
     }
-    if (other_subject.count(words[k]) || imperatives.count(words[k]) || addressed(words[k])) return true;
+    if (other_subject.count(words[k]) || imperatives.count(words[k]) || addressed_verb(words[k])) return true;
     return k == i + 1 && capitalized[i] && capitalized[k];
 }
 
@@ -1565,13 +1588,13 @@ const char32_t* meni_reading(const std::vector<std::u32string>& words, const std
 } // namespace
 
 const char32_t* clause_reading(const std::vector<std::u32string>& words, const std::vector<bool>& capitalized,
-                               size_t i, bool before_complement) {
+                               size_t i, bool before_complement, bool question) {
     const std::u32string& w = words[i];
     if (!w.empty() && w.back() == U'o') {
         for (const EndReading& r : END_READINGS) {
             if (w == r.spelling) return i + 1 == words.size() ? r.at_end : r.before_word;
         }
-        if (w == U"lahko" && lahko_is_adjective(words, capitalized, i)) return U"láhko";
+        if (w == U"lahko" && lahko_is_adjective(words, capitalized, i, question)) return U"láhko";
         return nullptr;
     }
     if (w == U"meni") {

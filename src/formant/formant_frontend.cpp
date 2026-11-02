@@ -4088,10 +4088,17 @@ Utterance Frontend::process_slovenian(const std::u32string& marked_text, Punctua
                                        bool letter_sounds) const {
     Utterance utt;
     utt.slovenian = true;
-    // The engine's mark that a clause opening with da, naj, kako ... follows
-    const bool before_complement =
-        !marked_text.empty() && marked_text.back() == slovenian::BEFORE_COMPLEMENT_MARK;
-    const std::u32string text = before_complement ? marked_text.substr(0, marked_text.size() - 1) : marked_text;
+    // The engine's marks: a clause opening with da, naj, kako ... follows; the
+    // sentence ends in a question mark
+    std::u32string text = marked_text;
+    bool before_complement = false;
+    bool question = punct == Punctuation::QUESTION;
+    while (!text.empty() && (text.back() == slovenian::BEFORE_COMPLEMENT_MARK ||
+                             text.back() == slovenian::IN_QUESTION_MARK)) {
+        if (text.back() == slovenian::BEFORE_COMPLEMENT_MARK) before_complement = true;
+        else question = true;
+        text.pop_back();
+    }
     std::vector<Word> tokens = tokenize(cyrillic::to_latin(text), m_language);
     const slovenian::Lexicon* user = m_user_slovenian.get();
     join_camel(tokens, [&](const std::u32string& spelled) {
@@ -4170,7 +4177,8 @@ Utterance Frontend::process_slovenian(const std::u32string& marked_text, Punctua
         if (!word.letter_name && !word.joined) {
             slovenian::VerbNounReadings readings;
             const char32_t* head = slovenian::head_reading(word.w);
-            const char32_t* in_clause = slovenian::clause_reading(spellings, capitalized, i, before_complement);
+            const char32_t* in_clause =
+                slovenian::clause_reading(spellings, capitalized, i, before_complement, question);
             // A name spelled like a common word (Múrska Sóbota, sobóta;
             // Jêlena, jeléna): only with a capital, not in text written all
             // in capitals, and at the head of a clause only when the name

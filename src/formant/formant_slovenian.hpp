@@ -229,11 +229,13 @@ const char32_t* head_reading(const std::u32string& w);
  * deadline's by an adjective or a plural verb (plačilni roki, roki so kratki).
  * Afna is the verb's afná next to se, else the lexicon's noun, áfna. With
  * before_complement the clause after a comma opens with da, naj, kako ...
- * (BEFORE_COMPLEMENT_MARK): Meni, da je prav.
+ * (BEFORE_COMPLEMENT_MARK): Meni, da je prav. With question the sentence ends
+ * in a question mark (IN_QUESTION_MARK): Lahko delo opravi vsak? is the modal,
+ * Lahko delo opravi vsak. the adjective.
  */
 const char32_t* clause_reading(const std::vector<std::u32string>& words,
                                const std::vector<bool>& capitalized, size_t i,
-                               bool before_complement = false);
+                               bool before_complement = false, bool question = false);
 
 /**
  * The mark the engine puts at the end of a clause whose comma is followed by a
@@ -243,6 +245,13 @@ const char32_t* clause_reading(const std::vector<std::u32string>& words,
  * by Frontend::process_slovenian(), never spoken.
  */
 constexpr char32_t BEFORE_COMPLEMENT_MARK = 0xE000;
+
+/**
+ * The same for a clause before a comma or a semicolon in a sentence that ends
+ * in a question mark, which only its last clause shows: Lahko delo opravi vsak,
+ * ki hoče?
+ */
+constexpr char32_t IN_QUESTION_MARK = 0xE001;
 
 /** Whether a clause begins with da, naj, kdaj, kako ... */
 bool opens_complement_clause(const std::u32string& text);

@@ -647,7 +647,7 @@ TEST_CASE("Slovenian spelling uses Slovenian names and preserves user overrides"
 TEST_CASE("Slovenian reads a word by the clause after the comma", "[formant][language]") {
     // Meni, da je prav: the clause after the comma makes meni the verb, which
     // the front end cannot see in one clause; alone it is the menu. For every
-    // voice, the recorded ones too, and in the streaming path.
+    // voice, the recorded ones too.
     for (const char* voice : {"zvonko", "josip"}) {
         const bool recorded = std::string(voice) == "josip";
         const char* data = std::getenv("LAPRDUS_DATA");
@@ -659,6 +659,13 @@ TEST_CASE("Slovenian reads a word by the clause after the comma", "[formant][lan
         REQUIRE(speak(engine.handle, "Meni, gumb.") != speak(engine.handle, "M\xC3\xA9ni, gumb."));
         REQUIRE(speak(engine.handle, "Ni obvestil, da pride.") == speak(engine.handle, "Ni obv\xC3\xA9stil, da pride."));
         REQUIRE(speak(engine.handle, "Ni obvestil, gumb.") != speak(engine.handle, "Ni obv\xC3\xA9stil, gumb."));
+        // Lahko by the question mark, which may be clauses away
+        REQUIRE(speak(engine.handle, "Lahko delo opravi vsak.") == speak(engine.handle, "L\xC3\xA1hko delo opravi vsak."));
+        REQUIRE(speak(engine.handle, "Lahko delo opravi vsak?") != speak(engine.handle, "L\xC3\xA1hko delo opravi vsak?"));
+        REQUIRE(speak(engine.handle, "Lahko delo opravi vsak, ki hoče.") ==
+                speak(engine.handle, "L\xC3\xA1hko delo opravi vsak, ki hoče."));
+        REQUIRE(speak(engine.handle, "Lahko delo opravi vsak, ki hoče?") !=
+                speak(engine.handle, "L\xC3\xA1hko delo opravi vsak, ki hoče?"));
     }
 }
 

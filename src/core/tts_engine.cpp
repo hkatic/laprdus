@@ -517,12 +517,23 @@ std::vector<TextSegment> TTSEngine::segment_text(const std::string& processed_te
     // Use inflection processor to analyze and segment text
     std::vector<TextSegment> segments = m_impl->inflection.analyze_text(processed_text);
 
-    // Slovenian: a verb of saying or thinking is told by the clause after it,
-    // which the front end does not see (Meni, da je prav. Ni obvestil, da
-    // pride.): the clause gets a mark that it is followed by such a clause.
+    // Slovenian: some readings are told by what the front end, which sees one
+    // clause at a time, does not see, so the clause gets a mark. A verb of saying
+    // or thinking by the clause after it (Meni, da je prav. Ni obvestil, da
+    // pride.), lahko by the question mark at the end of the sentence (Lahko delo
+    // opravi vsak, ki hoče?).
     if (current_language() == VoiceLanguage::Slovenian) {
-        for (size_t i = 0; i + 1 < segments.size(); ++i) {
-            if (segments[i].trailing_punct == Punctuation::COMMA &&
+        bool in_question = false;
+        for (size_t i = segments.size(); i-- > 0;) {
+            const Punctuation punct = segments[i].trailing_punct;
+            const bool continues = punct == Punctuation::COMMA || punct == Punctuation::SEMICOLON;
+            if (punct == Punctuation::QUESTION) {
+                in_question = true;
+            } else if (!continues) {
+                in_question = false;
+            }
+            if (continues && in_question) segments[i].text.push_back(formant::slovenian::IN_QUESTION_MARK);
+            if (punct == Punctuation::COMMA && i + 1 < segments.size() &&
                 formant::slovenian::opens_complement_clause(segments[i + 1].text)) {
                 segments[i].text.push_back(formant::slovenian::BEFORE_COMPLEMENT_MARK);
             }

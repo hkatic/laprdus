@@ -2110,7 +2110,14 @@ TEST_CASE("Slovenian spellings told apart by the clause (November 2026)", "[fron
         {U"Zelo lahko torbo imam", "zEl'ó: l'a:hkO t'ó:rbO im'a:m"},
         {U"Lahko vino je najboljše", "l'a:hkO v'i:nO jE najb'ó:lšE"},
         {U"Lahko me pokličeš", "lahk'ó: mE pOkl'i:čEš"},
-        {U"Lahko torbo nosi", "lahk'ó: t'ó:rbO n'ó:si"},
+        {U"Lahko torbo nosi", "l'a:hkO t'ó:rbO n'ó:si"},
+        {U"Lahko delo opravi vsak", "l'a:hkO d'é:lO Opr'a:vi us'a:k"},
+        {U"Lahko delo vsak opravi", "l'a:hkO d'é:lO us'a:k Opr'a:vi"},
+        {U"Lahko hrano kupite v trgovini", "lahk'ó: hr'a:nO k'u:pitE u tərgOv'i:ni"},
+        {U"Lahko hrano kupijo", "lahk'ó: hr'a:nO k'u:pijO"},
+        {U"Lahko delo danes opravimo", "lahk'ó: d'é:lO d'a:nəs Opr'a:vimO"},
+        {U"Lahko kuhinjo prepleskamo drugače", "lahk'ó: k'u:hinjO prEpl'é:skamO drug'a:čE"},
+        {U"Lahko kavo", "lahk'ó: k'a:vO"},
         {U"Kupim lahko hrano", "k'u:pim lahk'ó: hr'a:nO"},
         {U"Kupi lahko hrano", "k'u:pi lahk'ó: hr'a:nO"},
         {U"Vidimo lahko delo umetnikov", "v'i:dimO lahk'ó: d'é:lO um'é:tnikOw"},
@@ -2184,6 +2191,30 @@ TEST_CASE("Slovenian spellings told apart by the clause (November 2026)", "[fron
     custom.set_user_lexicon(UserLexicon::parse(
         R"({"entries":[{"word":"bruhobérał","language":"sl"}]})"));
     REQUIRE(phones_of(read(custom, U"bruhoberal")) == "bruhOb'é:ral");
+}
+
+// A question opening with lahko and a noun asks whether something can be done,
+// a statement says something of the light thing (a native listener, November 2026)
+TEST_CASE("Slovenian lahko at the head of a question and of a statement", "[frontend][slovenian]") {
+    Frontend frontend(VoiceLanguage::Slovenian);
+    const auto question = [&](const char32_t* text) { return phones_of(frontend.process(text, Punctuation::QUESTION)); };
+    REQUIRE(question(U"Lahko delo opravi vsak") == "lahk'ó: d'é:lO Opr'a:vi us'a:k");
+    REQUIRE(phones_of(read(frontend, U"Lahko delo opravi vsak")) == "l'a:hkO d'é:lO Opr'a:vi us'a:k");
+    REQUIRE(question(U"Lahko torbo nosi") == "lahk'ó: t'ó:rbO n'ó:si");
+    REQUIRE(question(U"Lahko delo") == "lahk'ó: d'é:lO");
+    REQUIRE(phones_of(read(frontend, U"Lahko delo")) == "l'a:hkO d'é:lO");
+    REQUIRE(question(U"Lahko noč") == "l'a:hkO n'ó:č");
+    // The noun as the subject of a copula has no modal to ask about
+    REQUIRE(question(U"Lahko vino je najboljše") == "l'a:hkO v'i:nO jE najb'ó:lšE");
+    // Inside a clause nothing changes
+    REQUIRE(question(U"On nosi lahko torbo") == "'On n'ó:si l'a:hkO t'ó:rbO");
+    // The mark says so in a clause before a comma
+    std::u32string marked(U"Lahko delo opravi vsak");
+    marked.push_back(slovenian::IN_QUESTION_MARK);
+    REQUIRE(phones_of(frontend.process(marked, Punctuation::COMMA)) == "lahk'ó: d'é:lO Opr'a:vi us'a:k");
+    // ... also next to the other mark, in either order
+    marked.push_back(slovenian::BEFORE_COMPLEMENT_MARK);
+    REQUIRE(phones_of(frontend.process(marked, Punctuation::COMMA)) == "lahk'ó: d'é:lO Opr'a:vi us'a:k");
 }
 
 // The clause after a comma, which one clause does not show
