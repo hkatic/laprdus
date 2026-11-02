@@ -19,7 +19,7 @@
     <string name="language_croatian">Hrvatski</string>
     <string name="language_serbian">Srpski</string>
     <string name="language_bosnian">Bosanski</string>
-    <string name="language_slovenian">Slovenski</string>
+    <string name="language_slovenian">Slovenački</string>
 
     <!-- Voice attributes -->
     <string name="gender_male">Muški</string>
@@ -69,7 +69,7 @@
     <string name="restore_default_inflection_level">Vrati podrazumevanu intonaciju</string>
     <string name="restore_default_acceleration">Vrati podrazumevano ubrzanje</string>
     <string name="cd_restore_inflection_level_desc">Postavlja intonaciju na 50%</string>
-    <string name="cd_restore_acceleration_desc">Postavlja ubrzanje na 1.0x</string>
+    <string name="cd_restore_acceleration_desc">Postavlja ubrzanje na 1,0x</string>
 
     <!-- Number mode settings -->
     <string name="setting_number_mode_title">Čitaj brojeve cifru po cifru</string>
@@ -104,7 +104,7 @@
     <string name="cd_restore_speed_desc">Postavlja brzinu govora na podrazumevanu vrednost</string>
     <string name="cd_restore_pitch_desc">Postavlja visinu govora na podrazumevanu vrednost</string>
     <string name="cd_restore_volume_desc">Postavlja jačinu govora na podrazumevanu vrednost</string>
-    <string name="cd_speak_desc">Izgovara uneseni tekst</string>
+    <string name="cd_speak_desc">Izgovara uneti tekst</string>
     <string name="cd_stop_desc">Zaustavlja trenutni govor</string>
     <string name="cd_laprdus_settings_desc">Otvara podešavanja Laprdusa</string>
     <string name="cd_android_tts_settings_desc">Otvara podešavanja Android sistema za TTS</string>
@@ -145,7 +145,7 @@
     <!-- Dictionary screen -->
     <string name="dict_screen_title">Rečnici</string>
     <string name="dict_type_main">Glavni rečnik</string>
-    <string name="dict_type_spelling">Rečnik slovkanja</string>
+    <string name="dict_type_spelling">Rečnik sricanja</string>
     <string name="dict_type_emoji">Rečnik emodžija</string>
     <string name="dict_type_label">Vrsta rečnika</string>
     <string name="dict_empty_list">Nema unosa. Dodirnite + za dodavanje.</string>
@@ -155,7 +155,7 @@
     <string name="dict_entry_title_add">Dodaj unos</string>
     <string name="dict_entry_title_edit">Uredi unos</string>
     <string name="dict_entry_original">Izvorni tekst</string>
-    <string name="dict_entry_replacement">Zamenska izgovor</string>
+    <string name="dict_entry_replacement">Zamenski izgovor</string>
     <string name="dict_entry_comment">Komentar (opciono)</string>
     <string name="dict_entry_case_sensitive">Razlikuj velika i mala slova</string>
     <string name="dict_entry_whole_word">Samo cela reč</string>
@@ -179,8 +179,8 @@
     <string name="dict_accent_language_all">Svi jezici</string>
     <string name="dict_accent_help">Znakovi: \' ispred naglašenog samoglasnika (ton se bira sam), ^ silazni naglasak, / uzlazni naglasak, : iza dugog samoglasnika, * na kraju osnove (kontr\'o:l* važi za kontróla, kontróle, kontrólom), | između oblika (sign\'a:l|a|u|om). Glagol: cela osnova, znak = i vrsta (ur\'e:d=i&lt;p za uréditi, urédim), ili koren s dugim ije (dijel:i za podijeliti).</string>
     <string name="dict_accent_error_invalid">Unos nije ispravan: %1$s</string>
-    <string name="cd_dict_accent_kind_dropdown_desc">Odabir vrste unosa</string>
-    <string name="cd_dict_accent_language_dropdown_desc">Odabir jezika unosa</string>
+    <string name="cd_dict_accent_kind_dropdown_desc">Izbor vrste unosa</string>
+    <string name="cd_dict_accent_language_dropdown_desc">Izbor jezika unosa</string>
 
     <!-- About screen -->
     <string name="category_about">O Laprdusu</string>

@@ -430,7 +430,8 @@ echo "Text" | laprdus.exe -o output.wav
    - SCons reads buildVars.py and generates manifest.ini automatically
 
 4. **To modify addon documentation**:
-   - Edit `nvda-addon/readme.md` - SCons converts this to HTML automatically
+   - The manual exists in four languages, and SCons converts each to HTML automatically: `nvda-addon/addon/doc/hr/readme.md` (Croatian, the source), `nvda-addon/readme.md` (English, the base language, copied to `addon/doc/en/` by the build), `nvda-addon/addon/doc/sr/readme.md` and `nvda-addon/addon/doc/sl/readme.md`. NVDA opens the one of its language, else English. Change them together, then run `python tests/nvda/test_manuals.py`
+   - It is rendered by Python-Markdown with the extensions in `buildVars.markdownExtensions` (tables, fenced code, heading anchors that keep diacritics), not GitHub's renderer: nested list items take 4 spaces, a list or table needs a blank line before it, and a code block inside a list is indented, not fenced
 
 5. **To add/modify translations**:
    - Edit `.po` files in `nvda-addon/addon/locale/*/LC_MESSAGES/`
@@ -905,7 +906,7 @@ cd nvda-addon && scons && cd ..
 
 **To make changes:**
 - Addon metadata (name, version, description): Edit `nvda-addon/buildVars.py`
-- Documentation: Edit `nvda-addon/readme.md`
+- Documentation: Edit the manuals listed above (`nvda-addon/readme.md` is the English one)
 - Translations: Edit `.po` files in `nvda-addon/addon/locale/*/LC_MESSAGES/`
 
 SCons handles all file generation automatically. Manual edits to generated files will be overwritten or cause corruption.

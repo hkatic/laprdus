@@ -677,7 +677,7 @@ Datoteka `user.json` koristi JSON format. Evo primjera:
 
 - `true` (zadano): Zamjenjuje samo kada je tekst cijela riječ
   - "TV" u "TV program" će biti zamijenjeno
-  - "TV" u "aktivator" neće biti zamijenjeno (jer je dio veće riječi)
+  - "TV" u "Latvija" neće biti zamijenjeno (jer je dio veće riječi)
 - `false`: Zamjenjuje i unutar drugih riječi
   - Korisno za sufikse i prefikse
 
@@ -792,14 +792,14 @@ Rječnik emodžija pretvara emoji simbole u govorni tekst.
 **Windows (Laprdus Konfigurator):**
 
 1. Otvorite Laprdus Konfigurator (Start > Laprdus > Laprdus Konfigurator)
-2. Tipkom Tab pronađite opciju "Čitaj emodžije"
+2. Tipkom Tab pronađite opciju "Izgovori emoji znakove"
 3. Označite potvrdni okvir
 4. Tipkom Tab odaberite "U redu" i pritisnite Enter
 
 **NVDA:**
 
 1. Otvorite NVDA izbornik (NVDA tipka + N) > Laprdus podizbornik > Laprdus Konfigurator
-2. Tipkom Tab pronađite opciju "Čitaj emodžije"
+2. Tipkom Tab pronađite opciju "Izgovori emoji znakove"
 3. Označite potvrdni okvir
 4. Tipkom Tab odaberite "U redu" i pritisnite Enter
 
@@ -807,7 +807,7 @@ Rječnik emodžija pretvara emoji simbole u govorni tekst.
 
 1. Otvorite Laprdus aplikaciju
 2. Dodirnite "Laprdus postavke"
-3. Pronađite prekidač "Čitaj emodžije" i uključite ga
+3. Pronađite prekidač "Omogući čitanje emojija" i uključite ga
 
 #### Format datoteke
 
@@ -852,7 +852,7 @@ Laprdus Konfigurator pruža grafičko sučelje za jednostavno upravljanje rječn
 **Uređivanje rječnika:**
 
 1. U Laprdus Konfiguratoru tipkom Tab ili Shift+Tab pronađite gumb **"Rječnici..."** i pritisnite Enter
-2. Otvorit će se prozor Uređivač rječnika
+2. Otvorit će se prozor Upravljanje rječnicima
 3. Na vrhu prozora nalazi se padajući izbornik za odabir vrste rječnika koji želite prilagoditi:
    - **Glavni rječnik** - za zamjenu riječi i fraza
    - **Rječnik slovkanja** - za izgovor pojedinačnih znakova
@@ -933,7 +933,7 @@ Dodirnite padajući izbornik i odaberite željenu vrstu.
    - **Komentar:** Opcionalni opis (npr. "Društvena mreža")
 3. Dodirnite gumb **"Spremi"** na dnu zaslona
 
-Za naglasni rječnik zaslon za unos ima polja **Unos** (riječ, osnova, oblici ili glagol s naglaskom, npr. `kontr'o:l*`), **Vrsta unosa** (riječ ili glagol), **Jezik** (svi jezici ili jedan od tri) i **Komentar**, s podsjetnikom na znakove ispod njih. Unos koji nije ispravan aplikacija odbija i ispisuje razlog ispod polja.
+Za naglasni rječnik zaslon za unos ima polja **Unos** (riječ, osnova, oblici ili glagol s naglaskom, npr. `kontr'o:l*`), **Vrsta unosa** (riječ ili glagol), **Jezik** (svi jezici ili jedan od četiri) i **Komentar**, s podsjetnikom na znakove ispod njih. Unos koji nije ispravan aplikacija odbija i ispisuje razlog ispod polja.
 
 **Korak 4: Uređivanje postojećeg unosa**
 
@@ -1194,7 +1194,7 @@ S ovim unosom, riječi poput "information" će sadržavati izgovor "šen" umjest
 
 **Rješenje:** Uključite opciju **"Samo cijela riječ"** za problematični unos, ili ručno promijenite vrijednost za taj unos u konfiguracijskoj datoteci, `wholeWord: true`
 
-Primjer problema: Unos za "TV" zamjenjuje i "aktivator" jer sadrži "TV".
+Primjer problema: Unos za "TV" zamjenjuje i dio riječi "Latvija" jer sadrži "TV".
 
 ```json
 {
@@ -1265,7 +1265,7 @@ Primjer problema: Unos za "TV" zamjenjuje i "aktivator" jer sadrži "TV".
 **Rješenje:** Provjerite je li čitanje emodžija uključeno
 
 1. Otvorite Laprdus Konfigurator ili Android postavke
-2. Pronađite opciju "Čitaj emodžije"
+2. Pronađite opciju "Izgovori emoji znakove" (na Androidu "Omogući čitanje emojija")
 3. Uključite opciju
 4. Spremite postavke
 
@@ -1679,14 +1679,14 @@ Ovaj problem je zabilježen na Honor uređajima (MagicOS), a moguć je i na Huaw
 #### Govor je prebrz ili prespor
 
 Podesite brzinu govora:
-- U NVDA: Control + NVDA tipka + N > Postavke > Govor > Brzina
+- U NVDA: NVDA tipka + N > Opcije > Postavke > Govor > Brzina
 - Na Androidu: Otvorite Laprdus aplikaciju i podesite klizač brzine u Laprdus postavkama, ili brzinu govora u TalkBacku
 - Na iPhoneu, iPadu i Macu: klizač brzine u Laprdus postavkama ili brzina govora VoiceOvera
 - U naredbenom programu: koristite opciju `-r`
 
 #### NVDA ne pronalazi Laprdus
 
-1. Provjerite je li dodatak ispravno instaliran (NVDA izbornik > Alati > Upravljanje dodacima)
+1. Provjerite je li dodatak ispravno instaliran (NVDA izbornik > Alati > Upravitelj dodataka)
 2. Ponovno pokrenite NVDA
 3. Provjerite da dodatak nije onemogućen
 

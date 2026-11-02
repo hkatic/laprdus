@@ -317,7 +317,7 @@
         "sr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Slovenski"
+            "value" : "Slovenački"
           }
         },
         "sl" : {
@@ -1869,7 +1869,7 @@
         "sr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Izgovara uneseni tekst"
+            "value" : "Izgovara uneti tekst"
           }
         },
         "sl" : {
@@ -2001,7 +2001,7 @@
         "sr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rečnik slovkanja"
+            "value" : "Rečnik sricanja"
           }
         },
         "sl" : {

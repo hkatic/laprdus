@@ -2,6 +2,8 @@
 # Build customizations for LaprdusTTS NVDA Add-on
 # Change this file instead of sconstruct or manifest files, whenever possible.
 
+from markdown.extensions.toc import TocExtension, slugify_unicode
+
 from site_scons.site_tools.NVDATool.typings import AddonInfo, BrailleTables, SymbolDictionaries
 
 # Since some strings in `addon_info` are translatable,
@@ -37,7 +39,7 @@ The language is a separate setting, with word stress and natural sentence melody
 - Ten singing voices: Orguljaš, Dalmacija Klapa, Trubač, Harmonikaš, Sevdalija, Sazlija, Lika Velebit, Solunac, Sarajevo Bembaša and Bećarac
 - NVDA's Inflection slider controls the sentence melody of every voice, and an accent dictionary (accents.json) to correct the stress of a word
 - Letters are spelled by their sounds (b, c, d) unless the Configurator says names; capital letters are spelled at NVDA's capital pitch change, as with NVDA's other synthesizers
-- The add-on and the Laprdus Configurator are available in English, Croatian, Serbian and Slovenian: both follow NVDA's language
+- The add-on, its user guide and the Laprdus Configurator are available in English, Croatian, Serbian and Slovenian: all follow NVDA's language
 - Fixed: user spelling and emoji dictionary entries had no effect
 """),
     # Author(s)
@@ -86,8 +88,9 @@ excludedFiles: list[str] = [
 # Base language for the NVDA add-on
 baseLanguage: str = "en"
 
-# Markdown extensions for add-on documentation
-markdownExtensions: list[str] = []
+# Markdown extensions for add-on documentation: the manuals have tables and code
+# blocks, and links to their headings (slugs that keep the diacritics, as on GitHub)
+markdownExtensions: list = ["tables", "fenced_code", TocExtension(slugify=slugify_unicode)]
 
 # Custom braille translation tables
 brailleTables: BrailleTables = {}

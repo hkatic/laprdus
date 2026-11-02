@@ -1,198 +1,198 @@
-# Laprdus - Korisnički priručnik
+# Laprdus - User Guide
 
-Inačica 2.0
-
----
-
-## Sadržaj
-
-1. [Uvod](#1-uvod)
-   - [1.1 Što je Laprdus?](#11-što-je-laprdus)
-   - [1.2 Kome je Laprdus namijenjen?](#12-kome-je-laprdus-namijenjen)
-   - [1.3 Podržane platforme](#13-podržane-platforme)
-   - [1.4 Mogućnosti](#14-mogućnosti)
-2. [Instalacija](#2-instalacija)
-   - [2.1 Windows SAPI5](#21-windows-sapi5)
-   - [2.2 NVDA dodatak](#22-nvda-dodatak)
-   - [2.3 Linux](#23-linux)
-   - [2.4 Android](#24-android)
-3. [Uporaba](#3-uporaba)
-   - [3.1 Osnovna uporaba](#31-osnovna-uporaba)
-   - [3.2 Naredbena linija (Linux i Windows)](#32-naredbena-linija-linux-i-windows)
-   - [3.3 NVDA postavke](#33-nvda-postavke)
-   - [3.4 Android aplikacija](#34-android-aplikacija)
-4. [Postavke](#4-postavke)
-   - [4.1 Brzina govora](#41-brzina-govora)
-   - [4.2 Visina glasa](#42-visina-glasa)
-   - [4.3 Glasnoća](#43-glasnoća)
-   - [4.4 Pauze](#44-pauze)
-   - [4.5 Način čitanja brojeva](#45-način-čitanja-brojeva)
-   - [4.6 Infleksija](#46-infleksija)
-   - [4.7 Slovkanje](#47-slovkanje)
-   - [4.8 Laprdus Konfigurator (Windows)](#48-laprdus-konfigurator-windows)
-5. [Rječnici](#5-rječnici)
-   - [5.1 Vrste rječnika](#51-vrste-rječnika)
-   - [5.2 Lokacije datoteka rječnika](#52-lokacije-datoteka-rječnika)
-   - [5.3 Glavni rječnik (user.json)](#53-glavni-rječnik-userjson)
-   - [5.4 Rječnik slovkanja (spelling.json)](#54-rječnik-slovkanja-spellingjson)
-   - [5.5 Rječnik emodžija (emoji.json)](#55-rječnik-emodžija-emojijson)
-   - [5.6 Uređivanje rječnika na Windowsu](#56-uređivanje-rječnika-na-windowsu-laprdus-konfigurator)
-   - [5.7 Uređivanje rječnika na Androidu](#57-uređivanje-rječnika-na-androidu)
-   - [5.8 Ručno uređivanje JSON datoteka](#58-ručno-uređivanje-json-datoteka-napredno)
-   - [5.9 Primjeri praktične uporabe](#59-primjeri-praktične-uporabe)
-   - [5.10 Rješavanje problema s rječnicima](#510-rješavanje-problema-s-rječnicima)
-   - [5.11 Naglasni rječnik (accents.json)](#511-naglasni-rječnik-accentsjson)
-6. [Glasovi](#6-glasovi)
-   - [6.1 Dostupni glasovi](#61-dostupni-glasovi)
-   - [6.2 Osnovni i izvedeni glasovi](#62-osnovni-i-izvedeni-glasovi)
-   - [6.3 Odabir glasa](#63-odabir-glasa)
-7. [Rješavanje problema](#7-rješavanje-problema)
-   - [7.1 Česti problemi](#71-česti-problemi)
-   - [7.2 Dijagnostički zapisnici](#72-dijagnostički-zapisnici)
-   - [7.3 Kontakt i podrška](#73-kontakt-i-podrška)
+Version 2.0
 
 ---
 
-## 1. Uvod
+## Contents
 
-### 1.1 Što je Laprdus?
-
-Laprdus je sintetizator govora (TTS - Text-to-Speech) za hrvatski, srpski, bosanski i slovenski jezik. Njegovi izvorni glasovi koriste tehnologiju konkatenativne sinteze, spajajući unaprijed snimljene fonemske jedinice za proizvodnju govora, a formantni glasovi govor u cijelosti računaju pravilima, bez snimaka. Svaki glas govori sva četiri jezika. Iako ne doseže kvalitetu modernih neuronskih TTS sustava, Laprdus nudi visoke performanse i minimalnu potrošnju memorije.
-
-Laprdus je razvijen kako bi korisnicima čitača ekrana pružio jednostavan i brz pristup računalima i mobilnim uređajima na njihovom materinjem jeziku, besplatno.
-
-Laprdus, započet kao moj osobni hobi projekt, također je zamišljen kao eksperimentalan, što mi omogućuje da vidim dokle mogu dogurati s njim.
-
-### 1.2 Kome je Laprdus namijenjen?
-
-Laprdus nije namijenjen svima. Dobar je izbor za one koji uživaju u nostalgičnom zvuku retro sintetizatora govora iz 1980-ih i 1990-ih godina.
-
-Možda neće odgovarati korisnicima naviklim na visoku kvalitetu glasa modernih sintetizatora koji koriste umjetnu inteligenciju i neuronske mreže. Međutim, Laprdus bi mogao biti idealan za one kojima su performanse i minimalna potrošnja resursa važniji od kvalitete glasa.
-
-Ukratko: moderni sintetizatori nude kvalitetu po cijenu resursa; Laprdus nudi performanse po cijenu kvalitete.
-
-### 1.3 Podržane platforme
-
-Laprdus je dostupan na sljedećim platformama:
-
-- **Windows 7 do Windows 11** - putem Microsoft SAPI5 standarda, što omogućuje korištenje Laprdusa u svim programima koji podržavaju Windows govor, što uključuje i čitače ekrana poput Narrator-a, NVDA-a i JAWS-a
-- **Direktna integracija sa NVDA čitačem ekrana** - dostupan i kao poseban dodatak za besplatan Windows čitač ekrana NVDA
-- **Linux** - putem Speech Dispatcher sustava za Orca čitač ekrana, te kao naredbeni program
-- **Android** - kao ugrađen sintetizator govora za Android uređaje
-
-### 1.4 Mogućnosti
-
-Laprdus nudi sljedeće mogućnosti:
-
-- Govor na hrvatskom, srpskom i bosanskom jeziku (podržano latinično i ćirilično pismo)
-- Osamnaest glasova (dva osnovna, tri izvedena, tri formantna i deset pjevajućih), od kojih svaki govori sva četiri jezika (hrvatski, srpski, bosanski i slovenski); jezik se bira odvojeno od glasa
-- Podešavanje brzine govora
-- Podešavanje visine glasa
-- Podešavanje glasnoće
-- Prirodna intonacija koja prati interpunkciju
-- Čitanje punih brojeva ili znamenku po znamenku
-- Podešavanje trajanja pauza za različite interpunkcijske znakove
-- Korisničke rječnike za prilagodbu izgovora riječi, fraza, simbola i emodžija
+1. [Introduction](#1-introduction)
+    - [1.1 What is Laprdus?](#11-what-is-laprdus)
+    - [1.2 Who is Laprdus for?](#12-who-is-laprdus-for)
+    - [1.3 Supported platforms](#13-supported-platforms)
+    - [1.4 Features](#14-features)
+2. [Installation](#2-installation)
+    - [2.1 Windows SAPI5](#21-windows-sapi5)
+    - [2.2 NVDA add-on](#22-nvda-add-on)
+    - [2.3 Linux](#23-linux)
+    - [2.4 Android](#24-android)
+3. [Usage](#3-usage)
+    - [3.1 Basic usage](#31-basic-usage)
+    - [3.2 Command line (Linux and Windows)](#32-command-line-linux-and-windows)
+    - [3.3 NVDA settings](#33-nvda-settings)
+    - [3.4 Android app](#34-android-app)
+4. [Settings](#4-settings)
+    - [4.1 Speech rate](#41-speech-rate)
+    - [4.2 Pitch](#42-pitch)
+    - [4.3 Volume](#43-volume)
+    - [4.4 Pauses](#44-pauses)
+    - [4.5 How numbers are read](#45-how-numbers-are-read)
+    - [4.6 Inflection](#46-inflection)
+    - [4.7 Spelling](#47-spelling)
+    - [4.8 Laprdus Configurator (Windows)](#48-laprdus-configurator-windows)
+5. [Dictionaries](#5-dictionaries)
+    - [5.1 Types of dictionaries](#51-types-of-dictionaries)
+    - [5.2 Dictionary file locations](#52-dictionary-file-locations)
+    - [5.3 Main dictionary (user.json)](#53-main-dictionary-userjson)
+    - [5.4 Spelling dictionary (spelling.json)](#54-spelling-dictionary-spellingjson)
+    - [5.5 Emoji dictionary (emoji.json)](#55-emoji-dictionary-emojijson)
+    - [5.6 Editing dictionaries on Windows](#56-editing-dictionaries-on-windows-laprdus-configurator)
+    - [5.7 Editing dictionaries on Android](#57-editing-dictionaries-on-android)
+    - [5.8 Editing JSON files by hand](#58-editing-json-files-by-hand-advanced)
+    - [5.9 Practical examples](#59-practical-examples)
+    - [5.10 Troubleshooting dictionaries](#510-troubleshooting-dictionaries)
+    - [5.11 Accent dictionary (accents.json)](#511-accent-dictionary-accentsjson)
+6. [Voices](#6-voices)
+    - [6.1 Available voices](#61-available-voices)
+    - [6.2 Base and derived voices](#62-base-and-derived-voices)
+    - [6.3 Choosing a voice](#63-choosing-a-voice)
+7. [Troubleshooting](#7-troubleshooting)
+    - [7.1 Common problems](#71-common-problems)
+    - [7.2 Diagnostic logs](#72-diagnostic-logs)
+    - [7.3 Contact and support](#73-contact-and-support)
 
 ---
 
-## 2. Instalacija
+## 1. Introduction
+
+### 1.1 What is Laprdus?
+
+Laprdus is a text-to-speech (TTS) synthesizer for Croatian, Serbian, Bosnian and Slovenian. Its original voices use concatenative synthesis, joining prerecorded phoneme units to produce speech, while its formant voices compute speech entirely by rule, with no recordings. Every voice speaks all four languages. Although it doesn't reach the quality of modern neural TTS systems, Laprdus offers high performance and minimal memory use.
+
+Laprdus was developed to give screen reader users simple, fast access to computers and mobile devices in their native language, free of charge.
+
+Laprdus started as my personal hobby project and is also meant to be experimental, which lets me see how far I can take it.
+
+### 1.2 Who is Laprdus for?
+
+Laprdus isn't for everyone. It's a good choice if you enjoy the nostalgic sound of the retro speech synthesizers of the 1980s and 1990s.
+
+It may not suit you if you're used to the high voice quality of modern synthesizers that use artificial intelligence and neural networks. However, Laprdus could be ideal if performance and minimal resource use matter more to you than voice quality.
+
+In short: modern synthesizers offer quality at the cost of resources; Laprdus offers performance at the cost of quality.
+
+### 1.3 Supported platforms
+
+Laprdus is available on the following platforms:
+
+- **Windows 7 to Windows 11** - through the Microsoft SAPI5 standard, so you can use Laprdus in any program that supports Windows speech, including screen readers such as Narrator, NVDA and JAWS
+- **Direct integration with the NVDA screen reader** - also available as a separate add-on for NVDA, the free Windows screen reader
+- **Linux** - through Speech Dispatcher for the Orca screen reader, and as a command-line program
+- **Android** - as a built-in speech synthesizer for Android devices
+
+### 1.4 Features
+
+Laprdus offers the following features:
+
+- Speech in Croatian, Serbian, Bosnian and Slovenian (Latin and Cyrillic scripts are supported)
+- Eighteen voices (two base, three derived, three formant and ten singing), each of which speaks all four languages (Croatian, Serbian, Bosnian and Slovenian); you choose the language separately from the voice
+- Adjustable speech rate
+- Adjustable pitch
+- Adjustable volume
+- Natural intonation that follows punctuation
+- Numbers read in full or digit by digit
+- Adjustable pause length for different punctuation marks
+- User dictionaries for customizing the pronunciation of words, phrases, symbols and emoji
+
+---
+
+## 2. Installation
 
 ### 2.1 Windows SAPI5
 
-Da biste instalirali Laprdus na Windows sustavu, slijedite ove korake:
+To install Laprdus on Windows, follow these steps:
 
-#### Korak 1: Preuzimanje
+#### Step 1: Download
 
-1. Posjetite službenu stranicu Laprdusa: https://hrvojekatic.com/laprdus
-2. Pronađite odjeljak za preuzimanje i kliknite na poveznicu za Windows SAPI5
-3. Preuzmite instalacijski program (datoteka s nazivom `Laprdus_SAPI5_Setup.exe`)
-4. Datoteka će se spremiti u vašu mapu Preuzimanja (Downloads)
+1. Go to the official Laprdus website: https://hrvojekatic.com/laprdus
+2. Find the download section and click the link for Windows SAPI5
+3. Download the installer (the file named `Laprdus_SAPI5_Setup.exe`)
+4. The file is saved in your Downloads folder
 
-#### Korak 2: Pokretanje instalacije
+#### Step 2: Run the installer
 
-1. Otvorite Windows Explorer (tipka Windows+E)
-2. Strelicom dolje pronađite mapu Preuzimanja i otvorite ju tipkom Enter
-3. Pronađite preuzeti instalacijski program Laprdusa (datoteka s nazivom `Laprdus_SAPI5_Setup.exe`)
-4. **Preporučeno:** Aplikacijska tipka ili Shift+F10 na datoteku, zatim odaberite "Pokreni kao administrator"
-   - Alternativno: Pritisnite Enter za normalno pokretanje
-5. Ako se pojavi prozor Kontrole korisničkog računa (UAC), odaberite "Da"
+1. Open File Explorer (Windows+E)
+2. Use the Down Arrow key to find the Downloads folder and press Enter to open it
+3. Find the Laprdus installer you downloaded (the file named `Laprdus_SAPI5_Setup.exe`)
+4. **Recommended:** Press the Applications key or Shift+F10 on the file, then select "Run as administrator"
+    - Alternatively: Press Enter to run it normally
+5. If a User Account Control (UAC) window appears, select "Yes"
 
-#### Korak 3: Proces instalacije
+#### Step 3: Installation process
 
-1. Odaberite jezik instalacije strelicom dolje i pritisnite Enter
-2. Odaberite lokaciju instalacije (zadano: `C:\Program Files\Laprdus`) i tipkom Tab odaberite "Sljedeće" pa zatim Enter
-3. Označite razmaknicom ako želite da vam se na radnoj površini kreira ikona za Laprdus konfigurator, a zatim tipkom Tab pronađite "Sljedeće" i pritisnite Enter.
-4. Tipkom Tab pronađite "Instaliraj", pritisnite Enter i pričekajte završetak instalacije
-5. Na kraju instalacije, pritisnite Enter na "Završi" za zatvaranje instalacijskog programa
+1. Use the Down Arrow key to select the setup language and press Enter
+2. Choose the installation location (default: `C:\Program Files\Laprdus`), then press Tab to select "Next" and press Enter
+3. If you want a desktop icon for the Laprdus Configurator, press Spacebar to select "Create desktop shortcut". Then press Tab to find "Next" and press Enter.
+4. Press Tab to find "Install", press Enter and wait for the installation to finish
+5. When the installation is complete, press Enter on "Finish" to close the installer
 
-#### Korak 4: Provjera instalacije
+#### Step 4: Verify the installation
 
-1. Otvorite Upravljačku ploču (Control Panel):
-   - Pritisnite tipku Windows
-   - Upišite "Upravljačka ploča" i pritisnite Enter
-2. Odaberite "Olakšani pristup" > "Prepoznavanje govora"
-3. Tipkom Tab pronađite "Tekst u govor" i pritisnite Enter
-4. U padajućem izborniku "Odabir glasa" trebali biste vidjeti četiri Laprdus glasa:
-   - Laprdus Croatian (hrvatski)
-   - Laprdus Serbian (srpski)
-   - Laprdus Bosnian (bosanski)
-   - Laprdus Slovenian (slovenski)
+1. Open Control Panel:
+    - Press the Windows key
+    - Type "Control Panel" and press Enter
+2. Select "Ease of Access" > "Speech Recognition"
+3. Press Tab to find "Text to Speech" and press Enter
+4. In the "Voice selection" drop-down list, you should see four Laprdus voices:
+    - Laprdus Croatian (Croatian)
+    - Laprdus Serbian (Serbian)
+    - Laprdus Bosnian (Bosnian)
+    - Laprdus Slovenian (Slovenian)
 
-   SAPI5 glas bira samo jezik. Sva četiri govore glasom koji odaberete u Laprdus Konfiguratoru (Zvonko dok ga ne promijenite): Josipom, Vladom, Detencetom, Babom, Đedom, Zvonkom, Stojanom, Mirsadom ili jednim od deset pjevajućih glasova (vidi [6.1](#61-dostupni-glasovi)). Instalacijski program pri instalaciji, nadogradnji i popravku uklanja glasove koje su registrirale prijašnje inačice (po jedan za svaki Laprdusov glas).
+    The SAPI5 voice chooses only the language. All four speak with the voice you choose in the Laprdus Configurator (Zvonko until you change it): Josip, Vlado, Detence, Baba, Đedo, Zvonko, Stojan, Mirsad or one of the ten singing voices (see [6.1](#61-available-voices)). During installation, upgrade and repair, the installer removes the voices registered by earlier versions (one for each Laprdus voice).
 
-### 2.2 NVDA dodatak
+### 2.2 NVDA add-on
 
-Za korištenje Laprdusa s NVDA čitačem ekrana:
+To use Laprdus with the NVDA screen reader:
 
-#### Korak 1: Preuzimanje
+#### Step 1: Download
 
-1. Posjetite službenu stranicu Laprdusa: https://hrvojekatic.com/laprdus
-2. Pronađite odjeljak za preuzimanje i kliknite na poveznicu za NVDA dodatak
-3. Preuzmite NVDA dodatak (datoteka s nastavkom `.nvda-addon`)
-4. Datoteka će se spremiti u vašu mapu Preuzimanja
+1. Go to the official Laprdus website: https://hrvojekatic.com/laprdus
+2. Find the download section and click the link for the NVDA add-on
+3. Download the NVDA add-on (the file with the `.nvda-addon` extension)
+4. The file is saved in your Downloads folder
 
-#### Korak 2: Instalacija dodatka
+#### Step 2: Install the add-on
 
-1. Otvorite Windows Explorer (tipka Windows+E)
-2. Pronađite mapu Preuzimanja
-3. Pronađite preuzetu datoteku Laprdus NVDA dodatka (datoteka s nastavkom `.nvda-addon`)
-4. Pritisnite Enter na datoteci
-   - **Alternativno:** Pritisnite aplikacijsku tipku (ili Shift+F10) za kontekstni izbornik, zatim odaberite "Otvori"
-5. NVDA će prikazati dijalog s pitanjem "Želite li instalirati ovaj dodatak?"
-6. Tipkom Tab pronađite gumb "Da" i pritisnite Enter, ili jednostavno pritisnite D za DA
-7. Pričekajte završetak instalacije
+1. Open File Explorer (Windows+E)
+2. Find the Downloads folder
+3. Find the Laprdus NVDA add-on file you downloaded (the file with the `.nvda-addon` extension)
+4. Press Enter on the file
+    - **Alternatively:** Press the Applications key (or Shift+F10) to open the context menu, then select "Open"
+5. NVDA shows a dialog that asks "Are you sure you want to install this add-on?"
+6. Press Tab to find the "Yes" button and press Enter, or just press Y for Yes
+7. Wait for the installation to finish
 
-#### Korak 3: Ponovno pokretanje NVDA
+#### Step 3: Restart NVDA
 
-1. NVDA će zatražiti ponovno pokretanje
-2. Odaberite "Da" za trenutačno ponovno pokretanje
-3. Pričekajte da se NVDA ponovno pokrene
+1. NVDA asks you to restart it
+2. Select "Yes" to restart right away
+3. Wait for NVDA to restart
 
-#### Korak 4: Odabir Laprdusa kao sintetizatora
+#### Step 4: Select Laprdus as the synthesizer
 
-**Metoda 1: Putem NVDA izbornika**
+**Method 1: From the NVDA menu**
 
-1. Otvorite NVDA izbornik: pritisnite NVDA tipku + N (Napomena: NVDA tipka na vašem sustavu može biti Insert ili Caps Lock, zavisno o tome kako ste ju konfigurirali. Ako je NVDA tipka postavljena na Insert, možete pritisnuti Insert + N.)
-2. Strelicom dolje pronađite "Opcije" i pritisnite Enter
-3. Strelicom dolje pronađite "Postavke" i pritisnite Enter
-4. U dijaloškom okviru Postavke, strelicom dolje pronađite kategoriju "Govor"
-5. Tipkom Tab pronađite gumb "Promijeni..." koji se nalazi odmah pored opcije "Govorna jedinica"
-6. Pritisnite Enter na gumbu "Promijeni..."
-7. U popisu sintetizatora strelicom dolje pronađite "Laprdus" i pritisnite Enter
-8. Pritisnite Escape za zatvaranje postavki
+1. Open the NVDA menu: press NVDA+N (Note: The NVDA key on your system can be Insert or Caps Lock, depending on how you configured it. If the NVDA key is set to Insert, you can press Insert+N.)
+2. Use the Down Arrow key to find "Preferences" and press Enter
+3. Use the Down Arrow key to find "Settings..." and press Enter
+4. In the NVDA Settings dialog, use the Down Arrow key to find the "Speech" category
+5. Press Tab to find the "Change..." button, right next to the "Synthesizer" option
+6. Press Enter on the "Change..." button
+7. In the list of synthesizers, use the Down Arrow key to find "Laprdus" and press Enter
+8. Press Escape to close the settings
 
-**Metoda 2: Brza prečica (preporučeno)**
+**Method 2: Quick shortcut (recommended)**
 
-1. Pritisnite prečicu Control + NVDA tipka + S (Napomena: NVDA tipka na vašem sustavu može biti Insert ili Caps Lock, zavisno o tome kako ste ju konfigurirali. Ako je NVDA tipka postavljena na Insert, možete pritisnuti Control + Insert + S.)
-2. Otvorit će se dijalog za odabir sintetizatora
-3. Strelicom dolje pronađite "Laprdus" i pritisnite Enter
+1. Press Ctrl+NVDA+S (Note: The NVDA key on your system can be Insert or Caps Lock, depending on how you configured it. If the NVDA key is set to Insert, you can press Ctrl+Insert+S.)
+2. The Select Synthesizer dialog opens
+3. Use the Down Arrow key to find "Laprdus" and press Enter
 
 ### 2.3 Linux
 
-#### Debian i Ubuntu
+#### Debian and Ubuntu
 
-Otvorite terminal i pokrenite sljedeću naredbu (zamijenite naziv datoteke s nazivom preuzete .deb datoteke):
+Open a terminal and run the following command (replace the file name with the name of the .deb file you downloaded):
 
 ```bash
 sudo dpkg -i laprdus_amd64.deb
@@ -200,7 +200,7 @@ sudo dpkg -i laprdus_amd64.deb
 
 #### Fedora
 
-Pokrenite sljedeću naredbu (zamijenite naziv datoteke s nazivom preuzete .rpm datoteke):
+Run the following command (replace the file name with the name of the .rpm file you downloaded):
 
 ```bash
 sudo rpm -i laprdus.x86_64.rpm
@@ -208,404 +208,402 @@ sudo rpm -i laprdus.x86_64.rpm
 
 #### Arch Linux
 
-1. Preuzmite PKGBUILD datoteku s web stranice
-2. U terminalu se pozicionirajte u direktorij s PKGBUILD datotekom
-3. Pokrenite:
+1. Download the PKGBUILD file from the website
+2. In a terminal, go to the folder that contains the PKGBUILD file
+3. Run:
 
 ```bash
 makepkg -si
 ```
 
-#### Ručna instalacija (iz tarball arhive)
+#### Manual installation (from a tarball)
 
-1. Raspakirajte arhivu (zamijenite naziv datoteke s nazivom preuzete arhive):
-   ```bash
-   tar xf laprdus-linux-x86_64.tar.xz
-   cd laprdus-linux-x86_64
-   ```
+1. Extract the archive (replace the file name with the name of the archive you downloaded):
 
-2. Pokrenite instalacijski skript:
-   ```bash
-   sudo ./install.sh
-   ```
+        tar xf laprdus-linux-x86_64.tar.xz
+        cd laprdus-linux-x86_64
 
-#### Konfiguracija za Orca čitač ekrana
+2. Run the installation script:
 
-Nakon instalacije, Laprdus se automatski konfigurira za Speech Dispatcher. Za korištenje s Orca čitačem ekrana:
+        sudo ./install.sh
 
-1. Za svaki slučaj, preporuča se da ponovno pokrenete Speech Dispatcher:
-   ```bash
-   systemctl --user restart speech-dispatcher
-   ```
+#### Configuring the Orca screen reader
 
-2. Otvorite Orca postavke:
-   - Pritisnite Insert+Razmaknica za otvaranje postavki (ili Caps Lock + Razmaknica ukoliko je Orca modifikator namješten na Caps Lock ili Laptop layout)
-   - Ili u Gnome ili Mate desktop okruženju: Alt+F2, upišite orca -s pa zatim Enter
+After installation, Laprdus is configured for Speech Dispatcher automatically. To use it with the Orca screen reader:
 
-3. Tipkom Tab ili Shift + Tab pozicionirajte se na kartice postavki, strelicom desno pronađite karticu "Voice" (Glas), a zatim ponavljanjem pritiska na tipku Tab odaberite:
-   - Speech system: Pritisnite Razmaknicu za proširenje padajućeg izbornika, Strelicom dolje odaberite Speech Dispatcher ukoliko već nije tako namješteno i pritisnite Enter
-   - Speech synthesizer: Pritisnite Razmaknicu za proširenje padajućeg izbornika, Strelicom dolje odaberite Laprdus pa zatim Enter
-   - Voice: Pritisnite Razmaknicu za proširenje padajućeg izbornika, Strelicom dolje odaberite željeni glas (Zvonko, Josip, Vlado itd.; svaki je glas naveden za hrvatski, srpski, bosanski i slovenski, a jezik koji Orca traži određuje kojim će jezikom govoriti) i pritisnite Enter
+1. To be safe, we recommend that you restart Speech Dispatcher:
 
-4. Tipkom Tab pronađite "Apply" (Primijeni) i zatvorite postavke
+        systemctl --user restart speech-dispatcher
+
+2. Open the Orca settings:
+    - Press Insert+Spacebar to open the settings (or Caps Lock+Spacebar if the Orca modifier is set to Caps Lock or Laptop layout)
+    - Or, on the Gnome or Mate desktop: press Alt+F2, type orca -s and press Enter
+
+3. Use Tab or Shift+Tab to move to the settings tabs, use the Right Arrow key to find the "Voice" tab, then press Tab repeatedly to select:
+    - Speech system: Press Spacebar to expand the drop-down list, use the Down Arrow key to select Speech Dispatcher if it isn't already set, and press Enter
+    - Speech synthesizer: Press Spacebar to expand the drop-down list, use the Down Arrow key to select Laprdus, and press Enter
+    - Voice: Press Spacebar to expand the drop-down list, use the Down Arrow key to select the voice you want (Zvonko, Josip, Vlado and so on; each voice is listed for Croatian, Serbian, Bosnian and Slovenian, and the language Orca requests determines which language it speaks), and press Enter
+
+4. Press Tab to find "Apply" and close the settings
 
 ### 2.4 Android
 
-#### Korak 1: Preuzimanje APK datoteke
+#### Step 1: Download the APK file
 
-1. Na svom Android uređaju otvorite web preglednik
-2. Posjetite: https://hrvojekatic.com/laprdus
-3. Preuzmite APK datoteku (datoteka s nastavkom `.apk`)
+1. On your Android device, open a web browser
+2. Go to: https://hrvojekatic.com/laprdus
+3. Download the APK file (the file with the `.apk` extension)
 
-#### Korak 2: Omogućavanje instalacije iz nepoznatih izvora
+#### Step 2: Allow installation from unknown sources
 
-Ovo je potrebno samo ako instalirate aplikaciju izvan Google Play trgovine.
+You need this only if you install the app from outside the Google Play Store.
 
-**Za Android 8.0 i novije verzije:**
+**For Android 8.0 and later:**
 
-1. Otvorite Postavke na svom uređaju
-2. Idite na: Aplikacije > Posebni pristup aplikacijama > Instaliranje nepoznatih aplikacija
-   - Ili: Postavke > Sigurnost > Instaliraj nepoznate aplikacije
-3. Pronađite web preglednik koji koristite (npr. Chrome)
-4. Uključite opciju "Dopusti iz ovog izvora"
+1. Open Settings on your device
+2. Go to: Apps > Special app access > Install unknown apps
+    - Or: Settings > Security > Install unknown apps
+3. Find the web browser you use (for example, Chrome)
+4. Turn on "Allow from this source"
 
-**Za starije verzije Androida:**
+**For older versions of Android:**
 
-1. Otvorite Postavke
-2. Idite na: Sigurnost
-3. Uključite opciju "Nepoznati izvori"
+1. Open Settings
+2. Go to: Security
+3. Turn on "Unknown sources"
 
-#### Korak 3: Instalacija aplikacije
+#### Step 3: Install the app
 
-1. Otvorite upravitelj datoteka na svom uređaju
-2. Pronađite preuzetu APK datoteku (obično u mapi "Download" ili "Preuzimanja")
-3. Dodirnite APK datoteku
-4. Kada se pojavi upit, dodirnite "Instaliraj"
-5. Pričekajte završetak instalacije
-6. Dodirnite "Otvori" za pokretanje aplikacije ili "Gotovo" za zatvaranje
+1. Open a file manager on your device
+2. Find the APK file you downloaded (usually in the "Download" or "Downloads" folder)
+3. Tap the APK file
+4. When prompted, tap "Install"
+5. Wait for the installation to finish
+6. Tap "Open" to start the app or "Done" to close the installer
 
-#### Korak 4: Postavljanje Laprdusa kao zadanog TTS-a
+#### Step 4: Set Laprdus as the default TTS engine
 
-1. Otvorite Postavke na svom uređaju
-2. Idite na: Pristupačnost > Tekst u govor (Text-to-speech)
-   - Na nekim uređajima: Postavke > Sustav > Jezik i unos > Tekst u govor
-   - Na Samsung uređajima: Postavke > Opće upravljanje > Jezik i unos > Tekst u govor
-3. Dodirnite "Preferirani mehanizam" ili ikonu zupčanika
-4. Odaberite "Laprdus TTS" iz popisa
-5. Vratite se na prethodni zaslon i dodirnite "Slušaj primjer" za testiranje
+1. Open Settings on your device
+2. Go to: Accessibility > Text-to-speech output
+    - On some devices: Settings > System > Languages & input > Text-to-speech output
+    - On Samsung devices: Settings > General management > Language and input > Text-to-speech
+3. Tap "Preferred engine" or the gear icon
+4. Select "Laprdus TTS" from the list
+5. Go back to the previous screen and tap "Listen to an example" to test it
 
-#### Napomena za korisnike TalkBack čitača ekrana
+#### Note for TalkBack users
 
-Ako koristite TalkBack, sva sučelja Laprdus aplikacije su potpuno pristupačna:
+If you use TalkBack, all the screens of the Laprdus app are fully accessible:
 
-- Koristite standardne TalkBack geste za navigaciju
-- Dvostruki dodir za aktivaciju gumba i opcija
-- Povlačenje s dva prsta za pomicanje kroz popise
+- Use the standard TalkBack gestures to navigate
+- Double-tap to activate buttons and options
+- Swipe with two fingers to scroll through lists
 
 ---
 
-## 3. Uporaba
+## 3. Usage
 
-### 3.1 Osnovna uporaba
+### 3.1 Basic usage
 
-Nakon instalacije, Laprdus je automatski dostupan svim programima koji koriste govornu sintezu na vašem sustavu. To uključuje:
+After installation, Laprdus is automatically available to every program on your system that uses speech synthesis. This includes:
 
-- Čitače ekrana (NVDA, Orca, Narrator)
-- Web preglednike s mogućnošću čitanja
-- Programe za čitanje dokumenata
-- Bilo koji program koji koristi Windows SAPI5 ili Android TTS
+- Screen readers (NVDA, Orca, Narrator)
+- Web browsers that can read pages aloud
+- Programs that read documents
+- Any program that uses Windows SAPI5 or Android TTS
 
-### 3.2 Naredbena linija (Linux i Windows)
+### 3.2 Command line (Linux and Windows)
 
-Laprdus uključuje naredbeni program koji možete koristiti za pretvaranje teksta u govor direktno iz terminala.
+Laprdus includes a command-line program you can use to convert text to speech directly from a terminal.
 
-#### Osnovni primjeri
+#### Basic examples
 
 ```bash
-# Izgovor teksta
+# Speak text
 laprdus "Dobar dan!"
 
-# Korištenje drugog glasa (bez -L glas govori svoj izvorni jezik, Vlado srpski)
+# Use another voice (without -L a voice speaks its native language, Vlado speaks Serbian)
 laprdus -v vlado "Zdravo svete!"
 
-# Svaki glas na svakom jeziku: Zvonko govori srpski, Vlado hrvatski
+# Any voice in any language: Zvonko speaks Serbian, Vlado speaks Croatian
 laprdus -L sr "Zdravo svete!"
 laprdus -v vlado -L hr "Dobar dan svima!"
 
-# Podešavanje brzine govora
+# Adjust the speech rate
 laprdus -r 1.5 "Brži govor"
 
-# Spremanje u WAV datoteku
+# Save to a WAV file
 laprdus -o govor.wav "Tekst za snimanje"
 
-# Čitanje iz datoteke
+# Read from a file
 laprdus -i dokument.txt
 
-# Čitanje iz standardnog ulaza
+# Read from standard input
 echo "Tekst" | laprdus
 ```
 
-#### Opcije naredbenog programa
+#### Command-line options
 
-| Opcija | Opis |
+| Option | Description |
 |--------|------|
-| `-v, --voice` | Odabir glasa (zvonko (zadano), stojan, mirsad, josip, vlado, detence, baba, djedo ili pjevajući glas: orguljas, dalmacija_klapa, trubac, harmonikas, sevdalija, sazlija, lika_velebit, solunac, sarajevo_bembasa, becarac) |
-| `-L, --language` | Jezik: `hr`, `sr`, `bs` ili `sl`. Svaki glas govori svaki jezik; bez ove opcije glas govori svoj izvorni jezik |
-| `-r, --speech-rate` | Brzina govora (0.5-2.0, zadano: 1.0; formantni glasovi 0.25-4.0) |
-| `-p, --speech-pitch` | Visina glasa (0.5-2.0, zadano: 1.0; formantni glasovi 0.25-4.0) |
-| `-I, --inflection` | Razina infleksije, 0-100 (zadano: 50; 0 je monotono) |
-| `-a, --acceleration` | Ubrzanje, množitelj brzine 0.5-3.0 (zadano: 1.0) |
-| `-V, --speech-volume` | Glasnoća (0.0-1.0, zadano: 1.0) |
-| `-B, --volume-boost` | Pojačanje glasnoće: glasniji govor kroz ograničivač vrhova, za bučna mjesta |
-| `-d, --numbers-digits` | Čitaj brojeve znamenka po znamenka |
-| `-s, --spell` | Slovkaj tekst znak po znak |
-| `-S, --spelling-speed` | Brzina slovkanja, 0-100; niže vrijednosti produljuju pauze (zadano: 50) |
-| `-m, --spelling-mode` | Slovkanje: `sounds` (glasovi slova: b, c, d; zadano) ili `names` (nazivi slova: be, ce, de) |
-| `-c, --comma-pauses` | Trajanje pauze za zarez u ms (zadano: 100) |
-| `-e, --period-pauses` | Trajanje pauze za točku u ms (zadano: 80) |
-| `-x, --exclamationmark-pauses` | Trajanje pauze za uskličnik u ms (zadano: 70) |
-| `-q, --questionmark-pauses` | Trajanje pauze za upitnik u ms (zadano: 60) |
-| `-n, --newline-pauses` | Trajanje pauze za novi red u ms (zadano: 100) |
-| `-D, --data-dir` | Direktorij s glasovnim podacima |
-| `-o, --output-file` | Spremi govor u WAV datoteku |
-| `-i, --input-file` | Učitaj tekst iz datoteke |
-| `-l, --list-voices` | Prikaži popis dostupnih glasova s njihovim izvornim jezikom |
-| `-w, --verbose` | Opširniji ispis (za dijagnostiku) |
-| `-h, --help` | Prikaži pomoć |
+| `-v, --voice` | Select a voice (zvonko (default), stojan, mirsad, josip, vlado, detence, baba, djedo or a singing voice: orguljas, dalmacija_klapa, trubac, harmonikas, sevdalija, sazlija, lika_velebit, solunac, sarajevo_bembasa, becarac) |
+| `-L, --language` | Language: `hr`, `sr`, `bs` or `sl`. Every voice speaks every language; without this option, a voice speaks its native language |
+| `-r, --speech-rate` | Speech rate (0.5-2.0, default: 1.0; formant voices 0.25-4.0) |
+| `-p, --speech-pitch` | Pitch (0.5-2.0, default: 1.0; formant voices 0.25-4.0) |
+| `-I, --inflection` | Inflection level, 0-100 (default: 50; 0 is a monotone) |
+| `-a, --acceleration` | Acceleration, a speech rate multiplier 0.5-3.0 (default: 1.0) |
+| `-V, --speech-volume` | Volume (0.0-1.0, default: 1.0) |
+| `-B, --volume-boost` | Volume boost: louder speech through a peak limiter, for noisy places |
+| `-d, --numbers-digits` | Read numbers digit by digit |
+| `-s, --spell` | Spell the text character by character |
+| `-S, --spelling-speed` | Spelling speed, 0-100; lower values make the pauses longer (default: 50) |
+| `-m, --spelling-mode` | Spelling: `sounds` (letter sounds: b, c, d; default) or `names` (letter names: be, ce, de) |
+| `-c, --comma-pauses` | Comma pause length in ms (default: 100) |
+| `-e, --period-pauses` | Period pause length in ms (default: 80) |
+| `-x, --exclamationmark-pauses` | Exclamation mark pause length in ms (default: 70) |
+| `-q, --questionmark-pauses` | Question mark pause length in ms (default: 60) |
+| `-n, --newline-pauses` | Newline pause length in ms (default: 100) |
+| `-D, --data-dir` | Voice data folder |
+| `-o, --output-file` | Save the speech to a WAV file |
+| `-i, --input-file` | Load text from a file |
+| `-l, --list-voices` | List the available voices with their native language |
+| `-w, --verbose` | Verbose output (for diagnostics) |
+| `-h, --help` | Show help |
 
-### 3.3 NVDA postavke
+### 3.3 NVDA settings
 
-Kada koristite Laprdus s NVDA čitačem ekrana, postavke glasa možete promijeniti na sljedeći način:
+When you use Laprdus with the NVDA screen reader, you can change the voice settings as follows:
 
-1. Otvorite NVDA izbornik (NVDA tipka + N)
-2. Odaberite Opcije podizbornik pa zatim Postavke > kategorija Govor
-3. U dijalogu možete podesiti:
-   - Jezik (hrvatski, srpski, bosanski ili slovenski)
-   - Glas (popis sadrži svih 18 Laprdus glasova, pod imenima iz [6.1](#61-dostupni-glasovi); zadani je Zvonko)
-   - Brzinu govora
-   - Visinu glasa
-   - Infleksiju (razinu rečenične melodije, vidi [4.6](#46-infleksija))
-   - Glasnoću
-   - Dodatnu brzinu ili Rate Boost (svaki položaj klizača brzine čini tri puta bržim)
+1. Open the NVDA menu (NVDA+N)
+2. Select the Preferences submenu, then Settings > the Speech category
+3. In the dialog, you can adjust:
+    - Language (Croatian, Serbian, Bosnian or Slovenian)
+    - Voice (the list contains all 18 Laprdus voices, under the names in [6.1](#61-available-voices); the default is Zvonko)
+    - Rate
+    - Pitch
+    - Inflection (the level of the sentence melody, see [4.6](#46-inflection))
+    - Volume
+    - Rate boost (makes every position of the rate slider three times faster)
 
-**Jezik je odvojen od glasa.** Svaki Laprdus glas govori sva četiri jezika, pa je popis glasova isti za svaki jezik, a jezik birate u zasebnom padajućem izborniku „Jezik”, kao kod eSpeaka. Jezik određuje pravila izgovora, rječnik naglasaka, nazive slova pri slovkanju i riječi za brojeve (*tisuća*, *milijun* na hrvatskom; *hiljada*, *milion* na srpskom i bosanskom; *tisoč*, *milijon* na slovenskom): Josip tako može govoriti srpski, a Stojan hrvatski ili slovenski. Nova instalacija počinje na jeziku NVDA-a ako je to hrvatski, srpski, bosanski ili slovenski, inače na hrvatskom; jezik koji sami odaberete NVDA pamti kao i ostale postavke. Jezik se nalazi i u prstenu postavki sintetizatora (Control + NVDA tipka + strelice).
+**The language is separate from the voice.** Every Laprdus voice speaks all four languages, so the list of voices is the same for every language, and you choose the language in a separate "Language" drop-down list, as in eSpeak. The language determines the pronunciation rules, the accent dictionary, the letter names when spelling and the words for numbers (*tisuća*, *milijun* in Croatian; *hiljada*, *milion* in Serbian and Bosnian; *tisoč*, *milijon* in Slovenian): this way, Josip can speak Serbian, and Stojan Croatian or Slovenian. A new installation starts in NVDA's language if that's Croatian, Serbian, Bosnian or Slovenian, and otherwise in Croatian; NVDA remembers the language you choose, like its other settings. Language is also in the synth settings ring (Ctrl+NVDA+arrow keys).
 
-**Automatska promjena jezika.** Kad je u NVDA postavkama govora uključena opcija „Automatski mijenjaj jezik”, tekst označen kao hrvatski, srpski, bosanski ili slovenski Laprdus izgovara na tom jeziku, istim glasom; tekst na bilo kojem drugom jeziku izgovara na jeziku koji ste odabrali. Glas se pritom nikad ne mijenja.
+**Automatic language switching.** When "Automatic language switching (when supported)" is turned on in NVDA's speech settings, Laprdus speaks text marked as Croatian, Serbian, Bosnian or Slovenian in that language, with the same voice; it speaks text in any other language in the language you chose. The voice never changes.
 
-### 3.4 Android aplikacija
+### 3.4 Android app
 
-Laprdus Android aplikacija uključuje zaslon s postavkama gdje možete:
+The Laprdus Android app includes a settings screen where you can:
 
-1. Odabrati glas
-2. Odabrati jezik (hrvatski, srpski, bosanski ili slovenski) za govor u samoj aplikaciji; govor koji traže druge aplikacije i TalkBack ide na jeziku koji one zatraže, osim uz uključeno prisilno korištenje jezika
-3. Podesiti brzinu govora
-4. Podesiti visinu glasa
-5. Podesiti glasnoću
-6. Podesiti mogućnost čitanja emodžija
-7. Podesiti način čitanja brojeva
-8. Podesiti trajanje pauza i brzinu slovkanja
-9. Odabrati slovkanje nazivima slova ili glasovima
+1. Choose a voice
+2. Choose the language (Croatian, Serbian, Bosnian or Slovenian) for speech in the app itself; speech requested by other apps and TalkBack uses the language they request, unless "Force language" is on
+3. Adjust the speech rate
+4. Adjust the pitch
+5. Adjust the volume
+6. Turn emoji reading on or off
+7. Set how numbers are read
+8. Adjust the pause lengths and the spelling speed
+9. Choose whether letters are spelled by their names or by their sounds
 
-Za pristup postavkama:
+To open the settings:
 
-1. Otvorite Laprdus aplikaciju iz ladice aplikacija
-2. Pritisnite na gumb "Laprdus postavke"
-3. Promijenite postavke po želji (Promjene se automatski spremaju)
-
----
-
-## 4. Postavke
-
-### 4.1 Brzina govora
-
-Brzina govora određuje koliko brzo Laprdus izgovara tekst. Raspon je od 0.5 (upola sporije) do 2.0 (dvostruko brže), pri čemu je 1.0 normalna brzina.
-
-- **0.5** - Vrlo sporo, korisno za početnike ili kada trebate pažljivo slušati svaku riječ
-- **1.0** - Normalna brzina, prikladna za većinu situacija
-- **1.5** - Umjereno brzo, za iskusne korisnike
-- **2.0** - Brzo, za napredne korisnike
-
-Napomena: U NVDA dodatku, opcija "Dodatna brzina" ili "Rate Boost" svaki položaj klizača brzine čini tri puta bržim, kao kod eSpeaka i OneCorea; Josip, Vlado i glasovi izvedeni iz njih zaustavljaju se na četverostrukoj brzini.
-
-**Brzina u Laprdusu i brzina čitača ekrana.** Brzina iz postavki Laprdusa normalna je brzina glasa, a čitač ekrana ili aplikacija (TalkBack, VoiceOver, NVDA, programi koji koriste SAPI5, Speech Dispatcher) svoju brzinu zadaje u odnosu na nju. Dok čitač ekrana govori svojom normalnom brzinom, Laprdus govori upravo brzinom iz svojih postavki; dvostruko brži čitač ekrana daje dvostruko tu brzinu. Zato govor ubrzavaju i usporavaju i klizač brzine u Laprdusu i klizač u čitaču ekrana. Prekidač „Prisilno koristi Laprdus brzinu” (u Windows Konfiguratoru „Prisili Laprdusovu brzinu govora za sve aplikacije”) zanemaruje brzinu koju traži čitač ekrana ili aplikacija, pa Laprdus govori samo brzinom iz svojih postavki. [Ubrzanje](#46-infleksija) na kraju množi tu brzinu.
-
-### 4.2 Visina glasa
-
-Visina glasa omogućuje podešavanje osnovne frekvencije glasa. Raspon je od 0.5 (niži glas) do 2.0 (viši glas), pri čemu je 1.0 prirodna visina glasa. Kao i brzina (vidi [4.1](#41-brzina-govora)), visina iz postavki Laprdusa normalna je visina glasa koju čitač ekrana podiže ili spušta, osim kad je uključen prekidač „Prisilno koristi Laprdus visinu”.
-
-- **0.5** - Niži glas
-- **1.0** - Prirodna visina
-- **2.0** - Viši glas
-
-Napomena: Podešavanje visine glasa ne utječe na karakter glasa (ne dolazi do "efekta crtića").
-
-### 4.3 Glasnoća
-
-Glasnoća određuje koliko će govor biti glasan. Raspon je od 0.0 (tiho) do 1.0 (maksimalna glasnoća).
-
-- **0.0** - Tiho (nema zvuka)
-- **0.5** - Umjerena glasnoća
-- **1.0** - Maksimalna glasnoća
-
-#### Pojačanje glasnoće
-
-Prekidač **Pojačaj glasnoću govora** u Laprdus Konfiguratoru čini govor glasnijim nego što to dopušta klizač glasnoće na 100 %. Namijenjen je bučnim mjestima (promet, ulica) i slušalici telefona kad je zvučnik isključen: na primjer da čujete koga zovete dok se poziv uspostavlja ili da pronađete tipku za uključenje zvučnika tijekom poziva. Govor se vodi kroz jako pojačanje, ograničivač vrhova i meko odrezivanje najjačih vrhova, kao kod Googleova pojačanja glasnoće govora: tihi dijelovi postaju glasniji za oko 11 dB, glasni za oko 8 dB, a zvuk se ne lomi, iako su najglasniji samoglasnici blago sabijeni. NVDA-ov klizač glasnoće i dalje mijenja pojačani govor. Prekidač je po zadanom isključen i vrijedi za sve glasove.
-
-### 4.4 Pauze
-
-Laprdus automatski ubacuje pauze nakon interpunkcijskih znakova kako bi govor zvučao prirodnije. Možete podesiti trajanje pauza za:
-
-- **Točka** - Pauza nakon točke (zadano: 100 ms u korisničkim postavkama, 80 ms u naredbenom programu)
-- **Uskličnik** - Pauza nakon uskličnika (zadano: 100 ms u korisničkim postavkama, 70 ms u naredbenom programu)
-- **Upitnik** - Pauza nakon upitnika (zadano: 100 ms u korisničkim postavkama, 60 ms u naredbenom programu)
-- **Zarez** - Kratka pauza unutar rečenice (zadano: 100 ms)
-- **Novi red** - Pauza za prijelom retka (zadano: 100 ms)
-
-Vrijednosti se izražavaju u milisekundama (ms). Raspon je od 0 do 2000 ms.
-
-**Napomena:** Korisnički konfigurator (Windows/Android) koristi jedinstveno podešavanje od 100 ms za sve znakove kraja rečenice (točka, uskličnik, upitnik), dok naredbeni program omogućuje zasebno podešavanje svakog znaka.
-
-U istom odjeljku postavki nalazi se i **brzina slovkanja** (0–100%, zadano 50%): niža vrijednost produljuje pauzu nakon svakog slovkanog ili tipkanog znaka, a sam se znak uvijek izgovara uobičajenom brzinom govora. Na 100% nema dodatne pauze; na 50% dodaje se oko 41% trajanja izgovora znaka, na 20% oko 74%, a na 0% cijelo trajanje. Ta se tišina pribraja osnovnoj pauzi slovkanja (zadano 200 ms, `pauses.spelling` u `settings.json`). Pauza slijedi i nakon posljednjeg znaka, pa je razmak jednak šalje li čitač ekrana cijelu riječ ili znak po znak.
-
-U NVDA-u ima prednost NVDA-ova opcija „Odgođeni opis znakova poslije pomicanja kursora” (postavke govora): kad je uključena, NVDA nakon slova na koje ste se pomaknuli čeka jednu sekundu i zatim izgovara njegov opis (npr. „Alan” za A). Laprdus tada pauzu brzine slovkanja nakon tog slova ne dodaje, pa opis dolazi točno nakon NVDA-ove sekunde, bez obzira na brzinu slovkanja. Slovkanje riječi i tipkanje zadržavaju ritam brzine slovkanja.
-
-### 4.5 Način čitanja brojeva
-
-Laprdus može čitati brojeve na dva načina:
-
-1. **Riječima** (zadano) - Brojevi se čitaju kao pune riječi
-   - Primjer: "123" se čita kao "sto dvadeset tri"
-
-2. **Znamenkama** - Brojevi se čitaju znamenka po znamenka
-   - Primjer: "123" se čita kao "jedan dva tri"
-
-Način čitanja riječima podržava brojeve do centiljuna (10^303) i koristi ispravne hrvatske gramatičke oblike.
-
-### 4.6 Infleksija
-
-Infleksija je prirodna promjena visine glasa koja prati interpunkciju:
-
-- Točka na kraju rečenice uzrokuje pad visine glasa
-- Upitnik uzrokuje porast visine glasa na kraju
-- Uskličnik daje naglasak
-- Zarez uzrokuje blagi porast visine glasa
-
-Veličinu infleksije određuje klizač, a prekidača za uključivanje i isključivanje iz inačice 1.0 više nema: monoton govor dobiva se klizačem na 0%. Za sve glasove vrijede dvije postavke:
-
-- **Razina infleksije** (0-100%) određuje veličinu svih pomaka visine: 0% je monoton govor, 50% prirodna melodija, 100% udvostručuje svaki pomak.
-- **Ubrzanje** (0,5-3) množi brzinu govora, pa klizač brzine u čitaču ekrana ili sustavu dosegne veću (ili manju) najveću brzinu. Josip, Vlado i glasovi izvedeni iz njih zaustavljaju se na četverostrukoj brzini; Zvonko, Stojan i Mirsad idu do osmerostruke.
-
-U NVDA-u razinu infleksije određuje NVDA-ov klizač Infleksija u postavkama glasa: 50 je prirodna melodija, 0 monoton govor, a na 100 svaki je pomak dvostruk. Infleksija iz Konfiguratora tada se ne koristi. Ubrzanje se u NVDA-u ne koristi; veće brzine dosežu se NVDA-ovim pojačanjem brzine (Rate boost).
-
-### 4.7 Slovkanje
-
-Kad čitač ekrana slovka tekst ili izgovara znakove dok tipkate, Laprdus svako slovo čita na jedan od dva načina:
-
-- **Nazivima slova**: *a, be, ce, če, će, de, dže, đe, e, ef, ge, ha, i, je, ka, el, elj, em, en, enj, o, pe, er, es, eš, te, u, ve, ze, že*; strana slova *ku, duplo ve, iks, ipsilon*. To su nazivi iz hrvatskog pravopisa, a vrijede i na bosanskom. Na srpskom svaki glas slijedi odluku Odbora za standardizaciju srpskog jezika: *lje, nje* i *ša* umjesto *elj, enj* i *eš*, ostala slova jednako, ćirilična kao i latinična (*Љ* je *lje*, *Ш* je *ša*). Nazive određuje odabrani jezik, ne glas: Josip na srpskom kaže *lje*, Stojan na hrvatskom *elj*.
-- **Glasovima slova** (zadano): umjesto naziva izgovara se glas koji slovo označava, kao kad dijete uči čitati i kao što slova slovka hrvatski eSpeak: suglasnik i za njim kratak neutralni samoglasnik (*bə, cə, čə, fə, sə, mə*), samoglasnici kao samoglasnici. Strana slova *q, w, x* i *y* nisu slova naše abecede, pa se i ovdje čitaju nazivima (*ku, duplo ve, iks, ipsilon*). Engleski nazivi i engleski izgovor ne koriste se.
-
-Način slovkanja prekidač je „Slovkaj slova glasovima”, uključen pri novoj instalaciji, u naprednim postavkama (Windows: skupina Opcije u Konfiguratoru; Android i Apple: odjeljak Napredno; NVDA: Konfigurator; naredbeni program: `-m`). Odnosi se na slovkanje, tipkanje i na slovo koje u poruci stoji samo; riječi se i dalje izgovaraju normalno. Brojevi, interpunkcija i simboli u oba se načina čitaju imenom iz rječnika slovkanja. Brzina slovkanja opisana je u [4.4](#44-pauze).
-
-**Velika slova.** Ako je čitač ekrana podešen da najavljuje velika slova riječju („veliko N” u NVDA-u, „veliko slovo N” u TalkBacku, „veliko početno slovo N” u VoiceOveru, „cap N” na engleskom), Laprdus riječ izgovara normalno, a slovo slovka kao i svako drugo: nazivom ili glasom, prema odabranom načinu, i brzinom slovkanja. NVDA velika slova najčešće označava povišenim glasom: postavka „Postotak promjene visine glasa za velika slova” u postavkama glasa (zadano 30) podiže visinu slovkanog velikog slova, a sljedeći znak ili riječ vraća se na visinu klizača. To vrijedi i uz uključeno prisilno korištenje Laprdusove visine: promjena se tada računa od sredine NVDA-ova klizača visine.
-
-**Slovo samo u poruci.** Čitač ekrana često javlja znak unutar poruke: „Obrisano B”, „B odabrano”, „veliko slovo B” kad dijelove najave pošalje odvojeno. Suglasnik koji tako stoji sam, kao riječ za sebe, Laprdus čita na odabrani način kao i slovkano slovo: glasom (*bə*) kad su uključeni glasovi slova, nazivom (*be*) kad nisu. Isto vrijedi za takvo slovo u običnom tekstu (*Plan B*, *tipka F 5*). Prijedlozi *s* i *k* (na slovenskom i *v, z, h*) ispred riječi ostaju prijedlozi, kratice (*USB*, *s.a.r.s.*) i slova u složenicama (*S-klasa*) čitaju se nazivima, a strana slova *q, w, x, y* uvijek nazivima.
-
-**Rječnik slovkanja i glasovi slova.** Vaši unosi u rječniku slovkanja (odjeljak [5.4](#54-rječnik-slovkanja-spellingjson)) vrijede u oba načina, s jednom iznimkom: kad se slova slovkaju glasovima, unos koji je samo naziv slova (*be*, *jot*, *lje*) također je naziv i ustupa mjesto glasu, dok se unos koji kaže nešto drugo (na primjer *B* → *bum*) izgovara kako ste ga napisali. Tako stari unosi kojima ste ispravljali nazive ne isključuju glasove.
-
-### 4.8 Laprdus Konfigurator (Windows)
-
-Na Windows sustavu, dodatne postavke možete podesiti putem Laprdus Konfiguratora:
-
-1. Otvorite Windows Start izbornik, a zatim pronađite Laprdus konfigurator u programskoj mapi Laprdus i otvorite ga tipkom Enter.
-2. Ili ako vam je Laprdus instaliran kao NVDA dodatak, otvorite NVDA izbornik > Laprdus podizbornik > Laprdus Konfigurator
-
-Konfigurator je na hrvatskom, srpskom, slovenskom i engleskom jeziku. Prati jezik prikaza Windowsa, a kad ga otvorite iz NVDA izbornika, prati jezik NVDA-a. Bosanski jezik prikaza daje hrvatski tekst, a svaki drugi jezik engleski. Instalacijski program također nudi ta četiri jezika, a NVDA dodatak prati jezik NVDA-a.
-
-Konfigurator omogućuje podešavanje:
-- Brzine, visine i glasnoće govora (brzinu i visinu NVDA klizači ubrzavaju, usporavaju, podižu i spuštaju, osim kad je uključeno prisilno korištenje Laprdusovih vrijednosti; vidi [4.1](#41-brzina-govora))
-- Intonacije i ubrzanja, za sve glasove: intonacija od 0% (monotono) preko 50% (zadano, prirodni pokreti) do 100% (dvostruko veći pokreti), u SAPI5 programima (u NVDA-u je određuje NVDA-ov klizač Infleksija); ubrzanje množi brzinu govora u SAPI5 programima (0.5x-3.0x, zadano 1.0x), a u NVDA-u se ne koristi jer veće brzine daje NVDA-ovo pojačanje brzine. Klizači brzine i visine za formantne glasove idu od 0.25x do 4.0x.
-- Načina čitanja brojeva
-- Trajanja pauza i brzine slovkanja
-- Slovkanja slova glasovima umjesto nazivima
-- Prilagodbu korisničkih rječnika
-
-Postavke se spremaju u korisničkoj mapi `%APPDATA%\Laprdus` i dijele se između SAPI5 i NVDA dodatka.
+1. Open the Laprdus app from the app drawer
+2. Tap the "Laprdus Settings" button
+3. Change the settings as you like (changes are saved automatically)
 
 ---
 
-## 5. Rječnici
+## 4. Settings
 
-Rječnici omogućuju prilagodbu načina na koji Laprdus izgovara određene riječi, kratice, simbole i emodžije. Pomoću rječnika možete ispraviti izgovor stranih riječi, dodati izgovor za kratice ili prilagoditi čitanje posebnih znakova.
+### 4.1 Speech rate
 
-### 5.1 Vrste rječnika
+Speech rate determines how fast Laprdus speaks text. The range is 0.5 (half speed) to 2.0 (twice as fast), and 1.0 is the normal rate.
 
-Laprdus koristi tri vrste rječnika, od kojih svaki ima posebnu namjenu, i uz njih naglasni rječnik formantnih glasova:
+- **0.5** - Very slow, useful for beginners or when you need to listen carefully to every word
+- **1.0** - Normal rate, suitable for most situations
+- **1.5** - Moderately fast, for experienced users
+- **2.0** - Fast, for advanced users
 
-| Vrsta rječnika | Datoteka | Namjena |
+Note: In the NVDA add-on, the "Rate boost" option makes every position of the rate slider three times faster, as in eSpeak and OneCore; Josip, Vlado and the voices derived from them stop at four times the normal rate.
+
+**The Laprdus rate and the screen reader's rate.** The rate in the Laprdus settings is the voice's normal rate, and the screen reader or app (TalkBack, VoiceOver, NVDA, programs that use SAPI5, Speech Dispatcher) sets its own rate relative to it. While the screen reader speaks at its normal rate, Laprdus speaks at exactly the rate in its settings; a screen reader running twice as fast gives twice that rate. That's why both the rate slider in Laprdus and the slider in the screen reader speed up and slow down the speech. The "Force Laprdus speech rate" switch ("Force Laprdus speech speed for all applications" in the Windows Configurator) ignores the rate the screen reader or app asks for, so Laprdus speaks at the rate in its settings alone. [Acceleration](#46-inflection) then multiplies that rate.
+
+### 4.2 Pitch
+
+Pitch lets you adjust the base frequency of the voice. The range is 0.5 (lower voice) to 2.0 (higher voice), and 1.0 is the natural pitch of the voice. Like the rate (see [4.1](#41-speech-rate)), the pitch in the Laprdus settings is the voice's normal pitch, which the screen reader raises or lowers, unless the "Force Laprdus speech pitch" switch is on.
+
+- **0.5** - Lower voice
+- **1.0** - Natural pitch
+- **2.0** - Higher voice
+
+Note: Adjusting the pitch doesn't affect the character of the voice (there's no "cartoon effect").
+
+### 4.3 Volume
+
+Volume determines how loud the speech is. The range is 0.0 (silent) to 1.0 (maximum volume).
+
+- **0.0** - Silent (no sound)
+- **0.5** - Moderate volume
+- **1.0** - Maximum volume
+
+#### Volume boost
+
+The **Boost speech volume (for noisy places)** switch in the Laprdus Configurator makes speech louder than the volume slider allows at 100%. It's meant for noisy places (traffic, the street) and for the phone's earpiece when the speaker is off: for example, to hear who you're calling while the call connects, or to find the button that turns on the speaker during a call. Speech goes through strong amplification, a peak limiter and soft clipping of the strongest peaks, as in Google's "amplify speech volume" setting: quiet parts get about 11 dB louder and loud parts about 8 dB louder, and the sound doesn't break up, although the loudest vowels are slightly compressed. NVDA's volume slider still changes the boosted speech. The switch is off by default and applies to all voices.
+
+### 4.4 Pauses
+
+Laprdus automatically inserts pauses after punctuation marks to make speech sound more natural. You can adjust the length of the pauses for:
+
+- **Period** - Pause after a period (default: 100 ms in the user settings, 80 ms in the command-line program)
+- **Exclamation mark** - Pause after an exclamation mark (default: 100 ms in the user settings, 70 ms in the command-line program)
+- **Question mark** - Pause after a question mark (default: 100 ms in the user settings, 60 ms in the command-line program)
+- **Comma** - Short pause within a sentence (default: 100 ms)
+- **Newline** - Pause at a line break (default: 100 ms)
+
+Values are in milliseconds (ms). The range is 0 to 2000 ms.
+
+**Note:** The user settings (Windows/Android) use a single value of 100 ms for all sentence-ending characters (period, exclamation mark, question mark), while the command-line program lets you set each character separately.
+
+The same section of the settings also has the **spelling speed** (0–100%, default 50%): a lower value makes the pause after each spelled or typed character longer, and the character itself is always spoken at the normal speech rate. At 100% there's no extra pause; at 50% about 41% of the character's duration is added, at 20% about 74%, and at 0% its whole duration. This silence is added to the base spelling pause (default 200 ms, `pauses.spelling` in `settings.json`). The pause also follows the last character, so the spacing is the same whether the screen reader sends a whole word or one character at a time.
+
+In NVDA, NVDA's "Delayed descriptions for characters on cursor movement" option (speech settings) takes precedence: when it's on, NVDA waits one second after the letter you moved to and then speaks its description (for example, "Alan" for A). Laprdus then doesn't add the spelling speed pause after that letter, so the description comes right after NVDA's one second, whatever the spelling speed. Spelling words and typing keep the rhythm of the spelling speed.
+
+### 4.5 How numbers are read
+
+Laprdus can read numbers in two ways:
+
+1. **As words** (default) - Numbers are read as full words
+    - Example: "123" is read as "sto dvadeset tri"
+
+2. **As digits** - Numbers are read digit by digit
+    - Example: "123" is read as "jedan dva tri"
+
+Reading as words supports numbers up to a centillion (10^303) and uses the correct grammatical forms of the selected language.
+
+### 4.6 Inflection
+
+Inflection is the natural change in pitch that follows punctuation:
+
+- A period at the end of a sentence makes the pitch fall
+- A question mark makes the pitch rise at the end
+- An exclamation mark adds emphasis
+- A comma makes the pitch rise slightly
+
+A slider sets the amount of inflection, and the on/off switch from version 1.0 is gone: for monotone speech, set the slider to 0%. Two settings apply to all voices:
+
+- **Inflection level** (0-100%) sets the size of all pitch movements: 0% is monotone speech, 50% the natural melody, and 100% doubles every movement.
+- **Acceleration** (0.5-3) multiplies the speech rate, so the rate slider in the screen reader or system reaches a higher (or lower) top rate. Josip, Vlado and the voices derived from them stop at four times the normal rate; Zvonko, Stojan and Mirsad go up to eight times.
+
+In NVDA, NVDA's Inflection slider in the voice settings sets the inflection level: 50 is the natural melody, 0 is monotone speech, and at 100 every movement is doubled. The inflection from the Configurator isn't used in that case. Acceleration isn't used in NVDA; you reach higher rates with NVDA's Rate boost.
+
+### 4.7 Spelling
+
+When the screen reader spells text or speaks characters as you type, Laprdus reads each letter in one of two ways:
+
+- **By letter name**: *a, be, ce, če, će, de, dže, đe, e, ef, ge, ha, i, je, ka, el, elj, em, en, enj, o, pe, er, es, eš, te, u, ve, ze, že*; foreign letters *ku, duplo ve, iks, ipsilon*. These are the names from the Croatian orthography, and they also apply in Bosnian. In Serbian, every voice follows the decision of the Committee for the Standardization of the Serbian Language: *lje, nje* and *ša* instead of *elj, enj* and *eš*, with the other letters the same, Cyrillic as well as Latin (*Љ* is *lje*, *Ш* is *ša*). In Slovenian, the names follow Slovenski pravopis: the same names for its 25 letters, *dvojni ve* for W, and *mehki če* and *mehki dže* for Ć and Đ. The selected language determines the names, not the voice: Josip says *lje* in Serbian, Stojan says *elj* in Croatian.
+- **By letter sound** (default): instead of the name, Laprdus speaks the sound the letter stands for, as when a child learns to read and as eSpeak's Croatian voice spells letters: the consonant followed by a short neutral vowel (*bə, cə, čə, fə, sə, mə*), and vowels as vowels. The foreign letters *q, w, x* and *y* aren't part of the native alphabet, so they're read by name here too (*ku, duplo ve, iks, ipsilon*). English names and English pronunciation aren't used.
+
+The spelling mode is the "Spell letters by their sounds" switch, on in a new installation, in the advanced settings (Windows: the Options group in the Configurator; Android and Apple: the Advanced section; NVDA: the Configurator; command line: `-m`). It applies to spelling, typing and a letter standing alone in a message; words are still spoken normally. In both modes, numbers, punctuation and symbols are read by their names from the spelling dictionary. Spelling speed is described in [4.4](#44-pauses).
+
+**Capital letters.** If the screen reader is set to announce capitals with a word ("veliko N" in NVDA, "veliko slovo N" in TalkBack, "veliko početno slovo N" in VoiceOver, "cap N" in English), Laprdus speaks the word normally and spells the letter like any other: by name or by sound, according to the selected mode, and at the spelling speed. NVDA most often marks capitals with a higher pitch: the "Capital pitch change percentage" setting in the voice settings (default 30) raises the pitch of a spelled capital, and the next character or word returns to the pitch of the slider. This also applies when forcing the Laprdus pitch is on: the change is then calculated from the middle of NVDA's pitch slider.
+
+**A letter alone in a message.** Screen readers often report a character inside a message: "Obrisano B", "B odabrano", "veliko slovo B" when they send the parts of an announcement separately. A consonant that stands alone like this, as a word of its own, is read in the selected mode, like a spelled letter: by sound (*bə*) when letter sounds are on, by name (*be*) when they're off. The same goes for such a letter in ordinary text (*Plan B*, *tipka F 5*). The prepositions *s* and *k* (in Slovenian also *v, z, h*) before a word stay prepositions, abbreviations (*USB*, *s.a.r.s.*) and letters in compounds (*S-klasa*) are read by name, and the foreign letters *q, w, x, y* always by name.
+
+**The spelling dictionary and letter sounds.** Your entries in the spelling dictionary (section [5.4](#54-spelling-dictionary-spellingjson)) apply in both modes, with one exception: when letters are spelled by sound, an entry that is only a letter's name (*be*, *jot*, *lje*) counts as a name too and gives way to the sound, while an entry that says something else (for example, *B* → *bum*) is spoken as you wrote it. This way, old entries you used to correct the names don't turn off the sounds.
+
+### 4.8 Laprdus Configurator (Windows)
+
+On Windows, you can adjust additional settings in the Laprdus Configurator:
+
+1. Open the Windows Start menu, find Laprdus Configurator in the Laprdus program folder and press Enter to open it.
+2. Or, if you have Laprdus installed as an NVDA add-on, open the NVDA menu > Laprdus submenu > Laprdus Configurator
+
+The Configurator is available in Croatian, Serbian, Slovenian and English. It follows the Windows display language, and when you open it from the NVDA menu, it follows NVDA's language. A Bosnian display language gives Croatian text, and any other language gives English. The installer also offers those four languages, and the NVDA add-on follows NVDA's language.
+
+The Configurator lets you adjust:
+
+- Speech rate, pitch and volume (NVDA's sliders speed up, slow down, raise and lower the rate and pitch, unless forcing the Laprdus values is on; see [4.1](#41-speech-rate))
+- Inflection and acceleration, for all voices: inflection from 0% (monotone) through 50% (default, natural movements) to 100% (movements twice as large), in SAPI5 programs (in NVDA, NVDA's Inflection slider sets it); acceleration multiplies the speech rate in SAPI5 programs (0.5x-3.0x, default 1.0x) and isn't used in NVDA, because NVDA's Rate boost provides higher rates. The speed and pitch sliders go from 0.25x to 4.0x for the formant voices.
+- How numbers are read
+- Pause lengths and spelling speed
+- Spelling letters by their sounds instead of their names
+- Customizing the user dictionaries
+
+Settings are saved in the user folder `%APPDATA%\Laprdus` and are shared between SAPI5 and the NVDA add-on.
+
+---
+
+## 5. Dictionaries
+
+Dictionaries let you customize how Laprdus pronounces particular words, abbreviations, symbols and emoji. With dictionaries, you can correct the pronunciation of foreign words, add a pronunciation for abbreviations or customize how special characters are read.
+
+### 5.1 Types of dictionaries
+
+Laprdus uses three types of dictionaries, each with its own purpose, plus the accent dictionary for the formant voices:
+
+| Dictionary type | File | Purpose |
 |----------------|----------|---------|
-| **Glavni rječnik** | `user.json` | Zamjena riječi i fraza prilagođenim izgovorom |
-| **Rječnik slovkanja** | `spelling.json` | Izgovor pojedinačnih znakova (slova, brojeva, simbola) |
-| **Rječnik emodžija** | `emoji.json` | Pretvaranje emodžija u tekstualni opis |
-| **Naglasni rječnik** | `accents.json` | Naglasak, dužina i ton riječi za formantne glasove (vidi [5.11](#511-naglasni-rječnik-accentsjson)) |
+| **Main dictionary** | `user.json` | Replaces words and phrases with a custom pronunciation |
+| **Spelling dictionary** | `spelling.json` | Sets the pronunciation of individual characters (letters, numbers, symbols) |
+| **Emoji dictionary** | `emoji.json` | Converts emoji to a text description |
+| **Accent dictionary** | `accents.json` | Sets the stress, length and tone of words for formant voices (see [5.11](#511-accent-dictionary-accentsjson)) |
 
-### 5.2 Lokacije datoteka rječnika
+### 5.2 Dictionary file locations
 
-Lokacija datoteka rječnika ovisi o platformi koju koristite:
+The location of the dictionary files depends on your platform:
 
-#### Windows (SAPI5 i NVDA)
+#### Windows (SAPI5 and NVDA)
 
-Sve datoteke rječnika nalaze se u korisničkom direktoriju Laprdusa:
+All dictionary files are in the Laprdus user folder:
 
 ```
 %APPDATA%\Laprdus\
 ```
 
-Puna putanja je obično: `C:\Users\VašeKorisničkoIme\AppData\Roaming\Laprdus\`
+The full path is usually: `C:\Users\VašeKorisničkoIme\AppData\Roaming\Laprdus\`
 
-**Kako otvoriti ovaj direktorij:**
+**How to open this folder:**
 
-1. Pritisnite tipke Windows+R za otvaranje dijaloga "Pokreni"
-2. Upišite: `%APPDATA%\Laprdus`
-3. Pritisnite Enter
+1. Press Windows+R to open the "Run" dialog
+2. Type: `%APPDATA%\Laprdus`
+3. Press Enter
 
-Datoteke u ovom direktoriju:
+Files in this folder:
 
-| Datoteka | Opis |
+| File | Description |
 |----------|------|
-| `settings.json` | Glavne postavke Laprdusa |
-| `user.json` | Vaš korisnički rječnik izgovora |
-| `spelling.json` | Rječnik slovkanja (izgovor znakova) |
-| `emoji.json` | Rječnik emodžija |
-| `accents.json` | Naglasni rječnik formantnih glasova |
+| `settings.json` | Main Laprdus settings |
+| `user.json` | Your user pronunciation dictionary |
+| `spelling.json` | Spelling dictionary (character pronunciation) |
+| `emoji.json` | Emoji dictionary |
+| `accents.json` | Accent dictionary for the formant voices |
 
-**Napomena:** Ove datoteke se stvaraju automatski kada prvi put dodate unos putem Laprdus Konfiguratora. Također ih možete stvoriti ručno.
+**Note:** These files are created automatically the first time you add an entry in the Laprdus Configurator. You can also create them by hand.
 
 #### Linux
 
-Datoteke rječnika nalaze se u:
+Dictionary files are in:
 
 ```
 ~/.config/Laprdus/
 ```
 
-Koristite iste nazive datoteka kao na Windowsu (`user.json`, `spelling.json`, `emoji.json`, `accents.json`).
+Use the same file names as on Windows (`user.json`, `spelling.json`, `emoji.json`, `accents.json`).
 
 #### Android
 
-Na Androidu, rječnici se uređuju isključivo putem sučelja Laprdus aplikacije. Datoteke se pohranjuju u internoj memoriji aplikacije i nisu izravno dostupne korisniku.
+On Android, you edit dictionaries only through the interface of the Laprdus app. The files are stored in the app's internal storage and aren't directly accessible to you.
 
-### 5.3 Glavni rječnik (user.json)
+### 5.3 Main dictionary (user.json)
 
-Glavni rječnik služi za zamjenu riječi ili fraza prilagođenim izgovorom. Koristan je za:
+The main dictionary replaces words or phrases with a custom pronunciation. It's useful for:
 
-- **Strane riječi i brandove** - npr. "Facebook" izgovarati kao "Fejzbuk"
-- **Kratice** - npr. "TV" izgovarati kao "Te Ve"
-- **Tehnički pojmovi** - npr. "ChatGPT" izgovarati kao "ČetDžipiti"
-- **Imena s neuobičajenim izgovorom** - npr. "Sean" izgovarati kao "Šon"
+- **Foreign words and brands** - for example, pronouncing "Facebook" as "Fejzbuk"
+- **Abbreviations** - for example, pronouncing "TV" as "Te Ve"
+- **Technical terms** - for example, pronouncing "ChatGPT" as "ČetDžipiti"
+- **Names with an unusual pronunciation** - for example, pronouncing "Sean" as "Šon"
 
-#### Format datoteke
+#### File format
 
-Datoteka `user.json` koristi JSON format. Evo primjera:
+The `user.json` file uses the JSON format. Here's an example:
 
 ```json
 {
@@ -616,14 +614,14 @@ Datoteka `user.json` koristi JSON format. Evo primjera:
             "phoneme": "Fejzbuk",
             "caseSensitive": false,
             "wholeWord": true,
-            "comment": "Društvena mreža"
+            "comment": "Social network"
         },
         {
             "grapheme": "TV",
             "phoneme": "Te Ve",
             "caseSensitive": false,
             "wholeWord": true,
-            "comment": "Kratica za televiziju"
+            "comment": "Abbreviation for television"
         },
         {
             "grapheme": "ChatGPT",
@@ -636,43 +634,43 @@ Datoteka `user.json` koristi JSON format. Evo primjera:
 }
 ```
 
-#### Opis polja
+#### Field descriptions
 
-| Polje | Obavezno | Opis | Zadana vrijednost |
+| Field | Required | Description | Default value |
 |-------|----------|------|-------------------|
-| `grapheme` | Da | Izvorni tekst koji se zamjenjuje | - |
-| `phoneme` | Da | Zamjenski izgovor | - |
-| `caseSensitive` | Ne | Razlikuje li se velika i mala slova | `false` |
-| `wholeWord` | Ne | Zamjenjuje samo cijelu riječ | `true` |
-| `comment` | Ne | Komentar za referencu (ne utječe na izgovor) | - |
+| `grapheme` | Yes | The original text to replace | - |
+| `phoneme` | Yes | The replacement pronunciation | - |
+| `caseSensitive` | No | Whether uppercase and lowercase letters are treated as different | `false` |
+| `wholeWord` | No | Replaces only whole words | `true` |
+| `comment` | No | A comment for reference (doesn't affect pronunciation) | - |
 
-#### Objašnjenje opcija
+#### Options explained
 
-**caseSensitive (razlikovanje velikih i malih slova):**
+**caseSensitive (case sensitivity):**
 
-- `false` (zadano): "Facebook", "facebook", "FACEBOOK" će svi biti zamijenjeni
-- `true`: Samo točno podudaranje će biti zamijenjeno
+- `false` (default): "Facebook", "facebook" and "FACEBOOK" are all replaced
+- `true`: Only an exact match is replaced
 
-**wholeWord (samo cijela riječ):**
+**wholeWord (whole word only):**
 
-- `true` (zadano): Zamjenjuje samo kada je tekst cijela riječ
-  - "TV" u "TV program" će biti zamijenjeno
-  - "TV" u "aktivator" neće biti zamijenjeno (jer je dio veće riječi)
-- `false`: Zamjenjuje i unutar drugih riječi
-  - Korisno za sufikse i prefikse
+- `true` (default): Replaces the text only when it's a whole word
+    - "TV" in "TV program" is replaced
+    - "TV" in "Latvia" isn't replaced (because it's part of a larger word)
+- `false`: Also replaces the text inside other words
+    - Useful for suffixes and prefixes
 
-### 5.4 Rječnik slovkanja (spelling.json)
+### 5.4 Spelling dictionary (spelling.json)
 
-Rječnik slovkanja definira kako se izgovaraju pojedinačni znakovi kada čitač ekrana slovka tekst (čitanje znak po znak). Koristan je za:
+The spelling dictionary defines how individual characters are pronounced when the screen reader spells text (reads it character by character). It's useful for:
 
-- **Brojeve** - npr. "5" izgovarati kao "pet"
-- **Interpunkciju** - npr. "." izgovarati kao "točka"
-- **Posebne znakove** - npr. "@" izgovarati kao "at"
-- **Slova abecede** - ako želite da se neko slovo zove drukčije nego što ga Laprdus zove sam, npr. "W" kao "dvostruko ve"
+- **Numbers** - for example, pronouncing "5" as "pet"
+- **Punctuation** - for example, pronouncing "." as "točka"
+- **Special characters** - for example, pronouncing "@" as "at"
+- **Letters of the alphabet** - if you want a letter to have a different name than the one Laprdus gives it, for example, "W" as "dvostruko ve"
 
-Slova abecede Laprdus imenuje sam, na odabranom jeziku (vidi [4.7](#47-slovkanje)), pa ih ugrađeni rječnik ne sadrži; vaš unos za slovo ima prednost pred ugrađenim nazivom. Kad je uključeno slovkanje glasovima, unos koji je samo naziv slova zanemaruje se, a svaki drugi unos vrijedi.
+Laprdus names the letters of the alphabet itself, in the selected language (see [4.7](#47-spelling)), so the built-in dictionary doesn't contain them; your entry for a letter takes precedence over the built-in name. When spelling by sounds is on, an entry that is only a letter's name is ignored, and any other entry applies.
 
-#### Format datoteke
+#### File format
 
 ```json
 {
@@ -688,13 +686,13 @@ Slova abecede Laprdus imenuje sam, na odabranom jeziku (vidi [4.7](#47-slovkanje
 }
 ```
 
-#### Ugrađeni izgovori znakova
+#### Built-in character pronunciations
 
-Laprdus dolazi s ugrađenim rječnikom slovkanja brojeva, interpunkcije i simbola (nazivi su hrvatski). Slova se imenuju ovako:
+Laprdus comes with a built-in spelling dictionary of numbers, punctuation and symbols (the names are Croatian). Letters are named as follows:
 
-**Slova abecede** (ugrađeno u Laprdus, ne u rječnik):
+**Letters of the alphabet** (built into Laprdus, not into the dictionary):
 
-| Slovo | Hrvatski i bosanski | Srpski | Slovo | Hrvatski i bosanski | Srpski |
+| Letter | Croatian and Bosnian | Serbian | Letter | Croatian and Bosnian | Serbian |
 |-------|---------------------|--------|-------|---------------------|--------|
 | A | a | a | N | en | en |
 | B | be | be | NJ, Њ | enj | nje |
@@ -714,11 +712,11 @@ Laprdus dolazi s ugrađenim rječnikom slovkanja brojeva, interpunkcije i simbol
 | L | el | el | Y | ipsilon | ipsilon |
 | LJ, Љ | elj | lje | | | |
 
-Ćirilična slova imenuju se kao njihovi latinični parnjaci, a velika i mala slova jednako.
+Cyrillic letters are named like their Latin counterparts, and uppercase and lowercase letters are named the same.
 
-**Brojevi:**
+**Numbers:**
 
-| Znak | Izgovor |
+| Character | Pronunciation |
 |------|---------|
 | 0 | nula |
 | 1 | jedan |
@@ -731,9 +729,9 @@ Laprdus dolazi s ugrađenim rječnikom slovkanja brojeva, interpunkcije i simbol
 | 8 | osam |
 | 9 | devet |
 
-**Uobičajena interpunkcija:**
+**Common punctuation:**
 
-| Znak | Izgovor |
+| Character | Pronunciation |
 |------|---------|
 | . | točka |
 | , | zarez |
@@ -748,9 +746,9 @@ Laprdus dolazi s ugrađenim rječnikom slovkanja brojeva, interpunkcije i simbol
 | " | navodnik |
 | ' | apostrof |
 
-**Posebni znakovi:**
+**Special characters:**
 
-| Znak | Izgovor |
+| Character | Pronunciation |
 |------|---------|
 | @ | at |
 | # | ljestve |
@@ -763,33 +761,33 @@ Laprdus dolazi s ugrađenim rječnikom slovkanja brojeva, interpunkcije i simbol
 | / | kosa crta |
 | \ | obrnuta kosa crta |
 
-### 5.5 Rječnik emodžija (emoji.json)
+### 5.5 Emoji dictionary (emoji.json)
 
-Rječnik emodžija pretvara emoji simbole u govorni tekst.
+The emoji dictionary converts emoji symbols to spoken text.
 
-#### Uključivanje čitanja emodžija
+#### Turning on emoji reading
 
-**Windows (Laprdus Konfigurator):**
+**Windows (Laprdus Configurator):**
 
-1. Otvorite Laprdus Konfigurator (Start > Laprdus > Laprdus Konfigurator)
-2. Tipkom Tab pronađite opciju "Čitaj emodžije"
-3. Označite potvrdni okvir
-4. Tipkom Tab odaberite "U redu" i pritisnite Enter
+1. Open the Laprdus Configurator (Start > Laprdus > Laprdus Configurator)
+2. Press Tab to find the "Speak emoji" option
+3. Select the check box
+4. Press Tab to select "OK" and press Enter
 
 **NVDA:**
 
-1. Otvorite NVDA izbornik (NVDA tipka + N) > Laprdus podizbornik > Laprdus Konfigurator
-2. Tipkom Tab pronađite opciju "Čitaj emodžije"
-3. Označite potvrdni okvir
-4. Tipkom Tab odaberite "U redu" i pritisnite Enter
+1. Open the NVDA menu (NVDA+N) > Laprdus submenu > Laprdus Configurator
+2. Press Tab to find the "Speak emoji" option
+3. Select the check box
+4. Press Tab to select "OK" and press Enter
 
 **Android:**
 
-1. Otvorite Laprdus aplikaciju
-2. Dodirnite "Laprdus postavke"
-3. Pronađite prekidač "Čitaj emodžije" i uključite ga
+1. Open the Laprdus app
+2. Tap "Laprdus Settings"
+3. Find the "Enable emoji reading" switch and turn it on
 
-#### Format datoteke
+#### File format
 
 ```json
 {
@@ -803,11 +801,11 @@ Rječnik emodžija pretvara emoji simbole u govorni tekst.
 }
 ```
 
-#### Ugrađeni emodžiji
+#### Built-in emoji
 
-Laprdus dolazi s opsežnim ugrađenim rječnikom emodžija koji sadrži preko 1100 emodžija s hrvatskim opisima. Evo nekoliko primjera:
+Laprdus comes with an extensive built-in emoji dictionary that contains over 1,100 emoji with Croatian descriptions. Here are a few examples:
 
-| Emodži | Opis |
+| Emoji | Description |
 |--------|------|
 | 😀 | nasmijano lice |
 | 😂 | lice sa suzama radosnicama |
@@ -820,155 +818,158 @@ Laprdus dolazi s opsežnim ugrađenim rječnikom emodžija koji sadrži preko 11
 | ⭐ | zvijezda |
 | ✅ | kvačica |
 
-### 5.6 Uređivanje rječnika na Windowsu (Laprdus Konfigurator)
+### 5.6 Editing dictionaries on Windows (Laprdus Configurator)
 
-Laprdus Konfigurator pruža grafičko sučelje za jednostavno upravljanje rječnicima. Ovo je **preporučena metoda** za korisnike koji preferiraju grafičko sučelje.
+The Laprdus Configurator provides a graphical interface for managing dictionaries easily. This is the **recommended method** if you prefer a graphical interface.
 
-**Kako otvoriti Konfigurator:**
+**How to open the Configurator:**
 
-- **Iz Start izbornika:** Start > Laprdus > Laprdus Konfigurator
-- **Iz NVDA izbornika:** NVDA tipka + N > Laprdus podizbornik > Laprdus Konfigurator
+- **From the Start menu:** Start > Laprdus > Laprdus Configurator
+- **From the NVDA menu:** NVDA+N > Laprdus submenu > Laprdus Configurator
 
-**Uređivanje rječnika:**
+**Editing dictionaries:**
 
-1. U Laprdus Konfiguratoru tipkom Tab ili Shift+Tab pronađite gumb **"Rječnici..."** i pritisnite Enter
-2. Otvorit će se prozor Uređivač rječnika
-3. Na vrhu prozora nalazi se padajući izbornik za odabir vrste rječnika koji želite prilagoditi:
-   - **Glavni rječnik** - za zamjenu riječi i fraza
-   - **Rječnik slovkanja** - za izgovor pojedinačnih znakova
-   - **Rječnik emodžija** - za pretvaranje emodžija u tekst
-   - **Naglasni rječnik** - za naglasak, dužinu i ton riječi, za sve njezine oblike odjednom (zapis u [5.11](#511-naglasni-rječnik-accentsjson))
-4. Odaberite željenu vrstu rječnika strelicom dolje
+1. In the Laprdus Configurator, use Tab or Shift+Tab to find the **"Dictionaries..."** button and press Enter
+2. The Dictionary Management window opens
+3. At the top of the window is a drop-down list for choosing the type of dictionary you want to customize:
+    - **Main user dictionary** - for replacing words and phrases
+    - **Spelling dictionary** - for the pronunciation of individual characters
+    - **Emoji dictionary** - for converting emoji to text
+    - **Accent dictionary** - for the stress, length and tone of a word, for all its forms at once (notation in [5.11](#511-accent-dictionary-accentsjson))
+4. Use the Down Arrow key to select the dictionary type you want
 
-**Dodavanje novog unosa:**
+**Adding a new entry:**
 
-1. Kliknite gumb **"Dodaj..."**
-2. Otvorit će se dijalog za unos:
-   - **Originalan (izvorni) niz:** Upišite tekst koji želite zamijeniti
-   - **Zamjenski niz:** Upišite kako želite da se tekst izgovara
-   - **Razlikuj velika/mala slova:** Označite ako je bitno točno podudaranje
-   - **Samo cijela riječ:** Označite ako ne želite zamjenu unutar drugih riječi
-   - **Komentar:** Opcionalni opis unosa
-3. Pritisnite Enter ili tipkom Tab pronađite gumb **"U redu"** pa zatim potvrdite tipkom Enter za spremanje unosa
+1. Click the **"Add"** button
+2. The entry dialog opens:
+    - **Original string:** Type the text you want to replace
+    - **Replacement string:** Type how you want the text pronounced
+    - **Case sensitive:** Select this if an exact match matters
+    - **Whole word only:** Select this if you don't want replacements inside other words
+    - **Comment:** An optional description of the entry
+3. Press Enter, or press Tab to find the **"OK"** button and press Enter, to save the entry
 
-**Uređivanje postojećeg unosa:**
+**Editing an existing entry:**
 
-1. Odaberite unos u popisu krećući se strelicama dolje ili gore
-2. Tipkom Tab locirajte gumb **"Uredi..."**, a za korisnike miša moguć je i dvoklik na unos
-3. Izmijenite željene vrijednosti
-4. Pritisnite Enter, ili tipkom Tab pronađite gumb **"U redu"** i pritisnite Enter
+1. Select the entry in the list with the Down or Up Arrow key
+2. Press Tab to find the **"Edit"** button; if you use a mouse, you can also double-click the entry
+3. Change the values you want
+4. Press Enter, or press Tab to find the **"OK"** button and press Enter
 
-**Brisanje unosa:**
+**Deleting an entry:**
 
-1. Odaberite unos u popisu strelicama gore ili dolje
-2. Tipkom Tab locirajte gumb **"Izbriši"** i pritisnite Enter
+1. Select the entry in the list with the Up or Down Arrow key
+2. Press Tab to find the **"Delete"** button and press Enter
 
-**Dupliciranje unosa:**
+**Duplicating an entry:**
 
-1. Odaberite unos koji želite duplicirati
-2. Tipkom Tab locirajte gumb **"Dupliciraj"** i pritisnite Enter
-3. Novi unos s kopiranim vrijednostima bit će dodan u popis
-4. Uredite duplicirani unos prema potrebi
+1. Select the entry you want to duplicate
+2. Press Tab to find the **"Duplicate"** button and press Enter
+3. A new entry with the copied values is added to the list
+4. Edit the duplicated entry as needed
 
-**Unos u naglasni rječnik:**
+**Accent dictionary entries:**
 
-Kad je odabran naglasni rječnik, dijalog za unos ima druga polja:
+When the accent dictionary is selected, the entry dialog has different fields:
 
-- **Unos:** riječ, osnova, popis oblika ili glagol s naglasnim znakovima, u zapisu iz [5.11](#511-naglasni-rječnik-accentsjson), npr. `kontr'o:l*` ili `ur'e:d=i<p`
-- **Vrsta unosa:** *Riječ* (riječ, osnova sa `*` ili oblici s `|`) ili *Glagol* (cijela osnova sa znakom `=` i vrstom, ili korijen s dugim *ije*)
-- **Jezik:** *Svi jezici*, ili hrvatski, srpski, bosanski odnosno slovenski ako unos vrijedi samo za jedan jezik
-- **Komentar:** opcionalna bilješka, npr. oblici koje unos pokriva
+- **Entry:** a word, stem, list of forms or verb with accent marks, in the notation from [5.11](#511-accent-dictionary-accentsjson), for example, `kontr'o:l*` or `ur'e:d=i<p`
+- **Kind of entry:** *Word* (a word, a stem with `*` or forms with `|`) or *Verb* (a whole stem with the `=` sign and the class, or a root with a long *ije*)
+- **Language:** *All languages*, or Croatian, Serbian, Bosnian or Slovenian if the entry applies to only one language
+- **Comment:** an optional note, for example, the forms the entry covers
 
-Ispod polja stoji kratki podsjetnik na znakove. Unos se provjerava istim pravilima kojima ga Laprdus čita: unos bez naglasnog znaka, s dva naglaska ili s nepoznatom vrstom glagola Konfigurator odbija i kaže što je krivo, pa u datoteku ne može dospjeti unos koji bi se pri učitavanju preskočio. Dupliciranje ne mijenja tekst unosa.
+A short reminder of the marks appears below the fields. The entry is checked with the same rules Laprdus reads it by: the Configurator rejects an entry with no accent mark, with two accents or with an unknown verb class and tells you what's wrong, so an entry that would be skipped at load time can't get into the file. Duplicating doesn't change the text of the entry.
 
-### 5.7 Uređivanje rječnika na Androidu
+### 5.7 Editing dictionaries on Android
 
-Android aplikacija pruža ugrađeno sučelje za upravljanje rječnicima.
+The Android app provides a built-in interface for managing dictionaries.
 
-**Korak 1: Otvorite rječnike**
+**Step 1: Open the dictionaries**
 
-1. Otvorite Laprdus aplikaciju iz ladice aplikacija
-2. Dodirnite gumb **"Laprdus postavke"**
-3. Dodirnite gumb **"Upravljanje rječnicima"**
+1. Open the Laprdus app from the app drawer
+2. Tap the **"Laprdus Settings"** button
+3. Tap the **"Manage dictionaries"** button
 
-**Korak 2: Odaberite vrstu rječnika**
+**Step 2: Choose the dictionary type**
 
-Na vrhu zaslona nalazi se padajući izbornik za odabir vrste rječnika:
+At the top of the screen is a drop-down list for choosing the dictionary type:
 
-- **Glavni rječnik** - za zamjenu riječi i fraza
-- **Rječnik slovkanja** - za izgovor znakova
-- **Rječnik emodžija** - za pretvaranje emodžija
-- **Naglasni rječnik** - za naglasak riječi (zapis u [5.11](#511-naglasni-rječnik-accentsjson))
+- **Main Dictionary** - for replacing words and phrases
+- **Spelling Dictionary** - for pronouncing characters
+- **Emoji Dictionary** - for converting emoji
+- **Accent Dictionary** - for word stress (notation in [5.11](#511-accent-dictionary-accentsjson))
 
-Dodirnite padajući izbornik i odaberite željenu vrstu.
+Tap the drop-down list and select the type you want.
 
-**Korak 3: Dodavanje novog unosa**
+**Step 3: Add a new entry**
 
-1. Dodirnite gumb **"+"** (plus) u donjem desnom kutu zaslona
-2. Otvorit će se zaslon za unos:
-   - **Izvorni tekst:** Upišite riječ ili frazu koju želite zamijeniti
-   - **Zamjenski izgovor:** Upišite kako želite da se izgovara
-   - **Razlikuj velika i mala slova:** Uključite ako je bitno točno podudaranje
-   - **Samo cijela riječ:** Uključite ako ne želite zamjenu unutar drugih riječi
-   - **Komentar:** Opcionalni opis (npr. "Društvena mreža")
-3. Dodirnite gumb **"Spremi"** na dnu zaslona
+1. Tap the **"+"** (plus) button in the lower-right corner of the screen
+2. The entry screen opens:
+    - **Original text:** Type the word or phrase you want to replace
+    - **Replacement pronunciation:** Type how you want it pronounced
+    - **Case sensitive:** Turn this on if an exact match matters
+    - **Match whole word only:** Turn this on if you don't want replacements inside other words
+    - **Comment (optional):** A description of the entry (for example, "Social network")
+3. Tap the **"Save"** button at the bottom of the screen
 
-Za naglasni rječnik zaslon za unos ima polja **Unos** (riječ, osnova, oblici ili glagol s naglaskom, npr. `kontr'o:l*`), **Vrsta unosa** (riječ ili glagol), **Jezik** (svi jezici ili jedan od tri) i **Komentar**, s podsjetnikom na znakove ispod njih. Unos koji nije ispravan aplikacija odbija i ispisuje razlog ispod polja.
+For the accent dictionary, the entry screen has the fields **Entry** (a word, stem, forms or verb with its accent, for example, `kontr'o:l*`), **Kind of entry** (word or verb), **Language** (all languages or one of the four) and **Comment (optional)**, with a reminder of the marks below them. The app rejects an entry that isn't valid and shows the reason below the field.
 
-**Korak 4: Uređivanje postojećeg unosa**
+**Step 4: Edit an existing entry**
 
-1. Pronađite unos u popisu
-2. Dodirnite unos za otvaranje zaslona za uređivanje
-3. Izmijenite željene vrijednosti
-4. Dodirnite **"Spremi"**
+1. Find the entry in the list
+2. Tap the entry to open the editing screen
+3. Change the values you want
+4. Tap **"Save"**
 
-**Korak 5: Brisanje unosa**
+**Step 5: Delete an entry**
 
-1. Pronađite unos u popisu
-2. Povucite unos ulijevo za prikaz opcije brisanja
-3. Dodirnite ikonu koša za smeće
-4. Potvrdite brisanje
+1. Find the entry in the list
+2. Swipe the entry left to show the delete option
+3. Tap the trash can icon
+4. Confirm the deletion
 
-**Napomena za TalkBack korisnike:**
+**Note for TalkBack users:**
 
-- Koristite standardne TalkBack geste za navigaciju
-- Dvostruki dodir za aktivaciju gumba
-- Za brisanje: dvostruki dodir i zadržavanje na unosu, zatim odaberite "Izbriši"
+- Use the standard TalkBack gestures to navigate
+- Double-tap to activate buttons
+- To delete: double-tap and hold the entry, then select "Delete"
 
-### 5.8 Ručno uređivanje JSON datoteka (napredno)
+### 5.8 Editing JSON files by hand (advanced)
 
-Ova metoda je namijenjena **naprednim korisnicima** koji žele izravno uređivati JSON datoteke rječnika. Za većinu korisnika preporučujemo korištenje Laprdus Konfiguratora (Windows) ili sučelja Android aplikacije.
+This method is for **advanced users** who want to edit the JSON dictionary files directly. For most users, we recommend the Laprdus Configurator (Windows) or the interface of the Android app.
 
-**Prednosti ručnog uređivanja:**
-- Brže masovno dodavanje/uređivanje velikog broja unosa
-- Mogućnost dijeljenja rječnika s drugim korisnicima
-- Stvaranje sigurnosnih kopija rječnika
+**Benefits of editing by hand:**
 
-**Korak 1: Otvorite direktorij s rječnicima**
+- Faster bulk adding and editing of a large number of entries
+- You can share dictionaries with other users
+- You can make backup copies of your dictionaries
+
+**Step 1: Open the dictionaries folder**
 
 **Windows:**
-1. Pritisnite Windows+R
-2. Upišite: `%APPDATA%\Laprdus`
-3. Pritisnite Enter
+
+1. Press Windows+R
+2. Type: `%APPDATA%\Laprdus`
+3. Press Enter
 
 **Linux:**
-1. Otvorite upravitelj datoteka
-2. Otvorite skrivenu mapu `.config` u vašem osobnom direktoriju
-3. Otvorite mapu `Laprdus`
-   - Ili u terminalu: `cd ~/.config/Laprdus`
 
-**Korak 2: Otvorite ili stvorite datoteku**
+1. Open a file manager
+2. Open the hidden `.config` folder in your home folder
+3. Open the `Laprdus` folder
+    - Or in a terminal: `cd ~/.config/Laprdus`
 
-- Ako datoteka već postoji, otvorite je u tekstualnom editoru (Windows: Notepad, Linux: gedit, nano, vim)
-- Ako datoteka ne postoji, stvorite novu tekstualnu datoteku s odgovarajućim imenom:
-  - `user.json` za glavni rječnik
-  - `spelling.json` za rječnik slovkanja
-  - `emoji.json` za rječnik emodžija
-  - `accents.json` za naglasni rječnik formantnih glasova (zapis u [5.11](#511-naglasni-rječnik-accentsjson))
+**Step 2: Open or create the file**
 
-**Korak 3: Uredite sadržaj**
+- If the file already exists, open it in a text editor (Windows: Notepad, Linux: gedit, nano, vim)
+- If the file doesn't exist, create a new text file with the matching name:
+    - `user.json` for the main dictionary
+    - `spelling.json` for the spelling dictionary
+    - `emoji.json` for the emoji dictionary
+    - `accents.json` for the accent dictionary of the formant voices (notation in [5.11](#511-accent-dictionary-accentsjson))
 
-Koristite JSON format opisan u prethodnim odjeljcima (5.3, 5.4, 5.5). Primjer za `user.json`:
+**Step 3: Edit the content**
+
+Use the JSON format described in the previous sections (5.3, 5.4, 5.5). Example for `user.json`:
 
 ```json
 {
@@ -979,44 +980,45 @@ Koristite JSON format opisan u prethodnim odjeljcima (5.3, 5.4, 5.5). Primjer za
             "phoneme": "Jutjub",
             "caseSensitive": false,
             "wholeWord": true,
-            "comment": "Video platforma"
+            "comment": "Video platform"
         },
         {
             "grapheme": "Google",
             "phoneme": "Gugl",
             "caseSensitive": false,
             "wholeWord": true,
-            "comment": "Tražilica"
+            "comment": "Search engine"
         }
     ]
 }
 ```
 
-**VAŽNO - Pravila JSON sintakse:**
-- Svi ključevi i tekstualne vrijednosti moraju biti unutar dvostrukih navodnika `"`
-- Zarezi `,` između unosa, ALI NE nakon zadnjeg unosa
-- Vitičaste zagrade `{}` za svaki unos
-- Uglate zagrade `[]` za listu unosa
+**IMPORTANT - JSON syntax rules:**
 
-**Korak 4: Spremite datoteku**
+- All keys and text values must be inside double quotation marks `"`
+- Commas `,` between entries, BUT NOT after the last entry
+- Curly braces `{}` around each entry
+- Square brackets `[]` around the list of entries
 
-- **Obavezno** spremite datoteku s **UTF-8 kodiranjem** (za podršku hrvatskih znakova)
-- **Windows Notepad:** Datoteka > Spremi kao > Encoding: UTF-8
-- **Linux:** Većina editora automatski koristi UTF-8
+**Step 4: Save the file**
 
-**Korak 5: Ponovno pokrenite sintetizator**
+- You **must** save the file with **UTF-8 encoding** (to support Croatian characters)
+- **Windows Notepad:** File > Save As > Encoding: UTF-8
+- **Linux:** Most editors use UTF-8 automatically
 
-- **Windows SAPI5:** Zatvorite i ponovno otvorite aplikaciju koja koristi Laprdus
-- **NVDA:** Pritisnite NVDA tipku + Q i ponovno pokrenite NVDA, ili prijeđite na drugi sintetizator pa se vratite na Laprdus
-- **Linux:** Ponovno pokrenite aplikaciju ili Speech Dispatcher: `systemctl --user restart speech-dispatcher`
+**Step 5: Restart the synthesizer**
 
-**Napomena:** Ako uredite rječnik dok je Android aplikacija pokrenuta, promjene neće biti vidljive sve dok ne osvježite popis ili ponovno ne otvorite aplikaciju.
+- **Windows SAPI5:** Close and reopen the app that uses Laprdus
+- **NVDA:** Press NVDA+Q and restart NVDA, or switch to another synthesizer and then back to Laprdus
+- **Linux:** Restart the app or Speech Dispatcher: `systemctl --user restart speech-dispatcher`
 
-### 5.9 Primjeri praktične uporabe
+**Note:** If you edit a dictionary while the Android app is running, the changes don't appear until you refresh the list or reopen the app.
 
-#### Primjer 1: Strane tvrtke i brandovi
+### 5.9 Practical examples
 
-Mnoge strane tvrtke i brandovi imaju izgovor koji se razlikuje od pisanog oblika:
+#### Example 1: Foreign companies and brands
+
+Many foreign companies and brands are pronounced differently from how they're written:
 
 ```json
 {
@@ -1045,9 +1047,9 @@ Mnoge strane tvrtke i brandovi imaju izgovor koji se razlikuje od pisanog oblika
 }
 ```
 
-#### Primjer 2: Kratice
+#### Example 2: Abbreviations
 
-Kratice koje želite da se čitaju slovo po slovo:
+Abbreviations you want read letter by letter:
 
 ```json
 {
@@ -1064,7 +1066,7 @@ Kratice koje želite da se čitaju slovo po slovo:
     "phoneme": "Ha Er",
     "caseSensitive": false,
     "wholeWord": true,
-    "comment": "Kratica za Hrvatsku"
+    "comment": "Abbreviation for Croatia"
 }
 ```
 
@@ -1074,11 +1076,11 @@ Kratice koje želite da se čitaju slovo po slovo:
     "phoneme": "E U",
     "caseSensitive": false,
     "wholeWord": true,
-    "comment": "Europska unija"
+    "comment": "European Union"
 }
 ```
 
-#### Primjer 3: Tehnički pojmovi
+#### Example 3: Technical terms
 
 ```json
 {
@@ -1107,7 +1109,7 @@ Kratice koje želite da se čitaju slovo po slovo:
 }
 ```
 
-#### Primjer 4: Imena s neuobičajenim izgovorom
+#### Example 4: Names with an unusual pronunciation
 
 ```json
 {
@@ -1115,7 +1117,7 @@ Kratice koje želite da se čitaju slovo po slovo:
     "phoneme": "Šon",
     "caseSensitive": false,
     "wholeWord": true,
-    "comment": "Irsko ime"
+    "comment": "Irish name"
 }
 ```
 
@@ -1128,9 +1130,9 @@ Kratice koje želite da se čitaju slovo po slovo:
 }
 ```
 
-#### Primjer 5: Zamjena unutar riječi (wholeWord: false)
+#### Example 5: Replacing inside a word (wholeWord: false)
 
-Za zamjenu sufiksa ili prefiksa, postavite `wholeWord` na `false`:
+To replace a suffix or prefix, set `wholeWord` to `false`:
 
 ```json
 {
@@ -1138,43 +1140,43 @@ Za zamjenu sufiksa ili prefiksa, postavite `wholeWord` na `false`:
     "phoneme": "šen",
     "caseSensitive": false,
     "wholeWord": false,
-    "comment": "Engleski sufiks -tion"
+    "comment": "English suffix -tion"
 }
 ```
 
-S ovim unosom, riječi poput "information" će sadržavati izgovor "šen" umjesto "tion".
+With this entry, words such as "information" contain the pronunciation "šen" instead of "tion".
 
-### 5.10 Rješavanje problema s rječnicima
+### 5.10 Troubleshooting dictionaries
 
-#### Problem: Promjene u rječniku se ne primjenjuju
+#### Problem: Dictionary changes don't apply
 
-**Mogući uzroci i rješenja:**
+**Possible causes and solutions:**
 
-1. **Primjena korisničkih rječnika je isključena**
-   - Uključite opciju **"Primjena korisničkih rječnika"** u Laprdus konfiguratoru (Windows) ili u Laprdus postavkama (Android)
+1. **Applying user dictionaries is turned off**
+    - Turn on the **"Apply user dictionaries"** option in the Laprdus Configurator (Windows) or in Laprdus Settings (Android)
 
-2. **Sintaksna greška u JSON datoteci**
-   - Provjerite jesu li svi navodnici ispravno zatvoreni
-   - Provjerite jesu li zarezi na pravim mjestima
-   - Koristite online JSON validator za provjeru sintakse
+2. **Syntax error in the JSON file**
+    - Check that all quotation marks are closed correctly
+    - Check that the commas are in the right places
+    - Use an online JSON validator to check the syntax
 
-3. **Datoteka nije spremljena s UTF-8 kodiranjem**
-   - U Notepadu: Datoteka > Spremi kao > Encoding: UTF-8
-   - U drugim editorima: provjerite postavke kodiranja
+3. **The file wasn't saved with UTF-8 encoding**
+    - In Notepad: File > Save As > Encoding: UTF-8
+    - In other editors: check the encoding settings
 
-4. **Sintetizator nije ponovno pokrenut**
-   - Zatvorite i ponovno otvorite aplikaciju
-   - Za NVDA: Insert+Q > Ponovno pokreni NVDA
+4. **The synthesizer wasn't restarted**
+    - Close and reopen the app
+    - For NVDA: Insert+Q > Restart
 
-5. **Datoteka je na krivoj lokaciji**
-   - Windows: `%APPDATA%\Laprdus\`
-   - Linux: `~/.config/Laprdus/`
+5. **The file is in the wrong location**
+    - Windows: `%APPDATA%\Laprdus\`
+    - Linux: `~/.config/Laprdus/`
 
-#### Problem: Riječ se zamjenjuje na krivim mjestima
+#### Problem: A word is replaced in the wrong places
 
-**Rješenje:** Uključite opciju **"Samo cijela riječ"** za problematični unos, ili ručno promijenite vrijednost za taj unos u konfiguracijskoj datoteci, `wholeWord: true`
+**Solution:** Turn on the **"Whole word only"** option for the entry that causes the problem, or set `wholeWord: true` for that entry by hand in the configuration file
 
-Primjer problema: Unos za "TV" zamjenjuje i "aktivator" jer sadrži "TV".
+Example of the problem: The entry for "TV" also replaces part of "Latvia" because it contains "TV".
 
 ```json
 {
@@ -1184,42 +1186,44 @@ Primjer problema: Unos za "TV" zamjenjuje i "aktivator" jer sadrži "TV".
 }
 ```
 
-#### Problem: Zamjena ne radi za velika/mala slova
+#### Problem: Replacement doesn't work for uppercase or lowercase letters
 
-**Rješenje:** Provjerite opciju **"Osjetljivost na velika i mala slova"** za problematičan unos, ili provjerite upis u konfiguracijskoj datoteci za taj unos, `caseSensitive`
+**Solution:** Check the **"Case sensitive"** option for the entry that causes the problem, or check the `caseSensitive` value for that entry in the configuration file
 
-- Za zamjenu neovisno o veličini slova: `caseSensitive: false` odnosno Isključeno
-- Za točno podudaranje: `caseSensitive: true` odnosno Uključeno
+- To replace regardless of case: `caseSensitive: false`, that is, off
+- For an exact match: `caseSensitive: true`, that is, on
 
-#### Problem: JSON sintaksna greška
+#### Problem: JSON syntax error
 
-Česte greške u JSON formatu:
+Common errors in the JSON format:
 
-**Zaboravljeni zarez:**
+**Missing comma:**
+
 ```json
-// POGREŠNO:
+// WRONG:
 {
     "grapheme": "test"
     "phoneme": "test"
 }
 
-// ISPRAVNO:
+// CORRECT:
 {
     "grapheme": "test",
     "phoneme": "test"
 }
 ```
 
-**Zarez na kraju:**
+**Trailing comma:**
+
 ```json
-// POGREŠNO:
+// WRONG:
 {
     "entries": [
         { "grapheme": "a", "phoneme": "b" },
     ]
 }
 
-// ISPRAVNO:
+// CORRECT:
 {
     "entries": [
         { "grapheme": "a", "phoneme": "b" }
@@ -1227,277 +1231,282 @@ Primjer problema: Unos za "TV" zamjenjuje i "aktivator" jer sadrži "TV".
 }
 ```
 
-**Nedostaju vitičaste zagrade:**
+**Missing curly braces:**
+
 ```json
-// POGREŠNO:
+// WRONG:
 "grapheme": "test",
 "phoneme": "test"
 
-// ISPRAVNO:
+// CORRECT:
 {
     "grapheme": "test",
     "phoneme": "test"
 }
 ```
 
-#### Problem: Emodžiji se ne čitaju
+#### Problem: Emoji aren't read
 
-**Rješenje:** Provjerite je li čitanje emodžija uključeno
+**Solution:** Check that emoji reading is turned on
 
-1. Otvorite Laprdus Konfigurator ili Android postavke
-2. Pronađite opciju "Čitaj emodžije"
-3. Uključite opciju
-4. Spremite postavke
+1. Open the Laprdus Configurator or the Android settings
+2. Find the "Speak emoji" option ("Enable emoji reading" on Android)
+3. Turn the option on
+4. Save the settings
 
 ---
 
-### 5.11 Naglasni rječnik (accents.json)
+### 5.11 Accent dictionary (accents.json)
 
-Formantni glasovi (Zvonko, Stojan, Mirsad i pjevački glasovi) sami određuju mjesto naglaska, dužinu i ton svake riječi: prvo iz naglasnih znakova u tekstu, zatim iz ugrađenog leksikona, pa po pravilima za nastavke i vrste riječi (posuđenice i izvedenice s dugim zadnjim slogom osnove, glagoli s prefiksom, glagoli na -ovati), a ako ništa ne pogodi, naglasak ide na prvi slog. Riječ koja tako ispadne krivo može se ispraviti u naglasnom rječniku, i to ne samo jedan njezin oblik: unos može pokriti cijelu osnovu, popis oblika ili cijeli glagol sa svim licima i vremenima. Snimljeni glasovi (Josip, Vlado i izvedeni) naglasak određuju na isti način i koriste isti rječnik; rječnik vrijedi za odabrani jezik, kojim god glasom se govori.
+The formant voices (Zvonko, Stojan, Mirsad and the singing voices) work out the position of the stress and the length and tone of every word themselves: first from accent marks in the text, then from the built-in lexicon, then by rules for endings and word types (loanwords and derived words with a long last stem syllable, prefixed verbs, verbs in -ovati), and if nothing matches, the stress goes on the first syllable. You can correct a word that comes out wrong in the accent dictionary, and not just one of its forms: an entry can cover a whole stem, a list of forms or a whole verb with all its persons and tenses. The recorded voices (Josip, Vlado and the derived voices) determine stress the same way and use the same dictionary; the dictionary applies to the selected language, whichever voice is speaking.
 
-Datoteka `accents.json` stoji uz ostale rječnike (`%APPDATA%\Laprdus` na Windowsu, `~/.config/Laprdus` na Linuxu) i učitava se zajedno s njima kad su korisnički rječnici uključeni. Učitava se jednom, pri pokretanju i pri promjeni datoteke; govor zbog nje nije ništa sporiji.
+The `accents.json` file is next to the other dictionaries (`%APPDATA%\Laprdus` on Windows, `~/.config/Laprdus` on Linux) and is loaded with them when user dictionaries are on. It's loaded once, at startup and when the file changes, so it doesn't slow speech down at all.
 
-#### Zapis
+#### Notation
 
-Unosi se pišu u zapisu ugrađenog leksikona:
+Entries are written in the notation of the built-in lexicon:
 
-| Znak | Značenje |
+| Mark | Meaning |
 |------|----------|
-| `'` | ispred naglašenog samoglasnika (ili slogotvornog r); ton se bira sam |
-| `^` | ispred naglašenog samoglasnika: silazni naglasak |
-| `/` | ispred naglašenog samoglasnika: uzlazni naglasak |
-| `:` | iza dugog samoglasnika |
-| `*` | na kraju: osnova, koja vrijedi i za oblike s do tri slova više (kontróla, kontróle, kontrólom) |
-| `\|` | `osnova\|nastavak\|nastavak`: po jedan točan oblik za svaki nastavak; prazan nastavak je sama osnova |
+| `'` | before the stressed vowel (or syllabic r); the tone is chosen automatically |
+| `^` | before the stressed vowel: falling accent |
+| `/` | before the stressed vowel: rising accent |
+| `:` | after a long vowel |
+| `*` | at the end: a stem, which also covers forms with up to three more letters (kontróla, kontróle, kontrólom) |
+| `\|` | `osnova\|nastavak\|nastavak` (stem, then endings): one exact form for each ending; an empty ending is the stem itself |
 
-Primjer datoteke:
+Example file:
 
 ```json
 {
     "version": "1.0",
     "entries": [
         { "word": "kontr'o:l*", "comment": "kontróla, kontróle, kontrólom" },
-        { "word": "sign'a:l|a|u|om|e|i|ima", "comment": "signála, signálu...; sìgnal ostaje kako jest" },
-        { "word": "p^oruk*", "comment": "pȍruka: silazni naglasak na prvom slogu" },
-        { "word": "dir'ektor*", "language": "sr", "comment": "samo na srpskom, kojim god glasom" },
+        { "word": "sign'a:l|a|u|om|e|i|ima", "comment": "signála, signálu...; sìgnal stays as it is" },
+        { "word": "p^oruk*", "comment": "pȍruka: falling accent on the first syllable" },
+        { "word": "dir'ektor*", "language": "sr", "comment": "Serbian only, with any voice" },
         { "verb": "ur'e:d=i<p", "comment": "uréditi, urédim, urédio, uređen" },
         { "verb": "dijel:i", "comment": "podijeliti, raspodijeliti, podijelim, podijeljen" }
     ]
 }
 ```
 
-- `word`: riječ, osnova (`*`) ili popis oblika (`|`).
-- `verb`: glagol. Piše se cijela osnova s naglaskom infinitiva, znak `=` i vrsta: `i` za glagole na -iti/-im, `a` na -ati/-am, `u` na -nuti/-nem, `t` na -ati s drugom osnovom u prezentu i `e` za tu osnovu (`pok'a:z=t` i `pok'a:ž=e`). Iza vrste mogu stajati oznake: `<` pomiče naglasak jedan slog unatrag u prezentu, `p` i u trpnom pridjevu (tako govore Stojan i Mirsad, Zvonko zadržava naglasak infinitiva), `n` kad je imperativ jednak obliku neke imenice (potvrdi, uredi), pa se čita kao glagol samo na početku rečenice. Glagol s dugim *ije* u korijenu piše se kao `korijen:vrsta` i vrijedi sa svakim prefiksom.
-- `language`: `hr`, `sr`, `bs` ili `sl` ograničava unos na taj jezik, kojim god glasom se govori; bez toga vrijedi za sve jezike. Slovenski unos piše se u zapisu slovenskih rječnika (`mésto`, `člôvek`, `p'əs`, `d'é:la*`): ostrivec za dugi naglašeni samoglasnik (é, ó uski), strešica za dugi široki ê, ô, krativec za kratki naglašeni, `ə` za polglasnik i `w` za l koji se izgovara kao u (bíw).
-- `comment`: bilješka za vas, Laprdus je ne čita.
+- `word`: a word, stem (`*`) or list of forms (`|`).
+- `verb`: a verb. Write the whole stem with the accent of the infinitive, the `=` sign and the class: `i` for verbs in -iti/-im, `a` for -ati/-am, `u` for -nuti/-nem, `t` for -ati with a different stem in the present tense and `e` for that stem (`pok'a:z=t` and `pok'a:ž=e`). Markers can follow the class: `<` moves the accent one syllable back in the present tense, `p` also in the passive participle (that's how Stojan and Mirsad speak; Zvonko keeps the accent of the infinitive), and `n` is for an imperative that is the same as a form of a noun (potvrdi, uredi), so it's read as a verb only at the start of a sentence. A verb with a long *ije* in its root is written as `korijen:vrsta` (root:class) and applies with every prefix.
+- `language`: `hr`, `sr`, `bs` or `sl` limits the entry to that language, whichever voice is speaking; without it, the entry applies to all languages. A Slovenian entry is written in the notation of Slovenian dictionaries (`mésto`, `člôvek`, `p'əs`, `d'é:la*`): an acute for a long stressed vowel (close é, ó), a circumflex for long open ê, ô, a grave for a short stressed vowel, `ə` for the schwa and `w` for an l pronounced like u (bíw).
+- `comment`: a note for you; Laprdus doesn't read it.
 
-Točan oblik ima prednost pred osnovom, dulja osnova pred kraćom, a vaš unos pred ugrađenim. Naglasni znakovi napisani u samom tekstu, ili u zamjeni glavnog rječnika (`telèfon`), imaju prednost pred svime.
+An exact form takes precedence over a stem, a longer stem over a shorter one, and your entry over a built-in one. Accent marks written in the text itself, or in a main dictionary replacement (`telèfon`), take precedence over everything.
 
-Neispravan unos (bez naglasnog znaka, s dva naglaska, s nepoznatim slovom ili nepoznatom vrstom glagola) preskače se, a ostali vrijede. Na naredbenoj liniji `laprdus -w` ispisuje koliko je unosa prihvaćeno i što je bilo krivo s prvim odbijenim; NVDA dodatak to upisuje u svoj dnevnik. Rezultat možete odmah čuti:
+An invalid entry (no accent mark, two accents, an unknown letter or an unknown verb class) is skipped, and the others apply. On the command line, `laprdus -w` prints how many entries were accepted and what was wrong with the first one rejected; the NVDA add-on writes this to its log. You can hear the result right away:
 
 ```bash
 laprdus -v zvonko "kontrola, signala, uredio"
 ```
 
-**Uređivanje:** naglasni rječnik uređuje se kao i ostali rječnici: u Laprdus Konfiguratoru na Windowsu (gumb **Rječnici...**, vrsta rječnika *Naglasni rječnik*, vidi [5.6](#56-uređivanje-rječnika-na-windowsu-laprdus-konfigurator)), u Android aplikaciji ([5.7](#57-uređivanje-rječnika-na-androidu)) i u aplikaciji za iPhone, iPad i Mac (kartica Rječnici, vrsta *Naglasni rječnik*). Svaki unos ima polja Unos, Vrsta unosa (riječ ili glagol), Jezik i Komentar, a uređivač ga provjerava istim pravilima kojima ga Laprdus čita, pa neispravan unos ne može biti spremljen. Datoteku možete i dalje uređivati ručno ([5.8](#58-ručno-uređivanje-json-datoteka-napredno)); aplikacije na Androidu i Appleu čitaju je iz istog direktorija kao ostale rječnike kad su korisnički rječnici uključeni.
+**Editing:** you edit the accent dictionary like the other dictionaries: in the Laprdus Configurator on Windows (**Dictionaries...** button, dictionary type *Accent dictionary*, see [5.6](#56-editing-dictionaries-on-windows-laprdus-configurator)), in the Android app ([5.7](#57-editing-dictionaries-on-android)) and in the app for iPhone, iPad and Mac (Dictionaries tab, type *Accent Dictionary*). Every entry has the fields Entry, Kind of entry (word or verb), Language and Comment, and the editor checks it with the same rules Laprdus reads it by, so an invalid entry can't be saved. You can still edit the file by hand ([5.8](#58-editing-json-files-by-hand-advanced)); the apps on Android and Apple read it from the same folder as the other dictionaries when user dictionaries are on.
 
-## 6. Glasovi
+## 6. Voices
 
-### 6.1 Dostupni glasovi
+### 6.1 Available voices
 
-Laprdus uključuje osamnaest glasova - dva osnovna, tri izvedena, tri formantna i deset pjevajućih. **Svaki glas govori svaki jezik.** Glas određuje samo zvuk; jezik (hrvatski, srpski, bosanski ili slovenski) određuje pravila izgovora, naglasni rječnik, brojevne riječi (*tisuća* / *hiljada* / *tisoč*) i nazive slova pri slovkanju, a bira se odvojeno od glasa, na svakoj platformi na svoj način (vidi [6.3](#63-odabir-glasa)). *Izvorni jezik* u tablici jezik je kojim glas govori kad se ništa drugo ne zatraži. **Zadani glas je Zvonko**, na svim platformama i za sve jezike. Oznaka glasa (u stupcu Oznaka) piše se bez dijakritičkih znakova namjerno, da se glasovi sigurno registriraju na svakoj platformi; oznake iz prijašnjih inačica (`djed`, `klapa`, `pjevac`, `pevac`, `solist`) i dalje vrijede u spremljenim postavkama i skriptama.
+Laprdus includes eighteen voices - two base, three derived, three formant and ten singing. **Every voice speaks every language.** The voice determines only the sound; the language (Croatian, Serbian, Bosnian or Slovenian) determines the pronunciation rules, the accent dictionary, the number words (*tisuća* / *hiljada* / *tisoč*) and the letter names when spelling, and you choose it separately from the voice, in a different way on each platform (see [6.3](#63-choosing-a-voice)). *Native language* in the table is the language a voice speaks when nothing else is requested. **The default voice is Zvonko**, on all platforms and for all languages. The voice ID (in the ID column) is written without diacritics on purpose, so that voices register safely on every platform; IDs from earlier versions (`djed`, `klapa`, `pjevac`, `pevac`, `solist`) still work in saved settings and scripts.
 
-| Glas | Oznaka | Vrsta | Izvorni jezik | Opis |
+| Voice | ID | Type | Native language | Description |
 |------|--------|-------|---------------|------|
-| **Josip** | `josip` | Osnovni | Hrvatski | Muški glas normalne visine. |
-| **Vlado** | `vlado` | Osnovni | Srpski | Muški glas normalne visine. |
-| **Detence** | `detence` | Izvedeni | Hrvatski | Dječji glas. Izveden iz glasa Josip s povišenom visinom. |
-| **Baba** | `baba` | Izvedeni | Hrvatski | Ženski glas. Izveden iz glasa Josip s blago povišenom visinom. |
-| **Đedo** | `djedo` | Izvedeni | Srpski | Stariji muški glas. Izveden iz glasa Vlado sa sniženom visinom. |
-| **Zvonko** | `zvonko` | Formantni | Hrvatski | Muški glas. Govor nastaje pravilima, bez snimaka. Zadani glas. |
-| **Stojan** | `stojan` | Formantni | Srpski | Muški glas, dublji i tamniji. Govor nastaje pravilima, bez snimaka. |
-| **Mirsad** | `mirsad` | Formantni | Bosanski | Muški glas, viši i melodičniji. Govor nastaje pravilima, bez snimaka. |
-| **Orguljaš - Vila Velebita** | `orguljas` | Pjevajući | Hrvatski | Zvonko za orguljama: pjeva *Vilu Velebita*. |
-| **Dalmacija Klapa** | `dalmacija_klapa` | Pjevajući | Hrvatski | Zvonko kao cijela klapa: pjeva *Vilu Velebita*. |
-| **Lika Velebit** | `lika_velebit` | Pjevajući | Hrvatski | Zvonko pjeva svojim glasom, u svojoj visini: *Vila Velebita*. |
-| **Trubač - Kreće se lađa francuska** | `trubac` | Pjevajući | Srpski | Stojan kao truba: pjeva *Kreće se lađa francuska*. |
-| **Harmonikaš - Kreće se lađa francuska** | `harmonikas` | Pjevajući | Srpski | Stojan kao harmonika: pjeva *Kreće se lađa francuska*. |
-| **Solunac** | `solunac` | Pjevajući | Srpski | Stojan pjeva svojim glasom: *Kreće se lađa francuska*. |
-| **Sevdalija - Kad ja pođoh na Bembašu** | `sevdalija` | Pjevajući | Bosanski | Mirsad pjeva sevdah: *Kad ja pođoh na Bembašu*. |
-| **Sazlija - Kad ja pođoh na Bembašu** | `sazlija` | Pjevajući | Bosanski | Mirsad kao saz: pjeva *Kad ja pođoh na Bembašu*. |
-| **Sarajevo Bembaša** | `sarajevo_bembasa` | Pjevajući | Bosanski | Mirsad pjeva svojim glasom: *Kad ja pođoh na Bembašu*. |
-| **Bećarac** | `becarac` | Pjevajući | Hrvatski | Zvonko svojim glasom pjeva bećarac: svaki deseterački dvostih sjeda na napjev. |
+| **Josip** | `josip` | Base | Croatian | Male voice of normal pitch. |
+| **Vlado** | `vlado` | Base | Serbian | Male voice of normal pitch. |
+| **Detence** | `detence` | Derived | Croatian | Child's voice. Derived from the Josip voice with a raised pitch. |
+| **Baba** | `baba` | Derived | Croatian | Female voice. Derived from the Josip voice with a slightly raised pitch. |
+| **Đedo** | `djedo` | Derived | Serbian | Older male voice. Derived from the Vlado voice with a lowered pitch. |
+| **Zvonko** | `zvonko` | Formant | Croatian | Male voice. Speech is generated by rule, without recordings. Default voice. |
+| **Stojan** | `stojan` | Formant | Serbian | Male voice, deeper and darker. Speech is generated by rule, without recordings. |
+| **Mirsad** | `mirsad` | Formant | Bosnian | Male voice, higher and more melodic. Speech is generated by rule, without recordings. |
+| **Orguljaš - Vila Velebita** | `orguljas` | Singing | Croatian | Zvonko at the organ: sings *Vila Velebita*. |
+| **Dalmacija Klapa** | `dalmacija_klapa` | Singing | Croatian | Zvonko as a whole klapa: sings *Vila Velebita*. |
+| **Lika Velebit** | `lika_velebit` | Singing | Croatian | Zvonko sings in his own voice, at his own pitch: *Vila Velebita*. |
+| **Trubač - Kreće se lađa francuska** | `trubac` | Singing | Serbian | Stojan as a trumpet: sings *Kreće se lađa francuska*. |
+| **Harmonikaš - Kreće se lađa francuska** | `harmonikas` | Singing | Serbian | Stojan as an accordion: sings *Kreće se lađa francuska*. |
+| **Solunac** | `solunac` | Singing | Serbian | Stojan sings in his own voice: *Kreće se lađa francuska*. |
+| **Sevdalija - Kad ja pođoh na Bembašu** | `sevdalija` | Singing | Bosnian | Mirsad sings sevdah: *Kad ja pođoh na Bembašu*. |
+| **Sazlija - Kad ja pođoh na Bembašu** | `sazlija` | Singing | Bosnian | Mirsad as a saz: sings *Kad ja pođoh na Bembašu*. |
+| **Sarajevo Bembaša** | `sarajevo_bembasa` | Singing | Bosnian | Mirsad sings in his own voice: *Kad ja pođoh na Bembašu*. |
+| **Bećarac** | `becarac` | Singing | Croatian | Zvonko sings a bećarac in his own voice: every ten-syllable couplet fits the tune. |
 
-### 6.2 Osnovni i izvedeni glasovi
+### 6.2 Base and derived voices
 
-**Osnovni glasovi** (Josip i Vlado) koriste fizičke snimke fonema - stvarne zvučne zapise govornika.
+**Base voices** (Josip and Vlado) use physical phoneme recordings: real sound recordings of a speaker.
 
-**Izvedeni glasovi** (Detence, Baba, Đedo) koriste iste zvučne zapise kao osnovni glasovi, ali s prilagođenom visinom glasa:
+**Derived voices** (Detence, Baba, Đedo) use the same sound recordings as the base voices, but with an adjusted pitch:
 
-- **Detence** koristi Josipove foneme s visinom 1.5x (viši glas)
-- **Baba** koristi Josipove foneme s visinom 1.2x (blago viši glas)
-- **Đedo** koristi Vladove foneme s visinom 0.75x (niži glas)
+- **Detence** uses Josip's phonemes at a pitch of 1.5x (higher voice)
+- **Baba** uses Josip's phonemes at a pitch of 1.2x (slightly higher voice)
+- **Đedo** uses Vlado's phonemes at a pitch of 0.75x (lower voice)
 
-Osnovni i izvedeni glasovi, kao i svi ostali, govore sva četiri jezika: Josip na srpskom kaže *hiljada* i slovka *lje*, Vlado na hrvatskom *tisuća* i *elj*, a na slovenskom *tisoč*.
+Base and derived voices, like all the others, speak all four languages: Josip says *hiljada* and spells *lje* in Serbian, Vlado says *tisuća* and *elj* in Croatian, and *tisoč* in Slovenian.
 
-**Formantni glasovi** (Zvonko, Stojan, Mirsad) ne koriste snimke. Govor se u cijelosti računa pravilima, kao kod sintetizatora Eloquence i DECtalk: iz teksta se određuju glasovi, naglasak i rečenična intonacija, a zatim se zvuk stvara formantnim sintetizatorom. Zato ovi glasovi:
+**Formant voices** (Zvonko, Stojan, Mirsad) use no recordings. Speech is computed entirely by rule, as with the Eloquence and DECtalk synthesizers: the sounds, stress and sentence intonation are worked out from the text, and then a formant synthesizer generates the audio. As a result, these voices:
 
-- ne trebaju datoteke s glasovnim podacima
-- ostaju čisti i razumljivi pri vrlo velikim brzinama, jer se brzina i visina ne dobivaju naknadnom obradom zvuka
-- imaju rečeničnu intonaciju (izjava, pitanje, zarez, usklik)
-- brojeve izgovaraju, kao i svi glasovi, prema odabranom jeziku (hrvatski: *tisuća*, *milijun*; srpski: *hiljada*, *milion*, *dvesta*; bosanski: *hiljada*, *milion*, *dvjesto*; slovenski: *tisoč*, *milijon*, *enaindvajset*)
+- don't need voice data files
+- stay clean and intelligible at very high rates, because rate and pitch don't come from audio processing after the fact
+- have sentence intonation (statement, question, comma, exclamation)
+- say numbers, like all voices, according to the selected language (Croatian: *tisuća*, *milijun*; Serbian: *hiljada*, *milion*, *dvesta*; Bosnian: *hiljada*, *milion*, *dvjesto*; Slovenian: *tisoč*, *milijon*, *enaindvajset*)
 
-Ako formantni glas neku riječ naglasi na pogrešnom slogu, naglasak možete zadati u rječniku izgovora uobičajenim naglasnim znakovima, na primjer `telèfon`, `gláva`, `kȕća` ili `grȃd`.
+If a formant voice stresses a word on the wrong syllable, you can set the stress in the pronunciation dictionary with the usual accent marks, for example, `telèfon`, `gláva`, `kȕća` or `grȃd`.
 
-**Pjevajući glasovi** (Orguljaš - Vila Velebita, Dalmacija Klapa, Lika Velebit i Bećarac Zvonkovim glasom, Trubač - Kreće se lađa francuska, Harmonikaš - Kreće se lađa francuska i Solunac Stojanovim, Sevdalija - Kad ja pođoh na Bembašu, Sazlija - Kad ja pođoh na Bembašu i Sarajevo Bembaša Mirsadovim) su formantni glasovi koji tekst ne govore nego pjevaju, kao što su to činili DECtalk i glasovi Pipe Organ i Cellos na Macintoshu. Svaki slog dobiva jednu notu narodne pjesme (Zvonkovi glasovi pjevaju *Vilu Velebita*, Stojanovi *Kreće se lađa francuska*, Mirsadovi *Kad ja pođoh na Bembašu*), na onom od tri jezika koji je odabran; prva kitica pjesme točno sjeda na melodiju, a svaki drugi tekst pjeva se na istu melodiju, slog po slog, iz početka sa svakom novom rečenicom koju program pošalje. Brzina govora određuje tempo, visina transponira pjesmu, a intonacija određuje dubinu vibrata (0% ga isključuje). Umjesto grkljana svaki glas ima svoj "instrument": orgulje s odjekom crkve, klapu od nekoliko glasova s basom oktavu niže, trubu, dvije harmonikaške piskove ugođene za nekoliko centa različito, sevdalijski glas sa širokim vibratom i saz s tremolom. Lika Velebit, Solunac i Sarajevo Bembaša pjevaju običnim glasom Zvonka, Stojana i Mirsada, bez instrumenta i odjeka, a pjesma im je prenesena u visinu u kojoj inače govore.
+**Singing voices** (Orguljaš - Vila Velebita, Dalmacija Klapa, Lika Velebit and Bećarac in Zvonko's voice; Trubač - Kreće se lađa francuska, Harmonikaš - Kreće se lađa francuska and Solunac in Stojan's; Sevdalija - Kad ja pođoh na Bembašu, Sazlija - Kad ja pođoh na Bembašu and Sarajevo Bembaša in Mirsad's) are formant voices that sing text instead of speaking it, as DECtalk and the Pipe Organ and Cellos voices on the Macintosh did. Each syllable gets one note of a folk song (Zvonko's voices sing *Vila Velebita*, Stojan's *Kreće se lađa francuska*, Mirsad's *Kad ja pođoh na Bembašu*), in whichever of the four languages is selected; the first verse of the song fits the melody exactly, and any other text is sung to the same melody, syllable by syllable, starting over with each new sentence the program sends. Speech rate sets the tempo, pitch transposes the song, and inflection sets the vibrato depth (0% turns it off). Instead of a larynx, each voice has its own "instrument": an organ with church reverb, a klapa of several voices with a bass an octave lower, a trumpet, two accordion reeds tuned a few cents apart, a sevdah singer's voice with a wide vibrato, and a saz with tremolo. Lika Velebit, Solunac and Sarajevo Bembaša sing in the ordinary voices of Zvonko, Stojan and Mirsad, with no instrument or reverb, and their song is transposed to the pitch at which they normally speak.
 
-### 6.3 Odabir glasa
+### 6.3 Choosing a voice
 
 #### Windows SAPI5
 
-SAPI5 nudi četiri glasa, po jedan za svaki jezik: Laprdus Croatian, Laprdus Serbian, Laprdus Bosnian i Laprdus Slovenian. Oni biraju jezik; kojim će glasom govoriti, bira se u Laprdus Konfiguratoru i vrijedi za sva četiri (u `settings.json` to je `voice.default`; ključa za jezik nema, jer jezik bira program koji govori). Zadani glas je Zvonko.
+SAPI5 offers four voices, one for each language: Laprdus Croatian, Laprdus Serbian, Laprdus Bosnian and Laprdus Slovenian. They choose the language; you choose the voice they speak with in the Laprdus Configurator, and it applies to all four (in `settings.json` it's `voice.default`; there's no key for the language, because the program that's speaking chooses it). The default voice is Zvonko.
 
-1. Otvorite Laprdus Konfigurator i u skupini Glas odaberite željeni glas (Josip, Vlado, Detence, Baba, Đedo, Zvonko, Stojan, Mirsad ili pjevajući glas), pa spremite
-2. Otvorite Upravljačku ploču
-3. Odaberite "Olakšani pristup" > "Prepoznavanje govora" > "Tekst u govor"
-4. U padajućem izborniku "Odabir glasa" odaberite jezik: Laprdus Croatian, Laprdus Serbian, Laprdus Bosnian ili Laprdus Slovenian
-5. Kliknite "Primijeni"
+1. Open the Laprdus Configurator, select the voice you want in the Voice Settings group (Josip, Vlado, Detence, Baba, Đedo, Zvonko, Stojan, Mirsad or a singing voice), and save
+2. Open Control Panel
+3. Select "Ease of Access" > "Speech Recognition" > "Text to Speech"
+4. In the "Voice selection" drop-down list, select the language: Laprdus Croatian, Laprdus Serbian, Laprdus Bosnian or Laprdus Slovenian
+5. Click "Apply"
 
 #### NVDA
 
-U NVDA-u su svi Laprdus glasovi dostupni za svaki jezik: glas i jezik biraju se odvojeno (vidi [3.3](#33-nvda-postavke)). Zadani glas je Zvonko.
+In NVDA, all Laprdus voices are available for every language: you choose the voice and the language separately (see [3.3](#33-nvda-settings)). The default voice is Zvonko.
 
-**Metoda 1: Postavke govora**
-1. Otvorite NVDA izbornik (NVDA tipka + N)
-2. Odaberite Opcije > Postavke > Govor
-3. U padajućem izborniku "Glas" odaberite željeni glas (popis sadrži svih 18 glasova)
-4. U padajućem izborniku "Jezik" odaberite hrvatski, srpski, bosanski ili slovenski
-5. Pritisnite "U redu" ili "Primijeni"
+**Method 1: Speech settings**
 
-**Metoda 2: Brzi prsten postavki**
-1. Pritisnite Control + NVDA tipka + strelica lijevo/desno dok ne dođete do postavke "Glas" ili "Jezik", pa strelicom gore/dolje promijenite vrijednost
-2. Ili koristite Control + NVDA tipka + V za otvaranje dijaloga za odabir glasa
+1. Open the NVDA menu (NVDA+N)
+2. Select Preferences > Settings > Speech
+3. In the "Voice" drop-down list, select the voice you want (the list contains all 18 voices)
+4. In the "Language" drop-down list, select Croatian, Serbian, Bosnian or Slovenian
+5. Press "OK" or "Apply"
 
-Ako je uključena NVDA opcija „Automatski mijenjaj jezik”, Laprdus među hrvatskim, srpskim, bosanskim i slovenskim prelazi sam prema jeziku teksta, ne mijenjajući glas.
+**Method 2: Synth settings ring**
+
+1. Press Ctrl+NVDA+Left Arrow or Right Arrow until you reach the "Voice" or "Language" setting, then use the Up or Down Arrow key to change the value
+2. Or press Ctrl+NVDA+V to open the voice selection dialog
+
+If NVDA's "Automatic language switching (when supported)" option is on, Laprdus switches among Croatian, Serbian, Bosnian and Slovenian on its own, according to the language of the text, without changing the voice.
 
 #### Linux (Speech Dispatcher)
 
-Speech Dispatcher svaki glas navodi za svaki jezik. Jezik zahtjeva (`-l`) određuje jezik, a glas (`-y`) ostaje onaj koji ste odabrali; bez odabranog glasa govori Zvonko, na sva četiri jezika. Simbolički glasovi isti su za sve jezike: MALE1 je Zvonko, MALE2 Josip, MALE3 Đedo, FEMALE1 Baba, CHILD_MALE Detence.
+Speech Dispatcher lists every voice for every language. The language of the request (`-l`) sets the language, and the voice (`-y`) stays the one you chose; with no voice chosen, Zvonko speaks, in all four languages. The symbolic voices are the same for all languages: MALE1 is Zvonko, MALE2 Josip, MALE3 Đedo, FEMALE1 Baba, CHILD_MALE Detence.
 
 ```bash
-# Lista dostupnih glasova
+# List the available voices
 spd-say -o laprdus -L
 
-# Korištenje određenog glasa (govori svoj izvorni jezik)
+# Use a specific voice (it speaks its native language)
 spd-say -o laprdus -y Josip "Tekst na hrvatskom"
 spd-say -o laprdus -y Vlado "Tekst na srpskom"
 
-# Bilo koji glas na bilo kojem jeziku
+# Any voice in any language
 spd-say -o laprdus -l sr -y Zvonko "Zvonko govori srpski"
 spd-say -o laprdus -l hr -y Vlado "Vlado govori hrvatski"
 spd-say -o laprdus -l bs "Zvonko govori bosanski"
 spd-say -o laprdus -l sl "Zvonko govori slovensko"
 ```
 
-Za trajnu promjenu u Orca čitaču ekrana:
-1. Otvorite Orca postavke (Insert+Razmaknica)
-2. Na kartici "Voice" odaberite željeni glas iz padajućeg izbornika; jezik kojim govori određuje jezik koji Orca traži
+To make a permanent change in the Orca screen reader:
+
+1. Open the Orca settings (Insert+Spacebar)
+2. On the "Voice" tab, select the voice you want from the drop-down list; the language Orca requests determines the language it speaks
 
 #### Android
 
-Laprdus sustavu nudi svaki glas pod hrvatskim, srpskim, bosanskim i slovenskim (72 glasa sustava). Jezik koji zatraži TalkBack ili druga aplikacija određuje jezik, a glas ostaje onaj odabran u aplikaciji; zadani je Zvonko.
+Laprdus offers the system every voice under Croatian, Serbian, Bosnian and Slovenian (72 system voices). The language requested by TalkBack or another app sets the language, and the voice stays the one selected in the app; the default is Zvonko.
 
-1. Otvorite Laprdus aplikaciju
-2. Dodirnite "Laprdus postavke"
-3. U odjeljku "Glas" dodirnite **"Glas"** padajući izbornik
-4. Odaberite željeni glas iz popisa
-5. U izborniku **"Jezik"** odaberite jezik za govor u samoj aplikaciji; uz uključeno "Prisilno koristi jezik" tim se jezikom govori i kad aplikacije zatraže drugi
+1. Open the Laprdus app
+2. Tap "Laprdus Settings"
+3. In the "Voice" section, tap the **"Voice"** drop-down list
+4. Select the voice you want from the list
+5. In the **"Language"** menu, select the language for speech in the app itself; with "Force language" on, that language is also used when apps request another one
 
-Za promjenu zadanog glasa u sustavu:
-1. Otvorite Postavke > Pristupačnost > Tekst u govor
-2. Dodirnite ikonu zupčanika pored "Laprdus TTS"
-3. Odaberite željeni glas
+To change the default voice in the system:
 
-#### Apple (iPhone, iPad i Mac)
+1. Open Settings > Accessibility > Text-to-speech output
+2. Tap the gear icon next to "Laprdus TTS"
+3. Select the voice you want
 
-U Izgovorenom sadržaju (iOS: Postavke > Pristupačnost > Izgovoreni sadržaj > Glasovi; macOS: Postavke sustava > Pristupačnost > Izgovoreni sadržaj > Glas sustava > Upravljaj glasovima) i u VoiceOverovim postavkama glasa svaki je Laprdusov glas naveden pod hrvatskim, srpskim, bosanskim i slovenskim; stavka koju odaberete bira i glas i jezik. U aplikaciji Laprdus izbornik "Glas" bira glas, a izbornik "Jezik" jezik za govor u samoj aplikaciji. Zadani glas je Zvonko.
+#### Apple (iPhone, iPad and Mac)
+
+In Spoken Content (iOS: Settings > Accessibility > Spoken Content > Voices; macOS: System Settings > Accessibility > Spoken Content > System voice > Manage Voices) and in VoiceOver's voice settings, every Laprdus voice is listed under Croatian, Serbian, Bosnian and Slovenian; the item you select chooses both the voice and the language. In the Laprdus app, the "Voice" menu chooses the voice and the "Language" menu chooses the language for speech in the app itself. The default voice is Zvonko.
 
 ---
 
-## 7. Rješavanje problema
+## 7. Troubleshooting
 
-### 7.1 Česti problemi
+### 7.1 Common problems
 
-#### Nema zvuka
+#### No sound
 
-1. Provjerite je li Laprdus odabran kao aktivni sintetizator
-2. Provjerite da glasnoća nije postavljena na 0
-3. Provjerite sistemsku glasnoću računala
-4. Ponovno pokrenite program koji koristite
+1. Check that Laprdus is selected as the active synthesizer
+2. Check that the volume isn't set to 0
+3. Check the computer's system volume
+4. Restart the program you're using
 
-#### Govor je prebrz ili prespor
+#### Speech is too fast or too slow
 
-Podesite brzinu govora:
-- U NVDA: Control + NVDA tipka + N > Postavke > Govor > Brzina
-- Na Androidu: Otvorite Laprdus aplikaciju i podesite klizač brzine u Laprdus postavkama
-- U naredbenom programu: koristite opciju `-r`
+Adjust the speech rate:
 
-#### NVDA ne pronalazi Laprdus
+- In NVDA: NVDA+N > Preferences > Settings > Speech > Rate
+- On Android: Open the Laprdus app and adjust the rate slider in Laprdus Settings
+- In the command-line program: use the `-r` option
 
-1. Provjerite je li dodatak ispravno instaliran (NVDA izbornik > Alati > Upravljanje dodacima)
-2. Ponovno pokrenite NVDA
-3. Provjerite da dodatak nije onemogućen
+#### NVDA can't find Laprdus
 
-#### Speech Dispatcher ne radi na Linuxu
+1. Check that the add-on is installed correctly (NVDA menu > Tools > Add-on store...)
+2. Restart NVDA
+3. Check that the add-on isn't disabled
 
-1. Provjerite je li Laprdus modul instaliran:
-   ```bash
-   ls /usr/lib/speech-dispatcher-modules/sd_laprdus
-   ```
+#### Speech Dispatcher doesn't work on Linux
 
-2. Provjerite konfiguraciju:
-   ```bash
-   grep laprdus /etc/speech-dispatcher/speechd.conf
-   ```
+1. Check that the Laprdus module is installed:
 
-3. Ponovno pokrenite Speech Dispatcher:
-   ```bash
-   systemctl --user restart speech-dispatcher
-   ```
+        ls /usr/lib/speech-dispatcher-modules/sd_laprdus
 
-### 7.2 Dijagnostički zapisnici
+2. Check the configuration:
 
-#### NVDA dodatak
+        grep laprdus /etc/speech-dispatcher/speechd.conf
 
-Za uključivanje dijagnostičkih zapisnika za NVDA dodatak:
+3. Restart Speech Dispatcher:
 
-1. Stvorite praznu datoteku `laprdus_debug` u privremenom direktoriju
-   - Windows: `%TEMP%\laprdus_debug`
-2. Ponovno pokrenite NVDA
-3. Zapisnici će se spremati u `%TEMP%\laprdus_debug.log`
+        systemctl --user restart speech-dispatcher
+
+### 7.2 Diagnostic logs
+
+#### NVDA add-on
+
+To turn on diagnostic logs for the NVDA add-on:
+
+1. Create an empty file named `laprdus_debug` in the temporary folder
+    - Windows: `%TEMP%\laprdus_debug`
+2. Restart NVDA
+3. Logs are saved to `%TEMP%\laprdus_debug.log`
 
 #### Linux
 
-Koristite opciju `-w` za opširniji ispis:
+Use the `-w` option for verbose output:
+
 ```bash
 laprdus -w "Test"
 ```
 
-### 7.3 Kontakt i podrška
+### 7.3 Contact and support
 
-Za pomoć i podršku:
+For help and support:
 
-- **E-mail:** hrvojekatic@gmail.com
-- **Web stranica:** https://hrvojekatic.com/laprdus
-- **Izvorni kod:** https://github.com/hkatic/laprdus
+- **Email:** hrvojekatic@gmail.com
+- **Website:** https://hrvojekatic.com/laprdus
+- **Source code:** https://github.com/hkatic/laprdus
 
-Pri prijavi problema, molimo navedite:
-- Verziju Laprdusa
-- Operativni sustav
-- Korišteni čitač ekrana (ako je primjenjivo)
-- Opis problema
-- Korake za reprodukciju problema
+When you report a problem, please include:
+
+- Your Laprdus version
+- Your operating system
+- The screen reader you use (if applicable)
+- A description of the problem
+- The steps to reproduce the problem
 
 ---
 
-Zadnja izmjena: veljača 2026.
+Last updated: November 2026.
