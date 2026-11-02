@@ -268,7 +268,8 @@ def notation(orth, accented, ipa, trust_accent=False):
     aligned with the spelling, or that puts its stress elsewhere, does not
     lose the form: the accent alone gives the notation, without the schwa
     and the [w] that only the transcription shows (Afganistan, whose
-    transcription begins [aʋɡ], is Afgánistan)."""
+    transcription begins [aʋɡ], is Afgánistan), except a final [w], which
+    its end still shows (oddal [ɔˈdːau̯], whose dd is one sound, is oddàw)."""
     orth = orth.lower()
     accented = accented.lower()
     if not orth or any(c not in LETTERS for c in orth):
@@ -299,6 +300,8 @@ def notation(orth, accented, ipa, trust_accent=False):
         if not trust_accent:
             return None
         al = [''] * len(orth)       # no schwa, every l by the rules
+        if orth[-1] == 'l' and ipa.endswith('u\u032f'):
+            al[-1] = 'W'            # but the final [w]
         ipa_stress = -1
     else:
         ipa_stress = simp[1]
@@ -389,7 +392,8 @@ def ending_by_rule(stem_note, ending):
         out[-2] = SCHWA
     elif len(ending) == 1 and ending == 'l':
         pass
-    # final l after a vowel: [w] (the stress is in the stem)
+    # final l after a vowel: [w]; the stress is in the stem, or the stem ends
+    # in its stressed vowel and -l is the participle's ending (phonemize())
     if ending.endswith('l') and n >= 2 and (word[-2] in 'aeiu' or out[-2:-1] == [SCHWA]):
         out[-1] = 'w'
     return ''.join(out)
@@ -472,11 +476,15 @@ CORRECTIONS = {
     # seznam: SSKJ² and SP 2001 allow [sə] and [se]; a Slovenian listener asked
     # for the open e (2026-11-02), so the accent stays and the schwa goes
     'seznam': {'*': 'seznám', 'seznam': 'seznàm'},  # SSKJ² seznàm -áma [səznam in seznam]
-    # posodobiti: the l-participle on the i, as a Slovenian listener asked
-    # (2026-11-02), against SSKJ² and SP 2001 posodôbiti -im; the other forms
-    # stay the dictionaries' (posodôbim, posodôbi, posodôbljen)
-    'posodobiti': {'posodobil': 'posodobíw', 'posodobila': 'posodobíla', 'posodobilo': 'posodobílo',
-                   'posodobili': 'posodobíli', 'posodobile': 'posodobíle'},
+    # posodobiti on the i in every form of the verb, as a Slovenian listener
+    # asked (2026-11-02 and later), against SSKJ² and SP 2001 posodôbiti -im;
+    # the passive participle posodôbljen, which has no i to carry it, stays
+    # the dictionaries'
+    'posodobiti': {'posodobiti': 'posodobíti', 'posodobit': 'posodobít', 'posodobim': 'posodobím',
+                   'posodobiš': 'posodobíš', 'posodobi': 'posodobí', 'posodobiva': 'posodobíva',
+                   'posodobita': 'posodobíta', 'posodobimo': 'posodobímo', 'posodobite': 'posodobíte',
+                   'posodobijo': 'posodobíjo', 'posodobil': 'posodobíw', 'posodobila': 'posodobíla',
+                   'posodobilo': 'posodobílo', 'posodobili': 'posodobíli', 'posodobile': 'posodobíle'},
     # The teens on their first syllable, the first variant of SSKJ²
     # (dvánajst in dvanájst, pétnajst in petnájst) and the reading users
     # accepted; SP 2001 and Sloleks put the second first
@@ -552,6 +560,25 @@ def norm(note):
     """A notation as compared by the check below: an l that the rules read
     as [w] anyway is not a difference."""
     return note.replace('w', 'l')
+
+
+def loses_final_w(got, note):
+    """A form whose transcription ends in [w] while the lookup gives a notation
+    l after a stress on the last vowel of a word of two or more syllables,
+    which finish_word() reads as [l], as in the loanwords (hotél, kanál): the
+    stem of the participle's other forms, sledíl* of sledíla, reads sledil so.
+    The form must be listed, with its w. norm() would hide the difference."""
+    if not note.endswith('w') or not got.endswith('l') or len(got) < 2:
+        return False
+    before = got[:-1]
+    stressed = before[-1] == GRAVE or (before[-1] in ACCENTED and before[-1] not in 'aeiou')
+    # the syllables, the syllabic r among them (trdíl has two, zavŕl two)
+    plain = [PLAIN_OF.get(ch, ch) for ch in before if ch != GRAVE]
+    vowels = 'aeiouə'
+    nuclei = sum(1 for k, ch in enumerate(plain)
+                 if ch in vowels or (ch in 'rŕ' and (k == 0 or plain[k - 1] not in vowels)
+                                     and (k + 1 == len(plain) or plain[k + 1] not in vowels)))
+    return stressed and nuclei >= 2
 
 
 def hand_entries(cpp_path):
@@ -919,6 +946,7 @@ def build(forms_path, manual_min, auto_min, form_min):
     proper_weight = defaultdict(dict)
     names_w = defaultdict(lambda: defaultdict(int))     # spelling -> notation -> hand-accented name's ff
     names_lemma = {}                                    # (spelling, notation) -> a name; spelling -> all
+    note_lemma = {}                                     # (spelling, notation) -> the commonest lemma
     common_w = defaultdict(int)                         # spelling -> ff of the common words' forms
     adjective_w = defaultdict(int)                      # ... of the adjectives' among them
     unnamed = set()                                     # spellings of COMMON_CAPITALIZED
@@ -939,6 +967,8 @@ def build(forms_path, manual_min, auto_min, form_min):
                 note = correct(lemma, orth, mark_fleeting_e(orth, note, orths, cat))
                 w = (proper_weight if proper else weight)[orth].setdefault(note, [0, 0])
                 w[0] += ff
+                if entry['freq'] >= w[1]:
+                    note_lemma[(orth, note)] = lemma.lower()
                 w[1] = max(w[1], entry['freq'])
                 if proper:
                     if manual:
@@ -995,14 +1025,53 @@ def build(forms_path, manual_min, auto_min, form_min):
                 best = (total, verb, word_class == 'P')
         if best:
             verb_noun[orth] = (best[1], nominal, best[2])
-    names = {'weights': names_w, 'lemma': names_lemma, 'common': common_w,
+    names = {'weights': names_w, 'lemma': names_lemma, 'note_lemma': note_lemma, 'common': common_w,
              'adjective': adjective_w, 'unnamed': unnamed}
     return len(lemmas), truth, stems, verb_noun, names
 
 
-def read_given_names(path):
-    """The given names of slovenian_given_names.tsv, lowercase and in the order
-    of their code points, for the binary search of surname_reading()."""
+def final_l_forms(truth, names, marked):
+    """The spellings read with a final [l] although the rule of finish_word()
+    would say [w], for the table SLOVENIAN_FINAL_L: a word of one syllable, or
+    without the stress on its last syllable, or with a schwa before the l, looks
+    like a participle. Sloleks's transcription says [l], which it also says of
+    words the dictionaries mark [-u̯] (mísel, tôpel, vesél): those lemmas, from
+    slovenian_final_w.tsv, stay out. A name only where no common word of that
+    spelling has a [w] of its own."""
+    def looks_like_participle(note):
+        body = note[:-1]
+        if body.endswith(SCHWA) or body.endswith(SCHWA + GRAVE):
+            return True
+        plain = [PLAIN_OF.get(ch, ch) for ch in body if ch != GRAVE]
+        nuclei = sum(1 for k, ch in enumerate(plain)
+                     if ch in 'aeiouə' or (ch in 'rŕ' and (k == 0 or plain[k - 1] not in 'aeiouə')
+                                           and (k + 1 == len(plain) or plain[k + 1] not in 'aeiouə')))
+        stressed_last = body[-1] == GRAVE or (body[-1] in ACCENTED and body[-1] not in 'aeiou')
+        return nuclei == 1 or not stressed_last
+
+    forms = set()
+    lemma_of = names['note_lemma']
+    def consider(orth, note):
+        if not note.endswith('l') or len(orth) < 3 or orth[-2] not in 'aeiu':
+            return
+        lemma = lemma_of.get((orth, note), orth)
+        if lemma in marked or orth in marked or lemma.endswith(('ti', 'či')):
+            return      # a verb's participle is [w] whatever its transcription says
+        if looks_like_participle(note):
+            forms.add(orth)
+    for orth, note in truth.items():
+        consider(orth, note)
+    for orth, notes in names['weights'].items():
+        if truth.get(orth, '').endswith('w'):
+            continue
+        consider(orth, max(notes.items(), key=lambda kv: (kv[1], kv[0]))[0])
+    return sorted(forms, key=lambda k: [ord(c) for c in k])
+
+
+def read_word_list(path):
+    """A word per line, # for comments, lowercase and in the order of their code
+    points (slovenian_given_names.tsv, for the binary search of
+    surname_reading(); slovenian_final_w.tsv)."""
     if not path or not os.path.exists(path):
         return []
     with open(path, encoding='utf-8') as f:
@@ -1011,7 +1080,7 @@ def read_given_names(path):
 
 
 def generate(forms_path, out_path, manual_min=50, auto_min=2000, form_min=3, cpp_path=None,
-             places_path=None, names_report=None, given_names_path=None):
+             places_path=None, names_report=None, given_names_path=None, final_w_path=None):
     lemma_count, truth, stems, verb_noun, names = build(forms_path, manual_min, auto_min, form_min)
 
     # Every form must read as it should. The stem of one word catches the
@@ -1027,7 +1096,7 @@ def generate(forms_path, out_path, manual_min=50, auto_min=2000, form_min=3, cpp
         # a word with ć or đ takes a stem only with an ending of the
         # declension, as a name does (formant_slovenian.cpp, has_name_letter())
         got, hand = reader.read(orth, name='ć' in orth or 'đ' in orth)
-        if got is None or norm(got) != norm(note):
+        if got is None or norm(got) != norm(note) or (not hand and loses_final_w(got, note)):
             if not (hand and orth in hand_exact):
                 exact[orth] = note
     print('spellings', len(truth), 'exact', len(exact), 'stems', len(stems),
@@ -1188,7 +1257,18 @@ def generate(forms_path, out_path, manual_min=50, auto_min=2000, form_min=3, cpp
             if not blocks:
                 out.write('    u8"",\n')
             out.write('};\n')
-        given = read_given_names(given_names_path)
+        marked = set(read_word_list(final_w_path))
+        final_l = final_l_forms(truth, names, marked)
+        print('final [l] forms', len(final_l), file=sys.stderr)
+        out.write('// Spellings whose final l is [l] though they look like a participle:\n')
+        out.write('// the transcriptions of Sloleks, without the words SSKJ² and SP mark [-u̯]\n')
+        out.write('const char* const SLOVENIAN_FINAL_L[] = {\n')
+        for start in range(0, len(final_l), 8):
+            out.write('    %s,\n' % ', '.join('u8"%s"' % n for n in final_l[start:start + 8]))
+        if not final_l:
+            out.write('    u8"",\n')
+        out.write('};\n')
+        given = read_word_list(given_names_path)
         out.write('// Given names, lowercase, in code point order (slovenian_given_names.tsv)\n')
         out.write('const char* const SLOVENIAN_GIVEN_NAMES[] = {\n')
         for start in range(0, len(given), 8):
@@ -1231,7 +1311,8 @@ def main(argv):
                  os.path.join(root, 'src', 'formant', 'formant_slovenian.cpp'),
                  [os.path.join(root, 'tools', 'formant', 'slovenian_places.tsv'),
                   os.path.join(root, 'tools', 'formant', 'slovenian_persons.tsv')], names_report,
-                 os.path.join(root, 'tools', 'formant', 'slovenian_given_names.tsv'))
+                 os.path.join(root, 'tools', 'formant', 'slovenian_given_names.tsv'),
+                 os.path.join(root, 'tools', 'formant', 'slovenian_final_w.tsv'))
     else:
         print(__doc__, file=sys.stderr)
         return 2

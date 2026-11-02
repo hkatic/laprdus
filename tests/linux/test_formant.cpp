@@ -667,9 +667,10 @@ TEST_CASE("Slovenian is spoken by every voice", "[formant][language]") {
     REQUIRE(speak(zvonko.handle, "55") == speak(zvonko.handle, "petinpetdeset"));
     REQUIRE(speak(zvonko.handle, "2000000") == speak(zvonko.handle, "dva milijona"));
     REQUIRE(speak(zvonko.handle, "3,14") == speak(zvonko.handle, "tri cele \xC5\xA1tirinajst"));
-    // A 2 agrees with what it counts, and is dva where it counts nothing
-    // (a listener's report: 2 koša, 2 načina and T2 were dve)
+    // 1 to 4 agree with what they count, in gender, number and case, and are
+    // ena, dva, tri, stiri where they count nothing (a listener's report)
     const std::pair<const char*, const char*> twos[] = {
+        // 2
         {"2 ko\xC5\xA1" "a", "dva ko\xC5\xA1" "a"},
         {"2 na\xC4\x8Dina", "dva na\xC4\x8Dina"},
         {"2 velika ko\xC5\xA1" "a", "dva velika ko\xC5\xA1" "a"},
@@ -689,6 +690,51 @@ TEST_CASE("Slovenian is spoken by every voice", "[formant][language]") {
         {"2,5", "dve celi pet"},
         {"2 milijardi", "dve milijardi"},
         {"2 milijona", "dva milijona"},
+        {"z 2 \xC5\xBEli\xC4\x8Dkama", "z dvema \xC5\xBEli\xC4\x8Dkama"},
+        {"pred 2 leti", "pred dvema leti"},
+        {"v 2 urah", "v dveh urah"},
+        {"do 2 let", "do dveh let"},
+        {"od 2 ur", "od dveh ur"},
+        {"2 min", "dve min"},
+        // 1
+        {"1 ko\xC5\xA1", "en ko\xC5\xA1"},
+        {"101 ko\xC5\xA1", "sto en ko\xC5\xA1"},
+        {"1 knjiga", "ena knjiga"},
+        {"1 knjigo", "eno knjigo"},
+        {"1 leto", "eno leto"},
+        {"1 evro", "en evro"},
+        {"1 stvar", "ena stvar"},
+        {"1 mo\xC5\xBEnost", "ena mo\xC5\xBEnost"},
+        {"1 kg", "en kg"},
+        {"do 1 leta", "do enega leta"},
+        {"od 1 ure", "od ene ure"},
+        {"v 1 uri", "v eni uri"},
+        {"v 1 dnevu", "v enem dnevu"},
+        {"pred 1 letom", "pred enim letom"},
+        {"1", "ena"},
+        {"T1", "T ena"},
+        {"1 od 5", "ena od pet"},
+        {"1 in 1", "ena in ena"},
+        {"stran 1 od 3", "stran ena od tri"},
+        // 3, 4
+        {"3 ko\xC5\xA1i", "trije ko\xC5\xA1i"},
+        {"4 ko\xC5\xA1i", "\xC5\xA1tirje ko\xC5\xA1i"},
+        {"103 ko\xC5\xA1i", "sto trije ko\xC5\xA1i"},
+        {"3 ljudje", "trije ljudje"},
+        {"3 ko\xC5\xA1" "e", "tri ko\xC5\xA1" "e"},
+        {"3 hi\xC5\xA1" "e", "tri hi\xC5\xA1" "e"},
+        {"4 mesta", "\xC5\xA1tiri mesta"},
+        {"3 stvari", "tri stvari"},
+        {"4 mo\xC5\xBEnosti", "\xC5\xA1tiri mo\xC5\xBEnosti"},
+        {"3 dni", "tri dni"},
+        {"s 3 \xC5\xBElicami", "s tremi \xC5\xBElicami"},
+        {"s 4 \xC5\xBElicami", "s \xC5\xA1tirimi \xC5\xBElicami"},
+        {"pred 3 leti", "pred tremi leti"},
+        {"v 3 dneh", "v treh dneh"},
+        {"v 4 letih", "v \xC5\xA1tirih letih"},
+        {"k 3 osebam", "k trem osebam"},
+        {"3 tiso\xC4\x8D", "tri tiso\xC4\x8D"},
+        {"slika 3", "slika tri"},
     };
     for (const auto& two : twos) {
         INFO(two.first);

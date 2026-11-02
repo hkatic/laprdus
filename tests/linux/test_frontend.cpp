@@ -2097,12 +2097,67 @@ TEST_CASE("Slovenian listener's report of November 2026", "[frontend][slovenian]
         {U"Ivan Lapajne", "'i:van lap'a:jnE"},           // Sloleks: Lapájne
         {U"Miroslava Krleže", "m'i:rOslava kərl'é:žE"},  // a genitive
         {U"Janez Novak", "j'a:nEs nOv'a:k"},
-        // posodobiti: the l-participle on the i, the rest as the dictionaries
+        // posodobiti on the i in every form, as the listener answered; the
+        // passive participle, which has no i to carry it, as the dictionaries
         {U"Aplikacija se je posodobila", "aplik'a:cija sE jE pOsOdOb'i:la"},
         {U"Posodobil sem", "pOsOdOb'i:w səm"},
         {U"posodobili", "pOsOdOb'i:li"},
-        {U"Posodobi", "pOsOd'O:bi"},
-        {U"posodobiti", "pOsOd'O:biti"},
+        {U"Posodobi", "pOsOdOb'i:"},
+        {U"posodobiti", "pOsOdOb'i:ti"},
+        {U"posodobim", "pOsOdOb'i:m"},
+        {U"posodobite", "pOsOdOb'i:tE"},
+        {U"posodobijo", "pOsOdOb'i:jO"},
+        {U"posodobljen", "pOsOd'O:bljEn"},
+        {U"posodobitev", "pOsOdOb'i:təw"},
+        // The final l of a participle is [w], also stressed on the last vowel
+        // (Sloleks, SP); a loanword and a noun's genitive plural keep [l]
+        {U"želel", "žEl'é:w"},
+        {U"sledil", "slEd'i:w"},
+        {U"rodil", "rOd'i:w"},
+        {U"učil", "uč'i:w"},
+        {U"gradil", "grad'i:w"},
+        {U"posodobil", "pOsOdOb'i:w"},
+        {U"trdil", "tərd'i:w"},        // a stem with the l, the syllabic r
+        {U"oddal", "Odd'aw"},           // dd one sound in the transcription
+        {U"zatrl", "zat'ərw"},
+        {U"je vozil", "j'é: v'O:ziw"},
+        {U"brez vozil", "brEz vOz'i:l"},
+        {U"kanal", "kan'a:l"},
+        {U"model", "mOd'é:l"},
+        {U"april", "apr'i:l"},
+        {U"avtomobil", "awtOmOb'i:l"},
+        {U"del", "d'é:l"},
+        // Loanwords and other words with no [-u̯] in SSKJ² and SP keep [l],
+        // with the stress anywhere (the listener: ángel, módul, móbitel);
+        // the words the dictionaries mark, and the participles, are [w]
+        {U"angel", "'a:ŋgEl"},
+        {U"modul", "m'ó:dul"},
+        {U"mobitel", "m'ó:bitEl"},
+        {U"konzul", "k'ó:nzul"},
+        {U"stil", "st'i:l"},
+        {U"strel", "str'é:l"},
+        {U"ansambel", "ans'a:mbəl"},
+        {U"kabel", "k'a:bəl"},
+        {U"cikel", "c'i:kəl"},
+        {U"dizel", "d'i:zəl"},
+        {U"sil", "s'i:l"},                  // genitive plurals: the l is the stem's
+        {U"škatel", "šk'a:təl"},
+        {U"Izrael", "'i:zraEl"},
+        {U"Daniel", "d'a:nijEl"},
+        {U"Michael", "m'i:chaEl"},          // no lexicon: a capital is a foreign name
+        {U"Paul", "p'a:ul"},
+        {U"email", "Em'a:il"},
+        {U"misel", "m'i:səw"},
+        {U"posel", "p'O:səw"},
+        {U"topel", "t'O:pəw"},
+        {U"mrzel", "m'ərzəw"},
+        {U"vesel", "vEs'é:w"},
+        {U"žival", "živ'a:w"},
+        {U"rekel", "r'é:kəw"},
+        {U"videl", "v'i:dEw"},
+        {U"delal", "d'é:law"},
+        {U"bil", "b'i:w"},
+        {U"zadeklamiral", "zadEklam'i:raw"},    // no lexicon, small letters: a participle
         // seznam with the open e in every form
         {U"seznam", "sEzn'am"},
         {U"na seznamu", "na sEzn'a:mu"},

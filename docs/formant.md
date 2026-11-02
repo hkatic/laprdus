@@ -3351,11 +3351,55 @@ Toporišič's rules), so the lexicon carries most of the load:
      (SSKJ² *dvánajst in dvanájst*, *pétnajst in petnájst*, SP 2001 only
      *-nájst*; the user heard *-nájst* as strange), with *sédəmnajst*,
      *ósəmnajst* and their ordinals. Two deviations come from a native
-     listener (2026-11-02): *seznàm -áma* with the open e, the second
+     listener (November 2026): *seznàm -áma* with the open e, the second
      variant of SSKJ² and SP (*[səznam in seznam]*; until then the schwa,
-     the first), and the l-participle of *posodobiti* on the i (*posodobíl,
-     posodobíla*), against SSKJ² and SP (*posodôbiti -im*, which the other
-     forms keep).
+     the first), and *posodobiti* on the i in every form of the verb
+     (*posodobíti, posodobím, posodobí, posodobíl, posodobíla*), against SSKJ²
+     and SP (*posodôbiti -im*); the passive *posodôbljen* has no i to carry it
+     and stays.
+   - **The final l of a participle.** A final *l* after a vowel is [w] in the
+     participles and [l] in the loanwords stressed on the last syllable
+     (`finish_word()`: *delal* [w], *kanál, hotél* [l]). A participle stressed
+     on the last vowel looks like those, so it needs telling apart, and until
+     November 2026 the tool hid the difference: `norm()` treats *w* and *l*
+     alike, so *sledíl* from the stem *sledíl\** passed for the *sledíw* of the
+     transcription, and 269 of the 6,000 commonest masculine participles were
+     read [l] (*želel, sledil, rodil, učil, gradil*). Now a stem and the ending
+     *-l* alone is [w] in `phonemize()` (*posodobí\** + *l*), the check lists a
+     form whose transcription ends in [w] and whose lookup gives [l]
+     (`loses_final_w()`), and a transcription that cannot be aligned still gives
+     its final [w] (*oddal* [ɔˈdːau̯], one *d* sound, is *oddàw*). Of the 10,885
+     hand-accented spellings in a vowel and *l*, 10,598 now agree with the
+     transcription (10,104 before; 97.3 % by corpus count, 94.4 % before), and
+     496 changed, one of them against it. Of those 6,000 participles 46 stay [l],
+     nearly all because a noun's genitive plural is the commoner reading (*brez
+     vozil, pravil, zdravil*; *je vozil* is the verb, by `context_reading()`).
+     Where a noun and a participle have one accent the commoner decides, so the
+     rarer *predal* "drawer" and *nadomestil* (of *nadomestilo*) now read [w]
+     with the verb.
+   - **The final l of everything else.** The other way round the engine read
+     [w] where the word has [l], because a word of one syllable, or not stressed
+     on the last, or with a schwa before the l, looks like a participle. A native
+     listener confirmed it in November 2026 (*ángel, módul, móbitel* end in
+     [l]). Sloleks's transcription cannot decide alone, since it also writes [l]
+     for *misel, vesel, stol*. The dictionaries can: SSKJ² and SP mark the
+     pronunciation where the l is [u̯] (*mísel -sli [-u̯]*, *vesél [-u̯]*, *tôpel
+     [-u̯]*, *žival [-u̯]*) and mark nothing where it is [l] (*ángel*, *módul*, *stíl*,
+     *strél*, *ansámbel*, *kábel*, *dízel*, *cíkel*). Of the 352 spellings where the
+     engine said [w] and Sloleks [l], Fran's entries put about 75 lemmas among
+     the marked (`tools/formant/slovenian_final_w.tsv`; a [u̯] given only as a
+     second variant, *véčidel [tudi -u̯]*, *vítel*, does not count). The others go
+     into the generated table `SLOVENIAN_FINAL_L` (300 spellings), which
+     `finish_word()` consults: those loanwords, names (*Izrael, Daniel, Emil,
+     Istanbul, Pavel, Karel*) and the genitive plurals, whose l belongs to the
+     stem (*sil, žil, kril, škatel, gesel*). A verb's participle stays out whatever
+     its transcription says. A capitalized word in no lexicon reads [l] too,
+     being nearly always a foreign name (*Michael, Excel*), and a few foreign
+     words without an accent in Sloleks are a hand list (*Paul, email, cocktail*).
+     A small word in no lexicon is still read as a participle (*zadeklamiral*).
+     231 of the 352 changed; about 40 very rare forms remain, of frequency two.
+     Where a noun in *-l* shares its spelling with a rarer participle the noun
+     decides: *je kril* now reads [l] with *kril*, the genitive plural of *krilo*.
    - **Every form is checked.** The tool simulates `Lexicon::find_exact`
      and `find_stem` of the C++, the hand-written entries included (it
      reads `HAND_ENTRIES` from `formant_slovenian.cpp`), over every
@@ -3752,31 +3796,60 @@ is *sto dvaintrideset tisoč štiristo sedeminpetdeset*: § 253; *3.14* stays
 *tri pika štirinajst*), and a numeric date in the genitive, which does not
 depend on the sentence (*7. 10. 2026* is *sedmega desetega dva tisoč
 šestindvajset*, *7. oktobra* *sedmega oktobra*; Jezikovna svetovalnica).
-A 2 agrees with what it counts (`CroatianNumbers::slovenian_two_agrees()`,
-a listener's report of 2026-11-02: it was always *dve*, so *2 koša*,
-*2 načina* and the operator *T2* were wrong). The dual of a masculine noun
-and its adjective ends in *-a* (*dva koša, dva velika koša*), of the others
-in *-i* (*dve uri, dve mesti, dve veliki hiši*; a text that writes the plural
-has *-e*: *2 ure*), so a small word of three or more letters after the number
-that ends in *-i* or *-e* makes it *dve*, unless it is a function word, a
-common verb (also any *-uje*, *-jte*) or a masculine form (*2 dni*, *2 ljudje*).
-Everywhere else it is *dva*: glued to letters or after a hyphen (*T2, T-2*),
-before a capital or a sign, with nothing after it, in digits read one by one
-(*stran dva, dva plus dva, leta dva tisoč dva*), and when typed. It stays
-*dve* for the hour and the minutes (*Ura je 2*, *2:30*, *12:02*; SSKJ² *ura je
-dve*) and in a decimal (*dve celi pet, tri cele dve*). The numbers agree in
-the same way inside larger ones (*sto dve leti, sto dva stola, tisoč dve
-knjigi*), not in the compounds, which do not change (*dvaindvajset*).
+The numbers 1 to 4 agree with what they count, in gender, number and case
+(`CroatianNumbers::slovenian_agree()`). A listener's report of November 2026:
+a 2 was always *dve* (*2 koša*, *2 načina*, the operator *T2*), and asked about
+the rest he answered *en koš*, *trije koši*, *z dvema žličkama*. There is no
+parser at this point of the pipeline, so the ending of the next word and the
+preposition before the number decide, and a word that could be something else
+leaves the plain form *ena, dva, tri, štiri*.
 
-On SUK 1.1, of the 87 occurrences of 2 before a noun or an adjective this
-gives the noun's gender for 81, against 36 for the fixed *dve*; of the other
-six, three are names (*A-2 liga*, a numbered heading) and three are cases
-the rule does not attempt (*z 2 žličkama* should be *z dvema žličkama*,
-1-2 *urah*). GaMS 9B, asked for 16 sentences (*dva* or *dve*), agrees with the
-rule in all of them, the bare numbers included (*Odpri stran 2*, *Leta 2002*,
-*2 plus 2*, the digits of a phone number). The dictionaries name the number
-*dve* (SSKJ² "izraža število dve", SP § 11), and that is what the bare 2 read
-until now; the listener's report and GaMS prefer *dva* where nothing is counted.
+- **Nothing is counted:** the plain form. A number glued to letters or after a
+  hyphen (*T2, T-2, A-1 liga*), after a capitalized word inside a sentence
+  (*Pentium 2, Voyager 1*), after a word that takes a number as a label (*stran
+  2, slika 1, leta 3, člen 4*), before a capital, a sign, a function word or a
+  common verb, with nothing after it (*2 plus 2, leta dva tisoč dva*), digits
+  read one by one, a typed digit. It stays *dve* for the hour and the minutes
+  (*Ura je 2*, *2:30*, *12:02*; SSKJ² *ura je dve*) and in a decimal (*dve celi
+  pet, tri cele dve*).
+- **Cases, from the ending:** *-ama, -oma, -ema* the dual's instrumental and
+  dative (*z dvema žličkama*); *-ami, -imi* the plural's (*s tremi žlicami*);
+  *-ah, -eh, -ih, -ov, -ev* the locative and the genitive (*v dveh urah, v treh
+  dneh, dveh mesecev*).
+- **Cases, from the preposition:** a word with no ending after one with the
+  genitive (*do treh let, od dveh ur*); *-i* after *z, s, pred, med* (*pred
+  dvema leti, s tremi otroki*); *-am, -em* after *k, h, proti* (*k trem
+  osebam*). For 1: *enega, ene* with the genitive (*do enega leta, od ene ure*),
+  *enem, eni* with the locative (*v enem dnevu, v eni uri*), *enim* with the
+  instrumental (*pred enim letom*), *enemu, eni* with the dative.
+- **Otherwise the nominative and the accusative.** 1: *-a* *ena*; *-o, -e* *eno*
+  (not *en evro, en avto*); a consonant or *-i* *en* (*en koš, en glavni
+  element*), but *ena* for the feminine i-stems, about 100 of them from Sloleks
+  and every *-ost, -tev* (*ena stvar, ena možnost, ena odločitev*). 2: *-i, -e*
+  *dve* (*dve uri, dve veliki hiši*), else *dva*, also for *dni* and other
+  masculines (*dva dni*). 3, 4: *-i* and masculines in *-je* *trije, štirje*
+  (*trije koši, trije veliki koši, trije ljudje*), but *tri, štiri* for the same
+  i-stems and *dni* (*tri stvari, tri dni*), and for any other ending (*tri
+  koše, tri hiše, tri mesta*).
+- **Inside larger numbers** the same (*sto en koš, sto dve leti, sto trije
+  koši, tisoč dve knjigi*), not in the compounds, which do not change
+  (*dvaindvajset*). Units are not expanded but agree: *en kg, en km, dve min*.
+
+Measured on SUK 1.1, with the form the noun's gender, number and case ask for as
+the reference: of the 209 occurrences of 1 to 4 before a noun or an adjective
+the rule gets 185 right, the plain forms 95 (by number: 1: 45 of 64 against 9;
+2: 59 of 60 against 24; 3: 40 of 42 against 32; 4: 41 of 43 against 30). Most of
+the 24 left are abbreviations and names, where the plain form is acceptable
+(*1 KDP*, *Voyager 1*, *1 Johann*), or a case with no preposition to show it
+(*4 delavcem*). Of the 906 occurrences before anything else 6 are changed, when
+a number that ends a phrase stands before a verb in *-i* (*januarju 4 videli*).
+A first version without the labels and the capitals changed 19. The first
+capital of a sentence cannot be told from a name (*Pentium 2 procesorji* at the
+head is read as counting). GaMS 9B, asked for 16 sentences with 2
+(*dva* or *dve*), agrees with the rule in all of them. The dictionaries name the
+number *dve* (SSKJ² "izraža število dve", SP § 11), and that is what the bare 2
+read until November 2026; the listener's report and GaMS prefer *dva* where
+nothing is counted.
 
 Symbols inside a clause are *pika, dvopičje, klicaj, odstotkov, evrov,
 afna*; the spelled names of digits, punctuation and symbols (*ena, pika,

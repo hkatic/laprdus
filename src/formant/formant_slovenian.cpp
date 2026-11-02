@@ -588,11 +588,13 @@ bool l_final_w_word(const std::u32string& w) {
     return words.count(w) != 0;
 }
 
-// Words of one syllable in -l that keep the [l] although the rule for
-// monosyllables says [w]: dél (SSKJ: dél -a [tudi deu̯], the [l] first),
-// and the loans šál, bál, gél, mól.
+// Words that keep the [l] although the rule says [w], beside the table
+// SLOVENIAN_FINAL_L: dél (SSKJ: dél -a [tudi deu̯], the [l] first), the loans
+// šál, bál, gél, mól, and frequent foreign words without an accent in Sloleks,
+// which a stem or the rule would otherwise read (Paul, email, cocktail).
 bool l_final_l_word(const std::u32string& w) {
-    static const WordSet words = {U"del", U"šal", U"bal", U"gel", U"mol"};
+    static const WordSet words = {U"del", U"šal", U"bal", U"gel", U"mol", U"paul", U"opel", U"posedel",
+                                  U"musical", U"email", U"mail", U"hotmail", U"cocktail"};
     return words.count(w) != 0;
 }
 
@@ -601,6 +603,7 @@ struct Analysis {
     std::vector<uint8_t> flags;     // per letter
     size_t notation_letters = 0;    // letters that came from the lexicon's notation (the rest by rule)
     bool letter_name = false;
+    bool unknown_name = false;      // written with a capital and in no lexicon
 };
 
 void add_phone(WordPhones& out, Ph ph, int letter, bool nucleus) {
@@ -1732,6 +1735,16 @@ int default_stress(const std::u32string& w, const WordPhones& wp, const std::vec
 // Settles what depends on the stress: the length and quality of the
 // stressed vowel when no mark gave them, the schwa of an unstressed final
 // -er, -el, -en, -ek, -ec, -ev, and the l at the end of a word.
+// The forms of SLOVENIAN_FINAL_L (see finish_word())
+bool final_l_form(const std::u32string& w) {
+    static const WordSet forms = [] {
+        WordSet set;
+        for (const char* form : SLOVENIAN_FINAL_L) set.insert(PhonemeMapper::utf8_to_utf32(form));
+        return set;
+    }();
+    return forms.count(w) != 0;
+}
+
 void finish_word(const Analysis& a, WordPhones& wp) {
     const std::u32string& w = a.plain;
     const size_t n = w.size();
@@ -1788,18 +1801,23 @@ void finish_word(const Analysis& a, WordPhones& wp) {
     // l at the end of a word after a vowel (§ 650): [w] in the participles
     // (bil, dal, delal, videl, nosil), after a schwa (rekel, misel, topel)
     // and in the nouns and adjectives of the list (stol, sol, bel, vesel);
-    // [l] otherwise, as in the loanwords with the stress on the last
-    // syllable (hotél, kanál, avtomobíl, apríl, modél).
-    // A notation l follows the rule too (the lexicon writes w only where
-    // the rule would say l).
+    // [l] otherwise, as in the loanwords (hotél, kanál, avtomobíl, apríl,
+    // modél). A word with no stress on the last syllable, or of one syllable,
+    // looks like a participle: those that are not, whatever the vowel, are in
+    // SLOVENIAN_FINAL_L, from the transcriptions of Sloleks without the words
+    // SSKJ² and SP mark [-u̯] (ángel, módul, stíl, kábel, ansámbel, síl, žíl,
+    // škátel), and so is a capitalized word in no lexicon, nearly always a
+    // foreign name (Michael, Paul, Excel). A notation l follows the rule too
+    // (the lexicon writes w only where the rule would say l).
     if (n >= 2 && w.back() == U'l' && !wp.phones.empty() && wp.phones.back().ph == Ph::L &&
         is_vowel_letter(w[n - 2])) {
         const bool final_stress = static_cast<size_t>(wp.stress + 1) == wp.nuclei.size();
         const bool monosyllable = wp.nuclei.size() == 1;
         const bool schwa = wp.phones[static_cast<size_t>(wp.nuclei.back())].ph == Ph::AX;
         const bool participle_shape = w[n - 2] != U'o';
-        if (schwa || l_final_w_word(w) ||
-            (participle_shape && (monosyllable || !final_stress) && !l_final_l_word(w))) {
+        const bool listed_w = l_final_w_word(w);
+        const bool keeps_l = !listed_w && (a.unknown_name || l_final_l_word(w) || final_l_form(w));
+        if (!keeps_l && (schwa || listed_w || (participle_shape && (monosyllable || !final_stress)))) {
             wp.phones.back().ph = Ph::W;
         }
     }
@@ -1930,10 +1948,24 @@ void phonemize(const std::u32string& word, const std::vector<uint8_t>& marks,
         if (found && analysis_from_pron(pron, word.substr(stem_length), a)) {
             out.from_lexicon = true;
             if (stem_length < word.size()) stress_derived_l_suffix(word.substr(stem_length), a);
+            // A stem and the ending -l alone is the l-participle: [w], also
+            // after a stem that ends in its stressed vowel (želé*, sledí*,
+            // učí*, predá*: Slovenski pravopis 2001, § 650 and the
+            // transcriptions of Sloleks). finish_word() keeps [l] after a
+            // final stress for the loanwords, whose stem has the l (kanál*,
+            // hotél*); without this the participles were read like them.
+            // A participle read by the stem of its other forms (sledíl*) is
+            // listed whole with its w by the generator.
+            if (stem_length + 1 == word.size() && word.back() == U'l' && word.size() >= 2 &&
+                is_vowel_letter(word[word.size() - 2]) && word[word.size() - 2] != U'o' &&
+                a.flags.size() == word.size()) {
+                a.flags.back() |= F_W;
+            }
         } else {
             a.plain = word;
             a.flags.assign(word.size(), 0);
             a.notation_letters = 0;
+            a.unknown_name = capital != Capital::None;
         }
         letters_to_phones(a, out, prothetic);
         for (size_t k = 0; k < out.nuclei.size(); ++k) {

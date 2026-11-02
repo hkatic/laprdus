@@ -21,7 +21,7 @@ std::string_view CroatianNumbers::digit_to_word(char digit) {
         // The words of the digits (Slovenski pravopis 2001, § 11: nič, ena,
         // dve, tri, štiri ...). A 2 with nothing to agree with is dva, as a
         // Slovenian listener asked on 2026-11-02 (T2, stran 2, 2 plus 2);
-        // CroatianNumbers::slovenian_two_agrees() and the callers that
+        // CroatianNumbers::slovenian_agree() and the callers that
         // count something feminine make it dve. en/ena and dva/dve agree
         // with a scale word in process_number_groups, and the compounds
         // have dva- (dvaindvajset)
@@ -887,68 +887,232 @@ bool is_grouping_comma(const std::string& text, size_t i) {
 
 } // namespace
 
-// Whether the Slovenian 2 at the end of the number in [start, end) of the
-// text agrees with something feminine or neuter. The dual of a masculine
-// noun and its adjective end in -a (dva koša, dva načina, dva velika koša),
-// of the others in -i (dve uri, dve mesti, dve veliki hiši; Slovenski
-// pravopis 2001 "dvá dvé dvé"), and a text that writes the plural has -e
-// (2 ure). So the next word decides, unless it is one of the words that end
-// so without being feminine or neuter. A 2 that names something rather
-// than counts it keeps dva: glued to letters or after a hyphen (T2, T-2,
-// A-2 liga), before a capital (Pentium 2 Zbirka) or a sign. The hour is
-// feminine (SSKJ² "ura je dve"). Of the 87 occurrences of 2 before a noun or
-// an adjective in the corpus SUK 1.1 this gives the noun's gender in 81 (the
-// others are A-2 liga and cases such as z 2 žličkama); the fixed dve gave 36.
-bool CroatianNumbers::slovenian_two_agrees(const std::string& text, size_t start, size_t end) {
-    if (start > 0 && (is_letter_byte(text[start - 1]) || text[start - 1] == '-')) return false;
+// A Slovenian 1, 2, 3 or 4 at the end of the number in [start, end) of the
+// text agrees with what it counts (dvá dvé dvé, dvéh, dvéma; tríje trí, tréh,
+// trém, trémi; štírje štíri, štírih, štírim, štírimi; èn êna êno: SSKJ²,
+// Slovenski pravopis 2001). Asked for by a
+// Slovenian listener (2 koša, T2, en koš, trije koši, z dvema žličkama). The
+// ending of the next word and the preposition before the number decide; there
+// is no parser here, so a word that could be something else leaves the plain
+// form (ena, dva, tri, štiri):
+//   - A number that names something rather than counts it: glued to letters
+//     or after a hyphen (T2, A-1 liga), after a capitalized word inside a
+//     sentence (Pentium 2, Voyager 1), after a word that takes a number as a
+//     label (stran 2, slika 1, leta 3), before a capital, a sign, a function
+//     word or a common verb.
+//   - -ama, -oma, -ema: the dual's instrumental and dative (z dvema žličkama).
+//     -ami, -imi: the plural's (s tremi žlicami). -ah, -eh, -ih, -ov, -ev: the
+//     locative and genitive (v dveh urah, v treh dneh, dveh mesecev). A word
+//     with no ending after a preposition with the genitive (do treh let); -i
+//     after z, s, pred, med (pred dvema leti, s tremi otroki); -am, -em after
+//     k, h, proti (k trem osebam).
+//   - 1 after a preposition: enega, ene (do enega leta, od ene ure), enem, eni
+//     (v enem dnevu, v eni uri), enim (pred enim letom), enemu, eni.
+//   - Otherwise the nominative and the accusative. 1: -a ena; -o, -e eno (not
+//     evro, avto); a consonant or -i en (en koš, en glavni), but ena for the
+//     feminine i-stems (ena stvar, ena možnost, ena odločitev). 2: -i, -e dve
+//     (dve uri, dve veliki hiši), else dva. 3, 4: -i and the masculines in -je
+//     trije, štirje (trije koši, trije ljudje), but tri, štiri for the feminine
+//     i-stems (tri stvari) and dni, leti, else tri, štiri (tri koše, tri hiše).
+// The hour is feminine (SSKJ² "ura je dve"). On the 209 occurrences of 1 to 4
+// before a noun or an adjective in the corpus SUK 1.1 this gives the form the
+// noun's gender, number and case ask for in 185, the plain forms in 95; of the
+// 906 before anything else it changes 6.
+void CroatianNumbers::slovenian_agree(const std::string& text, size_t start, size_t end, std::string& words) {
+    // The number must end in a word of its own for 1 to 4: dvesto tri, not
+    // trinajst or triindvajset
+    size_t token = words.rfind(' ');
+    token = token == std::string::npos ? 0 : token + 1;
+    const std::string_view last = std::string_view(words).substr(token);
+    int digit = 0;
+    if (last == "ena") digit = 1;
+    else if (last == "dva") digit = 2;
+    else if (last == "tri") digit = 3;
+    else if (last == u8"štiri") digit = 4;
+    if (digit == 0) return;
+    auto say = [&](std::string_view form) { words.replace(token, std::string::npos, form); };
 
+    if (start > 0 && (is_letter_byte(text[start - 1]) || text[start - 1] == '-')) return;
+
+    // The word before the number, with only spaces between, in small letters
     size_t before = start;
     while (before > 0 && (text[before - 1] == ' ' || text[before - 1] == '\t')) --before;
-    if (before >= 6) {
-        std::string tail = text.substr(before - 6, 6);
-        for (char& c : tail) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-        if (tail == "ura je" && (before == 6 || !is_word_byte(text[before - 7]))) return true;
+    size_t begin = before;
+    while (begin > 0 && is_word_byte(text[begin - 1])) --begin;
+    std::string prev = text.substr(begin, before - begin);
+    size_t ahead = begin;       // the end of what stands before that word
+    while (ahead > 0 && (text[ahead - 1] == ' ' || text[ahead - 1] == '\t')) --ahead;
+    bool prev_capital = false;
+    if (!prev.empty()) {
+        const unsigned char c0 = static_cast<unsigned char>(prev[0]);
+        const unsigned char c1 = prev.size() > 1 ? static_cast<unsigned char>(prev[1]) : 0;
+        if (c0 >= 'A' && c0 <= 'Z') {
+            prev_capital = true;
+            prev[0] = static_cast<char>(c0 - 'A' + 'a');
+        } else if ((c0 == 0xC4 && (c1 == 0x8C || c1 == 0x86 || c1 == 0x90)) || (c0 == 0xC5 && (c1 == 0xA0 || c1 == 0xBD))) {
+            prev_capital = true;        // Č Ć Đ Š Ž: the small letter is the next code point
+            prev[1] = static_cast<char>(c1 + 1);
+        }
     }
+    if (prev_capital) {
+        // A capital inside a sentence is a name, and the number a part of it
+        const char head = ahead > 0 ? text[ahead - 1] : '.';
+        if (head != '.' && head != '!' && head != '?' && head != ':' && head != ';' && head != '\n' &&
+            head != ',' && head != '(') {
+            return;
+        }
+    }
+    if (digit == 2 && prev == "je" && ahead >= 3 && text[ahead - 1] == 'a' && text[ahead - 2] == 'r' &&
+        (text[ahead - 3] == 'u' || text[ahead - 3] == 'U') && (ahead == 3 || !is_word_byte(text[ahead - 4]))) {
+        say("dve");     // ura je dve
+        return;
+    }
+    static const std::unordered_set<std::string_view> labels = {
+        "leta", "leto", "letu", "stran", "strani", "slika", "sliki", "sliko", "tabela", "tabeli", "tabelo",
+        "skupina", "skupini", "skupino", "poglavje", "poglavju", u8"člen", u8"členu", u8"točka", u8"točki",
+        u8"točko", "odstavek", "odstavku", u8"različica", u8"različici", u8"različico", "verzija", "verziji",
+        "kanal", "kanalu", u8"številka", u8"številki", u8"št", "opomba", "opombi", "priloga", "prilogi",
+        "faza", "fazi", "korak", "koraku", "element", u8"vrstica", u8"vrstici", "stolpec", "stolpcu",
+        "zavihek", "zavihku", "okno", "oknu", "gumb", "gumbu", "datoteka", "datoteki", "mapa", "mapi",
+        "stopnja", "stopnji", "nivo", "del", "delu", "tier", "ulica", "ulici", "cesta", "cesti",
+    };
+    if (labels.count(prev)) return;
 
+    // The word after the number, in small letters
     size_t word = end;
     while (word < text.size() && (text[word] == ' ' || text[word] == '\t')) ++word;
-    if (word == end || word >= text.size()) return false;
+    if (word == end || word >= text.size()) return;
     const unsigned char first = static_cast<unsigned char>(text[word]);
     const unsigned char second = word + 1 < text.size() ? static_cast<unsigned char>(text[word + 1]) : 0;
     const bool small_letter = (first >= 'a' && first <= 'z') ||
                               (first == 0xC4 && (second == 0x8D || second == 0x87 || second == 0x91)) ||   // č ć đ
                               (first == 0xC5 && (second == 0xA1 || second == 0xBE));                       // š ž
-    if (!small_letter) return false;
+    if (!small_letter) return;
     size_t stop = word;
     while (stop < text.size() && is_word_byte(text[stop])) {
-        if (is_digit(text[stop])) return false;
+        if (is_digit(text[stop])) return;
         ++stop;
     }
-    if (stop - word < 3) return false;      // je, se, ni, ki, mi: no noun
-    const char last = text[stop - 1];
-    if (last != 'i' && last != 'e') return false;
-    std::string_view next(text.data() + word, stop - word);
-    // A verb's -uje and the imperative's -jte: 2 deluje, 2 zamešajte
-    if (next.size() >= 3 && (next.compare(next.size() - 3, 3, "uje") == 0 || next.compare(next.size() - 3, 3, "jte") == 0)) {
-        return false;
-    }
+    const std::string_view next(text.data() + word, stop - word);
+    auto ends = [&](std::string_view tail) {
+        return next.size() >= tail.size() && next.compare(next.size() - tail.size(), tail.size(), tail) == 0;
+    };
 
-    static const std::unordered_set<std::string_view> not_agreeing = {
+    // Units are not expanded: en kg, dve min
+    static const std::unordered_set<std::string_view> masculine_units = {
+        "m", "cm", "mm", "dm", "km", "kg", "g", "dag", "mg", "l", "dl", "cl", "ml", "hl", "kb", "mb", "gb", "tb",
+    };
+    static const std::unordered_set<std::string_view> feminine_units = {"h", "min", "t"};
+    if (digit == 1 && masculine_units.count(next)) { say("en"); return; }
+    if (digit == 2 && feminine_units.count(next)) { say("dve"); return; }
+    if (next.size() < 3 && next != "ur") return;    // je, se, ni, ki, mi: no noun; ur: od dveh ur
+    if (ends("uje") || ends("jte")) return;     // a verb's -uje, the imperative's -jte: 2 deluje, 2 zamešajte
+
+    static const std::unordered_set<std::string_view> not_counted = {
         // Function words and adverbs
         "tudi", "pri", "ali", "vse", "zaradi", "proti", "glede", "niti", "vsi", "okoli", "lani",
         u8"šele", "nikoli", "hkrati", "skozi", "zlasti", u8"drugače", "bolje", "pozneje", "kasneje",
         "vendarle", "kajti", "sredi", "kje", "radi", "nekateri", "kateri", "katere", "kakor", "meni",
-        "sebi", "sebe", "mene", "nje", "tri", u8"štiri", "dve", "obe", "bodisi", "jutri", "potem",
+        "sebi", "sebe", "mene", "nje", "tri", u8"štiri", "dve", "obe", "dva", "ena", "bodisi", "jutri", "potem",
+        "kot", "ker", "pod", "nad", "pred", "med", "brez", "sem", "smo", "bom", "nam", "vam", "jih", "jim",
+        "tem", "teh", "kar", "kaj", "kdo", "kako", "ter", "bodo", "krat", "lahko", "tako", "zato", "samo",
+        "zelo", "malo", "veliko", "dobro", "hitro", "vedno", "nato", "danes", u8"tisoč",
         // The commonest verbs
-        "bili", "bile", "biti", "boste", "ste", "imeli", "imate", "morali", u8"začeli", "dobili",
+        "bili", "bile", "biti", "boste", "ste", "imeli", "imate", "ima", "imajo", "morali", u8"začeli", "dobili",
         "gre", "pravi", "more", u8"kaže", "zdi", u8"želi", u8"prišli", "pride", "deluje", u8"piše",
         u8"živi", u8"začne", "govori", "potrebuje", "zgodi", "daje", "sme", "pove", "postane", "vidi",
         "sodi", u8"pričakuje", "vsebuje", u8"drži", "dobi", "pomeni",
-        // Masculine nouns written in a form other than the dual
-        "dni", "dneve", "dnevi", "ljudje", "ljudi", "otroke", "otroci", u8"možje", u8"moški",
-        "fantje", "bratje", "gostje", u8"starši", "tedne", "tedni", "mesece", "meseci",
     };
-    return not_agreeing.count(next) == 0;
+    if (not_counted.count(next)) return;
+
+    static const std::unordered_set<std::string_view> with_genitive = {
+        "od", "do", "iz", "brez", "zaradi", "okoli", "okrog", "blizu", "izmed", "izpod", "izza", "razen",
+        "sredi", "glede", "mimo", "poleg", "znotraj", "zunaj",
+    };
+    static const std::unordered_set<std::string_view> with_locative = {"v", "na", "o", "ob", "pri", "po"};
+    static const std::unordered_set<std::string_view> with_instrumental = {"z", "s", "pred", "med", "nad", "pod", "za"};
+    static const std::unordered_set<std::string_view> with_dative = {"k", "h", "proti", "kljub"};
+    const bool genitive = with_genitive.count(prev) != 0;
+    const bool locative = with_locative.count(prev) != 0;
+    const bool instrumental = with_instrumental.count(prev) != 0;
+    const bool dative = with_dative.count(prev) != 0;
+    const char tail = next.back();
+    const bool no_ending = tail != 'a' && tail != 'e' && tail != 'i' && tail != 'o' && tail != 'u';
+
+    // The feminine i-stems, the commonest of Sloleks (without -ost, -tev),
+    // singular and plural: their consonant and their -i look masculine
+    static const std::unordered_set<std::string_view> feminine = {
+        "stvar", "oblast", u8"žival", "pesem", "napoved", "misel", "jed", "bolezen", u8"luč", "kazen", "snov",
+        "stran", "pot", "vez", u8"reč", "skrb", u8"moč", "cev", "sled", "smet", "zamisel", "raven", u8"smuč",
+        "strast", u8"laž", "vas", "plesen", "pripoved", "prepoved", u8"kokoš", u8"uš", "plat", "dlan", "plast",
+        "smer", "korist", "odpoved", "klet", "smrt", u8"noč", "plavut", "kopel", "vajet", "klop", "izpoved",
+        "vest", "obrt", u8"peč", "vrzel", "bojazen", u8"miš", "rast", "past", u8"pošast", u8"četrt", "zapoved",
+        "obrv", "ljubezen", u8"pomoč", "pamet", "sol", "vrv", "zver", "gos", u8"utež", "vzmet", "dlesen",
+        u8"pešpot", u8"piščal", "zvrst", "perut", u8"čeljust", "kap", "pest", "prikazen", "gred", "nit", "pomlad",
+        "predjed", "basen", "kad", "jesen", "posest", u8"čast", "zmrzal", "prst", "povest", "zavest", "mast",
+        "podstran", "kost",
+        "stvari", "oblasti", u8"živali", "pesmi", "napovedi", "misli", "jedi", "bolezni", u8"luči", "kazni",
+        "snovi", "strani", "poti", "vezi", u8"reči", "skrbi", u8"moči", "cevi", "sledi", "smeti", "zamisli",
+        "ravni", u8"smuči", "strasti", u8"laži", "vasi", "plesni", "pripovedi", "prepovedi", u8"kokoši", u8"uši",
+        "plati", "dlani", "plasti", "smeri", "koristi", "odpovedi", "kleti", "smrti", u8"noči", "plavuti",
+        "kopeli", "vajeti", "klopi", "izpovedi", "vesti", "obrti", u8"peči", "vrzeli", "bojazni", u8"miši",
+        "rasti", "pasti", u8"pošasti", u8"četrti", "zapovedi", "obrvi", "ljubezni", u8"pomoči", "pameti", "soli",
+        "vrvi", "zveri", "gosi", u8"uteži", "vzmeti", "dlesni", u8"pešpoti", u8"piščali", "zvrsti", "peruti",
+        u8"čeljusti", "kapi", "pesti", "prikazni", "gredi", "niti", "pomladi", "predjedi", "basni", "kadi",
+        "jeseni", "posesti", u8"časti", "zmrzali", "prsti", "povesti", "zavesti", "masti", "podstrani", "kosti",
+        u8"oči", "prsi", "sani", "jasli",
+    };
+    const bool feminine_i = feminine.count(next) != 0 || (ends("ost") && next.size() > 5) ||
+                            (ends("osti") && next.size() > 6) || ends("tev");
+
+    if (digit == 1) {
+        if (genitive && tail == 'a') { say("enega"); return; }      // do enega leta
+        if (genitive && tail == 'e') { say("ene"); return; }        // od ene ure
+        if (locative && tail == 'u') { say("enem"); return; }       // v enem dnevu
+        if (locative && tail == 'i') { say("eni"); return; }        // v eni uri, na eni strani
+        if (instrumental && (ends("om") || ends("em"))) { say("enim"); return; }    // pred enim letom
+        if (dative && tail == 'u') { say("enemu"); return; }
+        if (dative && tail == 'i') { say("eni"); return; }
+        static const std::unordered_set<std::string_view> masculine_o = {
+            "evro", "avto", "euro", "kino", "radio", "video", "studio", "biro", "metro", "foto",
+        };
+        if (tail == 'a' || tail == 'u') return;                     // ena knjiga
+        if (tail == 'o') { say(masculine_o.count(next) ? "en" : "eno"); return; }
+        if (tail == 'e') { say("eno"); return; }                    // eno polje, eno vprašanje
+        if (tail == 'i' || !feminine_i) say("en");                  // en koš, en glavni; ena stvar
+        return;
+    }
+
+    const char* const INSTRUMENTAL[] = {"dvema", "tremi", u8"štirimi"};
+    const char* const GENITIVE[] = {"dveh", "treh", u8"štirih"};
+    const char* const DATIVE[] = {"dvema", "trem", u8"štirim"};
+    const char* const MASCULINE[] = {"dva", "trije", u8"štirje"};
+    const size_t n = static_cast<size_t>(digit - 2);
+
+    if (digit == 2 && (ends("ama") || ends("oma") || ends("ema"))) { say("dvema"); return; }
+    if (ends("ami") || ends("imi")) { say(INSTRUMENTAL[n]); return; }
+    if (ends("ah") || ends("eh") || ends("ih") || ends("ov") || ends("ev")) { say(GENITIVE[n]); return; }
+    if (dative && digit > 2 && (ends("am") || ends("em"))) { say(DATIVE[n]); return; }
+    if ((prev == "z" || prev == "s" || prev == "pred" || prev == "med") && tail == 'i') { say(INSTRUMENTAL[n]); return; }
+    if (genitive && (no_ending || next == "ljudi")) { say(GENITIVE[n]); return; }
+
+    if (digit == 2) {
+        static const std::unordered_set<std::string_view> masculine_forms = {
+            "dni", "dneve", "dnevi", "ljudje", "ljudi", "otroke", "otroci", u8"možje", u8"moški",
+            "fantje", "bratje", "gostje", u8"starši", "tedne", "tedni", "mesece", "meseci",
+        };
+        if ((tail == 'i' || tail == 'e') && !masculine_forms.count(next)) say("dve");
+        return;
+    }
+    // 3, 4
+    static const std::unordered_set<std::string_view> masculine_je = {
+        "ljudje", "gostje", "fantje", "kmetje", u8"možje", u8"študentje", "sosedje", "lasje", "vodje",
+        "bratje", "gospodje", u8"očetje", "zobje", u8"škofje", "grofje", "agentje", "dedje",
+    };
+    if (masculine_je.count(next)) { say(MASCULINE[n]); return; }
+    if (tail == 'i' && !feminine_i && next != "dni" && next != "leti" && next != "uri" && next != "ljudi") {
+        say(MASCULINE[n]);
+    }
 }
 
 std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
@@ -1010,7 +1174,7 @@ std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
                     if (is_digit(text[k])) digits += text[k];
                 }
                 std::string words = number_to_words(digits);
-                if (slovenian_two_agrees(text, i, end)) feminine_two(words);
+                slovenian_agree(text, i, end, words);
                 result += words;
                 i = end;
                 continue;
@@ -1071,7 +1235,7 @@ std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
             std::string_view num_str(text.data() + num_start, i - num_start);
             std::string words = number_to_words(num_str);
             if (!words.empty()) {
-                if (slovenian() && slovenian_two_agrees(text, num_start, i)) feminine_two(words);
+                if (slovenian()) slovenian_agree(text, num_start, i, words);
                 result += words;
             }
         }
