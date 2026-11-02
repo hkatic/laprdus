@@ -693,7 +693,8 @@ TEST_CASE("Slovenian is spoken by every voice", "[formant][language]") {
     REQUIRE(speak(zvonko.handle, "2000000") == speak(zvonko.handle, "dva milijona"));
     REQUIRE(speak(zvonko.handle, "3,14") == speak(zvonko.handle, "tri cele \xC5\xA1tirinajst"));
     // 1 to 4 agree with what they count, in gender, number and case, and are
-    // ena, dva, tri, stiri where they count nothing (a listener's report)
+    // ena, dve, tri, stiri where they count nothing (a listener's reports; SP 2001,
+    // SSKJ2 and the Jezikovna svetovalnica have dve as the name of the number)
     const std::pair<const char*, const char*> twos[] = {
         // 2
         {"2 ko\xC5\xA1" "a", "dva ko\xC5\xA1" "a"},
@@ -701,7 +702,31 @@ TEST_CASE("Slovenian is spoken by every voice", "[formant][language]") {
         {"2 velika ko\xC5\xA1" "a", "dva velika ko\xC5\xA1" "a"},
         {"T2", "T dva"},
         {"T-2", "T-dva"},
-        {"stran 2", "stran dva"},
+        {"PS/2", "PS/dva"},
+        {"Pentium 2", "Pentium dva"},
+        {"To je Pentium 2", "To je Pentium dva"},
+        {"\xC4\x8Dlen 2", "\xC4\x8Dlen dva"},
+        {"monitor 2", "monitor dva"},
+        {"2 kg", "dva kg"},
+        {"2kg", "dva kg"},
+        {"2-krat", "dva-krat"},
+        {"2 %", "dva %"},
+        {"2 Slovenca", "dva Slovenca"},
+        // The number 2 itself, counting nothing
+        {"2", "dve"},
+        {"2.", "dve."},
+        {"1, 2, 3", "ena, dve, tri"},
+        {"0 1 2 3", "ni\xC4\x8D ena dve tri"},
+        {"02", "ni\xC4\x8D dve"},
+        {"2 plus 2", "dve plus dve"},
+        {"2 + 2", "dve + dve"},
+        {"2 je sodo", "dve je sodo"},
+        {"pritisni 2", "pritisni dve"},
+        {"stran 2", "stran dve"},
+        {"Stran 2", "Stran dve"},
+        {"slika 2", "slika dve"},
+        {"poglavje 2", "poglavje dve"},
+        {"3.2", "tri.dve"},
         {"2 dni", "dva dni"},
         {"102 stola", "sto dva stola"},
         {"2002", "dva tiso\xC4\x8D dva"},
@@ -4296,8 +4321,8 @@ TEST_CASE("Letters are spelled by their sounds when asked", "[formant][spelling]
     }
 
     // Digits, punctuation and symbols keep their names, and so do the
-    // foreign letters (ku, duplo ve, iks, ipsilon) in every language
-    const char* named[] = { "7", "q", "w", "x", "y", "Q", "W", "X", "Y" };
+    // foreign letters (ku, iks, ipsilon) in every language
+    const char* named[] = { "7", "q", "x", "y", "Q", "X", "Y" };
     for (const char* voice : { "zvonko", "stojan", "mirsad" }) {
         REQUIRE(laprdus_set_voice(engine.handle, voice, NO_DATA) == LAPRDUS_OK);
         for (const char* character : named) {
@@ -4309,6 +4334,31 @@ TEST_CASE("Letters are spelled by their sounds when asked", "[formant][spelling]
         }
     }
     REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+
+    // w: duplo ve, dvojni ve by names, and by sounds the v is a sound (duplo v,
+    // dvojni v), spelled as in running text (a listener's report)
+    REQUIRE(laprdus_set_spelling_speed(engine.handle, 100) == LAPRDUS_OK);
+    for (const char* language : { "hr", "sr", "bs", "sl" }) {
+        INFO(language);
+        REQUIRE(laprdus_set_language(engine.handle, language) == LAPRDUS_OK);
+        REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_NAMES) == LAPRDUS_OK);
+        const std::vector<int16_t> by_name = spell(engine.handle, "w");
+        REQUIRE(spell(engine.handle, "W") == by_name);
+        REQUIRE(by_name == speak(engine.handle, "w"));
+        REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_SOUNDS) == LAPRDUS_OK);
+        const std::vector<int16_t> by_sound = spell(engine.handle, "w");
+        REQUIRE(by_sound != by_name);
+        REQUIRE(by_sound == speak(engine.handle, "w"));
+    }
+    REQUIRE(laprdus_set_language(engine.handle, "sl") == LAPRDUS_OK);
+    REQUIRE(spell(engine.handle, "w") == speak(engine.handle, "dvojni v"));
+    REQUIRE(laprdus_set_language(engine.handle, "hr") == LAPRDUS_OK);
+    REQUIRE(spell(engine.handle, "w") == speak(engine.handle, "duplo v"));
+
+    // A spelled or typed 2 in Slovenian is the name of the number
+    REQUIRE(laprdus_set_language(engine.handle, "sl") == LAPRDUS_OK);
+    REQUIRE(spell(engine.handle, "2") == speak(engine.handle, "dve"));
+    REQUIRE(laprdus_set_language(engine.handle, "hr") == LAPRDUS_OK);
 
     // Spelling a word gives the sounds with the spelling pause between them
     REQUIRE(laprdus_set_spelling_pause(engine.handle, 100) == LAPRDUS_OK);
@@ -4373,6 +4423,13 @@ TEST_CASE("The user's spelling entries win, except a letter name in sound mode",
     REQUIRE(spell(engine.handle, "x") == speak(engine.handle, "iks"));
     REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_NAMES) == LAPRDUS_OK);
     REQUIRE(spell(engine.handle, "w") == speak(engine.handle, "dvostruko ve"));
+
+    // An entry that merely names w gives way to the sound, as for any letter
+    REQUIRE(laprdus_add_spelling_entry(engine.handle, "w", "duplo ve") == LAPRDUS_OK);
+    REQUIRE(spell(engine.handle, "w") == speak(engine.handle, "duplo ve"));
+    REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_SOUNDS) == LAPRDUS_OK);
+    REQUIRE(spell(engine.handle, "w") == speak(engine.handle, "duplo v"));
+    REQUIRE(laprdus_set_spelling_mode(engine.handle, LAPRDUS_SPELLING_LETTER_NAMES) == LAPRDUS_OK);
 
     // Loading the bundled dictionary again drops the user's entries
     REQUIRE(laprdus_load_spelling_dictionary_from_memory(engine.handle,

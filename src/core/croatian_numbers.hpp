@@ -87,6 +87,7 @@ public:
 private:
     // Basic digit conversions
     std::string_view digit_to_word(char digit);
+    std::string_view digit_name(char digit);    // a digit read by itself (Slovenian: dve)
     std::string tens_to_words(char tens_digit);
     std::string teens_to_words(char ones_digit);
     std::string two_digit_to_words(std::string_view two_digits);

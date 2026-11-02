@@ -16,15 +16,20 @@ namespace laprdus {
 // Single Digit to Word (0-9)
 // =============================================================================
 
+// The name of a digit read by itself. Slovenian: SP 2001, § 11 and SSKJ² give dve
+// as the name of the number 2 (ena in ena je dve), also in a phone number
+// (Jezikovna svetovalnica, "Uporaba dva in dve", 2014).
+std::string_view CroatianNumbers::digit_name(char digit) {
+    if (slovenian() && digit == '2') return "dve";
+    return digit_to_word(digit);
+}
+
 std::string_view CroatianNumbers::digit_to_word(char digit) {
     if (slovenian()) {
-        // The words of the digits (Slovenski pravopis 2001, § 11: nič, ena,
-        // dve, tri, štiri ...). A 2 with nothing to agree with is dva, as a
-        // Slovenian listener asked on 2026-11-02 (T2, stran 2, 2 plus 2);
-        // CroatianNumbers::slovenian_agree() and the callers that
-        // count something feminine make it dve. en/ena and dva/dve agree
-        // with a scale word in process_number_groups, and the compounds
-        // have dva- (dvaindvajset)
+        // The word of a digit inside a longer number: dva tisoč, sto dva. The
+        // number 2 itself is dve (digit_name(), slovenian_agree()). en/ena and
+        // dva/dve agree with a scale word in process_number_groups, and the
+        // compounds have dva- (dvaindvajset)
         switch (digit) {
             case '0': return u8"nič";
             case '1': return "ena";
@@ -804,6 +809,7 @@ size_t CroatianNumbers::convert_time_or_date(const std::string& text, size_t i, 
 // Words for a group of digits: every leading zero is "nula", the rest is
 // one number ("007" -> "nula nula sedam", "000" -> "nula nula nula").
 std::string CroatianNumbers::digit_group_to_words(std::string_view group) {
+    if (group.size() == 1) return std::string(digit_name(group[0]));    // 3.2: tri pika dve
     std::string words;
     while (group.size() > 1 && group[0] == '0') {
         words += zero_word();
@@ -894,12 +900,16 @@ bool is_grouping_comma(const std::string& text, size_t i) {
 // Slovenian listener (2 koša, T2, en koš, trije koši, z dvema žličkama). The
 // ending of the next word and the preposition before the number decide; there
 // is no parser here, so a word that could be something else leaves the plain
-// form (ena, dva, tri, štiri):
-//   - A number that names something rather than counts it: glued to letters
-//     or after a hyphen (T2, A-1 liga), after a capitalized word inside a
-//     sentence (Pentium 2, Voyager 1), after a word that takes a number as a
-//     label (stran 2, slika 1, leta 3), before a capital, a sign, a function
-//     word or a common verb.
+// form (ena, dve, tri, štiri), the names of the numbers:
+//   - The number 2 counting nothing is dve. The same listener asked for it where
+//     it stands alone; SP 2001, § 11, SSKJ² (ena in ena je dve) and the Jezikovna
+//     svetovalnica ("Uporaba dva in dve", 2014) give the rest: 1, 2, 3, 0 1 2,
+//     2 plus 2, 2 je sodo, pritisni 2, stran 2, točka 2, slika 2. A feminine or a
+//     neuter noun before it asks for dve anyway.
+//   - dva stays in what is the name of a thing: glued to letters or after a
+//     hyphen or a slash (T2, T-2, PS/2, A-2 liga, 2kg, 2-krat), after another
+//     capitalized word (Pentium 2, Voyager 2), after a masculine noun (člen 2,
+//     korak 2, monitor 2), before a capital or a sign of a unit (2 %, 2 €).
 //   - -ama, -oma, -ema: the dual's instrumental and dative (z dvema žličkama).
 //     -ami, -imi: the plural's (s tremi žlicami). -ah, -eh, -ih, -ov, -ev: the
 //     locative and genitive (v dveh urah, v treh dneh, dveh mesecev). A word
@@ -918,6 +928,15 @@ bool is_grouping_comma(const std::string& text, size_t i) {
 // before a noun or an adjective in the corpus SUK 1.1 this gives the form the
 // noun's gender, number and case ask for in 185, the plain forms in 95; of the
 // 906 before anything else it changes 6.
+namespace {
+
+bool ends_in_vowel(const std::string& word) {
+    const char c = word.back();
+    return c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u';
+}
+
+} // namespace
+
 void CroatianNumbers::slovenian_agree(const std::string& text, size_t start, size_t end, std::string& words) {
     // The number must end in a word of its own for 1 to 4: dvesto tri, not
     // trinajst or triindvajset
@@ -931,12 +950,18 @@ void CroatianNumbers::slovenian_agree(const std::string& text, size_t start, siz
     else if (last == u8"štiri") digit = 4;
     if (digit == 0) return;
     auto say = [&](std::string_view form) { words.replace(token, std::string::npos, form); };
+    // Only the number 2 by itself, not sto dva or dva tisoč dva
+    auto name_of_number = [&] {
+        if (digit == 2 && token == 0) say("dve");
+    };
 
     if (start > 0 && (is_letter_byte(text[start - 1]) || text[start - 1] == '-')) return;
 
     // The word before the number, with only spaces between, in small letters
     size_t before = start;
     while (before > 0 && (text[before - 1] == ' ' || text[before - 1] == '\t')) --before;
+    // T- 2, PS/2, PS/ 2: part of a name written with a hyphen or a slash
+    if (before >= 2 && (text[before - 1] == '-' || text[before - 1] == '/') && is_letter_byte(text[before - 2])) return;
     size_t begin = before;
     while (begin > 0 && is_word_byte(text[begin - 1])) --begin;
     std::string prev = text.substr(begin, before - begin);
@@ -969,25 +994,73 @@ void CroatianNumbers::slovenian_agree(const std::string& text, size_t start, siz
     }
     static const std::unordered_set<std::string_view> labels = {
         "leta", "leto", "letu", "stran", "strani", "slika", "sliki", "sliko", "tabela", "tabeli", "tabelo",
-        "skupina", "skupini", "skupino", "poglavje", "poglavju", u8"člen", u8"členu", u8"točka", u8"točki",
+        "skupina", "skupini", "skupino", u8"člen", u8"členu", u8"točka", u8"točki",
         u8"točko", "odstavek", "odstavku", u8"različica", u8"različici", u8"različico", "verzija", "verziji",
         "kanal", "kanalu", u8"številka", u8"številki", u8"št", "opomba", "opombi", "priloga", "prilogi",
         "faza", "fazi", "korak", "koraku", "element", u8"vrstica", u8"vrstici", "stolpec", "stolpcu",
-        "zavihek", "zavihku", "okno", "oknu", "gumb", "gumbu", "datoteka", "datoteki", "mapa", "mapi",
+        "zavihek", "zavihku", "gumb", "gumbu", "datoteka", "datoteki", "mapa", "mapi",
         "stopnja", "stopnji", "nivo", "del", "delu", "tier", "ulica", "ulici", "cesta", "cesti",
     };
+    // What is named by the number's name: feminine labels, and the verbs of
+    // choosing a number
+    static const std::unordered_set<std::string_view> names_the_number = {
+        "stran", "strani", "slika", "sliki", "sliko", "tabela", "tabeli", "tabelo", "skupina", "skupini", "skupino",
+        u8"točka", u8"točki", u8"točko", u8"različica", u8"različici", u8"različico", "verzija", "verziji",
+        u8"številka", u8"številki", u8"številko", u8"št", "opomba", "opombi", "priloga", "prilogi", "faza", "fazi",
+        u8"vrstica", u8"vrstici", "datoteka", "datoteki", "mapa", "mapi", "stopnja", "stopnji", "ulica", "ulici",
+        "cesta", "cesti", "tipka", "tipko", u8"možnost", "poglavje", "poglavju", "okno", "oknu", "pritisni", "pritisnite", "izberi", "izberite", "vnesi",
+        "vnesite", "vtipkaj", "vtipkajte", "tapni", "tapnite", "klikni", "kliknite",
+    };
+    if (names_the_number.count(prev)) { name_of_number(); return; }
     if (labels.count(prev)) return;
+    static const std::unordered_set<std::string_view> not_counted = {
+        // Function words and adverbs
+        "tudi", "pri", "ali", "vse", "zaradi", "proti", "glede", "niti", "vsi", "okoli", "lani",
+        u8"šele", "nikoli", "hkrati", "skozi", "zlasti", u8"drugače", "bolje", "pozneje", "kasneje",
+        "vendarle", "kajti", "sredi", "kje", "radi", "nekateri", "kateri", "katere", "kakor", "meni",
+        "plus", "minus", "deljeno",     // 2 plus 2
+        "sebi", "sebe", "mene", "nje", "tri", u8"štiri", "dve", "obe", "dva", "ena", "bodisi", "jutri", "potem",
+        "kot", "ker", "pod", "nad", "pred", "med", "brez", "sem", "smo", "bom", "nam", "vam", "jih", "jim",
+        "tem", "teh", "kar", "kaj", "kdo", "kako", "ter", "bodo", "krat", "lahko", "tako", "zato", "samo",
+        "zelo", "malo", "veliko", "dobro", "hitro", "vedno", "nato", "danes", u8"tisoč",
+        // The commonest verbs
+        "bili", "bile", "biti", "boste", "ste", "imeli", "imate", "ima", "imajo", "morali", u8"začeli", "dobili",
+        "gre", "pravi", "more", u8"kaže", "zdi", u8"želi", u8"prišli", "pride", "deluje", u8"piše",
+        u8"živi", u8"začne", "govori", "potrebuje", "zgodi", "daje", "sme", "pove", "postane", "vidi",
+        "sodi", u8"pričakuje", "vsebuje", u8"drži", "dobi", "pomeni",
+    };
+    // A masculine noun before it, by its final consonant: monitor 2, disk 2,
+    // uporabnik 2, as the labels above (not plus 2, kot 2, pod 2)
+    const bool after_masculine = prev.size() >= 3 && !is_digit(prev.back()) && !ends_in_vowel(prev) &&
+                                 !not_counted.count(prev);
 
     // The word after the number, in small letters
     size_t word = end;
     while (word < text.size() && (text[word] == ' ' || text[word] == '\t')) ++word;
-    if (word == end || word >= text.size()) return;
+    // Nothing after it, or a mark glued to it (2. 2, 2)); a letter glued to it is
+    // a unit or a compound (2kg, 2-krat, 2-letni), and a capitalized word before
+    // it at the head of a clause a name like the one inside (Pentium 2)
+    if (word == end || word >= text.size()) {
+        const bool glued_letter = word == end && word < text.size() && is_letter_byte(text[word]);
+        const bool glued_compound = word == end && word + 1 < text.size() && text[word] == '-' &&
+                                    is_letter_byte(text[word + 1]);
+        const bool unit_sign = word == end && word < text.size() && (text[word] == '%' || text[word] == '$');
+        if (!glued_letter && !glued_compound && !unit_sign && !prev_capital && !after_masculine) name_of_number();
+        return;
+    }
     const unsigned char first = static_cast<unsigned char>(text[word]);
     const unsigned char second = word + 1 < text.size() ? static_cast<unsigned char>(text[word + 1]) : 0;
     const bool small_letter = (first >= 'a' && first <= 'z') ||
                               (first == 0xC4 && (second == 0x8D || second == 0x87 || second == 0x91)) ||   // č ć đ
                               (first == 0xC5 && (second == 0xA1 || second == 0xBE));                       // š ž
-    if (!small_letter) return;
+    if (!small_letter) {
+        // Another number, or a sign of arithmetic: 0 1 2 3, 2 + 2. A capital is
+        // a noun of either gender (2 Slovenca), and %, $, € and ° are masculine.
+        if (is_digit(text[word]) || first == '+' || first == '=' || first == '-' || first == '*' || first == '/') {
+            name_of_number();
+        }
+        return;
+    }
     size_t stop = word;
     while (stop < text.size() && is_word_byte(text[stop])) {
         if (is_digit(text[stop])) return;
@@ -1005,25 +1078,13 @@ void CroatianNumbers::slovenian_agree(const std::string& text, size_t start, siz
     static const std::unordered_set<std::string_view> feminine_units = {"h", "min", "t"};
     if (digit == 1 && masculine_units.count(next)) { say("en"); return; }
     if (digit == 2 && feminine_units.count(next)) { say("dve"); return; }
-    if (next.size() < 3 && next != "ur") return;    // je, se, ni, ki, mi: no noun; ur: od dveh ur
-    if (ends("uje") || ends("jte")) return;     // a verb's -uje, the imperative's -jte: 2 deluje, 2 zamešajte
+    if (digit == 2 && masculine_units.count(next)) return;      // dva kg
+    // je, se, ni, ki, mi: no noun; ur: od dveh ur
+    if (next.size() < 3 && next != "ur") { name_of_number(); return; }
+    // a verb's -uje, the imperative's -jte: 2 deluje, 2 zamešajte
+    if (ends("uje") || ends("jte")) { name_of_number(); return; }
 
-    static const std::unordered_set<std::string_view> not_counted = {
-        // Function words and adverbs
-        "tudi", "pri", "ali", "vse", "zaradi", "proti", "glede", "niti", "vsi", "okoli", "lani",
-        u8"šele", "nikoli", "hkrati", "skozi", "zlasti", u8"drugače", "bolje", "pozneje", "kasneje",
-        "vendarle", "kajti", "sredi", "kje", "radi", "nekateri", "kateri", "katere", "kakor", "meni",
-        "sebi", "sebe", "mene", "nje", "tri", u8"štiri", "dve", "obe", "dva", "ena", "bodisi", "jutri", "potem",
-        "kot", "ker", "pod", "nad", "pred", "med", "brez", "sem", "smo", "bom", "nam", "vam", "jih", "jim",
-        "tem", "teh", "kar", "kaj", "kdo", "kako", "ter", "bodo", "krat", "lahko", "tako", "zato", "samo",
-        "zelo", "malo", "veliko", "dobro", "hitro", "vedno", "nato", "danes", u8"tisoč",
-        // The commonest verbs
-        "bili", "bile", "biti", "boste", "ste", "imeli", "imate", "ima", "imajo", "morali", u8"začeli", "dobili",
-        "gre", "pravi", "more", u8"kaže", "zdi", u8"želi", u8"prišli", "pride", "deluje", u8"piše",
-        u8"živi", u8"začne", "govori", "potrebuje", "zgodi", "daje", "sme", "pove", "postane", "vidi",
-        "sodi", u8"pričakuje", "vsebuje", u8"drži", "dobi", "pomeni",
-    };
-    if (not_counted.count(next)) return;
+    if (not_counted.count(next)) { name_of_number(); return; }
 
     static const std::unordered_set<std::string_view> with_genitive = {
         "od", "do", "iz", "brez", "zaradi", "okoli", "okrog", "blizu", "izmed", "izpod", "izza", "razen",
@@ -1291,11 +1352,12 @@ std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
                 }
                 if (rest.size() <= 2) {
                     if (!first) result += ' ';
-                    result += number_to_words(rest);
+                    if (rest.size() == 1) result += digit_name(rest[0]);   // 3.2, 3.02
+                    else result += number_to_words(rest);
                 } else {
                     for (char d : rest) {
                         if (!first) result += ' ';
-                        result += digit_to_word(d);
+                        result += digit_name(d);
                         first = false;
                     }
                 }
@@ -1312,7 +1374,7 @@ std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
 // =============================================================================
 
 std::string CroatianNumbers::digit_to_croatian_word(char digit) {
-    return std::string(digit_to_word(digit));
+    return std::string(digit_name(digit));
 }
 
 // =============================================================================
@@ -1361,7 +1423,7 @@ std::string CroatianNumbers::convert_digits_in_text(const std::string& text) {
             if (!first_digit) {
                 result += " ";
             }
-            result += digit_to_word(text[i]);
+            result += digit_name(text[i]);
             first_digit = false;
             i++;
         }

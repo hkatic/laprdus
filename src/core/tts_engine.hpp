@@ -271,9 +271,10 @@ public:
      *
      * A letter of the alphabet (Latin or Cyrillic, any case) is read by its
      * name in the language spoken, or by its sound when the spelling
-     * mode is LetterSounds; q, w, x and y, which are not letters of these
-     * languages, keep their names (ku, duplo ve, iks, ipsilon) in both
-     * modes. Every other character is read by its entry in the spelling
+     * mode is LetterSounds; q, x and y, which are not letters of these
+     * languages, keep their names (ku, iks, ipsilon) in both modes, and w is
+     * duplo ve by names, duplo v with the v's sound by sounds (dvojni in
+     * Slovenian). Every other character is read by its entry in the spelling
      * dictionary, or spoken as text when it has none.
      *
      * The user's spelling entries (add_spelling_entry, append_spelling_dictionary)

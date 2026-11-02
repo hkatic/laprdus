@@ -723,9 +723,10 @@ SynthesisResult TTSEngine::spell_character(const std::string& character) {
     const std::u32string letter = cps.size() == 1 ? formant::spelling_letter(cps[0])
                                                    : std::u32string();
     const std::string* user = m_impl->user_spelling_dictionary.find(character);
-    // q, w, x and y are not letters of the language: named in both modes
-    const bool sounds = m_impl->voice_params.spelling_mode == SpellingMode::LetterSounds &&
-                        !formant::is_foreign_letter(letter);
+    // q, x and y are not letters of the language: named in both modes. Nor is
+    // w, but its name ends in another letter, and that follows the mode.
+    const bool sound_mode = m_impl->voice_params.spelling_mode == SpellingMode::LetterSounds;
+    const bool sounds = sound_mode && !formant::is_foreign_letter(letter);
 
     std::string text;
     bool sound = false;
@@ -737,6 +738,9 @@ SynthesisResult TTSEngine::spell_character(const std::string& character) {
             } else {
                 sound = true;
             }
+        } else if (letter == U"w" &&
+                   (!user || (sound_mode && formant::is_letter_name(letter, PhonemeMapper::utf8_to_utf32(*user))))) {
+            text = "w";     // the front end's reading: dvojni ve by names, dvojni və by sounds
         } else if (user) {
             text = *user;
         } else {

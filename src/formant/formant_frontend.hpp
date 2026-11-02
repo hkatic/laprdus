@@ -48,8 +48,9 @@ std::u32string spelling_letter(char32_t c);
 /**
  * True for q, w, x and y, the letters outside the Croatian, Serbian and
  * Bosnian alphabets. They have no sound of their own in the language, so
- * spelling reads them by their names (ku, duplo ve, iks, ipsilon) also when
- * the other letters are spelled by their sounds.
+ * spelling reads them by their names (ku, iks, ipsilon) also when the other
+ * letters are spelled by their sounds; w is duplo ve, or duplo v with the sound
+ * of the v, by expand_words().
  */
 bool is_foreign_letter(const std::u32string& letter);
 

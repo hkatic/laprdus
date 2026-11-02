@@ -137,6 +137,8 @@ struct Word {
     bool user_accent = false;       // do not reinterpret a user's lexical accent
     bool letter_name = false;       // part of a spelled-out abbreviation
     bool letter_sound = false;      // a lone letter spoken by its sound ("Obrisano B")
+    bool own_accent = false;        // a letter's name that keeps its accent (www, https, w)
+    bool word_start = false;        // the first letter of an abbreviation written as one word
     bool joined = false;            // one word with the previous ("ne znam", tiflo-)
     bool spell = false;             // a letter of a dotted abbreviation ("s.a.r.s.")
     bool before_hyphen = false;     // a hyphen follows directly ("s-klasa")
@@ -346,7 +348,8 @@ const SymbolName SYMBOLS[] = {
 // elj, em, en, enj, o, pe, er, es, eš, te, u, ve, ze, že. Serbian, by
 // decision 41 of the Board for the Standardization of the Serbian Language
 // (the same names for Cyrillic and Latin): lje, nje and ša instead of elj,
-// enj and eš. The foreign letters: ku, duplo ve, iks, ipsilon.
+// enj and eš. The foreign letters: ku, duplo ve, iks, ipsilon (expand_words() has
+// the reading of w by sounds, duplo və).
 struct LetterName {
     const char32_t* letter;
     const char32_t* croatian;
@@ -667,12 +670,23 @@ Ph consonant_phone(char32_t c);
 // A consonant letter standing alone as a word (b, s, њ): what a screen
 // reader reports as a character ("veliko slovo B", "Obrisano B", "B
 // deleted"). Not one before a hyphen, which is part of a compound
-// (S-klasa, k-pop), and not q, w, x, y, named in both spelling modes.
+// (S-klasa, k-pop), and not q, x, y, named in both spelling modes, or w,
+// whose name is two words (expand_words()).
 bool lone_consonant_letter(const Word& token) {
     const std::u32string& w = token.w;
     if (token.before_hyphen) return false;
     if (w == U"lj" || w == U"nj" || w == U"dž") return true;
     return w.size() == 1 && consonant_phone(w[0]) != Ph::SIL;
+}
+
+// The letters read one by one, each with its accent, in the prefix of a web
+// address in any case: a listener's report of November 2026, "ha te te pe es"
+// for https, "ef te pe" for ftp and "ve ve ve" for www, in every language; the
+// usual reading of www names the v, not the w. nullptr for any other word.
+const char32_t* address_letters(const std::u32string& w) {
+    if (w == U"www") return U"vvv";
+    if (w == U"http" || w == U"https" || w == U"ftp" || w == U"ftps" || w == U"sftp") return w.c_str();
+    return nullptr;
 }
 
 // letter_sounds: a lone consonant letter is spoken by its sound ("bə"), as
@@ -699,6 +713,35 @@ std::vector<Word> expand_words(std::vector<Word> tokens, VoiceLanguage language,
         // Abbreviations are not expanded (dr., npr., km): they are read as
         // written, by the rules for any other word.
         if (!marked) {
+            if (const char32_t* letters = address_letters(token.w)) {
+                for (const char32_t* c = letters; *c; ++c) {
+                    size_t first = words.size();
+                    split_words(letter_name_in(*c, language), words);
+                    for (size_t i = first; i < words.size(); ++i) {
+                        words[i].letter_name = true;
+                        words[i].own_accent = true;
+                    }
+                }
+                continue;
+            }
+            // w alone is two words, "dvojni ve", "duplo ve"; by sounds the second
+            // is the sound of the v: "dvojni və", "duplo və" (the same report)
+            if (token.w == U"w" && !token.before_hyphen) {
+                size_t first = words.size();
+                split_words(letter_name_in(U'w', language), words);
+                for (size_t i = first; i < words.size(); ++i) {
+                    words[i].letter_name = true;
+                    words[i].own_accent = true;
+                }
+                if (letter_sounds && words.size() > first) {
+                    Word sound(U"v");
+                    sound.letter_sound = true;
+                    sound.letter_name = true;
+                    sound.own_accent = true;
+                    words.back() = std::move(sound);
+                }
+                continue;
+            }
             if (letter_sounds && !leaning[t] && lone_consonant_letter(token)) {
                 // A full word of its own, never a clitic (see letter_name)
                 token.letter_sound = true;
@@ -711,9 +754,11 @@ std::vector<Word> expand_words(std::vector<Word> tokens, VoiceLanguage language,
                 size_t first = words.size();
                 split_words(letter_name_in(token.w, language), words);
                 for (size_t i = first; i < words.size(); ++i) words[i].letter_name = true;
+                if (words.size() > first) words[first].word_start = true;
                 continue;
             }
             if (!leaning[t] && needs_spelling(token)) {
+                const size_t start = words.size();
                 for (char32_t c : token.w) {
                     size_t first = words.size();
                     split_words(letter_name_in(c, language), words);
@@ -721,6 +766,7 @@ std::vector<Word> expand_words(std::vector<Word> tokens, VoiceLanguage language,
                         words[i].letter_name = true;
                     }
                 }
+                if (words.size() > start) words[start].word_start = true;
                 continue;
             }
         }
@@ -4259,12 +4305,15 @@ Utterance Frontend::process_slovenian(const std::u32string& marked_text, Punctua
     // An acronym spelled letter by letter has one stress, on its last
     // letter (SP [espé], RTV [ertevé]: Slovenski pravopis 2001, § 1022):
     // the names before it lean on it; letters spoken by their sounds keep
-    // a stress each
-    auto named = [&](size_t k) { return words[k].letter_name && !words[k].letter_sound; };
+    // a stress each, and so do the letters of a web address's prefix (https). Two
+    // abbreviations written apart are two (USB PDF), the letters of s.a.r.s. one.
+    auto named = [&](size_t k) {
+        return words[k].letter_name && !words[k].letter_sound && !words[k].own_accent;
+    };
     for (size_t i = 0; i < count;) {
         if (!named(i)) { ++i; continue; }
-        size_t end = i;
-        while (end < count && named(end)) ++end;
+        size_t end = i + 1;
+        while (end < count && named(end) && !words[end].word_start) ++end;
         for (size_t k = i; k + 1 < end; ++k) {
             if (words[k].nuclei.empty()) continue;
             words[k].clitic = true;

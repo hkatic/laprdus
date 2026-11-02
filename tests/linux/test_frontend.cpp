@@ -2193,6 +2193,81 @@ TEST_CASE("Slovenian spellings told apart by the clause (November 2026)", "[fron
     REQUIRE(phones_of(read(custom, U"bruhoberal")) == "bruhOb'é:ral");
 }
 
+// A native listener's report: a verb's present before or after its object clitic,
+// meni after any adjective (SSKJ2, SP: veselí, žalostí; Sloleks for the adjectives)
+TEST_CASE("Slovenian verbs by their object clitic and meni after an adjective", "[frontend][slovenian]") {
+    Frontend frontend(VoiceLanguage::Slovenian);
+    struct Case { const char32_t* text; const char* phones; };
+    const Case cases[] = {
+        {U"Veseli me", "vEsEl'i: mE"},
+        {U"Žalosti me", "žalOst'i: mE"},
+        {U"Veseli nas", "vEsEl'i: nas"},
+        {U"To me žalosti", "t'ó: mE žalOst'i:"},
+        {U"Zelo me žalosti", "zEl'ó: mE žalOst'i:"},
+        {U"To me veseli", "t'ó: mE vEsEl'i:"},
+        // The nouns and adjectives of the same spellings stay
+        {U"Polna je žalosti", "p'O:wna jE ž'a:lOsti"},
+        {U"Žalosti ne morem skriti", "ž'a:lOsti nE m'ó:rEm skr'i:ti"},
+        {U"Otroci so veseli", "Otr'O:ci sO vEs'é:li"},
+        // After an auxiliary and a clitic only a participle could be the verb
+        {U"So nas levi", "s'O nas l'é:vi"},
+        // ... but si is the reflexive
+        {U"Si ga deli", "s'i ga dEl'i:"},
+        // The menu
+        {U"zaprti meni nedavno", "zap'ərti mEn'i: nEd'a:wnO"},
+        {U"Zaprti meni nedavno", "zap'ərti mEn'i: nEd'a:wnO"},
+        {U"Zaprti meni", "zap'ərti mEn'i:"},
+        {U"odprti meni", "Otp'ərti mEn'i:"},
+        {U"Skriti meni", "skr'i:ti mEn'i:"},
+        {U"Najboljši meni", "najb'ó:lši mEn'i:"},
+        {U"Dobri meni", "d'O:bri mEn'i:"},
+        {U"Zaprt meni", "zap'ərt mEn'i:"},
+        {U"Meni zaprt", "mEn'i: zap'ərt"},
+        // The pronoun and the verb
+        {U"Tudi meni", "t'u:di m'E:ni"},
+        {U"Daj meni", "d'aj m'E:ni"},
+        {U"K meni", "k m'E:ni"},
+        {U"Meni se zdi", "m'E:ni sE zd'i:"},
+        {U"Minister meni", "min'i:stər m'é:ni"},
+        {U"Pravi meni", "pr'a:vi m'é:ni"},
+        {U"V knjigi meni", "u knj'i:gi m'é:ni"},
+        {U"Ki meni", "ki m'é:ni"},
+    };
+    for (const Case& c : cases) {
+        INFO(PhonemeMapper::utf32_to_utf8(c.text));
+        REQUIRE(phones_of(read(frontend, c.text)) == c.phones);
+    }
+}
+
+// The same report: the prefix of a web address letter by letter, www as ve ve ve,
+// and w with its v by the spelling mode, in every language
+TEST_CASE("Web address prefixes and the letter w", "[frontend][slovenian]") {
+    Frontend sl(VoiceLanguage::Slovenian);
+    for (const char32_t* text : {U"www", U"WWW", U"Www"}) REQUIRE(phones_of(read(sl, text)) == "v'é: v'é: v'é:");
+    for (const char32_t* text : {U"https", U"HTTPS"}) REQUIRE(phones_of(read(sl, text)) == "h'a: t'é: t'é: p'é: 'Es");
+    for (const char32_t* text : {U"http", U"HTTP"}) REQUIRE(phones_of(read(sl, text)) == "h'a: t'é: t'é: p'é:");
+    for (const char32_t* text : {U"ftp", U"FTP"}) REQUIRE(phones_of(read(sl, text)) == "'Ef t'é: p'é:");
+    REQUIRE(phones_of(read(sl, U"https://www.index.hr")) == "h'a: t'é: t'é: p'é: 'Es v'é: v'é: v'é: p'i:ka 'i:ndEks p'i:ka ha'Er");
+    REQUIRE(phones_of(read(sl, U"w")) == "dv'ó:jni v'é:");
+    REQUIRE(phones_of(sl.process(U"w", Punctuation::PERIOD, true)) == "dv'ó:jni v'ə");
+    REQUIRE(phones_of(sl.process(U"Pritisni W", Punctuation::PERIOD, true)) == "prit'i:sni dv'ó:jni v'ə");
+    // An abbreviation has one accent, on its last letter, and two are two
+    REQUIRE(phones_of(read(sl, U"BMW")) == "béEmdvójniv'é:");
+    REQUIRE(phones_of(read(sl, U"USB")) == "uEzb'é:");
+    REQUIRE(phones_of(read(sl, U"USB PDF")) == "uEzb'é: pédé'Ef");
+    REQUIRE(phones_of(read(sl, U"s.a.r.s.")) == "EsaEr'Es");
+
+    for (VoiceLanguage language : {VoiceLanguage::Croatian, VoiceLanguage::Serbian, VoiceLanguage::Bosnian}) {
+        Frontend other(language);
+        REQUIRE(phones_of(read(other, U"www")) == "v'e v'e v'e");
+        REQUIRE(phones_of(read(other, U"HTTPS")) == "h'a t'e t'e p'e 'es");
+        REQUIRE(phones_of(read(other, U"ftp")) == "'ef t'e p'e");
+        REQUIRE(phones_of(read(other, U"w")) == "d'uplo v'e");
+        REQUIRE(phones_of(other.process(U"w", Punctuation::PERIOD, true)) == "d'uplo v'ə");
+        REQUIRE(phones_of(read(other, U"BMW")) == "b'e 'em d'uplo v'e");
+    }
+}
+
 // A question opening with lahko and a noun asks whether something can be done,
 // a statement says something of the light thing (a native listener, November 2026)
 TEST_CASE("Slovenian lahko at the head of a question and of a statement", "[frontend][slovenian]") {

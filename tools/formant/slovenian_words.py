@@ -1053,6 +1053,36 @@ def build(forms_path, manual_min, auto_min, form_min):
     return len(lemmas), truth, stems, verb_noun, names
 
 
+def definite_adjectives(forms_path, min_frequency=10):
+    """The masculine definite adjectives in -i (msd P..meid: zaprti, odprti,
+    najboljši) for the table SLOVENIAN_DEFINITE_ADJECTIVES, which tells a noun
+    after them from a verb or a pronoun of the same spelling (zaprti meni). Only
+    those is_adjective_ending() in formant_slovenian.cpp misses (-ni, -ski, -ški,
+    -čki, -nji, -oči, -eči), and not where another lemma's verb form is as
+    frequent: pravi, the present of praviti (pravi meni), or an infinitive."""
+    adjective = defaultdict(int)
+    lemma_of = {}
+    verb = defaultdict(lambda: defaultdict(int))
+    with open(forms_path, encoding='utf-8') as f:
+        for line in f:
+            parts = line.rstrip('\n').split('\t')
+            if len(parts) < 10 or not parts[6].endswith('i') or parts[6] != parts[6].lower():
+                continue
+            lemma, msd, orth, ff = parts[0], parts[5], parts[6], int(parts[7])
+            if msd.startswith('P') and msd[3:7] == 'meid':
+                if ff >= adjective[orth]:
+                    adjective[orth] = ff
+                    lemma_of[orth] = lemma
+            elif msd.startswith('G'):
+                verb[orth][lemma] += ff
+    def ending_known(w):
+        return (len(w) >= 5 and w.endswith('ni')) or w.endswith(('ski', 'ški', 'čki', 'nji', 'oči', 'eči'))
+    forms = [w for w, ff in adjective.items()
+             if ff >= min_frequency and not ending_known(w) and
+             sum(verb[w].values()) < ff]
+    return sorted(forms, key=lambda k: [ord(c) for c in k])
+
+
 def final_l_forms(truth, names, marked):
     """The spellings read with a final [l] although the rule of finish_word()
     would say [w], for the table SLOVENIAN_FINAL_L: a word of one syllable, or
@@ -1296,6 +1326,14 @@ def generate(forms_path, out_path, manual_min=50, auto_min=2000, form_min=3, cpp
         out.write('const char* const SLOVENIAN_GIVEN_NAMES[] = {\n')
         for start in range(0, len(given), 8):
             out.write('    %s,\n' % ', '.join('u8"%s"' % n for n in given[start:start + 8]))
+        out.write('};\n')
+        adjectives = definite_adjectives(forms_path)
+        print('definite adjectives', len(adjectives), file=sys.stderr)
+        out.write('// Masculine definite adjectives in -i, of frequency 10 or more, in code\n')
+        out.write('// point order, without those known by their ending (is_adjective_ending())\n')
+        out.write('const char* const SLOVENIAN_DEFINITE_ADJECTIVES[] = {\n')
+        for start in range(0, len(adjectives), 8):
+            out.write('    %s,\n' % ', '.join('u8"%s"' % n for n in adjectives[start:start + 8]))
         out.write('};\n')
         out.write('// Spellings read as a verb\'s form or as another word: the verb\'s\n')
         out.write('// reading, the other, whether the verb\'s is the l-participle, and the\n')

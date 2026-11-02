@@ -3539,6 +3539,18 @@ frequent reading alone is right for 93.3 %, the cues below for 94.8 %.
   *-li*, *-le*: the participle (*je vozil*, *so sporočili*); not *-lo*, which
   after *je* is a noun (*to je besedilo*, *pravilo*). An adjective in *-ih*
   before it: the noun (*brez novih vozil*).
+- At the head of a clause before an object clitic, any spelling of the table
+  is the verb: *Veseli me, da sva se spoznala*, *Žalosti me, da nisi prišel*, *Skrbi
+  me*, as SSKJ² has it (*veseli nas, da delo napreduje*) and SP (*~i me, da vas
+  vidim*; *žalostíti -ím*). All 20 occurrences in SUK 1.1 are verbs, two of them
+  these very words; a noun there has a form of *biti* after the clitic (*Pomoči mi
+  ni*). An object clitic right before a present makes it the verb too (*To me
+  žalosti*, *si ga deli*, *se me krivi*), except *ti* and *te*, also the
+  demonstratives (*ti pogoji*, *te dobe*), and after an auxiliary other than the
+  reflexive *si*, where only a participle could be the verb (*so nas levi in desni*,
+  *so ga poleti*). A listener's report of November 2026. These two rules move 13
+  words of SUK, and the corpus tags all 13 as verbs (*deli, žalosti, odgovori, lasti,
+  krivi, hrabri, kolovrati, veseli*).
 - *veseli*: the verb *veselí* with *se* or *si* in the clause, an object
   clitic or *ne* right before it, or at the end of the clause (*On se zelo
   veseli*, *To me veseli*); the adjective *veséli* after a form of *biti*
@@ -3662,6 +3674,17 @@ SSKJ², SP and the Collocations Dictionary of Modern Slovene at CJVT (Kolokacije
   hand's dual has *sta*) or what a deadline is for (*roki za prijavo*, *roki
   plačila*). *Rok*, in the genitive plural of the hand too, is close in SP and
   Sloleks (*iz rók*, *brez rók*) and needs nothing.
+- *meni* after any adjective is the menu (*zaprti meni nedavno*, a listener's
+  report of November 2026; *odprti meni*, *skriti meni*, *najboljši meni*): the
+  verb's subject is no adjective and a pronoun has no use for one. The endings
+  *-ni, -ski, -ški, -čki, -nji, -oči, -eči* show it, and for the rest the generator
+  writes the table `SLOVENIAN_DEFINITE_ADJECTIVES` (Sloleks's masculine definite
+  adjectives of frequency 10 or more, 1,479, without those another lemma's verb
+  form outweighs, such as *pravi*, the present of *praviti*). *Zaprt meni* and *Meni
+  zaprt* name its state. The Kolokacije of CJVT give the adjectives and the verbs
+  that go with it. SUK 1.1 has only 5 tokens of the menu, so it cannot show that this
+  catches every menu; it does show the cost, since none of the 237 tokens of the
+  verb and the pronoun changes.
 - *meni*: the menu *mení* also after a preposition whose pronoun would be
   *mano* or *mene* (*pod meni*, *za meni*), after *v* or *na* when a verb of
   motion or clicking comes before them (*Pojdi v meni*, *Kliknite na meni*,
@@ -3699,7 +3722,16 @@ of a clause, or after a conjunction, are the pronouns. An acronym spelled
 letter by letter is stressed only on its last letter (*SP* [espé], *RTV*
 [ertevé]: § 1022). The letter names are those of Pravopis § 7: *á é í ó ú*,
 *bé cé čé dé ef gé há jé ká èl èm èn pé èr ès èš té vé zé žé*, *kú, dvojni
-vé, íks, ípsilon*, *mehki čé* and *mehki džé* for ć and đ.
+vé, íks, ípsilon*, *mehki čé* and *mehki džé* for ć and đ. Pravopis § 7 also allows
+the names by sound (*bə, cə*), which is what letter-sound mode reads, so *w* is
+*dvojni və* there and *dvojni vé* in name mode, spelled and in running text (a
+listener's report of November 2026, who said the same for *duplo v* and *duplo ve* in
+the other languages; which mode he means by "spelling off" is my reading, see the
+report). The prefix of a web address is read letter by letter with an accent on each
+letter, in every language: *www* is *ve ve ve*, *https* *ha te te pe es*, *http*, *ftp*,
+*ftps*, *sftp* likewise (`address_letters()`). They used to run together with the
+rest into one accent, *hatétépéEzdvójnivédvójnivé...*. Two abbreviations written
+apart are now two (*USB PDF*, *SLS SKD*, *EUR USD*).
 
 ### Names
 
@@ -3867,7 +3899,7 @@ misread (*David Trimble*).
 ### Numbers, dates, symbols
 
 The number converter has a Slovenian dialect (Pravopis § 11 and § 536):
-*nič, ena, dva, tri, štiri ...* for the digits, *enaindvajset* and
+*nič, ena, dve, tri, štiri ...* for the numbers themselves, *enaindvajset* and
 *štiriinštirideset* written as one word
 and read as three, *ena in dvajset*, with an accent on the ones and on the
 tens and the *in* a clitic between them, without a pause (SP 2001:
@@ -3891,14 +3923,25 @@ a 2 was always *dve* (*2 koša*, *2 načina*, the operator *T2*), and asked abou
 the rest he answered *en koš*, *trije koši*, *z dvema žličkama*. There is no
 parser at this point of the pipeline, so the ending of the next word and the
 preposition before the number decide, and a word that could be something else
-leaves the plain form *ena, dva, tri, štiri*.
+leaves the plain form *ena, dve, tri, štiri*.
 
-- **Nothing is counted:** the plain form. A number glued to letters or after a
-  hyphen (*T2, T-2, A-1 liga*), after a capitalized word inside a sentence
-  (*Pentium 2, Voyager 1*), after a word that takes a number as a label (*stran
-  2, slika 1, leta 3, člen 4*), before a capital, a sign, a function word or a
-  common verb, with nothing after it (*2 plus 2, leta dva tisoč dva*), digits
-  read one by one, a typed digit. It stays *dve* for the hour and the minutes
+The first version of this made the plain 2 *dva*, which went beyond what he had
+asked, and his next report was that a 2 written apart, with nothing before or after
+it, must be *dve*. The sources agree: SP § 11 names the numbers *ena, dve, tri*, SSKJ²
+has *ena in ena je dve*, and the Jezikovna svetovalnica ("Uporaba 'dva' in 'dve'",
+in the collection of 2014, pp. 91-96) concludes that for the name of the number,
+phone numbers included, the normative form is *dve*, while usage has both and *dva*
+is fixed only in *dva tisoč*, *dvaintrideset*, *dvakrat*, *dvajset*.
+
+- **Nothing is counted:** the plain form, *dve* for the 2 by itself: alone, in a
+  list, one by one, with signs and function words (*2*, *1, 2, 3*, *0 1 2 3*, *2 plus
+  2*, *2 je sodo*, a typed digit), after the verbs of choosing a number (*pritisni 2*)
+  and after a feminine or a neuter noun (*stran 2, slika 2, točka 2, poglavje 2*).
+  *dva* stays in a longer number (*sto dva, dva tisoč dva*) and in a name or after a
+  masculine noun: glued to letters or after a hyphen or a slash (*T2, T-2, PS/2, A-2
+  liga, 2kg, 2-krat*), after a capitalized word (*Pentium 2, Voyager 2*), after a word
+  in a consonant (*člen 2, korak 2, monitor 2*), before a capital or a unit's sign
+  (*2 Slovenca, 2 %*). The same places give *ena, tri, štiri* for the others. It stays *dve* for the hour and the minutes
   (*Ura je 2*, *2:30*, *12:02*; SSKJ² *ura je dve*) and in a decimal (*dve celi
   pet, tri cele dve*).
 - **Cases, from the ending:** *-ama, -oma, -ema* the dual's instrumental and
@@ -4479,9 +4522,9 @@ Croatian speaker 11.1%; eSpeak NG Croatian 23.2%; Josip 33.1%.
   (`Frontend::letter_sound`: an `Utterance` with `isolated_sound` set, whose
   durations the builder fixes: the consonant and a neutral release vowel
   after it, "bə", "sə", as eSpeak's Croatian voice sounds letters out). The
-  foreign letters q, w, x and y (`formant::is_foreign_letter`) have no sound
-  of their own in the language and keep their names (ku, duplo ve, iks,
-  ipsilon) in that mode too.
+  foreign letters q, x and y (`formant::is_foreign_letter`, which also has w)
+  have no sound of their own in the language and keep their names (ku, iks,
+  ipsilon) in that mode too; w is duplo v, with the sound of the v (`expand_words()`).
 
 ## Sources
 

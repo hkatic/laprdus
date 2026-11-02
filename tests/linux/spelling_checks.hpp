@@ -31,8 +31,12 @@ inline void check_slovenian_spelling(LaprdusHandle engine) {
             INFO(character);
             REQUIRE(render(character, true) == render(name, false));
         }
-        REQUIRE(render("w", true) == render("dvojni ve", false));
+        // By names dvojni ve, by sounds the v is a sound: as in running text
+        REQUIRE(render("w", true) == render("w", false));
     }
+    REQUIRE(laprdus_set_spelling_mode(engine, LAPRDUS_SPELLING_LETTER_SOUNDS) == LAPRDUS_OK);
+    REQUIRE(render("w", true) == render("dvojni v", false));
+    REQUIRE(render("2", true) == render("dve", false));
     REQUIRE(laprdus_add_spelling_entry(engine, "@", "moj znak") == LAPRDUS_OK);
     REQUIRE(render("@", true) == render("moj znak", false));
     REQUIRE(laprdus_set_language(engine, "hr") == LAPRDUS_OK);

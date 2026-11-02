@@ -165,8 +165,9 @@ struct LetterName {
 // Slovenska abeceda (Slovenski pravopis 2001, § 7-9, "Imena črk"): the
 // vowels á é í ó ú, the consonants bé cé čé dé ef gé há jé ká èl èm èn pé èr
 // ès èš té vé zé žé (the rules also allow the sound with a schwa, bə, cə,
-// which is the spelling by sounds). The letters of other alphabets: kú,
-// dvojni vé, íks, ípsilon; ć and đ are mehki čé and mehki džé, dž is trdi
+// which is the spelling by sounds, and so dvojni və for w: expand_words() in
+// formant_frontend.cpp). The letters of other alphabets: kú, dvojni vé, íks,
+// ípsilon; ć and đ are mehki čé and mehki džé, dž is trdi
 // džé. The pronunciation of the names is in the lexicon.
 const LetterName LETTER_NAMES[] = {
     {U"a", U"a"},   {U"b", U"be"},  {U"c", U"ce"},  {U"č", U"če"},  {U"d", U"de"},
@@ -212,7 +213,7 @@ struct SpelledName {
 // pravopis 2001, "Ločila"; the names of the computer symbols as the
 // Slovenian localizations of NVDA and Windows give them.
 const SpelledName SPELLED[] = {
-    {"0", u8"nič"}, {"1", "ena"}, {"2", "dva"}, {"3", "tri"}, {"4", u8"štiri"},
+    {"0", u8"nič"}, {"1", "ena"}, {"2", "dve"}, {"3", "tri"}, {"4", u8"štiri"},
     {"5", "pet"}, {"6", u8"šest"}, {"7", "sedem"}, {"8", "osem"}, {"9", "devet"},
     {" ", "presledek"},
     {".", "pika"}, {",", "vejica"}, {"!", "klicaj"}, {"?", u8"vprašaj"},
@@ -1432,6 +1433,26 @@ const char32_t* roki_roke_reading(const std::vector<std::u32string>& words, size
     return nullptr;
 }
 
+// The endings of the masculine definite adjectives that hardly anything else has
+bool is_adjective_ending(const std::u32string& w) {
+    return (w.size() >= 5 && word_ends_with(w, U"ni")) || word_ends_with(w, U"ski") || word_ends_with(w, U"ški") ||
+           word_ends_with(w, U"čki") || word_ends_with(w, U"nji") || word_ends_with(w, U"oči") ||
+           word_ends_with(w, U"eči");
+}
+
+// The other masculine definite adjectives of Sloleks (the generated table)
+bool is_definite_adjective(const std::u32string& w) {
+    size_t lo = 0, hi = sizeof(SLOVENIAN_DEFINITE_ADJECTIVES) / sizeof(SLOVENIAN_DEFINITE_ADJECTIVES[0]);
+    while (lo < hi) {
+        const size_t mid = lo + (hi - lo) / 2;
+        const int c = compare_key(w, SLOVENIAN_DEFINITE_ADJECTIVES[mid]);
+        if (c == 0) return true;
+        if (c < 0) hi = mid;
+        else lo = mid + 1;
+    }
+    return false;
+}
+
 // meni after a preposition: the pronoun's form after those with the dative
 // and the locative (k meni, proti meni, o meni, pri meni, ob meni, po meni,
 // v meni, na meni), but after those with the accusative or the instrumental
@@ -1451,7 +1472,12 @@ const char32_t* roki_roke_reading(const std::vector<std::u32string>& words, size
 // participle, since the verb's present cannot follow those (je meni rekel,
 // ponudili so meni), and before what is said of whom (meni ne, meni je všeč,
 // meni se zdi); but what opens, closes and is empty is the menu (Meni se
-// odpre, Meni je prazen).
+// odpre, Meni je prazen). An adjective before it, whatever its meaning (zaprti
+// meni nedavno, a listener's example; odprti meni, najboljši meni), says the
+// menu by itself: the verb's subject is not an adjective and a pronoun has no
+// use for one. Those the ending does not show are in the table of Sloleks
+// (is_definite_adjective()). Of the 237 tokens of the verb and the pronoun in
+// SUK 1.1 none stands after one of these.
 const char32_t* meni_reading(const std::vector<std::u32string>& words, const std::vector<bool>& capitalized,
                              size_t i) {
     static const WordSet accusative_only = {U"pod", U"nad", U"pred", U"med", U"za", U"čez", U"skozi"};
@@ -1471,6 +1497,12 @@ const char32_t* meni_reading(const std::vector<std::u32string>& words, const std
         U"stari", U"ta", U"tale", U"tisti", U"isti", U"ves", U"cel", U"celoten", U"poseben", U"dober", U"okusen",
         U"bogat", U"pester", U"kratek", U"velik", U"majhen", U"lep", U"nov", U"star", U"lahek", U"prvi", U"drugi",
         U"tretji", U"četrti", U"vsak", U"neki", U"nek", U"kakšen", U"cenejši", U"dražji", U"večji", U"manjši",
+        U"skriti",      // the adjective's form is also the infinitive, which is ten times as frequent
+    };
+    // The state of a menu, right before or after it: Zaprt meni, Meni zaprt
+    static const WordSet menu_states = {
+        U"odprt", U"zaprt", U"skrit", U"prikazan", U"izbran", U"prazen", U"razširjen", U"strnjen",
+        U"onemogočen", U"omogočen", U"aktiven", U"neaktiven", U"naložen",
     };
     // Nouns it is the name or the kind of (Gumb meni, Tipka meni)
     static const WordSet naming = {
@@ -1485,6 +1517,12 @@ const char32_t* meni_reading(const std::vector<std::u32string>& words, const std
         U"sestavi", U"sestavite", U"sestavil", U"sestavila", U"pripravi", U"pripravite", U"pripravil",
         U"pripravila", U"ima", U"imajo", U"ponuja", U"ponujajo", U"uredi", U"uredite", U"nastavi", U"nastavite",
         U"spremeni", U"spremenite", U"prilagodi", U"prilagodite", U"preglej", U"preglejte", U"najdi", U"najdite",
+        // The verbs the Collocations Dictionary lists with a menu as the object
+        U"odpira", U"odpirajo", U"odpiraj", U"odpirajte", U"izbira", U"izbirajo", U"izbiraj", U"izbirajte",
+        U"sestavlja", U"sestavljajo", U"sestavljaj", U"sestavljajte", U"uporablja", U"uporabljajo", U"uporabljaj",
+        U"uporabljajte", U"upravlja", U"upravljajo", U"upravljaj", U"upravljajte", U"menjaj", U"menjajte",
+        U"oblikuj", U"oblikujte", U"ustvari", U"ustvarite", U"ustvaril", U"ustvarila", U"izdelaj", U"izdelajte",
+        U"izdelal", U"izdelala", U"vsebuje", U"vsebujejo", U"vključuje", U"vključujejo",
     };
     // A word before it that stresses the pronoun, or a verb with a dative
     static const WordSet before_pronoun = {
@@ -1548,13 +1586,12 @@ const char32_t* meni_reading(const std::vector<std::u32string>& words, const std
         }
         if (prepositions().count(*prev)) return U"mêni";
         if (before_capital && capitalized[i]) return U"mení";   // To je Meni Start
-        if (qualifying.count(*prev) || naming.count(*prev) || takes_menu.count(*prev)) return U"mení";
+        if (qualifying.count(*prev) || naming.count(*prev) || takes_menu.count(*prev) || menu_states.count(*prev)) {
+            return U"mení";
+        }
         const bool a_name = capitalized[i - 1] && i > 1;
-        if (!a_name && ((prev->size() >= 5 && word_ends_with(*prev, U"ni")) || word_ends_with(*prev, U"ski") ||
-                        word_ends_with(*prev, U"ški") || word_ends_with(*prev, U"čki") ||
-                        word_ends_with(*prev, U"nji") || word_ends_with(*prev, U"oči") ||
-                        word_ends_with(*prev, U"eči") || word_ends_with(*prev, U"joči"))) {
-            return U"mení";     // glavni meni, začetni meni, stranski meni, zadnji meni, padajoči meni
+        if (!a_name && (is_adjective_ending(*prev) || is_definite_adjective(*prev))) {
+            return U"mení";     // glavni meni, stranski meni, zadnji meni, padajoči meni, zaprti meni
         }
         if (capitalized[i]) return U"mení";     // Gumb Meni
         if (before_pronoun.count(*prev)) return U"mêni";
@@ -1568,6 +1605,7 @@ const char32_t* meni_reading(const std::vector<std::u32string>& words, const std
         return U"mení";     // Meni Start, Meni Datoteka
     }
     if (next) {
+        if (menu_states.count(*next)) return U"mení";       // Meni zaprt
         if (*next == U"se" && i + 2 < n && menu_verbs_se.count(words[i + 2])) return U"mení";
         if ((*next == U"je" || *next == U"ni" || *next == U"bo") && i + 2 < n && menu_predicates.count(words[i + 2])) {
             return U"mení";
@@ -1833,6 +1871,16 @@ VerbOrNoun context_reading(const std::vector<std::u32string>& words, size_t i, b
         return s.size() >= t.size() && s.compare(s.size() - t.size(), t.size(), t) == 0;
     };
 
+    // A verb's present opens the clause before its object: Veseli me, da sva se
+    // spoznala. Žalosti me, da nisi prišel. Skrbi me. (SSKJ² veseli nas, da delo
+    // napreduje; SP ~i me, da vas vidim.) All 20 occurrences of a spelling of this
+    // table at the head of a clause before an object clitic in SUK 1.1 are verbs;
+    // a noun there has a form of biti after the clitic (Pomoči mi ni).
+    if (i == 0 && !participle && !last && object_clitics.count(words[1]) &&
+        !(words.size() > 2 && biti.count(words[2]))) {
+        return VerbOrNoun::Verb;
+    }
+
     // veseli: veselí (se) "looks forward, pleases", veséli "cheerful". The
     // adjective follows a form of biti (smo veseli, so bili zelo veseli);
     // the verb has its se, an object (nas veseli), ne, or ends the clause
@@ -1901,6 +1949,14 @@ VerbOrNoun context_reading(const std::vector<std::u32string>& words, size_t i, b
         // brez novih vozil, teh sporočil: a genitive plural after an adjective
         if (participle && prev->size() > 3 && ends_with(*prev, U"ih")) return VerbOrNoun::Nominal;
         if (*prev == U"ne") return VerbOrNoun::Verb;
+        // To me žalosti. Ga skrbi. An object clitic before a present (not ti and
+        // te, also the demonstratives: ti pogoji, te dobe); after an auxiliary
+        // only a participle could follow, so this is another word (so nas levi in
+        // desni, so ga poleti). si is the reflexive here: si ga deli, si ga lasti.
+        if (!participle && *prev != U"ti" && *prev != U"te" && object_clitics.count(*prev) &&
+            !(i >= 2 && words[i - 2] != U"si" && biti.count(words[i - 2]))) {
+            return VerbOrNoun::Verb;
+        }
         // je vozil, sem pojasnila, so sporočili: the auxiliary right before
         // a participle that agrees with it (not -lo: to je besedilo, pravilo)
         if (participle) {
