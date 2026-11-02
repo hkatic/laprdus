@@ -389,7 +389,8 @@ Kada koristite Laprdus s NVDA čitačem ekrana, postavke glasa možete promijeni
 1. Otvorite NVDA izbornik (NVDA tipka + N)
 2. Odaberite Opcije podizbornik pa zatim Postavke > kategorija Govor
 3. U dijalogu možete podesiti:
-   - Glas (odaberite jedan od 5 Laprdus glasova)
+   - Jezik (hrvatski, srpski, bosanski ili slovenski)
+   - Glas (popis sadrži svih 18 Laprdus glasova; zadani je Zvonko)
    - Brzinu govora
    - Visinu glasa
    - Glasnoću
@@ -537,6 +538,8 @@ Na Windows sustavu, dodatne postavke možete podesiti putem Laprdus Konfigurator
 
 1. Otvorite Windows Start izbornik, a zatim pronađite Laprdus konfigurator u programskoj mapi Laprdus i otvorite ga tipkom Enter.
 2. Ili ako vam je Laprdus instaliran kao NVDA dodatak, otvorite NVDA izbornik > Laprdus podizbornik > Laprdus Konfigurator
+
+Konfigurator je na hrvatskom, srpskom, slovenskom i engleskom jeziku. Prati jezik prikaza Windowsa, a kad ga otvorite iz NVDA izbornika, prati jezik NVDA-a. Bosanski jezik prikaza daje hrvatski tekst, a svaki drugi jezik engleski. Instalacijski program također nudi ta četiri jezika, a NVDA dodatak prati jezik NVDA-a.
 
 Konfigurator omogućuje podešavanje:
 - Brzine, visine i glasnoće govora (brzinu i visinu čitač ekrana ili program ubrzava, usporava, podiže i spušta, osim kad je uključeno prisilno korištenje Laprdusovih vrijednosti; vidi [4.1](#41-brzina-govora))

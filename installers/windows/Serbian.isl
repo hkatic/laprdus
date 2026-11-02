@@ -5,7 +5,7 @@
 
 [LangOptions]
 LanguageName=Srpski
-LanguageID=$081A
+LanguageID=$241A
 LanguageCodePage=1250
 
 DialogFontName=
@@ -25,7 +25,7 @@ ErrorTitle=Greška
 ; *** SetupLdr messages
 SetupLdrStartupMessage=Instaliraćete program %1. Želite li da nastavite?
 LdrCannotCreateTemp=Nije moguće kreirati privremenu datoteku. Instalacija je prekinuta
-LdrCannotExecTemp=Nije moguće pokrenuti datoteku u privremenom folderu. Instalacija je prekinuta
+LdrCannotExecTemp=Nije moguće pokrenuti datoteku u privremenoj fascikli. Instalacija je prekinuta
 
 ; *** Startup error messages
 LastErrorMessage=%1.%n%nGreška %2: %3
@@ -43,8 +43,8 @@ WinVersionTooLowError=Ovaj program zahteva %1 verziju %2 ili noviju.
 WinVersionTooHighError=Ovaj program ne možete instalirati na %1 verzije %2 ili novije.
 AdminPrivilegesRequired=Za instalaciju programa morate biti prijavljeni kao administrator.
 PowerUserPrivilegesRequired=Za instalaciju programa morate biti prijavljeni kao administrator ili power user.
-SetupAppRunningError=Program %1 je trenutno otvoren.%n%nZatvorite program, zatim kliknite U redu za nastavak ili Odustani za izlaz.
-UninstallAppRunningError=Program %1 je trenutno otvoren.%n%nZatvorite program, zatim kliknite U redu za nastavak ili Odustani za izlaz.
+SetupAppRunningError=Program %1 je trenutno otvoren.%n%nZatvorite program, zatim kliknite U redu za nastavak ili Otkaži za izlaz.
+UninstallAppRunningError=Program %1 je trenutno otvoren.%n%nZatvorite program, zatim kliknite U redu za nastavak ili Otkaži za izlaz.
 
 ; *** Startup questions
 PrivilegesRequiredOverrideTitle=Izaberite način instalacije
@@ -57,8 +57,8 @@ PrivilegesRequiredOverrideCurrentUser=Instaliraj samo za &mene
 PrivilegesRequiredOverrideCurrentUserRecommended=Instaliraj samo za &mene (preporučeno)
 
 ; *** Misc. errors
-ErrorCreatingDir=Instalacioni program nije mogao kreirati folder »%1«
-ErrorTooManyFilesInDir=Instalacioni program ne može kreirati novu datoteku u folderu »%1« jer sadrži previše datoteka
+ErrorCreatingDir=Instalacioni program nije mogao da kreira fasciklu »%1«
+ErrorTooManyFilesInDir=Instalacioni program ne može da kreira novu datoteku u fascikli »%1« jer sadrži previše datoteka
 
 ; *** Setup common messages
 ExitSetupTitle=Prekini instalaciju
@@ -74,7 +74,7 @@ ButtonBack=< &Nazad
 ButtonNext=&Dalje >
 ButtonInstall=&Instaliraj
 ButtonOK=U redu
-ButtonCancel=Odustani
+ButtonCancel=Otkaži
 ButtonYes=&Da
 ButtonYesToAll=Da za &sve
 ButtonNo=&Ne
@@ -82,18 +82,18 @@ ButtonNoToAll=N&e za sve
 ButtonFinish=&Završi
 ButtonBrowse=&Pregledaj...
 ButtonWizardBrowse=&Pregledaj...
-ButtonNewFolder=&Kreiraj novi folder
+ButtonNewFolder=&Kreiraj novu fasciklu
 
 ; *** "Select Language" dialog messages
 SelectLanguageTitle=Izbor jezika instalacije
 SelectLanguageLabel=Izaberite jezik koji želite da koristite tokom instalacije.
 
 ; *** Common wizard text
-ClickNext=Kliknite Dalje za nastavak instalacije ili Odustani za prekid instalacije.
+ClickNext=Kliknite Dalje za nastavak instalacije ili Otkaži za prekid instalacije.
 BeveledLabel=
-BrowseDialogTitle=Izbor foldera
-BrowseDialogLabel=Izaberite folder sa spiska, zatim kliknite U redu.
-NewFolderName=Novi folder
+BrowseDialogTitle=Izbor fascikle
+BrowseDialogLabel=Izaberite fasciklu sa spiska, zatim kliknite U redu.
+NewFolderName=Nova fascikla
 
 ; *** "Welcome" wizard page
 WelcomeLabel1=Dobrodošli u instalaciju programa [name].
@@ -132,8 +132,8 @@ UserInfoNameRequired=Morate uneti ime.
 ; *** "Select Destination Location" wizard page
 WizardSelectDir=Izbor odredišne lokacije
 SelectDirDesc=Gde želite da instalirate program [name]?
-SelectDirLabel3=Program [name] biće instaliran u sledeći folder.
-SelectDirBrowseLabel=Za nastavak kliknite Dalje. Ako želite da izaberete drugi folder, kliknite Pregledaj.
+SelectDirLabel3=Program [name] biće instaliran u sledeću fasciklu.
+SelectDirBrowseLabel=Za nastavak kliknite Dalje. Ako želite da izaberete drugu fasciklu, kliknite Pregledaj.
 DiskSpaceGBLabel=Potrebno je najmanje [gb] GB slobodnog prostora na disku.
 DiskSpaceMBLabel=Potrebno je najmanje [mb] MB slobodnog prostora na disku.
 CannotInstallToNetworkDrive=Program nije moguće instalirati na mrežni disk.
@@ -142,13 +142,13 @@ InvalidPath=Morate upisati punu putanju uključujući oznaku diska. Primer:%n%nC
 InvalidDrive=Izabrani disk ili UNC putanja ne postoji ili nije dostupna. Izaberite drugu.
 DiskSpaceWarningTitle=Nema dovoljno prostora na disku
 DiskSpaceWarning=Instalacija zahteva najmanje %1 KB prostora, ali na izabranom disku dostupno je samo %2 KB.%n%nŽelite li ipak da nastavite?
-DirNameTooLong=Ime foldera ili putanja je predugačka.
-InvalidDirName=Ime foldera nije validno.
-BadDirName32=Ime foldera ne sme da sadrži sledeće znakove:%n%n%1
-DirExistsTitle=Folder već postoji
-DirExists=Folder%n%n%1%n%nveć postoji. Želite li ipak da instalirate program u taj folder?
-DirDoesntExistTitle=Folder ne postoji
-DirDoesntExist=Folder %n%n%1%n%nne postoji. Želite li da ga kreirate?
+DirNameTooLong=Ime fascikle ili putanja je predugačka.
+InvalidDirName=Ime fascikle nije ispravno.
+BadDirName32=Ime fascikle ne sme da sadrži sledeće znakove:%n%n%1
+DirExistsTitle=Fascikla već postoji
+DirExists=Fascikla%n%n%1%n%nveć postoji. Želite li ipak da instalirate program u tu fasciklu?
+DirDoesntExistTitle=Fascikla ne postoji
+DirDoesntExist=Fascikla %n%n%1%n%nne postoji. Želite li da je kreirate?
 
 ; *** "Select Components" wizard page
 WizardSelectComponents=Izbor komponenti
@@ -170,15 +170,15 @@ SelectTasksDesc=Koje dodatne zadatke želite da izvršite?
 SelectTasksLabel2=Izaberite dodatne zadatke koje će instalacioni program izvršiti tokom instalacije programa [name], zatim kliknite Dalje.
 
 ; *** "Select Start Menu Folder" wizard page
-WizardSelectProgramGroup=Izbor foldera u Start meniju
+WizardSelectProgramGroup=Izbor fascikle u Start meniju
 SelectStartMenuFolderDesc=Gde želite da instalacioni program kreira prečice?
-SelectStartMenuFolderLabel3=Instalacioni program će kreirati prečice u sledećem folderu u Start meniju.
-SelectStartMenuFolderBrowseLabel=Za nastavak kliknite Dalje. Ako želite da izaberete drugi folder, kliknite Pregledaj.
+SelectStartMenuFolderLabel3=Instalacioni program će kreirati prečice u sledećoj fascikli u Start meniju.
+SelectStartMenuFolderBrowseLabel=Za nastavak kliknite Dalje. Ako želite da izaberete drugu fasciklu, kliknite Pregledaj.
 MustEnterGroupName=Morate uneti ime grupe.
-GroupNameTooLong=Ime foldera ili putanja je predugačka.
-InvalidGroupName=Ime foldera nije validno.
+GroupNameTooLong=Ime fascikle ili putanja je predugačka.
+InvalidGroupName=Ime fascikle nije ispravno.
 BadGroupName=Ime grupe ne sme da sadrži sledeće znakove:%n%n%1
-NoProgramGroupCheck2=&Ne kreiraj folder u Start meniju
+NoProgramGroupCheck2=&Ne kreiraj fasciklu u Start meniju
 
 ; *** "Ready to Install" wizard page
 WizardReady=Spremno za instalaciju
@@ -189,7 +189,7 @@ ReadyMemoUserInfo=Podaci o korisniku:
 ReadyMemoDir=Odredišna lokacija:
 ReadyMemoType=Vrsta instalacije:
 ReadyMemoComponents=Izabrane komponente:
-ReadyMemoGroup=Folder u Start meniju:
+ReadyMemoGroup=Fascikla u Start meniju:
 ReadyMemoTasks=Dodatni zadaci:
 
 ; *** TDownloadWizardPage wizard page and DownloadTemporaryFile
@@ -218,14 +218,14 @@ ArchiveUnsupportedFormat=Format arhive nije podržan
 WizardPreparing=Priprema za instalaciju
 PreparingDesc=Instalacioni program se priprema za instalaciju programa [name] u vaš računar.
 PreviousInstallNotCompleted=Instalacija ili uklanjanje prethodnog programa nije završena. Morate ponovo pokrenuti računar da biste je dovršili.%n%nNakon ponovnog pokretanja računara, ponovo pokrenite instalacioni program da biste završili instalaciju programa [name].
-CannotContinue=Instalacioni program ne može da nastavi. Kliknite Odustani za izlaz.
+CannotContinue=Instalacioni program ne može da nastavi. Kliknite Otkaži za izlaz.
 
 ; *** "Installing" wizard page
 ApplicationsFound=Sledeći programi koriste datoteke koje instalacioni program mora da ažurira. Preporučljivo je da dozvolite instalacionom programu da zatvori te programe.
 ApplicationsFound2=Sledeći programi koriste datoteke koje instalacioni program mora da ažurira. Preporučljivo je da dozvolite instalacionom programu da zatvori te programe. Nakon završetka instalacije, instalacioni program će pokušati ponovo da pokrene te programe.
 CloseApplications=&Automatski zatvori programe
 DontCloseApplications=&Ne zatvaraj programe
-ErrorCloseApplications=Instalacionom programu nije uspelo da automatski zatvori sve programe. Preporučljivo je da zatvorite sve programe koji koriste datoteke koje instalacija mora da ažurira pre nastavka.
+ErrorCloseApplications=Instalacioni program nije uspeo da automatski zatvori sve programe. Preporučljivo je da zatvorite sve programe koji koriste datoteke koje instalacija mora da ažurira pre nastavka.
 PrepareToInstallNeedsRestart=Instalacioni program mora ponovo da pokrene vaš računar. Za dovršetak instalacije programa [name], nakon ponovnog pokretanja ponovo pokrenite instalacioni program.%n%nŽelite li sada ponovo da pokrenete računar?
 
 WizardInstalling=Instaliranje
@@ -249,9 +249,9 @@ RunEntryShellExec=Pregledaj %1
 
 ; *** "Setup Needs the Next Disk" stuff
 ChangeDiskTitle=Instalacioni program treba sledeći disk
-SelectDiskLabel2=Ubacite disk %1 i kliknite U redu.%n%nAko se datoteke sa ovog diska nalaze u drugom folderu od navedenog, unesite ispravnu putanju ili kliknite Pregledaj.
+SelectDiskLabel2=Ubacite disk %1 i kliknite U redu.%n%nAko se datoteke sa ovog diska nalaze u drugoj fascikli od navedene, unesite ispravnu putanju ili kliknite Pregledaj.
 PathLabel=&Putanja:
-FileNotInDir2=Datoteka »%1« nije u folderu »%2«. Ubacite ispravan disk ili izaberite drugi folder.
+FileNotInDir2=Datoteka »%1« nije u fascikli »%2«. Ubacite ispravan disk ili izaberite drugu fasciklu.
 SelectDirectoryLabel=Navedite lokaciju sledećeg diska.
 
 ; *** Installation phase messages
@@ -262,11 +262,11 @@ AbortRetryIgnoreIgnore=&Zanemari grešku i nastavi
 AbortRetryIgnoreCancel=Prekini instalaciju
 RetryCancelSelectAction=Izaberite radnju
 RetryCancelRetry=Pokušaj &ponovo
-RetryCancelCancel=Odustani
+RetryCancelCancel=Otkaži
 
 ; *** Installation status messages
 StatusClosingApplications=Zatvaranje programa...
-StatusCreateDirs=Kreiranje foldera...
+StatusCreateDirs=Kreiranje fascikli...
 StatusExtractFiles=Raspakivanje datoteka...
 StatusDownloadFiles=Preuzimanje datoteka...
 StatusCreateIcons=Kreiranje prečica...
@@ -321,14 +321,14 @@ ExistingFileNewerOverwriteExisting=&Prepiši postojeću datoteku
 ExistingFileNewerKeepExisting=&Zadrži trenutnu datoteku (preporučeno)
 ExistingFileNewerOverwriteOrKeepAll=&Učini isto za preostale sukobe
 ErrorChangingAttr=Došlo je do greške pri pokušaju promene atributa datoteke:
-ErrorCreatingTemp=Došlo je do greške pri kreiranju datoteke u odredišnom folderu:
+ErrorCreatingTemp=Došlo je do greške pri kreiranju datoteke u odredišnoj fascikli:
 ErrorReadingSource=Došlo je do greške pri čitanju izvorne datoteke:
 ErrorCopying=Došlo je do greške pri kopiranju datoteke:
 ErrorDownloading=Došlo je do greške pri preuzimanju datoteke:
 ErrorExtracting=Došlo je do greške pri raspakivanju datoteke:
 ErrorReplacingExistingFile=Došlo je do greške pri pokušaju zamene postojeće datoteke:
 ErrorRestartReplace=Greška RestartReplace:
-ErrorRenamingTemp=Došlo je do greške pri pokušaju preimenovanja datoteke u odredišnom folderu:
+ErrorRenamingTemp=Došlo je do greške pri pokušaju preimenovanja datoteke u odredišnoj fascikli:
 ErrorRegisterServer=Registracija DLL/OCX nije uspela: %1
 ErrorRegSvr32Failed=RegSvr32 nije uspeo sa kodom greške %1
 ErrorRegisterTypeLib=Registracija TypeLib nije uspela: %1
@@ -343,7 +343,7 @@ UninstallDisplayNameMarkCurrentUser=trenutni korisnik
 
 ; *** Post-installation errors
 ErrorOpeningReadme=Došlo je do greške pri otvaranju README datoteke.
-ErrorRestartingComputer=Instalacionom programu nije uspelo ponovo da pokrene računar. Molimo ponovo pokrenite računar ručno.
+ErrorRestartingComputer=Instalacioni program nije uspeo da ponovo pokrene računar. Ponovo pokrenite računar ručno.
 
 ; *** Uninstaller messages
 UninstallNotFound=Datoteka »%1« ne postoji. Deinstalacija nije moguća.
@@ -376,23 +376,24 @@ NameAndVersion=%1 verzija %2
 AdditionalIcons=Dodatne ikone:
 CreateDesktopIcon=Kreiraj ikonu na &radnoj površini
 CreateQuickLaunchIcon=Kreiraj ikonu za &brzo pokretanje
-ProgramOnTheWeb=%1 na webu
+ProgramOnTheWeb=%1 na vebu
 UninstallProgram=Deinstaliraj %1
 LaunchProgram=Pokreni %1
 AssocFileExtension=&Poveži %1 sa ekstenzijom %2
 AssocingFileExtension=Povezujem %1 sa ekstenzijom %2...
 AutoStartProgramGroupDescription=Pokretanje:
 AutoStartProgram=Automatski pokreni %1
-AddonHostProgramNotFound=Program %1 nije pronađen u izabranom folderu.%n%nŽelite li ipak da nastavite?
+AddonHostProgramNotFound=Program %1 nije pronađen u izabranoj fascikli.%n%nŽelite li ipak da nastavite?
 
 ; LaprdusTTS custom messages
 LaprdusDesktopShortcut=Napravi prečicu na radnoj površini
 LaprdusAdditionalOptions=Dodatne opcije:
 LaprdusConfiguratorName=Laprdus konfigurator
 LaprdusConfiguratorComment=Konfigurišite Laprdus podešavanja
-LaprdusWebsiteName=Laprdus Web stranica
-LaprdusWebsiteComment=Posetite Laprdus web stranicu
+LaprdusWebsiteName=Laprdus veb stranica
+LaprdusWebsiteComment=Posetite Laprdus veb stranicu
 LaprdusUninstallName=Deinstaliraj Laprdus
 LaprdusUninstallComment=Uklonite Laprdus sa računara
 LaprdusOldVersionFound=Prethodna verzija programa Laprdus je već instalirana. Želite li da je deinstalirate pre nastavka?%n%nKliknite Da za deinstalaciju prethodne verzije ili Ne za prekid instalacije.
 LaprdusUpgradeFound=Prethodna verzija programa Laprdus je već instalirana. Instalacioni program će nadograditi postojeću instalaciju.%n%nKliknite Da za nastavak nadogradnje ili Ne za prekid.
+LaprdusRequiresWindows7=Laprdus zahteva Windows 7 ili noviji.

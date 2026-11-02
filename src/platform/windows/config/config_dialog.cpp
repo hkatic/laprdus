@@ -6,6 +6,7 @@
 #include "config_dialog.hpp"
 #include "dictionary_dialog.hpp"
 #include "dark_mode.hpp"
+#include "ui_language.hpp"
 #include "resource.h"
 #include "core/voice_registry.hpp"
 #include <sapi.h>
@@ -422,12 +423,14 @@ void ConfigDialog::UpdateSliderValue(HWND hDlg, int sliderId, int valueId, bool 
         // Format as multiplier (e.g., "1.0x"; "0.25x" where one decimal is not enough)
         float value = pos / 100.0f;
         swprintf_s(text, (pos % 10) ? L"%.2fx" : L"%.1fx", value);
+        LocalizeDecimalPoint(text);
     } else if (isMs) {
         // Format as milliseconds
         swprintf_s(text, L"%d ms", pos);
     } else {
-        // Format as percentage
-        swprintf_s(text, L"%d%%", pos);
+        // Format as percentage: "50%" or "50 %", as the language writes it
+        std::wstring format = LoadLocalizedString(IDS_VALUE_PERCENT);
+        swprintf_s(text, format.empty() ? L"%d%%" : format.c_str(), pos);
     }
 
     SetDlgItemTextW(hDlg, valueId, text);
@@ -451,6 +454,7 @@ void ConfigDialog::UpdateAccelerationValue(HWND hDlg) {
     if (format.empty()) format = L"%.1fx (up to %d WPM)";
     wchar_t text[64];
     swprintf_s(text, format.c_str(), acceleration, topWpm);
+    LocalizeDecimalPoint(text);
     SetDlgItemTextW(hDlg, IDC_ACCELERATION_VALUE, text);
 }
 
@@ -683,19 +687,10 @@ void ConfigDialog::OnApply(HWND hDlg) {
 // The SAPI5 voice tokens are one per language ("Laprdus Croatian",
 // "Laprdus Serbian", "Laprdus Bosnian", "Laprdus Slovenian"); the voice they speak with is the
 // one saved in settings.json. The test therefore saves the settings first
-// and then speaks through the token of the configurator's own language.
+// and then speaks through the token of the configurator's own language
+// (Croatian when that is one Laprdus does not speak).
 static const wchar_t* TestTokenLanguage() {
-    const LANGID id = GetUserDefaultUILanguage();
-    switch (id) {
-        case 0x141A: case 0x201A: case 0x641A: case 0x681A:   // Bosnian
-            return L"bs";
-        case 0x0424:                                           // Slovenian
-            return L"sl";
-        case 0x081A: case 0x0C1A: case 0x181A: case 0x1C1A: case 0x2C1A: case 0x301A: case 0x7C1A:
-            return L"sr";
-        default:
-            return L"hr";
-    }
+    return g_uiLanguage.speech;
 }
 
 void ConfigDialog::OnTest(HWND hDlg) {
@@ -810,6 +805,16 @@ std::wstring ConfigDialog::LoadLocalizedString(UINT id) {
         return std::wstring(buffer, len);
     }
     return L"";
+}
+
+// swprintf writes a decimal point whatever the language; the C locale stays
+// as it is because settings.json is written with it.
+void ConfigDialog::LocalizeDecimalPoint(wchar_t* text) {
+    const std::wstring separator = LoadLocalizedString(IDS_DECIMAL_SEPARATOR);
+    wchar_t* point = wcschr(text, L'.');
+    if (point && separator.size() == 1) {
+        *point = separator[0];
+    }
 }
 
 void ConfigDialog::SetControlText(HWND hDlg, int ctrlId, UINT stringId) {

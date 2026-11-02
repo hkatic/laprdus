@@ -500,7 +500,7 @@ void DictionaryDialog::SetupListViewColumns(HWND hDlg) {
 
     InsertColumn(hListView, 0, IDS_DICT_COL_ORIGINAL, 120);
     InsertColumn(hListView, 1, IDS_DICT_COL_REPLACEMENT, 120);
-    InsertColumn(hListView, 2, IDS_DICT_COL_CASE, 80);
+    InsertColumn(hListView, 2, IDS_DICT_COL_CASE, 100);
     InsertColumn(hListView, 3, IDS_DICT_COL_WHOLE_WORD, 80);
     InsertColumn(hListView, 4, IDS_DICT_COL_COMMENT, 150);
 }
@@ -815,11 +815,11 @@ void DictionaryDialog::OnDuplicateEntry(HWND hDlg) {
     int index = GetSelectedIndex(hListView);
     if (index < 0 || index >= static_cast<int>(m_entries.size())) return;
 
-    // Create a copy. An accent entry is kept as it is: " (copy)" would make
+    // Create a copy. An accent entry is kept as it is: the suffix would make
     // it a different, unaccented word.
     UserDictionaryEntry copy = m_entries[index];
     if (!IsAccentLexicon()) {
-        copy.grapheme += L" (copy)";
+        copy.grapheme += LoadLocalizedString(IDS_DUPLICATE_SUFFIX);
     }
 
     m_entries.push_back(copy);
@@ -896,7 +896,7 @@ int DictionaryDialog::GetSelectedIndex(HWND hListView) {
 
 void DictionaryDialog::ShowError(HWND hDlg, UINT stringId) {
     std::wstring msg = LoadLocalizedString(stringId);
-    MessageBoxW(hDlg, msg.c_str(), L"Error", MB_OK | MB_ICONERROR);
+    MessageBoxW(hDlg, msg.c_str(), LoadLocalizedString(IDS_ERROR_TITLE).c_str(), MB_OK | MB_ICONERROR);
 }
 
 void DictionaryDialog::ApplyDarkMode(HWND hDlg) {
@@ -1059,7 +1059,7 @@ bool DictionaryEntryDialog::ValidateAndCollect(HWND hDlg) {
     // Validate
     if (originalLen == 0 || replacementLen == 0) {
         std::wstring msg = LoadLocalizedString(IDS_ERROR_INVALID_ENTRY);
-        MessageBoxW(hDlg, msg.c_str(), L"Error", MB_OK | MB_ICONWARNING);
+        MessageBoxW(hDlg, msg.c_str(), LoadLocalizedString(IDS_ERROR_TITLE).c_str(), MB_OK | MB_ICONWARNING);
         return false;
     }
 
@@ -1154,7 +1154,7 @@ bool AccentEntryDialog::ValidateAndCollect(HWND hDlg) {
 
     if (text.empty()) {
         std::wstring msg = LoadLocalizedString(IDS_ERROR_ACCENT_EMPTY);
-        MessageBoxW(hDlg, msg.c_str(), L"Error", MB_OK | MB_ICONWARNING);
+        MessageBoxW(hDlg, msg.c_str(), LoadLocalizedString(IDS_ERROR_TITLE).c_str(), MB_OK | MB_ICONWARNING);
         SetFocus(GetDlgItem(hDlg, IDC_ACCENT_ENTRY_EDIT));
         return false;
     }
@@ -1178,7 +1178,7 @@ bool AccentEntryDialog::ValidateAndCollect(HWND hDlg) {
         // The reason quotes the whole entry, so the message has no fixed size
         std::wstring msg = FormatResourceString(
             LoadLocalizedString(IDS_ERROR_ACCENT_INVALID), Utf8ToWide(report.first_error));
-        MessageBoxW(hDlg, msg.c_str(), L"Error", MB_OK | MB_ICONWARNING);
+        MessageBoxW(hDlg, msg.c_str(), LoadLocalizedString(IDS_ERROR_TITLE).c_str(), MB_OK | MB_ICONWARNING);
         SetFocus(GetDlgItem(hDlg, IDC_ACCENT_ENTRY_EDIT));
         return false;
     }

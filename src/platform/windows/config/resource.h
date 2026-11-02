@@ -211,5 +211,8 @@
 #define IDS_ERROR_ACCENT_EMPTY      1256
 #define IDS_ERROR_ACCENT_INVALID    1257  // "%s" = the parser's reason
 #define IDS_ACCENT_LANG_SL          1259
+#define IDS_ERROR_TITLE             1260
+#define IDS_DECIMAL_SEPARATOR       1261  // "," or "."
+#define IDS_DUPLICATE_SUFFIX        1262  // " (copy)", after a duplicated entry's text
 
 #endif // LAPRDUS_CONFIG_RESOURCE_H

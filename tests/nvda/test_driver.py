@@ -19,7 +19,8 @@ What is covered:
   replays at the start of a sequence applies to its text;
 - RateCommand and VolumeCommand;
 - NVDA's delayed character descriptions: the break after a spelled
-  character is played as silence and the description follows.
+  character is played as silence and the description follows;
+- the Language setting comes before the Voice setting.
 """
 import json
 import os
@@ -241,7 +242,14 @@ def test_delayed_description():
     synth.terminate()
 
 
+def test_settings_order():
+    ids = [getattr(s, "id", s) for s in drv.SynthDriver.supportedSettings]
+    check("the Language setting comes before the Voice setting",
+          ids[:2] == ["language", "voice"])
+
+
 if __name__ == "__main__":
+    test_settings_order()
     test_spelling_mode()
     test_capital_pitch(force_pitch=False)
     test_capital_pitch(force_pitch=True)

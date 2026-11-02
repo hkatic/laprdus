@@ -320,12 +320,13 @@ class SynthDriver(synthDriverHandler.SynthDriver):
     description = "Laprdus"
 
     # Supported settings - MUST be a tuple
-    # Base settings always available. The language (Croatian, Serbian,
-    # Bosnian, Slovenian) is chosen separately from the voice: every voice speaks
-    # every language.
+    # Base settings always available, in the order NVDA's voice settings and
+    # synth settings ring show them. The language (Croatian, Serbian, Bosnian,
+    # Slovenian) is chosen separately from the voice and comes first: every
+    # voice speaks every language.
     _baseSettings = [
-        synthDriverHandler.SynthDriver.VoiceSetting(),
         _language_setting(),
+        synthDriverHandler.SynthDriver.VoiceSetting(),
         synthDriverHandler.SynthDriver.RateSetting(),
         synthDriverHandler.SynthDriver.RateBoostSetting(),
         synthDriverHandler.SynthDriver.PitchSetting(),

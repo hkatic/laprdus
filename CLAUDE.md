@@ -336,6 +336,12 @@ iscc installers/windows/laprdus_sapi5.iss
 
 Output: `installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe`
 
+The installer is in English, Croatian, Serbian and Slovenian (Slovenian: Inno Setup's own `Languages\Slovenian.isl`, with the Laprdus messages as `slovenian.*` in the script's `[CustomMessages]`; the others carry theirs in `Croatian.isl` / `Serbian.isl`). Setup preselects the display language of Windows, with an exact match on `LanguageID`, then the first entry of the same primary language (hr, sr and bs share 0x1A, so `Serbian.isl` has 0x241A, sr-Latn-RS, and Serbian in Cyrillic and Bosnian preselect Croatian), then the first entry, English.
+
+#### Laprdus Configurator languages
+
+`laprdgui.exe` has string tables in English, Croatian, Serbian (Latin, ekavian) and Slovenian in `laprdus_config.rc`; the dialog templates are language-neutral and all their text is set from the tables at run time. `SelectUiLanguage()` (`ui_language.hpp`) picks the table from Windows's display language (`GetUserDefaultUILanguage()`) or from `--language=<tag>`, which the NVDA add-on passes with NVDA's language, and sets it with `SetThreadUILanguage()`, which works without that language pack installed. Bosnian reads Croatian; any other language reads English. There must be no `LANG_NEUTRAL` string table: the loader prefers it over the thread's language (with one, the configurator was Croatian under an English Windows). The Test button speaks through the SAPI5 token of that language (Croatian under English), with `IDS_TEST_TEXT` in the language it speaks. The decimal separator and the percent format come from the tables too (`1,5x`, `50 %` in hr and sl, `50%` in sr; CLDR). Tests: `python tests/windows/test_configurator_language.py` (runs the real dialogs on a desktop of their own, checks the tables, access keys and text fit) and `tests/windows/test_ui_language.cpp` (display language and tag to table).
+
 #### Windows CLI
 
 The Windows CLI (`laprdus.exe`) provides command-line access to TTS, identical to the Linux CLI.
@@ -467,9 +473,10 @@ scons --platform=windows --arch=x86 --build-config=release config
 cd nvda-addon && scons
 ```
 
-**Localization**: The addon supports Croatian (hr) and Serbian (sr) translations. Translation files are in:
+**Localization**: The addon is in English (its base language), Croatian (hr), Serbian (sr, Latin, ekavian) and Slovenian (sl), by NVDA's language through `addonHandler.initTranslation()`. The manifest's description and changelog are translated only while the msgids match `buildVars.py` to the letter: change them together. Translation files are in:
 - `nvda-addon/addon/locale/hr/LC_MESSAGES/nvda.po`
 - `nvda-addon/addon/locale/sr/LC_MESSAGES/nvda.po`
+- `nvda-addon/addon/locale/sl/LC_MESSAGES/nvda.po`
 
 The SCons build automatically compiles .po files to .mo files using either `msgfmt` (if available) or Python's `polib` library as a fallback. Install polib with: `pip install polib`
 
@@ -514,7 +521,7 @@ SAPI5 registers four voice tokens, one per language ("Laprdus Croatian" 0x041A, 
 
 1. Install the `.nvda-addon` file
 2. Restart NVDA
-3. Select "Laprdus" in NVDA's synthesizer settings; the Voice list holds all 18 voices (default Zvonko) and the Language setting chooses hr, sr, bs or sl for any of them
+3. Select "Laprdus" in NVDA's synthesizer settings; the Language setting, which comes before the Voice setting, chooses hr, sr, bs or sl, and the Voice list holds all 18 voices (default Zvonko) for any of them
 
 ## Android
 

@@ -9,6 +9,7 @@ import sys
 import subprocess
 import globalPluginHandler
 import gui
+import languageHandler
 import wx
 import addonHandler
 
@@ -72,7 +73,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
                 item = mainMenu.FindItemByPosition(i)
                 if item:
                     label = item.GetItemLabelText().replace('&', '').lower()
-                    if label in ('help', 'pomoć', 'помоћ'):  # English, Croatian, Serbian
+                    # English; Croatian and Serbian; Serbian in Cyrillic; Slovenian
+                    if label in ('help', 'pomoć', 'помоћ', 'pomoč'):
                         helpIndex = i
                         break
 
@@ -115,7 +117,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
         if os.path.exists(exe_path):
             try:
-                subprocess.Popen([exe_path], shell=False)
+                # The Configurator opened from NVDA speaks NVDA's language
+                subprocess.Popen([exe_path, "--language=" + languageHandler.getLanguage()], shell=False)
             except Exception as e:
                 gui.messageBox(
                     # Translators: Error message when configurator fails to launch

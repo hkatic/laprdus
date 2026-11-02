@@ -6,6 +6,7 @@
 #include <windows.h>
 #include <commctrl.h>
 #include "config_dialog.hpp"
+#include "ui_language.hpp"
 
 // Link with required libraries
 #pragma comment(lib, "comctl32.lib")
@@ -22,7 +23,6 @@ int WINAPI wWinMain(
 ) {
     // Suppress unused parameter warnings
     (void)hPrevInstance;
-    (void)lpCmdLine;
     (void)nShowCmd;
 
     // Set DPI awareness for proper scaling on high-DPI displays
@@ -46,6 +46,9 @@ int WINAPI wWinMain(
             }
         }
     }
+
+    // Windows's display language, or the language the NVDA add-on asks for
+    laprdus::SelectUiLanguage(lpCmdLine);
 
     // Run the configuration dialog
     return laprdus::RunConfigDialog(hInstance);

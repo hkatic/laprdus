@@ -31,12 +31,13 @@ The language is a separate setting, with word stress and natural sentence melody
     # Brief changelog for this version
     # Translators: what's new content for the add-on version
     addon_changelog=_("""Laprdus 2.0 for NVDA.
-- Every voice speaks every language: Croatian, Serbian and Bosnian are a separate Language setting next to the voice (NVDA's automatic language switching switches among them); Zvonko is the default voice
-- Three new voices synthesized by rule, clear at any rate: Zvonko, Stojan and Mirsad; Bosnian is now supported
+- Every voice speaks every language: Croatian, Serbian, Bosnian and Slovenian are a separate Language setting before the voice (NVDA's automatic language switching switches among them); Zvonko is the default voice
+- Three new voices synthesized by rule, clear at any rate: Zvonko, Stojan and Mirsad; Bosnian and Slovenian are now supported
 - Word stress and natural sentence melody for every voice; Josip and Vlado have a new engine without clicks, with a natural tempo and rate and pitch that no longer affect each other
 - Ten singing voices: Orguljaš, Dalmacija Klapa, Trubač, Harmonikaš, Sevdalija, Sazlija, Lika Velebit, Solunac, Sarajevo Bembaša and Bećarac
 - NVDA's Inflection slider controls the sentence melody of every voice, and an accent dictionary (accents.json) to correct the stress of a word
 - Letters are spelled by their sounds (b, c, d) unless the Configurator says names; capital letters are spelled at NVDA's capital pitch change, as with NVDA's other synthesizers
+- The add-on and the Laprdus Configurator are available in English, Croatian, Serbian and Slovenian: both follow NVDA's language
 - Fixed: user spelling and emoji dictionary entries had no effect
 """),
     # Author(s)

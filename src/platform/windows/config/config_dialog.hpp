@@ -77,6 +77,7 @@ private:
 
     // Localization
     std::wstring LoadLocalizedString(UINT id);
+    void LocalizeDecimalPoint(wchar_t* text);
     void SetControlText(HWND hDlg, int ctrlId, UINT stringId);
 
     // Settings management
