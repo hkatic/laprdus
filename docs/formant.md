@@ -3347,10 +3347,15 @@ Toporišič's rules), so the lexicon carries most of the load:
    - **`CORRECTIONS`** in the tool holds the lemma-level readings in which
      SSKJ² or the Pravopis differ from Sloleks's first accentuation: the
      schwa of *dánəs*, *rázən*, *kônəc* the preposition, *sédəmdeset*,
-     *ósəmdeset*, *səznàm -áma*, and the teens on their first syllable
+     *ósəmdeset*, and the teens on their first syllable
      (SSKJ² *dvánajst in dvanájst*, *pétnajst in petnájst*, SP 2001 only
      *-nájst*; the user heard *-nájst* as strange), with *sédəmnajst*,
-     *ósəmnajst* and their ordinals.
+     *ósəmnajst* and their ordinals. Two deviations come from a native
+     listener (2026-11-02): *seznàm -áma* with the open e, the second
+     variant of SSKJ² and SP (*[səznam in seznam]*; until then the schwa,
+     the first), and the l-participle of *posodobiti* on the i (*posodobíl,
+     posodobíla*), against SSKJ² and SP (*posodôbiti -im*, which the other
+     forms keep).
    - **Every form is checked.** The tool simulates `Lexicon::find_exact`
      and `find_stem` of the C++, the hand-written entries included (it
      reads `HAND_ENTRIES` from `formant_slovenian.cpp`), over every
@@ -3502,12 +3507,57 @@ frequent reading alone is right for 93.3 %, the cues below for 94.8 %.
   verb *letí* otherwise (*ptič leti*, *letalo leti nad mestom*). The noun is
   98 % of the corpus, and every occurrence of it there has such a word.
 
+- *gori* (a listener's report of 2026-11-02: *Na gori gori ogenj. Peč gori
+  vsak dan.*): the verb *gorí* by default, at the head of a clause too
+  (*Gori!*), against the more frequent noun; *gôri*, the locative and the
+  dative of *gôra*, after a preposition or an adjective (*na gori*, *v Kranjski
+  Gori*, *Črni gori*), and the adverb after *tam, tu, tukaj* (SSKJ² *gôri*).
+
 Cues that look as good did worse than no cue over all 909 spellings and
 were left out: the end of the clause (*pred milijoni leti*, *čez dve leti*,
 *smo lahko toliko bolj veseli* end with the noun as often as *zato nas
 veseli* with the verb: 590 nouns broken for 25 verbs fixed), *se* earlier in
 the clause (it belongs to another verb as often as not), a determiner and a
 copula before the word.
+
+A listener's report of 2026-11-02 added four more words of this kind
+(`clause_reading()`):
+
+- *lahko*: the modal and the adverb *lahkó* in 2,703 of its 2,718 occurrences
+  in SUK 1.1, the adjective *láhko* (SP *láhek -hka -o*) in the rest, so the
+  adjective needs evidence. A noun right after it is not enough: the modal
+  stands before its object in 63 of those tokens (*Lahko kuhinjo prepleskamo*,
+  *Preboliš lahko bolezen*). *láhko* is read in *lahko noč*; after a
+  preposition (*z lahko nogo*, *na lahko*; SP *na láhko tudi na lahkó*), not
+  before a word in *-ljiv-* (*lahko prebavljiva hrana*, the adverb); after a
+  verb of obligation, which the modal never follows, unless an infinitive
+  comes next (*Jesti moraš lahko hrano*, not *mora lahko dostopati*); and
+  before one of 58 nouns SSKJ², SP and the corpus give the adjective with, when
+  the noun ends the clause and no present tense, auxiliary or conjunction
+  stands before *lahko* (*Prosim daj mi lahko nalogo*, *To je lahko delo*, but
+  *Izberete lahko nalogo*). The adjective has a content word's full accent.
+  No modal token of the corpus changes, and 6 of its adjectives become right;
+  those left are predicative (*ga pa ni lahko*), which SP reads *lahkó*. GaMS
+  got *Ali lahko prideš?* wrong (*láhko*) and *Jesti moraš lahko hrano* right.
+- *roka*: *rôka* the hand (HAND_ENTRIES; SSKJ², SP) though the genitive *róka*
+  of *rók* "deadline" is the commoner form in the corpus behind Sloleks (26,817
+  against 16,241), and that genitive after a preposition, a genitive in
+  *-ega* or a noun of time limits (*do roka*, *vojaškega roka*, *podaljšanje
+  roka*); the name's *Róka* inside a clause only, from the tables of names.
+- *meni*: the menu *mení* also after a preposition whose pronoun would be
+  *mano* or *mene* (*pod meni*, *za meni*), after *v* or *na* when a verb of
+  motion or clicking comes before them (*Pojdi v meni*, *Kliknite na meni*,
+  *Nazaj v meni*) or a capital after it (*v meni Start*), after an adjective
+  or a possessive (*glavni meni*, *vaš meni*), after a verb that takes a menu
+  (*Odpri meni*) and, itself with a capital, before a capital (*Meni
+  Datoteka*). A small *meni* before a capital is the verb of the news (*meni
+  Kučan*, *tako meni Križanič*: 30 occurrences in SUK 1.1, which a first version
+  read as the menu), and so is one after a surname that looks like an adjective
+  (*Franco Frattini meni*). In SUK 1.1 the pronoun is all 17 occurrences after a
+  preposition in the absence of such a cue.
+- *afna*: the noun *áfna* (SSKJ², SP, eSSKJ), also the name of @, as a hand
+  entry, since the verb's *afná* has more occurrences in the corpus than the
+  noun; the verb next to *se*.
 
 Clitics (Toporišič: the monosyllabic prepositions and conjunctions, *ne*,
 *naj*, the forms of *biti* and the future auxiliary, *bi*, the short
@@ -3655,11 +3705,37 @@ came out *popólnoma* unnoticed (`l_suffix_stem()` now mirrors it). On the
 corpus below the stressed syllable stays at 99.40 % and the quality and
 length at 99.84 %; the table has 96,000 forms and 80,000 stems.
 
+**Surnames in -e** (a listener's report of 2026-11-02: *Jani Perše, Drago
+Lekše, Vesna Smode*, "all surnames in -e are stressed on the last, open e"):
+the hand-accented names of Sloleks agree: of its 182 nouns in *-e* with a
+proper name's tag, 85 are final and nearly all surnames (*Peršè, Lekšè,
+Peterlè, Šukljè, Bolè, Starè, Zorè, Nosè*), while the 97 others are places and
+given names (*Cêlje, Velênje, Jóže, Tóne*) with a few surnames (*Lapájne,
+Bárle*). A word the lexicon does not know read so generally would be wrong,
+though: of the 1,030 capitalized words in *-e* of SUK 1.1 that it does not
+know, most are foreign names (*Melbourne, Google, Hesse*) or oblique cases
+(*Španije*). So `surname_reading()` applies only after a given name
+(`tools/formant/slovenian_given_names.tsv`, Wikidata, CC0, without foreign
+names and those spelled like common words), where the word is a surname whatever
+common word it is spelled like (*Janez Stare* is *Starè*, not the adjective's
+*stáre*): a consonant and *-e*, two or more syllables, nothing foreign in the
+spelling (no q, w, x, y, doubled letters, vowel pairs but *au*, ch, sh, ck ...),
+not one of the hand-accented exceptions, not in the tables of names, which win.
+The list leaves out names in *-a* with less than half the bearers of the man's
+name whose genitive they are spelled like (*Miroslava Krleže*, *Bojana Korsike*,
+*Metoda Dragonje* are genitives), so *Marija Smode* and *Tjaša Mrgole* are
+surnames, while *Bojana Smode* and *Petra Smode* are not recognized. In SUK 1.1 the rule changes 40-odd readings,
+nearly all Slovenian surnames (*Peterlè, Povšè, Lovšè, Šukljè, Rodè*). Titles were
+tried and dropped: all six cases in SUK 1.1 were wrong (*gospa Stone*, *profesor
+Stare zaveze*, *gospe Urške*). Alone, *Smode* keeps the second-last syllable.
+Foreign surnames after a given name Slovenian speakers also have can still be
+misread (*David Trimble*).
+
 ### Numbers, dates, symbols
 
 The number converter has a Slovenian dialect (Pravopis § 11 and § 536):
-*nič, ena, dve, tri, štiri ...* for the digits (the counting *dva* only in
-the compounds), *enaindvajset* and *štiriinštirideset* written as one word
+*nič, ena, dva, tri, štiri ...* for the digits, *enaindvajset* and
+*štiriinštirideset* written as one word
 and read as three, *ena in dvajset*, with an accent on the ones and on the
 tens and the *in* a clitic between them, without a pause (SP 2001:
 *ênaindvájset*, *pétindvájset*; `slovenian::split_compound_numeral()` in
@@ -3676,6 +3752,32 @@ is *sto dvaintrideset tisoč štiristo sedeminpetdeset*: § 253; *3.14* stays
 *tri pika štirinajst*), and a numeric date in the genitive, which does not
 depend on the sentence (*7. 10. 2026* is *sedmega desetega dva tisoč
 šestindvajset*, *7. oktobra* *sedmega oktobra*; Jezikovna svetovalnica).
+A 2 agrees with what it counts (`CroatianNumbers::slovenian_two_agrees()`,
+a listener's report of 2026-11-02: it was always *dve*, so *2 koša*,
+*2 načina* and the operator *T2* were wrong). The dual of a masculine noun
+and its adjective ends in *-a* (*dva koša, dva velika koša*), of the others
+in *-i* (*dve uri, dve mesti, dve veliki hiši*; a text that writes the plural
+has *-e*: *2 ure*), so a small word of three or more letters after the number
+that ends in *-i* or *-e* makes it *dve*, unless it is a function word, a
+common verb (also any *-uje*, *-jte*) or a masculine form (*2 dni*, *2 ljudje*).
+Everywhere else it is *dva*: glued to letters or after a hyphen (*T2, T-2*),
+before a capital or a sign, with nothing after it, in digits read one by one
+(*stran dva, dva plus dva, leta dva tisoč dva*), and when typed. It stays
+*dve* for the hour and the minutes (*Ura je 2*, *2:30*, *12:02*; SSKJ² *ura je
+dve*) and in a decimal (*dve celi pet, tri cele dve*). The numbers agree in
+the same way inside larger ones (*sto dve leti, sto dva stola, tisoč dve
+knjigi*), not in the compounds, which do not change (*dvaindvajset*).
+
+On SUK 1.1, of the 87 occurrences of 2 before a noun or an adjective this
+gives the noun's gender for 81, against 36 for the fixed *dve*; of the other
+six, three are names (*A-2 liga*, a numbered heading) and three are cases
+the rule does not attempt (*z 2 žličkama* should be *z dvema žličkama*,
+1-2 *urah*). GaMS 9B, asked for 16 sentences (*dva* or *dve*), agrees with the
+rule in all of them, the bare numbers included (*Odpri stran 2*, *Leta 2002*,
+*2 plus 2*, the digits of a phone number). The dictionaries name the number
+*dve* (SSKJ² "izraža število dve", SP § 11), and that is what the bare 2 read
+until now; the listener's report and GaMS prefer *dva* where nothing is counted.
+
 Symbols inside a clause are *pika, dvopičje, klicaj, odstotkov, evrov,
 afna*; the spelled names of digits, punctuation and symbols (*ena, pika,
 vejica, podpičje, vprašaj, oklepaj, zaklepaj, poševnica, afna, lojtra,

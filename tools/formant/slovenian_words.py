@@ -469,7 +469,14 @@ CORRECTIONS = {
     'osemdeset': {'*': 'ósəmdeset'},                # SSKJ² ósemdeset [osəmdeset]
     'sedemsto': {'*': 'sédəmsto'},
     'osemsto': {'*': 'ósəmsto'},
-    'seznam': {'*': 'səznám', 'seznam': 'səznàm'},  # SSKJ² seznàm -áma [səznam]
+    # seznam: SSKJ² and SP 2001 allow [sə] and [se]; a Slovenian listener asked
+    # for the open e (2026-11-02), so the accent stays and the schwa goes
+    'seznam': {'*': 'seznám', 'seznam': 'seznàm'},  # SSKJ² seznàm -áma [səznam in seznam]
+    # posodobiti: the l-participle on the i, as a Slovenian listener asked
+    # (2026-11-02), against SSKJ² and SP 2001 posodôbiti -im; the other forms
+    # stay the dictionaries' (posodôbim, posodôbi, posodôbljen)
+    'posodobiti': {'posodobil': 'posodobíw', 'posodobila': 'posodobíla', 'posodobilo': 'posodobílo',
+                   'posodobili': 'posodobíli', 'posodobile': 'posodobíle'},
     # The teens on their first syllable, the first variant of SSKJ²
     # (dvánajst in dvanájst, pétnajst in petnájst) and the reading users
     # accepted; SP 2001 and Sloleks put the second first
@@ -993,8 +1000,18 @@ def build(forms_path, manual_min, auto_min, form_min):
     return len(lemmas), truth, stems, verb_noun, names
 
 
+def read_given_names(path):
+    """The given names of slovenian_given_names.tsv, lowercase and in the order
+    of their code points, for the binary search of surname_reading()."""
+    if not path or not os.path.exists(path):
+        return []
+    with open(path, encoding='utf-8') as f:
+        names = {line.strip().lower() for line in f if line.strip() and not line.startswith('#')}
+    return sorted(names, key=lambda k: [ord(c) for c in k])
+
+
 def generate(forms_path, out_path, manual_min=50, auto_min=2000, form_min=3, cpp_path=None,
-             places_path=None, names_report=None):
+             places_path=None, names_report=None, given_names_path=None):
     lemma_count, truth, stems, verb_noun, names = build(forms_path, manual_min, auto_min, form_min)
 
     # Every form must read as it should. The stem of one word catches the
@@ -1171,6 +1188,12 @@ def generate(forms_path, out_path, manual_min=50, auto_min=2000, form_min=3, cpp
             if not blocks:
                 out.write('    u8"",\n')
             out.write('};\n')
+        given = read_given_names(given_names_path)
+        out.write('// Given names, lowercase, in code point order (slovenian_given_names.tsv)\n')
+        out.write('const char* const SLOVENIAN_GIVEN_NAMES[] = {\n')
+        for start in range(0, len(given), 8):
+            out.write('    %s,\n' % ', '.join('u8"%s"' % n for n in given[start:start + 8]))
+        out.write('};\n')
         out.write('// Spellings read as a verb\'s form or as another word: the verb\'s\n')
         out.write('// reading, the other, and whether the verb\'s is the l-participle\n')
         out.write('const VerbNoun SLOVENIAN_VERB_NOUN[] = {\n')
@@ -1207,7 +1230,8 @@ def main(argv):
         generate(argv[2], argv[3], manual_min, auto_min, form_min,
                  os.path.join(root, 'src', 'formant', 'formant_slovenian.cpp'),
                  [os.path.join(root, 'tools', 'formant', 'slovenian_places.tsv'),
-                  os.path.join(root, 'tools', 'formant', 'slovenian_persons.tsv')], names_report)
+                  os.path.join(root, 'tools', 'formant', 'slovenian_persons.tsv')], names_report,
+                 os.path.join(root, 'tools', 'formant', 'slovenian_given_names.tsv'))
     else:
         print(__doc__, file=sys.stderr)
         return 2

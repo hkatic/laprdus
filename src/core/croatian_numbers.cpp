@@ -7,6 +7,7 @@
 #include <cctype>
 #include <cstring>
 #include <string_view>
+#include <unordered_set>
 #include <vector>
 
 namespace laprdus {
@@ -17,14 +18,17 @@ namespace laprdus {
 
 std::string_view CroatianNumbers::digit_to_word(char digit) {
     if (slovenian()) {
-        // The names of the numbers (Slovenski pravopis 2001, § 11: nič, ena,
-        // dve, tri, štiri ...; the counting "ena, dva, tri" uses the
-        // masculine dva); en/ena and dva/dve agree with a scale word in
-        // process_number_groups, and the compounds have dva- (dvaindvajset)
+        // The words of the digits (Slovenski pravopis 2001, § 11: nič, ena,
+        // dve, tri, štiri ...). A 2 with nothing to agree with is dva, as a
+        // Slovenian listener asked on 2026-11-02 (T2, stran 2, 2 plus 2);
+        // CroatianNumbers::slovenian_two_agrees() and the callers that
+        // count something feminine make it dve. en/ena and dva/dve agree
+        // with a scale word in process_number_groups, and the compounds
+        // have dva- (dvaindvajset)
         switch (digit) {
             case '0': return u8"nič";
             case '1': return "ena";
-            case '2': return "dve";
+            case '2': return "dva";
             case '3': return "tri";
             case '4': return u8"štiri";
             case '5': return "pet";
@@ -449,13 +453,25 @@ std::string CroatianNumbers::slovenian_decimal(std::string_view whole, std::stri
     std::string_view clean = remove_leading_zeros(whole);
     const bool ones_alone = clean.size() == 1 || clean[clean.size() - 2] == '0';
     const char last = clean.back();
+    feminine_two(words);        // dve celi
     if (ones_alone && last == '1') words += " cela";
     else if (ones_alone && last == '2') words += " celi";
     else if (ones_alone && (last == '3' || last == '4')) words += " cele";
     else words += " celih";
     words += ' ';
-    words += digit_group_to_words(fraction);
+    std::string decimals = digit_group_to_words(fraction);
+    feminine_two(decimals);     // tri cele dve: dve desetinki
+    words += decimals;
     return words;
+}
+
+// A Slovenian number that ends in a 2 of its own (dva, sto dva, dva tisoč
+// dva; not dvaindvajset, dvanajst) in the feminine.
+void CroatianNumbers::feminine_two(std::string& words) {
+    const size_t n = words.size();
+    if (n >= 3 && words.compare(n - 3, 3, "dva") == 0 && (n == 3 || words[n - 4] == ' ')) {
+        words[n - 1] = 'e';
+    }
 }
 
 // =============================================================================
@@ -749,7 +765,9 @@ std::string CroatianNumbers::time_to_words(const std::vector<std::string_view>& 
     std::string words;
     for (size_t k = 0; k < groups.size(); ++k) {
         if (k > 0) words += ' ';
-        words += k == 0 ? number_to_words(groups[k]) : digit_group_to_words(groups[k]);
+        std::string part = k == 0 ? number_to_words(groups[k]) : digit_group_to_words(groups[k]);
+        if (slovenian()) feminine_two(part);    // the hour and the minute: dve trideset
+        words += part;
     }
     return words;
 }
@@ -869,6 +887,70 @@ bool is_grouping_comma(const std::string& text, size_t i) {
 
 } // namespace
 
+// Whether the Slovenian 2 at the end of the number in [start, end) of the
+// text agrees with something feminine or neuter. The dual of a masculine
+// noun and its adjective end in -a (dva koša, dva načina, dva velika koša),
+// of the others in -i (dve uri, dve mesti, dve veliki hiši; Slovenski
+// pravopis 2001 "dvá dvé dvé"), and a text that writes the plural has -e
+// (2 ure). So the next word decides, unless it is one of the words that end
+// so without being feminine or neuter. A 2 that names something rather
+// than counts it keeps dva: glued to letters or after a hyphen (T2, T-2,
+// A-2 liga), before a capital (Pentium 2 Zbirka) or a sign. The hour is
+// feminine (SSKJ² "ura je dve"). Of the 87 occurrences of 2 before a noun or
+// an adjective in the corpus SUK 1.1 this gives the noun's gender in 81 (the
+// others are A-2 liga and cases such as z 2 žličkama); the fixed dve gave 36.
+bool CroatianNumbers::slovenian_two_agrees(const std::string& text, size_t start, size_t end) {
+    if (start > 0 && (is_letter_byte(text[start - 1]) || text[start - 1] == '-')) return false;
+
+    size_t before = start;
+    while (before > 0 && (text[before - 1] == ' ' || text[before - 1] == '\t')) --before;
+    if (before >= 6) {
+        std::string tail = text.substr(before - 6, 6);
+        for (char& c : tail) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+        if (tail == "ura je" && (before == 6 || !is_word_byte(text[before - 7]))) return true;
+    }
+
+    size_t word = end;
+    while (word < text.size() && (text[word] == ' ' || text[word] == '\t')) ++word;
+    if (word == end || word >= text.size()) return false;
+    const unsigned char first = static_cast<unsigned char>(text[word]);
+    const unsigned char second = word + 1 < text.size() ? static_cast<unsigned char>(text[word + 1]) : 0;
+    const bool small_letter = (first >= 'a' && first <= 'z') ||
+                              (first == 0xC4 && (second == 0x8D || second == 0x87 || second == 0x91)) ||   // č ć đ
+                              (first == 0xC5 && (second == 0xA1 || second == 0xBE));                       // š ž
+    if (!small_letter) return false;
+    size_t stop = word;
+    while (stop < text.size() && is_word_byte(text[stop])) {
+        if (is_digit(text[stop])) return false;
+        ++stop;
+    }
+    if (stop - word < 3) return false;      // je, se, ni, ki, mi: no noun
+    const char last = text[stop - 1];
+    if (last != 'i' && last != 'e') return false;
+    std::string_view next(text.data() + word, stop - word);
+    // A verb's -uje and the imperative's -jte: 2 deluje, 2 zamešajte
+    if (next.size() >= 3 && (next.compare(next.size() - 3, 3, "uje") == 0 || next.compare(next.size() - 3, 3, "jte") == 0)) {
+        return false;
+    }
+
+    static const std::unordered_set<std::string_view> not_agreeing = {
+        // Function words and adverbs
+        "tudi", "pri", "ali", "vse", "zaradi", "proti", "glede", "niti", "vsi", "okoli", "lani",
+        u8"šele", "nikoli", "hkrati", "skozi", "zlasti", u8"drugače", "bolje", "pozneje", "kasneje",
+        "vendarle", "kajti", "sredi", "kje", "radi", "nekateri", "kateri", "katere", "kakor", "meni",
+        "sebi", "sebe", "mene", "nje", "tri", u8"štiri", "dve", "obe", "bodisi", "jutri", "potem",
+        // The commonest verbs
+        "bili", "bile", "biti", "boste", "ste", "imeli", "imate", "morali", u8"začeli", "dobili",
+        "gre", "pravi", "more", u8"kaže", "zdi", u8"želi", u8"prišli", "pride", "deluje", u8"piše",
+        u8"živi", u8"začne", "govori", "potrebuje", "zgodi", "daje", "sme", "pove", "postane", "vidi",
+        "sodi", u8"pričakuje", "vsebuje", u8"drži", "dobi", "pomeni",
+        // Masculine nouns written in a form other than the dual
+        "dni", "dneve", "dnevi", "ljudje", "ljudi", "otroke", "otroci", u8"možje", u8"moški",
+        "fantje", "bratje", "gostje", u8"starši", "tedne", "tedni", "mesece", "meseci",
+    };
+    return not_agreeing.count(next) == 0;
+}
+
 std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
     std::string result;
     result.reserve(text.size() * 2);  // Estimate - numbers expand to words
@@ -927,7 +1009,9 @@ std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
                 for (size_t k = i; k < end; ++k) {
                     if (is_digit(text[k])) digits += text[k];
                 }
-                result += number_to_words(digits);
+                std::string words = number_to_words(digits);
+                if (slovenian_two_agrees(text, i, end)) feminine_two(words);
+                result += words;
                 i = end;
                 continue;
             }
@@ -987,6 +1071,7 @@ std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
             std::string_view num_str(text.data() + num_start, i - num_start);
             std::string words = number_to_words(num_str);
             if (!words.empty()) {
+                if (slovenian() && slovenian_two_agrees(text, num_start, i)) feminine_two(words);
                 result += words;
             }
         }

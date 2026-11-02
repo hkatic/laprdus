@@ -4143,10 +4143,19 @@ Utterance Frontend::process_slovenian(const std::u32string& text, Punctuation pu
                                               U"nato", U"prosim", U"samo", U"le", U"raje",
                                               U"kar", U"no", U"daj"};
     std::vector<std::u32string> spellings;
+    std::vector<bool> capitalized;
+    std::vector<bool> rewritten;       // spelled the foreign way (Wayne, Carlyle)
     spellings.reserve(words.size());
+    capitalized.reserve(words.size());
+    rewritten.reserve(words.size());
     for (Word& word : words) {
+        const std::u32string written = word.w;
         rewrite_foreign(word);
+        rewritten.push_back(word.w != written);
         spellings.push_back(word.w);
+        // In text written all in capitals nothing is a name; a capital
+        // letter alone is written so in any text
+        capitalized.push_back(word.capitalized && (!word.all_caps || word.w.size() == 1));
     }
     for (size_t i = 0; i < words.size(); ++i) {
         Word& word = words[i];
@@ -4157,7 +4166,7 @@ Utterance Frontend::process_slovenian(const std::u32string& text, Punctuation pu
         if (!word.letter_name && !word.joined) {
             slovenian::VerbNounReadings readings;
             const char32_t* head = slovenian::head_reading(word.w);
-            const char32_t* in_clause = slovenian::clause_reading(spellings, i);
+            const char32_t* in_clause = slovenian::clause_reading(spellings, capitalized, i);
             // A name spelled like a common word (Múrska Sóbota, sobóta;
             // Jêlena, jeléna): only with a capital, not in text written all
             // in capitals, and at the head of a clause only when the name
@@ -4165,12 +4174,18 @@ Utterance Frontend::process_slovenian(const std::u32string& text, Punctuation pu
             if (word.capitalized && !word.all_caps &&
                 slovenian::name_reading(word.w, i == 0 || word.after_opening, context_pron)) {
                 override = &context_pron;
+            } else if (capitalized[i] && i > 0 && !rewritten[i] && !rewritten[i - 1] &&
+                       slovenian::surname_reading(word.w, words[i - 1].w, capitalized[i - 1], context_pron)) {
+                override = &context_pron;
             } else if (head && (i == 0 || before_imperative.count(words[i - 1].w) != 0)) {
                 context_pron = head;
                 override = &context_pron;
             } else if (in_clause) {
                 context_pron = in_clause;
                 override = &context_pron;
+                // The adjective láhko has the full accent of a content word,
+                // not the small one of the modal lahkó
+                if (slovenian::clause_reading_is_content(word.w, in_clause)) word.explicit_stress = true;
             } else if (slovenian::verb_noun_readings(word.w, readings)) {
                 switch (slovenian::context_reading(spellings, i, readings.participle)) {
                     case slovenian::VerbOrNoun::Verb: context_pron = readings.verb; break;

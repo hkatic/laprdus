@@ -189,6 +189,19 @@ void phonemize(const std::u32string& word, const std::vector<uint8_t>& marks,
 bool name_reading(const std::u32string& w, bool clause_head, std::u32string& pron);
 
 /**
+ * The reading of a surname in -e: after a given name (Vesna Smode) a
+ * capitalized word in a consonant and -e the tables of names do not know is
+ * stressed on its open final e (Smodè, Starè, as the hand-accented Peršè,
+ * Lekšè, Peterlè, Šukljè of Sloleks), whatever common word it is spelled
+ * like. Not one of the hand-accented exceptions (Lapájne), not spelled the
+ * foreign way (Moore, Hesse). The list of given names leaves out names in -a
+ * that are mostly a man's genitive (Miroslava Krleže). `w` and `previous` are
+ * lowercase; false when the rule does not apply.
+ */
+bool surname_reading(const std::u32string& w, const std::u32string& previous,
+                     bool previous_capitalized, std::u32string& pron);
+
+/**
  * The reading of a spelling at the head of a clause, where it is the
  * greeting or the imperative (žívijo, narêdi, govôri); nullptr for a word
  * that reads the same everywhere. Elsewhere the lexicon's reading holds
@@ -199,14 +212,29 @@ const char32_t* head_reading(const std::u32string& w);
 /**
  * The reading of a word that depends on the other words of its clause,
  * in the notation, or nullptr to keep the lexicon's. `words` are the
- * clause's words, lowercase. Meni alone in its clause is the menu, mení;
- * after a preposition or before se, je, ni the pronoun mêni; elsewhere
- * the lexicon's méni, the verb. Lepo, težko, slabo and the other
- * spellings of an adverb on -ó and an adjective on its stem are the
- * adverb at the end of the clause (lepó, težkó), the adjective before
- * another word (lépo, têžko).
+ * clause's words, lowercase, `capitalized` says which were written with a
+ * capital. Meni is the menu, mení, alone in its clause, after a preposition
+ * no pronoun meni follows (pod meni), after v or na with a verb of motion
+ * (pojdi v meni), an adjective or a verb that takes a menu (glavni meni,
+ * odpri meni) and before a capital (meni Start); after another preposition
+ * or before se, je, ni the pronoun mêni; elsewhere the lexicon's méni, the
+ * verb. Lepo, težko, slabo and the other spellings of an adverb on -ó and
+ * an adjective on its stem are the adverb at the end of the clause (lepó,
+ * težkó), the adjective before another word (lépo, têžko). Lahko is the
+ * adjective láhko before a noun it qualifies (lahko noč, z lahko nogo, moraš
+ * lahko hrano, daj mi lahko nalogo), else the lexicon's modal lahkó. Roka is
+ * the genitive róka of the deadline after a preposition or a genitive (do
+ * roka, vojaškega roka), else the lexicon's hand, rôka. Afna is the verb's
+ * afná next to se, else the lexicon's noun, áfna.
  */
-const char32_t* clause_reading(const std::vector<std::u32string>& words, size_t i);
+const char32_t* clause_reading(const std::vector<std::u32string>& words,
+                               const std::vector<bool>& capitalized, size_t i);
+
+/**
+ * Whether the reading clause_reading() gave is a content word although its
+ * spelling is a function word's: the adjective láhko has a full accent.
+ */
+bool clause_reading_is_content(const std::u32string& w, const char32_t* reading);
 
 /**
  * A spelling read one way as a verb's form and another way as a noun, an

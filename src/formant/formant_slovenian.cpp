@@ -326,6 +326,15 @@ const WordSet& question_words() {
 // (2026-10-29: 281 of 1,605 entries written from memory contradicted
 // Sloleks, and the dictionaries sided with Sloleks every time).
 const char* const HAND_ENTRIES[] = {
+    // ---- The commoner word where the corpus counts of a form mislead: áfna
+    // the noun, also the name of @ (SSKJ², SP 2001, eSSKJ; the verb afnati's
+    // afná was taken for it, clause_reading() has the verb after se), rôka
+    // the hand (SSKJ², SP; the genitive róka of rók "deadline" is commoner in
+    // the news corpus, clause_reading() has it after a preposition or a
+    // genitive, the name Róka is in the tables of names), pòdmení the submenu
+    // (SSKJ² mení; the locative podméni of podména "hypothesis" is commoner in
+    // the corpus, not on a screen) ----
+    u8"áfna", u8"rôka", u8"pòdmení",
     // ---- Numbers Sloleks does not list ----
     u8"pétdeset", u8"šéstdeset", u8"devétdeset",
     u8"trilijárd|a|i|e|o", u8"kvadrilijón|a|i|ov", u8"kvintilijón|a|i|ov",
@@ -1100,21 +1109,236 @@ const EndReading END_READINGS[] = {
 
 } // namespace
 
-const char32_t* clause_reading(const std::vector<std::u32string>& words, size_t i) {
-    const std::u32string& w = words[i];
-    if (!w.empty() && w.back() == U'o') {
-        for (const EndReading& r : END_READINGS) {
-            if (w == r.spelling) return i + 1 == words.size() ? r.at_end : r.before_word;
+namespace {
+
+bool word_ends_with(const std::u32string& s, const char32_t* tail) {
+    const std::u32string t(tail);
+    return s.size() >= t.size() && s.compare(s.size() - t.size(), t.size(), t) == 0;
+}
+
+const WordSet& short_pronouns() {
+    static const WordSet set = {U"mi", U"ti", U"mu", U"ji", U"nam", U"vam", U"jim", U"me", U"te", U"ga",
+                                U"jo", U"nas", U"vas", U"jih", U"se", U"si", U"ju", U"naju", U"vaju"};
+    return set;
+}
+
+// lahko is the modal and the adverb, lahkó (SP 2001), in 2,703 of its 2,718
+// occurrences in SUK 1.1, and láhko, the adjective lahek (SP "láhek -hka -o";
+// a Slovenian listener's Jesti moraš lahko hrano, Prosim daj mi lahko nalogo)
+// in the others, so the adjective needs evidence. A noun right after it does
+// not decide: the modal stands before its object in 63 of those (Lahko
+// kuhinjo prepleskamo, Preboliš lahko bolezen). What does: lahko noč (SSKJ²
+// "kot pozdrav"); a preposition before it (z lahko nogo, na lahko nafto; SP
+// na láhko tudi na lahkó) unless an adverb is modifying an adjective in
+// -ljiv (na lahko obranljivem); a verb of obligation, which the modal never
+// follows, before a word that is no infinitive (moraš lahko hrano, not mora
+// lahko dostopati); and one of the nouns the dictionaries give it, as the
+// last word of the clause, with no present tense, auxiliary or conjunction
+// before lahko that would make it the modal (Daj mi lahko nalogo, but
+// Izberete lahko nalogo, Da lahko delo).
+bool lahko_is_adjective(const std::vector<std::u32string>& words, const std::vector<bool>& capitalized,
+                        size_t i) {
+    // SSKJ² and SP under láhek, and the corpus's lahko nafto, lahko opremo
+    static const WordSet nouns = {
+        U"hrano", U"nalogo", U"delo", U"obleko", U"oblačilo", U"salamo", U"vino", U"pivo", U"slovo",
+        U"življenje", U"čtivo", U"branje", U"olje", U"roko", U"nogo", U"službo", U"turo", U"vajo",
+        U"zmago", U"knjigo", U"hojo", U"bolezen", U"poškodbo", U"večerjo", U"kosilo", U"malico",
+        U"juho", U"jed", U"pijačo", U"literaturo", U"glasbo", U"industrijo", U"kategorijo",
+        U"konfekcijo", U"obutev", U"figuro", U"strojnico", U"artilerijo", U"prst", U"zemljo",
+        U"nafto", U"opremo", U"kovino", U"smrt", U"vožnjo", U"tekmo", U"pot", U"vprašanje",
+        U"odločitev", U"izbiro", U"torbo", U"jakno", U"atletiko", U"orožje", U"vozilo", U"letalo",
+        U"perilo", U"pohištvo",
+    };
+    static const WordSet obligation = {
+        U"mora", U"moram", U"moraš", U"morava", U"morata", U"moramo", U"morate", U"morajo",
+        U"moral", U"morala", U"moralo", U"morali", U"morale", U"sme", U"smem", U"smeš", U"smemo",
+        U"smete", U"smejo", U"hoče", U"hočem", U"hočeš", U"hočemo", U"hočete", U"hočejo",
+    };
+    static const WordSet modal_before = {
+        U"bi", U"da", U"če", U"ki", U"ali", U"a", U"kako", U"kje", U"kaj", U"kdaj", U"zakaj", U"kdo",
+        U"bo", U"bom", U"boš", U"bova", U"bosta", U"bomo", U"boste", U"bodo", U"sem", U"so", U"sta",
+        U"smo", U"ste",
+    };
+    const std::u32string* prev = i > 0 ? &words[i - 1] : nullptr;
+    // na lahko, the adverbial phrase, ends a clause too (jemati službo na lahko)
+    if (prev && *prev == U"na" && !(capitalized[i - 1] && i > 1)) {
+        if (i + 1 == words.size()) return true;
+    }
+    if (i + 1 == words.size()) return false;
+    const std::u32string& next = words[i + 1];
+    // lahko prebavljiva hrana, the adverb; but z lahko prebavljivostjo
+    if (next.find(U"ljiv") != std::u32string::npos && next.find(U"ljivost") == std::u32string::npos) return false;
+    if (next == U"noč") return true;
+    // Z, S with a capital inside a clause are letters (intervalna opredelitev
+    // Z lahko povzroča, model S lahko ponudi)
+    if (prev && prepositions().count(*prev) && !(capitalized[i - 1] && i > 1)) return true;
+    size_t k = i;
+    while (k > 0 && short_pronouns().count(words[k - 1])) --k;
+    const std::u32string* before = k > 0 ? &words[k - 1] : nullptr;
+    if (before && obligation.count(*before) && !word_ends_with(next, U"ti") && !word_ends_with(next, U"či")) {
+        return true;
+    }
+    if (i + 2 != words.size() || !nouns.count(next)) return false;
+    if (!before) return k == i;     // Lahko delo. (not Se lahko delo.)
+    if (modal_before.count(*before)) return false;
+    // A verb in the present before it (Kupim lahko hrano, Vidite lahko delo),
+    // though not imeti (Imam lahko nalogo) or an imperative in -jte (Dajte mi
+    // lahko nalogo)
+    if (before->rfind(U"im", 0) == 0 && before->size() >= 3 && (*before)[2] == U'a') return true;
+    if (word_ends_with(*before, U"jte")) return true;
+    for (const char32_t* tail : {U"m", U"š", U"mo", U"te", U"ta", U"va"}) {
+        if (word_ends_with(*before, tail)) return false;
+    }
+    return true;
+}
+
+// roka is the hand's nominative, rôka, or the genitive of rók "deadline",
+// róka (SP 2001 rók -a). In SUK 1.1 the 28 genitives have a preposition (do
+// roka, brez roka), a genitive in -ega (vojaškega roka) or a noun of time
+// limits before them; the 16 hands have none of these, and a hand after a
+// preposition would be roke or roko.
+bool roka_is_deadline(const std::vector<std::u32string>& words, size_t i) {
+    if (i == 0) return false;
+    const std::u32string& prev = words[i - 1];
+    static const WordSet limits = {
+        U"podaljšanje", U"podaljšanja", U"podaljšanju", U"podaljšanjem", U"iztek", U"izteka", U"izteku",
+        U"iztekom", U"potek", U"poteka", U"poteku", U"potekom", U"služenje", U"služenja", U"služenju",
+        U"služenjem", U"določitev", U"določitve", U"predpisuje", U"upoštevanje", U"upoštevanja",
+        U"spoštovanje", U"spoštovanja", U"zamuda", U"zamude", U"zamudo", U"zamik", U"zamika", U"zamiku",
+    };
+    return prepositions().count(prev) != 0 || word_ends_with(prev, U"ega") || limits.count(prev) != 0;
+}
+
+// meni after a preposition: the pronoun's form after those with the dative
+// and the locative (k meni, proti meni, o meni, pri meni, ob meni, po meni,
+// v meni, na meni), but after those with the accusative or the instrumental
+// the pronoun is mene or mano (pod mano, za mano, skozi mene), so meni is
+// the menu (pod meni, a Slovenian listener's example; SP 2001 mení -ja).
+// After v and na it is the menu's accusative when something moves there
+// (pojdi v meni, kliknite na meni, nazaj v meni); in SUK 1.1 the other 17
+// are the pronoun. Before those the menu follows an adjective or a possessive
+// (glavni meni, vaš meni) or a verb that takes a menu (odpri meni), and
+// comes before its name, itself with a capital (Meni Start) or after v or na
+// (v meni Dokumenti). A small meni before a capital is the verb of the news
+// (meni Kučan, tako meni Križanič: 30 occurrences in SUK 1.1), and so is meni
+// after a surname that looks like an adjective (Franco Frattini meni).
+const char32_t* meni_reading(const std::vector<std::u32string>& words, const std::vector<bool>& capitalized,
+                             size_t i) {
+    static const WordSet accusative_only = {U"pod", U"nad", U"pred", U"med", U"za", U"čez", U"skozi"};
+    static const WordSet towards = {
+        U"pojdi", U"pojdite", U"pojdimo", U"pojdiva", U"pojdem", U"pojdeš", U"gre", U"greš", U"grem",
+        U"gremo", U"greste", U"gredo", U"gresta", U"odidi", U"odidite", U"vstopi", U"vstopite",
+        U"vstopimo", U"vstop", U"stopi", U"stopite", U"preidi", U"preidite", U"preide", U"prehod",
+        U"vrni", U"vrnite", U"vrnimo", U"vrnitev", U"nazaj", U"skoči", U"skočite", U"premakni",
+        U"premaknite", U"povleci", U"povlecite", U"dodaj", U"dodajte", U"dodajanje", U"pripni",
+        U"pripnite", U"vstavi", U"vstavite", U"klikni", U"kliknite", U"klik", U"tapni", U"tapnite",
+        U"pritisni", U"pritisnite", U"dotakni", U"dotaknite",
+    };
+    static const WordSet possessives = {
+        U"vaš", U"tvoj", U"moj", U"naš", U"svoj", U"njihov", U"njegov", U"njen",
+        U"novi", U"levi", U"hitri", U"stari",
+    };
+    static const WordSet takes_menu = {
+        U"odpri", U"odprite", U"odpre", U"zapri", U"zaprite", U"zapre", U"prikaži", U"prikažite",
+        U"pokaži", U"pokažite", U"izberi", U"izberite", U"skrij", U"skrijte", U"poišči", U"poiščite",
+        U"razširi", U"razširite", U"strni", U"strnite", U"aktiviraj", U"aktivirajte", U"uporabi",
+        U"uporabite", U"klikni", U"kliknite", U"tapni", U"tapnite",
+    };
+    if (words.size() == 1) return U"mení";
+    const std::u32string* prev = i > 0 ? &words[i - 1] : nullptr;
+    const bool before_capital = i + 1 < words.size() && capitalized[i + 1];
+    if (prev) {
+        if (accusative_only.count(*prev)) return U"mení";
+        if (*prev == U"v" || *prev == U"na") {
+            if (before_capital) return U"mení";      // v meni Dokumenti
+            for (size_t k = 0; k + 1 < i; ++k) {
+                if (towards.count(words[k])) return U"mení";
+            }
+            return U"mêni";
+        }
+        if (prepositions().count(*prev)) return U"mêni";
+        if (possessives.count(*prev) || takes_menu.count(*prev)) return U"mení";
+        const bool a_name = capitalized[i - 1] && i > 1;
+        if (!a_name && ((prev->size() >= 5 && word_ends_with(*prev, U"ni")) || word_ends_with(*prev, U"ski") ||
+                        word_ends_with(*prev, U"ški") || word_ends_with(*prev, U"čki") ||
+                        word_ends_with(*prev, U"nji"))) {
+            return U"mení";     // glavni meni, začetni meni, stranski meni, zadnji meni
         }
     }
-    if (w != U"meni") return nullptr;
-    if (words.size() == 1) return U"mení";
-    if (i > 0 && prepositions().count(words[i - 1])) return U"mêni";
+    if (before_capital && capitalized[i]) return U"mení";   // Meni Start, Meni Datoteka
     if (i + 1 < words.size()) {
         const std::u32string& next = words[i + 1];
         if (next == U"se" || next == U"je" || next == U"ni") return U"mêni";
     }
     return nullptr;
+}
+
+} // namespace
+
+const char32_t* clause_reading(const std::vector<std::u32string>& words, const std::vector<bool>& capitalized,
+                               size_t i) {
+    const std::u32string& w = words[i];
+    if (!w.empty() && w.back() == U'o') {
+        for (const EndReading& r : END_READINGS) {
+            if (w == r.spelling) return i + 1 == words.size() ? r.at_end : r.before_word;
+        }
+        if (w == U"lahko" && lahko_is_adjective(words, capitalized, i)) return U"láhko";
+        return nullptr;
+    }
+    if (w == U"meni") return meni_reading(words, capitalized, i);
+    if (w == U"roka") return roka_is_deadline(words, i) ? U"róka" : nullptr;
+    if (w == U"afna") {
+        const bool se = (i > 0 && words[i - 1] == U"se") || (i + 1 < words.size() && words[i + 1] == U"se");
+        return se ? U"afná" : nullptr;
+    }
+    return nullptr;
+}
+
+bool clause_reading_is_content(const std::u32string& w, const char32_t* reading) {
+    return reading && w == U"lahko" && std::u32string(reading) == U"láhko";
+}
+
+bool surname_reading(const std::u32string& w, const std::u32string& previous, bool previous_capitalized,
+                     std::u32string& pron) {
+    // The names in -e with another accent in Sloleks, hand-accented: surnames
+    // and given names that may follow a given name
+    static const WordSet not_final = {
+        U"lapajne", U"barle", U"strmole", U"kobe", U"habe", U"maze", U"mate", U"kette", U"mengele",
+        U"verne", U"inge", U"arne", U"stipe", U"felipe", U"dante", U"monte", U"ante", U"palme",
+        U"pavle", U"pepe", U"polde", U"nande", U"nace", U"rade", U"dane", U"dare", U"bine", U"brane",
+        U"cene", U"france", U"frane", U"jože", U"jure", U"lojze", U"stane", U"tine", U"tone", U"zvone",
+        U"žare", U"čare", U"čile",
+    };
+    if (!previous_capitalized || w.size() < 3 || w.back() != U'e' || is_vowel_letter(w[w.size() - 2])) return false;
+    if (not_final.count(w)) return false;
+    size_t vowels = 0;
+    for (size_t k = 0; k + 1 < w.size(); ++k) {
+        const char32_t c = w[k];
+        if (c == U'q' || c == U'w' || c == U'x' || c == U'y') return false;
+        if (is_vowel_letter(c)) {
+            ++vowels;
+            // au stays (Gaube); the other pairs are not Slovenian (Moore, Pierce)
+            if (k + 1 < w.size() && is_vowel_letter(w[k + 1]) && !(c == U'a' && w[k + 1] == U'u')) return false;
+        }
+        if (w[k + 1] == c) return false;        // Hesse, Allende
+        if (c == U'h' && k > 0 && std::u32string(U"ctspg").find(w[k - 1]) != std::u32string::npos) return false;
+        if (c == U'k' && k > 0 && w[k - 1] == U'c') return false;
+    }
+    if (vowels == 0) return false;
+
+    size_t lo = 0, hi = sizeof(SLOVENIAN_GIVEN_NAMES) / sizeof(SLOVENIAN_GIVEN_NAMES[0]);
+    bool named = false;
+    while (lo < hi && !named) {
+        const size_t mid = lo + (hi - lo) / 2;
+        const int c = compare_key(previous, SLOVENIAN_GIVEN_NAMES[mid]);
+        if (c == 0) named = true;
+        else if (c < 0) hi = mid;
+        else lo = mid + 1;
+    }
+    if (!named) return false;
+    pron = w.substr(0, w.size() - 1);
+    pron += U'è';
+    return true;
 }
 
 VerbOrNoun context_reading(const std::vector<std::u32string>& words, size_t i, bool participle) {
@@ -1153,6 +1377,23 @@ VerbOrNoun context_reading(const std::vector<std::u32string>& words, size_t i, b
         }
         if ((prev && (object_clitics.count(*prev) || *prev == U"ne")) || last) return VerbOrNoun::Verb;
         return VerbOrNoun::Lexicon;
+    }
+    // gori: gorí "burns" (Peč gori vsak dan), but gôri the locative and the
+    // dative of gôra after a preposition (na gori) or an adjective (v Kranjski
+    // Gori, Črni gori; the 24 occurrences of the noun in SUK 1.1 that have a
+    // word before them) and the adverb "up there" after tam (SSKJ² gôri).
+    // The lexicon's commoner gôri would read the listener's Na gori gori ogenj
+    // twice as the noun.
+    if (w == U"gori") {
+        if (!prev) return VerbOrNoun::Verb;     // Gori! Gori luč.
+        static const WordSet up = {U"tam", U"tu", U"tukaj", U"tja", U"dve", U"obe", U"tej", U"neki",
+                                   U"visoko", U"daleč"};
+        static const WordSet not_adjective = {U"gori", U"tudi", U"vsi", U"oni", U"ali", U"kateri", U"nekateri",
+                                              U"zaradi", U"hkrati", U"nikoli", U"lani", U"ponoči", U"sredi",
+                                              U"okoli", U"zdi", U"vidi", U"pravi", U"meni", U"tebi", U"sebi"};
+        if (prepositions().count(*prev) || up.count(*prev)) return VerbOrNoun::Nominal;
+        if (prev->size() >= 4 && prev->back() == U'i' && !not_adjective.count(*prev)) return VerbOrNoun::Nominal;
+        return VerbOrNoun::Verb;
     }
     // leti: léti is the dual and the instrumental of léto (dve leti, pred
     // leti, z leti) or the plural of lèt "flight" (leti so odpovedani),

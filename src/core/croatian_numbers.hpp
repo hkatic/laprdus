@@ -106,6 +106,8 @@ private:
     static std::string_view slovenian_compound_unit(char digit);
     std::string slovenian_ordinal_genitive(std::string_view number);
     std::string slovenian_decimal(std::string_view whole, std::string_view fraction);
+    static void feminine_two(std::string& words);
+    static bool slovenian_two_agrees(const std::string& text, size_t start, size_t end);
 
     // Digits after a decimal mark or inside a dotted identifier
     std::string digit_group_to_words(std::string_view group);

@@ -1799,8 +1799,8 @@ TEST_CASE("Slovenian words reported by the first users (October 2026)", "[fronte
         {U"zahtevati", "zaht'é:vati"},
         {U"nadlegovanje", "nadlEgOv'a:njE"},
         {U"nadležen", "nadl'é:žən"},
-        {U"seznam", "səzn'am"},                  // seznàm [səznam], was séznam
-        {U"seznama", "səzn'a:ma"},
+        {U"seznam", "sEzn'am"},                  // seznàm, the listener's open e; was séznam
+        {U"seznama", "sEzn'a:ma"},
         {U"način", "nač'i:n"},                   // načín, was náčin
         {U"počiščeno", "pOč'i:ščEnO"},
         {U"ena", "'E:na"},                       // êna, open; was éna
@@ -2059,4 +2059,78 @@ TEST_CASE("A lone consonant letter is its sound in letter-sound mode", "[fronten
     REQUIRE(sounds(slovenian, U"B C") == "b'ə c'ə");
     REQUIRE(sounds(slovenian, U"v šoli") == phones_of(read(slovenian, U"v šoli")));
     REQUIRE(sounds(slovenian, U"SP") == phones_of(read(slovenian, U"SP")));
+}
+
+TEST_CASE("Slovenian listener's report of November 2026", "[frontend][slovenian]") {
+    Frontend frontend(VoiceLanguage::Slovenian);
+    struct Case { const char32_t* text; const char* phones; };
+    const Case cases[] = {
+        // afna is the noun, also the name of @; the verb only next to se
+        {U"afna", "'a:fna"},
+        {U"janez afna gmail", "j'a:nEs 'a:fna gma'il"},
+        {U"To se afna", "t'ó: sE afn'a:"},
+        // lahko: the adjective with evidence for it, otherwise the modal
+        {U"Jesti moraš lahko hrano", "j'é:sti m'ó:raš l'a:hkO hr'a:nO"},
+        {U"Prosim daj mi lahko nalogo", "pr'ó:sim d'aj mi l'a:hkO nal'ó:gO"},
+        {U"Lahko noč", "l'a:hkO n'ó:č"},
+        {U"Z lahko nogo", "z l'a:hkO n'O:gO"},
+        {U"To je lahko delo", "t'ó: jE l'a:hkO d'é:lO"},
+        {U"Ali lahko prideš", "ali lahk'ó: pr'i:dEš"},
+        {U"Lahko ti skuham kavo", "lahk'ó: ti sk'u:ham k'a:vO"},
+        {U"Izberete lahko nalogo", "izb'E:rEtE lahk'ó: nal'ó:gO"},
+        {U"Lahko hrano kupite v trgovini", "lahk'ó: hr'a:nO k'u:pitE u tərgOv'i:ni"},
+        {U"Uporabnik mora lahko dostopati", "upOr'a:bnik m'ó:ra lahk'ó: dOst'ó:pati"},
+        {U"To je lahko", "t'ó: jE lahk'ó:"},
+        // gori: the verb, but the noun or the adverb after these
+        {U"Na gori gori ogenj", "na g'O:ri gOr'i: 'O:gən"},
+        {U"Peč gori vsak dan", "p'é:č gOr'i: us'a:k d'a:n"},
+        {U"Gori", "gOr'i:"},
+        {U"V Kranjski Gori", "u kr'a:nski g'O:ri"},
+        {U"Tam gori", "t'am g'O:ri"},
+        // A surname in -e after a given name, on its open last e
+        {U"Jani Perše", "j'a:ni pErš'E"},
+        {U"Drago Lekše", "dr'a:gO lEkš'E"},
+        {U"Vesna Smode", "v'é:sna smOd'E"},
+        {U"Marija Smode", "mar'i:ja smOd'E"},
+        {U"Janez Stare", "j'a:nEs star'E"},
+        {U"Smode je rekla", "sm'ó:dE jE r'E:kla"},       // alone: too many foreign names
+        {U"Ivan Lapajne", "'i:van lap'a:jnE"},           // Sloleks: Lapájne
+        {U"Miroslava Krleže", "m'i:rOslava kərl'é:žE"},  // a genitive
+        {U"Janez Novak", "j'a:nEs nOv'a:k"},
+        // posodobiti: the l-participle on the i, the rest as the dictionaries
+        {U"Aplikacija se je posodobila", "aplik'a:cija sE jE pOsOdOb'i:la"},
+        {U"Posodobil sem", "pOsOdOb'i:w səm"},
+        {U"posodobili", "pOsOdOb'i:li"},
+        {U"Posodobi", "pOsOd'O:bi"},
+        {U"posodobiti", "pOsOd'O:biti"},
+        // seznam with the open e in every form
+        {U"seznam", "sEzn'am"},
+        {U"na seznamu", "na sEzn'a:mu"},
+        {U"seznamih", "sEzn'a:mih"},
+        // roka: the hand, open; the deadline's genitive and the name, close
+        {U"Roka je hladna", "r'O:ka jE hl'a:dna"},
+        {U"Njegova roka", "njEg'O:va r'O:ka"},
+        {U"Daj mi roko", "d'aj mi r'O:kO"},
+        {U"do roka", "dO r'ó:ka"},
+        {U"vojaškega roka", "vOj'a:škEga r'ó:ka"},
+        {U"To je Roka hiša", "t'ó: jE r'ó:ka h'i:ša"},
+        // meni: the menu, the pronoun, the verb of the news
+        {U"pod meni", "pOd mEn'i:"},
+        {U"Pojdi v meni", "p'ó:jdi u mEn'i:"},
+        {U"Kliknite na meni", "kl'i:knitE na mEn'i:"},
+        {U"Glavni meni", "gl'a:wni mEn'i:"},
+        {U"Odpri meni", "Otpr'i mEn'i:"},
+        {U"Meni Start", "mEn'i: st'a:rt"},
+        {U"v meni Dokumenti", "u mEn'i: dOkum'E:nti"},
+        {U"podmeni", "pOdmEn'i:"},
+        {U"Meni je všeč", "m'E:ni jE uš'é:č"},
+        {U"K meni", "k m'E:ni"},
+        {U"V meni je jeza", "u m'E:ni jE j'é:za"},
+        {U"meni Kučan", "m'é:ni k'u:čan"},
+        {U"Franco Frattini meni", "fr'a:ncO fr'a:ttini m'é:ni"},
+    };
+    for (const Case& c : cases) {
+        INFO(PhonemeMapper::utf32_to_utf8(c.text));
+        REQUIRE(phones_of(read(frontend, c.text)) == c.phones);
+    }
 }

@@ -498,7 +498,7 @@ Laprdus može čitati brojeve na dva načina:
 2. **Znamenkama** - Brojevi se čitaju znamenka po znamenka
    - Primjer: "123" se čita kao "jedan dva tri"
 
-Način čitanja riječima podržava brojeve do centiljuna (10^303) i koristi ispravne gramatičke oblike odabranog jezika. Na slovenskom brojevi se čitaju po slovenskom pravopisu: *nič, ena, dve, tri*, jedinice ispred desetica u jednoj riječi (*enaindvajset*), nepromjenjivo *tisoč* (*dva tisoč*), dvojina i množina (*dva milijona, trije milijoni, pet milijonov; dve milijardi*), decimalni zarez kao *cela* (*tri cele štirinajst*), točka između skupina od tri znamenke kao razdjelnik tisućica (*132.457* je *sto dvaintrideset tisoč štiristo sedeminpetdeset*), a datum u genitivu (*7. 10. 2026* je *sedmega desetega dva tisoč šestindvajset*, *7. oktobra* *sedmega oktobra*).
+Način čitanja riječima podržava brojeve do centiljuna (10^303) i koristi ispravne gramatičke oblike odabranog jezika. Na slovenskom brojevi se čitaju po slovenskom pravopisu: *nič, ena, dva, tri*; dvojka se slaže s riječju koju broji (*2 koša* je *dva koša*, *2 uri* je *dve uri*, *102 leti* je *sto dve leti*), a gdje ništa ne broji glasi *dva* (*T2*, *stran 2*), osim za sate i minute (*Ura je 2* je *dve*); jedinice ispred desetica u jednoj riječi (*enaindvajset*), nepromjenjivo *tisoč* (*dva tisoč*), dvojina i množina (*dva milijona, trije milijoni, pet milijonov; dve milijardi*), decimalni zarez kao *cela* (*tri cele štirinajst*), točka između skupina od tri znamenke kao razdjelnik tisućica (*132.457* je *sto dvaintrideset tisoč štiristo sedeminpetdeset*), a datum u genitivu (*7. 10. 2026* je *sedmega desetega dva tisoč šestindvajset*, *7. oktobra* *sedmega oktobra*).
 
 ### 4.6 Infleksija
 
@@ -707,7 +707,7 @@ Slova abecede Laprdus imenuje sam, na odabranom jeziku (vidi [4.7](#47-slovkanje
 
 #### Ugrađeni izgovori znakova
 
-Laprdus dolazi s ugrađenim rječnikom slovkanja brojeva, interpunkcije i simbola (nazivi su hrvatski; na slovenskom Laprdus ima vlastite nazive: *ena, dve, pika, vejica, podpičje, vprašaj, klicaj, oklepaj, zaklepaj, poševnica, afna, lojtra, zvezdica, enačaj* ...). Slova se imenuju ovako:
+Laprdus dolazi s ugrađenim rječnikom slovkanja brojeva, interpunkcije i simbola (nazivi su hrvatski; na slovenskom Laprdus ima vlastite nazive: *ena, dva, pika, vejica, podpičje, vprašaj, klicaj, oklepaj, zaklepaj, poševnica, afna, lojtra, zvezdica, enačaj* ...). Slova se imenuju ovako:
 
 **Slova abecede** (ugrađeno u Laprdus, ne u rječnik):
 

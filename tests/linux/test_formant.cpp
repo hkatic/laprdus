@@ -21,6 +21,7 @@
 #include <filesystem>
 #include <fstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #ifndef _WIN32
@@ -666,6 +667,33 @@ TEST_CASE("Slovenian is spoken by every voice", "[formant][language]") {
     REQUIRE(speak(zvonko.handle, "55") == speak(zvonko.handle, "petinpetdeset"));
     REQUIRE(speak(zvonko.handle, "2000000") == speak(zvonko.handle, "dva milijona"));
     REQUIRE(speak(zvonko.handle, "3,14") == speak(zvonko.handle, "tri cele \xC5\xA1tirinajst"));
+    // A 2 agrees with what it counts, and is dva where it counts nothing
+    // (a listener's report: 2 koša, 2 načina and T2 were dve)
+    const std::pair<const char*, const char*> twos[] = {
+        {"2 ko\xC5\xA1" "a", "dva ko\xC5\xA1" "a"},
+        {"2 na\xC4\x8Dina", "dva na\xC4\x8Dina"},
+        {"2 velika ko\xC5\xA1" "a", "dva velika ko\xC5\xA1" "a"},
+        {"T2", "T dva"},
+        {"T-2", "T-dva"},
+        {"stran 2", "stran dva"},
+        {"2 dni", "dva dni"},
+        {"102 stola", "sto dva stola"},
+        {"2002", "dva tiso\xC4\x8D dva"},
+        {"2 uri", "dve uri"},
+        {"2 mesti", "dve mesti"},
+        {"2 veliki hi\xC5\xA1i", "dve veliki hi\xC5\xA1i"},
+        {"102 leti", "sto dve leti"},
+        {"1.002 knjigi", "tiso\xC4\x8D dve knjigi"},
+        {"ura je 2", "ura je dve"},
+        {"2:30", "dve trideset"},
+        {"2,5", "dve celi pet"},
+        {"2 milijardi", "dve milijardi"},
+        {"2 milijona", "dva milijona"},
+    };
+    for (const auto& two : twos) {
+        INFO(two.first);
+        REQUIRE(speak(zvonko.handle, two.first) == speak(zvonko.handle, two.second));
+    }
     // The other formant voices and the singing presets speak it too
     for (const char* voice : {"stojan", "mirsad", "lika_velebit"}) {
         INFO(voice);

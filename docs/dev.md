@@ -191,9 +191,10 @@ is called by `TTSEngine::set_language()` for every voice (Croatian
 *tisuća / milijun / dvjesto*, Serbian *hiljada / milion / dvesta*, Bosnian
 *hiljada / milion / dvjesto*; one and two agree with the feminine scale
 words: *dvije tisuće*, *dve hiljade*). Slovenian has a system of its own
-(*nič, ena, dve, tri; enaindvajset; dva tisoč; dva milijona, trije
-milijoni, pet milijonov; dve milijardi; tri cele štirinajst; 132.457 read as
-one number; dates in the genitive, sedmega oktobra*).
+(*nič, ena, dva, tri; a 2 that counts agrees with the next word, dva koša, dve
+uri; enaindvajset; dva tisoč; dva milijona, trije milijoni, pet milijonov; dve
+milijardi; tri cele štirinajst; 132.457 read as one number; dates in the
+genitive, sedmega oktobra*).
 
 **Features:**
 - Supports numbers from 0 to 10^303 (centillions)
