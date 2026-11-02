@@ -4084,10 +4084,14 @@ Utterance Frontend::process(const std::u32string& text, Punctuation punct,
 // letter-to-sound rules, the lexicon, the clitics and the sound changes of
 // formant_slovenian.cpp. Every word has a plain (neutral) accent: Slovenian
 // stress is dynamic, with long and short stressed vowels and no tones.
-Utterance Frontend::process_slovenian(const std::u32string& text, Punctuation punct,
+Utterance Frontend::process_slovenian(const std::u32string& marked_text, Punctuation punct,
                                        bool letter_sounds) const {
     Utterance utt;
     utt.slovenian = true;
+    // The engine's mark that a clause opening with da, naj, kako ... follows
+    const bool before_complement =
+        !marked_text.empty() && marked_text.back() == slovenian::BEFORE_COMPLEMENT_MARK;
+    const std::u32string text = before_complement ? marked_text.substr(0, marked_text.size() - 1) : marked_text;
     std::vector<Word> tokens = tokenize(cyrillic::to_latin(text), m_language);
     const slovenian::Lexicon* user = m_user_slovenian.get();
     join_camel(tokens, [&](const std::u32string& spelled) {
@@ -4166,7 +4170,7 @@ Utterance Frontend::process_slovenian(const std::u32string& text, Punctuation pu
         if (!word.letter_name && !word.joined) {
             slovenian::VerbNounReadings readings;
             const char32_t* head = slovenian::head_reading(word.w);
-            const char32_t* in_clause = slovenian::clause_reading(spellings, capitalized, i);
+            const char32_t* in_clause = slovenian::clause_reading(spellings, capitalized, i, before_complement);
             // A name spelled like a common word (Múrska Sóbota, sobóta;
             // Jêlena, jeléna): only with a capital, not in text written all
             // in capitals, and at the head of a clause only when the name
@@ -4187,7 +4191,8 @@ Utterance Frontend::process_slovenian(const std::u32string& text, Punctuation pu
                 // not the small one of the modal lahkó
                 if (slovenian::clause_reading_is_content(word.w, in_clause)) word.explicit_stress = true;
             } else if (slovenian::verb_noun_readings(word.w, readings)) {
-                switch (slovenian::context_reading(spellings, i, readings.participle)) {
+                switch (slovenian::context_reading(spellings, i, readings.participle, readings.noun_percent,
+                                                   before_complement)) {
                     case slovenian::VerbOrNoun::Verb: context_pron = readings.verb; break;
                     case slovenian::VerbOrNoun::Nominal: context_pron = readings.nominal; break;
                     case slovenian::VerbOrNoun::Lexicon: break;

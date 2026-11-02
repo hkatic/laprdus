@@ -644,6 +644,24 @@ TEST_CASE("Slovenian spelling uses Slovenian names and preserves user overrides"
     check_slovenian_spelling(engine.handle);
 }
 
+TEST_CASE("Slovenian reads a word by the clause after the comma", "[formant][language]") {
+    // Meni, da je prav: the clause after the comma makes meni the verb, which
+    // the front end cannot see in one clause; alone it is the menu. For every
+    // voice, the recorded ones too, and in the streaming path.
+    for (const char* voice : {"zvonko", "josip"}) {
+        const bool recorded = std::string(voice) == "josip";
+        const char* data = std::getenv("LAPRDUS_DATA");
+        if (recorded && !data) continue;
+        Engine engine;
+        REQUIRE(laprdus_set_voice(engine.handle, voice, recorded ? data : NO_DATA) == LAPRDUS_OK);
+        REQUIRE(laprdus_set_language(engine.handle, "sl") == LAPRDUS_OK);
+        REQUIRE(speak(engine.handle, "Meni, da je prav.") == speak(engine.handle, "M\xC3\xA9ni, da je prav."));
+        REQUIRE(speak(engine.handle, "Meni, gumb.") != speak(engine.handle, "M\xC3\xA9ni, gumb."));
+        REQUIRE(speak(engine.handle, "Ni obvestil, da pride.") == speak(engine.handle, "Ni obv\xC3\xA9stil, da pride."));
+        REQUIRE(speak(engine.handle, "Ni obvestil, gumb.") != speak(engine.handle, "Ni obv\xC3\xA9stil, gumb."));
+    }
+}
+
 TEST_CASE("Slovenian is spoken by every voice", "[formant][language]") {
     // No voice has Slovenian as its native language: every one of them
     // speaks it when asked, formant and recorded alike, with a front end of

@@ -864,6 +864,7 @@ class Reader:
 def build(forms_path, manual_min, auto_min, form_min):
     """The reading of every spelling (by its most frequent form) and the
     stems, from the Sloleks forms: (lemma count, truth, stems)."""
+    genitive_plural = defaultdict(int)      # spelling -> ff of its nouns' genitive plurals
     lemmas = {}         # (lemma, cat) -> dict(freq, forms{orth: [note, ff, graded, proper]})
     skipped = 0
     with open(forms_path, encoding='utf-8') as f:
@@ -923,6 +924,9 @@ def build(forms_path, manual_min, auto_min, form_min):
                 word_class = 'P' if msd[3:4] == 'd' else 'V'
             elif msd.startswith(('S', 'P', 'R')) and not msd.startswith('Sl'):
                 word_class = 'N'
+                # A noun's genitive plural in -l (obvestíl, vozíl, sêdel)
+                if msd.startswith('So') and msd[3:5] == 'mr':
+                    genitive_plural[orth] += ff
             else:
                 word_class = ''
             form = entry['forms'].setdefault(orth, {}).setdefault(
@@ -1007,7 +1011,12 @@ def build(forms_path, manual_min, auto_min, form_min):
     # adjective's or an adverb's in another, read differently (veselí and
     # veséli, letí and léti, vôzil and vozíl), both readings at least 20
     # times in the corpus: the front end picks one by the words around it.
-    # spelling -> (verb's notation, other notation, participle)
+    # An l-participle and a noun read differently also when only the final
+    # l differs: [w] in the participle, [l] in the noun (predáw and predál;
+    # a listener's obvéstiw and obvestíl), so those are listed too.
+    # spelling -> (verb's notation, other notation, participle, the share of
+    # the genitive plural in percent of this spelling's uses, or -1 if the
+    # other reading is not a genitive plural)
     verb_noun = {}
     for orth, classes in by_class.items():
         if 'N' not in classes:
@@ -1019,12 +1028,26 @@ def build(forms_path, manual_min, auto_min, form_min):
                 continue
             verb, v_weight = max(classes[word_class].items(), key=lambda kv: kv[1])
             total = sum(classes[word_class].values())
-            if norm(verb) == norm(nominal) or min(total, sum(classes['N'].values())) < 20:
+            participle = word_class == 'P'
+            same = norm(verb) == norm(nominal)
+            final_l_differs = participle and orth.endswith('l') and orth[-2:-1] in ('a', 'e', 'i', 'u')
+            nominal_total = sum(classes['N'].values())
+            if (same and not final_l_differs) or min(total, nominal_total) < 20:
+                continue
+            # A reading of under 1 % is not worth the risk where nothing but
+            # the final l or a rule of context tells them apart: del "part"
+            # (681,000) and the participle of deti (1,100), moral the verb
+            # (278,000) and the genitive of morala (85)
+            if final_l_differs and min(total, nominal_total) * 100 < total + nominal_total:
                 continue
             if best is None or total > best[0]:
-                best = (total, verb, word_class == 'P')
+                best = (total, verb, participle)
         if best:
-            verb_noun[orth] = (best[1], nominal, best[2])
+            total, verb, participle = best
+            percent = -1
+            if participle and genitive_plural[orth] >= 20:
+                percent = 100 * genitive_plural[orth] // (genitive_plural[orth] + total)
+            verb_noun[orth] = (verb, nominal, participle, percent)
     names = {'weights': names_w, 'lemma': names_lemma, 'note_lemma': note_lemma, 'common': common_w,
              'adjective': adjective_w, 'unnamed': unnamed}
     return len(lemmas), truth, stems, verb_noun, names
@@ -1275,13 +1298,23 @@ def generate(forms_path, out_path, manual_min=50, auto_min=2000, form_min=3, cpp
             out.write('    %s,\n' % ', '.join('u8"%s"' % n for n in given[start:start + 8]))
         out.write('};\n')
         out.write('// Spellings read as a verb\'s form or as another word: the verb\'s\n')
-        out.write('// reading, the other, and whether the verb\'s is the l-participle\n')
+        out.write('// reading, the other, whether the verb\'s is the l-participle, and the\n')
+        out.write('// share in percent of a genitive plural in -l (-1: the other reading is none)\n')
         out.write('const VerbNoun SLOVENIAN_VERB_NOUN[] = {\n')
         for key in sorted(verb_noun, key=lambda k: [ord(c) for c in k]):
-            verb, nominal, participle = verb_noun[key]
-            out.write('    {u8"%s", u8"%s", %s},\n' % (unicodedata.normalize('NFC', verb),
-                                                      unicodedata.normalize('NFC', nominal),
-                                                      'true' if participle else 'false'))
+            verb, nominal, participle, percent = verb_noun[key]
+            if participle and key.endswith('l'):
+                # The participle's final l is [w] and the other word's [l],
+                # unless the dictionaries mark [-u\u032f] for that word too
+                # (vesél, zrél, tôpel): notation w and notation \u0142
+                if verb.endswith('l'):
+                    verb = verb[:-1] + 'w'
+                lemma = names['note_lemma'].get((key, nominal), key)
+                if nominal.endswith('l') and lemma not in marked and key not in marked:
+                    nominal = nominal[:-1] + '\u0142'
+            out.write('    {u8"%s", u8"%s", %s, %d},\n' % (unicodedata.normalize('NFC', verb),
+                                                          unicodedata.normalize('NFC', nominal),
+                                                          'true' if participle else 'false', percent))
         out.write('};\n')
         out.write('// clang-format on\n')
 

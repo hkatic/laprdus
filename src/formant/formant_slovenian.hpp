@@ -224,11 +224,28 @@ const char32_t* head_reading(const std::u32string& w);
  * adjective láhko before a noun it qualifies (lahko noč, z lahko nogo, moraš
  * lahko hrano, daj mi lahko nalogo), else the lexicon's modal lahkó. Roka is
  * the genitive róka of the deadline after a preposition or a genitive (do
- * roka, vojaškega roka), else the lexicon's hand, rôka. Afna is the verb's
- * afná next to se, else the lexicon's noun, áfna.
+ * roka, vojaškega roka) or of the name when no hand can be meant (Roka že ni,
+ * Roka nisem videl), else the lexicon's hand, rôka; roki and roke are a
+ * deadline's by an adjective or a plural verb (plačilni roki, roki so kratki).
+ * Afna is the verb's afná next to se, else the lexicon's noun, áfna. With
+ * before_complement the clause after a comma opens with da, naj, kako ...
+ * (BEFORE_COMPLEMENT_MARK): Meni, da je prav.
  */
 const char32_t* clause_reading(const std::vector<std::u32string>& words,
-                               const std::vector<bool>& capitalized, size_t i);
+                               const std::vector<bool>& capitalized, size_t i,
+                               bool before_complement = false);
+
+/**
+ * The mark the engine puts at the end of a clause whose comma is followed by a
+ * clause opens_complement_clause() says yes to, since the front end sees one
+ * clause at a time and a verb of saying or thinking is told by what follows it:
+ * Meni, da je prav. Ni obvestil, da pride. A private use character, consumed
+ * by Frontend::process_slovenian(), never spoken.
+ */
+constexpr char32_t BEFORE_COMPLEMENT_MARK = 0xE000;
+
+/** Whether a clause begins with da, naj, kdaj, kako ... */
+bool opens_complement_clause(const std::u32string& text);
 
 /**
  * Whether the reading clause_reading() gave is a content word although its
@@ -249,6 +266,7 @@ struct VerbNounReadings {
     std::u32string verb;
     std::u32string nominal;
     bool participle = false;    // the verb's reading is the l-participle
+    int noun_percent = -1;      // the share of a genitive plural in -l, or -1 (none)
 };
 bool verb_noun_readings(const std::u32string& w, VerbNounReadings& out);
 
@@ -258,10 +276,13 @@ enum class VerbOrNoun { Lexicon, Verb, Nominal };
  * Which reading of a verb/noun spelling (verb_noun_readings()) the clause
  * asks for: `words` are its words, lowercase, `i` the spelling's place.
  * A preposition or dve/obe before it make it the noun, ne the verb; veseli
- * and leti have rules of their own. Lexicon: no cue, the more frequent
+ * and leti have rules of their own. A spelling in -l that is a participle and
+ * a noun's genitive plural (noun_percent >= 0: obvéstil, obvestíl) is told by
+ * its auxiliary (participle_or_genitive()). Lexicon: no cue, the more frequent
  * reading stays.
  */
-VerbOrNoun context_reading(const std::vector<std::u32string>& words, size_t i, bool participle);
+VerbOrNoun context_reading(const std::vector<std::u32string>& words, size_t i, bool participle,
+                           int noun_percent = -1, bool before_complement = false);
 
 /**
  * A compound numeral (enaindvajset, štiriinštirideset) split into its

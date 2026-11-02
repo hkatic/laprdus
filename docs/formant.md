@@ -3437,7 +3437,7 @@ Toporišič's rules), so the lexicon carries most of the load:
    stem, and a deviation for every form of a word belongs in `CORRECTIONS`.
    The notation of an entry (`slovenian::Lexicon` in
    `formant_slovenian.hpp`) is the word spelled as it is pronounced: the
-   accented letters of SSKJ, *ə* for the schwa, *w* for an *l* that is [w],
+   accented letters of SSKJ, *ə* for the schwa, *w* for an *l* that is [w], *ł* for one that stays [l],
    `*` for a stem, `|` for a list of forms, `spelling=pronunciation` where
    the two cannot be matched letter by letter; `'` and `:` are accepted as
    the ASCII marks. Users write the same notation in `accents.json` with
@@ -3524,7 +3524,7 @@ against both the listener and the dictionaries.
 
 A spelling that is a verb's form in one reading and a noun's, an
 adjective's or an adverb's in another, with a different accent, is read by
-the words around it (`SLOVENIAN_VERB_NOUN`, 909 spellings the generator
+the words around it (`SLOVENIAN_VERB_NOUN`, 941 spellings the generator
 finds where both readings occur at least 20 times in the corpus;
 `slovenian::context_reading()`). Without a cue the lexicon's reading, the
 more frequent one, stays. The cues were chosen on the tagged corpus SUK 1.1
@@ -3564,9 +3564,54 @@ veseli* with the verb: 590 nouns broken for 25 verbs fixed), *se* earlier in
 the clause (it belongs to another verb as often as not), a determiner and a
 copula before the word.
 
-A listener's report of 2026-11-02 added four more words of this kind
-(`clause_reading()`):
+A listener's reports of November 2026 added more words of this kind
+(`clause_reading()`, `context_reading()`). Every list below is checked on SUK
+1.1 by the sense of each token (its lemma and tag), and the words were taken from
+SSKJ², SP and the Collocations Dictionary of Modern Slovene at CJVT (Kolokacije,
+`viri.cjvt.si/kolokacije`, where each headword's page lists what goes with *lahek*,
+*meni*, *rok* and *roka*).
 
+| Spelling | SUK tokens right, before | after |
+|----------|--------------------------|-------|
+| The 350 spellings in -l that are a noun and a participle | 2,208 of 2,309 | 2,245 |
+| *meni* | 194 of 242 | 231 |
+| *roki* | 15 of 23 | 23 |
+| *roke* | 60 of 64 | 63 |
+| *roka* | 34 of 35 | 35 |
+| *lahko* | 1,943 of 1,944 | 1,943 (no modal read as the adjective) |
+
+- **A spelling in -l that is a noun's genitive plural and a verb's l-participle**
+  (*obvestíl* "of notifications" with [l] and *obvéstil* "notified" with [u̯],
+  *vozíl* and *vôzil*, *sporočíl* and *sporóčil*, *zdravíl* and *zdrávil*,
+  *sêdel* and *sedél*; the listener's *Ni obvestil* and *On me ni obvestil*). The
+  generator lists them in `SLOVENIAN_VERB_NOUN`, 153 spellings with the share
+  of the noun in percent of their uses in Gigafida (Sloleks's form frequencies:
+  73 for *vozil*, 30 for *obvestil*, 3 for *pojasnil*), also where only the final
+  l differs (*predál* the drawer, *predáw* "handed over"), leaving out those whose
+  rarer reading is under 1 % (*del* "part" and the participle of *deti*; *moral*
+  and the genitive of *morala*). `participle_or_genitive()` reads them by the main
+  difference between the two: **a participle needs an auxiliary**. The noun after
+  a preposition, a word in *-ih*, a number or a quantity (*pet obvestil*, *veliko
+  obvestil*, from a share of 3 %), a form of *nimam*, a noun that takes such a
+  genitive (*seznam obvestil*), with no auxiliary before it from a share of 5 %
+  (*Odpri center obvestil*, *Seznam obvestil je prazen*), after another participle
+  that has the auxiliary (*Nisem dobil obvestil*, not *Je prišel in obvestil*),
+  and after *ni* alone or with a word that says something is not there, from a
+  share of 20 %, ending the clause or before a preposition (*Ni obvestil*,
+  *Trenutno ni obvestil*, *Ni vozil na cesti*; *opravil*, 12 %, stays the verb). The
+  verb with an auxiliary and clitics right before it (*On me ni obvestil*, *Ni me
+  obvestil*, *Janez ni obvestil*), at the head of a clause before clitics and
+  an auxiliary (*Obvestil me je*), with *se* in the clause (*ki se je pred pol leta
+  poročil*), and last in a clause when a comma and *da*, *kako*, *kdaj* ... follow
+  (*Ni obvestil, da pride*); and with an object after *ni* (*Ni obvestil policije*).
+  Otherwise an auxiliary further back means the verb, up to a share of 40 %. A first
+  version read *je del* "is part" as the verb, which is why the 1 % floor is there.
+  Trade-off seen: a sentence that goes on after a comma with a participle and no
+  auxiliary (*..., obvestil vlado*) is read as the noun.
+- **The notation ł** is an l that stays [l] whatever the rules would say, as *w*
+  is one that is [u̯], for the nominal reading of those spellings where the shape
+  of the word would make it a participle in `finish_word()` (*sêdəł*, *kríł*);
+  it can be written in `accents.json` too.
 - *lahko*: the modal and the adverb *lahkó* in 2,703 of its 2,718 occurrences
   in SUK 1.1, the adjective *láhko* (SP *láhek -hka -o*) in the rest, so the
   adjective needs evidence. A noun right after it is not enough: the modal
@@ -3576,29 +3621,65 @@ A listener's report of 2026-11-02 added four more words of this kind
   before a word in *-ljiv-* (*lahko prebavljiva hrana*, the adverb); after a
   verb of obligation, which the modal never follows, unless an infinitive
   comes next (*Jesti moraš lahko hrano*, not *mora lahko dostopati*); and
-  before one of 58 nouns SSKJ², SP and the corpus give the adjective with, when
-  the noun ends the clause and no present tense, auxiliary or conjunction
-  stands before *lahko* (*Prosim daj mi lahko nalogo*, *To je lahko delo*, but
-  *Izberete lahko nalogo*). The adjective has a content word's full accent.
-  No modal token of the corpus changes, and 6 of its adjectives become right;
-  those left are predicative (*ga pa ni lahko*), which SP reads *lahkó*. GaMS
-  got *Ali lahko prideš?* wrong (*láhko*) and *Jesti moraš lahko hrano* right.
+  before one of about 170 nouns things are called light by (SSKJ², SP, Kolokacije,
+  the corpus, and what has a weight, is food or clothes or takes little effort:
+  *torbo, obleko, hrano, vino, nalogo, delo, juho, jakno*), alone or after an
+  adjective of its own (*lahko rdečo torbo*, *lahko in hladno obleko*), when the
+  noun ends the clause or stands before a preposition, a conjunction or a copula
+  (a verb after it makes *lahko* the modal: *Lahko torbo nosi*, *Lahko delo
+  opravi vsak*). The verb before *lahko* then decides: an imperfective verb that
+  carries, eats or wears such a thing is the adjective in any person (*On nosi
+  lahko torbo*, *Nosim lahko torbo*, *Pijem lahko vino*); a perfective present,
+  which needs the modal to be a present at all, or any other verb in the first or
+  second person, is the modal (*Kupim lahko hrano*, *Kupi lahko hrano*, *Izberete
+  lahko nalogo*, *Vidimo lahko delo*). A degree word goes with the adjective (*Zelo
+  lahko torbo imam*). The adjective has a content word's full accent. No modal
+  token of the corpus changes, and 6 of its adjectives become right; those left
+  are predicative (*ga pa ni lahko*), which SP reads *lahkó*.
 - *roka*: *rôka* the hand (HAND_ENTRIES; SSKJ², SP) though the genitive *róka*
   of *rók* "deadline" is the commoner form in the corpus behind Sloleks (26,817
   against 16,241), and that genitive after a preposition, a genitive in
   *-ega* or a noun of time limits (*do roka*, *vojaškega roka*, *podaljšanje
-  roka*); the name's *Róka* inside a clause only, from the tables of names.
+  roka*); the name's *Róka* inside a clause, from the tables of names (*Čakam na
+  Roka*), and at the head of a clause where no hand can be meant
+  (`roka_is_absent_or_object()`, the listener's *Roka že ni*, *Roka ni več*): a noun
+  after a negated verb of being is in the genitive (*Roka ni doma*, *Roka ni bilo
+  na sestanku*, *Roka ne bo več*), a hand there is in the nominative with an
+  adjective (*Roka ni zlomljena*, *Roka ni več bolna*, *Roka ne bo bolela*); and a
+  verb in the first or second person or the plural has another subject (*Roka nisem
+  videl*, *Roka poznam*, *Roka so našli*).
+- *roki*, *roke*: the hand's unless a word around them says deadlines, in the
+  plural (*rôki*, *róki*; 12 of 87 tokens in SUK 1.1): an adjective that goes with
+  deadlines (Kolokacije: *plačilni roki*, *izpitne roke*), the instrumental (*z
+  roki*, *prijavnimi roki*), the plural verb (*roki so kratki*, *da so roki*; a
+  hand's dual has *sta*) or what a deadline is for (*roki za prijavo*, *roki
+  plačila*). *Rok*, in the genitive plural of the hand too, is close in SP and
+  Sloleks (*iz rók*, *brez rók*) and needs nothing.
 - *meni*: the menu *mení* also after a preposition whose pronoun would be
   *mano* or *mene* (*pod meni*, *za meni*), after *v* or *na* when a verb of
   motion or clicking comes before them (*Pojdi v meni*, *Kliknite na meni*,
   *Nazaj v meni*) or a capital after it (*v meni Start*), after an adjective
-  or a possessive (*glavni meni*, *vaš meni*), after a verb that takes a menu
-  (*Odpri meni*) and, itself with a capital, before a capital (*Meni
-  Datoteka*). A small *meni* before a capital is the verb of the news (*meni
-  Kučan*, *tako meni Križanič*: 30 occurrences in SUK 1.1, which a first version
-  read as the menu), and so is one after a surname that looks like an adjective
-  (*Franco Frattini meni*). In SUK 1.1 the pronoun is all 17 occurrences after a
-  preposition in the absence of such a cue.
+  or a possessive (*glavni meni*, *vaš meni*, *padajoči meni*, *dober meni*, *ta
+  meni*), a noun it names (*Gumb meni*), a verb that takes a menu (*Odpri meni*,
+  *Restavracija ima meni*), with a capital inside a clause (*Gumb Meni*) and, itself
+  with a capital, before a capital (*Meni Datoteka*). Also what a menu does and is,
+  which the pronoun's *se* and *je* would otherwise catch: *Meni se odpre*, *Meni je
+  prazen*, *Meni ima pet možnosti*, *Meni aplikacij*, *Meni za kosilo*. The pronoun
+  *mêni* is the one a preposition asks for (*Ti si v meni*), and after a word that
+  stresses it or an auxiliary or a participle, since a present cannot follow those
+  (*Tudi meni*, *Daj meni*, *To je meni znano*, *Ponudili so meni*), before what is
+  said of whom (*meni ne*, *meni je všeč*, *meni se zdi*, *Meni za to ni mar*). A
+  small *meni* before a capital is the verb of the news (*meni Kučan*, *tako meni
+  Križanič*: 30 occurrences in SUK 1.1, which a first version read as the menu), and
+  so is one after a surname that looks like an adjective (*Franco Frattini meni*).
+  **Across a comma:** *Meni, da je prav* is the commonest *meni* of the news,
+  and alone in its clause it would be the menu (26 of 32 such tokens are followed
+  by *da*). `TTSEngine::segment_text()` puts `BEFORE_COMPLEMENT_MARK` (a private use
+  character, consumed by `process_slovenian()`) at the end of a clause whose comma
+  comes before one of *da, naj, kdaj, kako, kje, zakaj, ali, kaj, kdo, koliko, kam,
+  če*, and then *meni* last in its clause is the verb, unless the rules made it the
+  menu (*Odprite meni, da izberete*, except alone or after *ta*) or a preposition
+  has it (*k meni, da*).
 - *afna*: the noun *áfna* (SSKJ², SP, eSSKJ), also the name of @, as a hand
   entry, since the verb's *afná* has more occurrences in the corpus than the
   noun; the verb next to *se*.

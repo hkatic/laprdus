@@ -2061,6 +2061,155 @@ TEST_CASE("A lone consonant letter is its sound in letter-sound mode", "[fronten
     REQUIRE(sounds(slovenian, U"SP") == phones_of(read(slovenian, U"SP")));
 }
 
+TEST_CASE("Slovenian spellings told apart by the clause (November 2026)", "[frontend][slovenian]") {
+    Frontend frontend(VoiceLanguage::Slovenian);
+    struct Case { const char32_t* text; const char* phones; };
+    const Case cases[] = {
+        // A noun's genitive plural: obvestíl, final [l]; the participle:
+        // obvéstil, final [w]. The participle has an auxiliary.
+        {U"Ni obvestil", "ni ObvEst'i:l"},
+        {U"Trenutno ni obvestil", "trEn'u:tnO ni ObvEst'i:l"},
+        {U"Nimam obvestil", "n'i:mam ObvEst'i:l"},
+        {U"Brez obvestil", "brEz ObvEst'i:l"},
+        {U"Pet obvestil", "p'é:t ObvEst'i:l"},
+        {U"Veliko obvestil", "vEl'i:kO ObvEst'i:l"},
+        {U"Nimate novih obvestil", "n'i:matE n'O:vih ObvEst'i:l"},
+        {U"Seznam obvestil", "sEzn'am ObvEst'i:l"},
+        {U"Seznam obvestil je prazen", "sEzn'am ObvEst'i:l jE pr'a:zən"},
+        {U"Nisem dobil obvestil", "n'i:sEm dOb'i:w ObvEst'i:l"},
+        {U"Ni vozil na cesti", "ni vOz'i:l na c'é:sti"},
+        {U"Vozil je bilo malo", "vOz'i:l jE bil'ó: m'a:lO"},
+        {U"On me ni obvestil", "'On mE ni Obv'é:stiw"},
+        {U"Ni me obvestil", "ni mE Obv'é:stiw"},
+        {U"Janez ni obvestil", "j'a:nEs ni Obv'é:stiw"},
+        {U"Ni obvestil policije", "ni Obv'é:stiw pOlic'i:jE"},
+        {U"Janez je obvestil Marijo", "j'a:nEs jE Obv'é:stiw mar'i:jO"},
+        {U"Obvestil me je", "Obv'é:stiw mE jE"},
+        {U"Obvestil je policijo", "Obv'é:stiw jE pOlic'i:jO"},
+        {U"Prišel je in obvestil policijo", "priš'əw jE in Obv'é:stiw pOlic'i:jO"},
+        {U"Ni opravil", "ni Opr'a:viw"},
+        {U"Vozil je hitro", "v'O:ziw jE h'i:trO"},
+        // ... also where the accent is the same and only the l differs
+        {U"Odpri predal", "Otpr'i prEd'a:l"},
+        {U"v predal", "u prEd'a:l"},
+        // ... and a noun's [l] after a schwa or in one syllable
+        {U"Brez stekel", "brE st'E:kəl"},
+        {U"Stekel je domov", "st'é:kəw jE dOm'O:w"},
+        // del "part" and moral the verb have nothing to tell apart
+        {U"To je del", "t'ó: jE d'é:l"},
+        {U"Moral je iti", "m'ó:raw jE 'i:ti"},
+
+        // lahko: the adjective before a noun things are called light by, the
+        // modal otherwise and before a verb
+        {U"On nosi lahko torbo", "'On n'ó:si l'a:hkO t'ó:rbO"},
+        {U"On nosi lahko torbo v roki", "'On n'ó:si l'a:hkO t'ó:rbO u r'O:ki"},
+        {U"On nosi lahko rdečo torbo", "'On n'ó:si l'a:hkO ərd'é:čO t'ó:rbO"},
+        {U"Nosim lahko torbo", "n'ó:sim l'a:hkO t'ó:rbO"},
+        {U"Pijem lahko vino", "p'i:jEm l'a:hkO v'i:nO"},
+        {U"Oblekla je lahko in hladno obleko", "Obl'é:kla jE l'a:hkO iŋ hl'a:dnO Obl'é:kO"},
+        {U"Zelo lahko torbo imam", "zEl'ó: l'a:hkO t'ó:rbO im'a:m"},
+        {U"Lahko vino je najboljše", "l'a:hkO v'i:nO jE najb'ó:lšE"},
+        {U"Lahko me pokličeš", "lahk'ó: mE pOkl'i:čEš"},
+        {U"Lahko torbo nosi", "lahk'ó: t'ó:rbO n'ó:si"},
+        {U"Kupim lahko hrano", "k'u:pim lahk'ó: hr'a:nO"},
+        {U"Kupi lahko hrano", "k'u:pi lahk'ó: hr'a:nO"},
+        {U"Vidimo lahko delo umetnikov", "v'i:dimO lahk'ó: d'é:lO um'é:tnikOw"},
+        {U"To je lahko res", "t'ó: jE lahk'ó: r'é:s"},
+        {U"Ni lahko", "ni lahk'ó:"},
+        {U"Najbolj nazoren primer je lahko neko besedilo",
+         "n'a:jbOl naz'ó:rən prim'é:r jE lahk'ó: n'é:kO bEsEd'i:lO"},
+
+        // meni: the pronoun, the menu, the verb
+        {U"Ti si v meni", "t'i: si u m'E:ni"},
+        {U"Tudi meni", "t'u:di m'E:ni"},
+        {U"Daj meni", "d'aj m'E:ni"},
+        {U"To je meni znano", "t'ó: jE m'E:ni zn'a:nO"},
+        {U"Meni za to ni mar", "m'E:ni za t'ó: ni m'ar"},
+        {U"Meni pa je všeč", "m'E:ni pa jE uš'é:č"},
+        {U"Ponudili so meni", "pOn'u:dili sO m'E:ni"},
+        {U"Meni se odpre", "mEn'i: sE Otpr'E"},
+        {U"Meni je prazen", "mEn'i: jE pr'a:zən"},
+        {U"Meni za kosilo", "mEn'i: za kOs'i:lO"},
+        {U"Meni aplikacij", "mEn'i: aplik'a:cij"},
+        {U"Meni ima pet možnosti", "mEn'i: im'a: p'é:t m'ó:žnOsti"},
+        {U"Gumb meni", "g'u:mp mEn'i:"},
+        {U"Padajoči meni", "padaj'ó:či mEn'i:"},
+        {U"Restavracija ima dober meni", "rEstawr'a:cija im'a: d'ó:bər mEn'i:"},
+        {U"Kaj meni o tem", "k'a:j m'é:ni O t'é:m"},
+
+        // roka: the hand; the name's or the deadline's when it cannot be one
+        {U"Čakam na Roka", "č'a:kam na r'ó:ka"},
+        {U"Roka že ni", "r'ó:ka žE n'i:"},
+        {U"Roka ni več", "r'ó:ka ni v'Eč"},
+        {U"Roka ni doma", "r'ó:ka ni dOm'a:"},
+        {U"Roka ni bilo na sestanku", "r'ó:ka ni bil'ó: na sEst'a:ŋku"},
+        {U"Roka ne bo več", "r'ó:ka nE bO v'Eč"},
+        {U"Roka nisem videl", "r'ó:ka n'i:sEm v'i:dEw"},
+        {U"Roka poznam", "r'ó:ka pOzn'a:m"},
+        {U"Roka so našli", "r'ó:ka sO n'a:šli"},
+        {U"Roka ni zlomljena", "r'O:ka ni zl'ó:mljEna"},
+        {U"Roka ni več bolna", "r'O:ka ni v'Eč b'O:lna"},
+        {U"Roka ne bo bolela", "r'O:ka nE bO bOl'é:la"},
+        {U"Roka me boli", "r'O:ka mE bOl'i:"},
+        {U"Desna roka", "d'é:sna r'O:ka"},
+        {U"Rok je potekel", "r'ó:k jE pOt'é:kəw"},
+        // roki and roke: the hands, or deadlines
+        {U"Dobavni roki so kratki", "dOb'a:wni r'ó:ki sO kr'a:tki"},
+        {U"Plačilni roki", "plač'i:lni r'ó:ki"},
+        {U"Roki za prijavo", "r'ó:ki za prij'a:vO"},
+        {U"z roki", "z r'ó:ki"},
+        {U"Spremenili so odpovedne roke", "sprEmEn'i:li sO Otp'O:vEdnE r'ó:kE"},
+        {U"V roki drži knjigo", "u r'O:ki dərž'i: knj'i:gO"},
+        {U"Obe roki", "Ob'é: r'O:ki"},
+        {U"Roki sta hladni", "r'O:ki sta hl'a:dni"},
+        {U"Dvignil je roke", "dv'i:gniw jE r'O:kE"},
+
+        // odstranjevalnik, as napajalnik and zaganjalnik, in every case
+        {U"odstranjevalnik", "OtstranjEv'a:lnik"},
+        {U"odstranjevalnika", "OtstranjEv'a:lnika"},
+        {U"odstranjevalniku", "OtstranjEv'a:lniku"},
+        {U"odstranjevalnikom", "OtstranjEv'a:lnikOm"},
+        {U"odstranjevalniki", "OtstranjEv'a:lniki"},
+        {U"odstranjevalnikov", "OtstranjEv'a:lnikOw"},
+    };
+    for (const Case& c : cases) {
+        INFO(PhonemeMapper::utf32_to_utf8(c.text));
+        REQUIRE(phones_of(read(frontend, c.text)) == c.phones);
+    }
+
+    // ł in a notation keeps the l where the rules would say [w], w says [w]
+    // where they would say [l]: the user's own entries can say so too
+    REQUIRE(phones_of(read(frontend, U"bruhoberal")) == "bruhOb'é:raw");
+    Frontend custom(VoiceLanguage::Slovenian);
+    custom.set_user_lexicon(UserLexicon::parse(
+        R"({"entries":[{"word":"bruhobérał","language":"sl"}]})"));
+    REQUIRE(phones_of(read(custom, U"bruhoberal")) == "bruhOb'é:ral");
+}
+
+// The clause after a comma, which one clause does not show
+TEST_CASE("A clause mark after a Slovenian comma says a complement follows", "[frontend][slovenian]") {
+    Frontend frontend(VoiceLanguage::Slovenian);
+    const auto marked = [&](const char32_t* text) {
+        std::u32string with(text);
+        with.push_back(slovenian::BEFORE_COMPLEMENT_MARK);
+        return phones_of(frontend.process(with, Punctuation::COMMA));
+    };
+    REQUIRE(marked(U"Meni") == "m'é:ni");
+    REQUIRE(marked(U"Ta meni") == "t'a: m'é:ni");
+    REQUIRE(marked(U"Tudi meni") == "t'u:di m'é:ni");
+    REQUIRE(marked(U"Minister meni") == "min'i:stər m'é:ni");
+    REQUIRE(marked(U"k meni") == "k m'E:ni");
+    REQUIRE(marked(U"Odprite meni") == "Otpr'i:tE mEn'i:");
+    REQUIRE(marked(U"Ni obvestil") == "ni Obv'é:stiw");
+    REQUIRE(marked(U"Ni sporočil") == "ni spOr'ó:čiw");
+    REQUIRE(marked(U"Ni zdravil") == "ni zdrav'i:l");    // the noun is 95 % of this spelling
+    REQUIRE(phones_of(read(frontend, U"Meni")) == "mEn'i:");
+    REQUIRE(slovenian::opens_complement_clause(U"da je prav"));
+    REQUIRE(slovenian::opens_complement_clause(U" Kako je"));
+    REQUIRE(!slovenian::opens_complement_clause(U"gumb"));
+    REQUIRE(!slovenian::opens_complement_clause(U"dan"));
+}
+
 TEST_CASE("Slovenian listener's report of November 2026", "[frontend][slovenian]") {
     Frontend frontend(VoiceLanguage::Slovenian);
     struct Case { const char32_t* text; const char* phones; };

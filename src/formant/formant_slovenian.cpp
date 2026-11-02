@@ -40,6 +40,7 @@ constexpr uint8_t F_CLOSE = 16;             // e, o: close [e], [o] (acute)
 constexpr uint8_t F_OPEN = 32;              // e, o: open, said explicitly (circumflex, grave)
 constexpr uint8_t F_SCHWA = 64;             // e: the schwa
 constexpr uint8_t F_W = 128;                // l: [w] (notation w); a notation l follows the rules
+constexpr uint8_t F_L = 4;                  // l: [l] (notation ł), whatever the rules would say
 
 bool is_vowel_letter(char32_t c) {
     return c == U'a' || c == U'e' || c == U'i' || c == U'o' || c == U'u';
@@ -425,6 +426,7 @@ bool notation_letter(char32_t c, char32_t& plain, uint8_t& flags) {
         case 0x155: plain = U'r'; flags = F_STRESS | F_LONG; return true;            // ŕ
         case SCHWA_LETTER: plain = U'e'; flags = F_SCHWA; return true;               // ə
         case U'w': plain = U'l'; flags = F_W; return true;
+        case 0x142: plain = U'l'; flags = F_L; return true;                          // ł
         default:
             if (is_base_letter(c)) { plain = c; return true; }
             return false;
@@ -918,6 +920,7 @@ struct VerbNoun {
     const char* verb;           // the verb's reading
     const char* nominal;        // the noun's, adjective's or adverb's
     bool participle;            // the verb's reading is the l-participle
+    int noun_percent;           // the share of a genitive plural in -l, or -1 (none)
 };
 
 #include "formant_slovenian.inc"
@@ -1032,6 +1035,7 @@ bool verb_noun_readings(const std::u32string& w, VerbNounReadings& out) {
             out.verb = PhonemeMapper::utf8_to_utf32(SLOVENIAN_VERB_NOUN[mid].verb);
             out.nominal = PhonemeMapper::utf8_to_utf32(SLOVENIAN_VERB_NOUN[mid].nominal);
             out.participle = SLOVENIAN_VERB_NOUN[mid].participle;
+            out.noun_percent = SLOVENIAN_VERB_NOUN[mid].noun_percent;
             return true;
         }
         if (c < 0) hi = mid;
@@ -1127,30 +1131,45 @@ const WordSet& short_pronouns() {
 
 // lahko is the modal and the adverb, lahkó (SP 2001), in 2,703 of its 2,718
 // occurrences in SUK 1.1, and láhko, the adjective lahek (SP "láhek -hka -o";
-// a Slovenian listener's Jesti moraš lahko hrano, Prosim daj mi lahko nalogo)
-// in the others, so the adjective needs evidence. A noun right after it does
-// not decide: the modal stands before its object in 63 of those (Lahko
-// kuhinjo prepleskamo, Preboliš lahko bolezen). What does: lahko noč (SSKJ²
-// "kot pozdrav"); a preposition before it (z lahko nogo, na lahko nafto; SP
-// na láhko tudi na lahkó) unless an adverb is modifying an adjective in
-// -ljiv (na lahko obranljivem); a verb of obligation, which the modal never
-// follows, before a word that is no infinitive (moraš lahko hrano, not mora
-// lahko dostopati); and one of the nouns the dictionaries give it, as the
-// last word of the clause, with no present tense, auxiliary or conjunction
-// before lahko that would make it the modal (Daj mi lahko nalogo, but
-// Izberete lahko nalogo, Da lahko delo).
+// a Slovenian listener's Jesti moraš lahko hrano, Prosim daj mi lahko nalogo,
+// On nosi lahko torbo) in the others, so the adjective needs evidence. A noun
+// right after it does not decide by itself: the modal stands before its object
+// in 63 of those (Lahko kuhinjo prepleskamo, Preboliš lahko bolezen), and a
+// present of a perfective verb, which has no other way to be a present, comes
+// with the modal after it (Izberete lahko nalogo, Kupi lahko hrano). What does:
+// lahko noč (SSKJ² "kot pozdrav"); a preposition before it (z lahko nogo, na
+// lahko nafto; SP na láhko tudi na lahkó) unless an adverb is modifying an
+// adjective in -ljiv (na lahko obranljivem); a verb of obligation, which the
+// modal never follows, before a word that is no infinitive (moraš lahko hrano,
+// not mora lahko dostopati); and a noun things are called light by (SSKJ²
+// under láhek, the Collocations Dictionary of Modern Slovene at CJVT, the
+// corpus's lahko nafto), alone or after an adjective of its own (lahko poletno
+// obleko, lahko in hladno obleko), ending the clause or before a preposition or
+// a conjunction (a verb after it would make lahko the modal: Lahko torbo nosi,
+// Lahko vino kupite), with a verb before lahko that carries such things in the
+// present (nosim, pijem, kuham), or none that would make it the modal.
 bool lahko_is_adjective(const std::vector<std::u32string>& words, const std::vector<bool>& capitalized,
                         size_t i) {
-    // SSKJ² and SP under láhek, and the corpus's lahko nafto, lahko opremo
     static const WordSet nouns = {
-        U"hrano", U"nalogo", U"delo", U"obleko", U"oblačilo", U"salamo", U"vino", U"pivo", U"slovo",
-        U"življenje", U"čtivo", U"branje", U"olje", U"roko", U"nogo", U"službo", U"turo", U"vajo",
-        U"zmago", U"knjigo", U"hojo", U"bolezen", U"poškodbo", U"večerjo", U"kosilo", U"malico",
-        U"juho", U"jed", U"pijačo", U"literaturo", U"glasbo", U"industrijo", U"kategorijo",
-        U"konfekcijo", U"obutev", U"figuro", U"strojnico", U"artilerijo", U"prst", U"zemljo",
-        U"nafto", U"opremo", U"kovino", U"smrt", U"vožnjo", U"tekmo", U"pot", U"vprašanje",
-        U"odločitev", U"izbiro", U"torbo", U"jakno", U"atletiko", U"orožje", U"vozilo", U"letalo",
-        U"perilo", U"pohištvo",
+        U"aktovko", U"artilerijo", U"atletiko", U"baterijo", U"besedilo", U"blago", U"bluzo", U"bolezen",
+        U"branje", U"cev", U"copato", U"delo", U"desko", U"dieto", U"dihanje", U"dostopnost", U"figuro",
+        U"folijo", U"gimnastiko", U"glasbo", U"gorivo", U"gripo", U"haljo", U"harmoniko", U"hojo", U"hrano",
+        U"hruško", U"igro", U"industrijo", U"izbiro", U"jakno", U"jed", U"jedilo", U"jopico", U"jopo", U"juho",
+        U"kamero", U"kapico", U"kapo", U"kategorijo", U"kavo", U"kitaro", U"klobaso", U"knjigo", U"kolesce",
+        U"kolo", U"komedijo", U"konfekcijo", U"konstrukcijo", U"kosilo", U"kost", U"kovino", U"kremo", U"krilce",
+        U"krilo", U"križarko", U"krmo", U"kroglo", U"kuhinjo", U"letalo", U"letev", U"letvo", U"literaturo",
+        U"litino", U"majico", U"malico", U"nafto", U"nalogo", U"nesrečo", U"nogavico", U"nogo", U"oblačilo",
+        U"obleko", U"obliko", U"obutev", U"obuvalo", U"odejo", U"odločitev", U"ogrodje", U"olje", U"omako",
+        U"opeko", U"operacijo", U"opravilo", U"opremo", U"orodje", U"orožje", U"palico", U"pasto", U"pecivo",
+        U"peno", U"perilo", U"pero", U"pijačo", U"pito", U"pivo", U"pižamo", U"platišče", U"platno", U"ploščo",
+        U"podvozje", U"pohištvo", U"pohodnico", U"pokrivalo", U"posodo", U"pot", U"poškodbo", U"prehrano",
+        U"preizkušnjo", U"preskušnjo", U"prevleko", U"prst", U"puško", U"raketo", U"rekreacijo", U"rezino",
+        U"rokavico", U"roko", U"salamo", U"sandalo", U"sladico", U"slovo", U"službo", U"smrt", U"snov", U"solato",
+        U"spanje", U"srajco", U"srce", U"steklo", U"strojnico", U"suknjo", U"tarčo", U"tekmo", U"tekočino",
+        U"telesce", U"telo", U"telovadbo", U"tipkovnico", U"tiskalnico", U"tkanino", U"tkivo", U"torbo", U"torto",
+        U"tuniko", U"turo", U"usnje", U"vajo", U"vetrovko", U"večerjo", U"vino", U"vozilo", U"vožnjo",
+        U"vprašanje", U"vrečko", U"vrečo", U"vzmet", U"zaveso", U"zaščito", U"zemljo", U"zlitino", U"zmago",
+        U"čelado", U"čokolado", U"čtivo", U"škatlo", U"železo", U"žganje", U"življenje", U"žogo",
     };
     static const WordSet obligation = {
         U"mora", U"moram", U"moraš", U"morava", U"morata", U"moramo", U"morate", U"morajo",
@@ -1160,14 +1179,62 @@ bool lahko_is_adjective(const std::vector<std::u32string>& words, const std::vec
     static const WordSet modal_before = {
         U"bi", U"da", U"če", U"ki", U"ali", U"a", U"kako", U"kje", U"kaj", U"kdaj", U"zakaj", U"kdo",
         U"bo", U"bom", U"boš", U"bova", U"bosta", U"bomo", U"boste", U"bodo", U"sem", U"so", U"sta",
-        U"smo", U"ste",
+        U"smo", U"ste", U"vsak", U"vsakdo", U"vsi", U"nihče",
     };
+    // Verbs that carry, eat, wear or look for such a thing in the present
+    static const WordSet carrying = {
+        U"nosim", U"nosiš", U"nosi", U"nosiva", U"nosita", U"nosimo", U"nosijo",
+        U"jem", U"ješ", U"jemo", U"jedo", U"jejo",
+        U"pijem", U"piješ", U"pije", U"pijemo", U"pijejo",
+        U"oblačim", U"oblačiš", U"oblači", U"oblačimo", U"oblačijo",
+        U"kuham", U"kuhaš", U"kuha", U"kuhamo", U"kuhajo",
+        U"pripravljam", U"pripravljaš", U"pripravlja", U"pripravljamo", U"pripravljajo",
+        U"iščem", U"iščeš", U"išče", U"iščemo", U"iščejo",
+        U"maram", U"maraš", U"mara", U"maramo", U"marajo",
+        U"ljubim", U"ljubiš", U"ljubi", U"ljubimo", U"ljubijo",
+        U"želim", U"želiš", U"želi", U"želimo", U"želijo",
+        U"potrebujem", U"potrebuješ", U"potrebuje", U"potrebujemo", U"potrebujejo",
+        U"rabim", U"rabiš", U"rabi", U"rabimo", U"rabijo",
+        U"kupujem", U"kupuješ", U"kupuje", U"kupujemo", U"kupujejo",
+        U"prodajam", U"prodajaš", U"prodaja", U"prodajamo", U"prodajajo",
+        U"opravljam", U"opravljaš", U"opravlja", U"opravljamo", U"opravljajo",
+        U"prenašam", U"prenašaš", U"prenaša", U"prenašamo", U"prenašajo",
+        U"držim", U"držiš", U"drži", U"držimo", U"držijo",
+        U"vlečem", U"vlečeš", U"vleče", U"vlečemo", U"vlečejo",
+        U"uživam", U"uživaš", U"uživa", U"uživamo", U"uživajo",
+        U"berem", U"bereš", U"bere", U"beremo", U"berejo",
+        U"poslušam", U"poslušaš", U"posluša", U"poslušamo", U"poslušajo",
+        U"igram", U"igraš", U"igra", U"igramo", U"igrajo",
+        U"izdelujem", U"izdeluješ", U"izdeluje", U"izdelujemo", U"izdelujejo",
+        U"proizvajam", U"proizvajaš", U"proizvaja", U"proizvajamo", U"proizvajajo",
+        U"dobivam", U"dobivaš", U"dobiva", U"dobivamo", U"dobivajo",
+        U"imam", U"imaš", U"ima", U"imava", U"imata", U"imamo", U"imate", U"imajo",
+    };
+    // Perfective presents: with lahko after them they are its verb
+    static const WordSet perfective = {
+        U"izbere", U"dobi", U"kupi", U"najde", U"vzame", U"uporabi", U"naroči", U"opravi", U"prebere", U"vidi",
+        U"odda", U"pridobi", U"spremeni", U"prenese", U"pošlje", U"ponudi", U"pripravi", U"skuha", U"sestavi",
+        U"zamenja", U"doda", U"prevzame", U"preboli", U"obleče", U"sname", U"poje", U"popije", U"ustvari",
+    };
+    // Adverbs an adjective's -o is spelled like, which modify the modal's verb
+    static const WordSet not_adjectives = {
+        U"tako", U"nekako", U"zato", U"samo", U"kako", U"zelo", U"malo", U"veliko", U"hitro", U"lepo", U"dobro",
+        U"slabo", U"vedno", U"skoraj", U"celo", U"nato", U"tudi", U"prej", U"ravno", U"kmalu", U"mirno", U"pravo",
+        U"neko", U"eno", U"vsako", U"katero", U"kakšno", U"takšno", U"tako", U"tisto", U"tole", U"ono", U"svojo",
+        U"mojo", U"tvojo", U"našo", U"vašo", U"njeno", U"drugo", U"isto", U"marsikatero", U"nekako",
+    };
+    static const WordSet joining = {U"in", U"ter", U"ali", U"pa", U"a", U"ampak", U"oziroma"};
+    // A degree goes with the adjective, not the modal (zelo lahko torbo imam)
+    static const WordSet degrees = {U"zelo", U"precej", U"dokaj", U"razmeroma", U"sorazmerno", U"dovolj",
+                                    U"izredno", U"nadvse", U"preveč", U"res", U"čisto", U"povsem"};
+
+    const size_t n = words.size();
     const std::u32string* prev = i > 0 ? &words[i - 1] : nullptr;
     // na lahko, the adverbial phrase, ends a clause too (jemati službo na lahko)
     if (prev && *prev == U"na" && !(capitalized[i - 1] && i > 1)) {
-        if (i + 1 == words.size()) return true;
+        if (i + 1 == n) return true;
     }
-    if (i + 1 == words.size()) return false;
+    if (i + 1 == n) return false;
     const std::u32string& next = words[i + 1];
     // lahko prebavljiva hrana, the adverb; but z lahko prebavljivostjo
     if (next.find(U"ljiv") != std::u32string::npos && next.find(U"ljivost") == std::u32string::npos) return false;
@@ -1181,25 +1248,48 @@ bool lahko_is_adjective(const std::vector<std::u32string>& words, const std::vec
     if (before && obligation.count(*before) && !word_ends_with(next, U"ti") && !word_ends_with(next, U"či")) {
         return true;
     }
-    if (i + 2 != words.size() || !nouns.count(next)) return false;
+
+    // The noun: right after it, after an adjective, or after a coordinated one
+    size_t noun = i + 1;
+    if (!nouns.count(next)) {
+        auto adjective_o = [&](size_t a) {
+            return a < n && words[a].size() >= 3 && words[a].back() == U'o' && !not_adjectives.count(words[a]);
+        };
+        if (adjective_o(i + 1) && i + 2 < n && nouns.count(words[i + 2])) {
+            noun = i + 2;
+        } else if (next == U"in" && adjective_o(i + 2) && i + 3 < n && nouns.count(words[i + 3])) {
+            noun = i + 3;
+        } else {
+            return false;
+        }
+    }
+    if (before && degrees.count(*before)) return true;
+    // What follows it: a verb there makes lahko the modal, but not a copula,
+    // whose subject the noun is (Lahko vino je najboljše)
+    if (noun + 1 < n) {
+        const std::u32string& after = words[noun + 1];
+        const bool copula = k == i && (after == U"je" || after == U"ni" || after == U"bo");
+        if (!prepositions().count(after) && !joining.count(after) && !copula) return false;
+    }
     if (!before) return k == i;     // Lahko delo. (not Se lahko delo.)
     if (modal_before.count(*before)) return false;
-    // A verb in the present before it (Kupim lahko hrano, Vidite lahko delo),
-    // though not imeti (Imam lahko nalogo) or an imperative in -jte (Dajte mi
-    // lahko nalogo)
-    if (before->rfind(U"im", 0) == 0 && before->size() >= 3 && (*before)[2] == U'a') return true;
+    if (carrying.count(*before)) return true;
+    // An imperative in -jte (Dajte mi lahko nalogo)
     if (word_ends_with(*before, U"jte")) return true;
-    for (const char32_t* tail : {U"m", U"š", U"mo", U"te", U"ta", U"va"}) {
+    if (perfective.count(*before)) return false;
+    // A verb in the present before it (Kupim lahko hrano, Vidite lahko delo)
+    for (const char32_t* tail : {U"m", U"š", U"mo", U"te", U"ta", U"va", U"jo"}) {
         if (word_ends_with(*before, tail)) return false;
     }
     return true;
 }
 
 // roka is the hand's nominative, rôka, or the genitive of rók "deadline",
-// róka (SP 2001 rók -a). In SUK 1.1 the 28 genitives have a preposition (do
-// roka, brez roka), a genitive in -ega (vojaškega roka) or a noun of time
-// limits before them; the 16 hands have none of these, and a hand after a
-// preposition would be roke or roko.
+// róka (SP 2001 rók -a), or the genitive and the accusative of the name Rok,
+// Róka (SP Rók -a). In SUK 1.1 the 28 genitives have a preposition (do roka,
+// brez roka), a genitive in -ega (vojaškega roka) or a noun of time limits
+// before them; the 16 hands have none of these, and a hand after a preposition
+// would be roke or roko.
 bool roka_is_deadline(const std::vector<std::u32string>& words, size_t i) {
     if (i == 0) return false;
     const std::u32string& prev = words[i - 1];
@@ -1208,8 +1298,115 @@ bool roka_is_deadline(const std::vector<std::u32string>& words, size_t i) {
         U"iztekom", U"potek", U"poteka", U"poteku", U"potekom", U"služenje", U"služenja", U"služenju",
         U"služenjem", U"določitev", U"določitve", U"predpisuje", U"upoštevanje", U"upoštevanja",
         U"spoštovanje", U"spoštovanja", U"zamuda", U"zamude", U"zamudo", U"zamik", U"zamika", U"zamiku",
+        U"prestavitev", U"prestavitve", U"podaljševanje", U"podaljševanja", U"prekoračitev", U"prekoračitve",
+        U"odsluženje", U"odsluženja", U"pretek", U"preteka", U"preteku", U"štetje", U"štetja", U"zaključek",
+        U"zaključka", U"dolžina", U"dolžine", U"sprememba", U"spremembe", U"konec", U"konca", U"začetek",
+        U"začetka",
     };
     return prepositions().count(prev) != 0 || word_ends_with(prev, U"ega") || limits.count(prev) != 0;
+}
+
+// The first words of a clause that are no hand: a noun after a negated verb of
+// being is in the genitive, and that genitive can only be the name's or the
+// deadline's (Roka že ni, Roka ni več, Roka ni bilo na sestanku, Roka ne bo; a
+// listener's examples, November 2026), but a hand is in the nominative with an
+// adjective or a participle (Roka ni zlomljena, Roka ni več bolna, Roka ne bo
+// bolela). A verb in the first or second person or in the plural has another
+// subject, so roka is its object (Roka nisem videl, Roka poznam, Roka so
+// našli), and so it is before a surname (Roka Žarnića).
+bool roka_is_absent_or_object(const std::vector<std::u32string>& words, const std::vector<bool>& capitalized,
+                              size_t i) {
+    static const WordSet openers = {U"in", U"pa", U"ampak", U"a", U"toda", U"ker", U"da", U"če", U"ko",
+                                    U"zakaj", U"kje", U"ali", U"še", U"tudi", U"vendar"};
+    static const WordSet adverbs = {
+        U"že", U"še", U"tudi", U"pa", U"sploh", U"danes", U"včeraj", U"jutri", U"zdaj", U"sedaj", U"trenutno",
+        U"nikjer", U"nikoli", U"nikdar", U"več", U"tu", U"tukaj", U"tam", U"doma", U"notri", U"zunaj", U"tja",
+        U"dolgo", U"spet", U"vedno", U"res", U"žal", U"sedaj", U"več",
+    };
+    static const WordSet places = {
+        U"službi", U"šoli", U"pisarni", U"sestanku", U"delu", U"poti", U"treningu", U"tekmi", U"vaji",
+        U"predavanju", U"zabavi", U"nas", U"vas", U"njih", U"meni", U"tebi",
+    };
+    static const WordSet other_subject = {
+        U"sem", U"sva", U"sta", U"smo", U"ste", U"so", U"nisem", U"nisi", U"nisva", U"nista", U"nismo", U"niste",
+        U"niso", U"bom", U"boš", U"bova", U"bosta", U"bomo", U"boste", U"bodo",
+    };
+    static const WordSet imperatives = {
+        U"pokliči", U"pokličite", U"vprašaj", U"vprašajte", U"počakaj", U"počakajte", U"pozdravi", U"pozdravite",
+        U"poišči", U"poiščite", U"obvesti", U"obvestite", U"kliči", U"kličite",
+    };
+    static const WordSet not_verbs = {U"potem", U"zatem", U"nekam", U"drugam", U"nikamor"};
+    auto addressed = [&](const std::u32string& w) {
+        if (w.size() < 4 || not_verbs.count(w)) return false;
+        for (const char32_t* tail : {U"im", U"am", U"em", U"iš", U"aš", U"eš", U"imo", U"amo", U"emo", U"ite",
+                                     U"ate", U"ete"}) {
+            if (word_ends_with(w, tail)) return true;
+        }
+        return false;
+    };
+    if (i > 0 && !openers.count(words[i - 1])) return false;
+    const size_t n = words.size();
+    size_t k = i + 1;
+    while (k < n && adverbs.count(words[k])) ++k;
+    if (k >= n) return false;
+    if (words[k] == U"ni") {
+        ++k;
+        if (k < n && words[k] == U"bilo") return true;
+        while (k < n && adverbs.count(words[k])) ++k;
+        if (k == n) return true;
+        return k + 2 == n && (words[k] == U"v" || words[k] == U"na" || words[k] == U"pri") && places.count(words[k + 1]);
+    }
+    if (words[k] == U"ne") {
+        ++k;
+        if (k < n && words[k] == U"bo") {
+            ++k;
+            while (k < n && adverbs.count(words[k])) ++k;
+            return k == n;
+        }
+        return k < n && addressed(words[k]);
+    }
+    if (other_subject.count(words[k]) || imperatives.count(words[k]) || addressed(words[k])) return true;
+    return k == i + 1 && capitalized[i] && capitalized[k];
+}
+
+// roki and roke are the hand's (v roki, obe roki, dvigni roke) unless a word
+// around them says they are deadlines, in the plural (SP rók -a; SUK 1.1 has
+// 12 of them against 75 hands): an adjective that goes with deadlines (the
+// Collocations Dictionary of Modern Slovene at CJVT: plačilni roki, izpitne
+// roke), the instrumental (z roki, prijavnimi roki: a hand's is roko, rokama),
+// the plural verb (da so roki, roki so kratki) or what a deadline is for (roki
+// za prijavo, roki plačila).
+const char32_t* roki_roke_reading(const std::vector<std::u32string>& words, size_t i) {
+    static const WordSet adjectives_i = {
+        U"plačilni", U"časovni", U"dobavni", U"izvedbeni", U"odpovedni", U"izpitni", U"prijavni", U"razpisni",
+        U"pritožbeni", U"zastaralni", U"zakonski", U"zakoniti", U"pogodbeni", U"predvideni", U"dogovorjeni",
+        U"določeni", U"predpisani", U"skrajni", U"prestopni", U"garancijski", U"setveni", U"vpisni", U"kratki",
+        U"daljši", U"krajši", U"zimski", U"jesenski", U"spomladanski", U"novi", U"vsi", U"ti", U"taki", U"taksni",
+        U"predvidljivi",
+    };
+    static const WordSet adjectives_e = {
+        U"plačilne", U"časovne", U"dobavne", U"izvedbene", U"odpovedne", U"izpitne", U"prijavne", U"razpisne",
+        U"pritožbene", U"zastaralne", U"zakonske", U"zakonite", U"pogodbene", U"predvidene", U"dogovorjene",
+        U"predpisane", U"skrajne", U"prestopne", U"garancijske", U"setvene", U"vpisne", U"zimske", U"jesenske",
+        U"spomladanske", U"predvidljive",
+    };
+    static const WordSet for_what = {
+        U"plačila", U"dobave", U"trajanja", U"vračanja", U"izvedbe", U"oddaje", U"prijave", U"odplačila",
+    };
+    const std::u32string* prev = i > 0 ? &words[i - 1] : nullptr;
+    const std::u32string* next = i + 1 < words.size() ? &words[i + 1] : nullptr;
+    if (words[i] == U"roke") {
+        return prev && adjectives_e.count(*prev) ? U"róke" : nullptr;
+    }
+    if (prev) {
+        if (*prev == U"z" || *prev == U"s") return U"róki";
+        if (prepositions().count(*prev) || *prev == U"dve" || *prev == U"obe") return nullptr;
+        if (adjectives_i.count(*prev) || word_ends_with(*prev, U"nimi") || word_ends_with(*prev, U"skimi")) return U"róki";
+        if (*prev == U"so" || *prev == U"bodo" || *prev == U"niso") return U"róki";
+    }
+    if (next && (*next == U"so" || *next == U"niso" || *next == U"bodo" || for_what.count(*next))) return U"róki";
+    if (next && *next == U"za" && !prev) return U"róki";
+    return nullptr;
 }
 
 // meni after a preposition: the pronoun's form after those with the dative
@@ -1220,11 +1417,18 @@ bool roka_is_deadline(const std::vector<std::u32string>& words, size_t i) {
 // After v and na it is the menu's accusative when something moves there
 // (pojdi v meni, kliknite na meni, nazaj v meni); in SUK 1.1 the other 17
 // are the pronoun. Before those the menu follows an adjective or a possessive
-// (glavni meni, vaš meni) or a verb that takes a menu (odpri meni), and
-// comes before its name, itself with a capital (Meni Start) or after v or na
-// (v meni Dokumenti). A small meni before a capital is the verb of the news
-// (meni Kučan, tako meni Križanič: 30 occurrences in SUK 1.1), and so is meni
-// after a surname that looks like an adjective (Franco Frattini meni).
+// (glavni meni, vaš meni, padajoči meni: the Collocations Dictionary of Modern
+// Slovene at CJVT) or a verb that takes a menu (odpri meni), and comes before
+// its name, itself with a capital (Meni Start) or after v or na (v meni
+// Dokumenti), and inside a clause with a capital it is a name (Gumb Meni). A
+// small meni before a capital is the verb of the news (meni Kučan, tako meni
+// Križanič: 30 occurrences in SUK 1.1), and so is meni after a surname that
+// looks like an adjective (Franco Frattini meni). The pronoun comes after a
+// word that stresses it (tudi meni, samo meni, ti meni), after an auxiliary or a
+// participle, since the verb's present cannot follow those (je meni rekel,
+// ponudili so meni), and before what is said of whom (meni ne, meni je všeč,
+// meni se zdi); but what opens, closes and is empty is the menu (Meni se
+// odpre, Meni je prazen).
 const char32_t* meni_reading(const std::vector<std::u32string>& words, const std::vector<bool>& capitalized,
                              size_t i) {
     static const WordSet accusative_only = {U"pod", U"nad", U"pred", U"med", U"za", U"čez", U"skozi"};
@@ -1237,19 +1441,79 @@ const char32_t* meni_reading(const std::vector<std::u32string>& words, const std
         U"pripnite", U"vstavi", U"vstavite", U"klikni", U"kliknite", U"klik", U"tapni", U"tapnite",
         U"pritisni", U"pritisnite", U"dotakni", U"dotaknite",
     };
-    static const WordSet possessives = {
-        U"vaš", U"tvoj", U"moj", U"naš", U"svoj", U"njihov", U"njegov", U"njen",
-        U"novi", U"levi", U"hitri", U"stari",
+    // What a noun's nominative or accusative is qualified by, without the
+    // adjective's endings below
+    static const WordSet qualifying = {
+        U"vaš", U"tvoj", U"moj", U"naš", U"svoj", U"njihov", U"njegov", U"njen", U"novi", U"levi", U"hitri",
+        U"stari", U"ta", U"tale", U"tisti", U"isti", U"ves", U"cel", U"celoten", U"poseben", U"dober", U"okusen",
+        U"bogat", U"pester", U"kratek", U"velik", U"majhen", U"lep", U"nov", U"star", U"lahek", U"prvi", U"drugi",
+        U"tretji", U"četrti", U"vsak", U"neki", U"nek", U"kakšen", U"cenejši", U"dražji", U"večji", U"manjši",
+    };
+    // Nouns it is the name or the kind of (Gumb meni, Tipka meni)
+    static const WordSet naming = {
+        U"gumb", U"gumba", U"ikona", U"ikone", U"ikono", U"tipka", U"tipke", U"tipko", U"zavihek", U"zavihka",
+        U"postavka", U"možnost", U"ukaz", U"element", U"vrstica", U"izbira",
     };
     static const WordSet takes_menu = {
-        U"odpri", U"odprite", U"odpre", U"zapri", U"zaprite", U"zapre", U"prikaži", U"prikažite",
-        U"pokaži", U"pokažite", U"izberi", U"izberite", U"skrij", U"skrijte", U"poišči", U"poiščite",
-        U"razširi", U"razširite", U"strni", U"strnite", U"aktiviraj", U"aktivirajte", U"uporabi",
-        U"uporabite", U"klikni", U"kliknite", U"tapni", U"tapnite",
+        U"odpri", U"odprite", U"odpre", U"odprl", U"odprla", U"zapri", U"zaprite", U"zapre", U"zaprl", U"zaprla",
+        U"prikaži", U"prikažite", U"pokaži", U"pokažite", U"izberi", U"izberite", U"izbral", U"izbrala",
+        U"skrij", U"skrijte", U"poišči", U"poiščite", U"razširi", U"razširite", U"strni", U"strnite",
+        U"aktiviraj", U"aktivirajte", U"uporabi", U"uporabite", U"klikni", U"kliknite", U"tapni", U"tapnite",
+        U"sestavi", U"sestavite", U"sestavil", U"sestavila", U"pripravi", U"pripravite", U"pripravil",
+        U"pripravila", U"ima", U"imajo", U"ponuja", U"ponujajo", U"uredi", U"uredite", U"nastavi", U"nastavite",
+        U"spremeni", U"spremenite", U"prilagodi", U"prilagodite", U"preglej", U"preglejte", U"najdi", U"najdite",
     };
-    if (words.size() == 1) return U"mení";
+    // A word before it that stresses the pronoun, or a verb with a dative
+    static const WordSet before_pronoun = {
+        U"tudi", U"samo", U"le", U"prav", U"celo", U"vsaj", U"predvsem", U"zlasti", U"kar", U"ti", U"tebi",
+        U"njemu", U"njej", U"nam", U"vam", U"niti", U"sem", U"si", U"je", U"bi", U"smo", U"ste", U"so", U"sva",
+        U"sta", U"bom", U"boš", U"bo", U"bomo", U"boste", U"bodo", U"bova", U"bosta", U"nisem", U"nisi", U"ni",
+        U"nismo", U"niste", U"niso", U"daj", U"dajte", U"reci", U"recite", U"povej", U"povejte", U"pomagaj",
+        U"pomagajte", U"piši", U"pišite", U"zaupaj", U"verjemi", U"oprosti", U"vrni", U"vrnite", U"prinesi",
+        U"prinesite", U"pošlji", U"pošljite", U"hvala", U"gre", U"gredo", U"edino",
+    };
+    static const WordSet not_participles = {U"general", U"admiral", U"kardinal", U"portal", U"tribunal", U"kanal",
+                                            U"kapital", U"šola", U"sila", U"skupščina"};
+    // After it: said of whom. The verb's present does not take these.
+    static const WordSet after_pronoun = {
+        U"ne", U"že", U"nič", U"osebno", U"doma", U"všeč", U"znano", U"znana", U"znan", U"zdi", U"zdijo", U"ugaja",
+        U"diši", U"paše", U"manjka", U"preostane", U"pripada", U"dovolj", U"mar", U"žal", U"dolgčas", U"vseeno",
+        U"hladno", U"vroče", U"toplo", U"slabo", U"dobro", U"lepo", U"jasno", U"nerazumljivo", U"se", U"je", U"ni",
+    };
+    // A predicate anywhere after a pronoun at the head (Meni za to ni mar)
+    static const WordSet dative_predicate = {U"mar", U"všeč", U"žal", U"zdi", U"zdijo", U"dolgčas", U"vseeno",
+                                             U"ugaja", U"manjka", U"preostane"};
+    // What a menu does, after meni se
+    static const WordSet menu_verbs_se = {
+        U"odpre", U"odpira", U"zapre", U"zapira", U"prikaže", U"prikazuje", U"pokaže", U"pokazuje", U"razširi",
+        U"skrije", U"pojavi", U"naloži", U"nalaga", U"strne", U"spremeni", U"premakne", U"premika", U"osveži",
+    };
+    // What a menu is, after meni je, ni, bo
+    static const WordSet menu_predicates = {
+        U"odprt", U"zaprt", U"prazen", U"skrit", U"viden", U"prikazan", U"izbran", U"onemogočen", U"omogočen",
+        U"aktiven", U"neaktiven", U"razširjen", U"strnjen", U"naložen", U"poln", U"dolg", U"pregleden",
+        U"nepregleden", U"zapleten", U"sestavljen", U"dostopen", U"nedostopen",
+    };
+    // What a menu does, after it
+    static const WordSet menu_verbs = {
+        U"ima", U"vsebuje", U"omogoča", U"prikazuje", U"ponuja", U"vključuje", U"stane", U"sestavljajo", U"odpre",
+        U"zapre", U"izgine",
+    };
+    // A genitive or a name of what the menu is of
+    static const WordSet menu_of = {
+        U"aplikacij", U"aplikacije", U"možnosti", U"nastavitev", U"orodij", U"orodja", U"jedi", U"dneva",
+        U"restavracije", U"palete", U"telefona", U"gumba", U"datoteke", U"pomoči", U"povezav", U"gostilne",
+        U"vrstica", U"vrstice",
+    };
+    static const WordSet menu_for = {
+        U"kosilo", U"večerjo", U"zajtrk", U"otroke", U"goste", U"vegetarijance", U"krmarjenje", U"navigacijo",
+        U"dostopnost", U"pomoč", U"izbiro", U"pokušino", U"cel", U"ves",
+    };
+    const size_t n = words.size();
+    if (n == 1) return U"mení";
     const std::u32string* prev = i > 0 ? &words[i - 1] : nullptr;
-    const bool before_capital = i + 1 < words.size() && capitalized[i + 1];
+    const std::u32string* next = i + 1 < n ? &words[i + 1] : nullptr;
+    const bool before_capital = next && capitalized[i + 1];
     if (prev) {
         if (accusative_only.count(*prev)) return U"mení";
         if (*prev == U"v" || *prev == U"na") {
@@ -1260,18 +1524,40 @@ const char32_t* meni_reading(const std::vector<std::u32string>& words, const std
             return U"mêni";
         }
         if (prepositions().count(*prev)) return U"mêni";
-        if (possessives.count(*prev) || takes_menu.count(*prev)) return U"mení";
+        if (before_capital && capitalized[i]) return U"mení";   // To je Meni Start
+        if (qualifying.count(*prev) || naming.count(*prev) || takes_menu.count(*prev)) return U"mení";
         const bool a_name = capitalized[i - 1] && i > 1;
         if (!a_name && ((prev->size() >= 5 && word_ends_with(*prev, U"ni")) || word_ends_with(*prev, U"ski") ||
                         word_ends_with(*prev, U"ški") || word_ends_with(*prev, U"čki") ||
-                        word_ends_with(*prev, U"nji"))) {
-            return U"mení";     // glavni meni, začetni meni, stranski meni, zadnji meni
+                        word_ends_with(*prev, U"nji") || word_ends_with(*prev, U"oči") ||
+                        word_ends_with(*prev, U"eči") || word_ends_with(*prev, U"joči"))) {
+            return U"mení";     // glavni meni, začetni meni, stranski meni, zadnji meni, padajoči meni
         }
+        if (capitalized[i]) return U"mení";     // Gumb Meni
+        if (before_pronoun.count(*prev)) return U"mêni";
+        // ponudili meni, je rekla meni: a participle, not a name or a noun
+        if (!capitalized[i - 1] && prev->size() >= 4 && !not_participles.count(*prev) &&
+            (word_ends_with(*prev, U"li") || word_ends_with(*prev, U"le") || word_ends_with(*prev, U"la") ||
+             word_ends_with(*prev, U"al") || word_ends_with(*prev, U"il") || word_ends_with(*prev, U"el"))) {
+            return U"mêni";
+        }
+    } else if (before_capital && capitalized[i]) {
+        return U"mení";     // Meni Start, Meni Datoteka
     }
-    if (before_capital && capitalized[i]) return U"mení";   // Meni Start, Meni Datoteka
-    if (i + 1 < words.size()) {
-        const std::u32string& next = words[i + 1];
-        if (next == U"se" || next == U"je" || next == U"ni") return U"mêni";
+    if (next) {
+        if (*next == U"se" && i + 2 < n && menu_verbs_se.count(words[i + 2])) return U"mení";
+        if ((*next == U"je" || *next == U"ni" || *next == U"bo") && i + 2 < n && menu_predicates.count(words[i + 2])) {
+            return U"mení";
+        }
+        if (!prev) {
+            if (menu_verbs.count(*next) || menu_of.count(*next)) return U"mení";
+            if (*next == U"za" && i + 2 < n && menu_for.count(words[i + 2])) return U"mení";
+            if (*next == U"pa") return U"mêni";
+            for (size_t k = i + 1; k < n; ++k) {
+                if (dative_predicate.count(words[k])) return U"mêni";
+            }
+        }
+        if (after_pronoun.count(*next)) return U"mêni";
     }
     return nullptr;
 }
@@ -1279,7 +1565,7 @@ const char32_t* meni_reading(const std::vector<std::u32string>& words, const std
 } // namespace
 
 const char32_t* clause_reading(const std::vector<std::u32string>& words, const std::vector<bool>& capitalized,
-                               size_t i) {
+                               size_t i, bool before_complement) {
     const std::u32string& w = words[i];
     if (!w.empty() && w.back() == U'o') {
         for (const EndReading& r : END_READINGS) {
@@ -1288,13 +1574,43 @@ const char32_t* clause_reading(const std::vector<std::u32string>& words, const s
         if (w == U"lahko" && lahko_is_adjective(words, capitalized, i)) return U"láhko";
         return nullptr;
     }
-    if (w == U"meni") return meni_reading(words, capitalized, i);
-    if (w == U"roka") return roka_is_deadline(words, i) ? U"róka" : nullptr;
+    if (w == U"meni") {
+        const char32_t* reading = meni_reading(words, capitalized, i);
+        // Meni, da je prav. Ta meni, da je prav. Tudi meni, da je prav. The
+        // clause after it is what a verb of thinking takes; but a purpose
+        // clause follows a menu (Odprite meni, da izberete), and a preposition
+        // has the pronoun (k meni, da).
+        if (before_complement && i + 1 == words.size() && (i == 0 || !prepositions().count(words[i - 1])) &&
+            (!reading || i == 0 || (i == 1 && words[0] == U"ta") || std::u32string(reading) != U"mení")) {
+            return U"méni";
+        }
+        return reading;
+    }
+    if (w == U"roka") {
+        return roka_is_deadline(words, i) || roka_is_absent_or_object(words, capitalized, i) ? U"róka" : nullptr;
+    }
+    if (w == U"roki" || w == U"roke") return roki_roke_reading(words, i);
     if (w == U"afna") {
         const bool se = (i > 0 && words[i - 1] == U"se") || (i + 1 < words.size() && words[i + 1] == U"se");
         return se ? U"afná" : nullptr;
     }
     return nullptr;
+}
+
+bool opens_complement_clause(const std::u32string& text) {
+    static const WordSet openers = {U"da", U"naj", U"kdaj", U"kako", U"kje", U"zakaj", U"ali", U"kaj",
+                                    U"kdo", U"koliko", U"kam", U"če"};
+    std::u32string word;
+    for (char32_t c : text) {
+        if (c >= U'A' && c <= U'Z') c += 32;
+        else if (c == 0x10C || c == 0x160 || c == 0x17D) c += 1;    // Č Š Ž
+        if (!is_base_letter(c)) {
+            if (!word.empty()) break;
+            continue;
+        }
+        word.push_back(c);
+    }
+    return openers.count(word) != 0;
 }
 
 bool clause_reading_is_content(const std::u32string& w, const char32_t* reading) {
@@ -1344,7 +1660,134 @@ bool surname_reading(const std::u32string& w, const std::u32string& previous, bo
     return true;
 }
 
-VerbOrNoun context_reading(const std::vector<std::u32string>& words, size_t i, bool participle) {
+namespace {
+
+// A spelling in -l that is a noun's genitive plural (obvestíl [l], vozíl,
+// sporočíl) and a verb's l-participle (obvéstil [u̯], vôzil, sporóčil), and
+// noun_percent is how often it is the noun in Gigafida (Sloleks's form
+// frequencies): 91 % of vozil, 30 % of obvestil, 3 % of pojasnil. A participle
+// needs an auxiliary, a noun does not: that is the main cue. Of the 2,309 tokens
+// of such spellings in SUK 1.1 the cues below read 2,245 right, against 2,208
+// without them. (A listener's Ni obvestil, On me ni obvestil: November 2026.)
+VerbOrNoun participle_or_genitive(const std::vector<std::u32string>& words, size_t i, int noun_percent,
+                                  bool before_complement) {
+    static const WordSet auxiliaries = {
+        U"sem", U"si", U"je", U"bi", U"ni", U"nisem", U"nisi", U"bom", U"boš", U"bo", U"smo", U"ste", U"so",
+        U"sva", U"sta", U"nismo", U"niste", U"niso", U"nisva", U"nista", U"bomo", U"boste", U"bodo", U"bova",
+        U"bosta",
+    };
+    static const WordSet clitics = {
+        U"me", U"te", U"ga", U"jo", U"nas", U"vas", U"jih", U"ju", U"naju", U"vaju", U"mi", U"ti", U"mu",
+        U"ji", U"nam", U"vam", U"jim", U"se", U"si",
+    };
+    // What counts things, in the genitive plural after it (pet obvestil)
+    static const WordSet quantities = {
+        U"dve", U"dva", U"tri", U"štiri", U"pet", U"šest", U"sedem", U"osem", U"devet", U"deset", U"enajst",
+        U"dvanajst", U"trinajst", U"štirinajst", U"petnajst", U"šestnajst", U"sedemnajst", U"osemnajst",
+        U"devetnajst", U"dvajset", U"trideset", U"štirideset", U"petdeset", U"šestdeset", U"sedemdeset",
+        U"osemdeset", U"devetdeset", U"sto", U"dvesto", U"tristo", U"štiristo", U"petsto", U"tisoč",
+        U"milijon", U"milijonov", U"veliko", U"več", U"mnogo", U"nekaj", U"dosti", U"manj", U"koliko",
+        U"toliko", U"preveč", U"premalo", U"največ", U"najmanj", U"oba", U"obe", U"vseh", U"teh", U"nobenih",
+        U"tistih", U"nekaterih",
+    };
+    static const WordSet lacking = {
+        U"nimam", U"nimaš", U"nima", U"nimava", U"nimata", U"nimamo", U"nimate", U"nimajo",
+    };
+    // A noun with its genitive after it (seznam obvestil, pošiljanje sporočil)
+    static const WordSet head_nouns = {
+        U"seznam", U"seznama", U"število", U"števila", U"vrsta", U"vrste", U"vrst", U"pregled", U"pregleda",
+        U"prikaz", U"prikaza", U"pošiljanje", U"pošiljanja", U"zgodovina", U"zgodovine", U"center", U"centra",
+        U"nastavitev", U"nastavitve", U"urejanje", U"upravljanje", U"uporaba", U"uporabe", U"prodaja",
+        U"prodaje", U"nakup", U"nakupa", U"proizvodnja", U"proizvodnje", U"izdelava", U"izdelave", U"zaloga",
+        U"zaloge", U"kup", U"kupa", U"niz", U"niza", U"večina", U"večine", U"polovica", U"polovice",
+        U"tretjina", U"odstotek", U"odstotkov", U"par", U"para", U"skupina", U"skupine", U"sistem", U"sistema",
+        U"branje", U"prejemanje", U"brisanje", U"izbris", U"izvoz", U"uvoz", U"rezervacija", U"pravilnik",
+    };
+    // With these before ni it says something is not there, not who did not
+    // do something (Trenutno ni obvestil, Janez ni obvestil)
+    static const WordSet existential = {
+        U"trenutno", U"zdaj", U"sedaj", U"danes", U"tu", U"tukaj", U"tam", U"še", U"že", U"žal", U"sploh",
+        U"nikjer", U"več", U"nikoli", U"včeraj", U"jutri",
+    };
+    static const WordSet coordinators = {U"in", U"ter", U"ali", U"pa", U"oziroma", U"nato", U"potem"};
+    auto ends_with = [](const std::u32string& s, const char32_t* tail) {
+        const std::u32string t(tail);
+        return s.size() >= t.size() && s.compare(s.size() - t.size(), t.size(), t) == 0;
+    };
+    auto looks_like_participle = [&](const std::u32string& s) {
+        return s.size() > 3 && s.back() == U'l' &&
+               (s[s.size() - 2] == U'a' || s[s.size() - 2] == U'e' || s[s.size() - 2] == U'i' ||
+                s[s.size() - 2] == U'u');
+    };
+    const size_t n = words.size();
+    // Alone, the commoner reading: a genitive plural is no heading (učil, poročil)
+    if (n == 1) return noun_percent >= 50 ? VerbOrNoun::Nominal : VerbOrNoun::Verb;
+    const std::u32string* prev = i > 0 ? &words[i - 1] : nullptr;
+    const std::u32string* next = i + 1 < n ? &words[i + 1] : nullptr;
+    if (prev) {
+        if (prepositions().count(*prev)) return VerbOrNoun::Nominal;
+        if (prev->size() > 3 && ends_with(*prev, U"ih") && *prev != U"njih") {
+            return noun_percent >= 2 ? VerbOrNoun::Nominal : VerbOrNoun::Verb;
+        }
+        if (lacking.count(*prev)) return VerbOrNoun::Nominal;
+        if (noun_percent >= 3 && (quantities.count(*prev) || head_nouns.count(*prev))) return VerbOrNoun::Nominal;
+    }
+    // What a verb of saying takes: Ni obvestil, da pride. Ni sporočil, kdaj.
+    if (!next && before_complement && noun_percent < 90) return VerbOrNoun::Verb;
+    // At the head of the clause: Obvestil me je. Obvestil je policijo. But
+    // Vozil je bilo malo.
+    if (i == 0) {
+        size_t k = 1;
+        while (k < n && clitics.count(words[k])) ++k;
+        if (k < n && auxiliaries.count(words[k])) {
+            if (noun_percent >= 5 && k == 1 && k + 1 < n && words[k] == U"je" && words[k + 1] == U"bilo") {
+                return VerbOrNoun::Nominal;
+            }
+            return VerbOrNoun::Verb;
+        }
+    }
+    size_t aux = n;
+    for (size_t k = 0; k < i; ++k) {
+        if (auxiliaries.count(words[k])) aux = k;
+    }
+    if (aux == n) return noun_percent >= 5 ? VerbOrNoun::Nominal : VerbOrNoun::Verb;
+    bool only_clitics = true;
+    for (size_t k = aux + 1; k < i; ++k) {
+        if (!clitics.count(words[k])) only_clitics = false;
+    }
+    if (only_clitics) {
+        // Ni obvestil. Trenutno ni obvestil. Ni vozil na cesti. But Ni me
+        // obvestil, On ni obvestil, Ni obvestil policije.
+        if (words[aux] == U"ni" && aux + 1 == i && noun_percent >= 20 &&
+            (aux == 0 || (aux == 1 && existential.count(words[0]))) &&
+            (!next || prepositions().count(*next))) {
+            return VerbOrNoun::Nominal;
+        }
+        return VerbOrNoun::Verb;
+    }
+    // se je poročil: the reflexive makes it the verb
+    for (size_t k = 0; k < i; ++k) {
+        if (words[k] == U"se") return VerbOrNoun::Verb;
+    }
+    if (noun_percent >= 5) {
+        // Another participle has the auxiliary (Nisem dobil obvestil), unless
+        // this one is coordinated with it (je prišel in obvestil)
+        for (size_t k = aux + 1; k < i; ++k) {
+            if (!looks_like_participle(words[k])) continue;
+            bool coordinated = false;
+            for (size_t c = k + 1; c < i; ++c) {
+                if (coordinators.count(words[c])) coordinated = true;
+            }
+            if (!coordinated) return VerbOrNoun::Nominal;
+        }
+    }
+    return noun_percent >= 40 ? VerbOrNoun::Nominal : VerbOrNoun::Verb;
+}
+
+} // namespace
+
+VerbOrNoun context_reading(const std::vector<std::u32string>& words, size_t i, bool participle, int noun_percent,
+                           bool before_complement) {
     static const WordSet biti = {
         U"sem", U"si", U"je", U"sva", U"sta", U"smo", U"ste", U"so", U"nisem", U"nisi",
         U"ni", U"nisva", U"nista", U"nismo", U"niste", U"niso", U"bi", U"bom", U"boš",
@@ -1413,6 +1856,18 @@ VerbOrNoun context_reading(const std::vector<std::u32string>& words, size_t i, b
         }
         if (!last && biti.count(words[i + 1])) return VerbOrNoun::Nominal;
         return VerbOrNoun::Verb;
+    }
+
+    if (participle && noun_percent >= 0) return participle_or_genitive(words, i, noun_percent, before_complement);
+    // A noun in the nominative or the accusative that a participle is spelled
+    // like (predál and predáw, hotél and hôtel, lokál, pokál): in a clause of
+    // several words, with no auxiliary in it, it is no participle (Odpri predal)
+    if (participle && words.size() > 1) {
+        bool auxiliary = false;
+        for (const std::u32string& x : words) {
+            if (biti.count(x)) auxiliary = true;
+        }
+        if (!auxiliary) return VerbOrNoun::Nominal;
     }
 
     if (prev) {
@@ -1816,7 +2271,8 @@ void finish_word(const Analysis& a, WordPhones& wp) {
         const bool schwa = wp.phones[static_cast<size_t>(wp.nuclei.back())].ph == Ph::AX;
         const bool participle_shape = w[n - 2] != U'o';
         const bool listed_w = l_final_w_word(w);
-        const bool keeps_l = !listed_w && (a.unknown_name || l_final_l_word(w) || final_l_form(w));
+        const bool keeps_l = (a.flags.back() & F_L) != 0 ||
+                             (!listed_w && (a.unknown_name || l_final_l_word(w) || final_l_form(w)));
         if (!keeps_l && (schwa || listed_w || (participle_shape && (monosyllable || !final_stress)))) {
             wp.phones.back().ph = Ph::W;
         }

@@ -7,6 +7,7 @@
 #include <map>
 #include "phoneme_mapper.hpp"
 #include "../formant/formant_synthesizer.hpp"
+#include "../formant/formant_slovenian.hpp"
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
@@ -514,7 +515,20 @@ std::string TTSEngine::preprocess_text(const std::string& text) {
 
 std::vector<TextSegment> TTSEngine::segment_text(const std::string& processed_text) {
     // Use inflection processor to analyze and segment text
-    return m_impl->inflection.analyze_text(processed_text);
+    std::vector<TextSegment> segments = m_impl->inflection.analyze_text(processed_text);
+
+    // Slovenian: a verb of saying or thinking is told by the clause after it,
+    // which the front end does not see (Meni, da je prav. Ni obvestil, da
+    // pride.): the clause gets a mark that it is followed by such a clause.
+    if (current_language() == VoiceLanguage::Slovenian) {
+        for (size_t i = 0; i + 1 < segments.size(); ++i) {
+            if (segments[i].trailing_punct == Punctuation::COMMA &&
+                formant::slovenian::opens_complement_clause(segments[i + 1].text)) {
+                segments[i].text.push_back(formant::slovenian::BEFORE_COMPLEMENT_MARK);
+            }
+        }
+    }
+    return segments;
 }
 
 // =============================================================================
