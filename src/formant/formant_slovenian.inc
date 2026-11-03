@@ -11073,7 +11073,7 @@ const char* const SLOVENIAN_NAMES[] = {
     u8"štíh\004ják\010a\010om\010u\004rékelj\003vájncer\013ja\014em\014u\003čúlac\001žábljelj\003êjah\003elímlje\013ga\013m",
     u8"želímljemu\012im\004néva\003gánəc\003ílavəc\003iráh\007m\010i\005í\003íčah\010m\011i\007e\003léndər",
 };
-const size_t SLOVENIAN_NAMES_INSIDE_COUNT = 505;
+const size_t SLOVENIAN_NAMES_INSIDE_COUNT = 506;
 const char* const SLOVENIAN_NAMES_INSIDE[] = {
     u8"áfrika\001angélci\007i\001bakála\002árbar\010i\002ênde\006i\006u\002éti\002láži\002obá\002ôri\004žiča\011em\011i",
     u8"bôžičih\011u\002rémən\005z\006ən\006na\007o\010m\002ŕij\002rín\003ódniki\011ov\003usníc\011ami\011e\002údi",
@@ -11093,20 +11093,29 @@ const char* const SLOVENIAN_NAMES_INSIDE[] = {
     u8"míš\006ih\002olè\002óri\006ja\004stu\004šenj\006njah\011mi\010e\002ožè\002ravljè\001nános\007a\007om\007u",
     u8"nédelja\010e\010i\010o\002ivò\004ôja\007em\007u\002ovínəc\001občínar\012ja\013em\013i\002jstríca\011e\011i",
     u8"ojstríco\001óko\003mar\003sla\005om\001ostánək\001óstani\001ôtoka\006om\006u\001pád\002elín\002ére\005i\002erníc\010ah",
-    u8"pernícam\012i\002érov\002etêlina\011e\011i\011om\012v\011u\002éterke\010i\010o\004čam\006e\006in\010ah",
-    u8"péčine\006ka\010h\002ečkè\002éčki\002lanínəc\002ódna\006om\002ôdplat\002óličih\002ôlzelo\002ópita\004rečem\002osédel\011a\002rebíl",
-    u8"preddvôrom\004gára\003éməc\003íncip\011a\011e\011i\011om\012v\011u\005stava\011e\011i\011o\003stí\002ŕši",
-    u8"racè\003díne\002ádič\010a\010em\010u\004vnam\004zbor\010ja\011em\011u\005lag\010a\010i\002ébər\002eberšákov",
-    u8"rébri\004gent\010a\010om\010u\002epè\002êza\005e\005i\005ko\002ečíce\010o\002óbnika\010om\011v\010u",
-    u8"rógu\004j\004ka\005i\004man\007i\007om\010v\007u\004ti\004č\006e\002ôžičev\001ŕži\005jo\001sajè",
-    u8"sámo\004ni\002chmídta\011om\011u\002êdla\002él\002emè\002éna\005o\002lávi\007jo\002molè\002óbota\007e\007i",
-    u8"sóboto\002pacál\002tánu\003êgne\003rážar\012ja\013em\013u\004éləc\004ôj\003udênec\002véta\006lika\005čan\011om\001táji",
-    u8"témenica\011e\011i\011o\004pe\002ítan\007a\007e\007i\007om\004šina\010e\010i\010o\002opóla\007om",
-    u8"topólu\002órka\006e\006i\002rnôvcev\007im\007o\002úle\001uhán\001váleta\004s\005jo\002aščàn\002éliko\002enè\002êra",
-    u8"vêre\005i\005o\002ìd\002íhar\007ja\010em\011v\010i\011h\010u\002odícam\011i\002ódnik\010a\010i",
-    u8"vódnikom\011v\010u\004jsko\002olíčina\002rábəc\003húnəc\001zálega\002aletél\002álog\007a\002alóžnik\013a\013i\014h\013om",
-    u8"zalóžniku\002áman\004sip\007a\007om\007u\005tava\010e\010i\010o\002láta\002orè\002óri\006co\005o\001čáretov",
-    u8"čókom\006u\001šésta\003kórci\003úmberku\006i\001žágah\005reti\003ícah",
+    u8"pernícam\012i\002êro\002érov\002etêlina\011e\011i\011om\012v\011u\002éterke\010i\010o\004čam\006e\006in",
+    u8"péčinah\010e\006ka\010h\002ečkè\002éčki\002lanínəc\002ódna\006om\002ôdplat\002óličih\002ôlzelo\002ópita\004rečem\002osédel\011a",
+    u8"prebíl\004ddvôrom\004gára\003éməc\003íncip\011a\011e\011i\011om\012v\011u\005stava\011e\011i\011o\003stí",
+    u8"pŕši\001racè\003díne\002ádič\010a\010em\010u\004vnam\004zbor\010ja\011em\011u\005lag\010a\010i\002ébər",
+    u8"reberšákov\002ébri\004gent\010a\010om\010u\002epè\002êza\005e\005i\005ko\002ečíce\010o\002óbnika\010om\011v",
+    u8"róbniku\004gu\004j\004ka\005i\004man\007i\007om\010v\007u\004ti\004č\006e\002ôžičev\001ŕži\005jo",
+    u8"sajè\002ámo\004ni\002chmídta\011om\011u\002êdla\002él\002emè\002éna\005o\002lávi\007jo\002molè\002óbota\007e",
+    u8"sóboti\007o\002pacál\002tánu\003êgne\003rážar\012ja\013em\013u\004éləc\004ôj\003udênec\002véta\006lika\005čan\011om",
+    u8"táji\002émenica\011e\011i\011o\004pe\002ítan\007a\007e\007i\007om\004šina\010e\010i\010o\002opóla",
+    u8"topólom\007u\002órka\006e\006i\002rnôvcev\007im\007o\002úle\001uhán\001váleta\004s\005jo\002aščàn\002éliko\002enè",
+    u8"vêra\005e\005i\005o\002ìd\002íhar\007ja\010em\011v\010i\011h\010u\002odícam\011i\002ódnik\010a",
+    u8"vódniki\010om\011v\010u\004jsko\002olíčina\002rábəc\003húnəc\001zálega\002aletél\002álog\007a\002alóžnik\013a\013i\014h",
+    u8"zalóžnikom\013u\002áman\004sip\007a\007om\007u\005tava\010e\010i\010o\002láta\002orè\002óri\006co\005o",
+    u8"čáretov\003ókom\006u\001šésta\003kórci\003úmberku\006i\001žágah\005reti\003ícah",
+};
+// The imperatives of the verbs of commands (slovenian_commands.tsv),
+// read at the head of a clause where their spelling is the present
+// elsewhere (nadgrádi, namésti, posodôbi; nadgradí, namestí, posodobí)
+const size_t SLOVENIAN_HEAD_IMPERATIVES_COUNT = 45;
+const char* const SLOVENIAN_HEAD_IMPERATIVES[] = {
+    u8"dêli\002ôbi\002odêli\003vôli\004olíte\001govôri\001izvôzi\004ozíte\004ŕši\001nadgrádi\004omésti\003lôži\003mésti\003rêdi\004ôči\001obdŕži",
+    u8"obvêsti\002ddálji\003govôri\003lôži\002mêji\002pústi\002svêži\001podêli\003nôvi\003skŕbi\004odôbi\002reskôči\006očíte\003ilagôdi\003ôsi\003osíte",
+    u8"pústi\001razdêli\004vŕsti\001spremêni\003ústi\002tôri\001urêdi\002vôzi\003ozíte\001zadŕži\003pústi\003vŕti\002grádi",
 };
 // Spellings whose final l is [l] though they look like a participle:
 // the transcriptions of Sloleks, without the words SSKJ² and SP mark [-u̯]

@@ -521,21 +521,37 @@ std::vector<TextSegment> TTSEngine::segment_text(const std::string& processed_te
     // clause at a time, does not see, so the clause gets a mark. A verb of saying
     // or thinking by the clause after it (Meni, da je prav. Ni obvestil, da
     // pride.), lahko by the question mark at the end of the sentence (Lahko delo
-    // opravi vsak, ki hoče?).
+    // opravi vsak, ki hoče?), the imperative vesêli se by its exclamation mark
+    // (Veseli se, dragi prijatelj!), an address by the comma next to it (Pero,
+    // kje si? Hvala, Pero.).
     if (current_language() == VoiceLanguage::Slovenian) {
         bool in_question = false;
+        bool in_exclamation = false;
         for (size_t i = segments.size(); i-- > 0;) {
             const Punctuation punct = segments[i].trailing_punct;
             const bool continues = punct == Punctuation::COMMA || punct == Punctuation::SEMICOLON;
             if (punct == Punctuation::QUESTION) {
                 in_question = true;
+                in_exclamation = false;
+            } else if (punct == Punctuation::EXCLAMATION) {
+                in_exclamation = true;
+                in_question = false;
             } else if (!continues) {
                 in_question = false;
+                in_exclamation = false;
             }
             if (continues && in_question) segments[i].text.push_back(formant::slovenian::IN_QUESTION_MARK);
+            if (continues && in_exclamation) segments[i].text.push_back(formant::slovenian::IN_EXCLAMATION_MARK);
             if (punct == Punctuation::COMMA && i + 1 < segments.size() &&
                 formant::slovenian::opens_complement_clause(segments[i + 1].text)) {
                 segments[i].text.push_back(formant::slovenian::BEFORE_COMPLEMENT_MARK);
+            }
+            // An address: one capitalized word before a comma (Pero, kje si?
+            // Pero, pridi sem.) or after one (Hvala, Pero. Veseli se, Pero!)
+            if (formant::slovenian::is_address(segments[i].text) &&
+                ((punct == Punctuation::COMMA && i + 1 < segments.size()) ||
+                 (i > 0 && segments[i - 1].trailing_punct == Punctuation::COMMA))) {
+                segments[i].text.push_back(formant::slovenian::VOCATIVE_MARK);
             }
         }
     }

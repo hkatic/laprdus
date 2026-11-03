@@ -3356,7 +3356,9 @@ Toporišič's rules), so the lexicon carries most of the load:
      the first), and *posodobiti* on the i in every form of the verb
      (*posodobíti, posodobím, posodobí, posodobíl, posodobíla*), against SSKJ²
      and SP (*posodôbiti -im*); the passive *posodôbljen* has no i to carry it
-     and stays.
+     and stays, and so does the command *posodôbi* at the head of a clause
+     (the listener's second report, 2026-11-03; `SLOVENIAN_HEAD_IMPERATIVES`
+     below takes Sloleks's imperative before the correction).
    - **The final l of a participle.** A final *l* after a vowel is [w] in the
      participles and [l] in the loanwords stressed on the last syllable
      (`finish_word()`: *delal* [w], *kanál, hotél* [l]). A participle stressed
@@ -3482,6 +3484,47 @@ labels of buttons; elsewhere they are the present tense (*oni živíjo*,
 spelled the same (*déli* "parts"). The reading is passed to
 `phonemize()` as `pron_override`; the user's entries still win.
 
+The verbs software commands the user with (a listener's report of
+2026-11-03: *Posodobi*, *Nadgradi*, *Namesti*, *Izvrši* alone or as the
+command of a sentence are *posodóbi, nadgrádi, namésti, izvŕši*; in
+*Aplikacija naj se posodobi*, *to moraš nadgraditi*, *to naj se takoj izvrši*
+the last syllable) are the same thing, generated: the imperative of a verb in
+*-íti -ím* retracts the stress (SP 2001: *namestíti -ím, namésti -íte*;
+*gradíti -ím, grádi -íte*, so *nadgrádi*; *vršíti -ím, vŕši -íte*, so
+*izvŕši*; *dovolíti -vólim, dovôli -íte*; *prosíti prósim, prôsi -íte*;
+*posodôbiti -im*), and its 2nd person spells like the present (*nadgradí*
+"it upgrades", *dovólite* "you allow"). `tools/formant/slovenian_commands.tsv`
+lists about 90 such verbs (Save, Install, Update, Allow, Confirm, Export,
+Log in ...), chosen by hand; the generator writes
+`SLOVENIAN_HEAD_IMPERATIVES` from Sloleks's hand-accented second-person
+imperatives (`Gg?vde`, `Gg?vdm`; the first accentuation, before
+`CORRECTIONS`, so the command is *posodôbi* while the present is
+*posodobí*; the listener answered that *Posodobite* as a command is
+*posodobíte* too, so a spelling `CORRECTIONS` hold at his word gets no entry
+but *posodobi*) wherever the accent differs from the reading the lexicon
+gives the spelling: 45 entries (*posodôbi, nadgrádi,
+namésti, izvŕši, obvêsti, poskŕbi, prilagôdi, spremêni, zgrádi, dovolíte,
+prosíte, uvozíte* ...; *Namestite* needs none, SP *-íte*; the first person
+plural is left out, since *Prosimo, počakajte* is the present *prósimo*; a
+hand-written form such as *vŕnite*, SP's first variant *vŕni -te in -íte*,
+is left to the hand). `head_reading()` consults the hand table, then this
+one. Why only these verbs: of the 2,154 Sloleks spellings whose 2sg
+imperative and 3sg present differ, the one at the head of a sentence of SUK
+1.1 is the present 68 times and the imperative 10 (*Sledi del njene
+razlage*, *Živi v plitvih vodah*, *Vodi društvo*, *Drži pa tudi, da*), so the
+class as a whole must not be read so; the commands at a clause head in SUK
+are the present 21 times and the imperative 4, 14 of the 21 with the hand
+table's old entries (*govori* 7, *dobi* 3, mostly after a comma in a relative
+clause: *, ki ..., dobi po dve vstopnici*), 4 new (*obdrži, obvesti, omeji*,
+*osveži*). Two refinements of the same report: the head is the first word
+with only the request's conjunctions and adverbs before it (*in, pa, zdaj,
+potem, prosim, takoj, nemudoma, najprej ...*: *Nemudoma posodobi to
+aplikacijo!*, *Takoj nadgradi Dodavo*), no longer any word after one of them
+(*to naj se takoj izvrši* is the present), and a verb of saying (*govori,
+odgovori, prosi*) before a comma and a clause of *da* is the present
+(*Govori, da bo prišel*; `BEFORE_COMPLEMENT_MARK`), while *Poskrbi, da bo
+delovalo* keeps the command.
+
 *Meni* is three words (`slovenian::clause_reading()`): *mení* the menu
 (SSKJ² "mení tudi menu [mení]", SP *mení -ja*), *mêni* the dative and
 locative of *jàz* (SSKJ², SP: *mêne, mêni*) and *méni* the present of
@@ -3539,7 +3582,9 @@ frequent reading alone is right for 93.3 %, the cues below for 94.8 %.
   *-li*, *-le*: the participle (*je vozil*, *so sporočili*); not *-lo*, which
   after *je* is a noun (*to je besedilo*, *pravilo*). An adjective in *-ih*
   before it: the noun (*brez novih vozil*).
-- At the head of a clause before an object clitic, any spelling of the table
+- At the head of a clause, or after a conjunction (*in, pa, ter, ki, ampak, a,
+  toda*; *Toda žalosti nas, da* in SUK, the sample text's *in veseli me, da*),
+  before an object clitic, any spelling of the table
   is the verb: *Veseli me, da sva se spoznala*, *Žalosti me, da nisi prišel*, *Skrbi
   me*, as SSKJ² has it (*veseli nas, da delo napreduje*) and SP (*~i me, da vas
   vidim*; *žalostíti -ím*). All 20 occurrences in SUK 1.1 are verbs, two of them
@@ -3552,10 +3597,22 @@ frequent reading alone is right for 93.3 %, the cues below for 94.8 %.
   words of SUK, and the corpus tags all 13 as verbs (*deli, žalosti, odgovori, lasti,
   krivi, hrabri, kolovrati, veseli*).
 - *veseli*: the verb *veselí* with *se* or *si* in the clause, an object
-  clitic or *ne* right before it, or at the end of the clause (*On se zelo
-  veseli*, *To me veseli*); the adjective *veséli* after a form of *biti*
-  in the three words before it (*Otroci so veseli*, *smo bili zelo veseli*)
-  and elsewhere (*veseli ljudje*).
+  clitic anywhere before it (*To me veseli*, *Me zelo veseli vaš obisk*, *To
+  me srčno veseli*, *in me veseli*: the listener's second report, 2026-11-03,
+  which had the clitic right before it until then) or right after it (*rojen
+  sem bil leta 2026 in veseli me, da se lahko spoznava*, the sample text, which
+  he heard with the adjective; not *ti*, the demonstrative of *veseli ti
+  ljudje*), *ne* right before it, or at the end of the clause (*On se zelo
+  veseli*); the adjective *veséli* after
+  a form of *biti* in the three words before it (*Otroci so veseli*, *Otroci
+  so ga veseli*, *smo bili zelo veseli*) and elsewhere (*veseli ljudje*). The
+  imperative *vesêli* (SP 2001 *veselíti -ím, vesêli -íte*) at the head of a
+  clause before *se* or *si* in a sentence that ends in an exclamation mark
+  (*Veseli se!*, *Veseli se novega dneva!*, *Veseli se, dragi prijatelj!*), the
+  cue the listener named; without it the shape is the present (*Veseli se
+  novega dneva.* "he looks forward to the new day"). The exclamation mark of a
+  later clause reaches the front end as `IN_EXCLAMATION_MARK`, appended by
+  `TTSEngine::segment_text()` like `IN_QUESTION_MARK`.
 - *leti*: the noun *léti* (the dual and instrumental of *léto*, the plural
   of *lèt* "flight") only with a preposition, a number or a word in *-imi*,
   *-ema* among the three words before it (*dve leti*, *pred leti*, *pred
@@ -3592,6 +3649,10 @@ SSKJ², SP and the Collocations Dictionary of Modern Slovene at CJVT (Kolokacije
 | *roka* | 34 of 35 | 35 |
 | *lahko* | 1,943 of 1,944 | 1,943 (no modal read as the adjective) |
 
+- **The commands, *veseli se!* and the name Pero** are the listener's second
+  report (2026-11-03), under `HEAD_READINGS`, *veseli* and "An address"
+  above; SUK 1.1 changes only at the clause heads of the command verbs
+  (4 presents newly read as the command, listed there).
 - **A spelling in -l that is a noun's genitive plural and a verb's l-participle**
   (*obvestíl* "of notifications" with [l] and *obvéstil* "notified" with [u̯],
   *vozíl* and *vôzil*, *sporočíl* and *sporóčil*, *zdravíl* and *zdrávil*,
@@ -3895,6 +3956,32 @@ tried and dropped: all six cases in SUK 1.1 were wrong (*gospa Stone*, *profesor
 Stare zaveze*, *gospe Urške*). Alone, *Smode* keeps the second-last syllable.
 Foreign surnames after a given name Slovenian speakers also have can still be
 misread (*David Trimble*).
+
+**An address** (the listener's second report, 2026-11-03: *Pero, pridi sem!*,
+*Pero, kje si?*, *Peter, ki ga vsi kličejo Pero, bo tudi prišel* are the name
+*Péro*, first syllable; *Lahek si kot pero* the pen *peró*). The name is in
+Sloleks only with the network's accent (*Pêro*, 690 times), which never enters
+the tables, and SP 2001 has no entry for it, so it is a row of
+`slovenian_persons.tsv` with Sloleks's accent and the listener's syllable, and
+lands in `SLOVENIAN_NAMES_INSIDE` because the pen holds the spelling: inside a
+clause the name (*kličejo Pero*, *Dragi Pero*), at the head the pen (*Pero je
+na mizi*). The address is the head of its own clause, so
+`TTSEngine::segment_text()` marks it (`VOCATIVE_MARK`): a clause of one
+capitalized word (`slovenian::is_address()`) before a comma or after one
+(*Pero, pridi sem.*, *Hvala, Pero.*, *Veseli se, Pero!*) is read by the tables
+as inside a clause, and so is a given name (`SLOVENIAN_GIVEN_NAMES`,
+`slovenian::is_given_name()`) at the head of a clause followed by another
+capitalized word, its surname (*Pero Novak je prišel*, *Roman Jančič*, *Vera
+Šolinc*; the maintainer's note of 2026-11-03), except *samo*, which is "only"
+there (*Samo Janez je prišel*). Any capitalized head word before a capital
+was tried first and changed 180 words of SUK, among them *Pripravil Janez*,
+*Torej Janez* and *Financial Times*; with the given names it changes 10, all
+names. The first version asked for an exclamation
+or a question mark at the end of the sentence; the listener answered that
+*Pero, pridi sem.* must be the name too, so any such clause is. SUK 1.1 has no vocative; of its
+341 sentences that open with a capitalized common noun and a comma, three are
+spellings of the inside table and now read as names (*Vid, sluh, vonj*;
+*Izidi, moški*; *Gorenje, ki je*), the price of his rule.
 
 ### Numbers, dates, symbols
 

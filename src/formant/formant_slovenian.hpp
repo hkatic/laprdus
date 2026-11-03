@@ -201,13 +201,19 @@ bool name_reading(const std::u32string& w, bool clause_head, std::u32string& pro
 bool surname_reading(const std::u32string& w, const std::u32string& previous,
                      bool previous_capitalized, std::u32string& pron);
 
+/** Whether a word (in small letters) is one of SLOVENIAN_GIVEN_NAMES */
+bool is_given_name(const std::u32string& w);
+
 /**
  * The reading of a spelling at the head of a clause, where it is the
- * greeting or the imperative (žívijo, narêdi, govôri); nullptr for a word
- * that reads the same everywhere. Elsewhere the lexicon's reading holds
- * (živíjo, naredí "they live", "he makes").
+ * greeting or the imperative (žívijo, narêdi, govôri, and the commands of
+ * SLOVENIAN_HEAD_IMPERATIVES: posodôbi, nadgrádi, namésti, izvŕši); nullptr
+ * for a word that reads the same everywhere. Elsewhere the lexicon's reading
+ * holds (živíjo, naredí "they live", "he makes"). A verb of saying (govori,
+ * odgovori, prosi) sets *speech: before a comma and a clause of da it is the
+ * present (Govori, da bo prišel).
  */
-const char32_t* head_reading(const std::u32string& w);
+const char32_t* head_reading(const std::u32string& w, bool* speech = nullptr);
 
 /**
  * The reading of a word that depends on the other words of its clause,
@@ -235,7 +241,8 @@ const char32_t* head_reading(const std::u32string& w);
  */
 const char32_t* clause_reading(const std::vector<std::u32string>& words,
                                const std::vector<bool>& capitalized, size_t i,
-                               bool before_complement = false, bool question = false);
+                               bool before_complement = false, bool question = false,
+                               bool exclamation = false);
 
 /**
  * The mark the engine puts at the end of a clause whose comma is followed by a
@@ -253,8 +260,29 @@ constexpr char32_t BEFORE_COMPLEMENT_MARK = 0xE000;
  */
 constexpr char32_t IN_QUESTION_MARK = 0xE001;
 
+/**
+ * The same for a sentence that ends in an exclamation mark: Veseli se, dragi
+ * prijatelj! (the imperative vesêli; Veseli se novega dneva. is the present)
+ */
+constexpr char32_t IN_EXCLAMATION_MARK = 0xE002;
+
+/**
+ * The mark of a clause that is one capitalized word before a comma or after
+ * one: an address (Pero, kje si? Pero, pridi sem. Hvala, Pero.), so the word
+ * is read by the tables of names as inside a clause, where the name Pêro
+ * wins over the pen peró (a listener's answer of 2026-11-03: the name
+ * whatever ends the sentence). Pero je na mizi. stays the pen.
+ */
+constexpr char32_t VOCATIVE_MARK = 0xE003;
+
 /** Whether a clause begins with da, naj, kdaj, kako ... */
 bool opens_complement_clause(const std::u32string& text);
+
+/**
+ * Whether a clause is one capitalized word (Pero, Janez, Mama), the shape of
+ * an address before a comma; for VOCATIVE_MARK, with the sentence's end
+ */
+bool is_address(const std::u32string& text);
 
 /**
  * Whether the reading clause_reading() gave is a content word although its

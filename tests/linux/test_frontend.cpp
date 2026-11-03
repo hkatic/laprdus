@@ -2357,10 +2357,10 @@ TEST_CASE("Slovenian listener's report of November 2026", "[frontend][slovenian]
         {U"Aplikacija se je posodobila", "aplik'a:cija sE jE pOsOdOb'i:la"},
         {U"Posodobil sem", "pOsOdOb'i:w səm"},
         {U"posodobili", "pOsOdOb'i:li"},
-        {U"Posodobi", "pOsOdOb'i:"},
+        {U"Aplikacija naj se posodobi", "aplik'a:cija naj sE pOsOdOb'i:"},     // alone: the command posodôbi
         {U"posodobiti", "pOsOdOb'i:ti"},
         {U"posodobim", "pOsOdOb'i:m"},
-        {U"posodobite", "pOsOdOb'i:tE"},
+        {U"Zdaj jo posodobite", "zd'aj jO pOsOdOb'i:tE"},       // alone: the command posodôbite
         {U"posodobijo", "pOsOdOb'i:jO"},
         {U"posodobljen", "pOsOd'O:bljEn"},
         {U"posodobitev", "pOsOdOb'i:təw"},
@@ -2443,4 +2443,78 @@ TEST_CASE("Slovenian listener's report of November 2026", "[frontend][slovenian]
         INFO(PhonemeMapper::utf32_to_utf8(c.text));
         REQUIRE(phones_of(read(frontend, c.text)) == c.phones);
     }
+}
+
+TEST_CASE("Slovenian listener's report of 2026-11-03: commands, veseli se, Pero", "[frontend][slovenian]") {
+    Frontend frontend(VoiceLanguage::Slovenian);
+    struct Case { const char32_t* text; const char* phones; };
+    // The verbs of commands at the head of a clause are the imperative, which
+    // retracts the stress (SP 2001: namestíti namésti -íte, gradíti grádi,
+    // vršíti vŕši, posodôbiti); elsewhere their spelling is the present
+    const Case cases[] = {
+        {U"Posodobi", "pOsOd'O:bi"},
+        {U"Posodobite", "pOsOdOb'i:tE"},                 // the listener: posodobíte as a command too
+        {U"Nadgradi", "nadgr'a:di"},
+        {U"Namesti", "nam'é:sti"},
+        {U"Namestite", "namEst'i:tE"},                   // SP namésti -íte
+        {U"Izvrši", "izv'ərši"},
+        {U"Shrani", "shr'a:ni"},                         // the same in both; by the lexicon
+        {U"Dovolite", "dOvOl'i:tE"},                     // SP dovôli -íte; the present dovólite
+        {U"Prijavi se", "prij'a:vi sE"},
+        {U"Nemudoma posodobi to aplikacijo", "nEm'u:dOma pOsOd'O:bi t'ó: aplik'a:cijO"},
+        {U"Takoj nadgradi Dodavo", "tak'ó:j nadgr'a:di dOd'a:vO"},
+        {U"Aplikacija naj se posodobi", "aplik'a:cija naj sE pOsOdOb'i:"},
+        {U"To moraš nadgraditi", "t'ó: m'ó:raš nadgrad'i:ti"},
+        {U"To naj se takoj izvrši", "t'ó: naj sE tak'ó:j izvərš'i:"},
+        {U"Program nadgradi sistem", "prOgr'a:m nadgrad'i: sist'é:m"},
+        // veseli: an object clitic anywhere before it is the verb of pleasing
+        {U"Me zelo veseli vaš obisk", "m'é: zEl'ó: vEsEl'i: v'aš Ob'i:sk"},
+        {U"To me srčno veseli", "t'ó: mE s'ərčnO vEsEl'i:"},
+        {U"In me veseli", "in mE vEsEl'i:"},
+        // an object clitic right after it, also after a conjunction (the sample text)
+        {U"rojen sem bil lani in veseli me", "rOj'En səm b'i:w l'a:ni in vEsEl'i: mE"},
+        {U"To veseli nas", "t'ó: vEsEl'i: nas"},
+        {U"Toda žalosti nas", "t'ó:da žalOst'i: nas"},
+        {U"Veseli me", "vEsEl'i: mE"},
+        {U"Otroci so ga veseli", "Otr'O:ci sO ga vEs'é:li"},
+        {U"Veseli se novega dneva", "vEs'é:li sE n'O:vEga dn'é:va"},   // a statement: the present
+        // The pen; the name only inside a clause and as an address (below)
+        {U"Lahek si kot pero", "l'a:hək si k'Ot pEr'ó:"},
+        {U"ki ga vsi kličejo Pero bo tudi prišel", "ki ga us'i kl'i:čEjO p'E:rO bO t'u:di priš'əw"},
+        {U"Dragi Pero", "dr'a:gi p'E:rO"},
+        {U"Pero Novak je prišel", "p'E:rO nOv'a:k jE priš'əw"},    // before a surname, at the head too
+        {U"Pero je na mizi", "pEr'ó: jE na m'i:zi"},
+    };
+    for (const Case& c : cases) {
+        INFO(PhonemeMapper::utf32_to_utf8(c.text));
+        REQUIRE(phones_of(read(frontend, c.text)) == c.phones);
+    }
+    // Veseli se! The imperative vesêli (SP vesêli -íte) by the exclamation mark,
+    // of its own clause or, as the engine's mark, of the sentence
+    REQUIRE(phones_of(frontend.process(U"Veseli se", Punctuation::EXCLAMATION)) == "vEs'E:li sE");
+    REQUIRE(phones_of(frontend.process(U"Veseli se novega dneva", Punctuation::EXCLAMATION)) ==
+            "vEs'E:li sE n'O:vEga dn'é:va");
+    std::u32string marked = U"Veseli se";
+    marked.push_back(slovenian::IN_EXCLAMATION_MARK);
+    REQUIRE(phones_of(frontend.process(marked, Punctuation::COMMA)) == "vEs'E:li sE");
+    REQUIRE(phones_of(frontend.process(U"Veseli me", Punctuation::EXCLAMATION)) == "vEsEl'i: mE");
+    // Govori, da bo prišel: the verb of saying before its clause of da is the present
+    marked = U"Govori";
+    marked.push_back(slovenian::BEFORE_COMPLEMENT_MARK);
+    REQUIRE(phones_of(frontend.process(marked, Punctuation::COMMA)) == "gOvOr'i:");
+    REQUIRE(phones_of(frontend.process(U"Govori", Punctuation::COMMA)) == "gOv'O:ri");
+    marked = U"Poskrbi";                                 // an instruction: the imperative
+    marked.push_back(slovenian::BEFORE_COMPLEMENT_MARK);
+    REQUIRE(phones_of(frontend.process(marked, Punctuation::COMMA)) == "pOsk'ərbi");
+    // Pero, kje si? Pero, pridi sem. The address, marked by the engine
+    marked = U"Pero";
+    marked.push_back(slovenian::VOCATIVE_MARK);
+    REQUIRE(phones_of(frontend.process(marked, Punctuation::COMMA)) == "p'E:rO");
+    REQUIRE(phones_of(frontend.process(U"Pero", Punctuation::COMMA)) == "pEr'ó:");
+    // The engine's test of the mark: one capitalized word before a comma
+    REQUIRE(slovenian::is_address(U"Pero"));
+    REQUIRE(slovenian::is_address(U"Dragi") );
+    REQUIRE_FALSE(slovenian::is_address(U"Dragi Pero"));
+    REQUIRE_FALSE(slovenian::is_address(U"pero"));
+    REQUIRE_FALSE(slovenian::is_address(U"USB"));
 }

@@ -659,6 +659,16 @@ TEST_CASE("Slovenian reads a word by the clause after the comma", "[formant][lan
         REQUIRE(speak(engine.handle, "Meni, gumb.") != speak(engine.handle, "M\xC3\xA9ni, gumb."));
         REQUIRE(speak(engine.handle, "Ni obvestil, da pride.") == speak(engine.handle, "Ni obv\xC3\xA9stil, da pride."));
         REQUIRE(speak(engine.handle, "Ni obvestil, gumb.") != speak(engine.handle, "Ni obv\xC3\xA9stil, gumb."));
+        // Pero, kje si? Pero, pridi sem! The address is the name Pêro (first
+        // syllable), the pen peró elsewhere at the head; the imperative
+        // vesêli se by the exclamation mark of the sentence
+        REQUIRE(speak(engine.handle, "Pero, kje si?") == speak(engine.handle, "P\xC3\xAAro, kje si?"));
+        REQUIRE(speak(engine.handle, "Pero, pridi sem!") == speak(engine.handle, "P\xC3\xAAro, pridi sem!"));
+        REQUIRE(speak(engine.handle, "Pero, pridi sem.") == speak(engine.handle, "P\xC3\xAAro, pridi sem."));
+        REQUIRE(speak(engine.handle, "Pero je na mizi.") == speak(engine.handle, "Per\xC3\xB3 je na mizi."));
+        REQUIRE(speak(engine.handle, "Pero je na mizi.") != speak(engine.handle, "P\xC3\xAAro je na mizi."));
+        REQUIRE(speak(engine.handle, "Veseli se, Pero!") == speak(engine.handle, "Ves\xC3\xAAli se, P\xC3\xAAro!"));
+        REQUIRE(speak(engine.handle, "Veseli se, Pero.") != speak(engine.handle, "Ves\xC3\xAAli se, P\xC3\xAAro."));
         // Lahko by the question mark, which may be clauses away
         REQUIRE(speak(engine.handle, "Lahko delo opravi vsak.") == speak(engine.handle, "L\xC3\xA1hko delo opravi vsak."));
         REQUIRE(speak(engine.handle, "Lahko delo opravi vsak?") != speak(engine.handle, "L\xC3\xA1hko delo opravi vsak?"));

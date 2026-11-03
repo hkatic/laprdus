@@ -386,25 +386,26 @@ const char* const HAND_ENTRIES[] = {
 struct HeadReading {
     const char32_t* spelling;
     const char32_t* head;
+    bool speech;        // a verb of saying: the present before a clause of da
 };
 
 const HeadReading HEAD_READINGS[] = {
-    {U"živijo", U"žívijo"},
-    {U"živio", U"žívio"},
-    {U"naredi", U"narêdi"},
-    {U"govori", U"govôri"},
-    {U"odgovori", U"odgovôri"},
-    {U"dobi", U"dôbi"},
-    {U"zapusti", U"zapústi"},
-    {U"spusti", U"spústi"},
-    {U"stori", U"stôri"},
-    {U"prosi", U"prôsi"},
-    {U"deli", U"dêli"},          // the Share button; déli "parts" elsewhere
-    {U"uredi", U"urêdi"},
-    {U"ponovi", U"ponôvi"},
-    {U"obnovi", U"obnôvi"},
-    {U"naloži", U"nalôži"},
-    {U"osveži", U"osvéži"},
+    {U"živijo", U"žívijo", false},
+    {U"živio", U"žívio", false},
+    {U"naredi", U"narêdi", false},
+    {U"govori", U"govôri", true},
+    {U"odgovori", U"odgovôri", true},
+    {U"dobi", U"dôbi", false},
+    {U"zapusti", U"zapústi", false},
+    {U"spusti", U"spústi", false},
+    {U"stori", U"stôri", false},
+    {U"prosi", U"prôsi", true},
+    {U"deli", U"dêli", false},          // the Share button; déli "parts" elsewhere
+    {U"uredi", U"urêdi", false},
+    {U"ponovi", U"ponôvi", false},
+    {U"obnovi", U"obnôvi", false},
+    {U"naloži", U"nalôži", false},
+    {U"osveži", U"osvéži", false},
 };
 
 // The flags a notation letter carries, and the plain letter it stands for.
@@ -771,13 +772,6 @@ bool split_compound_numeral(const std::u32string& w, std::u32string& ones, std::
     return split_compound_numeral_impl(w, ones, tens);
 }
 
-const char32_t* head_reading(const std::u32string& w) {
-    for (const HeadReading& r : HEAD_READINGS) {
-        if (w == r.spelling) return r.head;
-    }
-    return nullptr;
-}
-
 bool is_proclitic(const std::u32string& w) { return proclitics().count(w) != 0; }
 bool is_enclitic(const std::u32string& w) { return enclitics().count(w) != 0; }
 bool is_function_word(const std::u32string& w) { return function_words().count(w) != 0; }
@@ -1011,16 +1005,35 @@ const Lexicon& builtin_lexicon() {
     return lexicon;
 }
 
+// A lexicon of one generated table of whole forms (the names, the commands)
+static Lexicon table_of(const char* const* blocks, size_t count) {
+    Lexicon lex;
+    Lexicon::Table forms;
+    forms.blocks = blocks;
+    forms.count = count;
+    forms.block = SLOVENIAN_BLOCK;
+    lex.set_tables(forms, Lexicon::Table());
+    return lex;
+}
+
+const char32_t* head_reading(const std::u32string& w, bool* speech) {
+    if (speech) *speech = false;
+    for (const HeadReading& r : HEAD_READINGS) {
+        if (w == r.spelling) {
+            if (speech) *speech = r.speech;
+            return r.head;
+        }
+    }
+    // The commands of software (slovenian_commands.tsv): the imperatives of
+    // Sloleks where they retract the stress of the present (SP 2001 gradíti
+    // grádi, namestíti namésti, vršíti vŕši; a listener's report of
+    // 2026-11-03: Posodobi, Nadgradi, Namesti, Izvrši)
+    static const Lexicon commands = table_of(SLOVENIAN_HEAD_IMPERATIVES, SLOVENIAN_HEAD_IMPERATIVES_COUNT);
+    static thread_local std::u32string pron;
+    return commands.find_exact(w, pron) ? pron.c_str() : nullptr;
+}
+
 bool name_reading(const std::u32string& w, bool clause_head, std::u32string& pron) {
-    auto table_of = [](const char* const* blocks, size_t count) {
-        Lexicon lex;
-        Lexicon::Table forms;
-        forms.blocks = blocks;
-        forms.count = count;
-        forms.block = SLOVENIAN_BLOCK;
-        lex.set_tables(forms, Lexicon::Table());
-        return lex;
-    };
     static const Lexicon names = table_of(SLOVENIAN_NAMES, SLOVENIAN_NAMES_COUNT);
     static const Lexicon inside = table_of(SLOVENIAN_NAMES_INSIDE, SLOVENIAN_NAMES_INSIDE_COUNT);
     if (names.find_exact(w, pron)) return true;
@@ -1626,8 +1639,17 @@ const char32_t* meni_reading(const std::vector<std::u32string>& words, const std
 } // namespace
 
 const char32_t* clause_reading(const std::vector<std::u32string>& words, const std::vector<bool>& capitalized,
-                               size_t i, bool before_complement, bool question) {
+                               size_t i, bool before_complement, bool question, bool exclamation) {
     const std::u32string& w = words[i];
+    // Veseli se! Veseli se novega dneva! The imperative vesêli (SP 2001
+    // veselíti -ím, vesêli -íte) at the head of a clause before se or si in
+    // a sentence that ends in an exclamation mark, the cue a listener named
+    // (2026-11-03); without it the shape is the present veselí (Veseli se
+    // novega dneva. "he looks forward to the new day"), and before an object
+    // clitic the verb of pleasing (Veseli me, da ...), context_reading()
+    if (w == U"veseli" && i == 0 && exclamation && words.size() > 1 && (words[1] == U"se" || words[1] == U"si")) {
+        return U"vesêli";
+    }
     if (!w.empty() && w.back() == U'o') {
         for (const EndReading& r : END_READINGS) {
             if (w == r.spelling) return i + 1 == words.size() ? r.at_end : r.before_word;
@@ -1658,9 +1680,10 @@ const char32_t* clause_reading(const std::vector<std::u32string>& words, const s
     return nullptr;
 }
 
-bool opens_complement_clause(const std::u32string& text) {
-    static const WordSet openers = {U"da", U"naj", U"kdaj", U"kako", U"kje", U"zakaj", U"ali", U"kaj",
-                                    U"kdo", U"koliko", U"kam", U"če"};
+namespace {
+
+// The first word of a clause, in small letters
+std::u32string first_word(const std::u32string& text) {
     std::u32string word;
     for (char32_t c : text) {
         if (c >= U'A' && c <= U'Z') c += 32;
@@ -1671,11 +1694,60 @@ bool opens_complement_clause(const std::u32string& text) {
         }
         word.push_back(c);
     }
-    return openers.count(word) != 0;
+    return word;
+}
+
+}  // namespace
+
+bool opens_complement_clause(const std::u32string& text) {
+    static const WordSet openers = {U"da", U"naj", U"kdaj", U"kako", U"kje", U"zakaj", U"ali", U"kaj",
+                                    U"kdo", U"koliko", U"kam", U"če"};
+    return openers.count(first_word(text)) != 0;
+}
+
+bool is_address(const std::u32string& text) {
+    // One word of letters, capitalized and not all in capitals, with the
+    // engine's marks of the clause after it
+    bool upper = false, lower = false;
+    size_t words = 0;
+    bool in_word = false;
+    for (char32_t c : text) {
+        if (c >= 0xE000 && c <= 0xE00F) continue;
+        if (c == U' ' || c == U'\t') {
+            in_word = false;
+            continue;
+        }
+        if (!in_word) {
+            ++words;
+            in_word = true;
+            if (!(c >= U'A' && c <= U'Z') && c != 0x10C && c != 0x106 && c != 0x160 && c != 0x17D &&
+                c != 0x110) {
+                return false;       // the first letter is a capital
+            }
+            upper = true;
+            continue;
+        }
+        if (c >= U'A' && c <= U'Z') return false;      // all in capitals (an abbreviation)
+        if (!is_base_letter(c) && c != 0x107 && c != 0x111) return false;
+        lower = true;
+    }
+    return words == 1 && upper && lower;
 }
 
 bool clause_reading_is_content(const std::u32string& w, const char32_t* reading) {
     return reading && w == U"lahko" && std::u32string(reading) == U"láhko";
+}
+
+bool is_given_name(const std::u32string& w) {
+    size_t lo = 0, hi = sizeof(SLOVENIAN_GIVEN_NAMES) / sizeof(SLOVENIAN_GIVEN_NAMES[0]);
+    while (lo < hi) {
+        const size_t mid = lo + (hi - lo) / 2;
+        const int c = compare_key(w, SLOVENIAN_GIVEN_NAMES[mid]);
+        if (c == 0) return true;
+        if (c < 0) hi = mid;
+        else lo = mid + 1;
+    }
+    return false;
 }
 
 bool surname_reading(const std::u32string& w, const std::u32string& previous, bool previous_capitalized,
@@ -1706,15 +1778,7 @@ bool surname_reading(const std::u32string& w, const std::u32string& previous, bo
     }
     if (vowels == 0) return false;
 
-    size_t lo = 0, hi = sizeof(SLOVENIAN_GIVEN_NAMES) / sizeof(SLOVENIAN_GIVEN_NAMES[0]);
-    bool named = false;
-    while (lo < hi && !named) {
-        const size_t mid = lo + (hi - lo) / 2;
-        const int c = compare_key(previous, SLOVENIAN_GIVEN_NAMES[mid]);
-        if (c == 0) named = true;
-        else if (c < 0) hi = mid;
-        else lo = mid + 1;
-    }
+    const bool named = is_given_name(previous);
     if (!named) return false;
     pron = w.substr(0, w.size() - 1);
     pron += U'è';
@@ -1876,23 +1940,37 @@ VerbOrNoun context_reading(const std::vector<std::u32string>& words, size_t i, b
     // napreduje; SP ~i me, da vas vidim.) All 20 occurrences of a spelling of this
     // table at the head of a clause before an object clitic in SUK 1.1 are verbs;
     // a noun there has a form of biti after the clitic (Pomoči mi ni).
-    if (i == 0 && !participle && !last && object_clitics.count(words[1]) &&
-        !(words.size() > 2 && biti.count(words[2]))) {
+    // Also after a conjunction (rojen sem bil leta 2026 in veseli me, da ...:
+    // the sample text; a listener's report of 2026-11-03)
+    static const WordSet conjunctions = {U"in", U"pa", U"ter", U"ki", U"ampak", U"a", U"toda"};
+    if ((i == 0 || conjunctions.count(words[i - 1])) && !participle && !last &&
+        object_clitics.count(words[i + 1]) && !(i + 2 < words.size() && biti.count(words[i + 2]))) {
         return VerbOrNoun::Verb;
     }
 
     // veseli: veselí (se) "looks forward, pleases", veséli "cheerful". The
     // adjective follows a form of biti (smo veseli, so bili zelo veseli);
     // the verb has its se, an object (nas veseli), ne, or ends the clause
-    // (On se zelo veseli. To me veseli.)
+    // (On se zelo veseli. To me veseli.) The imperative vesêli se! is read
+    // by clause_reading(), which sees the exclamation mark.
     if (w == U"veseli") {
         for (size_t k = i >= 3 ? i - 3 : 0; k < i; ++k) {
             if (biti.count(words[k])) return VerbOrNoun::Nominal;
         }
+        // An object clitic anywhere before it, not only right before it: Me
+        // zelo veseli vaš obisk, To me srčno veseli (a listener's report of
+        // 2026-11-03: "me veseli", "me zelo veseli", "me srčno veseli", "in me
+        // veseli" are all the verb); with a form of biti before it the
+        // adjective took the clause above (Otroci so ga veseli)
         for (size_t k = 0; k < i; ++k) {
             if (words[k] == U"se" || words[k] == U"si") return VerbOrNoun::Verb;
+            if (words[k] != U"ti" && words[k] != U"te" && object_clitics.count(words[k])) return VerbOrNoun::Verb;
         }
         if ((prev && (object_clitics.count(*prev) || *prev == U"ne")) || last) return VerbOrNoun::Verb;
+        // An object clitic right after it anywhere in the clause (in veseli
+        // me, da ...), not ti, which is also the demonstrative (veseli ti
+        // ljudje)
+        if (!last && words[i + 1] != U"ti" && object_clitics.count(words[i + 1])) return VerbOrNoun::Verb;
         return VerbOrNoun::Lexicon;
     }
     // gori: gorí "burns" (Peč gori vsak dan), but gôri the locative and the

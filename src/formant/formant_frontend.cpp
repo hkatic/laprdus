@@ -4135,14 +4135,21 @@ Utterance Frontend::process_slovenian(const std::u32string& marked_text, Punctua
     Utterance utt;
     utt.slovenian = true;
     // The engine's marks: a clause opening with da, naj, kako ... follows; the
-    // sentence ends in a question mark
+    // sentence ends in a question mark or an exclamation mark; the clause is
+    // an address (Pero, kje si?)
     std::u32string text = marked_text;
     bool before_complement = false;
     bool question = punct == Punctuation::QUESTION;
+    bool exclamation = punct == Punctuation::EXCLAMATION;
+    bool vocative = false;
     while (!text.empty() && (text.back() == slovenian::BEFORE_COMPLEMENT_MARK ||
-                             text.back() == slovenian::IN_QUESTION_MARK)) {
+                             text.back() == slovenian::IN_QUESTION_MARK ||
+                             text.back() == slovenian::IN_EXCLAMATION_MARK ||
+                             text.back() == slovenian::VOCATIVE_MARK)) {
         if (text.back() == slovenian::BEFORE_COMPLEMENT_MARK) before_complement = true;
-        else question = true;
+        else if (text.back() == slovenian::IN_QUESTION_MARK) question = true;
+        else if (text.back() == slovenian::IN_EXCLAMATION_MARK) exclamation = true;
+        else vocative = true;
         text.pop_back();
     }
     std::vector<Word> tokens = tokenize(cyrillic::to_latin(text), m_language);
@@ -4190,15 +4197,19 @@ Utterance Frontend::process_slovenian(const std::u32string& marked_text, Punctua
     }
 
     // ---- Per-word analysis: phones and stress ----
-    // The first word of the clause, and one after a conjunction or an
-    // adverb that opens a request, is the greeting or the imperative where
-    // the spelling has two readings (Živijo!, Naredi to, Zdaj naredi to);
-    // elsewhere it is the verb's present (oni živijo, program naredi).
+    // The first word of the clause, and one with only conjunctions and
+    // adverbs that open a request before it, is the greeting or the
+    // imperative where the spelling has two readings (Živijo!, Naredi to,
+    // Zdaj naredi to, Nemudoma posodobi to aplikacijo!); elsewhere it is the
+    // verb's present (oni živijo, program naredi, to naj se takoj izvrši).
     // A spelling that is a verb's form or another word (veselí/veséli,
     // letí/léti) is read by the words around it (context_reading()).
     static const WordSet before_imperative = {U"in", U"pa", U"ter", U"zdaj", U"sedaj", U"potem",
                                               U"nato", U"prosim", U"samo", U"le", U"raje",
-                                              U"kar", U"no", U"daj"};
+                                              U"kar", U"no", U"daj", U"takoj", U"nemudoma",
+                                              U"najprej"};
+    size_t head_words = 0;          // the words before the first that is not one of them
+    while (head_words < words.size() && before_imperative.count(words[head_words].w) != 0) ++head_words;
     std::vector<std::u32string> spellings;
     std::vector<bool> capitalized;
     std::vector<bool> rewritten;       // spelled the foreign way (Wayne, Carlyle)
@@ -4220,22 +4231,36 @@ Utterance Frontend::process_slovenian(const std::u32string& marked_text, Punctua
                                            [](uint8_t m) { return (m & MARK_STRESS) != 0; });
         std::u32string context_pron;
         const std::u32string* override = nullptr;
+        // The head of a clause, where a capital says nothing of a name, for
+        // the tables of names: not an address (Pero, kje si?), and not a
+        // given name before another capitalized word, its surname (Pero
+        // Novak je prišel); samo is "only" there (Samo Janez je prišel)
+        const bool before_surname = i + 1 < words.size() && capitalized[i + 1] && !words[i + 1].all_caps &&
+                                    !words[i + 1].letter_name && word.w != U"samo" &&
+                                    slovenian::is_given_name(word.w);
+        const bool clause_head = (i == 0 || word.after_opening) && !vocative && !before_surname;
         if (!word.letter_name && !word.joined) {
             slovenian::VerbNounReadings readings;
-            const char32_t* head = slovenian::head_reading(word.w);
+            bool speech = false;
+            const char32_t* head = slovenian::head_reading(word.w, &speech);
             const char32_t* in_clause =
-                slovenian::clause_reading(spellings, capitalized, i, before_complement, question);
+                slovenian::clause_reading(spellings, capitalized, i, before_complement, question, exclamation);
             // A name spelled like a common word (Múrska Sóbota, sobóta;
             // Jêlena, jeléna): only with a capital, not in text written all
             // in capitals, and at the head of a clause only when the name
-            // is the commoner word (slovenian::name_reading())
+            // is the commoner word (slovenian::name_reading()), unless the
+            // clause is an address (Pero, kje si?) or a capitalized word
+            // follows, a surname (Pero Novak je prišel)
             if (word.capitalized && !word.all_caps &&
-                slovenian::name_reading(word.w, i == 0 || word.after_opening, context_pron)) {
+                slovenian::name_reading(word.w, clause_head, context_pron)) {
                 override = &context_pron;
             } else if (capitalized[i] && i > 0 && !rewritten[i] && !rewritten[i - 1] &&
                        slovenian::surname_reading(word.w, words[i - 1].w, capitalized[i - 1], context_pron)) {
                 override = &context_pron;
-            } else if (head && (i == 0 || before_imperative.count(words[i - 1].w) != 0)) {
+            } else if (head && (i == 0 || i == head_words) &&
+                       !(speech && before_complement && i + 1 == words.size())) {
+                // Govori, da bo prišel: the verb of saying before its clause
+                // of da is the present
                 context_pron = head;
                 override = &context_pron;
             } else if (in_clause) {

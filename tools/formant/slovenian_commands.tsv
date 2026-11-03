@@ -1,0 +1,97 @@
+# The verbs software commands the user with (Save, Install, Update, Allow,
+# Confirm ...), one lemma per line, chosen by hand; read by
+# tools/formant/slovenian_words.py, which writes SLOVENIAN_HEAD_IMPERATIVES
+# into formant_slovenian.inc: for each verb the second person imperatives of
+# Sloleks 3.1 (hand-accented) whose accent differs from the reading of the
+# same spelling as the present (nadgrádi, nadgradí; namésti, namestí;
+# posodôbi, posodobí), the pattern of Slovenski pravopis 2001 (gradíti grádi
+# -íte, vršíti vŕši -íte, namestíti namésti -íte, dovolíti dovôli -íte).
+# A verb whose imperative and present read alike (zaženi, prenesi, kopiraj)
+# gets no entry. Only verbs that are commands in software belong here:
+# at the head of a sentence of prose the spelling is mostly the present
+# (SUK 1.1: sledi, živi, vodi, drži, cveti), so the class as a whole is not
+# read so. A Slovenian listener's report of 2026-11-03 (posodobi, nadgradi,
+# namesti, izvrši).
+posodobiti
+nadgraditi
+namestiti
+odnamestiti
+izvršiti
+odstraniti
+shraniti
+potrditi
+nastaviti
+ponastaviti
+spremeniti
+zaustaviti
+ustaviti
+ustvariti
+dovoliti
+uvoziti
+izvoziti
+preveriti
+poskrbeti
+obvestiti
+omogočiti
+onemogočiti
+vklopiti
+izklopiti
+prijaviti
+odjaviti
+odpraviti
+popraviti
+prilagoditi
+razveljaviti
+uveljaviti
+izprazniti
+počistiti
+očistiti
+označiti
+odznačiti
+zaključiti
+naročiti
+pritrditi
+zaščititi
+nadomestiti
+pretvoriti
+pripraviti
+preskočiti
+opustiti
+opomniti
+spomniti
+objaviti
+odložiti
+zavrteti
+razvrstiti
+dopolniti
+izpolniti
+zgraditi
+obdržati
+zadržati
+določiti
+omejiti
+razširiti
+skrčiti
+združiti
+ločiti
+razdeliti
+dodeliti
+podeliti
+naložiti
+osvežiti
+ponoviti
+obnoviti
+urediti
+narediti
+storiti
+deliti
+zapustiti
+spustiti
+dobiti
+govoriti
+odgovoriti
+prositi
+pustiti
+oddaljiti
+vrniti
+zavrniti

@@ -1083,6 +1083,51 @@ def definite_adjectives(forms_path, min_frequency=10):
     return sorted(forms, key=lambda k: [ord(c) for c in k])
 
 
+def command_imperatives(forms_path, lemmas, reader):
+    """The imperatives of the verbs software commands the user with
+    (slovenian_commands.tsv) whose accent is not the one the lexicon gives
+    their spelling, for the table SLOVENIAN_HEAD_IMPERATIVES: the second
+    person singular and plural (JOS Gg?vde, Gg?vdm) of Sloleks, the first
+    accentuation, without CORRECTIONS (posodôbi, the dictionaries', where
+    the present is posodobí at a listener's wish). A verb of this class
+    retracts the stress in the imperative (SP 2001: gradíti grádi -íte,
+    vršíti vŕši -íte, namestíti namésti -íte, dovolíti dovôli -íte), so the
+    spelling of the present (nadgradí, namestí, dovólite) is read so at the
+    head of a clause, where it is a command (Nadgradi, Namesti, Dovolite);
+    the first person plural is left out (Prosimo, počakajte is the present
+    prósimo). spelling -> notation."""
+    wanted = set(lemmas)
+    # A spelling CORRECTIONS give a reading at a listener's word keeps it,
+    # except the one command he named: posodobi alone is posodôbi, but
+    # Posodobite as a command is posodobíte (his answers of 2026-11-03)
+    corrected = {orth for lemma in wanted for orth in CORRECTIONS.get(lemma, {}) if orth != 'posodobi'}
+    out = {}
+    with open(forms_path, encoding='utf-8') as f:
+        for line in f:
+            parts = line.rstrip('\n').split('\t')
+            if len(parts) < 10 or parts[0] not in wanted or parts[1] != 'verb':
+                continue
+            lemma, _cat, status, _freq, _feats, msd, orth, _ff, accs, ipas = parts[:10]
+            if status != 'MANUAL' or not msd.startswith('Gg') or msd[3:5] != 'vd' or msd[5:6] not in 'em':
+                continue
+            if not accs or not ipas:
+                continue
+            orth = orth.lower()
+            if orth in corrected:
+                continue
+            note = notation(orth, accs.split('|')[0], ipas.split('|')[0], True)
+            if note is None or strip_key(note) != orth or orth in out:
+                continue
+            # a hand-written form is the hand's decision (vŕnite: SP vŕni -te
+            # in -íte, the first variant; Sloleks's imperative is the second)
+            got, hand = reader.read(orth)
+            if hand and orth in reader.hand_exact:
+                continue
+            if got is None or norm(got) != norm(note):
+                out[orth] = note
+    return out
+
+
 def final_l_forms(truth, names, marked):
     """The spellings read with a final [l] although the rule of finish_word()
     would say [w], for the table SLOVENIAN_FINAL_L: a word of one syllable, or
@@ -1133,7 +1178,8 @@ def read_word_list(path):
 
 
 def generate(forms_path, out_path, manual_min=50, auto_min=2000, form_min=3, cpp_path=None,
-             places_path=None, names_report=None, given_names_path=None, final_w_path=None):
+             places_path=None, names_report=None, given_names_path=None, final_w_path=None,
+             commands_path=None):
     lemma_count, truth, stems, verb_noun, names = build(forms_path, manual_min, auto_min, form_min)
 
     # Every form must read as it should. The stem of one word catches the
@@ -1275,6 +1321,9 @@ def generate(forms_path, out_path, manual_min=50, auto_min=2000, form_min=3, cpp
     stem_keys, stem_blocks = front_coded(stems)
     any_keys, any_blocks = front_coded(names_any)
     mid_keys, mid_blocks = front_coded(names_mid)
+    commands = command_imperatives(forms_path, read_word_list(commands_path), reader) if commands_path else {}
+    print('command imperatives', len(commands), file=sys.stderr)
+    command_keys, command_blocks = front_coded(commands)
     with open(out_path, 'w', encoding='utf-8') as out:
         out.write('// -*- coding: utf-8 -*-\n')
         out.write('// formant_slovenian.inc - Slovenian pronunciation lexicon of the formant\n')
@@ -1302,7 +1351,12 @@ def generate(forms_path, out_path, manual_min=50, auto_min=2000, form_min=3, cpp
         out.write('// Names (persons, places, regions) read so only when written with a\n')
         out.write('// capital: anywhere, and only inside a clause (not at its head)\n')
         for name, keys, blocks in (('NAMES', any_keys, any_blocks),
-                                   ('NAMES_INSIDE', mid_keys, mid_blocks)):
+                                   ('NAMES_INSIDE', mid_keys, mid_blocks),
+                                   ('HEAD_IMPERATIVES', command_keys, command_blocks)):
+            if name == 'HEAD_IMPERATIVES':
+                out.write('// The imperatives of the verbs of commands (slovenian_commands.tsv),\n')
+                out.write('// read at the head of a clause where their spelling is the present\n')
+                out.write('// elsewhere (nadgrádi, namésti, posodôbi; nadgradí, namestí, posodobí)\n')
             out.write('const size_t SLOVENIAN_%s_COUNT = %d;\n' % (name, len(keys)))
             out.write('const char* const SLOVENIAN_%s[] = {\n' % name)
             for block in blocks:
@@ -1383,7 +1437,8 @@ def main(argv):
                  [os.path.join(root, 'tools', 'formant', 'slovenian_places.tsv'),
                   os.path.join(root, 'tools', 'formant', 'slovenian_persons.tsv')], names_report,
                  os.path.join(root, 'tools', 'formant', 'slovenian_given_names.tsv'),
-                 os.path.join(root, 'tools', 'formant', 'slovenian_final_w.tsv'))
+                 os.path.join(root, 'tools', 'formant', 'slovenian_final_w.tsv'),
+                 os.path.join(root, 'tools', 'formant', 'slovenian_commands.tsv'))
     else:
         print(__doc__, file=sys.stderr)
         return 2

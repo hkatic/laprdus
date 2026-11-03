@@ -170,3 +170,8 @@ Dorica	Dórica	-e	ž
 Leopoldina	Leopoldína	-e	ž		
 Jazon	Jázon	-a	m		
 Elin	Elín Pelín	-a -a	m		
+# Names SP 2001 lacks, reported by listeners, with the accent Sloleks 3.1 gives
+# them (its network's, not a hand's; checked against the listener's syllable):
+# Pero, Peter's short name, on the first syllable (a listener's report of
+# 2026-11-03: Pero, kje si?; the pen peró stays), Sloleks Pêro 690 times
+Pero	Pêro	-a	m		
