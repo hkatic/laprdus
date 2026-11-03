@@ -2126,6 +2126,47 @@ TEST_CASE("Slovenian spellings told apart by the clause (November 2026)", "[fron
         {U"Najbolj nazoren primer je lahko neko besedilo",
          "n'a:jbOl naz'ó:rən prim'é:r jE lahk'ó: n'é:kO bEsEd'i:lO"},
 
+        // je: the auxiliary "is", unstressed [jɛ] and stressed jè (SP 2001
+        // poudarjeno jè), or jé "eats" (SSKJ² jésti jém, jé: long close e), a
+        // listener's report of 2026-11-03: after ne, before a food object,
+        // after an adverb of eating at the end of the clause, before a
+        // utensil; "is" at the head of the clause, after to, a question word,
+        // a clitic or a food nominative, and in the perfect tense
+        {U"On je krompir", "'On j'é: krOmp'i:r"},
+        {U"Ona je palačinke", "'O:na j'é: palač'i:ŋkE"},
+        {U"Marko zelo veliko je", "m'a:rkO zEl'ó: vEl'i:kO j'é:"},
+        {U"Marko zelo rad je palačinke", "m'a:rkO zEl'ó: r'at j'é: palač'i:ŋkE"},
+        {U"Mama je juho", "m'a:ma j'é: j'u:hO"},
+        {U"Pes je meso", "p'əs j'é: mEs'ó:"},
+        {U"Marko je sendvič", "m'a:rkO j'é: s'é:ndvič"},
+        {U"On je veliko sadja", "'On j'é: vEl'i:kO s'a:dja"},
+        {U"Otrok je nezdravo hrano", "Otr'Ok j'é: nEzdr'a:vO hr'a:nO"},
+        {U"Za kosilo običajno je korenčkovo juho", "za kOs'i:lO Obič'a:jnO j'é: kOr'é:nčkOvO j'u:hO"},
+        {U"Otrok ne je", "Otr'Ok nE j'é:"},
+        {U"naj ne je", "naj nE j'é:"},
+        {U"On rad je", "'On r'at j'é:"},
+        {U"On je z žlico", "'On j'é: žl'i:cO"},
+        {U"ki je z vilicami", "ki j'é: z v'i:licami"},
+        {U"On je priden", "'On jE pr'i:dən"},
+        {U"Ona je zelo pametna", "'O:na jE zEl'ó: p'a:mEtna"},
+        {U"Marko je zelo navdušen nad Laprdusom", "m'a:rkO jE zEl'ó: nawd'u:šEn nad l'a:pərdusOm"},
+        {U"Je to res", "j'E t'ó: r'é:s"},
+        {U"Je veliko solate", "j'E vEl'i:kO sOl'a:tE"},
+        {U"Kaj je", "k'a:j jE"},
+        {U"To je krompir", "t'ó: jE krOmp'i:r"},
+        {U"Kosilo je krompir", "kOs'i:lO jE krOmp'i:r"},
+        {U"Priloga je krompir", "pril'ó:ga jE krOmp'i:r"},
+        {U"Zdaj je kosilo", "zd'aj jE kOs'i:lO"},
+        {U"V Ljubljani je kosilo ob dvanajstih", "u ljublj'a:ni jE kOs'i:lO Ob dv'a:najstih"},
+        {U"Videla je ribe", "v'i:dEla jE r'i:bE"},
+        {U"Suči je hrano darovala pred vsakim obedom", "s'u:či jE hr'a:nO darOv'a:la prEd us'a:kim Ob'é:dOm"},
+        {U"Zdelo se je", "zd'é:lO sE jE"},
+        {U"Strah ga je", "str'a:ɣ ga jE"},
+        {U"Lepo je", "l'é:pO jE"},
+        {U"Tega je veliko", "t'é:ga jE vEl'i:kO"},
+        {U"Tako je", "tak'ó: jE"},
+        {U"On je", "'On jE"},
+
         // meni: the pronoun, the menu, the verb
         {U"Ti si v meni", "t'i: si u m'E:ni"},
         {U"Tudi meni", "t'u:di m'E:ni"},
@@ -2386,7 +2427,7 @@ TEST_CASE("Slovenian listener's report of November 2026", "[frontend][slovenian]
         {U"trdil", "tərd'i:w"},        // a stem with the l, the syllabic r
         {U"oddal", "Odd'aw"},           // dd one sound in the transcription
         {U"zatrl", "zat'ərw"},
-        {U"je vozil", "j'é: v'O:ziw"},
+        {U"je vozil", "j'E v'O:ziw"},     // the auxiliary stressed at the head: jè, short open (SP 2001)
         {U"brez vozil", "brEz vOz'i:l"},
         {U"kanal", "kan'a:l"},
         {U"model", "mOd'é:l"},

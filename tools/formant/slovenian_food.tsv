@@ -1,0 +1,194 @@
+# What is eaten: the nouns that tell the verb jé "eats" (jésti jém, SSKJ²,
+# SP 2001: long close e) from the auxiliary je "is" (bíti; unstressed, and
+# stressed jè, short open e) when one of them follows je as its object (On
+# je krompir, Ona je palačinke, On je veliko sadja). One lemma per line,
+# chosen by hand; read by tools/formant/slovenian_words.py, which writes
+# every Sloleks 3.1 form of the lemma with its cases (nominative,
+# accusative, genitive) into SLOVENIAN_FOOD of formant_slovenian.inc, so
+# that je_reading() in formant_slovenian.cpp can tell an unambiguous
+# accusative (juho, hrano, palačinko) from a form that is the nominative
+# too (krompir, meso, palačinke), which needs an eater as the subject.
+# Sources: the collocations of jesti in Kolokacije of CJVT
+# (viri.cjvt.si/kolokacije: "JESTI + samostalnik v tožilniku", "NE + JESTI
+# + samostalnik v rodilniku"), the examples of SSKJ² under jésti, the
+# objects of je "eats" in SUK 1.1, and a listener's own examples of
+# 2026-11-03 (krompir, palačinke). No drinks (one drinks them, pije), and
+# no noun that is also a preposition or another common word (med "honey"
+# is the preposition in je med njimi; rak the illness; plod and sadež, the
+# fruit of an effort: roman je plod študija, 2 of 2 in SUK 1.1).
+#
+# Kolokacije: JESTI + samostalnik v tožilniku
+juha
+riž
+živilo
+sladoled
+hamburger
+hrana
+jajce
+jed
+meso
+sadje
+kruh
+solata
+trava
+sendvič
+kosilo
+pica
+pizza
+obrok
+čokolada
+krompir
+zajtrk
+zrezek
+potica
+testenina
+ananas
+arašid
+artičoka
+divjačina
+ligenj
+mandarina
+oliva
+palačinka
+pistacija
+pomaranča
+redkev
+avokado
+lešnik
+redkvica
+sardela
+čili
+datelj
+lazanja
+pasulj
+pomfrit
+pomfri
+ragu
+riba
+# Kolokacije: NE + JESTI + samostalnik v rodilniku
+sladkarija
+zelenjava
+svinjina
+# SSKJ² jésti: jabolko, juha, večerja, kompot
+jabolko
+večerja
+kompot
+# SUK 1.1: the objects of je "eats"
+jetra
+kosmič
+češnja
+mango
+toast
+tableta
+oves
+pšenica
+žito
+stročnica
+olupek
+krompirček
+beljakovina
+miš
+# Everyday food
+sir
+jogurt
+maslo
+salama
+klobasa
+piščanec
+govedina
+teletina
+jagnjetina
+puran
+gos
+raca
+zelje
+fižol
+grah
+leča
+čičerika
+soja
+tofu
+korenje
+paradižnik
+kumara
+kumarica
+paprika
+čebula
+goba
+špinača
+brokoli
+cvetača
+bučka
+buča
+koruza
+banana
+jagoda
+grozdje
+hruška
+sliva
+figa
+rozina
+oreh
+marmelada
+sladkor
+torta
+pecivo
+piškot
+keks
+kreker
+bonbon
+bombon
+lizika
+žele
+puding
+žemlja
+burek
+kebab
+hotdog
+špaget
+makaron
+njok
+golaž
+žganec
+štrukelj
+kaša
+zdrob
+polenta
+pašteta
+malica
+sladica
+prigrizek
+enolončnica
+čips
+skuta
+rezina
+školjka
+kozica
+losos
+tuna
+sardina
+postrv
+krap
+tortilja
+suši
+omleta
+vafelj
+mafin
+krof
+pita
+štrudelj
+zavitek
+baklava
+muesli
+müsli
+jedača
+krma
+seno
+listje
+plen
+mrhovina
+ostanek
+seme
+žuželka
+črv
+drobtina

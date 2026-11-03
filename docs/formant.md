@@ -3734,6 +3734,52 @@ SSKJ², SP and the Collocations Dictionary of Modern Slovene at CJVT (Kolokacije
   lahko torbo imam*). The adjective has a content word's full accent. No modal
   token of the corpus changes, and 6 of its adjectives become right; those left
   are predicative (*ga pa ni lahko*), which SP reads *lahkó*.
+- *je*: the auxiliary of *bíti* "is", or the verb of eating *jé* (a listener's
+  report of 2026-11-03: *On je krompir*, *Ona je palačinke*, *Marko zelo veliko
+  je* with the close e; *On je priden*, *Ona je zelo pametna* with the open one).
+  SSKJ² and SP 2001: *jésti jém, 3. os. jé* (ẹ́), a long close e; *bíti sem si je
+  …, poudarjeno sèm sì jè*: the auxiliary is unstressed, [jɛ], and even
+  stressed it is the short open *jè*. Sloleks 3.1 has the same (*jè* [ˈjɛ],
+  *jé* [ˈjeː]). Until this round `HAND_ENTRIES` held *jé*, so every *je* at the
+  head of a clause, which is not a clitic there, was read long and close:
+  *Je to res?*, *Je bilo lepo.*, *«…,» je dejala*; 2,772 sentences of SUK 1.1.
+  The entry is gone, the table's *jè* reads there, and `je_reading()` gives *jé*
+  by the clause. SUK 1.1 has *je* as the auxiliary 24,471 times and as "eats"
+  107 times, so "is" is the reading unless the clause says otherwise, by cues
+  measured there (each with the auxiliaries it also caught in the corpus):
+  *ne* right before it (the negated auxiliary is *ni*; 10 of 10 "eats"; SSKJ²
+  *od skrbi ne je*, SP *Kdor ne dela, naj ne jé*); a food noun as its object
+  (`SLOVENIAN_FOOD`, generated from `tools/formant/slovenian_food.tsv`, about
+  180 lemmas from the collocations of *jesti* in Kolokacije of CJVT, SSKJ²'s
+  examples and the corpus, with every Sloleks form and its cases), in the
+  accusative, or in the genitive after an amount or *ne* (*veliko sadja*,
+  *premalo mesa*), also after adverbs, an adjective or *za kosilo* (*je
+  nezdravo hrano*, *je korenčkovo juho*); an adverb of amount or manner of
+  eating before a *je* that ends its clause, after a subject (*Marko zelo veliko
+  je*, *On rad je*; SSKJ² *dosti, rad, zmerno je*; the four auxiliaries SUK had
+  after such an adverb, *Lepo je, …*, *Normalno je, da*, have no subject); and a
+  utensil after it (*Kralj, ki je z vilicami*; not *roko*: *Gospa je z roko
+  segla*). Guards, from the auxiliaries the object cue caught: no l-participle
+  in the clause (*Videla je ribe*, *Podala jima je kavo*, *je hrano darovala*:
+  the perfect tense, 5 of 5); no clitic, question word or *to/tisto* right before
+  *je* (*se je*, *jo je*, *Strah ga je*, *Kaj je?*, *To je krompir*); no food
+  noun as the subject (*Kosilo je krompir*); and where the form of the object
+  is the nominative too (masculine and neuter singular, every plural: *krompir,
+  meso, palačinke, ribe*) an eater as the subject, a personal or relative
+  pronoun, a capitalized word not after a preposition (*Marko je krompir*, not
+  *v Ljubljani je kosilo*) or a person or animal of a hand list, so that
+  *Priloga je krompir* and *Zdaj je kosilo* stay "is"; an unambiguous
+  accusative (*juho, hrano, palačinko*) needs no subject (*Za kosilo običajno je
+  korenčkovo juho*). *Je* at the head of a clause stays the auxiliary: *Je
+  krompir.* "It is potato." and *Je veliko solate.* "There is a lot of salad."
+  are as good as the eating. Result: 24 of the 107 "eats" of SUK read *jé*
+  (the rest are *kaj je*, *kako je*, *ki jo je*, clause-final after a clitic,
+  which the spelling does not tell apart), no auxiliary moves (*plod* and
+  *sadež*, "the fruit of", left the food list for *roman je plod študija*), and
+  the reading has a content word's accent (`clause_reading_is_content()`).
+  Not done: a question "what does he eat" (*Kaj on je?*) and a clause whose
+  only cue is a clitic object (*ki ga je*) read the auxiliary; asked of the
+  listener.
 - *roka*: *rôka* the hand (HAND_ENTRIES; SSKJ², SP) though the genitive *róka*
   of *rók* "deadline" is the commoner form in the corpus behind Sloleks (26,817
   against 16,241), and that genitive after a preposition, a genitive in

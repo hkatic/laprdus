@@ -360,11 +360,16 @@ const char* const HAND_ENTRIES[] = {
     // (písati in pisáti, potrdíti in potŕditi, shraníti in shrániti), the
     // present where Sloleks lists another word of the same spelling
     // (naredíjo, stojíjo, živíjo "they live"; žívijo the greeting is in
-    // HEAD_READINGS), jé (jésti jém), tŕdi (SP: trdíti in tŕditi -im,
-    // tŕdi), kúpite, vŕnite (SP: kúpi -te, vŕni -te), povéj (SP povèj/
-    // povéj), razúmel (SSKJ² razúmel tudi razumèl in razumél) ----
+    // HEAD_READINGS), tŕdi (SP: trdíti in tŕditi -im, tŕdi), kúpite,
+    // vŕnite (SP: kúpi -te, vŕni -te), povéj (SP povèj/povéj), razúmel
+    // (SSKJ² razúmel tudi razumèl in razumél). Not jé "eats" (jésti jém):
+    // the spelling is the auxiliary of bíti 39,000 times for once the verb
+    // of eating in Sloleks, and the auxiliary has the open e, unstressed
+    // and stressed alike (SP 2001: bíti sem si je, poudarjeno sèm sì jè;
+    // Sloleks jè [ˈjɛ], jé [ˈjeː]); the table gives jè, je_reading() the
+    // verb of eating by the clause (a listener's report of 2026-11-03) ----
     u8"písati", u8"potrdíti", u8"shraníti", u8"shraníla", u8"shraníli",
-    u8"naredíjo", u8"stojíjo", u8"živíjo", u8"jé", u8"tŕdi", u8"kúpite", u8"vŕnite",
+    u8"naredíjo", u8"stojíjo", u8"živíjo", u8"tŕdi", u8"kúpite", u8"vŕnite",
     u8"povéj", u8"razúmel", u8"gréjo", u8"dájo", u8"dobíjo", u8"jéjo", u8"učíjo",
     // ---- Words of computers and phones, and names ----
     u8"ínternet", u8"ínternet*", u8"menu=mení",      // SSKJ² mení tudi menu [mení]
@@ -917,6 +922,15 @@ struct VerbNoun {
     bool participle;            // the verb's reading is the l-participle
     int noun_percent;           // the share of a genitive plural in -l, or -1 (none)
 };
+
+// A form of a food noun (slovenian_food.tsv) and the cases it is
+struct FoodForm {
+    const char* spelling;
+    uint8_t cases;              // FOOD_NOMINATIVE | FOOD_ACCUSATIVE | FOOD_GENITIVE
+};
+constexpr uint8_t FOOD_NOMINATIVE = 1;
+constexpr uint8_t FOOD_ACCUSATIVE = 2;
+constexpr uint8_t FOOD_GENITIVE = 4;
 
 #include "formant_slovenian.inc"
 
@@ -1506,6 +1520,19 @@ bool is_definite_adjective(const std::u32string& w) {
     return false;
 }
 
+// The cases a form of a food noun of the generated table is, or 0
+uint8_t food_cases(const std::u32string& w) {
+    size_t lo = 0, hi = sizeof(SLOVENIAN_FOOD) / sizeof(SLOVENIAN_FOOD[0]);
+    while (lo < hi) {
+        const size_t mid = lo + (hi - lo) / 2;
+        const int c = compare_key(w, SLOVENIAN_FOOD[mid].spelling);
+        if (c == 0) return SLOVENIAN_FOOD[mid].cases;
+        if (c < 0) hi = mid;
+        else lo = mid + 1;
+    }
+    return 0;
+}
+
 // The names a screen reader speaks for the quotation marks and brackets
 // around a word when its punctuation level is high (NVDA's Slovenian symbol
 // names: narekovaj, začetni and končni narekovaj, dvojni spodnji narekovaj,
@@ -1832,6 +1859,172 @@ const char32_t* vprasaj_reading(const std::vector<std::u32string>& words, size_t
     return U"vprášaj";
 }
 
+// je: the auxiliary of bíti "is", unstressed [jɛ] and stressed jè (SP 2001
+// poudarjeno sèm sì jè; Sloleks jè), or the verb of eating jé (SSKJ², SP
+// jésti jém, 3. os. jé, long close e), as a listener asked on 2026-11-03:
+// On je krompir, Ona je palačinke, Marko zelo veliko je against On je
+// priden, Ona je zelo pametna. In SUK 1.1 je is the auxiliary 24,471 times
+// and "eats" 107 times, so "is" is the reading unless the clause says
+// otherwise, by cues measured there: ne right before it (the negated
+// auxiliary is ni; 10 of 10 in SUK; SSKJ² od skrbi ne je, SP Kdor ne
+// dela, naj ne jé); a food noun as its object (SLOVENIAN_FOOD, from the
+// collocations of jesti), in the accusative, or in the genitive after an
+// amount or ne (veliko sadja, premalo mesa), after adverbs, an adjective
+// or za kosilo (je nezdravo hrano, je korenčkovo juho, je za kosilo
+// ribe), with no l-participle in the clause (Videla je ribe, je hrano
+// darovala: the perfect tense, 5 of 5 auxiliaries SUK had before a food
+// accusative), no clitic, question word or to/tisto right before je (se
+// je, jo je, Kaj je, To je krompir), and, where the form is the
+// nominative too (krompir, meso, palačinke, ribe), an eater as the
+// subject: a personal or relative pronoun, a capitalized word not after a
+// preposition (Marko je krompir; not v Ljubljani je kosilo), or a person
+// or animal of a hand list, so that Priloga je krompir and Zdaj je kosilo
+// stay "is"; an adverb of amount or manner of eating before je ending its
+// clause (Marko zelo veliko je, On rad je; SSKJ² dosti, rad, zmerno je)
+// after a subject, since Lepo je, Normalno je, da and Le malo je tistih,
+// the auxiliaries SUK had after such an adverb, have none; and a utensil
+// after it (Kralj, ki je z vilicami). Je at the head of a clause stays the
+// auxiliary: Je krompir. "It is potato." and Je veliko solate. "There is a
+// lot of salad." are as good as the eating.
+const char32_t* je_reading(const std::vector<std::u32string>& words, const std::vector<bool>& capitalized,
+                           size_t i) {
+    const size_t n = words.size();
+    if (i == 0) return nullptr;
+    if (words[i - 1] == U"ne") return U"jé";
+    // The subject's pronouns, and those that mean one who eats
+    static const WordSet pronouns = {U"on", U"ona", U"ono", U"oni", U"one", U"onadva", U"onidve",
+                                     U"ki", U"kdor", U"kateri", U"katera", U"nekdo", U"vsak", U"vsakdo",
+                                     U"marsikdo", U"vsi", U"vsakdor"};
+    // People and animals (Kolokacije of CJVT, samostalnik + JEDO: angelček,
+    // žival, riba, krava, prednik, otrok, vegetarijanec, pes, konj)
+    static const WordSet eaters = {
+        U"otrok", U"človek", U"mož", U"žena", U"fant", U"dekle", U"punca", U"deklica", U"deček", U"sin",
+        U"hči", U"hčerka", U"mama", U"mami", U"mamica", U"oče", U"očka", U"ata", U"ati", U"mati", U"babica",
+        U"dedek", U"dojenček", U"dojenčica", U"malček", U"bolnik", U"bolnica", U"pacient", U"pacientka",
+        U"gost", U"gostja", U"učenec", U"učenka", U"dijak", U"dijakinja", U"študent", U"študentka",
+        U"kralj", U"kraljica", U"princ", U"princesa", U"gospod", U"gospa", U"prijatelj", U"prijateljica",
+        U"sosed", U"soseda", U"brat", U"sestra", U"bratec", U"sestrica", U"stric", U"teta", U"vnuk",
+        U"vnukinja", U"starec", U"starka", U"mladenič", U"mladenka", U"fantek", U"punčka", U"vegetarijanec",
+        U"vegetarijanka", U"vegan", U"veganka", U"športnik", U"športnica", U"angelček", U"prednik",
+        U"mačka", U"maček", U"muca", U"muc", U"mucek", U"pes", U"kuža", U"kužek", U"psiček", U"krava",
+        U"konj", U"kobila", U"prašič", U"svinja", U"pujs", U"koza", U"kozel", U"ovca", U"oven", U"zajec",
+        U"zajček", U"kokoš", U"petelin", U"piščanec", U"ptica", U"ptič", U"ptiček", U"riba", U"ribica",
+        U"miš", U"miška", U"podgana", U"hrček", U"bober", U"medved", U"lev", U"tiger", U"volk", U"lisica",
+        U"srna", U"jelen", U"žival", U"živalca", U"slon", U"opica", U"kača", U"papiga", U"veverica",
+        U"žirafa", U"zebra", U"krokodil", U"želva", U"polž", U"pajek", U"žuželka", U"čebela", U"mravlja",
+        U"gosenica", U"črv", U"dinozaver", U"zmaj", U"pošast", U"velikan", U"družina", U"mladič",
+    };
+    // Between the subject and je, or je and its object: amounts (a genitive
+    // may follow them), manner, time, particles
+    static const WordSet amounts = {U"veliko", U"malo", U"preveč", U"premalo", U"dosti", U"precej",
+                                    U"ogromno", U"manj", U"več", U"največ", U"nekaj", U"mnogo", U"dovolj",
+                                    U"toliko", U"koliko"};
+    static const WordSet manner = {U"rad", U"rada", U"rado", U"radi", U"rade", U"nerad", U"nerada", U"neradi",
+                                   U"najraje", U"raje", U"hitro", U"počasi", U"prehitro", U"hitreje",
+                                   U"počasneje", U"zdravo", U"nezdravo", U"dobro", U"pogosto", U"redko",
+                                   U"redno", U"zmerno", U"hlastno", U"zvečer", U"zjutraj", U"opoldne",
+                                   U"doma", U"zunaj", U"sam", U"sama", U"sami", U"same"};
+    static const WordSet particles = {U"zelo", U"precej", U"tako", U"res", U"zares", U"kar", U"bolj",
+                                      U"najbolj", U"čisto", U"vedno", U"včasih", U"še", U"že", U"tudi", U"pa",
+                                      U"sicer", U"navadno", U"običajno", U"zdaj", U"potem", U"danes", U"samo",
+                                      U"le", U"vsak", U"dan", U"spet", U"zopet", U"ponavadi", U"večinoma",
+                                      U"seveda", U"morda", U"mogoče", U"verjetno", U"najprej", U"skupaj"};
+    static const WordSet meals = {U"zajtrk", U"kosilo", U"večerjo", U"malico", U"predjed", U"sladico"};
+    // Not roko, rokami, prsti: Gospa je z roko segla v žep (SUK 1.1)
+    static const WordSet utensils = {U"žlico", U"žličko", U"vilicami", U"vilico", U"nožem", U"paličicami",
+                                     U"palčkami"};
+    static const WordSet never_subject = {U"to", U"tole", U"tisto", U"ono", U"ni", U"kaj", U"kar", U"nič",
+                                          U"ničesar", U"vse", U"tega", U"vsega", U"česa", U"nekaj"};
+    const auto is_amount = [&](const std::u32string& w) { return amounts.count(w) != 0; };
+    const auto is_modifier = [&](const std::u32string& w) {
+        return amounts.count(w) || manner.count(w) || particles.count(w);
+    };
+    const auto ends_in_vowel = [](const std::u32string& w) {
+        return !w.empty() && (w.back() == U'a' || w.back() == U'e' || w.back() == U'i' || w.back() == U'o' ||
+                              w.back() == U'u');
+    };
+    // An l-participle: the perfect tense, whose je is the auxiliary (Videla
+    // je ribe, Podala jima je kavo, je hrano darovala). The words between je
+    // and its object are not asked (je zrele banane).
+    const auto participle_like = [&](size_t k) {
+        const std::u32string& w = words[k];
+        if (w.size() < 4 || is_function_word(w) || is_proclitic(w) || is_enclitic(w) || food_cases(w) != 0) {
+            return false;
+        }
+        if (capitalized[k] && (k > 0 || is_given_name(w))) return false;
+        const char32_t last = w.back();
+        if (last == U'l') return true;
+        if (w[w.size() - 2] != U'l') return false;
+        return last == U'a' || last == U'o' || last == U'i' || last == U'e';
+    };
+    // The word right before je: no clitic (se je, jo je, ga je: the perfect
+    // tense or Strah ga je), no question word, nothing that cannot eat
+    const std::u32string& prev = words[i - 1];
+    if (is_enclitic(prev) || is_question_word(prev) || never_subject.count(prev)) return nullptr;
+    // The subject: the word before the adverbs and prepositional phrases
+    // between it and je (On za kosilo rad je juho); a clause may have none
+    // (Za kosilo običajno je korenčkovo juho; Lepo je)
+    size_t s = i;
+    bool manner_adverb = false;
+    for (;;) {
+        while (s > 0 && is_modifier(words[s - 1])) {
+            if (manner.count(words[s - 1]) || amounts.count(words[s - 1])) manner_adverb = true;
+            --s;
+        }
+        if (s >= 2 && prepositions().count(words[s - 2]) && !is_modifier(words[s - 1])) {
+            s -= 2;
+            continue;
+        }
+        break;
+    }
+    const std::u32string* subject = s > 0 ? &words[s - 1] : nullptr;
+    if (subject && (is_question_word(*subject) || never_subject.count(*subject) || is_enclitic(*subject) ||
+                    (food_cases(*subject) & FOOD_NOMINATIVE) != 0)) {
+        return nullptr;                     // Kaj je, To je krompir, Kosilo je krompir
+    }
+    const bool eater = subject && (pronouns.count(*subject) || eaters.count(*subject) ||
+                                   (capitalized[s - 1] && (s - 1 > 0 ? !prepositions().count(words[s - 2])
+                                                                     : is_given_name(*subject))));
+    const bool lexical_subject = eater || (subject && !is_function_word(*subject) && !is_proclitic(*subject));
+    for (size_t k = 0; k < i; ++k) {
+        if (participle_like(k)) return nullptr;
+    }
+    // 1. The object: a food noun after je, after an amount, an adverb, an
+    // adjective or "za kosilo"
+    bool genitive_ok = false;
+    size_t k = i + 1;
+    for (size_t skipped = 0; k < n && skipped < 4; ++skipped) {
+        const std::u32string& w = words[k];
+        if (is_amount(w)) { genitive_ok = true; ++k; continue; }
+        if (is_modifier(w)) { ++k; continue; }
+        if (w == U"za" && k + 1 < n && meals.count(words[k + 1])) { k += 2; ++skipped; continue; }
+        const uint8_t cases = food_cases(w);
+        if ((cases & FOOD_ACCUSATIVE) != 0 || (genitive_ok && (cases & FOOD_GENITIVE) != 0)) {
+            if ((cases & FOOD_NOMINATIVE) != 0 && !eater) return nullptr;
+            for (size_t m = k + 1; m < n; ++m) {
+                if (participle_like(m)) return nullptr;
+            }
+            return U"jé";
+        }
+        if (cases == 0 && !is_function_word(w) && !is_proclitic(w) && !is_enclitic(w) && ends_in_vowel(w)) {
+            ++k;                            // an adjective of the object
+            continue;
+        }
+        break;
+    }
+    if (!lexical_subject) return nullptr;
+    // 2. A utensil after je, and no participle after it (je z vilicami jedel)
+    if (i + 2 < n && (words[i + 1] == U"z" || words[i + 1] == U"s") && utensils.count(words[i + 2])) {
+        for (size_t m = i + 3; m < n; ++m) {
+            if (participle_like(m)) return nullptr;
+        }
+        return U"jé";
+    }
+    // 3. An adverb of eating before je ending its clause, after a subject
+    if (i + 1 == n && manner_adverb) return U"jé";
+    return nullptr;
+}
+
 } // namespace
 
 const char32_t* clause_reading(const std::vector<std::u32string>& words, const std::vector<bool>& capitalized,
@@ -1839,6 +2032,7 @@ const char32_t* clause_reading(const std::vector<std::u32string>& words, const s
                                bool exclamation) {
     const std::u32string& w = words[i];
     if (w == U"vprašaj") return vprasaj_reading(words, i, question, exclamation);
+    if (w == U"je") return je_reading(words, capitalized, i);
     // Veseli se! Veseli se novega dneva! The imperative vesêli (SP 2001
     // veselíti -ím, vesêli -íte) at the head of a clause before se or si in
     // a sentence that ends in an exclamation mark, the cue a listener named
@@ -1942,7 +2136,9 @@ bool is_address(const std::u32string& text) {
 }
 
 bool clause_reading_is_content(const std::u32string& w, const char32_t* reading) {
-    return reading && w == U"lahko" && std::u32string(reading) == U"láhko";
+    if (!reading) return false;
+    if (w == U"je") return std::u32string(reading) == U"jé";       // "eats", a verb with an accent of its own
+    return w == U"lahko" && std::u32string(reading) == U"láhko";
 }
 
 bool is_given_name(const std::u32string& w) {

@@ -1134,6 +1134,37 @@ def command_imperatives(forms_path, lemmas, reader):
     return out
 
 
+def food_forms(forms_path, lemmas):
+    """Every Sloleks form of the food nouns of slovenian_food.tsv with its
+    cases, for the table SLOVENIAN_FOOD that je_reading() in
+    formant_slovenian.cpp reads: a food noun after je makes it jé "eats"
+    (jésti jém, SSKJ²), not the auxiliary je "is". The cases are a bitmask, 1
+    nominative, 2 accusative, 4 genitive, over the singular, dual and plural
+    and over every lemma spelled so: a form that is the accusative alone
+    (juho, hrano, palačinko) is an object wherever it stands, one that is the
+    nominative too (krompir, meso, palačinke) needs an eater as the subject,
+    and a nominative before je (Kosilo je krompir) is the subject of "is".
+    spelling -> bitmask, in code point order."""
+    wanted = set(lemmas)
+    cases = defaultdict(int)
+    seen = set()
+    with open(forms_path, encoding='utf-8') as f:
+        for line in f:
+            parts = line.rstrip('\n').split('\t')
+            if len(parts) < 7 or parts[0] not in wanted or parts[1] != 'noun':
+                continue
+            msd, orth = parts[5], parts[6].lower()
+            if not msd.startswith('So') or len(msd) < 5:
+                continue
+            seen.add(parts[0])
+            bit = {'i': 1, 't': 2, 'r': 4}.get(msd[4])
+            if bit:
+                cases[orth] |= bit
+    for lemma in sorted(wanted - seen):
+        print('food noun not in Sloleks:', lemma, file=sys.stderr)
+    return sorted(cases.items(), key=lambda kv: [ord(c) for c in kv[0]])
+
+
 def final_l_forms(truth, names, marked):
     """The spellings read with a final [l] although the rule of finish_word()
     would say [w], for the table SLOVENIAN_FINAL_L: a word of one syllable, or
@@ -1185,7 +1216,7 @@ def read_word_list(path):
 
 def generate(forms_path, out_path, manual_min=50, auto_min=2000, form_min=3, cpp_path=None,
              places_path=None, names_report=None, given_names_path=None, final_w_path=None,
-             commands_path=None):
+             commands_path=None, food_path=None):
     lemma_count, truth, stems, verb_noun, names = build(forms_path, manual_min, auto_min, form_min)
 
     # Every form must read as it should. The stem of one word catches the
@@ -1395,6 +1426,16 @@ def generate(forms_path, out_path, manual_min=50, auto_min=2000, form_min=3, cpp
         for start in range(0, len(adjectives), 8):
             out.write('    %s,\n' % ', '.join('u8"%s"' % n for n in adjectives[start:start + 8]))
         out.write('};\n')
+        food = food_forms(forms_path, read_word_list(food_path)) if food_path else []
+        print('food forms', len(food), file=sys.stderr)
+        out.write('// Food nouns (slovenian_food.tsv): every form of Sloleks with its cases,\n')
+        out.write('// 1 nominative, 2 accusative, 4 genitive, in code point order\n')
+        out.write('const FoodForm SLOVENIAN_FOOD[] = {\n')
+        for start in range(0, len(food), 6):
+            out.write('    %s,\n' % ', '.join('{u8"%s", %d}' % kv for kv in food[start:start + 6]))
+        if not food:
+            out.write('    {u8"", 0},\n')
+        out.write('};\n')
         out.write('// Spellings read as a verb\'s form or as another word: the verb\'s\n')
         out.write('// reading, the other, whether the verb\'s is the l-participle, and the\n')
         out.write('// share in percent of a genitive plural in -l (-1: the other reading is none)\n')
@@ -1444,7 +1485,8 @@ def main(argv):
                   os.path.join(root, 'tools', 'formant', 'slovenian_persons.tsv')], names_report,
                  os.path.join(root, 'tools', 'formant', 'slovenian_given_names.tsv'),
                  os.path.join(root, 'tools', 'formant', 'slovenian_final_w.tsv'),
-                 os.path.join(root, 'tools', 'formant', 'slovenian_commands.tsv'))
+                 os.path.join(root, 'tools', 'formant', 'slovenian_commands.tsv'),
+                 os.path.join(root, 'tools', 'formant', 'slovenian_food.tsv'))
     else:
         print(__doc__, file=sys.stderr)
         return 2
