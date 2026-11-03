@@ -5,11 +5,17 @@
 #ifndef LAPRDUS_CROATIAN_NUMBERS_HPP
 #define LAPRDUS_CROATIAN_NUMBERS_HPP
 
+#include <cstdint>
 #include <string>
 #include <string_view>
 #include <vector>
 
 namespace laprdus {
+
+// The case a Slovenian number with a unit's sign is in, by the preposition
+// before it (do petih odstotkov, pri eni stopinji, z dvema evroma, k petim
+// evrom) or its place as an object (za tri evre)
+enum class SlCase : uint8_t { Nominative, Accusative, Genitive, Dative, Locative, Instrumental };
 
 /**
  * CroatianNumbers - Converts numbers to Croatian words.
@@ -111,12 +117,14 @@ private:
     std::string slovenian_decimal(std::string_view whole, std::string_view fraction);
     static void feminine_two(std::string& words);
     static void slovenian_agree(const std::string& text, size_t start, size_t end, std::string& words);
+    std::string slovenian_range_left(std::string_view digits, const std::string& right_words, const std::string& prev,
+                                     std::string_view noun);
     // The Slovenian constructs the shared loop does not know: a minus, a time
     // after "ob", a range, a date without a year, thousands with spaces, a
     // number compounded with a word (2-krat, 2-letni), a unit's noun
     size_t slovenian_number_at(const std::string& text, size_t i, std::string& result, bool in_range = false);
     std::string slovenian_count(std::string_view digits, const struct SlUnit& unit, std::string_view scale,
-                                bool accusative = false);
+                                SlCase grammatical_case = SlCase::Nominative, bool number_only = false);
     // Croatian, Serbian and Bosnian: the same constructs with their grammar
     // (prvo mjesto, na prvom mjestu, sedmog listopada, jedna kuća, dvije kuće,
     // jedan euro, dva eura, pet stupnjeva Celzija, tisuću tristo sedamnaest)

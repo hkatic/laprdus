@@ -4235,7 +4235,24 @@ byte for byte what it was.
   the neuter (*tretje mesto, tisoče*), and a compound keeps its two accents
   (*ena in dvajseto*). Nothing counted keeps the cardinal (*2. je*, *2.
   deluje*, *1.* alone, *stran 2.*). The Sloleks table has every form with its
-  accent (*pŕvi, trétjem, stôti, ênaindvájsetega*). A date without a year
+  accent (*pŕvi, trétjem, stôti, ênaindvájsetega*). Since the listener's
+  answers of the same day: before a noun in *-o* the ordinal is the feminine
+  accusative or instrumental (*za 3. nagrado* *za tretjo nagrado*, *s 3.
+  nagrado*, *3. svetovno vojno*, *3. zlato medaljo*) unless the noun is in
+  the generated table of neuter nouns in *-o* (`SLOVENIAN_NEUTER_O`, 1,843
+  nominative and accusative singulars of Sloleks, `noun_gender_tables()` in
+  the generator; *3. mesto* *tretje mesto*, *3. veliko mesto*), the word after
+  an adjective in *-o* deciding, also a neuter noun in *-je, -šče* (*tretje
+  politično zatočišče*); only *tretji* shows the difference, and the feminine
+  *-o* is 3.6 times the commoner in Gigafida, so it is the default
+  (`sl_neuter_o()`, the ending `"O"` of `slovenian_ordinal()`). Before a word
+  in *-a* that is a masculine noun's genitive or animate accusative
+  (`SLOVENIAN_NOUN_A`, below) the ordinal is *-ega* wherever it stands (*videl
+  sem 3. otroka* *tretjega otroka*), before a masculine nominative in *-a*
+  *-i* (*prvi kolega*); *leta* is left to the old rule because it is the
+  decades' plural too (*80. leta* *osemdeseta leta*), except after a year,
+  where it is the genitive of time (*1958. leta debitiral* *tisoč devetsto
+  oseminpetdesetega leta*). A date without a year
   (*7. 10.*, *7.10.*) is *sedmega desetega* (`short_date` in the hook; not
   before a year, not in an enumeration *1. 2. in 3. mesto*, not after another
   *N.*), and the final period stays a clause end unless a lowercase word
@@ -4250,6 +4267,20 @@ byte for byte what it was.
   anyway (*pet novih hiš*), so *-ih* and *-ov* say nothing there. *sto* and
   *tisoč* stay (*v sto letih*; SP *stó stôtih tudi neskl.*, *tísoč -- tudi
   -ih*), and so do the milijon words and a unit's abbreviation (*v 5 min*).
+  *starosti* governs the genitive like a preposition (*otroci starosti 2 do 3
+  let* *dveh do treh let*, *v starosti 68 let* *oseminšestdesetih*).
+- **1 before a word in *-a*** (`slovenian_agree()`, the listener's *videl sem 1
+  otroka*): *ena* is the feminine nominative (*ena miza*), but before a
+  masculine noun's animate accusative or a masculine or neuter noun's genitive
+  singular it is *enega* (*videl sem enega otroka*, *imam enega brata*,
+  *poznam enega človeka*), and before a masculine nominative in *-a* *en*
+  (*en kolega*, *en ha*). The words come from the generated `SLOVENIAN_NOUN_A`
+  (4,855: the animate accusatives of form frequency 10 or more, the genitives
+  of 1,000 or more, the masculine nominatives of 10 or more, never a spelling
+  that is also a noun's nominative singular or a feminine adjective's, so
+  *fanta, gospoda, mlada, sveta* are left out; `noun_gender_tables()`), and
+  only the number 1 alone looks it up: a year before a verb in *-a* (*2001
+  pooblastila*) is not counting.
 - **The nouns of the unit signs** (`SL_UNITS`, `slovenian_count()`): *%, €, $,
   °, °C, °F* were one fixed genitive plural (*ena evrov*). The converter now
   writes the noun in the form the number asks for and the number agreeing
@@ -4263,8 +4294,21 @@ byte for byte what it was.
   Celzija* (SP 2001 *odstótek -tka m* "pet ~ov ‹5 %›", *évro -a m*, *dólar -ja
   m*, *stopínja -e ž* "pet stopinj Celzija ‹5 °C›", *Célzij -a* "37 stopinj
   ~a"; Pravopis 8.0 § 35). The front end's `SYMBOLS` names a sign that stands
-  without a number. Not applied: the case of the noun after a preposition (*do
-  5 %* stays *pet odstotkov*).
+  without a number. Since the listener's answers of the same day the noun
+  and the number also take the case of the preposition before them
+  (`sl_unit_case()`, the `SlCase` of `slovenian_count()`, the oblique forms in
+  `SL_UNITS`): the genitive after *od, do, brez, okoli ...* (*do enega
+  odstotka, do dveh, treh, štirih, petih, enaindvajsetih odstotkov, do sto
+  odstotkov, do sto enega odstotka*), the dative after *k, h, proti* (*k enemu
+  evru, k dvema evroma, k trem, petim evrom*), the locative after *pri, ob, o,
+  v* (*pri eni stopinji, pri dveh, dvajsetih stopinjah Celzija, v tridesetih
+  odstotkih primerov, pri sto odstotkih*), the instrumental after *z, s, pred,
+  med, nad, pod* (*z enim evrom, z dvema evroma, s tremi, petimi evri, nad
+  petimi odstotki*), *za, na, po* and the verbs of an object the accusative as
+  before, now for the feminine too (*za eno stopinjo Celzija*); *nič* keeps
+  the genitive plural in every case (SP 2001 *nìč* "pri nič stopinj Celzija se
+  led taja"). A decimal stays as it was (*do 2,5 %* *do dve celi pet
+  odstotka*), and a unit's abbreviation too (*v 5 min*).
 - **A minus** glued to the number, after a space, a bracket or at the start
   (hyphen-minus, U+2212, the en dash): *minus pet, minus pet stopinj Celzija,
   od minus tri do ena* (Pravopis 8.0 § 26 "–10 °C"; SP 2001 *mínus*
@@ -4286,7 +4330,23 @@ byte for byte what it was.
   razredu* (*v sedmem in osmem razredu*), *8.30–16.00* and *8:30–16:00*. A
   hyphen joins a range only between numbers of up to two digits or two years,
   with the right one larger (*716-844* is a telephone number, *5-3* a
-  subtraction), the en dash always.
+  subtraction), the en dash always. Since the listener's answers of the same
+  day a range written with words is one too, *do* between any two numbers
+  and *in* after *med*, so that both numbers take the case of the preposition
+  before the first: *od 5 do 10 %* *od petih do desetih odstotkov*, *od 1 do 2
+  %* *od enega do dveh odstotkov*, *med 5 in 10 °C* *med petimi in desetimi
+  stopinjami Celzija*, *od 2 do 3 ur* *od dveh do treh ur*, *od 5 do 10 let*,
+  *od 1 do 5 ur* *od ene do petih ur*, *starosti 2 do 3 let* *dveh do treh*;
+  the second number agrees with the noun and the first takes the second's
+  case (`slovenian_range_left()`), or the plain form when the second is in
+  the nominative or the accusative, since the noun's ending then belongs to
+  the second number (*2 do 3 ure* *dve do tri ure*, *1 do 2 litra* *ena do
+  dva litra*, *ocene od 1 do 5* *od ena do pet*, *med 4 in 8 milijonov*
+  *štiri in osem*, *za 2 do 5 kilogramov* *dva do pet*: *en, dva* before a
+  masculine genitive plural in *-ov, -ev* or a masculine unit, else the
+  names). In the corpus the old reading had cased the second number by its
+  own *do* (*deset do petnajstih minut*); it is now *deset do petnajst minut*.
+  A year before a date is no range (*od 2006 do 1. aprila 2007*).
 - **Multiplicatives and compounds with a hyphen**, one word so the lexicon's
   accent applies: *2-krat* and *2x* *dvakrat*, *1-krat* *enkrat*, *21-krat*
   *enaindvajsetkrat*, *2-letni* *dvoletni*, *3-letna* *triletna*,
@@ -4320,11 +4380,21 @@ the same) and `test_frontend`, the SUK 1.1 sentences with a digit (1,450 of
 7,326 change, read by category: the ordinals of crossword clues *1. pisec
 kronike* now *prvi pisec*, which is the one disputable class), and the
 Croatian, Serbian and Bosnian audio of the survey and of 60 sentences of prose,
-identical to the old library for four voices. Left as they are, for the
-tester: *videl sem 1 otroka* (*enega* would need the noun's gender), *1 od 3*
-(*ena od tri*, the scale), the feminine accusative in *-o* after a preposition
-(*za 3. nagrado* comes out *tretje*), the case of a unit's noun after a
-preposition, and the list of symbol and unit names, which is a hand list.
+identical to the old library for four voices. Left as they were, for the
+tester: *videl sem 1 otroka*, *1 od 3* (*ena od tri*, the scale), the feminine
+accusative in *-o* (*za 3. nagrado* came out *tretje*), the case of a unit's
+noun after a preposition, and the list of symbol and unit names, which is a
+hand list. His answers the same day settled three of them (*tretjo nagrado*,
+*enega otroka*, *do petih odstotkov*: the readings above), and *1 od 3* and
+the abbreviations after a preposition (*v 5 min*) stay. The three changes
+were checked on the SUK sentences with a digit again: 86 of 7,326 change, read
+one by one; the ranges written with *do* are most of them (*od petih do
+desetih*, *starosti dveh do treh let*, *dva do pet kilogramov*), then the
+units after a preposition (*pri šestih odstotkih*, *okoli desetih odstotkov*),
+the years (*tisoč devetsto oseminpetdesetega leta debitiral*) and the
+crossword clues (*3. politično zatočišče* *tretje*, *3. turško dvorišče*);
+*pri okoli 1 do 5 % primerov* reads *okoli* as the preposition (*enega do
+petih odstotkov*), the one reading in the list to dispute.
 
 Measured on SUK 1.1, with the form the noun's gender, number and case ask for as
 the reference: of the 209 occurrences of 1 to 4 before a noun or an adjective

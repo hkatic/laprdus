@@ -1089,6 +1089,76 @@ def definite_adjectives(forms_path, min_frequency=10):
     return sorted(forms, key=lambda k: [ord(c) for c in k])
 
 
+def noun_gender_tables(forms_path):
+    """Two tables for the agreement of the numerals (croatian_numbers.cpp),
+    which reads a noun's gender and case off its ending and needs help where
+    the ending is shared. SLOVENIAN_NEUTER_O: the neuter nouns' nominative
+    and accusative singular in -o (mesto, leto, nadstropje is -e), so that
+    "3. nagrado" is the feminine accusative tretjo nagrado (a listener's
+    report of 2026-11-03) and "3. mesto" stays tretje mesto; a spelling that
+    is a feminine accusative or instrumental more often (kola, of kolo) is
+    left out. The feminine -o is 3.6 times the commoner in Gigafida, so it is
+    the default and the neuter the table. SLOVENIAN_NOUN_A: the words in -a
+    after 1 that are not a feminine nominative (ena miza): 1 a masculine
+    noun's animate accusative or a masculine or neuter noun's genitive
+    singular (otroka, brata, leta: videl sem enega otroka, the listener's
+    example), 2 a masculine noun's nominative (kolega, vodja is also
+    feminine: en kolega). A spelling that is also any noun's nominative
+    singular or a feminine adjective's (mlada, sveta) is left out; the
+    genitives of frequency 1000 or more, the animate accusatives and the
+    masculine nominatives of 10 or more. spelling -> kind."""
+    neuter = defaultdict(int)
+    feminine_o = defaultdict(int)
+    genitive = defaultdict(int)
+    animate = defaultdict(int)
+    masculine_nominative = defaultdict(int)
+    nominative = set()
+    feminine_nominative = set()
+    with open(forms_path, encoding='utf-8') as f:
+        for line in f:
+            parts = line.rstrip('\n').split('\t')
+            if len(parts) < 8:
+                continue
+            msd, orth, ff = parts[5], parts[6], int(parts[7])
+            if orth != orth.lower() or not orth.endswith(('o', 'a')):
+                continue
+            if msd.startswith('So') and len(msd) >= 5:
+                gender, number, case = msd[2], msd[3], msd[4]
+                if number != 'e':
+                    continue
+                if orth.endswith('o'):
+                    if gender == 's' and case in 'it':
+                        neuter[orth] += ff
+                    elif gender == 'z' and case in 'to':
+                        feminine_o[orth] += ff
+                elif case == 'i':
+                    nominative.add(orth)
+                    if gender == 'm':
+                        masculine_nominative[orth] += ff
+                    elif gender == 'z':
+                        feminine_nominative.add(orth)
+                elif case == 'r' and gender in 'ms':
+                    genitive[orth] += ff
+                elif case == 't' and gender == 'm' and msd[5:6] == 'd':
+                    animate[orth] += ff
+            elif msd.startswith('P') and msd[3:6] == 'zei' and orth.endswith('a'):
+                nominative.add(orth)
+                feminine_nominative.add(orth)
+    key = lambda k: [ord(c) for c in k]
+    neuter_o = sorted((w for w, ff in neuter.items() if ff > feminine_o.get(w, 0)), key=key)
+    kinds = {}
+    for w, ff in animate.items():
+        if ff >= 10 and w not in nominative:
+            kinds[w] = 1
+    for w, ff in genitive.items():
+        if ff >= 1000 and w not in nominative:
+            kinds[w] = 1
+    for w, ff in masculine_nominative.items():
+        if ff >= 10 and w not in feminine_nominative and w not in kinds:
+            kinds[w] = 2
+    return neuter_o, [(w, kinds[w]) for w in sorted(kinds, key=key)]
+
+
 def command_imperatives(forms_path, lemmas, reader):
     """The imperatives of the verbs software commands the user with
     (slovenian_commands.tsv) whose accent is not the one the lexicon gives
@@ -1430,6 +1500,26 @@ def generate(forms_path, out_path, manual_min=50, auto_min=2000, form_min=3, cpp
         out.write('const char* const SLOVENIAN_DEFINITE_ADJECTIVES[] = {\n')
         for start in range(0, len(adjectives), 8):
             out.write('    %s,\n' % ', '.join('u8"%s"' % n for n in adjectives[start:start + 8]))
+        out.write('};\n')
+        neuter_o, noun_a = noun_gender_tables(forms_path)
+        print('neuter nouns in -o', len(neuter_o), 'nouns in -a after 1', len(noun_a), file=sys.stderr)
+        out.write('// Neuter nouns in -o, nominative and accusative singular (mesto, not the\n')
+        out.write('// feminine accusative nagrado), in code point order; for the numerals\n')
+        out.write('const char* const SLOVENIAN_NEUTER_O[] = {\n')
+        for start in range(0, len(neuter_o), 8):
+            out.write('    %s,\n' % ', '.join('u8"%s"' % n for n in neuter_o[start:start + 8]))
+        if not neuter_o:
+            out.write('    u8"",\n')
+        out.write('};\n')
+        out.write('// Words in -a after the number 1 that are not a feminine nominative: 1 a\n')
+        out.write('// masculine noun\'s animate accusative or a masculine or neuter noun\'s\n')
+        out.write('// genitive singular (otroka: enega otroka), 2 a masculine noun\'s\n')
+        out.write('// nominative (kolega: en kolega); in code point order\n')
+        out.write('const NounA SLOVENIAN_NOUN_A[] = {\n')
+        for start in range(0, len(noun_a), 6):
+            out.write('    %s,\n' % ', '.join('{u8"%s", %d}' % kv for kv in noun_a[start:start + 6]))
+        if not noun_a:
+            out.write('    {u8"", 0},\n')
         out.write('};\n')
         food = food_forms(forms_path, read_word_list(food_path)) if food_path else []
         print('food forms', len(food), file=sys.stderr)

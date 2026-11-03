@@ -3,6 +3,7 @@
 // Ported from Python numbers.py
 
 #include "croatian_numbers.hpp"
+#include "../formant/formant_slovenian.hpp"
 #include <algorithm>
 #include <cctype>
 #include <cstring>
@@ -458,7 +459,8 @@ std::string sl_ordinal_stem(std::string_view token) {
 // "ega" of a date (sedmega oktobra, enaintridesetega), "o" of prvo mesto,
 // "em" of na prvem mestu, "ih" of v devetdesetih letih. The soft stems
 // (tretj-, tisoč-) take -e for the -o of the neuter (tretje mesto, SP 2001
-// trétji -a -e; tisóči -a -e).
+// trétji -a -e; tisóči -a -e) and keep it for the feminine accusative and
+// instrumental, written "O" (tretjo nagrado, s tretjo nagrado).
 std::string CroatianNumbers::slovenian_ordinal(std::string_view number, std::string_view ending) {
     number = remove_leading_zeros(number);
     if (number.empty()) return "";
@@ -467,7 +469,9 @@ std::string CroatianNumbers::slovenian_ordinal(std::string_view number, std::str
     token = token == std::string::npos ? 0 : token + 1;
     std::string stem = sl_ordinal_stem(std::string_view(words).substr(token));
     std::string end(ending);
-    if (end == "o") {
+    if (end == "O") {
+        end = "o";          // the feminine accusative and instrumental, which the soft stems keep (tretjo nagrado)
+    } else if (end == "o") {
         const char last = stem.back();
         if (last == 'j' || last == 'c' || sl_ends(stem, u8"č") || sl_ends(stem, u8"š") || sl_ends(stem, u8"ž")) end = "e";
     }
@@ -925,7 +929,7 @@ namespace {
 // shared by the agreement of 1 to 4, of 5 and above, and of the ordinals
 const std::unordered_set<std::string_view> SL_WITH_GENITIVE = {
     "od", "do", "iz", "brez", "zaradi", "okoli", "okrog", "blizu", "izmed", "izpod", "izza", "razen",
-    "sredi", "glede", "mimo", "poleg", "znotraj", "zunaj",
+    "sredi", "glede", "mimo", "poleg", "znotraj", "zunaj", "starosti",
     };
 const std::unordered_set<std::string_view> SL_WITH_LOCATIVE = {"v", "na", "o", "ob", "pri", "po"};
 const std::unordered_set<std::string_view> SL_WITH_INSTRUMENTAL = {"z", "s", "pred", "med", "nad", "pod", "za"};
@@ -1103,11 +1107,33 @@ SlNext sl_next_word(const std::string& text, size_t pos) {
     return n;
 }
 
+// Whether the noun phrase in -o after an ordinal or a numeral is neuter
+// (tretje mesto) or the feminine accusative or instrumental (tretjo
+// nagrado, s tretjo nagrado; a listener's report of 2026-11-03): the
+// generated table of the neuter nouns in -o (formant::slovenian), the
+// feminine being the commoner and the default. When the word after it is in
+// -o too the first may be an adjective, and the second decides (tretjo
+// zlato medaljo, tretje veliko mesto). Only tretji shows the difference;
+// prvo, drugo, peto are the same in both genders.
+bool sl_neuter_o(std::string_view next, std::string_view after_next) {
+    if (after_next.size() >= 3 && after_next.back() == 'o' && !is_digit(after_next[0])) {
+        return formant::slovenian::is_neuter_noun_o(after_next);
+    }
+    // An adjective and a neuter noun in -je or -šče (tretje politično
+    // zatočišče, tretje veliko nadstropje); not a verb (prejme, deluje) nor
+    // a feminine genitive in -ije (tretjo nagrado akcije)
+    if (after_next.size() >= 5 && ((sl_ends(after_next, "je") && !sl_ends(after_next, "uje") && !sl_ends(after_next, "ije")) ||
+                                   sl_ends(after_next, u8"šče"))) {
+        return true;
+    }
+    return formant::slovenian::is_neuter_noun_o(next);
+}
+
 // The ending of an ordinal before the word `next`, after the word `prev`
-// (both in small letters): the adjectival endings as the noun's case,
-// gender and number show them. "" keeps the cardinal (nothing counted:
-// 2. je, 2. deluje).
-std::string_view sl_ordinal_ending(const std::string& prev, std::string_view next) {
+// (both in small letters; `after_next` the lowercase word after `next`, or
+// empty): the adjectival endings as the noun's case, gender and number show
+// them. "" keeps the cardinal (nothing counted: 2. je, 2. deluje).
+std::string_view sl_ordinal_ending(const std::string& prev, std::string_view next, std::string_view after_next = {}) {
     if (sl_is_month_genitive(next)) return "ega";                   // sedmega oktobra
     if (next.size() < 3) return "";
     if (SL_NOT_COUNTED.count(next) || sl_ends(next, "uje") || sl_ends(next, "jte")) return "";
@@ -1133,11 +1159,20 @@ std::string_view sl_ordinal_ending(const std::string& prev, std::string_view nex
         "to", "ta", "le", "samo", "kar", "sicer", "torej", "npr", "oziroma", "zdaj", "danes", u8"že", u8"šele",
     };
     switch (next.back()) {
-        case 'a':
+        case 'a': {
             if (genitive) return "ega";                                             // do tretjega razreda
+            // A masculine noun's genitive or animate accusative, or its
+            // nominative in -a (the generated table): videl sem tretjega
+            // otroka, prvi kolega
+            // (leta is the decades' nominative plural too, 80. leta; a year's
+            // "1958. leta" is made the genitive by slovenian_ordinal_before())
+            const uint8_t kind = next == "leta" ? 0 : formant::slovenian::noun_a_kind(next);
+            if (kind == formant::slovenian::NOUN_A_GENITIVE) return "ega";
+            if (kind == formant::slovenian::NOUN_A_MASCULINE) return "i";
             return prev.empty() || before_subject.count(prev) ? "a" : "ega";        // prva stran; odstavka tretjega člena
+        }
         case 'e': return (sl_ends(next, "je") && !sl_ends(next, "ije")) ? "o" : "e";    // tretje nadstropje; prve knjige
-        case 'o': return "o";                                       // prvo mesto
+        case 'o': return sl_neuter_o(next, after_next) ? "o" : "O";     // prvo mesto, tretje mesto; tretjo nagrado
         case 'u': return dative ? "emu" : "em";                     // k prvemu členu; na prvem mestu
         case 'i': return "i";                                       // na prvi strani, ob peti uri, prvi koraki
         default: return sl_feminine_i(next) ? "a" : "i";            // prva stran; tretji člen, sedmi oktober
@@ -1391,7 +1426,18 @@ void CroatianNumbers::slovenian_agree(const std::string& text, size_t start, siz
         static const std::unordered_set<std::string_view> masculine_o = {
             "evro", "avto", "euro", "kino", "radio", "video", "studio", "biro", "metro", "foto",
         };
-        if (tail == 'a' || tail == 'u') return;                     // ena knjiga
+        if (tail == 'a') {
+            // A masculine noun's animate accusative or a masculine or neuter
+            // noun's genitive (videl sem enega otroka, the listener's example
+            // of 2026-11-03), or a masculine nominative in -a (en kolega):
+            // the generated table, for the number 1 alone (a year before a
+            // verb, 2001 pooblastila, is not counting); ena knjiga otherwise
+            const uint8_t kind = token == 0 ? formant::slovenian::noun_a_kind(next) : 0;
+            if (kind == formant::slovenian::NOUN_A_GENITIVE) say("enega");
+            else if (kind == formant::slovenian::NOUN_A_MASCULINE) say("en");
+            return;
+        }
+        if (tail == 'u') return;
         if (tail == 'o') { say(masculine_o.count(next) ? "en" : "eno"); return; }
         if (tail == 'e') { say("eno"); return; }                    // eno polje, eno vprašanje
         if (tail == 'i' || !feminine_i) say("en");                  // en koš, en glavni; ena stvar
@@ -1443,15 +1489,29 @@ struct SlUnit {
     const char* accusative_plural;  // tri evre (za 3 €, stane 3 €)
     const char* genitive_plural;
     const char* genitive_singular;
+    // The Slovenian cases after a preposition (do petih odstotkov, pri eni
+    // stopinji, z dvema evroma, k petim evrom); the Croatian tables leave
+    // them out
+    const char* accusative_singular = nullptr;      // eno stopinjo (the singular for the masculines)
+    const char* dative_singular = nullptr;          // enemu odstotku, eni stopinji (also the locative)
+    const char* instrumental_singular = nullptr;    // enim odstotkom, eno stopinjo
+    const char* dual_dative = nullptr;              // dvema odstotkoma, stopinjama (also the instrumental)
+    const char* plural_dative = nullptr;            // trem odstotkom, stopinjam
+    const char* plural_locative = nullptr;          // treh odstotkih, stopinjah
+    const char* plural_instrumental = nullptr;      // tremi odstotki, stopinjami
 };
 
 namespace {
 
 const SlUnit SL_UNITS[] = {
-    {"%", false, "odstotek", "odstotka", "odstotki", "odstotke", "odstotkov", "odstotka"},
-    {"\xE2\x82\xAC", false, "evro", "evra", "evri", "evre", "evrov", "evra"},
-    {"$", false, "dolar", "dolarja", "dolarji", "dolarje", "dolarjev", "dolarja"},
-    {"\xC2\xB0", true, "stopinja", "stopinji", "stopinje", "stopinje", "stopinj", "stopinje"},
+    {"%", false, "odstotek", "odstotka", "odstotki", "odstotke", "odstotkov", "odstotka",
+     "odstotek", "odstotku", "odstotkom", "odstotkoma", "odstotkom", "odstotkih", "odstotki"},
+    {"\xE2\x82\xAC", false, "evro", "evra", "evri", "evre", "evrov", "evra",
+     "evro", "evru", "evrom", "evroma", "evrom", "evrih", "evri"},
+    {"$", false, "dolar", "dolarja", "dolarji", "dolarje", "dolarjev", "dolarja",
+     "dolar", "dolarju", "dolarjem", "dolarjema", "dolarjem", "dolarjih", "dolarji"},
+    {"\xC2\xB0", true, "stopinja", "stopinji", "stopinje", "stopinje", "stopinj", "stopinje",
+     "stopinjo", "stopinji", "stopinjo", "stopinjama", "stopinjam", "stopinjah", "stopinjami"},
 };
 
 // A unit's sign at or after pos (spaces allowed): %, €, $, °, °C, °F, not
@@ -1497,6 +1557,23 @@ bool sl_accusative_context(const std::string& text, const SlPrev& prev_word) {
                                 sl_ends(prev, "ilo") || sl_ends(prev, "ale") || sl_ends(prev, "ile"));
 }
 
+// The case a number with a unit's sign is in, by the word before it: od,
+// do, brez ... the genitive (do petih odstotkov), k, h, proti the dative,
+// pri, ob, o, v the locative (pri dvajsetih stopinjah Celzija), z, s, pred,
+// med, nad, pod the instrumental (s petimi evri), za, na, po and the verbs
+// of sl_accusative_context() the accusative (za tri evre), the nominative
+// otherwise. A listener asked for the cases on 2026-11-03 ("do 5 %" do
+// petih odstotkov). For a range (od 5 do 10 %) `prev` is the word before
+// the first number.
+SlCase sl_unit_case(const std::string& text, const SlPrev& prev) {
+    static const std::unordered_set<std::string_view> locative = {"pri", "ob", "o", "v"};
+    if (SL_WITH_GENITIVE.count(prev.word)) return SlCase::Genitive;
+    if (SL_WITH_DATIVE.count(prev.word)) return SlCase::Dative;
+    if (locative.count(prev.word)) return SlCase::Locative;
+    if (prev.word != "za" && SL_WITH_INSTRUMENTAL.count(prev.word)) return SlCase::Instrumental;
+    return sl_accusative_context(text, prev) ? SlCase::Accusative : SlCase::Nominative;
+}
+
 long sl_value(std::string_view digits) {
     if (digits.size() > 9) return -1;
     long v = 0;
@@ -1516,32 +1593,152 @@ bool sl_punct_or_end(const std::string& text, size_t pos) {
 // A number with a unit's sign: the noun in the form the number asks for,
 // the number agreeing with it (en odstotek, dva odstotka, trije odstotki,
 // štirje evri, pet odstotkov, enaindvajset odstotkov, sto en evro, ena
-// stopinja, dve stopinji, tri stopinje, pet stopinj Celzija, nič odstotkov);
-// `accusative`: tri evre, štiri odstotke, where the number is an object
+// stopinja, dve stopinji, tri stopinje, pet stopinj Celzija, nič odstotkov),
+// both in the case the sentence asks for (sl_unit_case()): the accusative
+// of an object (tri evre, štiri odstotke, eno stopinjo), the genitive (do
+// enega odstotka, do dveh, treh, petih odstotkov), the dative (k enemu evru,
+// k dvema evroma, k trem, petim evrom), the locative (pri eni stopinji, pri
+// dveh, treh, dvajsetih stopinjah) and the instrumental (z enim evrom, z
+// dvema evroma, s tremi, petimi evri; SP 2001 èn ênega ênemu, dvá dvéh dvéma,
+// tríje tréh trém trémi, pét pêtih pêtim pêtimi, odstótek -tka, évro -a,
+// stopínja -e). nič keeps the genitive plural in every case (SP nìč "pri
+// nič stopinj Celzija se led taja").
+// `number_only`: the words of the number alone, for the first number of a
+// range (od petih do desetih odstotkov).
 std::string CroatianNumbers::slovenian_count(std::string_view digits, const SlUnit& unit, std::string_view scale,
-                                             bool accusative) {
+                                             SlCase grammatical_case, bool number_only) {
     std::string words = number_to_words(digits);
     const std::string_view clean = remove_leading_zeros(digits);
     const bool ones_alone = clean.size() == 1 || clean[clean.size() - 2] == '0';
     const char last = clean.back();
+    const bool fem = unit.feminine;
     size_t token = words.rfind(' ');
     token = token == std::string::npos ? 0 : token + 1;
+    auto say = [&](std::string_view form) { words.replace(token, std::string::npos, form); };
     const char* form = unit.genitive_plural;
-    if (ones_alone && last == '1') {
-        words.replace(token, std::string::npos, unit.feminine ? "ena" : "en");
-        form = unit.singular;
+    if (clean == "0") {
+        // nič with the genitive plural in every case (SP 2001 nìč "pri nič
+        // stopinj Celzija se led taja")
+    } else if (ones_alone && last == '1') {
+        switch (grammatical_case) {
+            case SlCase::Nominative: say(fem ? "ena" : "en"); form = unit.singular; break;
+            case SlCase::Accusative: say(fem ? "eno" : "en"); form = fem ? unit.accusative_singular : unit.singular; break;
+            case SlCase::Genitive: say(fem ? "ene" : "enega"); form = unit.genitive_singular; break;
+            case SlCase::Dative: say(fem ? "eni" : "enemu"); form = unit.dative_singular; break;
+            case SlCase::Locative: say(fem ? "eni" : "enem"); form = unit.dative_singular; break;
+            case SlCase::Instrumental: say(fem ? "eno" : "enim"); form = unit.instrumental_singular; break;
+        }
     } else if (ones_alone && last == '2') {
-        words.replace(token, std::string::npos, unit.feminine ? "dve" : "dva");
-        form = unit.dual;
+        switch (grammatical_case) {
+            case SlCase::Nominative:
+            case SlCase::Accusative: say(fem ? "dve" : "dva"); form = unit.dual; break;
+            case SlCase::Genitive: say("dveh"); form = unit.genitive_plural; break;
+            case SlCase::Locative: say("dveh"); form = unit.plural_locative; break;
+            case SlCase::Dative:
+            case SlCase::Instrumental: say("dvema"); form = unit.dual_dative; break;
+        }
     } else if (ones_alone && (last == '3' || last == '4')) {
-        // The object of a verb or of za, na, po: tri evre (plačal 3 €, za
-        // 3 %); the subject: trije evri
-        if (!unit.feminine && !accusative) words.replace(token, std::string::npos, last == '3' ? "trije" : u8"štirje");
-        form = accusative ? unit.accusative_plural : unit.plural;
+        const bool three = last == '3';
+        switch (grammatical_case) {
+            case SlCase::Nominative:
+                // The subject: trije evri; the object of a verb or of za, na,
+                // po: tri evre
+                if (!fem) say(three ? "trije" : u8"štirje");
+                form = unit.plural;
+                break;
+            case SlCase::Accusative: form = unit.accusative_plural; break;
+            case SlCase::Genitive: say(three ? "treh" : u8"štirih"); form = unit.genitive_plural; break;
+            case SlCase::Dative: say(three ? "trem" : u8"štirim"); form = unit.plural_dative; break;
+            case SlCase::Locative: say(three ? "treh" : u8"štirih"); form = unit.plural_locative; break;
+            case SlCase::Instrumental: say(three ? "tremi" : u8"štirimi"); form = unit.plural_instrumental; break;
+        }
+    } else {
+        // 5 and above, the teens, the tens, the compounds (SP 2001 pét pêtih
+        // pêtim pêtimi, the compounds on their whole), nič, sto, tisoč and
+        // the milijon words, which stay (stó stôtih tudi neskl.)
+        const std::string_view last_word = std::string_view(words).substr(token);
+        if (sl_five_plus(last_word)) {
+            const std::string base = last_word == "sedem" ? "sedm" : last_word == "osem" ? "osm" : std::string(last_word);
+            switch (grammatical_case) {
+                case SlCase::Genitive:
+                case SlCase::Locative: say(base + "ih"); break;
+                case SlCase::Dative: say(base + "im"); break;
+                case SlCase::Instrumental: say(base + "imi"); break;
+                default: break;
+            }
+        }
+        switch (grammatical_case) {
+            case SlCase::Dative: form = unit.plural_dative; break;
+            case SlCase::Locative: form = unit.plural_locative; break;
+            case SlCase::Instrumental: form = unit.plural_instrumental; break;
+            default: break;
+        }
     }
+    if (number_only) return words;
     words += ' ';
     words += form;
     words += scale;
+    return words;
+}
+
+// The first number of a range (od 5 do 10 let, 2 do 3 ure, 1 do 5
+// kilogramov, med 4 in 8 milijonov): the second agrees with the noun
+// (slovenian_agree()), and the first takes the second's case: the same
+// oblique case (od petih do desetih let, starosti dveh do treh let, med
+// dvema in tremi leti, od enega do petih kilogramov), or the plain form when
+// the second is in the nominative or the accusative, because the noun's
+// ending then belongs to the second number (dve do tri ure, ena do dva
+// litra, štiri in osem milijonov; dva and en before a masculine genitive
+// plural in -ov, -ev: dva do pet kilogramov). `right_words` are the second
+// number's words, `prev` the word before the first, `noun` the lowercase
+// word after the second.
+std::string CroatianNumbers::slovenian_range_left(std::string_view digits, const std::string& right_words,
+                                                  const std::string& prev, std::string_view noun) {
+    std::string words = number_to_words(digits);
+    size_t token = words.rfind(' ');
+    token = token == std::string::npos ? 0 : token + 1;
+    const std::string last(std::string_view(words).substr(token));
+    size_t r_token = right_words.rfind(' ');
+    r_token = r_token == std::string::npos ? 0 : r_token + 1;
+    const std::string_view right = std::string_view(right_words).substr(r_token);
+    auto say = [&](std::string_view form) { words.replace(token, std::string::npos, form); };
+    int digit = last == "ena" ? 1 : last == "dva" ? 2 : last == "tri" ? 3 : last == u8"štiri" ? 4 : 0;
+    const bool five_plus = digit == 0 && sl_five_plus(last);
+
+    SlCase c = SlCase::Nominative;
+    if (sl_ends(right, "mi") || (right == "dvema" && !SL_WITH_DATIVE.count(prev))) {       // tremi, štirimi, petimi
+        c = SlCase::Instrumental;
+    } else if (sl_ends(right, "ih") || sl_ends(right, "eh")) {
+        c = SL_WITH_LOCATIVE.count(prev) ? SlCase::Locative : SlCase::Genitive;
+    } else if (right == "dvema" || (sl_ends(right, "im") && right != "enim")) {
+        c = SlCase::Dative;
+    }
+    // The noun's gender for 1 and 2: masculine and neuter before a genitive
+    // plural in -ov, -ev, let, dni, mest and a masculine unit's abbreviation
+    // (km, kg), feminine otherwise (ur, hiš, minut)
+    const bool masculine = sl_ends(noun, "ov") || sl_ends(noun, "ev") || noun == "let" || noun == "dni" || noun == "mest" ||
+                           SL_MASCULINE_UNITS.count(sl_ascii_lower(noun)) != 0;
+    if (c == SlCase::Nominative) {
+        if (digit == 1 && masculine) say("en");
+        else if (digit == 2 && !masculine && token == 0) say("dve");
+        return words;
+    }
+    if (five_plus) {
+        const std::string base = last == "sedem" ? "sedm" : last == "osem" ? "osm" : last;
+        say(base + (c == SlCase::Instrumental ? "imi" : c == SlCase::Dative ? "im" : "ih"));
+        return words;
+    }
+    if (digit == 0) return words;        // sto, tisoč, the milijon words stay
+    static const char* const GENITIVE[] = {"", "", "dveh", "treh", u8"štirih"};
+    static const char* const DATIVE[] = {"", "", "dvema", "trem", u8"štirim"};
+    static const char* const INSTRUMENTAL[] = {"", "", "dvema", "tremi", u8"štirimi"};
+    switch (c) {
+        case SlCase::Genitive: say(digit == 1 ? (masculine ? "enega" : "ene") : GENITIVE[digit]); break;
+        case SlCase::Locative: say(digit == 1 ? (masculine ? "enem" : "eni") : GENITIVE[digit]); break;
+        case SlCase::Dative: say(digit == 1 ? (masculine ? "enemu" : "eni") : DATIVE[digit]); break;
+        case SlCase::Instrumental: say(digit == 1 ? (masculine ? "enim" : "eno") : INSTRUMENTAL[digit]); break;
+        default: break;
+    }
     return words;
 }
 
@@ -1561,8 +1758,13 @@ std::string CroatianNumbers::slovenian_ordinal_before(const std::string& text, s
         if (is_digit(c)) return "";
     }
     const SlPrev prev = sl_prev_word(text, start);
-    const std::string_view ending = sl_ordinal_ending(prev.word, next.word);
+    const SlNext following = sl_next_word(text, next.end);
+    std::string_view ending = sl_ordinal_ending(
+        prev.word, next.word, following.lowercase ? std::string_view(following.word) : std::string_view());
     if (ending.empty()) return "";
+    // A year with leta is the genitive of time (1958. leta debitiral: tisoč
+    // devetsto oseminpetdesetega leta), a decade the plural (80. leta)
+    if (ending == "a" && next.word == "leta" && end - start == 4) ending = "ega";
     return slovenian_ordinal(number, ending);
 }
 
@@ -1741,10 +1943,17 @@ size_t CroatianNumbers::slovenian_number_at(const std::string& text, size_t i, s
         } else if (c < length && text[c] == '-' && !dotted) {
             connector = "hyphen";
             c += 1;
-        } else if (dotted) {
+        } else {
+            // 15. do 20. marca, 1. in 2. mesto; without the periods only do,
+            // and in after med, so that both numbers take the case of the
+            // preposition before the first: od 5 do 10 %, od petih do
+            // desetih odstotkov; med 5 in 10 °C, med petimi in desetimi
+            // stopinjami; od 2 do 3 ur, od dveh do treh ur
             const SlNext word = sl_next_word(text, c);
             static const std::unordered_set<std::string_view> joining = {"do", "in", "ali", "ter", "oziroma"};
-            if (word.begin > c && word.lowercase && joining.count(word.word)) {
+            const bool joins = dotted ? joining.count(word.word) != 0
+                                      : (word.word == "do" || (word.word == "in" && prev.word == "med"));
+            if (word.begin > c && word.lowercase && joins) {
                 connector = word.word;
                 c = sl_skip_spaces(text, word.end);
             }
@@ -1765,6 +1974,8 @@ size_t CroatianNumbers::slovenian_number_at(const std::string& text, size_t i, s
                 return stop;
             }
             if (r_end < length && text[r_end] == '.') {
+                // A year before a date is no range: od 2006 do 1. aprila 2007
+                if (!dotted && connector != "dash" && connector != "hyphen") return 0;
                 // The right side an ordinal before a lowercase word (3.–4.
                 // mesto); silent_dot_end() would stop at the dash before it
                 const SlNext noun = sl_next_word(text, r_end + 1);
@@ -1773,7 +1984,9 @@ size_t CroatianNumbers::slovenian_number_at(const std::string& text, size_t i, s
                     if (sl_is_month_genitive(noun.word)) {
                         result += slovenian_ordinal(digits, "ega") + join + slovenian_ordinal(right, "ega");
                     } else {
-                        const std::string_view ending = sl_ordinal_ending(prev.word, noun.word);
+                        const SlNext after = sl_next_word(text, noun.end);
+                        const std::string_view ending = sl_ordinal_ending(
+                            prev.word, noun.word, after.lowercase ? std::string_view(after.word) : std::string_view());
                         if (ending.empty()) {
                             result += number_to_words(digits) + join + number_to_words(right);
                         } else {
@@ -1808,17 +2021,20 @@ size_t CroatianNumbers::slovenian_number_at(const std::string& text, size_t i, s
                 }
                 if (text[end] == '.' || text[end] == ',') return 0;
                 if (is_separator_between_digits(text, r_end)) return 0;
-                std::string left_words = number_to_words(digits);
                 size_t unit_end = 0;
                 std::string_view scale;
                 if (const SlUnit* unit = sl_unit_at(text, r_end, unit_end, scale)) {
-                    result += left_words + join + slovenian_count(right, *unit, scale, sl_accusative_context(text, prev));
+                    // Both numbers in the unit's case: od petih do desetih
+                    // odstotkov, med petimi in desetimi stopinjami
+                    const SlCase c = sl_unit_case(text, prev);
+                    result += slovenian_count(digits, *unit, scale, c, true) + join + slovenian_count(right, *unit, scale, c);
                     return unit_end;
                 }
                 std::string right_words2 = number_to_words(right);
-                slovenian_agree(text, i, r_end, left_words);
                 slovenian_agree(text, i, r_end, right_words2);
-                result += left_words + join + right_words2;
+                const SlNext noun = sl_next_word(text, r_end);
+                result += slovenian_range_left(digits, right_words2, prev.word, noun.lowercase ? std::string_view(noun.word) : std::string_view()) +
+                          join + right_words2;
                 return r_end;
             }
         }
@@ -1874,7 +2090,7 @@ size_t CroatianNumbers::slovenian_number_at(const std::string& text, size_t i, s
             size_t unit_end = 0;
             std::string_view scale;
             if (const SlUnit* unit = sl_unit_at(text, pos, unit_end, scale)) {
-                result += slovenian_count(joined, *unit, scale, sl_accusative_context(text, prev));
+                result += slovenian_count(joined, *unit, scale, sl_unit_case(text, prev));
                 return unit_end;
             }
             std::string words = number_to_words(joined);
@@ -1898,7 +2114,7 @@ size_t CroatianNumbers::slovenian_number_at(const std::string& text, size_t i, s
         std::string_view scale;
         if (!is_separator_between_digits(text, pos)) {
             if (const SlUnit* unit = sl_unit_at(text, pos, unit_end, scale)) {
-                result += slovenian_count(joined, *unit, scale, sl_accusative_context(text, prev));
+                result += slovenian_count(joined, *unit, scale, sl_unit_case(text, prev));
                 return unit_end;
             }
         }
@@ -1992,7 +2208,7 @@ size_t CroatianNumbers::slovenian_number_at(const std::string& text, size_t i, s
         size_t unit_end = 0;
         std::string_view scale;
         if (const SlUnit* unit = sl_unit_at(text, end, unit_end, scale)) {
-            result += slovenian_count(digits, *unit, scale, sl_accusative_context(text, prev));
+            result += slovenian_count(digits, *unit, scale, sl_unit_case(text, prev));
             return unit_end;
         }
     }

@@ -932,6 +932,13 @@ constexpr uint8_t FOOD_NOMINATIVE = 1;
 constexpr uint8_t FOOD_ACCUSATIVE = 2;
 constexpr uint8_t FOOD_GENITIVE = 4;
 
+// A word in -a after the number 1 and what it is (NOUN_A_GENITIVE,
+// NOUN_A_MASCULINE)
+struct NounA {
+    const char* spelling;
+    uint8_t kind;
+};
+
 #include "formant_slovenian.inc"
 
 // The generated tables are sorted by the spelling their entries are for
@@ -2023,6 +2030,35 @@ const char32_t* je_reading(const std::vector<std::u32string>& words, const std::
 }
 
 } // namespace
+
+// A UTF-8 word in a generated table sorted in code point order (the byte
+// order of UTF-8), or -1; `stride` is the size of the table's entry, whose
+// first member is the spelling
+static int utf8_table_index(const char* const* table, size_t count, size_t stride, std::string_view w) {
+    size_t lo = 0, hi = count;
+    const char* base = reinterpret_cast<const char*>(table);
+    while (lo < hi) {
+        const size_t mid = lo + (hi - lo) / 2;
+        const char* entry = *reinterpret_cast<const char* const*>(base + mid * stride);
+        const int c = w.compare(entry);
+        if (c == 0) return static_cast<int>(mid);
+        if (c < 0) hi = mid;
+        else lo = mid + 1;
+    }
+    return -1;
+}
+
+bool is_neuter_noun_o(std::string_view word) {
+    return utf8_table_index(SLOVENIAN_NEUTER_O, sizeof(SLOVENIAN_NEUTER_O) / sizeof(SLOVENIAN_NEUTER_O[0]),
+                            sizeof(SLOVENIAN_NEUTER_O[0]), word) >= 0;
+}
+
+uint8_t noun_a_kind(std::string_view word) {
+    const int i = utf8_table_index(&SLOVENIAN_NOUN_A[0].spelling, sizeof(SLOVENIAN_NOUN_A) / sizeof(SLOVENIAN_NOUN_A[0]),
+                                   sizeof(SLOVENIAN_NOUN_A[0]), word);
+    return i < 0 ? 0 : SLOVENIAN_NOUN_A[i].kind;
+}
+
 
 const char32_t* clause_reading(const std::vector<std::u32string>& words, const std::vector<bool>& capitalized,
                                const std::vector<bool>& acronym, size_t i, bool before_complement, bool question,

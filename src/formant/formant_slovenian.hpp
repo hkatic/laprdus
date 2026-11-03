@@ -15,6 +15,7 @@
 
 #include "formant_phonemes.hpp"
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -338,6 +339,25 @@ bool split_compound_numeral(const std::u32string& w, std::u32string& ones, std::
  * without a word break; `clitic` whether the word is a clitic.
  */
 void assimilate(std::vector<Phone>& phones, const std::vector<bool>& word_is_clitic);
+
+/**
+ * The gender of a noun after a numeral, for the numerals' agreement in
+ * croatian_numbers.cpp, which reads gender and case off the noun's ending
+ * and needs help where the ending is shared (a listener's report of
+ * 2026-11-03: "za 3. nagrado" is tretjo, "videl sem 1 otroka" enega).
+ * is_neuter_noun_o(): a neuter noun's nominative or accusative singular in
+ * -o (mesto, leto; the generated SLOVENIAN_NEUTER_O), not the feminine
+ * accusative or instrumental (nagrado), which is the commoner and the
+ * default. noun_a_kind(): a word in -a that is not a feminine nominative
+ * (ena miza): NOUN_A_GENITIVE, a masculine noun's animate accusative or a
+ * masculine or neuter noun's genitive singular (otroka, brata, leta: enega),
+ * NOUN_A_MASCULINE, a masculine noun's nominative (kolega: en), 0 otherwise
+ * (the generated SLOVENIAN_NOUN_A). Both take the word in UTF-8, lowercase.
+ */
+constexpr uint8_t NOUN_A_GENITIVE = 1;
+constexpr uint8_t NOUN_A_MASCULINE = 2;
+bool is_neuter_noun_o(std::string_view word);
+uint8_t noun_a_kind(std::string_view word);
 
 /**
  * The accent lexicon the user keeps in accents.json: entries with
