@@ -2155,8 +2155,10 @@ TEST_CASE("Slovenian spellings told apart by the clause (November 2026)", "[fron
         {U"Kaj je", "k'a:j jE"},
         {U"To je krompir", "t'ó: jE krOmp'i:r"},
         {U"Kosilo je krompir", "kOs'i:lO jE krOmp'i:r"},
-        {U"Priloga je krompir", "pril'ó:ga jE krOmp'i:r"},
+        {U"Hrvoje je krompir", "hərv'OjE j'é: krOmp'i:r"},
+        {U"Priloga je krompir", "pril'ó:ga j'é: krOmp'i:r"},    // any subject (the maintainer's word)
         {U"Zdaj je kosilo", "zd'aj jE kOs'i:lO"},
+        {U"Jutri je kosilo", "j'u:tri jE kOs'i:lO"},
         {U"V Ljubljani je kosilo ob dvanajstih", "u ljublj'a:ni jE kOs'i:lO Ob dv'a:najstih"},
         {U"Videla je ribe", "v'i:dEla jE r'i:bE"},
         {U"Suči je hrano darovala pred vsakim obedom", "s'u:či jE hr'a:nO darOv'a:la prEd us'a:kim Ob'é:dOm"},

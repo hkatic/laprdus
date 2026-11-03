@@ -1157,6 +1157,11 @@ def food_forms(forms_path, lemmas):
             if not msd.startswith('So') or len(msd) < 5:
                 continue
             seen.add(parts[0])
+            # not the dual: its accusative is spelled like the genitive
+            # singular (krompirja), which after je is the partitive; a dual
+            # object stands after dva, an amount
+            if msd[3] == 'd':
+                continue
             bit = {'i': 1, 't': 2, 'r': 4}.get(msd[4])
             if bit:
                 cases[orth] |= bit
@@ -1429,7 +1434,7 @@ def generate(forms_path, out_path, manual_min=50, auto_min=2000, form_min=3, cpp
         food = food_forms(forms_path, read_word_list(food_path)) if food_path else []
         print('food forms', len(food), file=sys.stderr)
         out.write('// Food nouns (slovenian_food.tsv): every form of Sloleks with its cases,\n')
-        out.write('// 1 nominative, 2 accusative, 4 genitive, in code point order\n')
+        out.write('// 1 nominative, 2 accusative, 4 genitive (singular and plural), in code point order\n')
         out.write('const FoodForm SLOVENIAN_FOOD[] = {\n')
         for start in range(0, len(food), 6):
             out.write('    %s,\n' % ', '.join('{u8"%s", %d}' % kv for kv in food[start:start + 6]))

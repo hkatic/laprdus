@@ -3765,17 +3765,29 @@ SSKJ², SP and the Collocations Dictionary of Modern Slovene at CJVT (Kolokacije
   *je* (*se je*, *jo je*, *Strah ga je*, *Kaj je?*, *To je krompir*); no food
   noun as the subject (*Kosilo je krompir*); and where the form of the object
   is the nominative too (masculine and neuter singular, every plural: *krompir,
-  meso, palačinke, ribe*) an eater as the subject, a personal or relative
-  pronoun, a capitalized word not after a preposition (*Marko je krompir*, not
-  *v Ljubljani je kosilo*) or a person or animal of a hand list, so that
-  *Priloga je krompir* and *Zdaj je kosilo* stay "is"; an unambiguous
-  accusative (*juho, hrano, palačinko*) needs no subject (*Za kosilo običajno je
-  korenčkovo juho*). *Je* at the head of a clause stays the auxiliary: *Je
-  krompir.* "It is potato." and *Je veliko solate.* "There is a lot of salad."
-  are as good as the eating. Result: 24 of the 107 "eats" of SUK read *jé*
+  meso, palačinke, kosilo*) a subject: a pronoun or any word that is not a
+  function word or an adverb of time (*Hrvoje je krompir*, *Pes je meso*, and
+  *Priloga je krompir* too, at the maintainer's word: a food noun after *je* is
+  the eating), so that only *Zdaj je kosilo*, *Jutri je kosilo* and *Ob
+  dvanajstih je kosilo*, where no subject is left, stay "is". A first version
+  asked for an eater there (a pronoun, a given name of the Wikidata table, a
+  person or animal of a hand list), and *Hrvoje je krompir* read "is" because
+  the name is not in that table; Sloleks marks every proper noun alike
+  (`type=proper`), so it cannot supply given names without surnames and places.
+  An unambiguous accusative (*juho, hrano, palačinko*) needs no subject (*Za
+  kosilo običajno je korenčkovo juho*). Between *je* and its object a participle
+  in *-l, -la, -lo, -li* is the perfect tense (*je izgubilo Žito*, *je zmanjkalo
+  hrane*), *-le* is left to the adjectives (*je zrele banane*), at most two
+  adjectives are crossed, and the dual is not in the table, since its accusative
+  is spelled like the genitive singular (*krompirja*, the partitive after *je*;
+  *dva krompirja* reads through *dva*, an amount). *Je* at the head of a clause
+  stays the auxiliary: *Je krompir.* "It is potato." and *Je veliko solate.* "There is a lot of salad."
+  are as good as the eating. Result: 29 of the 107 "eats" of SUK read *jé*
   (the rest are *kaj je*, *kako je*, *ki jo je*, clause-final after a clitic,
-  which the spelling does not tell apart), no auxiliary moves (*plod* and
-  *sadež*, "the fruit of", left the food list for *roman je plod študija*), and
+  which the spelling does not tell apart), two auxiliaries move (*poljščina je
+  krompir*, the identity the rule accepts, and *Slovenija je Grčiji prvi obrok,
+  …, nakazala*, whose participle the commas hide; *plod* and *sadež*, "the fruit
+  of", left the food list for *roman je plod študija*), and
   the reading has a content word's accent (`clause_reading_is_content()`).
   Not done: a question "what does he eat" (*Kaj on je?*) and a clause whose
   only cue is a clitic object (*ki ga je*) read the auxiliary; asked of the
