@@ -3795,8 +3795,10 @@ SSKJ², SP and the Collocations Dictionary of Modern Slovene at CJVT (Kolokacije
   a short list, because *Meni pomoč ni potrebna* and *Meni nastavitve niso všeč* are
   the pronoun). *SDS meni, da je prav* keeps the verb: an acronym before it, last in
   its clause before a clause of *da*, no verb of menus earlier in the clause. SUK 1.1:
-  no acronym stands before *meni*; one menu label changes, *Meni 1.jpg*, which now
-  reads the pronoun.
+  no acronym stands before *meni*. A menu named by a number with nothing after it
+  (*Meni 1*, *Meni 2*, *Meni 21*; `is_number_word()` over the rest of the clause) is
+  the menu, as the listener answered; *Meni ena stvar ni jasna* and *Meni 1 je prazen*
+  keep the pronoun.
 - *vprašaj* is the command *vprášaj* (SP 2001 *vprášati tudi vprašáti, vprášaj -te tudi
   -ájte*) unless the question mark *vprašáj* (SSKJ², SP *vprašáj -a*) is meant: alone in
   its clause, which is how a screen reader names the character (*Vprašaj!* alone is the

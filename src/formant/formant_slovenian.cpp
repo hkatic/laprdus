@@ -1079,6 +1079,21 @@ const WordSet& prepositions() {
     return set;
 }
 
+// A number as the number converter writes it (ena, dva, dve, dvanajst, sto,
+// tisoč) or a part of a compound one split by the front end (ena in dvajset)
+bool is_number_word(const std::u32string& w) {
+    static const WordSet numbers = {
+        U"nič", U"ena", U"en", U"eno", U"dva", U"dve", U"tri", U"trije", U"štiri", U"štirje", U"pet", U"šest",
+        U"sedem", U"osem", U"devet", U"deset", U"enajst", U"dvanajst", U"trinajst", U"štirinajst", U"petnajst",
+        U"šestnajst", U"sedemnajst", U"osemnajst", U"devetnajst", U"dvajset", U"trideset", U"štirideset",
+        U"petdeset", U"šestdeset", U"sedemdeset", U"osemdeset", U"devetdeset", U"sto", U"dvesto", U"tristo",
+        U"štiristo", U"petsto", U"šeststo", U"sedemsto", U"osemsto", U"devetsto", U"tisoč", U"milijon",
+        U"milijona", U"milijoni", U"milijonov", U"in",
+    };
+    std::u32string ones, tens;
+    return numbers.count(w) != 0 || split_compound_numeral_impl(w, ones, tens);
+}
+
 } // namespace
 
 // meni is three words: mení the menu (SSKJ² "mení tudi menu [mení]", SP
@@ -1633,6 +1648,11 @@ const char32_t* meni_reading(const std::vector<std::u32string>& words, const std
     const std::u32string* next = i + 1 < n ? &words[i + 1] : nullptr;
     const bool before_capital = next && capitalized[i + 1];
     if (next && menu_names_after.count(*next)) return U"mení";      // meni start, Meni orodja
+    // Meni 1, Meni 2: a menu named by a number, nothing after it (the
+    // listener's answer of 2026-11-03; Meni ena stvar ni jasna is the pronoun)
+    if (!prev && capitalized[i] && next && std::all_of(words.begin() + 1, words.end(), is_number_word)) {
+        return U"mení";
+    }
     if (prev) {
         if (accusative_only.count(*prev)) return U"mení";
         if (*prev == U"v" || *prev == U"na") {

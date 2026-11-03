@@ -2548,6 +2548,12 @@ TEST_CASE("Slovenian listener's report of 2026-11-03: meni to me, menu phrases, 
         {U"začetni meni", "zač'é:tni mEn'i:"},
         {U"Pojdi v start meni", "p'ó:jdi u st'a:rt mEn'i:"},
         {U"Meni ikona", "mEn'i: ik'ó:na"},
+        // Meni 1, Meni 2: a menu named by a number with nothing after it (the
+        // listener's answer); with more words after it the pronoun
+        {U"Meni ena", "mEn'i: 'E:na"},
+        {U"Meni dva", "mEn'i: dv'a:"},
+        {U"Meni enaindvajset", "mEn'i: 'E:naindv'a:jsEt"},
+        {U"Meni ena stvar ni jasna", "m'E:ni 'E:na stv'a:r ni j'a:sna"},
         // The verb méni stays small after a comma before its subject, and elsewhere
         {U"meni Kučan", "m'é:ni k'u:čan"},
         {U"Tako meni župan", "tak'ó: m'é:ni žup'an"},
