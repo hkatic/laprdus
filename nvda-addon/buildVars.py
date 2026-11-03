@@ -95,5 +95,14 @@ markdownExtensions: list = ["tables", "fenced_code", TocExtension(slugify=slugif
 # Custom braille translation tables
 brailleTables: BrailleTables = {}
 
-# Custom speech symbol dictionaries
-symbolDictionaries: SymbolDictionaries = {}
+# Custom speech symbol dictionaries: addon/locale/<lang>/symbols-<name>.dic.
+# The Slovenian one gives the quotation marks » and « the punctuation level
+# of every other quotation mark, "most"; NVDA's own Slovenian table has
+# them at "none", spoken at every level, even with punctuation off
+symbolDictionaries: SymbolDictionaries = {
+    "laprdus": {
+        # Translators: the name of the add-on's speech symbol dictionary in NVDA's punctuation settings
+        "displayName": _("Laprdus symbols"),
+        "mandatory": True,
+    },
+}

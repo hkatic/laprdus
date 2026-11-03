@@ -719,8 +719,8 @@ TEST_CASE("Slovenian is spoken by every voice", "[formant][language]") {
         {"monitor 2", "monitor dva"},
         {"2 kg", "dva kg"},
         {"2kg", "dva kg"},
-        {"2-krat", "dva-krat"},
-        {"2 %", "dva %"},
+        {"2-krat", "dvakrat"},
+        {"2 %", "dva odstotka"},
         {"2 Slovenca", "dva Slovenca"},
         // The number 2 itself, counting nothing
         {"2", "dve"},
@@ -800,6 +800,119 @@ TEST_CASE("Slovenian is spoken by every voice", "[formant][language]") {
         INFO(two.first);
         REQUIRE(speak(zvonko.handle, two.first) == speak(zvonko.handle, two.second));
     }
+    // The same, since the listener's report of 2026-11-03 on the numerals:
+    // ordinals in the case the noun and the preposition show, 5 and above
+    // in the oblique cases, the nouns of the unit signs, a minus, thousands
+    // with spaces, ranges, 2-krat and 2-letni as one word, the hours after
+    // ob (SP 2001 pét, stó, tísoč, pŕvi, trétji, dvákrat, dvóléten,
+    // odstótek, évro, stopínja; Pravopis 8.0 § 26)
+    const std::pair<const char*, const char*> numerals[] = {
+        {"1. mesto", "prvo mesto"},
+        {"2. mesto", "drugo mesto"},
+        {"3. mesto", "tretje mesto"},
+        {"na 1. mestu", "na prvem mestu"},
+        {"v 2. nadstropju", "v drugem nadstropju"},
+        {"3. \xC4\x8D" "len", "tretji \xC4\x8D" "len"},
+        {"1. stran", "prva stran"},
+        {"21. stoletje", "enaindvajseto stoletje"},
+        {"v 21. stoletju", "v enaindvajsetem stoletju"},
+        {"v 90. letih", "v devetdesetih letih"},
+        {"80. leta", "osemdeseta leta"},
+        {"100. obletnica", "stota obletnica"},
+        {"7. oktober 2026", "sedmi oktober dva tiso\xC4\x8D" " \xC5\xA1" "estindvajset"},
+        {"7. oktobra", "sedmega oktobra"},
+        {"15. do 20. marca", "petnajstega do dvajsetega marca"},
+        {"7. 10.", "sedmega desetega."},
+        {"7.10.", "sedmega desetega."},
+        {"15.\xE2\x80\x93" "20. 3.", "petnajstega do dvajsetega tretjega."},
+        {"3.\xE2\x80\x93" "4. mesto", "tretje do \xC4\x8D" "etrto mesto"},
+        {"do 3. razreda", "do tretjega razreda"},
+        {"k 1. \xC4\x8D" "lenu", "k prvemu \xC4\x8D" "lenu"},
+        {"ob 5. uri", "ob peti uri"},
+        {"2. svetovna vojna", "druga svetovna vojna"},
+        {"1.", "ena."},
+        {"v 5 urah", "v petih urah"},
+        {"s 5 prsti", "s petimi prsti"},
+        {"pred 5 leti", "pred petimi leti"},
+        {"pred 21 leti", "pred enaindvajsetimi leti"},
+        {"po 5 letih", "po petih letih"},
+        {"v 12 urah", "v dvanajstih urah"},
+        {"k 5 osebam", "k petim osebam"},
+        {"do 5 let", "do petih let"},
+        {"pred 7 leti", "pred sedmimi leti"},
+        {"v 100 letih", "v sto letih"},
+        {"5 novih hi\xC5\xA1", "pet novih hi\xC5\xA1"},
+        {"1 %", "en odstotek"},
+        {"2 %", "dva odstotka"},
+        {"3 %", "trije odstotki"},
+        {"4 %", "\xC5\xA1" "tirje odstotki"},
+        {"5 %", "pet odstotkov"},
+        {"21 %", "enaindvajset odstotkov"},
+        {"101 %", "sto en odstotek"},
+        {"0 %", "ni\xC4\x8D" " odstotkov"},
+        {"za 3 %", "za tri odstotke"},
+        {"1 \xE2\x82\xAC", "en evro"},
+        {"2 \xE2\x82\xAC", "dva evra"},
+        {"3 \xE2\x82\xAC", "trije evri"},
+        {"5 \xE2\x82\xAC", "pet evrov"},
+        {"stane 3 \xE2\x82\xAC", "stane tri evre"},
+        {"1 \xC2\xB0" "C", "ena stopinja Celzija"},
+        {"2 \xC2\xB0" "C", "dve stopinji Celzija"},
+        {"5 \xC2\xB0" "C", "pet stopinj Celzija"},
+        {"1,5 %", "ena cela pet odstotka"},
+        {"2,50 \xE2\x82\xAC", "dve celi petdeset evra"},
+        {"1.000 \xE2\x82\xAC", "tiso\xC4\x8D" " evrov"},
+        {"1 min", "ena min"},
+        {"1 MB", "en MB"},
+        {"2 h", "dve h"},
+        {"1 tiso\xC4\x8D", "en tiso\xC4\x8D"},
+        {"2 tiso\xC4\x8D", "dva tiso\xC4\x8D"},
+        {"3 tiso\xC4\x8D", "tri tiso\xC4\x8D"},
+        {"-5", "minus pet"},
+        {"-5 \xC2\xB0" "C", "minus pet stopinj Celzija"},
+        {"\xE2\x80\x93" "10 \xC2\xB0" "C", "minus deset stopinj Celzija"},
+        {"T-2", "T-dva"},
+        {"1 000", "tiso\xC4\x8D"},
+        {"1 000 000", "milijon"},
+        {"1\xC2\xA0" "000", "tiso\xC4\x8D"},
+        {"2 000 ljudi", "dva tiso\xC4\x8D" " ljudi"},
+        {"1 2 3", "ena dve tri"},
+        {"1991\xE2\x80\x93" "2000", "tiso\xC4\x8D" " devetsto enaindevetdeset do dva tiso\xC4\x8D"},
+        {"1991-2000", "tiso\xC4\x8D" " devetsto enaindevetdeset do dva tiso\xC4\x8D"},
+        {"2\xE2\x80\x93" "3 dni", "dva do tri dni"},
+        {"pred 2\xE2\x80\x93" "3 leti", "pred dvema do tremi leti"},
+        {"10\xE2\x80\x93" "15 %", "deset do petnajst odstotkov"},
+        {"2x", "dvakrat"},
+        {"3x", "trikrat"},
+        {"1-krat", "enkrat"},
+        {"21-krat", "enaindvajsetkrat"},
+        {"2-letni", "dvoletni"},
+        {"3-letna", "triletna"},
+        {"10-letnica", "desetletnica"},
+        {"20-letnik", "dvajsetletnik"},
+        {"5-dnevni", "petdnevni"},
+        {"1-sobno", "enosobno"},
+        {"2-sobno", "dvosobno"},
+        {"ob 5", "ob petih"},
+        {"ob 5h", "ob petih"},
+        {"ob 8h", "ob osmih"},
+        {"ob 5.00", "ob petih"},
+        {"ob 17:00", "ob sedemnajstih"},
+        {"ob 13", "ob trinajstih"},
+        {"ob 8.30", "ob osem trideset"},
+        {"ob 20.15", "ob dvajset petnajst"},
+        {"od 8.30 do 16.00", "od osem trideset do \xC5\xA1" "estnajst ni\xC4\x8D" " ni\xC4\x8D"},
+        {"8.30\xE2\x80\x93" "16.00", "osem trideset do \xC5\xA1" "estnajst ni\xC4\x8D" " ni\xC4\x8D"},
+        {"24:00", "\xC5\xA1" "tiriindvajset ni\xC4\x8D" " ni\xC4\x8D"},
+        {"Ura je 8.30", "Ura je osem trideset"},
+        {"Ura je 5", "Ura je pet"},
+        {"ob 5 urah", "ob petih urah"},
+        {"3.14", "tri pika \xC5\xA1" "tirinajst"},
+    };
+    for (const auto& pair : numerals) {
+        INFO(pair.first);
+        REQUIRE(speak(zvonko.handle, pair.first) == speak(zvonko.handle, pair.second));
+    }
     // The other formant voices and the singing presets speak it too
     for (const char* voice : {"stojan", "mirsad", "lika_velebit"}) {
         INFO(voice);
@@ -821,6 +934,147 @@ TEST_CASE("Slovenian is spoken by every voice", "[formant][language]") {
     REQUIRE(!josip_slovenian.empty());
     REQUIRE(josip_slovenian != josip_croatian);
     REQUIRE(speak(josip.handle, "1000") == speak(josip.handle, "tiso\xC4\x8D"));
+}
+
+TEST_CASE("Croatian, Serbian and Bosnian numerals agree with their nouns", "[formant][language]") {
+    // The numerals' grammar of 2026-11-03 for the three languages: jedan,
+    // jedna, jedno and dva, dvije (dve) agree with the noun, 1 declines after
+    // a preposition, the ordinals take the case the noun and the preposition
+    // show, the unit signs are nouns, a period or a space between groups of
+    // three digits is the thousands separator (Hrvatski pravopis), a minus is
+    // minus, a range reads do, 2-godišnji is one word, 8.30 after u is a time
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    const std::pair<const char*, const char*> croatian[] = {
+        {"1 ku\xC4\x87" "a", "jedna ku\xC4\x87" "a"},
+        {"2 ku\xC4\x87" "e", "dvije ku\xC4\x87" "e"},
+        {"1 selo", "jedno selo"},
+        {"1 dijete", "jedno dijete"},
+        {"1 stol", "jedan stol"},
+        {"2 stola", "dva stola"},
+        {"1 stvar", "jedna stvar"},
+        {"2 no\xC4\x87" "i", "dvije no\xC4\x87" "i"},
+        {"1 auto", "jedan auto"},
+        {"21 ku\xC4\x87" "a", "dvadeset jedna ku\xC4\x87" "a"},
+        {"102 ku\xC4\x87" "e", "sto dvije ku\xC4\x87" "e"},
+        {"s 1 prijateljem", "s jednim prijateljem"},
+        {"u 1 satu", "u jednom satu"},
+        {"u 1 godini", "u jednoj godini"},
+        {"do 1 godine", "do jedne godine"},
+        {"od 1 sata", "od jednog sata"},
+        {"za 1 kunu", "za jednu kunu"},
+        {"u 1 ujutro", "u jedan ujutro"},
+        {"1 i 2", "jedan i dva"},
+        {"stranica 2", "stranica dva"},
+        {"T2", "T dva"},
+        {"1 \xE2\x82\xAC", "jedan euro"},
+        {"2 \xE2\x82\xAC", "dva eura"},
+        {"5 \xE2\x82\xAC", "pet eura"},
+        {"21 \xE2\x82\xAC", "dvadeset jedan euro"},
+        {"1,5 \xE2\x82\xAC", "jedan zarez pet eura"},
+        {"1 $", "jedan dolar"},
+        {"1 %", "jedan posto"},
+        {"1 \xC2\xB0" "C", "jedan stupanj Celzija"},
+        {"2 \xC2\xB0" "C", "dva stupnja Celzija"},
+        {"5 \xC2\xB0" "C", "pet stupnjeva Celzija"},
+        {"1 min", "jedna min"},
+        {"2 min", "dvije min"},
+        {"1 kg", "jedan kg"},
+        {"-5", "minus pet"},
+        {"\xE2\x80\x93" "10 \xC2\xB0" "C", "minus deset stupnjeva Celzija"},
+        {"T-2", "T-dva"},
+        {"1 000", "tisu\xC4\x87" "u"},
+        {"1.000", "tisu\xC4\x87" "u"},
+        {"1.000.000", "milijun"},
+        {"1.317", "tisu\xC4\x87" "u tristo sedamnaest"},
+        {"1.000,50", "tisu\xC4\x87" "u zarez pedeset"},
+        {"1.000 \xE2\x82\xAC", "tisu\xC4\x87" "u eura"},
+        {"3.14", "tri to\xC4\x8D" "ka \xC4\x8D" "etrnaest"},
+        {"1 2 3", "jedan dva tri"},
+        {"1. mjesto", "prvo mjesto"},
+        {"2. mjesto", "drugo mjesto"},
+        {"3. mjesto", "tre\xC4\x87" "e mjesto"},
+        {"na 1. mjestu", "na prvom mjestu"},
+        {"u 2. razredu", "u drugom razredu"},
+        {"u 21. stolje\xC4\x87" "u", "u dvadeset prvom stolje\xC4\x87" "u"},
+        {"3. \xC4\x8D" "lanak", "tre\xC4\x87" "i \xC4\x8D" "lanak"},
+        {"1. stranica", "prva stranica"},
+        {"7. listopad", "sedmi listopad"},
+        {"7. listopada", "sedmog listopada"},
+        {"7. 10.", "sedmog desetog."},
+        {"7.10.2026.", "sedmog desetog dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "este."},
+        {"Danas je 7. 10. 2026.", "Danas je sedmi deseti dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "este."},
+        {"1990. godine", "tisu\xC4\x87" "u devetsto devedesete godine"},
+        {"u 1990. godini", "u tisu\xC4\x87" "u devetsto devedesetoj godini"},
+        {"1991.\xE2\x80\x93" "2000.", "tisu\xC4\x87" "u devetsto devedeset prve do dvije tisu\xC4\x87" "ite."},
+        {"15.\xE2\x80\x93" "20. o\xC5\xBE" "ujka", "petnaestog do dvadesetog o\xC5\xBE" "ujka"},
+        {"3.\xE2\x80\x93" "4. mjesto", "tre\xC4\x87" "e do \xC4\x8D" "etvrto mjesto"},
+        {"u 7. i 8. razredu", "u sedmom i osmom razredu"},
+        {"100. obljetnica", "stota obljetnica"},
+        {"u 90. godinama", "u devedesetim godinama"},
+        {"konac 80. godina", "konac osamdesetih godina"},
+        {"do 3. razreda", "do tre\xC4\x87" "eg razreda"},
+        {"osvojio je 1. nagradu", "osvojio je prvu nagradu"},
+        {"To je 1. liga", "To je prva liga"},
+        {"po\xC4\x8D" "etak 2. svjetskog rata", "po\xC4\x8D" "etak drugog svjetskog rata"},
+        {"1.", "jedan."},
+        {"u 8.30", "u osam trideset"},
+        {"od 8.30 do 16.00", "od osam trideset do \xC5\xA1" "esnaest nula nula"},
+        {"24:00", "dvadeset \xC4\x8D" "etiri nula nula"},
+        {"Sada je 8.30", "Sada je osam trideset"},
+        {"2x", "dva puta"},
+        {"1x", "jedanput"},
+        {"2-godi\xC5\xA1" "nji", "dvogodi\xC5\xA1" "nji"},
+        {"3-godi\xC5\xA1" "nja", "trogodi\xC5\xA1" "nja"},
+        {"10-godi\xC5\xA1" "njica", "desetogodi\xC5\xA1" "njica"},
+        {"4-sobni", "\xC4\x8D" "etverosobni"},
+        {"1-sobni", "jednosobni"},
+        {"57-godi\xC5\xA1" "nji", "pedesetsedmogodi\xC5\xA1" "nji"},
+        {"2-3 dana", "dva do tri dana"},
+        {"10-15 %", "deset do petnaest posto"},
+        {"5-3", "pet-tri"},
+    };
+    for (const auto& pair : croatian) {
+        INFO(pair.first);
+        REQUIRE(speak(engine.handle, pair.first) == speak(engine.handle, pair.second));
+    }
+    REQUIRE(laprdus_set_language(engine.handle, "sr") == LAPRDUS_OK);
+    const std::pair<const char*, const char*> serbian[] = {
+        {"2 ku\xC4\x87" "e", "dve ku\xC4\x87" "e"},
+        {"1 \xC5\xBE" "ena", "jedna \xC5\xBE" "ena"},
+        {"u 1 satu", "u jednom satu"},
+        {"1 \xE2\x82\xAC", "jedan evro"},
+        {"2 \xE2\x82\xAC", "dva evra"},
+        {"5 \xC2\xB0" "C", "pet stepeni Celzijusa"},
+        {"1.000", "hiljadu"},
+        {"4-sobni", "\xC4\x8D" "etvorosobni"},
+        {"1. mesto", "prvo mesto"},
+        {"u 21. veku", "u dvadeset prvom veku"},
+        {"7. oktobra", "sedmog oktobra"},
+        {"7. 10. 2026.", "sedmog desetog dve hiljade dvadeset \xC5\xA1" "este."},
+        {"2 \xD0\xBA" "\xD1\x83" "\xD1\x9B" "\xD0\xB5", "dve ku\xC4\x87" "e"},
+        {"\xD1\x83" " 1 \xD1\x81" "\xD0\xB0" "\xD1\x82" "\xD1\x83", "u jednom satu"},
+        {"\xD0\xBD" "\xD0\xB0" " 1. \xD0\xBC" "\xD0\xB5" "\xD1\x81" "\xD1\x82" "\xD1\x83", "na prvom mestu"},
+        {"7. \xD0\xBE" "\xD0\xBA" "\xD1\x82" "\xD0\xBE" "\xD0\xB1" "\xD1\x80" "\xD0\xB0", "sedmog oktobra"},
+        {"\xD1\x83" " 21. \xD0\xB2" "\xD0\xB5" "\xD0\xBA" "\xD1\x83", "u dvadeset prvom veku"},
+    };
+    for (const auto& pair : serbian) {
+        INFO(pair.first);
+        REQUIRE(speak(engine.handle, pair.first) == speak(engine.handle, pair.second));
+    }
+    REQUIRE(laprdus_set_language(engine.handle, "bs") == LAPRDUS_OK);
+    const std::pair<const char*, const char*> bosnian[] = {
+        {"2 ku\xC4\x87" "e", "dvije ku\xC4\x87" "e"},
+        {"1 \xE2\x82\xAC", "jedan euro"},
+        {"5 \xC2\xB0" "C", "pet stepeni Celzijusa"},
+        {"1.000", "hiljadu"},
+        {"4-sobni", "\xC4\x8D" "etvorosobni"},
+        {"7. 10. 2026.", "sedmog desetog dvije hiljade dvadeset \xC5\xA1" "este."},
+    };
+    for (const auto& pair : bosnian) {
+        INFO(pair.first);
+        REQUIRE(speak(engine.handle, pair.first) == speak(engine.handle, pair.second));
+    }
 }
 
 TEST_CASE("Lexicon accents cover the whole paradigm", "[formant][text]") {
@@ -3885,17 +4139,19 @@ TEST_CASE("A mark glued to a word is read by name, not as a clause end", "[forma
         // that joins a word to the letters before it is silent (a screen
         // reader's label "7.listopada.u20:03")
         REQUIRE(same("u20:03", "u dvadeset nula tri"));
-        REQUIRE(same("7.listopada.u20:03", "sedam listopada u dvadeset nula tri"));
+        REQUIRE(same("7.listopada.u20:03", "sedmog listopada u dvadeset nula tri"));
         REQUIRE(same("od20do30", "od dvadeset do trideset"));
         REQUIRE(same("5kg", "pet kg"));
         REQUIRE(same("COVID19", "COVID devetnaest"));
         REQUIRE(same("20:03h", "dvadeset nula tri h"));
         REQUIRE(same("3,14", "tri zarez \xC4\x8D" "etrnaest"));
         REQUIRE(same("0.05", "nula to\xC4\x8Dka nula pet"));
-        REQUIRE(same("1.317", "jedan to\xC4\x8Dka tristo sedamnaest"));
+        // A period between groups of three digits is the thousands separator
+        // (Hrvatski pravopis), since 2026-11-03; it used to be read by name
+        REQUIRE(same("1.317", "tisu\xC4\x87u tristo sedamnaest"));
         REQUIRE(same("3.14159", "tri to\xC4\x8Dka \xC4\x8D" "etrnaest tisu\xC4\x87" "a sto pedeset devet"));
         REQUIRE(same("3,14159", "tri zarez jedan \xC4\x8D" "etiri jedan pet devet"));
-        REQUIRE(same("1.000", "jedan to\xC4\x8Dka nula nula nula"));
+        REQUIRE(same("1.000", "tisu\xC4\x87u"));
     }
     SECTION("The commas of a phone number spelled digit by digit are pauses") {
         // Screen readers write a phone number one digit at a time, with a
@@ -3979,17 +4235,17 @@ TEST_CASE("A mark glued to a word is read by name, not as a clause end", "[forma
         REQUIRE(same("Prvi red.\nDrugi red.", "Prvi red. Drugi red."));
         REQUIRE_FALSE(same("Prvi red\nDrugi red", "Prvi red Drugi red"));
     }
-    SECTION("A number with a period before a lowercase word is read as a cardinal") {
-        // An ordinal would need the case of the noun, so the number is read
-        // as written; the period is silent and does not end the clause.
-        // Before an uppercase word it ends the sentence as before.
-        REQUIRE(same("7. listopada 2026.", "sedam listopada dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "est."));
-        REQUIRE(same("u 19. stolje\xC4\x87u", "u devetnaest stolje\xC4\x87u"));
-        REQUIRE(same("1990. godine", "tisu\xC4\x87u devetsto devedeset godine"));
-        REQUIRE(same("2000. godine", "dvije tisu\xC4\x87" "e godine"));
-        REQUIRE(same("100. put", "sto put"));
-        REQUIRE(same("21. put", "dvadeset jedan put"));
-        REQUIRE(same("7.listopada", "sedam listopada"));
+    SECTION("A number with a period before a lowercase word is an ordinal in the noun's case") {
+        // Since 2026-11-03 the ordinal takes the case the noun's ending and
+        // the preposition show; the period is silent and does not end the
+        // clause. Before an uppercase word it ends the sentence as before.
+        REQUIRE(same("7. listopada 2026.", "sedmog listopada dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "est."));
+        REQUIRE(same("u 19. stolje\xC4\x87u", "u devetnaestom stolje\xC4\x87u"));
+        REQUIRE(same("1990. godine", "tisu\xC4\x87u devetsto devedesete godine"));
+        REQUIRE(same("2000. godine", "dvije tisu\xC4\x87" "ite godine"));
+        REQUIRE(same("100. put", "stoti put"));
+        REQUIRE(same("21. put", "dvadeset prvi put"));
+        REQUIRE(same("7.listopada", "sedmog listopada"));
         REQUIRE(same("7. Listopad.", "sedam. Listopad."));
         REQUIRE(same("Ima ih 7. Sutra", "Ima ih sedam. Sutra"));
         REQUIRE(same("0. element", "nula. element"));
@@ -4005,19 +4261,21 @@ TEST_CASE("A mark glued to a word is read by name, not as a clause end", "[forma
         REQUIRE(same("3,14", "tri zarez jedan \xC4\x8D" "etiri"));
         REQUIRE(same("12:30", "dvanaest trideset"));
         REQUIRE(same("0 9 1,2 3 4,5 6 7 8", "0 9 1, 2 3 4, 5 6 7 8"));
-        REQUIRE(same("7.10.2026", "sedam deset dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "est"));
+        REQUIRE(same("7.10.2026", "sedmog desetog dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "este"));
         // The sections share one engine in this harness
         REQUIRE(laprdus_set_number_mode(engine.handle, LAPRDUS_NUMBER_MODE_WHOLE) == LAPRDUS_OK);
     }
     SECTION("Clock times and dates are read without the separators") {
+        // A date is read as it is said since 2026-11-03: the day and the
+        // month as genitive ordinals, the year as the ordinal of "godine"
         REQUIRE(same("12:30", "dvanaest trideset"));
         REQUIRE(same("9:05", "devet nula pet"));
         REQUIRE(same("12:30:45", "dvanaest trideset \xC4\x8D" "etrdeset pet"));
         REQUIRE(same("u 12:30 sati", "u dvanaest trideset sati"));
-        REQUIRE(same("7.10.2026.", "sedam deset dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "est."));
-        REQUIRE(same("7. 10. 2026.", "sedam deset dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "est."));
-        REQUIRE(same("07.10.26", "sedam deset dvadeset \xC5\xA1" "est"));
-        REQUIRE(same("31.12.1999", "trideset jedan dvanaest tisu\xC4\x87u devetsto devedeset devet"));
+        REQUIRE(same("7.10.2026.", "sedmog desetog dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "este."));
+        REQUIRE(same("7. 10. 2026.", "sedmog desetog dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "este."));
+        REQUIRE(same("07.10.26", "sedmog desetog dvadeset \xC5\xA1" "este"));
+        REQUIRE(same("31.12.1999", "trideset prvog dvanaestog tisu\xC4\x87u devetsto devedeset devete"));
         // Not a time or a date: the marks are read
         REQUIRE(same("3:1", "tri dvoto\xC4\x8Dka jedan"));
         REQUIRE(same("25:00", "dvadeset pet dvoto\xC4\x8Dka nula nula"));
@@ -4045,8 +4303,8 @@ TEST_CASE("A mark glued to a word is read by name, not as a clause end", "[forma
         REQUIRE(same("datoteka.txt", "datoteka ta\xC4\x8Dka txt"));
         REQUIRE(same("3.14", "tri ta\xC4\x8Dka \xC4\x8D" "etrnaest"));
         REQUIRE(same("a:b", "a dvota\xC4\x8Dka b"));
-        REQUIRE(same("7.10.2026", "sedam deset dve hiljade dvadeset \xC5\xA1" "est"));
-        REQUIRE(same("2000. godine", "dve hiljade godine"));
+        REQUIRE(same("7.10.2026", "sedmog desetog dve hiljade dvadeset \xC5\xA1" "este"));
+        REQUIRE(same("2000. godine", "dve hiljadite godine"));
         REQUIRE(same("p.s.", "pe es."));
         REQUIRE(laprdus_set_voice(engine.handle, "mirsad", NO_DATA) == LAPRDUS_OK);
         REQUIRE(same("Hej!ti", "Hej uzvi\xC4\x8Dnik ti"));

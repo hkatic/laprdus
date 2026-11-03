@@ -102,13 +102,30 @@ private:
     bool is_feminine_scale(int group_index);
     std::string_view zero_word() const;
     bool slovenian() const { return m_dialect == Dialect::Slovenian; }
-    // Slovenian: the unit of a compound numeral (dva- of dvaindvajset), the
-    // genitive ordinal of a day or month (sedmega), the "cela" of a decimal
+    // Slovenian: the unit of a compound numeral (dva- of dvaindvajset), an
+    // ordinal with an adjectival ending (sedmega, prvo, enaindvajsetem), the
+    // "cela" of a decimal, the agreement of the number with its noun
     static std::string_view slovenian_compound_unit(char digit);
-    std::string slovenian_ordinal_genitive(std::string_view number);
+    std::string slovenian_ordinal(std::string_view number, std::string_view ending);
+    std::string slovenian_ordinal_before(const std::string& text, size_t start, size_t end, size_t after);
     std::string slovenian_decimal(std::string_view whole, std::string_view fraction);
     static void feminine_two(std::string& words);
     static void slovenian_agree(const std::string& text, size_t start, size_t end, std::string& words);
+    // The Slovenian constructs the shared loop does not know: a minus, a time
+    // after "ob", a range, a date without a year, thousands with spaces, a
+    // number compounded with a word (2-krat, 2-letni), a unit's noun
+    size_t slovenian_number_at(const std::string& text, size_t i, std::string& result, bool in_range = false);
+    std::string slovenian_count(std::string_view digits, const struct SlUnit& unit, std::string_view scale,
+                                bool accusative = false);
+    // Croatian, Serbian and Bosnian: the same constructs with their grammar
+    // (prvo mjesto, na prvom mjestu, sedmog listopada, jedna kuća, dvije kuće,
+    // jedan euro, dva eura, pet stupnjeva Celzija, tisuću tristo sedamnaest)
+    std::string hr_ordinal(std::string_view number, std::string_view ending);
+    std::string hr_ordinal_before(const std::string& text, size_t start, size_t end, size_t after);
+    void hr_agree(const std::string& text, size_t start, size_t end, std::string& words);
+    std::string hr_count(std::string_view digits, const struct SlUnit& unit, std::string_view scale);
+    std::string hr_decimal(std::string_view whole, std::string_view fraction);
+    size_t hr_number_at(const std::string& text, size_t i, std::string& result, bool in_range = false);
 
     // Digits after a decimal mark or inside a dotted identifier
     std::string digit_group_to_words(std::string_view group);

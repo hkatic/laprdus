@@ -3624,7 +3624,25 @@ frequent reading alone is right for 93.3 %, the cues below for 94.8 %.
   vsak dan.*): the verb *gorí* by default, at the head of a clause too
   (*Gori!*), against the more frequent noun; *gôri*, the locative and the
   dative of *gôra*, after a preposition or an adjective (*na gori*, *v Kranjski
-  Gori*, *Črni gori*), and the adverb after *tam, tu, tukaj* (SSKJ² *gôri*).
+  Gori*, *Črni gori*), and the adverb *gôri* "up there" (SSKJ² *gôri* prisl.:
+  *tam gori na hribu*, *daleč, visoko gori*, *gori v bregu*, *hiša stoji na
+  hribu in gori je veliko sonca*; SP 2001 *gôri* mestov. prostor. prisl.) after
+  *tam, tu, tukaj, visoko, daleč*, before a form of *biti* anywhere in the
+  clause (*Gori je lepo*, *in gori je veliko sonca*: a present tense is never
+  followed by the auxiliary), and, since the listener's second report
+  (2026-11-03: *Gori na gori gori. Gori na seniku je lepo. Gori na podstrešju
+  je krama.*, the first syllable in all but the last word of the first
+  sentence), at the head of a clause before a preposition of place (*na, v,
+  pri, pod, nad, ob, za, pred, med, sredi, vrh, blizu, poleg, zraven, okoli,
+  okrog, nasproti, onkraj, do, proti, k, h*; not *s, brez, zaradi, po*: *gori s
+  plamenom*, *gori brez dima*, *gori po vsej hiši* burn) when the clause goes on
+  past the phrase of place, so the place is where something is or happens.
+  Two guards keep the fire: an exclamation mark (*Gori na podstrešju!*, the
+  alarm, read from the clause's own punctuation or the sentence's mark) and
+  nothing after the place (*Gori v hiši.*). SUK 1.1 has no *gori* at the head
+  of a clause (3 verbs inside one, 1 adverb after *tam*), so the listener's
+  description and the dictionaries decide, and the change moves no corpus
+  word. GaMS was not asked: it had *góri* for *Peč gori* in an earlier round.
 
 Cues that look as good did worse than no cue over all 909 spellings and
 were left out: the end of the clause (*pred milijoni leti*, *čez dve leti*,
@@ -3793,7 +3811,27 @@ SSKJ², SP and the Collocations Dictionary of Modern Slovene at CJVT (Kolokacije
   *Start meni*, *Windows meni*; the spellings after `rewrite_foreign()`, *contekst*,
   *vindovs*) and before the name of one in small letters (*meni start*, *Meni orodja*;
   a short list, because *Meni pomoč ni potrebna* and *Meni nastavitve niso všeč* are
-  the pronoun). *SDS meni, da je prav* keeps the verb: an acronym before it, last in
+  the pronoun), also when the name stands in quotation marks or brackets that a
+  screen reader names because its punctuation is on (*meni narekovaj Start
+  narekovaj*, *meni dvojni začetni narekovaj start dvojni zaključni narekovaj* for
+  *meni »start«*, *meni okrogli oklepaj start okrogli zaklepaj*, *narekovaj start
+  narekovaj meni*; `after_symbol_names()` / `before_symbol_names()` read through
+  NVDA's Slovenian symbol names and the engine's own spelled names: *narekovaj,
+  oklepaj, zaklepaj, kljukica, opuščaj, manjše, večje, zvezdica, navpičnica,
+  podčrtaj, pomišljaj* with their qualifiers *začetni, končni, zaključni, dvojni,
+  enojni, spodnji, levi, desni, okrogli, oglati, zaviti*; a listener's report of
+  2026-11-03, *meni "start"* read the pronoun; the marks themselves are silent in
+  the engine, which the listener's *meni "start"* with the punctuation off shows:
+  *mení start*). The same report: Laprdus seemed to speak quotation marks with the
+  screen reader's punctuation off. The engine never names a quotation mark; NVDA's
+  own Slovenian symbol table (`locale/sl/symbols.dic`) gives the Slovenian marks »
+  and « the level *none*, spoken at every punctuation level, while every other
+  quotation mark, and these two in NVDA's English table, have *most*. The add-on
+  therefore ships a mandatory speech symbol dictionary,
+  `nvda-addon/addon/locale/sl/symbols-laprdus.dic` (`symbolDictionaries` in
+  `buildVars.py`, NVDA 2024.1 and later; earlier versions ignore the manifest key),
+  with » and « at *most*, named *dvojni začetni narekovaj* and *dvojni zaključni
+  narekovaj*, NVDA's own names without their stray English *double*. *SDS meni, da je prav* keeps the verb: an acronym before it, last in
   its clause before a clause of *da*, no verb of menus earlier in the clause. SUK 1.1:
   no acronym stands before *meni*. A menu named by a number with nothing after it
   (*Meni 1*, *Meni 2*, *Meni 21*; `is_number_word()` over the rest of the clause) is
@@ -4105,7 +4143,130 @@ is fixed only in *dva tisoč*, *dvaintrideset*, *dvakrat*, *dvajset*.
   koše, tri hiše, tri mesta*).
 - **Inside larger numbers** the same (*sto en koš, sto dve leti, sto trije
   koši, tisoč dve knjigi*), not in the compounds, which do not change
-  (*dvaindvajset*). Units are not expanded but agree: *en kg, en km, dve min*.
+  (*dvaindvajset*). Units are not expanded but agree with their noun's gender,
+  the capitals of *MB, GB, kW* included: *en kg, en km, en MB, ena min, dve
+  min, en tisoč, dva tisoč* (`SL_MASCULINE_UNITS`, `SL_FEMININE_UNITS`: minuta,
+  ura, sekunda, tona are feminine, the rest masculine; SSKJ²).
+
+**The numerals' grammar (the maintainer's request of 2026-11-03: "correct the
+numerals to match the spelling and grammar").** A survey of about 400 inputs
+found the bare numbers right and the following wrong; all of it is gated to
+the Slovenian dialect (`CroatianNumbers::slovenian_number_at()`, the hook the
+shared loop calls first, and the Slovenian branches of `slovenian_agree()` and
+of the silent-period block), and the Croatian, Serbian and Bosnian audio is
+byte for byte what it was.
+
+- **Ordinals before a noun** (`slovenian_ordinal_before()`, `slovenian_ordinal()`,
+  `sl_ordinal_ending()`): *1. mesto* was *ena mesto*. A number of up to four
+  digits with a period before a lowercase word is now the ordinal in the
+  gender, number and case the noun's ending and the preposition show, the way
+  the agreement of 1 to 4 reads them: *prvo mesto, drugo mesto, tretje mesto,
+  na prvem mestu, v drugem nadstropju, v enaindvajsetem stoletju, tretji člen,
+  prva stran, prvi razred, sedmi oktober, sedmega oktobra, enaindvajseto
+  stoletje, v devetdesetih letih, osemdeseta leta, stota obletnica, do tretjega
+  razreda, k prvemu členu, pred prvim letom, ob peti uri, druga svetovna vojna,
+  začetek druge svetovne vojne, odstavka tretjega člena* (after a word that is
+  not a preposition, a copula, a conjunction or a particle the phrase in *-a*
+  is a genitive attribute; at the head or after *je, so, in, pa* the feminine
+  nominative, *prva nagrada, To je druga liga*), *konec osemdesetih let*. The
+  stems are the dictionaries' (SP 2001 *pŕvi -a -o, drúgi, trétji -a -e,
+  četŕti, pêti, šêsti, sêdmi* "~ september ‹7.›", *ôsmi, devêti, desêti,
+  enájsti, dvájseti, ênaindvájseti, stôti* "~a obletnica ‹100.›", *tisóči -a
+  -e, milijónti*), only the last word of a longer number changes (*sto prvi,
+  tisoč devetsto enaindevetdeseti, dva tisoči*), the soft stems take *-e* in
+  the neuter (*tretje mesto, tisoče*), and a compound keeps its two accents
+  (*ena in dvajseto*). Nothing counted keeps the cardinal (*2. je*, *2.
+  deluje*, *1.* alone, *stran 2.*). The Sloleks table has every form with its
+  accent (*pŕvi, trétjem, stôti, ênaindvájsetega*). A date without a year
+  (*7. 10.*, *7.10.*) is *sedmega desetega* (`short_date` in the hook; not
+  before a year, not in an enumeration *1. 2. in 3. mesto*, not after another
+  *N.*), and the final period stays a clause end unless a lowercase word
+  follows.
+- **5 and above in the oblique cases** (`slovenian_agree()`, the `five_plus`
+  branch): *v petih urah, s petimi prsti, pred petimi leti, pred
+  enaindvajsetimi leti, po petih letih, v dvanajstih urah, k petim osebam, do
+  petih let, od petih ur, pri dvajsetih stopinjah, sedmih, osmimi* (SP 2001
+  *pét pêtih* "v petih urah; priti s petimi sošolci"). Only a preposition or
+  an ending no other case has (*-ah, -eh, -ami, -imi*) says the case: in the
+  nominative and the accusative the noun phrase is in the genitive plural
+  anyway (*pet novih hiš*), so *-ih* and *-ov* say nothing there. *sto* and
+  *tisoč* stay (*v sto letih*; SP *stó stôtih tudi neskl.*, *tísoč -- tudi
+  -ih*), and so do the milijon words and a unit's abbreviation (*v 5 min*).
+- **The nouns of the unit signs** (`SL_UNITS`, `slovenian_count()`): *%, €, $,
+  °, °C, °F* were one fixed genitive plural (*ena evrov*). The converter now
+  writes the noun in the form the number asks for and the number agreeing
+  with it: *en odstotek, dva odstotka, trije odstotki, štirje evri, pet
+  odstotkov, enaindvajset odstotkov, sto en evro, ena stopinja, dve stopinji,
+  tri stopinje, pet stopinj Celzija, nič odstotkov*, after a decimal the
+  genitive singular (*ena cela pet odstotka, dve celi petdeset evra, nič celih
+  devet odstotka*), and *tri evre, štiri odstotke* where the number is an
+  object (after *za, na, po, stane, znaša*, after a participle, also across an
+  auxiliary: *plačal sem 4 €*; `sl_accusative_context()`); *°C* is *stopinj
+  Celzija* (SP 2001 *odstótek -tka m* "pet ~ov ‹5 %›", *évro -a m*, *dólar -ja
+  m*, *stopínja -e ž* "pet stopinj Celzija ‹5 °C›", *Célzij -a* "37 stopinj
+  ~a"; Pravopis 8.0 § 35). The front end's `SYMBOLS` names a sign that stands
+  without a number. Not applied: the case of the noun after a preposition (*do
+  5 %* stays *pet odstotkov*).
+- **A minus** glued to the number, after a space, a bracket or at the start
+  (hyphen-minus, U+2212, the en dash): *minus pet, minus pet stopinj Celzija,
+  od minus tri do ena* (Pravopis 8.0 § 26 "–10 °C"; SP 2001 *mínus*
+  "temperatura ~ deset stopinj Celzija"); *T-2, A-2* and *5-3* keep their
+  hyphen.
+- **Thousands with spaces** (space, no-break space, narrow no-break space,
+  thin space): *1 000* is *tisoč*, *1 000 000* *milijon*, *2 000 ljudi* *dva
+  tisoč ljudi*, *1 000 €* *tisoč evrov*, when the first group has one to
+  three digits without a leading zero and every other one exactly three, not
+  after a digit, a plus, a bracket or a slash (*+386 41 123 456*, *(031) 731
+  940*), not after *telefon, številka* and the like, and not after a name
+  inside a sentence (*Pentium 2 266 MHz*). A telephone number written as *75
+  458* still reads as one number.
+- **Ranges**: *do* between the two numbers, both read alike: *1991–2000*
+  and *1991-2000* (*tisoč devetsto enaindevetdeset do dva tisoč*), *2–3 dni*,
+  *pred 2–3 leti* (*pred dvema do tremi leti*), *10–15 %* (*deset do petnajst
+  odstotkov*), *15.–20. 3.* and *15. do 20. marca* (*petnajstega do dvajsetega
+  tretjega / marca*), *3.–4. mesto* (*tretje do četrto mesto*), *v 7. in 8.
+  razredu* (*v sedmem in osmem razredu*), *8.30–16.00* and *8:30–16:00*. A
+  hyphen joins a range only between numbers of up to two digits or two years,
+  with the right one larger (*716-844* is a telephone number, *5-3* a
+  subtraction), the en dash always.
+- **Multiplicatives and compounds with a hyphen**, one word so the lexicon's
+  accent applies: *2-krat* and *2x* *dvakrat*, *1-krat* *enkrat*, *21-krat*
+  *enaindvajsetkrat*, *2-letni* *dvoletni*, *3-letna* *triletna*,
+  *10-letnica* *desetletnica*, *20-letnik* *dvajsetletnik*, *57-letni*
+  *sedeminpetdesetletni*, *5-dnevni* *petdnevni*, *1-sobno* *enosobno*,
+  *2-sobno* *dvosobno*, *100-letnica* *stoletnica* (SP 2001 *ênkrat kratn.
+  prisl.*, *dvákrat*, *dvóléten*, *desétlétnica*); the word after the hyphen
+  must be lowercase and at least four letters (*3-D* stays).
+- **Clock times**: the hour after *ob* in the locative plural when nothing
+  counted follows, *ob 5, ob 5h, ob 8 h, ob 5.00, ob 17:00, ob 13* (*ob petih,
+  ob osmih, ob sedemnajstih, ob trinajstih*; SP 2001 *pét* "priti ob petih |ob
+  5. uri; ob 5h; ob 5.00; ob 17h; ob 17.00|", SSKJ² "vstajati ob petih"), while
+  *ob 5 urah* is *ob petih urah* by the agreement and *ob 5. uri* *ob peti uri*
+  by the ordinal; a time written with a period (SP: *ob 8.30*) in the context
+  of a time, after *ob, od, do, med, okoli, okrog*, after *ura je*, before *h,
+  ure, uri, ur, zjutraj, zvečer, dopoldne, popoldne* or in a range of times
+  (*ob osem trideset, od osem trideset do šestnajst nič nič*), so that *3.14*
+  and *3.2* stay what they were and *7.10.* with a possible month inside is
+  the date; *24:00* (*štiriindvajset nič nič*). *Ura je 5* stays *ura je pet*.
+- **The front end** (`is_number_word()` in `formant_slovenian.cpp`) counts the
+  oblique forms, the ordinals, the *cela* forms and the multiplicatives as
+  number words, so *Meni 21* stays the menu in any case, and the noun rule of
+  *leti* counts only the words that are not a number in its window: *pred 21
+  leti* (*pred ena in dvajsetimi leti*) read the verb *letí* because the split
+  compound pushed *pred* out of the three words.
+
+Checked: the survey file through the phones tool (only the readings above
+changed, 100 of 408 inputs), `test_formant` ("Slovenian is spoken by every
+voice", the table `numerals`, 101 pairs of digits and words that must sound
+the same) and `test_frontend`, the SUK 1.1 sentences with a digit (1,450 of
+7,326 change, read by category: the ordinals of crossword clues *1. pisec
+kronike* now *prvi pisec*, which is the one disputable class), and the
+Croatian, Serbian and Bosnian audio of the survey and of 60 sentences of prose,
+identical to the old library for four voices. Left as they are, for the
+tester: *videl sem 1 otroka* (*enega* would need the noun's gender), *1 od 3*
+(*ena od tri*, the scale), the feminine accusative in *-o* after a preposition
+(*za 3. nagrado* comes out *tretje*), the case of a unit's noun after a
+preposition, and the list of symbol and unit names, which is a hand list.
 
 Measured on SUK 1.1, with the form the noun's gender, number and case ask for as
 the reference: of the 209 occurrences of 1 to 4 before a noun or an adjective
@@ -4120,11 +4281,12 @@ capital of a sentence cannot be told from a name (*Pentium 2 procesorji* at the
 head is read as counting). GaMS 9B, asked for 16 sentences with 2
 (*dva* or *dve*), agrees with the rule in all of them. The dictionaries name the
 number *dve* (SSKJ² "izraža število dve", SP § 11), and that is what the bare 2
-read until November 2026; the listener's report and GaMS prefer *dva* where
-nothing is counted.
+reads; a first version of November 2026 had *dva* there, which the listener's
+next report reversed (see above).
 
-Symbols inside a clause are *pika, dvopičje, klicaj, odstotkov, evrov,
-afna*; the spelled names of digits, punctuation and symbols (*ena, pika,
+Symbols inside a clause without a number before them are *pika, dvopičje,
+klicaj, odstotkov, evrov, afna* (after a number the converter writes the
+noun's form, *dva odstotka*, see above); the spelled names of digits, punctuation and symbols (*ena, pika,
 vejica, podpičje, vprašaj, oklepaj, zaklepaj, poševnica, afna, lojtra,
 zvezdica, enačaj ...*) are a table of the module (`spelled_name()`), which
 `TTSEngine::spell_character()` uses instead of the Croatian spelling

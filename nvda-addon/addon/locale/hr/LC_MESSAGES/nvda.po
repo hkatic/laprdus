@@ -21,6 +21,10 @@ msgstr ""
 msgid "Laprdus TTS"
 msgstr "Laprdus TTS"
 
+#. Translators: the name of the add-on's speech symbol dictionary in NVDA's punctuation settings
+msgid "Laprdus symbols"
+msgstr "Laprdusovi simboli"
+
 #. Translators: Long description to be shown for this add-on
 msgid ""
 "Text-to-speech synthesizer for NVDA.\n"

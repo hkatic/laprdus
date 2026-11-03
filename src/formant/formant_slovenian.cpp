@@ -1080,7 +1080,9 @@ const WordSet& prepositions() {
 }
 
 // A number as the number converter writes it (ena, dva, dve, dvanajst, sto,
-// tisoč) or a part of a compound one split by the front end (ena in dvajset)
+// tisoč), a part of a compound one split by the front end (ena in dvajset),
+// an oblique form (dveh, petih, petimi, enaindvajsetimi), an ordinal (prvi,
+// tretjem, dvajsetega, stoti), a "cela" or a multiplicative (dvakrat)
 bool is_number_word(const std::u32string& w) {
     static const WordSet numbers = {
         U"nič", U"ena", U"en", U"eno", U"dva", U"dve", U"tri", U"trije", U"štiri", U"štirje", U"pet", U"šest",
@@ -1088,10 +1090,33 @@ bool is_number_word(const std::u32string& w) {
         U"šestnajst", U"sedemnajst", U"osemnajst", U"devetnajst", U"dvajset", U"trideset", U"štirideset",
         U"petdeset", U"šestdeset", U"sedemdeset", U"osemdeset", U"devetdeset", U"sto", U"dvesto", U"tristo",
         U"štiristo", U"petsto", U"šeststo", U"sedemsto", U"osemsto", U"devetsto", U"tisoč", U"milijon",
-        U"milijona", U"milijoni", U"milijonov", U"in",
+        U"milijona", U"milijoni", U"milijonov", U"milijarda", U"milijardi", U"milijarde", U"milijard", U"in",
+        U"cela", U"celi", U"cele", U"celih", U"minus",
+        U"enega", U"ene", U"enem", U"eni", U"enim", U"enemu", U"enih", U"dveh", U"dvema", U"treh", U"trem",
+        U"tremi", U"štirih", U"štirim", U"štirimi",
     };
+    // The stems of the ordinals and of the oblique forms of 5 and above,
+    // before an adjectival ending
+    static const WordSet stems = {
+        U"prv", U"drug", U"tretj", U"četrt", U"sedm", U"osm", U"stot", U"dvestot", U"tristot", U"štiristot",
+        U"petstot", U"šeststot", U"sedemstot", U"osemstot", U"devetstot", U"milijont", U"milijardt",
+    };
+    static const char32_t* const ENDINGS[] = {U"imi", U"ima", U"ega", U"emu", U"em", U"im", U"ih", U"i", U"a", U"o", U"e"};
     std::u32string ones, tens;
-    return numbers.count(w) != 0 || split_compound_numeral_impl(w, ones, tens);
+    if (numbers.count(w) != 0 || split_compound_numeral_impl(w, ones, tens)) return true;
+    if (ends_with(w, U"krat")) {
+        const std::u32string stem = w.substr(0, w.size() - 4);
+        return numbers.count(stem) != 0 || split_compound_numeral_impl(stem, ones, tens);
+    }
+    for (const char32_t* ending : ENDINGS) {
+        const std::u32string e(ending);
+        if (w.size() <= e.size() || !ends_with(w, e)) continue;
+        const std::u32string stem = w.substr(0, w.size() - e.size());
+        if (stems.count(stem) != 0) return true;
+        if (stem == U"in" || stem == U"en") continue;        // ini, ina: not numbers
+        if (numbers.count(stem) != 0 || split_compound_numeral_impl(stem, ones, tens)) return true;
+    }
+    return false;
 }
 
 } // namespace
@@ -1481,6 +1506,42 @@ bool is_definite_adjective(const std::u32string& w) {
     return false;
 }
 
+// The names a screen reader speaks for the quotation marks and brackets
+// around a word when its punctuation level is high (NVDA's Slovenian symbol
+// names: narekovaj, začetni and končni narekovaj, dvojni spodnji narekovaj,
+// dvojni začetni and zaključni narekovaj for » and «, okrogli oklepaj, oglati
+// zaklepaj, zaviti oklepaj, leva and desna kljukica, opuščaj, manjše, večje,
+// zvezdica, navpičnica, podčrtaj, pomišljaj; the engine's own spelled names
+// are the same words). The index after the run of such names that starts at
+// k, or k when there is none; and the index of the first name of the run
+// that ends before k, or k.
+size_t after_symbol_names(const std::vector<std::u32string>& words, size_t k) {
+    static const WordSet names = {U"narekovaj", U"narekovaji", U"oklepaj", U"zaklepaj", U"kljukica", U"opuščaj",
+                                  U"apostrof", U"manjše", U"večje", U"zvezdica", U"navpičnica", U"podčrtaj",
+                                  U"krativec", U"ostrivec", U"poševnica", U"pomišljaj", U"črtica", U"vezaj"};
+    static const WordSet qualifiers = {U"začetni", U"končni", U"zaključni", U"dvojni", U"enojni", U"spodnji",
+                                       U"zgornji", U"levi", U"desni", U"leva", U"desna", U"okrogli", U"oglati",
+                                       U"zaviti", U"kratka", U"dolga", U"double"};
+    size_t j = k;
+    while (j < words.size()) {
+        size_t q = j;
+        while (q < words.size() && qualifiers.count(words[q])) ++q;
+        if (q < words.size() && names.count(words[q])) j = q + 1; else break;
+    }
+    return j;
+}
+
+size_t before_symbol_names(const std::vector<std::u32string>& words, size_t k) {
+    size_t j = k;
+    for (size_t start = 0; start < j;) {
+        // The longest run of names starting at `start` that ends exactly at j
+        size_t end = after_symbol_names(words, start);
+        if (end == j) return start;
+        if (end > start && end < j) start = end; else ++start;
+    }
+    return j;
+}
+
 // meni after a preposition: the pronoun's form after those with the dative
 // and the locative (k meni, proti meni, o meni, pri meni, ob meni, po meni,
 // v meni, na meni), but after those with the accusative or the instrumental
@@ -1648,6 +1709,20 @@ const char32_t* meni_reading(const std::vector<std::u32string>& words, const std
     const std::u32string* next = i + 1 < n ? &words[i + 1] : nullptr;
     const bool before_capital = next && capitalized[i + 1];
     if (next && menu_names_after.count(*next)) return U"mení";      // meni start, Meni orodja
+    // The name of a menu in quotation marks or brackets, named by a screen
+    // reader whose punctuation is on: meni narekovaj Start narekovaj, meni
+    // dvojni začetni narekovaj start dvojni zaključni narekovaj (»start«),
+    // meni oklepaj start zaklepaj, and narekovaj start narekovaj meni (a
+    // listener's report of 2026-11-03: meni "start" read the pronoun). The
+    // marks themselves are silent in the engine and leave meni start; the
+    // word inside them says the menu, as the name alone does.
+    const size_t after_marks = after_symbol_names(words, i + 1);
+    if (after_marks > i + 1 && after_marks < n) return U"mení";
+    const size_t before_marks = before_symbol_names(words, i);
+    if (before_marks < i && before_marks > 0 &&
+        (menu_kinds.count(words[before_marks - 1]) || acronym[before_marks - 1])) {
+        return U"mení";
+    }
     // Meni 1, Meni 2: a menu named by a number, nothing after it (the
     // listener's answer of 2026-11-03; Meni ena stvar ni jasna is the pronoun)
     if (!prev && capitalized[i] && next && std::all_of(words.begin() + 1, words.end(), is_number_word)) {
@@ -2044,7 +2119,7 @@ VerbOrNoun participle_or_genitive(const std::vector<std::u32string>& words, size
 } // namespace
 
 VerbOrNoun context_reading(const std::vector<std::u32string>& words, size_t i, bool participle, int noun_percent,
-                           bool before_complement) {
+                           bool before_complement, bool exclamation) {
     static const WordSet biti = {
         U"sem", U"si", U"je", U"sva", U"sta", U"smo", U"ste", U"so", U"nisem", U"nisi",
         U"ni", U"nisva", U"nista", U"nismo", U"niste", U"niso", U"bi", U"bom", U"boš",
@@ -2108,16 +2183,38 @@ VerbOrNoun context_reading(const std::vector<std::u32string>& words, size_t i, b
     // gori: gorí "burns" (Peč gori vsak dan), but gôri the locative and the
     // dative of gôra after a preposition (na gori) or an adjective (v Kranjski
     // Gori, Črni gori; the 24 occurrences of the noun in SUK 1.1 that have a
-    // word before them) and the adverb "up there" after tam (SSKJ² gôri).
-    // The lexicon's commoner gôri would read the listener's Na gori gori ogenj
-    // twice as the noun.
+    // word before them), and the adverb gôri "up there" (SSKJ² gôri prisl.:
+    // tam gori na hribu, daleč, visoko gori, gori v bregu, hiša stoji na
+    // hribu in gori je veliko sonca; SP 2001 gôri mestov. prostor. prisl.):
+    // after tam and the like, before a form of biti anywhere (a present
+    // tense is never followed by the auxiliary), and at the head of a clause
+    // before a preposition of place when the clause goes on past the phrase
+    // of place, so the place is where something is or happens: Gori na gori
+    // gori. Gori na seniku je lepo. Gori na podstrešju je krama. (a listener's
+    // examples of 2026-11-03, the first syllable); not in an exclamation,
+    // the alarm (Gori na podstrešju!), and not where nothing follows the
+    // place (Gori v hiši.), the fire. SUK 1.1 has no gori at the head of a
+    // clause (3 verbs inside one, 1 adverb after tam), so the listener and
+    // the dictionaries decide. The lexicon's commoner gôri would read the
+    // listener's Na gori gori ogenj twice as the noun.
     if (w == U"gori") {
-        if (!prev) return VerbOrNoun::Verb;     // Gori! Gori luč.
         static const WordSet up = {U"tam", U"tu", U"tukaj", U"tja", U"dve", U"obe", U"tej", U"neki",
                                    U"visoko", U"daleč"};
         static const WordSet not_adjective = {U"gori", U"tudi", U"vsi", U"oni", U"ali", U"kateri", U"nekateri",
                                               U"zaradi", U"hkrati", U"nikoli", U"lani", U"ponoči", U"sredi",
                                               U"okoli", U"zdi", U"vidi", U"pravi", U"meni", U"tebi", U"sebi"};
+        // Where something is, not what it burns with or because of (gori s
+        // plamenom, gori brez dima, gori zaradi, gori po vsej hiši)
+        static const WordSet place = {U"na", U"v", U"pri", U"pod", U"nad", U"ob", U"za", U"pred", U"med",
+                                      U"sredi", U"vrh", U"blizu", U"poleg", U"zraven", U"okoli", U"okrog",
+                                      U"nasproti", U"onkraj", U"do", U"proti", U"k", U"h"};
+        const std::u32string* next = i + 1 < words.size() ? &words[i + 1] : nullptr;
+        if (next && biti.count(*next)) return VerbOrNoun::Nominal;      // Gori je lepo. in gori je veliko sonca
+        if (!prev) {
+            // Gori na gori gori. Gori na seniku je lepo.
+            if (next && place.count(*next) && i + 3 < words.size() && !exclamation) return VerbOrNoun::Nominal;
+            return VerbOrNoun::Verb;     // Gori! Gori luč. Gori v hiši.
+        }
         if (prepositions().count(*prev) || up.count(*prev)) return VerbOrNoun::Nominal;
         if (prev->size() >= 4 && prev->back() == U'i' && !not_adjective.count(*prev)) return VerbOrNoun::Nominal;
         return VerbOrNoun::Verb;
@@ -2129,11 +2226,17 @@ VerbOrNoun context_reading(const std::vector<std::u32string>& words, size_t i, b
     // mestom). The noun is 98 % of the corpus, and every one of its
     // occurrences there has such a word next to it.
     if (w == U"leti") {
-        for (size_t k = i >= 3 ? i - 3 : 0; k < i; ++k) {
+        // Three words back, not counting the words of a number, which the
+        // front end splits (pred ena in dvajsetimi leti; a listener's "pred
+        // 21 leti" read the verb while the window ended at "ena")
+        int budget = 3;
+        for (size_t k = i; k-- > 0 && budget > 0;) {
             const std::u32string& x = words[k];
-            if (prepositions().count(x) || counts.count(x) || ends_with(x, U"imi") || ends_with(x, U"ema")) {
+            if (prepositions().count(x) || counts.count(x) || is_number_word(x) || ends_with(x, U"imi") ||
+                ends_with(x, U"ema")) {
                 return VerbOrNoun::Nominal;
             }
+            --budget;
         }
         if (!last && biti.count(words[i + 1])) return VerbOrNoun::Nominal;
         return VerbOrNoun::Verb;

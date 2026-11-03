@@ -1,0 +1,10 @@
+# Laprdus: Slovenian speech symbols that correct NVDA's own table.
+# NVDA's locale/sl/symbols.dic gives the Slovenian quotation marks » and «
+# the level "none", so they are spoken at every punctuation level, even
+# with punctuation off; every other quotation mark, and these two in the
+# English table, have the level "most". A listener reported them spoken
+# with the punctuation off (2026-11-03). The names are NVDA's own without
+# the stray English word "double".
+symbols:
+«	dvojni začetni narekovaj	most	always
+»	dvojni zaključni narekovaj	most	always

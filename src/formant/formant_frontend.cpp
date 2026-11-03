@@ -4283,7 +4283,7 @@ Utterance Frontend::process_slovenian(const std::u32string& marked_text, Punctua
                 if (slovenian::clause_reading_is_content(word.w, in_clause)) word.explicit_stress = true;
             } else if (slovenian::verb_noun_readings(word.w, readings)) {
                 switch (slovenian::context_reading(spellings, i, readings.participle, readings.noun_percent,
-                                                   before_complement)) {
+                                                   before_complement, exclamation)) {
                     case slovenian::VerbOrNoun::Verb: context_pron = readings.verb; break;
                     case slovenian::VerbOrNoun::Nominal: context_pron = readings.nominal; break;
                     case slovenian::VerbOrNoun::Lexicon: break;

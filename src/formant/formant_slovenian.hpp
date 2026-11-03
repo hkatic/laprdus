@@ -315,11 +315,13 @@ enum class VerbOrNoun { Lexicon, Verb, Nominal };
  * A preposition or dve/obe before it make it the noun, ne the verb; veseli
  * and leti have rules of their own. A spelling in -l that is a participle and
  * a noun's genitive plural (noun_percent >= 0: obvéstil, obvestíl) is told by
- * its auxiliary (participle_or_genitive()). Lexicon: no cue, the more frequent
+ * its auxiliary (participle_or_genitive()). `exclamation`: the sentence ends
+ * in an exclamation mark (Gori na podstrešju! is the fire, not the adverb
+ * gôri of Gori na podstrešju je krama). Lexicon: no cue, the more frequent
  * reading stays.
  */
 VerbOrNoun context_reading(const std::vector<std::u32string>& words, size_t i, bool participle,
-                           int noun_percent = -1, bool before_complement = false);
+                           int noun_percent = -1, bool before_complement = false, bool exclamation = false);
 
 /**
  * A compound numeral (enaindvajset, štiriinštirideset) split into its

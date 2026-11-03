@@ -2342,6 +2342,17 @@ TEST_CASE("Slovenian listener's report of November 2026", "[frontend][slovenian]
         {U"Gori", "gOr'i:"},
         {U"V Kranjski Gori", "u kr'a:nski g'O:ri"},
         {U"Tam gori", "t'am g'O:ri"},
+        // The adverb gôri "up there" at the head of a clause before a place
+        // the clause goes on from, and before a form of biti (a listener's
+        // examples of 2026-11-03; SSKJ² gôri prisl.); the fire in an
+        // exclamation and where nothing follows the place
+        {U"Gori na gori gori", "g'O:ri na g'O:ri gOr'i:"},
+        {U"Gori na seniku je lepo", "g'O:ri na sEn'i:ku jE lEp'ó:"},
+        {U"Gori na podstrešju je krama", "g'O:ri na pOtstr'é:šju jE kr'a:ma"},
+        {U"Gori je lepo", "g'O:ri jE lEp'ó:"},
+        {U"Hiša stoji na hribu in gori je veliko sonca", "h'i:ša stOj'i: na hr'i:bu iŋ g'O:ri jE vEl'i:kO s'ó:nca"},
+        {U"Gori v hiši", "gOr'i: u h'i:ši"},
+        {U"Gori s plamenom brez dima", "gOr'i: s plam'é:nOm brEz d'i:ma"},
         // A surname in -e after a given name, on its open last e
         {U"Jani Perše", "j'a:ni pErš'E"},
         {U"Drago Lekše", "dr'a:gO lEkš'E"},
@@ -2443,6 +2454,10 @@ TEST_CASE("Slovenian listener's report of November 2026", "[frontend][slovenian]
         INFO(PhonemeMapper::utf32_to_utf8(c.text));
         REQUIRE(phones_of(read(frontend, c.text)) == c.phones);
     }
+    // Gori na podstrešju! is the fire: the exclamation mark keeps the verb
+    REQUIRE(phones_of(frontend.process(U"Gori na podstrešju", Punctuation::EXCLAMATION)) == "gOr'i: na pOtstr'é:šju");
+    REQUIRE(phones_of(frontend.process(U"Gori na podstrešju je krama", Punctuation::EXCLAMATION)) ==
+            "gOr'i: na pOtstr'é:šju jE kr'a:ma");
 }
 
 TEST_CASE("Slovenian listener's report of 2026-11-03: commands, veseli se, Pero", "[frontend][slovenian]") {
@@ -2543,6 +2558,33 @@ TEST_CASE("Slovenian listener's report of 2026-11-03: meni to me, menu phrases, 
         {U"kontekst meni", "kOnt'é:kst mEn'i:"},
         {U"context meni", "cOnt'é:kst mEn'i:"},
         {U"meni start", "mEn'i: st'a:rt"},
+        // The name in quotation marks or brackets, silent in the engine or
+        // named by a screen reader with its punctuation on (a listener's
+        // report of 2026-11-03)
+        {U"meni \"start\"", "mEn'i: st'a:rt"},
+        {U"meni »start«", "mEn'i: st'a:rt"},
+        {U"meni narekovaj start narekovaj", "mEn'i: narEkOv'a:j st'a:rt narEkOv'a:j"},
+        {U"Meni narekovaj Start narekovaj", "mEn'i: narEkOv'a:j st'a:rt narEkOv'a:j"},
+        {U"meni dvojni začetni narekovaj start dvojni zaključni narekovaj",
+         "mEn'i: dv'ó:jni zač'é:tni narEkOv'a:j st'a:rt dv'ó:jni zaklj'u:čni narEkOv'a:j"},
+        {U"meni okrogli oklepaj start okrogli zaklepaj", "mEn'i: Okr'ó:gli OklEp'a:j st'a:rt Okr'ó:gli zaklEp'a:j"},
+        {U"narekovaj start narekovaj meni", "narEkOv'a:j st'a:rt narEkOv'a:j mEn'i:"},
+        {U"Meni narekovaj", "m'E:ni narEkOv'a:j"},
+        // The numerals of the number converter since 2026-11-03: oblique
+        // forms, ordinals and multiplicatives are number words (Meni 21 in
+        // the genitive), the lexicon accents them, and a number before leti
+        // makes it the noun across a split compound
+        {U"Meni enaindvajsetega", "mEn'i: 'E:naindv'a:jsEtEga"},
+        {U"pred enaindvajsetimi leti", "prEd 'E:naindv'a:jsEtimi l'é:ti"},
+        {U"pred petimi leti", "prEt p'E:timi l'é:ti"},
+        {U"v petih urah", "u p'E:tih 'u:rah"},
+        {U"prvo mesto", "p'ərvO m'é:stO"},
+        {U"na tretjem mestu", "na tr'é:tjEm m'é:stu"},
+        {U"dvakrat", "dv'a:krat"},
+        {U"enkrat", "'E:ŋkrat"},
+        {U"dvoletni", "dvó:l'é:tni"},
+        {U"desetletnica", "dEsé:tl'é:tnica"},
+        {U"minus pet stopinj Celzija", "m'i:nus p'é:t stOp'i:n c'é:lzija"},
         {U"start meni", "st'a:rt mEn'i:"},
         {U"Start meni", "st'a:rt mEn'i:"},
         {U"začetni meni", "zač'é:tni mEn'i:"},
