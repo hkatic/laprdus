@@ -485,6 +485,12 @@ CORRECTIONS = {
                    'posodobita': 'posodobíta', 'posodobimo': 'posodobímo', 'posodobite': 'posodobíte',
                    'posodobijo': 'posodobíjo', 'posodobil': 'posodobíw', 'posodobila': 'posodobíla',
                    'posodobilo': 'posodobílo', 'posodobili': 'posodobíli', 'posodobile': 'posodobíle'},
+    # vprašati on its first syllable in every form, as a Slovenian listener
+    # asked (2026-11-03): SP 2001 vprášati tudi vprašáti, vprášal -ála tudi
+    # vprášala, SSKJ² "tudi vprášala"; Sloleks puts vprašála first for this
+    # verb alone and vprášala first for povprašati, izprašati, prašati
+    'vprašati': {'vprašala': 'vprášala', 'vprašali': 'vprášali', 'vprašale': 'vprášale',
+                 'vprašalo': 'vprášalo'},
     # The teens on their first syllable, the first variant of SSKJ²
     # (dvánajst in dvanájst, pétnajst in petnájst) and the reading users
     # accepted; SP 2001 and Sloleks put the second first

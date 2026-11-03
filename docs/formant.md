@@ -3771,7 +3771,58 @@ SSKJ², SP and the Collocations Dictionary of Modern Slovene at CJVT (Kolokacije
   comes before one of *da, naj, kdaj, kako, kje, zakaj, ali, kaj, kdo, koliko, kam,
   če*, and then *meni* last in its clause is the verb, unless the rules made it the
   menu (*Odprite meni, da izberete*, except alone or after *ta*) or a preposition
-  has it (*k meni, da*).
+  has it (*k meni, da*). *Meni tudi, da; Meni pa, da bo; Meni namreč, da* are the
+  verb too: capitalized at the head before only particles and the mark (SUK 1.1: 5 of
+  5; *Meni pa, da bo* used to read the pronoun).
+  **The pronoun before a request, and the menu of a program (a listener's report
+  of 2026-11-03):** *Meni daj žogo, Meni prinesi kavo, Meni podari ljubezen, Meni bo
+  hladno* are *mêni* (SSKJ², SP: *jàz, mêne, mêni*, the open e; they read the verb's
+  close *méni*). Three cues: a verb that gives, brings, shows or tells to someone
+  after it (*daj, prinesi, podari, pokaži, povej, pošlji, vrni, posodi, pomagaj ...*,
+  in any position and case: *meni daj žogo*, *potem meni prinesi kavo*); an
+  auxiliary after it (*Meni bo hladno*, *Meni so povedali*, *Meni bi bilo všeč*: the
+  verb's present cannot take one); and a capitalized *Meni* at the head of its clause
+  before any word (*Meni pomoč ni potrebna*), since in SUK 1.1 the verb at a clause
+  head before a word is written small after a comma before its subject (*, meni
+  župan*, *, meni Kučan*: 36 tokens, unchanged) or stands before a particle and a
+  clause of *da* (above), and never before a verb or an auxiliary (0 of 242); a
+  capitalized *Meni* before *gumb, ikona, tipka* ... is a name and its role, the menu.
+  The menu *mení* also after an acronym, written in capitals or spelled letter by
+  letter (*NVDA meni*, *JAWS meni*, *USB meni*; `acronym` of `clause_reading()`), after
+  the kind or the program of a menu (*kontekst meni*, *context meni*, *start meni*,
+  *Start meni*, *Windows meni*; the spellings after `rewrite_foreign()`, *contekst*,
+  *vindovs*) and before the name of one in small letters (*meni start*, *Meni orodja*;
+  a short list, because *Meni pomoč ni potrebna* and *Meni nastavitve niso všeč* are
+  the pronoun). *SDS meni, da je prav* keeps the verb: an acronym before it, last in
+  its clause before a clause of *da*, no verb of menus earlier in the clause. SUK 1.1:
+  no acronym stands before *meni*; one menu label changes, *Meni 1.jpg*, which now
+  reads the pronoun.
+- *vprašaj* is the command *vprášaj* (SP 2001 *vprášati tudi vprašáti, vprášaj -te tudi
+  -ájte*) unless the question mark *vprašáj* (SSKJ², SP *vprašáj -a*) is meant: alone in
+  its clause, which is how a screen reader names the character (*Vprašaj!* alone is the
+  command), after a preposition (*pod vprašaj*), a quantifier or an adjective (*en
+  vprašaj*, *velik vprašaj*, *dvojni vprašaj*), a verb that writes or sets one (*napiši
+  vprašaj*, *postavlja pod vprašaj*), and last in a clause of a sentence ending in a
+  question mark when no object clitic comes before it (NVDA's punctuation reading
+  puts the name before the mark, *Kako si vprašaj?*; *Vedno me vprašaj, kaj?* stays
+  the command). `vprasaj_reading()`. The table had read the noun everywhere: Sloleks
+  counts the noun 7,105 times and the imperative 11, its tagger's work, while SUK 1.1
+  has the imperative once (*Daj no, vprašaj že*) and the noun never; a listener's
+  report of 2026-11-03 (*Vprašaj me, če ne boš znal*). The participles *vprášala,
+  vprášali, vprášale, vprášalo* follow the first syllable of *vprášal* in `CORRECTIONS`
+  (SP *vprášal -ála tudi vprášala*, SSKJ² "tudi vprášala", the listener's reading;
+  Sloleks puts *vprašála* first for this verb alone and *povprášala, izprášala,
+  prášala* first for the prefixed ones, so the family now agrees). SUK 1.1: 21 tokens
+  change, all of them.
+- *podariti* is in `slovenian_commands.tsv` (SP 2001 *podaríti -ím, podári -íte*), so
+  *Podari mi to!* and *Meni podari ljubezen* read *podári* and *On mi naj podari to
+  stvar*, *Program podari sistemu čas* the present *podarí* (the listener's examples).
+  For the second, a capitalized dative pronoun opening the sentence (*Meni, Tebi,
+  Njemu, Njej, Nam, Vam, Njim, Mi*) counts as a head word before the command, like
+  *takoj* and *prosim* (`head_pronouns` in `process_slovenian()`): *Meni podari
+  ljubezen*, *Nam pokaži pot*. Not the accusatives (*Nas deli samo meja* is the present
+  *déli*) and not *ti* (*Ti deli so ...* are parts). SUK 1.1 has no such pronoun at a
+  clause head before a verb of the class.
 - *afna*: the noun *áfna* (SSKJ², SP, eSSKJ), also the name of @, as a hand
   entry, since the verb's *afná* has more occurrences in the corpus than the
   noun; the verb next to *se*.

@@ -4208,13 +4208,24 @@ Utterance Frontend::process_slovenian(const std::u32string& marked_text, Punctua
                                               U"nato", U"prosim", U"samo", U"le", U"raje",
                                               U"kar", U"no", U"daj", U"takoj", U"nemudoma",
                                               U"najprej"};
+    // A capitalized dative pronoun opening the sentence says whom the
+    // command is for (Meni podari ljubezen, Nam pokaži; a listener's report
+    // of 2026-11-03); not the accusatives (Nas deli samo meja is the present
+    // déli) and not ti (Ti deli so ...). In SUK 1.1 no such pronoun at a
+    // clause head stands before a verb of the class.
+    static const WordSet head_pronouns = {U"meni", U"tebi", U"njemu", U"njej", U"nam", U"vam", U"njim", U"mi"};
     size_t head_words = 0;          // the words before the first that is not one of them
+    if (!words.empty() && words[0].capitalized && !words[0].all_caps && head_pronouns.count(words[0].w) != 0) {
+        head_words = 1;
+    }
     while (head_words < words.size() && before_imperative.count(words[head_words].w) != 0) ++head_words;
     std::vector<std::u32string> spellings;
     std::vector<bool> capitalized;
+    std::vector<bool> acronym;         // written all in capitals (JAWS) or a letter of a spelled one (NVDA)
     std::vector<bool> rewritten;       // spelled the foreign way (Wayne, Carlyle)
     spellings.reserve(words.size());
     capitalized.reserve(words.size());
+    acronym.reserve(words.size());
     rewritten.reserve(words.size());
     for (Word& word : words) {
         const std::u32string written = word.w;
@@ -4224,6 +4235,7 @@ Utterance Frontend::process_slovenian(const std::u32string& marked_text, Punctua
         // In text written all in capitals nothing is a name; a capital
         // letter alone is written so in any text
         capitalized.push_back(word.capitalized && (!word.all_caps || word.w.size() == 1));
+        acronym.push_back(word.letter_name || (word.all_caps && word.w.size() > 1));
     }
     for (size_t i = 0; i < words.size(); ++i) {
         Word& word = words[i];
@@ -4243,8 +4255,8 @@ Utterance Frontend::process_slovenian(const std::u32string& marked_text, Punctua
             slovenian::VerbNounReadings readings;
             bool speech = false;
             const char32_t* head = slovenian::head_reading(word.w, &speech);
-            const char32_t* in_clause =
-                slovenian::clause_reading(spellings, capitalized, i, before_complement, question, exclamation);
+            const char32_t* in_clause = slovenian::clause_reading(spellings, capitalized, acronym, i,
+                                                                  before_complement, question, exclamation);
             // A name spelled like a common word (Múrska Sóbota, sobóta;
             // Jêlena, jeléna): only with a capital, not in text written all
             // in capitals, and at the head of a clause only when the name

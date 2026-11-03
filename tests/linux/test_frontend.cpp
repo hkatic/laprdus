@@ -1838,7 +1838,7 @@ TEST_CASE("Slovenian words reported by the first users (October 2026)", "[fronte
     REQUIRE(phones_of(read(frontend, U"Meni se zdi")) == "m'E:ni sE zd'i:");
     REQUIRE(phones_of(read(frontend, U"Pridi k meni")) == "pr'i:di k m'E:ni");
     REQUIRE(phones_of(read(frontend, U"Kaj meni o tem")) == "k'a:j m'é:ni O t'é:m");
-    REQUIRE(phones_of(read(frontend, U"Meni gumb")) == "m'é:ni g'u:mp");
+    REQUIRE(phones_of(read(frontend, U"Meni gumb")) == "mEn'i: g'u:mp");   // a name and its role, since 2026-11-03
     // The participle of biti on its last syllable (SSKJ² bilà biló bilí bilè)
     REQUIRE(phones_of(read(frontend, U"bila je")) == "bil'a jE");
     REQUIRE(phones_of(read(frontend, U"bilo je lepo")) == "bil'ó: jE lEp'ó:");
@@ -2517,4 +2517,85 @@ TEST_CASE("Slovenian listener's report of 2026-11-03: commands, veseli se, Pero"
     REQUIRE_FALSE(slovenian::is_address(U"Dragi Pero"));
     REQUIRE_FALSE(slovenian::is_address(U"pero"));
     REQUIRE_FALSE(slovenian::is_address(U"USB"));
+}
+
+TEST_CASE("Slovenian listener's report of 2026-11-03: meni to me, menu phrases, podari, vprašaj",
+          "[frontend][slovenian]") {
+    Frontend frontend(VoiceLanguage::Slovenian);
+    struct Case { const char32_t* text; const char* phones; };
+    const Case cases[] = {
+        // The pronoun mêni (SSKJ², SP: jàz, mêne, mêni; the open e): capitalized at
+        // the head of its clause before a word, before a verb that gives or tells to
+        // someone, before an auxiliary
+        {U"Meni daj žogo", "m'E:ni d'aj ž'ó:gO"},
+        {U"Meni prinesi kavo", "m'E:ni prin'E:si k'a:vO"},
+        {U"Meni podari ljubezen", "m'E:ni pOd'a:ri ljub'é:zən"},     // and the command podári
+        {U"Meni bo hladno", "m'E:ni bO hl'a:dnO"},
+        {U"Meni so povedali", "m'E:ni sO pOv'é:dali"},
+        {U"meni daj žogo", "m'E:ni d'aj ž'ó:gO"},
+        {U"potem meni prinesi kavo", "pOt'é:m m'E:ni prin'E:si k'a:vO"},
+        {U"Meni pomoč ni potrebna", "m'E:ni pOm'ó:č ni pOtr'é:bna"},
+        {U"Meni pa je všeč", "m'E:ni pa jE uš'é:č"},
+        // The menu mení after an acronym or the kind of a menu, before the name of one
+        {U"NVDA meni", "Envédé'a: mEn'i:"},
+        {U"Odpri NVDA meni", "Otpr'i Envédé'a: mEn'i:"},
+        {U"JAWS meni", "j'a:ws mEn'i:"},
+        {U"kontekst meni", "kOnt'é:kst mEn'i:"},
+        {U"context meni", "cOnt'é:kst mEn'i:"},
+        {U"meni start", "mEn'i: st'a:rt"},
+        {U"start meni", "st'a:rt mEn'i:"},
+        {U"Start meni", "st'a:rt mEn'i:"},
+        {U"začetni meni", "zač'é:tni mEn'i:"},
+        {U"Pojdi v start meni", "p'ó:jdi u st'a:rt mEn'i:"},
+        {U"Meni ikona", "mEn'i: ik'ó:na"},
+        // The verb méni stays small after a comma before its subject, and elsewhere
+        {U"meni Kučan", "m'é:ni k'u:čan"},
+        {U"Tako meni župan", "tak'ó: m'é:ni žup'an"},
+        {U"Kaj meni o tem", "k'a:j m'é:ni O t'é:m"},
+        // podari: the command at the head, also after Meni; the present after naj
+        // and after a subject (SP 2001 podaríti -ím, podári -íte)
+        {U"On mi naj podari to stvar", "'On mi naj pOdar'i: t'ó: stv'a:r"},
+        {U"Program podari sistemu čas", "prOgr'a:m pOdar'i: sist'é:mu č'as"},
+        {U"Nam pokaži pot", "n'am pOk'a:ži p'ó:t"},
+        // vprašaj the command (SP vprášaj -te) unless the question mark is meant
+        {U"Vprašaj me", "upr'a:šaj mE"},
+        {U"Vedno me vprašaj", "v'é:dnO mE upr'a:šaj"},
+        {U"Postavi pod vprašaj", "pOst'a:vi pOd upraš'a:j"},
+        {U"Napiši vprašaj", "nap'i:ši upraš'a:j"},
+        {U"velik vprašaj", "v'E:lik upraš'a:j"},
+        {U"imam eno vprašanje", "im'a:m 'E:nO upraš'a:njE"},
+        // the participles on the first syllable in every form (SP vprášal -ála
+        // tudi vprášala; the listener's reading); the prefixed verbs already were
+        {U"Vprašala si me", "upr'a:šala si mE"},
+        {U"Vprašali so me", "upr'a:šali sO mE"},
+        {U"Vprašal sem ga", "upr'a:šaw səm ga"},
+        {U"povprašala je", "pOwpr'a:šala jE"},
+    };
+    for (const Case& c : cases) {
+        INFO(PhonemeMapper::utf32_to_utf8(c.text));
+        REQUIRE(phones_of(read(frontend, c.text)) == c.phones);
+    }
+    // Podari mi to! The command at the head of a clause
+    REQUIRE(phones_of(frontend.process(U"Podari mi to", Punctuation::EXCLAMATION)) == "pOd'a:ri mi t'ó:");
+    // Vprašaj alone: the name of the character ? (a screen reader's), the command
+    // with an exclamation mark; last in a question it is the character too (NVDA
+    // reads Kako si? as Kako si vprašaj?), but not after an object clitic
+    REQUIRE(phones_of(frontend.process(U"Vprašaj", Punctuation::NONE)) == "upraš'a:j");
+    REQUIRE(phones_of(frontend.process(U"Vprašaj", Punctuation::EXCLAMATION)) == "upr'a:šaj");
+    REQUIRE(phones_of(frontend.process(U"Kako si vprašaj", Punctuation::QUESTION)) == "kak'ó: si upraš'a:j");
+    REQUIRE(phones_of(frontend.process(U"Vedno me vprašaj", Punctuation::QUESTION)) == "v'é:dnO mE upr'a:šaj");
+    // Across a comma: SDS meni, da je prav is the news verb with an acronym for its
+    // subject; Meni tudi, da / Meni pa, da bo too, with a particle before the clause
+    std::u32string marked = U"SDS meni";
+    marked.push_back(slovenian::BEFORE_COMPLEMENT_MARK);
+    REQUIRE(phones_of(frontend.process(marked, Punctuation::COMMA)) == "Ezdé'Es m'é:ni");
+    marked = U"Meni tudi";
+    marked.push_back(slovenian::BEFORE_COMPLEMENT_MARK);
+    REQUIRE(phones_of(frontend.process(marked, Punctuation::COMMA)) == "m'é:ni t'u:di");
+    marked = U"Meni pa";
+    marked.push_back(slovenian::BEFORE_COMPLEMENT_MARK);
+    REQUIRE(phones_of(frontend.process(marked, Punctuation::COMMA)) == "m'é:ni p'a:");
+    marked = U"Vedno me vprašaj";
+    marked.push_back(slovenian::BEFORE_COMPLEMENT_MARK);
+    REQUIRE(phones_of(frontend.process(marked, Punctuation::COMMA)) == "v'é:dnO mE upr'a:šaj");
 }

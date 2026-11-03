@@ -1491,8 +1491,23 @@ bool is_definite_adjective(const std::u32string& w) {
 // use for one. Those the ending does not show are in the table of Sloleks
 // (is_definite_adjective()). Of the 237 tokens of the verb and the pronoun in
 // SUK 1.1 none stands after one of these.
+//
+// A listener's report of 2026-11-03: Meni daj žogo, Meni prinesi kavo, Meni
+// podari ljubezen, Meni bo hladno are the pronoun mêni (SSKJ², SP: jàz, mêne,
+// mêni, the open e), and NVDA meni, JAWS meni, kontekst meni, context meni,
+// meni start, start meni are the menu. So an acronym or the name of a menu's
+// kind before it, or the name of a menu after it, says the menu; a verb that
+// gives, brings, shows or tells to someone (daj, prinesi, podari, pokaži,
+// povej ...) or an auxiliary (bo, sem, so, bi) after it says the pronoun; and
+// so does a capitalized Meni at the head of its clause before any word: in
+// SUK 1.1 the verb at a clause head before a word is written small after a
+// comma before its subject (, meni župan; , meni Kučan: 36 tokens, left as
+// they are) or capitalized before a particle and its clause of da (Meni tudi,
+// da; Meni pa, da: 5, read by clause_reading() from the mark of the comma),
+// never before a verb or an auxiliary (0 of 242). SDS meni, da je prav keeps
+// the verb: an acronym before it, last in its clause before a clause of da.
 const char32_t* meni_reading(const std::vector<std::u32string>& words, const std::vector<bool>& capitalized,
-                             size_t i) {
+                             const std::vector<bool>& acronym, size_t i, bool before_complement) {
     static const WordSet accusative_only = {U"pod", U"nad", U"pred", U"med", U"za", U"čez", U"skozi"};
     static const WordSet towards = {
         U"pojdi", U"pojdite", U"pojdimo", U"pojdiva", U"pojdem", U"pojdeš", U"gre", U"greš", U"grem",
@@ -1553,6 +1568,10 @@ const char32_t* meni_reading(const std::vector<std::u32string>& words, const std
         U"ne", U"že", U"nič", U"osebno", U"doma", U"všeč", U"znano", U"znana", U"znan", U"zdi", U"zdijo", U"ugaja",
         U"diši", U"paše", U"manjka", U"preostane", U"pripada", U"dovolj", U"mar", U"žal", U"dolgčas", U"vseeno",
         U"hladno", U"vroče", U"toplo", U"slabo", U"dobro", U"lepo", U"jasno", U"nerazumljivo", U"se", U"je", U"ni",
+        // the auxiliaries, which the verb's present cannot take: Meni bo
+        // hladno, Meni so povedali, Meni bi bilo všeč
+        U"bo", U"bom", U"boš", U"bomo", U"boste", U"bodo", U"bova", U"bosta", U"bi", U"sem", U"si", U"smo", U"ste",
+        U"so", U"sva", U"sta",
     };
     // A predicate anywhere after a pronoun at the head (Meni za to ni mar)
     static const WordSet dative_predicate = {U"mar", U"všeč", U"žal", U"zdi", U"zdijo", U"dolgčas", U"vseeno",
@@ -1583,11 +1602,37 @@ const char32_t* meni_reading(const std::vector<std::u32string>& words, const std
         U"kosilo", U"večerjo", U"zajtrk", U"otroke", U"goste", U"vegetarijance", U"krmarjenje", U"navigacijo",
         U"dostopnost", U"pomoč", U"izbiro", U"pokušino", U"cel", U"ves",
     };
+    // The kind or the program of a menu before it (kontekst meni, start meni,
+    // NVDA meni) and the name of a menu after it, in small letters (meni start,
+    // Meni orodja); not a word that can be the subject of what happens to me
+    // (aplikacija meni ne dela, Meni pomoč ni potrebna)
+    // (the spellings are those after rewrite_foreign(): x = ks, w = v)
+    static const WordSet menu_kinds = {U"kontekst", U"contekst", U"start", U"nvda", U"jaws", U"vindovs",
+                                       U"podmeni", U"popup", U"sistemski"};
+    static const WordSet menu_names_after = {U"start", U"nvda", U"jaws", U"kontekst", U"contekst", U"vindovs",
+                                             U"orodja"};
+    // A verb that gives, brings, shows or tells to someone, after the
+    // pronoun: Meni daj žogo, meni prinesi kavo, Meni podari ljubezen
+    static const WordSet dative_verbs = {
+        U"daj", U"dajte", U"dajmo", U"prinesi", U"prinesite", U"podari", U"podarite", U"pokaži", U"pokažite",
+        U"povej", U"povejte", U"reci", U"recite", U"pošlji", U"pošljite", U"vrni", U"vrnite", U"pusti",
+        U"pustite", U"posodi", U"posodite", U"kupi", U"kupite", U"skuhaj", U"skuhajte", U"nalij", U"nalijte",
+        U"pripravi", U"pripravite", U"piši", U"pišite", U"napiši", U"napišite", U"pojasni", U"pojasnite",
+        U"razloži", U"razložite", U"zaupaj", U"zaupajte", U"verjemi", U"verjemite", U"oprosti", U"oprostite",
+        U"pomagaj", U"pomagajte", U"svetuj", U"svetujte", U"izroči", U"izročite", U"predaj", U"predajte",
+        U"plačaj", U"plačajte", U"obljubi", U"obljubite", U"dovoli", U"dovolite", U"omogoči", U"omogočite",
+        U"ponudi", U"ponudite", U"sporoči", U"sporočite", U"odgovori", U"odgovorite", U"prepusti", U"prepustite",
+        U"prihrani", U"prihranite", U"naroči", U"naročite", U"pokliči", U"pokličite", U"zapoj", U"zapojte",
+        U"zaigraj", U"zaigrajte", U"prizanesi", U"prizanesite", U"odpusti", U"odpustite", U"nakaži", U"nakažite",
+        U"dela", U"daje", U"prinaša", U"pošilja", U"kaže", U"pomaga", U"pravi", U"govori", U"piše", U"manjka",
+        U"ustreza", U"odgovarja", U"pripada", U"ostane", U"preostane", U"gre", U"ni",
+    };
     const size_t n = words.size();
     if (n == 1) return U"mení";
     const std::u32string* prev = i > 0 ? &words[i - 1] : nullptr;
     const std::u32string* next = i + 1 < n ? &words[i + 1] : nullptr;
     const bool before_capital = next && capitalized[i + 1];
+    if (next && menu_names_after.count(*next)) return U"mení";      // meni start, Meni orodja
     if (prev) {
         if (accusative_only.count(*prev)) return U"mení";
         if (*prev == U"v" || *prev == U"na") {
@@ -1598,6 +1643,16 @@ const char32_t* meni_reading(const std::vector<std::u32string>& words, const std
             return U"mêni";
         }
         if (prepositions().count(*prev)) return U"mêni";
+        if (acronym[i - 1] || menu_kinds.count(*prev)) {
+            // NVDA meni, JAWS meni, kontekst meni; but SDS meni, da je prav
+            // is the news verb with its subject: last in its clause before
+            // a clause of da, with no verb of menus earlier in the clause
+            bool menu_verb_before = false;
+            for (size_t k = 0; k + 1 < i; ++k) {
+                if (takes_menu.count(words[k]) || towards.count(words[k])) menu_verb_before = true;
+            }
+            if (!(acronym[i - 1] && before_complement && i + 1 == n && !menu_verb_before)) return U"mení";
+        }
         if (before_capital && capitalized[i]) return U"mení";   // To je Meni Start
         if (qualifying.count(*prev) || naming.count(*prev) || takes_menu.count(*prev) || menu_states.count(*prev)) {
             return U"mení";
@@ -1631,16 +1686,64 @@ const char32_t* meni_reading(const std::vector<std::u32string>& words, const std
                 if (dative_predicate.count(words[k])) return U"mêni";
             }
         }
-        if (after_pronoun.count(*next)) return U"mêni";
+        if (after_pronoun.count(*next) || dative_verbs.count(*next)) return U"mêni";
+        if (!prev && naming.count(*next)) return U"mení";       // Meni gumb, Meni ikona: a screen reader's name and role
+        // Meni daj žogo, Meni podari ljubezen: capitalized at the head of its
+        // clause before any word, the pronoun (see above; the verb at a
+        // sentence head stands before a comma, Meni, da; Meni tudi, da)
+        if (!prev && capitalized[i]) return U"mêni";
     }
     return nullptr;
+}
+
+// vprašaj is the imperative vprášaj of vprášati (SP 2001: vprášaj -te tudi
+// -ájte; SSKJ² vprášati tudi vprašáti) or the question mark vprašáj (SSKJ²,
+// SP: vprašáj -a). In SUK 1.1 the spelling is the imperative once (Daj no,
+// vprašaj že) and the noun never; Sloleks's count for the noun (7,105 against
+// 11) is its tagger's, and had made the table read the noun, so Vprašaj me
+// came out as the question mark (a listener's report of 2026-11-03). The
+// noun: alone in its clause, which is how a screen reader names the
+// character ? (but Vprašaj! alone is the command), after a preposition (pod
+// vprašaj), a quantifier or an adjective (en vprašaj, velik vprašaj, dvojni
+// vprašaj), a verb that writes or sets one (napiši vprašaj, postavlja pod
+// vprašaj), and last in a clause of a sentence that ends in a question mark
+// when no object clitic comes before it: NVDA's punctuation reading puts the
+// name before the mark (Kako si vprašaj?), and a command does not end a
+// question.
+const char32_t* vprasaj_reading(const std::vector<std::u32string>& words, size_t i, bool question,
+                                bool exclamation) {
+    static const WordSet quantifiers = {U"en", U"enega", U"kakšen", U"kak", U"vsak", U"velik", U"dvojni",
+                                        U"obrnjeni", U"končni", U"zadnji", U"ta", U"tisti", U"še", U"dodaten",
+                                        U"nov", U"velikanski", U"ogromen", U"rdeč", U"črn"};
+    static const WordSet writes = {
+        U"postavi", U"postavlja", U"postavljajo", U"postavil", U"postavila", U"postaviti", U"postavimo",
+        U"postavite", U"napiši", U"napišite", U"piši", U"pišite", U"vstavi", U"vstavite", U"dodaj", U"dodajte",
+        U"vtipkaj", U"vtipkajte", U"vnesi", U"vnesite", U"izbriši", U"izbrišite", U"odstrani", U"odstranite",
+        U"briše", U"visi", U"pomeni", U"predstavlja", U"napisal", U"napisala", U"stoji", U"manjka",
+    };
+    static const WordSet object_clitics = {U"me", U"ga", U"jo", U"jih", U"nas", U"vas", U"ju", U"mu", U"ji",
+                                           U"jim", U"to", U"kaj", U"koga", U"ne", U"že", U"pa", U"raje", U"kar",
+                                           U"no", U"vedno", U"prosim", U"potem", U"zdaj"};
+    const size_t n = words.size();
+    if (n == 1) return exclamation ? U"vprášaj" : U"vprašáj";
+    if (i > 0) {
+        const std::u32string& prev = words[i - 1];
+        if (prepositions().count(prev) || quantifiers.count(prev) || writes.count(prev) ||
+            is_adjective_ending(prev) || is_definite_adjective(prev)) {
+            return U"vprašáj";
+        }
+    }
+    if (i + 1 == n && question && (i == 0 || !object_clitics.count(words[i - 1]))) return U"vprašáj";
+    return U"vprášaj";
 }
 
 } // namespace
 
 const char32_t* clause_reading(const std::vector<std::u32string>& words, const std::vector<bool>& capitalized,
-                               size_t i, bool before_complement, bool question, bool exclamation) {
+                               const std::vector<bool>& acronym, size_t i, bool before_complement, bool question,
+                               bool exclamation) {
     const std::u32string& w = words[i];
+    if (w == U"vprašaj") return vprasaj_reading(words, i, question, exclamation);
     // Veseli se! Veseli se novega dneva! The imperative vesêli (SP 2001
     // veselíti -ím, vesêli -íte) at the head of a clause before se or si in
     // a sentence that ends in an exclamation mark, the cue a listener named
@@ -1658,7 +1761,16 @@ const char32_t* clause_reading(const std::vector<std::u32string>& words, const s
         return nullptr;
     }
     if (w == U"meni") {
-        const char32_t* reading = meni_reading(words, capitalized, i);
+        // Meni tudi, da ... Meni pa, da bo ... Meni namreč, da ...: the verb of
+        // the news at the head of its sentence, a particle between it and
+        // its clause of da (SUK 1.1: 5 of 5)
+        static const WordSet particles = {U"tudi", U"pa", U"namreč", U"sicer", U"celo", U"še", U"seveda",
+                                          U"torej", U"tako", U"zato"};
+        if (before_complement && i == 0 && words.size() > 1 &&
+            std::all_of(words.begin() + 1, words.end(), [&](const std::u32string& x) { return particles.count(x) != 0; })) {
+            return U"méni";
+        }
+        const char32_t* reading = meni_reading(words, capitalized, acronym, i, before_complement);
         // Meni, da je prav. Ta meni, da je prav. Tudi meni, da je prav. The
         // clause after it is what a verb of thinking takes; but a purpose
         // clause follows a menu (Odprite meni, da izberete), and a preposition

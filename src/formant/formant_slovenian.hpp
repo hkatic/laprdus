@@ -240,8 +240,8 @@ const char32_t* head_reading(const std::u32string& w, bool* speech = nullptr);
  * Lahko delo opravi vsak. the adjective.
  */
 const char32_t* clause_reading(const std::vector<std::u32string>& words,
-                               const std::vector<bool>& capitalized, size_t i,
-                               bool before_complement = false, bool question = false,
+                               const std::vector<bool>& capitalized, const std::vector<bool>& acronym,
+                               size_t i, bool before_complement = false, bool question = false,
                                bool exclamation = false);
 
 /**
