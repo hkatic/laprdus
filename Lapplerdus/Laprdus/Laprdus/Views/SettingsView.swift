@@ -174,7 +174,7 @@ struct SettingsView: View {
                 range: 0.0...100.0,
                 step: 5,
                 format: { "\(Int($0.rounded()))%" },
-                subtitle: String(localized: "Length of the vocal tract: 0% a quarter longer (lower formants), 50% the voice as it is, 100% a quarter shorter (higher formants)"),
+                subtitle: String(localized: "Length of the vocal tract: 0% much longer (lower formants, a giant), 50% the voice as it is, 100% much shorter (higher formants, a child)"),
                 restoreLabel: String(localized: "Restore default head size"),
                 restore: { settings.headSize = SettingsSnapshot.defaultHeadSize }
             )
@@ -187,7 +187,7 @@ struct SettingsView: View {
                 range: 0.0...100.0,
                 step: 5,
                 format: { "\(Int($0.rounded()))%" },
-                subtitle: String(localized: "Breath in the voice: 0% a tense, clear voice, 50% the voice as it is, 100% a whisper (formant voices)"),
+                subtitle: String(localized: "Breath in the voice: 0% a pressed, hard voice, 50% the voice as it is, 100% a whisper (formant voices)"),
                 restoreLabel: String(localized: "Restore default breathiness"),
                 restore: { settings.breathiness = SettingsSnapshot.defaultBreathiness }
             )

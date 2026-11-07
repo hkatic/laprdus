@@ -719,8 +719,8 @@ class LaprdusEngine(object):
     # synthesizer A's voice parameters; the engine clamps the value
 
     def set_head_size(self, value):
-        """Set the head size: the length of the vocal tract, 0 a quarter
-        longer (lower formants), 100 a quarter shorter (higher formants).
+        """Set the head size: the length of the vocal tract, 0 40 %
+        longer (formants x0.71), 100 30 % shorter (formants x1.4).
         Every voice."""
         result = self._lib.laprdus_set_head_size(self._handle, int(value))
         return result == LAPRDUS_OK
@@ -730,7 +730,7 @@ class LaprdusEngine(object):
         return int(self._lib.laprdus_get_head_size(self._handle))
 
     def set_breathiness(self, value):
-        """Set the breathiness: 0 a tense, clear voice without breath, 50 the
+        """Set the breathiness: 0 a pressed, hard voice without breath, 50 the
         voice as it is, 100 a whisper. Formant voices."""
         result = self._lib.laprdus_set_breathiness(self._handle, int(value))
         return result == LAPRDUS_OK

@@ -539,8 +539,8 @@ Podešavanja se čuvaju u korisničkoj fascikli `%APPDATA%\Laprdus` i dele se iz
 
 Četiri podešavanja kvaliteta glasa slede model glasovnih parametara klasičnih formantnih sintetizatora: veličina glave, dah, hrapavost i svetlina. U NVDA to su NVDA sopstvena podešavanja glasa: klizači Veličina glave, Dah, Hrapavost i Svetlina u NVDA podešavanjima glasa, iza jačine, i u krugu govornih podešavanja (Control + NVDA taster + strelice), svako od 0 do 100, a 50 je glas kakav jeste; NVDA ih pamti kao i ostala svoja podešavanja. Laprdus konfigurator ima ista četiri iza dugmeta „Kvalitet glasa...”, ali te vrednosti važe samo za SAPI5 (u datoteci `settings.json` zapisana su kao `speech.head_size`, `speech.breathiness`, `speech.roughness` i `speech.brightness`), kao i njegova podešavanja infleksije.
 
-- **Veličina glave** – dužina govornog trakta: 0 je četvrtinu duži (niži formanti, krupniji glas), 100 četvrtinu kraći (viši formanti, sitniji glas). Deluje na sve glasove.
-- **Dah** – dah u glasu: 0 je napet, čist glas bez daha, 50 glas kakav jeste; iznad 50 u glasu je sve više daha, a 100 je šapat, samo dah bez zvučnosti. Deluje na formantne glasove (Zvonko, Stojan, Mirsad i pevajući glasovi).
+- **Veličina glave** – dužina govornog trakta: 0 je 40 % duži (svaki formant ×0,7, glas diva), 100 je 30 % kraći (×1,4, dečji glas). Deluje na sve glasove.
+- **Dah** – dah u glasu: 0 je napet, tvrd glas bez daha, 50 glas kakav jeste; iznad 50 u glasu je sve više daha, a 100 je šapat, samo dah bez zvučnosti. Deluje na formantne glasove (Zvonko, Stojan, Mirsad i pevajući glasovi).
 - **Hrapavost** – nepravilnosti visine i jačine od titraja do titraja (jitter i shimmer): 0 ih nema, a ni visina ne koleba (potpuno miran glas), 50 je glas kakav jeste; iznad 50 svaki drugi titraj glasa dolazi ranije i slabiji je, promuklost koja raste do 100. Deluje na formantne glasove.
 - **Svetlina** – boja tona: 0 je tamno i prigušeno, 100 oštro i svetlo. Deluje na sve glasove kroz nagib celog zvuka oko 1,5 kHz (na formantne i kroz izvor glasa), pa niže vrednosti ublažavaju i glasove kao što su s i š.
 

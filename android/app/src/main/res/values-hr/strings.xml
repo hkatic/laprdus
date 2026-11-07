@@ -73,11 +73,11 @@
 
     <!-- Kvaliteta glasa (svi glasovi; dah i hrapavost samo formantni): 0-100, 50 = glas kakav jest -->
     <string name="setting_head_size">Veličina glave</string>
-    <string name="setting_head_size_desc">Duljina govornog trakta: 0% četvrtinu dulji (niži formanti), 50% glas kakav jest, 100% četvrtinu kraći (viši formanti)</string>
+    <string name="setting_head_size_desc">Duljina govornog trakta: 0% znatno dulji (niži formanti, div), 50% glas kakav jest, 100% znatno kraći (viši formanti, dijete)</string>
     <string name="restore_default_head_size">Vrati zadanu veličinu glave</string>
     <string name="cd_restore_head_size_desc">Postavlja veličinu glave na 50%</string>
     <string name="setting_breathiness">Dah</string>
-    <string name="setting_breathiness_desc">Dah u glasu: 0% napet, čist glas, 50% glas kakav jest, 100% šapat (formantni glasovi)</string>
+    <string name="setting_breathiness_desc">Dah u glasu: 0% napet, tvrd glas, 50% glas kakav jest, 100% šapat (formantni glasovi)</string>
     <string name="restore_default_breathiness">Vrati zadani dah</string>
     <string name="cd_restore_breathiness_desc">Postavlja dah na 50%</string>
     <string name="setting_roughness">Hrapavost</string>

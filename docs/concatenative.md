@@ -198,7 +198,7 @@ samples (`tests/linux/test_concat.cpp`).
 | user_pitch | 0.5 - 2.0 | pitch × `user_pitch` at rendering, formants unchanged |
 | inflection_level | 0 - 1 | scales the whole contour, as for the formant voices |
 | head_size | 0 - 100 | the bank warp times `head_size_factor()` (1.25 at 0, 0.8 at 100), formants only, the pitch stays |
-| brightness | 0 - 100 | a one-pole tilt around 1.5 kHz after rendering (`tilt_brightness()`): the top folded away at 0, doubled at 100 |
+| brightness | 0 - 100 | a one-pole tilt after rendering (`tilt_brightness()`): the top folded away from an 800 Hz pivot at 0, the top above 1.5 kHz tripled at 100 |
 | volume | 0 - 1 | gain before the limiter |
 
 Spelling by letter sounds (`AudioSynthesizer::synthesize_letter_sound`) plays

@@ -48,8 +48,8 @@ constexpr double WHISPER_OQ = 0.85;
 constexpr double WHISPER_TILT_DB = 10.0;
 constexpr double WHISPER_BREATH = 0.6;
 constexpr double WHISPER_B1_HZ = 150.0;
-constexpr double TENSE_OQ = 0.40;
-constexpr double TENSE_TILT_DB = 4.0;
+constexpr double TENSE_OQ = 0.30;        // 0.40 and 4 dB until November 2026 (inaudible)
+constexpr double TENSE_TILT_DB = 8.0;
 constexpr double FRICATION_GAIN = 3.0;
 
 // Coefficients are refreshed twice per frame.

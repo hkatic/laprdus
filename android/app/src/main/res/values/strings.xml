@@ -73,11 +73,11 @@
 
     <!-- Voice quality (every voice; breathiness and roughness formant voices only): 0-100, 50 = the voice as it is -->
     <string name="setting_head_size">Head size</string>
-    <string name="setting_head_size_desc">Length of the vocal tract: 0% a quarter longer (lower formants), 50% the voice as it is, 100% a quarter shorter (higher formants)</string>
+    <string name="setting_head_size_desc">Length of the vocal tract: 0% much longer (lower formants, a giant), 50% the voice as it is, 100% much shorter (higher formants, a child)</string>
     <string name="restore_default_head_size">Restore default head size</string>
     <string name="cd_restore_head_size_desc">Sets head size to 50%</string>
     <string name="setting_breathiness">Breathiness</string>
-    <string name="setting_breathiness_desc">Breath in the voice: 0% a tense, clear voice, 50% the voice as it is, 100% a whisper (formant voices)</string>
+    <string name="setting_breathiness_desc">Breath in the voice: 0% a pressed, hard voice, 50% the voice as it is, 100% a whisper (formant voices)</string>
     <string name="restore_default_breathiness">Restore default breathiness</string>
     <string name="cd_restore_breathiness_desc">Sets breathiness to 50%</string>
     <string name="setting_roughness">Roughness</string>

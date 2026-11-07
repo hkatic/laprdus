@@ -565,14 +565,16 @@ like; `speech.head_size` ... in settings.json; keys `head_size`, `breathiness`,
 `roughness`, `brightness` on Android and Apple; CLI `--head-size` ...): four
 settings after the voice-parameter model of a classic formant synthesizer. 50 is the voice as
 its tables define it, so the defaults are bit-identical to the output before
-them. Head size multiplies every formant by 0.8 at 0 and 1.25 at 100 (the
+them. Head size multiplies every formant by 0.71 at 0 and 1.4 at 100 (0.8 and
+1.25 until November 2026; the
 higher value is the higher voice, at the maintainer's word; synthesizer A's runs
 the other way)
 (`head_size_factor()` in `types.hpp`): the formant voices through a
 per-utterance copy of the voice with a scaled `formant_scale` (also the fixed
 F5-F8), the recorded voices through the bank warp of `ensure_bank()`, which
-leaves the pitch where it was. Breathiness runs from a tense, clear voice at 0
-(the glottis closed for longer, a flatter source, no breath noise;
+leaves the pitch where it was. Breathiness runs from a pressed, hard voice at 0
+(a pressed voice: the glottis closed for longer, a flatter and sharper
+source, a weaker fundamental, no breath noise;
 `breathiness_tension()`) to a whisper at 100 (the voicing replaced by breath
 through the cascade; `breathiness_whisper()`, `VoiceQuality::whisper`);
 roughness its jitter and shimmer (0 none, 100 eight
@@ -583,7 +585,8 @@ November 2026 the diplophonia is twice as strong (every second period up to
 10 % shorter and 80 % weaker) and below 50 the slow pitch drift goes too, so
 0 is a perfectly steady voice. Brightness is a one-pole tilt of the whole
 output around 1.5 kHz for every voice (`tilt_brightness()` in
-`src/audio/brightness_tilt.hpp`: 0 the top folded away, 100 doubled), which
+`src/audio/brightness_tilt.hpp`: 0 the top folded away from an 800 Hz pivot,
+100 the top above 1.5 kHz tripled), which
 also reaches the hissing consonants and the bursts (Zvonko's s 8 dB further
 under the vowel at 0), plus, for the formant voices, the source emphasis (0
 the bare pulse, 100 the 0.85 cap; the voice's own is 0.55 since the match to

@@ -2078,6 +2078,9 @@ FormantVoice voice_with_quality(const FormantVoice& base, const VoiceParams& par
     FormantVoice voice = base;
     voice.formant_scale *= head_size_factor(params.head_size);
     voice.breathiness *= breathiness_noise_scale(params.breathiness);
+    // Roughness below 50 also takes the breath noise away, the last
+    // aperiodic part of the voicing: at 0 every glottal pulse is alike.
+    if (params.roughness < VOICE_QUALITY_DEFAULT) voice.breathiness *= voice_quality_scale(params.roughness);
     return voice;
 }
 
@@ -2131,6 +2134,11 @@ VoiceQuality quality_for(const FormantVoice& voice, const VoiceParams& params) {
     quality.whisper = breathiness_whisper(params.breathiness);
     quality.tension = breathiness_tension(params.breathiness);
     quality.brightness = brightness_emphasis(params.brightness, quality.brightness);
+    // A pressed voice has stronger upper harmonics (BREATHINESS_TENSE_EMPHASIS).
+    if (quality.tension > 0.0f && quality.brightness < BREATHINESS_TENSE_EMPHASIS) {
+        quality.brightness += quality.tension * (BREATHINESS_TENSE_EMPHASIS - quality.brightness);
+    }
+    if (quality.tension > 0.0f) quality.bass_db *= 1.0f - BREATHINESS_TENSE_BASS_CUT * quality.tension;
     return quality;
 }
 
@@ -2244,9 +2252,16 @@ void FormantSynthesizer::render_utterance(const Utterance& utt, const VoiceParam
         boost_volume(pcm, SAMPLE_RATE);
         gain = std::clamp(params.volume, 0.0f, 1.0f);
     }
+    for (float& sample : pcm) sample *= gain;
+    // The plain output goes through the boost's limiter at unity gain with
+    // its ceiling at the soft knee: breathiness 0 and brightness 100 raise
+    // the peaks, and the knee bent them into distortion (a waveshaping
+    // residual of -17 to -21 dB on a paragraph, November 2026). The gain
+    // moves only between syllables; output under the knee is unchanged.
+    if (!params.volume_boost) boost_volume(pcm, SAMPLE_RATE, 1.0f, LIMIT_KNEE, 0.0f, 0.0f, 0.0f, 0.0f);
     audio.samples.reserve(audio.samples.size() + pcm.size());
     for (float sample : pcm) {
-        float x = sample * gain;
+        float x = sample;
         float magnitude = std::abs(x);
         if (!params.volume_boost && magnitude > LIMIT_KNEE) {
             float over = (magnitude - LIMIT_KNEE) / (1.0f - LIMIT_KNEE);

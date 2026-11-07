@@ -294,8 +294,8 @@ class LaprdusTTS private constructor() {
 
     /**
      * Head size (0-100, default 50), after the voice-parameter model of a classic formant synthesizer: the
-     * length of the vocal tract, 0 a quarter longer (lower formants), 50
-     * the voice as it is, 100 a quarter shorter (higher formants). Every voice.
+     * length of the vocal tract, 0 40 % longer (formants x0.71), 50
+     * the voice as it is, 100 30 % shorter (formants x1.4). Every voice.
      */
     var headSize: Int = DEFAULT_VOICE_QUALITY
         set(value) {
@@ -304,7 +304,7 @@ class LaprdusTTS private constructor() {
         }
 
     /**
-     * Breathiness (0-100, default 50): 0 a tense, clear voice without
+     * Breathiness (0-100, default 50): 0 a pressed, hard voice without
      * breath, 50 the voice as it is, 100 a whisper. Formant voices only.
      */
     var breathiness: Int = DEFAULT_VOICE_QUALITY

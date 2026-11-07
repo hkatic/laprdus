@@ -1050,10 +1050,10 @@ the C API, `settings.json`, every settings screen and both CLIs carry them):
 
 | Setting | 0 | 50 | 100 | Where |
 |---|---|---|---|---|
-| head size | every formant × 0.8 (a quarter longer tract, a deeper voice) | the voice | × 1.25 (a quarter shorter, a higher voice; synthesizer A's head size runs the other way, the maintainer asked for this one) | `formant_scale` of a per-utterance copy of the voice and the fixed F5-F8 (`voice_with_quality()`, `quality_for()`); recorded voices: the bank warp, pitch unchanged |
-| breathiness | a tense, clear voice: no breath noise, open quotient towards 0.40, the source 4 dB flatter | the voice's own (`FormantVoice::breathiness`, open quotient, tilt) | a whisper: no voicing, breath through the cascade, open quotient 0.85, the source 10 dB steeper, B1 150 Hz wider | `VoiceQuality::whisper`, `tension` (`breathiness_whisper()`, `breathiness_tension()`); the noise scale on the same copy (formant voices) |
+| head size | every formant × 0.71 (a tract 40 % longer, a deeper voice; × 0.8 until the wider ranges below) | the voice | × 1.4 (30 % shorter, a higher voice; × 1.25 before; synthesizer A's head size runs the other way, the maintainer asked for this one) | `formant_scale` of a per-utterance copy of the voice and the fixed F5-F8 (`voice_with_quality()`, `quality_for()`); recorded voices: the bank warp, pitch unchanged |
+| breathiness | a pressed, hard voice: no breath noise, open quotient towards 0.30, the source 8 dB flatter, emphasis towards 0.88, 80 % of the low shelf gone (0.40 and 4 dB alone before the wider ranges below) | the voice's own (`FormantVoice::breathiness`, open quotient, tilt) | a whisper: no voicing, breath through the cascade, open quotient 0.85, the source 10 dB steeper, B1 150 Hz wider | `VoiceQuality::whisper`, `tension` (`breathiness_whisper()`, `breathiness_tension()`); the noise scale on the same copy (formant voices) |
 | roughness | no jitter, shimmer or slow pitch drift: a perfectly steady voice | the voice's own (0.4 %, 3 %, flutter 0.2) | eight times, and from 50 up diplophonia: every second period up to 10 % shorter and 80 % weaker (5 % and 60 % until November 2026) | `VoiceQuality::jitter`, `shimmer`, `flutter`, `roughness` (formant voices) |
-| brightness | the bare pulse (emphasis 0) and the top of the whole sound folded away | the voice's own emphasis (0.55 since "The reference balance" below; 0.65 before), no tilt | emphasis 0.85 and the top doubled | `VoiceQuality::brightness` and `tilt_brightness()` (`brightness_tilt.hpp`, a one-pole tilt of the whole output around 1.5 kHz, for every voice; the recorded voices have the tilt alone) |
+| brightness | the bare pulse (emphasis 0) and the top of the whole sound folded away from an 800 Hz pivot | the voice's own emphasis (0.55 since "The reference balance" below; 0.65 before), no tilt | emphasis 0.85 and the top above 1.5 kHz tripled | `VoiceQuality::brightness` and `tilt_brightness()` (`brightness_tilt.hpp`, a one-pole tilt of the whole output around 1.5 kHz, for every voice; the recorded voices have the tilt alone) |
 
 The mappings are `head_size_factor()`, `breathiness_whisper()`,
 `breathiness_tension()`, `breathiness_noise_scale()`, `voice_quality_scale()`,
@@ -1135,11 +1135,12 @@ frames against a scaled copy of the shelved plain output stays under -40 dB
 against the shelved copy). Josip: median gain 1.4 dB, friction median 2.3 dB
 under the voiced (plain 1.9), his treble 0.2-1.0 dB down instead of up.
 
-**Head size** runs the other way since this round: 0 a quarter longer tract
-(every formant × 0.8), 100 a quarter shorter (× 1.25), the higher value the
-higher voice, at the maintainer's word; synthesizer A's head size is the reverse.
-Measured on a sustained a: F1-F4 684, 1234, 2510, 3586 Hz at 50; 550, 994,
-1992, 2894 at 0; 886, 1562, 3139, 4488 at 100.
+**Head size** runs the other way since this round: 0 a longer tract (every
+formant × 0.71), 100 a shorter one (× 1.4; × 0.8 and × 1.25 until the wider
+ranges below), the higher value the higher voice, at the maintainer's word;
+synthesizer A's head size is the reverse. Measured on a sustained a (LPC,
+`analyze.py`): F1-F4 681, 1252, 2505, 3600 Hz at 50; 453, 875, 1827, 2604 at
+0; F1-F3 990, 1750, 3520 at 100 (F4 near the 5.3 kHz ceiling).
 
 **Roughness** was not heard: five times the voice's random jitter and shimmer
 (σ 2.3 % and 17 % per period at 100) is noise, not roughness. From 50 up the
@@ -1180,8 +1181,9 @@ the voiced one), multiplies the voicing by 1 - w² (so 75 is a breathy voice,
 not yet a whisper) and adds breath of `WHISPER_BREATH` 0.6 times the voicing
 amplitude through the cascade, which the glottal cycle no longer modulates
 (the closed-phase cut goes from 0.35 to 1). Below 50, `breathiness_tension()`
-(1 at 0) moves the open quotient towards `TENSE_OQ` 0.40, flattens the source
-by up to `TENSE_TILT_DB` 4 dB, and `breathiness_noise_scale()` takes the
+(1 at 0) moves the open quotient towards `TENSE_OQ` 0.30, flattens the source
+by up to `TENSE_TILT_DB` 8 dB, raises the source emphasis towards 0.88 and
+gives up 80 % of the low shelf (see "Wider ranges" below), and `breathiness_noise_scale()` takes the
 voice's own breath noise to none. The frication branch is untouched, so s, š
 and f stay as they are; the breath scales with the voicing amplitude, so a
 whispered word keeps its timing and its voiced consonants their place. 50
@@ -1328,6 +1330,59 @@ and 50 leaves it alone" (the hiss of asa at brightness 0), "Roughness is a
 rasp above 50 and a steady voice at 0"; `test_concat.cpp` "The volume boost
 makes the recorded voices louder without clipping" (the vowels rise, Josip's
 s comes down by more than 10 dB, the true peak).
+
+### Wider ranges for the voice quality settings (November 2026)
+
+The maintainer heard breathiness and roughness change only from 50 up, and
+asked for brightness and head size to be clearer. Measured on Zvonko as the
+spectral distance from 50 of a paragraph's voiced frames (RMS over the
+third-octave bands 0.5-5 kHz, the spectral shape with the level removed, dB)
+and the periodicity of a sustained a:
+
+| setting | 0 | 25 | 75 | 100 |
+|---|---|---|---|---|
+| head size before / now | 4.1 / 4.7 | 2.0 / 3.1 | 2.0 / 3.3 | 3.9 / 4.7 |
+| breathiness | 0.4 / 3.7 | 0.1 / 1.3 | 2.6 | 5.2 |
+| roughness (periodicity; 50: 0.979) | 0.999 / 1.000 | 0.995 | 0.730 | 0.475 |
+| brightness | 3.6 / 5.1 | 1.8 / 1.9 | 1.5 / 2.5 | 3.3 / 4.6 |
+
+Josip: head size 3.1 / 3.3 at 0, 3.2 / 3.4 at 100; brightness 3.2 / 4.6 at 0,
+1.1 / 1.6 at 100 (his sibilants, as loud as his vowels, are the peaks the
+plain limiter holds down when the top is tripled).
+
+- Head size: `HEAD_SIZE_SPAN` 1.25 → 1.4 (every formant × 0.71 at 0, × 1.4
+  at 100).
+- Breathiness below 50 is a pressed voice: `TENSE_OQ` 0.40 → 0.30 (the
+  source's floor), `TENSE_TILT_DB` 4 → 8 (Zvonko's own tilt is 0, so it acts
+  only where segments add tilt), the source emphasis towards
+  `BREATHINESS_TENSE_EMPHASIS` 0.88 and `BREATHINESS_TENSE_BASS_CUT` 80 % of
+  the low shelf given up (a pressed voice has a weak fundamental; below
+  500 Hz, which the distance above does not count). The top share of "Pozivam
+  Marka na mobitel." (energy above about 1.5 kHz) is three times 50's.
+- Roughness below 50 also takes the voice's breath noise away, the last
+  aperiodic part of the voicing; the periodicity goes to 1.000. The lower
+  half stays the subtlest of all: the voice's own jitter (0.46 %), shimmer
+  and drift (6.5 cents) are at the edge of what is heard, so removing them
+  cannot be loud.
+- Brightness: the dull side folds the top away from a pivot that moves from
+  1.5 kHz at 50 to `BRIGHTNESS_DULL_HZ` 800 Hz at 0; the sharp side
+  multiplies the top above 1.5 kHz by up to `BRIGHTNESS_SHARP_GAIN` 3 (+9.5 dB;
+  2 before).
+
+The sharp ends raised the peaks into the formant renderer's soft knee (0.8):
+a waveshaping residual (after the best gain per 2 ms, full volume against
+half) of -21 dB at breathiness 0, -17.5 at brightness 100 and -16 with both,
+where clean output measures -75. The plain output of `FormantSynthesizer`
+now goes through the limiter of `volume_boost.hpp` at unity gain after the
+volume with its ceiling at the knee, as the recorded voices' does: -43 to
+-48 dB (the limiter's 5 ms ramp is what a 2 ms fit still sees), peaks at
+-2.1 dBFS. The speaking voices at their defaults peak near -4 dBFS and are
+bit for bit unchanged; seven of the ten singing presets were bending their
+loudest notes at their defaults (Orguljaš -35 dB, Harmonikaš -44, Sevdalija
+-47, Sazlija -48) and are now at -53 to -61 dB, their peaks 1.5 dB lower.
+Test: `test_formant.cpp` "Voice quality settings shape the voice and 50
+leaves it alone" (breathiness 0's top, no waveshaping at the sharpest
+setting).
 
 ### The reference balance (November 2026)
 

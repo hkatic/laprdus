@@ -563,8 +563,8 @@ Postavke se spremaju u korisničkoj mapi `%APPDATA%\Laprdus` i dijele se između
 
 Četiri postavke kvalitete glasa slijede model glasovnih parametara klasičnih formantnih sintetizatora: veličina glave, dah, hrapavost i svjetlina. Podešavaju se u Laprdus Konfiguratoru gumbom „Kvaliteta glasa...” ispod pojačanja glasnoće, svaka od 0 do 100, a 50 je glas kakav jest, i vrijede za SAPI5; u NVDA-u ta četiri klizača nalaze se među NVDA-ovim postavkama glasa, pa dodatak ne čita vrijednosti Konfiguratora. U datoteci `settings.json` zapisane su kao `speech.head_size`, `speech.breathiness`, `speech.roughness` i `speech.brightness`.
 
-- **Veličina glave** – duljina govornog trakta: 0 je četvrtinu dulji (niži formanti, krupniji glas), 100 četvrtinu kraći (viši formanti, sitniji glas). Djeluje na sve glasove.
-- **Dah** – dah u glasu: 0 je napet, čist glas bez daha, 50 glas kakav jest; iznad 50 u glasu je sve više daha, a 100 je šapat, samo dah bez zvučnosti. Djeluje na formantne glasove (Zvonko, Stojan, Mirsad i pjevajući glasovi).
+- **Veličina glave** – duljina govornog trakta: 0 je 40 % dulji (svaki formant ×0,7, glas diva), 100 je 30 % kraći (×1,4, dječji glas). Djeluje na sve glasove.
+- **Dah** – dah u glasu: 0 je napet, tvrd glas bez daha, 50 glas kakav jest; iznad 50 u glasu je sve više daha, a 100 je šapat, samo dah bez zvučnosti. Djeluje na formantne glasove (Zvonko, Stojan, Mirsad i pjevajući glasovi).
 - **Hrapavost** – nepravilnosti visine i glasnoće od titraja do titraja (jitter i shimmer): 0 ih nema, a ni visina ne koleba (potpuno miran glas), 50 je glas kakav jest; iznad 50 svaki drugi titraj glasa dolazi ranije i slabiji je, promuklost koja raste do 100. Djeluje na formantne glasove.
 - **Svjetlina** – boja tona: 0 je tamno i prigušeno, 100 oštro i svijetlo. Djeluje na sve glasove kroz nagib cijelog zvuka oko 1,5 kHz (na formantne i kroz izvor glasa), pa niže vrijednosti ublažavaju i glasove poput s i š.
 

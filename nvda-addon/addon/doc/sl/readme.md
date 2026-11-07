@@ -539,8 +539,8 @@ Nastavitve se shranijo v uporabniško mapo `%APPDATA%\Laprdus`, uporabljata pa j
 
 Štiri nastavitve kakovosti glasu sledijo modelu glasovnih parametrov klasičnih formantnih sintetizatorjev: velikost glave, dih, hrapavost in svetlost. V NVDA so to NVDA-jeve lastne nastavitve glasu: drsniki Velikost glave, Dih, Hrapavost in Svetlost v NVDA-jevih nastavitvah glasu, za glasnostjo, in v krogu nastavitev sinteze (Control + tipka NVDA + puščice), vsak od 0 do 100, pri čemer je 50 glas, kakršen je; NVDA si jih zapomni kot druge svoje nastavitve. Konfigurator Laprdus ima iste štiri za gumbom »Kakovost glasu...«, vendar te vrednosti veljajo le za SAPI5 (v datoteki `settings.json` so zapisane kot `speech.head_size`, `speech.breathiness`, `speech.roughness` in `speech.brightness`), tako kot njegove nastavitve intonacije.
 
-- **Velikost glave** – dolžina govornega trakta: 0 je za četrtino daljši (nižji formanti, polnejši glas), 100 za četrtino krajši (višji formanti, drobnejši glas). Deluje na vse glasove.
-- **Dih** – dih v glasu: 0 je napet, čist glas brez diha, 50 glas, kakršen je; nad 50 je v glasu vse več diha, 100 pa je šepet, samo dih brez zvenečnosti. Deluje na formantne glasove (Zvonko, Stojan, Mirsad in pojoči glasovi).
+- **Velikost glave** – dolžina govornega trakta: 0 je za 40 % daljši (vsak formant ×0,7, glas velikana), 100 za 30 % krajši (×1,4, otroški glas). Deluje na vse glasove.
+- **Dih** – dih v glasu: 0 je napet, trd glas brez diha, 50 glas, kakršen je; nad 50 je v glasu vse več diha, 100 pa je šepet, samo dih brez zvenečnosti. Deluje na formantne glasove (Zvonko, Stojan, Mirsad in pojoči glasovi).
 - **Hrapavost** – nepravilnosti višine in glasnosti od nihaja do nihaja (jitter in shimmer): 0 jih ni, pa tudi višina ne niha (povsem miren glas), 50 je glas, kakršen je; nad 50 vsak drugi nihaj glasu pride prej in šibkejši, hripavost, ki narašča do 100. Deluje na formantne glasove.
 - **Svetlost** – barva tona: 0 je temno in zamolklo, 100 ostro in svetlo. Deluje na vse glasove prek nagiba celotnega zvoka okoli 1,5 kHz (na formantne tudi prek vira glasu), zato nižje vrednosti omilijo tudi glasove, kot sta s in š.
 

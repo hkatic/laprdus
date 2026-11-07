@@ -367,25 +367,29 @@ constexpr float VOLUME_BOOST_HISS_MAX_CUT_DB = 24.0f;
 // 2026; pitch baseline, fluctuation, speed and volume are Laprdus's pitch,
 // inflection level, rate and volume already). 50 is the voice as its tables
 // define it, so the defaults change nothing. Head size scales every formant
-// (the vocal tract length: 0 a quarter longer, formants a fifth lower;
-// 100 a quarter shorter, a higher voice) for every voice, recorded ones through their bank
-// warp. Breathiness runs from a tense, clear voice at 0 (no breath, a
+// (the vocal tract length: 0 40 % longer, formants x0.71; 100 30 % shorter,
+// x1.4, a higher voice) for every voice, recorded ones through their bank
+// warp. Breathiness runs from a pressed, hard voice at 0 (no breath, a
 // shorter open phase) to a whisper at 100 (no voicing, only breath through
 // the vocal tract; breathiness_tension(), breathiness_whisper()); roughness
 // scales the jitter and shimmer (0 none, 100 eight times) with diplophonia
 // above 50 (roughness_diplophonia(); both formant voices). Brightness is
 // the tone: for the formant voices the source emphasis (0 the bare pulse,
 // 50 the voice's own, 100 the sharpest), for the recorded voices a tilt of
-// the output around 1.5 kHz (0 the top folded away, 100 the top doubled).
+// the output (0 the top folded away from 800 Hz, 100 the top above 1.5 kHz
+// tripled; brightness_tilt.hpp), which the formant voices get on top of the
+// emphasis.
 constexpr int VOICE_QUALITY_MIN = 0;
 constexpr int VOICE_QUALITY_MAX = 100;
 constexpr int VOICE_QUALITY_DEFAULT = 50;
-constexpr float HEAD_SIZE_SPAN = 1.25f;      // formant factor at 100 (and 1/1.25 at 0)
+// Formant factor at 100 (and its inverse at 0): 1.4, a giant at 0 and a child at
+// 100; 1.25 until a listener found the steps hard to hear (November 2026).
+constexpr float HEAD_SIZE_SPAN = 1.4f;
 constexpr float BRIGHTNESS_MAX_EMPHASIS = 0.85f;  // source emphasis at 100 (klatt_synth.hpp brightness)
 
 /** Factor every formant frequency is multiplied by for a head size setting:
- *  0.8 at 0 (a tract a quarter longer, a deeper voice), 1 at 50, 1.25 at 100
- *  (a quarter shorter, a higher voice). The maintainer asked for the higher
+ *  0.71 at 0 (a tract 40 % longer, a deeper voice), 1 at 50, 1.4 at 100
+ *  (30 % shorter, a higher voice). The maintainer asked for the higher
  *  value to be the higher voice (November 2026); synthesizer A's head size runs
  *  the other way. */
 inline float head_size_factor(int head_size) {
@@ -427,6 +431,22 @@ inline float breathiness_noise_scale(int breathiness) {
     const int v = std::clamp(breathiness, VOICE_QUALITY_MIN, VOICE_QUALITY_MAX);
     return v >= 50 ? 1.0f : static_cast<float>(v) / 50.0f;
 }
+
+/** Source emphasis a fully tense voice (breathiness 0) reaches: a pressed
+ *  voice has stronger upper harmonics. Moving only the open quotient and the
+ *  tilt changed a paragraph by 0.4 dB, which a listener could not hear. */
+constexpr float BREATHINESS_TENSE_EMPHASIS = 0.88f;
+/** Share of the low shelf on the voicing (VoiceQuality::bass_db) a fully
+ *  tense voice gives up: a pressed voice has a weak fundamental. */
+constexpr float BREATHINESS_TENSE_BASS_CUT = 0.8f;
+
+/** Brightness tilt (brightness_tilt.hpp): the top above BRIGHTNESS_SHARP_HZ is
+ *  multiplied by up to BRIGHTNESS_SHARP_GAIN at 100; below 50 the pivot of the
+ *  fold moves down to BRIGHTNESS_DULL_HZ at 0. (1.5 kHz and x2 at both ends
+ *  until a listener asked for clearer steps, November 2026.) */
+constexpr float BRIGHTNESS_SHARP_HZ = 1500.0f;
+constexpr float BRIGHTNESS_SHARP_GAIN = 3.0f;
+constexpr float BRIGHTNESS_DULL_HZ = 800.0f;
 
 /** Factor a voice's own jitter or shimmer is multiplied by:
  *  0 at 0, 1 at 50, 5 at 100. */

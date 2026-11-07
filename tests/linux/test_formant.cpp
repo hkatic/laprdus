@@ -4241,6 +4241,28 @@ double true_peak(const std::vector<int16_t>& x) {
     return best;
 }
 
+// What of `full` is not a scaled copy of `half`: the residual after the best
+// gain over every 2 ms (a limiter's gain barely moves there, a clipper's
+// waveshaping does not go away), re `full`, in dB.
+double waveshaping_db(const std::vector<int16_t>& full, const std::vector<int16_t>& half) {
+    const size_t n = std::min(full.size(), half.size()), m = 44;
+    double res = 0.0, total = 0.0;
+    for (size_t s = 0; s + m <= n; s += m) {
+        double xy = 0.0, xx = 0.0;
+        for (size_t i = s; i < s + m; ++i) {
+            xy += double(half[i]) * full[i];
+            xx += double(half[i]) * half[i];
+        }
+        const double g = xx > 0.0 ? xy / xx : 0.0;
+        for (size_t i = s; i < s + m; ++i) {
+            const double r = full[i] - g * half[i];
+            res += r * r;
+            total += double(full[i]) * full[i];
+        }
+    }
+    return 10.0 * std::log10(res / (total + 1e-9) + 1e-15);
+}
+
 } // namespace
 
 TEST_CASE("The volume boost makes the speech louder without clipping", "[formant][params][volume]") {
@@ -4396,6 +4418,29 @@ TEST_CASE("Voice quality settings shape the voice and 50 leaves it alone", "[for
         REQUIRE(dull_s.second < dull_s.first - 5.0);
     }
     REQUIRE(laprdus_set_brightness(engine.handle, 50) == LAPRDUS_OK);
+
+    // The lower halves are heard too (a listener heard breathiness and
+    // roughness change only above 50, November 2026): breathiness 0 is a
+    // pressed voice, its top three times the share of 50's (open quotient
+    // 0.30, source emphasis 0.88, the bass shelf mostly gone). The sharpest
+    // settings raise the peaks, and the plain output's limiter holds them
+    // under the soft knee instead of letting it bend them (a waveshaping
+    // residual of -16 dB at breathiness 0 with brightness 100 before).
+    REQUIRE(laprdus_set_breathiness(engine.handle, 0) == LAPRDUS_OK);
+    const std::vector<int16_t> pressed = speak(engine.handle, text);
+    REQUIRE(pressed.size() == normal.size());
+    REQUIRE(top_share(pressed) > top_share(normal) * 2.0);
+    REQUIRE(laprdus_set_brightness(engine.handle, 100) == LAPRDUS_OK);
+    const std::vector<int16_t> hottest = speak(engine.handle, text);
+    REQUIRE(peak(hottest) <= static_cast<int>(0.8f * 32000.0f) + 1);
+    REQUIRE(laprdus_set_volume(engine.handle, 0.5f) == LAPRDUS_OK);
+    const std::vector<int16_t> hottest_half = speak(engine.handle, text);
+    INFO("waveshaping " << waveshaping_db(hottest, hottest_half) << " dB");
+    REQUIRE(waveshaping_db(hottest, hottest_half) < -35.0);
+    REQUIRE(laprdus_set_volume(engine.handle, 1.0f) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_brightness(engine.handle, 50) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_breathiness(engine.handle, 50) == LAPRDUS_OK);
+    REQUIRE(speak(engine.handle, text) == normal);
 
     // Breathiness and roughness change the voice and nothing else (what
     // breathiness does is measured in "Breathiness runs from a tense voice

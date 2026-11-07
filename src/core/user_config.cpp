@@ -225,8 +225,8 @@ std::string generate_settings_json(const UserSettings& settings) {
     json << "        \"speech.volume_boost\": \"Louder speech through a peak limiter, for noisy places and a phone's earpiece (true/false, default false)\",\n";
     json << "        \"speech.inflection_level\": \"Size of the pitch movements: 0.0 (monotone) to 1.0 (maximum), default 0.5\",\n";
     json << "        \"speech.acceleration\": \"Rate multiplier from 0.5 to 3.0, default 1.0 (2.0 doubles the rate the rate slider reaches)\",\n";
-    json << "        \"speech.head_size\": \"Voice quality: length of the vocal tract, 0 (a quarter longer, lower formants) to 100 (a quarter shorter, higher formants), default 50 = the voice as it is\",\n";
-    json << "        \"speech.breathiness\": \"Voice quality: breath in the formant voices, 0 (a tense, clear voice without breath) to 100 (a whisper), default 50 = the voice as it is\",\n";
+    json << "        \"speech.head_size\": \"Voice quality: length of the vocal tract, 0 (40 % longer, formants x0.71) to 100 (30 % shorter, formants x1.4), default 50 = the voice as it is\",\n";
+    json << "        \"speech.breathiness\": \"Voice quality: breath in the formant voices, 0 (a pressed, hard voice without breath) to 100 (a whisper), default 50 = the voice as it is\",\n";
     json << "        \"speech.roughness\": \"Voice quality: jitter and shimmer of the formant voices, 0 (none, and no slow drift of the pitch: a perfectly steady voice) to 100 (eight times the voice's own), above 50 also a rasp (every second cycle shorter and weaker), default 50\",\n";
     json << "        \"speech.brightness\": \"Voice quality: tone of the whole sound, 0 (dull, with softer s and sh) to 100 (sharp), default 50 = the voice as it is\",\n";
     json << "        \"speech.emoji\": \"Convert emoji to spoken text descriptions (true/false)\",\n";

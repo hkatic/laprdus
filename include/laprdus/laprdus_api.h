@@ -314,15 +314,15 @@ LAPRDUS_API float LAPRDUS_CALL laprdus_get_inflection_level(LaprdusHandle handle
  * Voice quality, four settings of 0-100 after the voice-parameter model of
  * a classic formant synthesizer; 50 (the default of each) is the voice as its tables define
  * it. Head size is the length of the vocal tract, for every voice: every
- * formant is multiplied by 0.8 at 0 (a longer tract, a deeper voice) and by
- * 1.25 at 100 (a shorter tract, a higher voice). Breathiness runs from a
- * tense, clear voice at 0 to a whisper at 100 (no voicing, only breath
+ * formant is multiplied by 0.71 at 0 (a longer tract, a deeper voice) and by
+ * 1.4 at 100 (a shorter tract, a higher voice). Breathiness runs from a
+ * pressed, hard voice at 0 to a whisper at 100 (no voicing, only breath
  * through the vocal tract); roughness scales the jitter
  * and shimmer (0 none, 100 eight times) and, above 50, adds diplophonia,
  * every second glottal period shorter and weaker (formant voices).
  * Brightness is the tone, for every voice: a tilt of the whole output
- * around 1.5 kHz (0 the top folded away, which also softens s and š, 100
- * doubled), and for the formant voices the source emphasis too (0 the bare
+ * (0 the top folded away from an 800 Hz pivot, which also softens s and š,
+ * 100 the top above 1.5 kHz tripled), and for the formant voices the source emphasis too (0 the bare
  * pulse, 100 the sharpest). Out-of-range values are clamped.
  * @param handle Engine handle.
  * @param value Setting (0 - 100, default 50).

@@ -555,8 +555,8 @@ class SettingsRepository internal constructor(
 
     /**
      * Flow of the head size (0-100, default 50): the length of the vocal
-     * tract, 0 a quarter longer (lower formants), 50 the voice as it is,
-     * 100 a quarter shorter (higher formants). Every voice.
+     * tract, 0 40 % longer (formants x0.71), 50 the voice as it is,
+     * 100 30 % shorter (formants x1.4). Every voice.
      */
     val headSize: Flow<Int> = prefs
         .map { preferences ->
@@ -575,7 +575,7 @@ class SettingsRepository internal constructor(
     }
 
     /**
-     * Flow of the breathiness (0-100, default 50): 0 a tense, clear voice
+     * Flow of the breathiness (0-100, default 50): 0 a pressed, hard voice
      * without breath, 50 the voice as it is, 100 a whisper. Formant voices
      * only.
      */

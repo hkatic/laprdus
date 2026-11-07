@@ -2518,24 +2518,24 @@
         }
       }
     },
-    "Length of the vocal tract: 0% a quarter longer (lower formants), 50% the voice as it is, 100% a quarter shorter (higher formants)" : {
+    "Length of the vocal tract: 0% much longer (lower formants, a giant), 50% the voice as it is, 100% much shorter (higher formants, a child)" : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Duljina govornog trakta: 0% četvrtinu dulji (niži formanti), 50% glas kakav jest, 100% četvrtinu kraći (viši formanti)"
+            "value" : "Duljina govornog trakta: 0% znatno dulji (niži formanti, div), 50% glas kakav jest, 100% znatno kraći (viši formanti, dijete)"
           }
         },
         "sr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dužina govornog trakta: 0% četvrtinu duži (niži formanti), 50% glas kakav jeste, 100% četvrtinu kraći (viši formanti)"
+            "value" : "Dužina govornog trakta: 0% znatno duži (niži formanti, div), 50% glas kakav jeste, 100% znatno kraći (viši formanti, dete)"
           }
         },
         "sl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dolžina govornega trakta: 0 % četrtino daljši (nižji formanti), 50 % glas, kakršen je, 100 % četrtino krajši (višji formanti)"
+            "value" : "Dolžina govornega trakta: 0 % veliko daljši (nižji formanti, velikan), 50 % glas, kakršen je, 100 % veliko krajši (višji formanti, otrok)"
           }
         }
       }
@@ -2584,24 +2584,24 @@
         }
       }
     },
-    "Breath in the voice: 0% a tense, clear voice, 50% the voice as it is, 100% a whisper (formant voices)" : {
+    "Breath in the voice: 0% a pressed, hard voice, 50% the voice as it is, 100% a whisper (formant voices)" : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dah u glasu: 0% napet, čist glas, 50% glas kakav jest, 100% šapat (formantni glasovi)"
+            "value" : "Dah u glasu: 0% napet, tvrd glas, 50% glas kakav jest, 100% šapat (formantni glasovi)"
           }
         },
         "sr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dah u glasu: 0% napet, čist glas, 50% glas kakav jeste, 100% šapat (formantni glasovi)"
+            "value" : "Dah u glasu: 0% napet, tvrd glas, 50% glas kakav jeste, 100% šapat (formantni glasovi)"
           }
         },
         "sl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dih v glasu: 0 % napet, čist glas, 50 % glas, kakršen je, 100 % šepet (formantni glasovi)"
+            "value" : "Dih v glasu: 0 % napet, trd glas, 50 % glas, kakršen je, 100 % šepet (formantni glasovi)"
           }
         }
       }
