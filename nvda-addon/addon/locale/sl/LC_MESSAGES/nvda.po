@@ -47,6 +47,7 @@ msgid ""
 "- Word stress and natural sentence melody for every voice; Josip and Vlado have a new engine without clicks, with a natural tempo and rate and pitch that no longer affect each other\n"
 "- Ten singing voices: Orguljaš, Dalmacija Klapa, Trubač, Harmonikaš, Sevdalija, Sazlija, Lika Velebit, Solunac, Sarajevo Bembaša and Bećarac\n"
 "- NVDA's Inflection slider controls the sentence melody of every voice, and an accent dictionary (accents.json) to correct the stress of a word\n"
+"- Voice quality: head size, breathiness, roughness and brightness (0-100, 50 = the voice as it is), after the voice-parameter model of a classic formant synthesizer, as sliders in NVDA's voice settings and the synth settings ring\n"
 "- Letters are spelled by their sounds (b, c, d) unless the Configurator says names; capital letters are spelled at NVDA's capital pitch change, as with NVDA's other synthesizers\n"
 "- The add-on, its user guide and the Laprdus Configurator are available in English, Croatian, Serbian and Slovenian: all follow NVDA's language\n"
 "- Fixed: user spelling and emoji dictionary entries had no effect\n"
@@ -57,6 +58,8 @@ msgstr ""
 "- Besedni naglas in naravna stavčna melodija za vsak glas; Josip in Vlado imata nov mehanizem brez pokanja, z naravnim tempom, hitrost in višina pa ne vplivata več druga na drugo\n"
 "- Deset pojočih glasov: Orguljaš, Dalmacija Klapa, Trubač, Harmonikaš, Sevdalija, Sazlija, Lika Velebit, Solunac, Sarajevo Bembaša in Bećarac\n"
 "- Drsnik Glasovna modulacija v NVDA uravnava stavčno melodijo vsakega glasu, naglasni slovar (accents.json) pa popravi naglas besede\n"
+"- Kakovost glasu: velikost glave, dih, hrapavost in svetlost (0–100, 50 = glas, kakršen je), po zgledu glasovnih parametrov klasičnega formantnega sintetizatorja, kot drsniki v NVDA-jevih nastavitvah glasu in v krogu nastavitev sinteze
+"
 "- Črke se črkujejo z glasovi (b, c, d), razen če je v Konfiguratorju izbrano črkovanje z imeni; velike črke se črkujejo s spremembo višine za velike črke v NVDA, kot pri drugih sintezah v NVDA\n"
 "- Dodatek, njegov uporabniški priročnik in Konfigurator Laprdus so na voljo v angleščini, hrvaščini, srbščini in slovenščini: vsi sledijo jeziku NVDA\n"
 "- Odpravljeno: uporabniški vnosi v slovarjih črkovanja in emodžijev niso imeli učinka\n"
@@ -100,3 +103,35 @@ msgstr "&Jezik"
 #. Translators: Label for the language setting in the synth settings ring
 msgid "Language"
 msgstr "Jezik"
+
+#. Translators: Label for the head size setting (the length of the vocal tract) in NVDA's voice settings
+msgid "&Head size"
+msgstr "Veli&kost glave"
+
+#. Translators: Label for the head size setting in the synth settings ring
+msgid "Head size"
+msgstr "Velikost glave"
+
+#. Translators: Label for the breathiness setting (breath noise in the voice) in NVDA's voice settings
+msgid "Breathi&ness"
+msgstr "&Dih"
+
+#. Translators: Label for the breathiness setting in the synth settings ring
+msgid "Breathiness"
+msgstr "Dih"
+
+#. Translators: Label for the roughness setting (a smooth to a rasping voice) in NVDA's voice settings
+msgid "Ro&ughness"
+msgstr "&Hrapavost"
+
+#. Translators: Label for the roughness setting in the synth settings ring
+msgid "Roughness"
+msgstr "Hrapavost"
+
+#. Translators: Label for the brightness setting (a dull to a sharp tone) in NVDA's voice settings
+msgid "Bri&ghtness"
+msgstr "Svetl&ost"
+
+#. Translators: Label for the brightness setting in the synth settings ring
+msgid "Brightness"
+msgstr "Svetlost"

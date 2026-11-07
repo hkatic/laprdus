@@ -60,6 +60,13 @@ struct Options {
     float speech_rate = 1.0f;
     float speech_pitch = 1.0f;
     float speech_volume = 1.0f;
+    bool volume_boost = false;       /* louder output through a peak limiter */
+    float inflection_level = 0.5f;   /* 0.0 monotone .. 1.0 maximum */
+    float acceleration = 1.0f;       /* rate multiplier 0.5 .. 3.0 */
+    int head_size = 50;              /* voice quality, 0 .. 100 each; 50 = the voice as it is */
+    int breathiness = 50;
+    int roughness = 50;
+    int brightness = 50;
     bool numbers_as_digits = false;
     bool spell = false;              /* spell the text character by character */
     int spelling_speed = 50;         /* spelling cadence, lower adds silence, 0 .. 100 */
@@ -79,7 +86,19 @@ struct Options {
 };
 
 /* Short options */
-static const char *short_options = "v:L:r:p:V:dsS:m:c:e:x:q:n:o:i:D:hlw";
+
+/* Long-only options (no short letter is left for them) and their parser */
+enum { OPT_HEAD_SIZE = 1001, OPT_BREATHINESS, OPT_ROUGHNESS, OPT_BRIGHTNESS };
+
+static int voice_quality_arg(const char *arg)
+{
+    int value = std::stoi(arg);
+    if (value < 0) value = 0;
+    if (value > 100) value = 100;
+    return value;
+}
+
+static const char *short_options = "v:L:r:p:I:a:V:BdsS:m:c:e:x:q:n:o:i:D:hlw";
 
 /* Long options */
 static struct option long_options[] = {
@@ -87,7 +106,14 @@ static struct option long_options[] = {
     {"language",            required_argument, nullptr, 'L'},
     {"speech-rate",         required_argument, nullptr, 'r'},
     {"speech-pitch",        required_argument, nullptr, 'p'},
+    {"inflection",          required_argument, nullptr, 'I'},
+    {"acceleration",        required_argument, nullptr, 'a'},
+    {"head-size",           required_argument, nullptr, OPT_HEAD_SIZE},
+    {"breathiness",         required_argument, nullptr, OPT_BREATHINESS},
+    {"roughness",           required_argument, nullptr, OPT_ROUGHNESS},
+    {"brightness",          required_argument, nullptr, OPT_BRIGHTNESS},
     {"speech-volume",       required_argument, nullptr, 'V'},
+    {"volume-boost",        no_argument,       nullptr, 'B'},
     {"numbers-digits",      no_argument,       nullptr, 'd'},
     {"spell",               no_argument,       nullptr, 's'},
     {"spelling-speed",      required_argument, nullptr, 'S'},
@@ -146,9 +172,21 @@ void print_help(const char *program_name)
               << "                             like are accepted.\n"
               << "                             Every voice speaks every language; without -L\n"
               << "                             the voice speaks its native language\n"
-              << "  -r, --speech-rate RATE     Speech rate 0.5-2.0 (default: 1.0)\n"
-              << "  -p, --speech-pitch PITCH   Speech pitch 0.5-2.0 (default: 1.0)\n"
+              << "  -r, --speech-rate RATE     Speech rate 0.5-2.0 (default: 1.0);\n"
+              << "                             formant voices 0.25-4.0\n"
+              << "  -p, --speech-pitch PITCH   Speech pitch 0.5-2.0 (default: 1.0);\n"
+              << "                             formant voices 0.25-4.0\n"
+              << "  -I, --inflection PERCENT   Inflection 0-100 (default: 50; 0 is a monotone)\n"
+              << "  -a, --acceleration FACTOR  Rate multiplier 0.5-3.0 (default: 1.0)\n"
+              << "      --head-size PERCENT    Voice quality: vocal tract length 0-100\n"
+              << "                             (default: 50 = the voice as it is; 0 a quarter\n"
+              << "                             longer, 100 a quarter shorter)\n"
+              << "      --breathiness PERCENT  Breath noise 0-100 (default: 50; formant voices)\n"
+              << "      --roughness PERCENT    Jitter and shimmer 0-100 (default: 50; formant voices)\n"
+              << "      --brightness PERCENT   Tone 0-100 (default: 50; 0 dull, 100 sharp)\n"
               << "  -V, --speech-volume VOL    Volume 0.0-1.0 (default: 1.0)\n"
+              << "  -B, --volume-boost         Louder speech through a peak limiter, for\n"
+              << "                             noisy places\n"
               << "  -d, --numbers-digits       Speak numbers as digits (jedan-dva-tri)\n"
               << "  -s, --spell                Spell the text character by character\n"
               << "  -S, --spelling-speed PERCENT\n"
@@ -249,19 +287,45 @@ bool parse_args(int argc, char *argv[], Options &opts)
                 opts.language = optarg;
                 break;
             case 'r':
+                /* The engine narrows these to 0.5-2.0 for the recorded voices. */
                 opts.speech_rate = std::stof(optarg);
-                if (opts.speech_rate < 0.5f) opts.speech_rate = 0.5f;
-                if (opts.speech_rate > 2.0f) opts.speech_rate = 2.0f;
+                if (opts.speech_rate < 0.25f) opts.speech_rate = 0.25f;
+                if (opts.speech_rate > 4.0f) opts.speech_rate = 4.0f;
                 break;
             case 'p':
                 opts.speech_pitch = std::stof(optarg);
-                if (opts.speech_pitch < 0.5f) opts.speech_pitch = 0.5f;
-                if (opts.speech_pitch > 2.0f) opts.speech_pitch = 2.0f;
+                if (opts.speech_pitch < 0.25f) opts.speech_pitch = 0.25f;
+                if (opts.speech_pitch > 4.0f) opts.speech_pitch = 4.0f;
+                break;
+            case 'I':
+                opts.inflection_level = std::stof(optarg) / 100.0f;
+                if (opts.inflection_level < 0.0f) opts.inflection_level = 0.0f;
+                if (opts.inflection_level > 1.0f) opts.inflection_level = 1.0f;
+                break;
+            case 'a':
+                opts.acceleration = std::stof(optarg);
+                if (opts.acceleration < 0.5f) opts.acceleration = 0.5f;
+                if (opts.acceleration > 3.0f) opts.acceleration = 3.0f;
+                break;
+            case OPT_HEAD_SIZE:
+                opts.head_size = voice_quality_arg(optarg);
+                break;
+            case OPT_BREATHINESS:
+                opts.breathiness = voice_quality_arg(optarg);
+                break;
+            case OPT_ROUGHNESS:
+                opts.roughness = voice_quality_arg(optarg);
+                break;
+            case OPT_BRIGHTNESS:
+                opts.brightness = voice_quality_arg(optarg);
                 break;
             case 'V':
                 opts.speech_volume = std::stof(optarg);
                 if (opts.speech_volume < 0.0f) opts.speech_volume = 0.0f;
                 if (opts.speech_volume > 1.0f) opts.speech_volume = 1.0f;
+                break;
+            case 'B':
+                opts.volume_boost = true;
                 break;
             case 'd':
                 opts.numbers_as_digits = true;
@@ -492,6 +556,13 @@ int main(int argc, char *argv[])
         opts.speech_rate = settings.speed;
         opts.speech_pitch = settings.user_pitch;
         opts.speech_volume = settings.volume;
+        opts.volume_boost = settings.volume_boost;
+        opts.inflection_level = settings.inflection_level;
+        opts.acceleration = settings.acceleration;
+        opts.head_size = settings.head_size;
+        opts.breathiness = settings.breathiness;
+        opts.roughness = settings.roughness;
+        opts.brightness = settings.brightness;
         opts.numbers_as_digits = (settings.number_mode == laprdus::NumberMode::DigitByDigit);
         opts.spelling_speed = settings.spelling_speed;
         opts.letter_sounds = settings.spelling_mode == laprdus::SpellingMode::LetterSounds;
@@ -543,7 +614,11 @@ int main(int argc, char *argv[])
         std::cout << "Voice: " << opts.voice << "\n";
         std::cout << "Rate: " << opts.speech_rate << "\n";
         std::cout << "Pitch: " << opts.speech_pitch << "\n";
-        std::cout << "Volume: " << opts.speech_volume << "\n";
+        std::cout << "Volume: " << opts.speech_volume << (opts.volume_boost ? " (boosted)" : "") << "\n";
+        std::cout << "Inflection: " << static_cast<int>(opts.inflection_level * 100.0f + 0.5f) << "%\n";
+        std::cout << "Acceleration: " << opts.acceleration << "\n";
+        std::cout << "Voice quality: head size " << opts.head_size << ", breathiness " << opts.breathiness
+                  << ", roughness " << opts.roughness << ", brightness " << opts.brightness << "\n";
         std::cout << "Text length: " << opts.text.length() << " characters\n";
     }
 
@@ -627,6 +702,13 @@ int main(int argc, char *argv[])
     laprdus_set_speed(engine, opts.speech_rate);
     laprdus_set_user_pitch(engine, opts.speech_pitch);
     laprdus_set_volume(engine, opts.speech_volume);
+    laprdus_set_volume_boost(engine, opts.volume_boost ? 1 : 0);
+    laprdus_set_inflection_level(engine, opts.inflection_level);
+    laprdus_set_acceleration(engine, opts.acceleration);
+    laprdus_set_head_size(engine, opts.head_size);
+    laprdus_set_breathiness(engine, opts.breathiness);
+    laprdus_set_roughness(engine, opts.roughness);
+    laprdus_set_brightness(engine, opts.brightness);
 
     /* Configure pause settings */
     laprdus_set_comma_pause(engine, opts.comma_pause);

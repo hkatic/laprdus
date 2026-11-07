@@ -12,7 +12,7 @@
 //
 // Unvoiced sound is overlap-added at a fixed spacing; a frame that has to
 // be repeated to lengthen it is played backwards the second time, which
-// keeps a stretched fricative from turning into a buzz (the MBROLA trick).
+// keeps a stretched fricative from turning into a buzz (a diphone synthesizer's trick).
 
 #ifndef LAPRDUS_PSOLA_HPP
 #define LAPRDUS_PSOLA_HPP

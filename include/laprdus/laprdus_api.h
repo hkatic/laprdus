@@ -311,6 +311,38 @@ LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_inflection_level(
 LAPRDUS_API float LAPRDUS_CALL laprdus_get_inflection_level(LaprdusHandle handle);
 
 /**
+ * Voice quality, four settings of 0-100 after the voice-parameter model of
+ * a classic formant synthesizer; 50 (the default of each) is the voice as its tables define
+ * it. Head size is the length of the vocal tract, for every voice: every
+ * formant is multiplied by 0.8 at 0 (a longer tract, a deeper voice) and by
+ * 1.25 at 100 (a shorter tract, a higher voice). Breathiness scales the
+ * voice's own breath noise (0 none, 100 five times); roughness its jitter
+ * and shimmer (0 none, 100 eight times) and, above 50, adds diplophonia,
+ * every second glottal period shorter and weaker (formant voices).
+ * Brightness is the tone:
+ * the source emphasis of the formant voices (0 the bare pulse, 100 the
+ * sharpest) and a tilt around 1.5 kHz for the recorded voices (0 the top
+ * folded away, 100 doubled). Out-of-range values are clamped.
+ * @param handle Engine handle.
+ * @param value Setting (0 - 100, default 50).
+ * @return LAPRDUS_OK on success, error code on failure.
+ */
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_head_size(LaprdusHandle handle, int value);
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_breathiness(LaprdusHandle handle, int value);
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_roughness(LaprdusHandle handle, int value);
+LAPRDUS_API LaprdusError LAPRDUS_CALL laprdus_set_brightness(LaprdusHandle handle, int value);
+
+/**
+ * Get a voice quality setting (see laprdus_set_head_size).
+ * @param handle Engine handle.
+ * @return The setting (0 - 100), or 50 for an invalid handle.
+ */
+LAPRDUS_API int LAPRDUS_CALL laprdus_get_head_size(LaprdusHandle handle);
+LAPRDUS_API int LAPRDUS_CALL laprdus_get_breathiness(LaprdusHandle handle);
+LAPRDUS_API int LAPRDUS_CALL laprdus_get_roughness(LaprdusHandle handle);
+LAPRDUS_API int LAPRDUS_CALL laprdus_get_brightness(LaprdusHandle handle);
+
+/**
  * Set the acceleration of every voice: a multiplier applied to the speech
  * speed, so the top of a host's rate range reaches a higher (or lower)
  * rate. 1.0 (the default) leaves the speed alone; 2.0 doubles it. The

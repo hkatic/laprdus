@@ -60,17 +60,41 @@ enum class SourceKind : uint8_t {
  * Per-voice constants of the vocal tract and voice source.
  */
 struct VoiceQuality {
-    // F5 sits where Eloquence's does (a fixed resonance near 3.9 kHz in
-    // every vowel), the rest are spread up to the voiced-path cut-off.
+    // F5 sits where synthesizer A's does (a fixed resonance near 3.9 kHz in
+    // every vowel), the rest are spread up to the voiced-path cut-off. F5's
+    // bandwidth was 260 Hz until November 2026: the 4 kHz third-octave band
+    // of the vowels then stood only 6 dB under the 500 Hz band, where a
+    // recorded Croatian voice, synthesizer B and two commercial voices all have
+    // 13-16 dB (see "Hiss, crackle and the boost" in docs/formant.md).
     float upper_f[CASCADE_FIXED] = {3950.0f, 4900.0f, 6000.0f, 7200.0f};
-    float upper_b[CASCADE_FIXED] = {260.0f, 420.0f, 700.0f, 900.0f};
+    float upper_b[CASCADE_FIXED] = {500.0f, 420.0f, 700.0f, 900.0f};   // F5 widened for speech in quality_for()
     float nasal_pole = 270.0f;          // Hz
     float nasal_zero = 450.0f;          // Hz, zero position at full coupling
-    float brightness = 0.72f;           // Source high-frequency emphasis (0..0.9)
+    // Source high-frequency emphasis (0..0.9): 0.72 until November 2026, 0.65
+    // after the hiss round, 0.55 since the match to the reference balance (the
+    // vowels' 3-4 kHz sat 2-6 dB above synthesizer A's; the speaking voices' F5
+    // is widened at the same time, SPEAKING_F5_BANDWIDTH). See "synthesizer A's
+    // balance" in docs/formant.md.
+    float brightness = 0.55f;
+    // the reference balance (November 2026): a low shelf of bass_db on the
+    // voicing from bass_hz down (synthesizer A has 5-7 dB more in 0.1-0.25 kHz
+    // than the bare pulse through the cascade gives; 0 = none), and a
+    // 6th-order ceiling at ceiling_hz on the whole output, since synthesizer A
+    // has nothing above 5.5 kHz (0 = the voice and frication low-passes
+    // VOICE_CUTOFF / FRICATION_CUTOFF instead, which the singing presets
+    // keep).
+    float bass_db = 7.0f;
+    float bass_hz = 230.0f;
+    float ceiling_hz = 5300.0f;
     float breathiness = 0.02f;          // Glottal noise mixed into voicing
     float flutter = 0.2f;               // Slow quasi-random F0 drift (0..1)
     float jitter = 0.004f;              // Period-to-period F0 perturbation
     float shimmer = 0.03f;              // Period-to-period amplitude perturbation
+    // Diplophonia 0..1 (the roughness setting above 50): every second
+    // period shorter and weaker, a subharmonic an octave under the voice.
+    // Random jitter and shimmer alone, even five times the voice's own,
+    // were not heard as roughness (a listener's report of November 2026).
+    float roughness = 0.0f;
 
     // Singing presets. chorus adds two copies of the source detuned by
     // chorus_cents up and down (a section of players, a klapa); sub_octave
@@ -126,7 +150,7 @@ private:
     // A fixed frication peak. Above 1 kHz it is a true band-pass, with zeros
     // at 0 Hz and at the Nyquist frequency: an all-pole resonator at 4.5 kHz
     // passes low frequencies only 17 dB below its peak, and the c of "ce"
-    // carried a rumble 15 dB under its hiss (Eloquence's 30 dB, recorded
+    // carried a rumble 15 dB under its hiss (synthesizer A's 30 dB, recorded
     // Croatian 36 dB). The low labial peak keeps its all-pole skirt.
     struct NoisePeak {
         double a = 1.0, z = 0.0, b = 0.0, c = 0.0, x1 = 0.0, x2 = 0.0, y1 = 0.0, y2 = 0.0;
@@ -168,6 +192,21 @@ private:
         void clear() { x1 = x2 = y1 = y2 = 0.0; }
     };
 
+    // A general second-order section (the low shelf of the Audio EQ Cookbook).
+    struct Biquad {
+        double b0 = 1.0, b1 = 0.0, b2 = 0.0, a1 = 0.0, a2 = 0.0, x1 = 0.0, x2 = 0.0, y1 = 0.0, y2 = 0.0;
+        void set_low_shelf(double freq, double db);
+        double tick(double x) {
+            double y = b0 * x + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
+            x2 = x1;
+            x1 = x;
+            y2 = y1;
+            y1 = y;
+            return y;
+        }
+        void clear() { x1 = x2 = y1 = y2 = 0.0; }
+    };
+
     // Schroeder reverberator: four parallel combs into two allpasses.
     struct Reverb {
         static constexpr int COMBS = 4;
@@ -198,6 +237,10 @@ private:
     Resonator m_parallel[PARALLEL_FORMANTS];
     LowPass m_fric_lp[2];
     LowPass m_voice_lp;
+    Biquad m_bass;                      // the low shelf on the voicing (VoiceQuality::bass_db)
+    bool m_bass_on = false;
+    LowPass m_ceiling[3];               // the 6th-order ceiling (VoiceQuality::ceiling_hz)
+    bool m_ceiling_on = false;
 
     // Voice source state. The extra oscillators carry the chorus copies
     // (up, down) and the sub-octave.
@@ -209,6 +252,7 @@ private:
     double m_period_jitter = 1.0;
     double m_period_shimmer = 1.0;
     double m_period_oq = 0.6;
+    bool m_period_odd = false;          // parity of the glottal period (diplophonia)
     double m_tilt_state = 0.0;
     double m_tilt_coef = 0.0;
     double m_bright_x1 = 0.0;

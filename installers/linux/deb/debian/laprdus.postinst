@@ -41,7 +41,7 @@ configure_speechd() {
 
     # Speech Dispatcher 0.12+ uses module autodetection when no AddModule
     # lines are present. If we add an AddModule line, it disables autodetection
-    # and other modules (espeak-ng, RHVoice, etc.) become invisible.
+    # and the other installed modules become invisible.
     # Detect if autodetection is active (no uncommented AddModule lines).
     if grep -q '^[[:space:]]*AddModule' "$SPEECHD_CONF" 2>/dev/null; then
         # Explicit module mode: other modules are already listed, add ours too

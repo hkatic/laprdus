@@ -469,6 +469,10 @@ LaprdusError laprdus_set_volume(handle, volume);
 // Every voice
 LaprdusError laprdus_set_inflection_level(handle, level);   // 0.0 monotone .. 1.0, default 0.5
 LaprdusError laprdus_set_acceleration(handle, factor);      // 0.5 .. 3.0, multiplies the speed
+LaprdusError laprdus_set_head_size(handle, value);          // voice quality, 0 .. 100 each, 50 = the voice as it is
+LaprdusError laprdus_set_breathiness(handle, value);        // (int laprdus_get_head_size(handle) and the like read them)
+LaprdusError laprdus_set_roughness(handle, value);
+LaprdusError laprdus_set_brightness(handle, value);
 float laprdus_get_nominal_wpm(voice_id);                    // words/min at speed 1.0 (Zvonko: 175)
 ```
 
@@ -502,21 +506,63 @@ VoiceOver puts in the request's `<prosody volume>`, in dB).
 
 **Volume boost** (`VoiceParams::volume_boost`, `laprdus_set_volume_boost()`,
 `speech.volume_boost` in settings.json, key `volume_boost` on Android and
-Apple, CLI `-B`): a loudness maximizer after Google TTS's "amplify speech
-volume". Both renderers drive the clause through `src/audio/volume_boost.hpp`
-before the volume is applied: a gain of `VOLUME_BOOST_GAIN` (5.0, +14 dB), a
-lookahead peak limiter (5 ms lookahead, 1 ms attack, 30 ms release) with
-its ceiling `VOLUME_BOOST_CEILING` at 1.4, above full scale on purpose, and
-a tanh soft clipper from `VOLUME_BOOST_KNEE` 0.6 up that keeps the result
-under full scale. A limiter alone stalls at about -8 dBFS on speech (its
-peaks stand 12 dB above its level), which was not a noticeable boost; the
-soft clipper trades a mild saturation of the strongest vowel peaks (about
--20 dB of distortion energy on the formant voices, -17 dB on the recorded
-ones) for the rest. Measured: Zvonko's median speech level -19.9 → -8.8
-dBFS, loud stretches -13.6 → -6.0; Josip -11.6 → -6.2 and -8.0 → -4.3. The
-output is still deterministic, and a host at half volume with the boost on
-is louder than without it. Tests: `[volume]` in `test_formant.cpp` and
-`test_concat.cpp`, `test_volume_boost` in `tests/nvda/test_driver.py`.
+Apple, CLI `-B`): louder speech for a phone's earpiece in traffic, after the amplified speech volume of phone systems. Both renderers drive the clause through
+`src/audio/volume_boost.hpp` before the volume is applied: a gain of
+`VOLUME_BOOST_GAIN` (5.0, +14 dB), then a lookahead peak limiter (5 ms
+lookahead, a 20 ms hold, a 50 ms release) with its ceiling
+`VOLUME_BOOST_CEILING` at 0.97. The hold is longer than a glottal period down
+to 50 Hz, so the gain moves only between syllables and the waveform of a
+syllable stays a scaled copy of the plain one; the tanh soft clipper above
+`VOLUME_BOOST_KNEE` 0.9 is a safety net the ceiling keeps idle, and the
+renderers apply no knee of their own after the boost. In boost mode two more
+things happen, since the listening of 7 November 2026 on a phone at full
+volume: the gain may rise at most `VOLUME_BOOST_MAX_LIFT_DB` (2 dB; 6 for a
+day, which still let the bursts of k, t and p come 4 dB closer to the vowels)
+above the gain of the loudest syllable of the last 0.6 s, so the consonants
+between loud vowels keep their distance from them (without the cap the limiter
+lifted Zvonko's friction frames 3.4 dB closer to the voiced median; with 2 dB
+they end 1.2 dB further away), and a second-order high shelf takes the treble
+down by `VOLUME_BOOST_TREBLE_DB` (3 dB) from `VOLUME_BOOST_TREBLE_HZ` (4 kHz)
+up before the limiter, for every voice. Measured on a 37 s paragraph
+(`tools/formant/spectrum.py --boost`) with the voice of "The reference balance":
+Zvonko's median speech level -17.6 → -11.2 dBFS, his loud stretches -13.9 →
+-9.0 dBFS, the residual of the loudest frames against a scaled copy of the
+shelved plain output under -40 dB (against the unshelved one -27 dB, the
+shelf's own work); Josip +1.4 dB with his treble 0.2-1.0 dB down instead of
+up, and Baba +2 dB, since their recordings are compressed and at full scale
+already. Until November 2026 the limiter had a 1 ms attack, a 30 ms
+release and a ceiling of 1.4, and a soft clipper from 0.6 up rounded every
+vowel peak off: 3 dB louder, at a residual of -18 dB (10 % distortion), which
+phone users heard. The output is still deterministic, and a host at half
+volume with the boost on is louder than without it. Tests: `[volume]` in
+`test_formant.cpp` and `test_concat.cpp`, `test_volume_boost` in
+`tests/nvda/test_driver.py`; the sweep behind the settings is in "Hiss,
+crackle and the boost" in `docs/formant.md`.
+
+**Voice quality** (`VoiceParams::head_size`, `breathiness`, `roughness`,
+`brightness`, integers 0-100, default 50; `laprdus_set_head_size()` and the
+like; `speech.head_size` ... in settings.json; keys `head_size`, `breathiness`,
+`roughness`, `brightness` on Android and Apple; CLI `--head-size` ...): four
+settings after the voice-parameter model of a classic formant synthesizer. 50 is the voice as
+its tables define it, so the defaults are bit-identical to the output before
+them. Head size multiplies every formant by 0.8 at 0 and 1.25 at 100 (the
+higher value is the higher voice, at the maintainer's word; synthesizer A's runs
+the other way)
+(`head_size_factor()` in `types.hpp`): the formant voices through a
+per-utterance copy of the voice with a scaled `formant_scale` (also the fixed
+F5-F8), the recorded voices through the bank warp of `ensure_bank()`, which
+leaves the pitch where it was. Breathiness scales the voice's own breath noise
+(0 none, 100 five times); roughness its jitter and shimmer (0 none, 100 eight
+times) and from 50 up adds diplophonia, every second glottal period shorter
+and weaker (`VoiceQuality::roughness`, `roughness_diplophonia()`), since five
+times the random jitter alone was not heard (formant voices only). Brightness is the source emphasis of the formant voices (0 the
+bare pulse, 100 the 0.85 cap; the voice's own is 0.55 since the match to
+the reference balance, see "The reference balance" in `docs/formant.md`) and a
+one-pole tilt around 1.5 kHz for the recorded voices (0 the top folded away,
+100 doubled). The engine applies them
+per clause, so a change is heard with the next utterance. Tests: `[quality]` in
+`test_formant.cpp`, "Head size and brightness shape the recorded voices" in
+`test_concat.cpp`, `test_voice_quality` in `tests/nvda/test_driver.py`.
 
 **Thread Safety:**
 - Error messages use thread-local storage with mutex protection
@@ -561,7 +607,7 @@ Python-based synthesizer driver for NVDA screen reader.
 - `addon/globalPlugins/laprdus/__init__.py` - NVDA menu integration
 
 **Features:**
-- NVDA's rate and pitch sliders scale `speech.speed` and `speech.pitch` from settings.json (unless forced); rate boost multiplies every slider position by 3 through the engine's acceleration (`speech.acceleration` is not used), as eSpeak's and OneCore's boost does
+- NVDA's rate and pitch sliders scale `speech.speed` and `speech.pitch` from settings.json (unless forced); rate boost multiplies every slider position by 3 through the engine's acceleration (`speech.acceleration` is not used), as other synthesizers' rate boost does
 - NVDA's inflection slider sets the inflection level (0-100 → 0.0-1.0) and keeps inflection enabled; `speech.inflection` and `speech.inflection_level` from settings.json are not used under NVDA
 - A separate **Language** setting (NVDA's standard `LanguageSetting`: hr, sr, bs; default from NVDA's UI language, else hr); the voice list shows all 18 voices by registry `display_name` for any language, and the default voice is `zvonko`. NVDA's automatic language switching (`LangChangeCommand`) switches among hr/sr/bs and ignores other languages
 - Character mode for spelling

@@ -45,6 +45,11 @@ data class SettingsUiState(
     val emojiEnabled: Boolean = SettingsRepository.DEFAULT_EMOJI_ENABLED,
     val inflectionLevel: Float = SettingsRepository.DEFAULT_INFLECTION_LEVEL,
     val acceleration: Float = SettingsRepository.DEFAULT_ACCELERATION,
+    /** Voice quality, 0-100 each, 50 = the voice as it is. */
+    val headSize: Int = SettingsRepository.DEFAULT_HEAD_SIZE,
+    val breathiness: Int = SettingsRepository.DEFAULT_BREATHINESS,
+    val roughness: Int = SettingsRepository.DEFAULT_ROUGHNESS,
+    val brightness: Int = SettingsRepository.DEFAULT_BRIGHTNESS,
     /** Words per minute of the selected voice at speed 1.0 and acceleration 1.0. */
     val nominalWpm: Float = 0f,
     val sentencePause: Int = SettingsRepository.DEFAULT_SENTENCE_PAUSE,
@@ -137,6 +142,10 @@ class SettingsViewModel @Inject constructor(
                             emojiEnabled = allSettings.emojiEnabled,
                             inflectionLevel = allSettings.inflectionLevel,
                             acceleration = allSettings.acceleration,
+                            headSize = allSettings.headSize,
+                            breathiness = allSettings.breathiness,
+                            roughness = allSettings.roughness,
+                            brightness = allSettings.brightness,
                             nominalWpm = tts.getNominalWpm(allSettings.defaultVoice),
                             sentencePause = allSettings.sentencePause,
                             commaPause = allSettings.commaPause,
@@ -426,6 +435,62 @@ class SettingsViewModel @Inject constructor(
             tts.acceleration = clamped
             settings.setAcceleration(clamped)
             _uiState.update { it.copy(acceleration = clamped) }
+        }
+    }
+
+    // ==========================================================================
+    // Voice Quality Settings (head size, breathiness, roughness, brightness)
+    // ==========================================================================
+
+    /**
+     * Set the head size and persist it.
+     * @param value 0-100, 50 = the voice as it is
+     */
+    fun setHeadSize(value: Int) {
+        val clamped = value.coerceIn(SettingsRepository.VOICE_QUALITY_RANGE)
+        viewModelScope.launch {
+            tts.headSize = clamped
+            settings.setHeadSize(clamped)
+            _uiState.update { it.copy(headSize = clamped) }
+        }
+    }
+
+    /**
+     * Set the breathiness and persist it.
+     * @param value 0-100, 50 = the voice as it is
+     */
+    fun setBreathiness(value: Int) {
+        val clamped = value.coerceIn(SettingsRepository.VOICE_QUALITY_RANGE)
+        viewModelScope.launch {
+            tts.breathiness = clamped
+            settings.setBreathiness(clamped)
+            _uiState.update { it.copy(breathiness = clamped) }
+        }
+    }
+
+    /**
+     * Set the roughness and persist it.
+     * @param value 0-100, 50 = the voice as it is
+     */
+    fun setRoughness(value: Int) {
+        val clamped = value.coerceIn(SettingsRepository.VOICE_QUALITY_RANGE)
+        viewModelScope.launch {
+            tts.roughness = clamped
+            settings.setRoughness(clamped)
+            _uiState.update { it.copy(roughness = clamped) }
+        }
+    }
+
+    /**
+     * Set the brightness and persist it.
+     * @param value 0-100, 50 = the voice as it is
+     */
+    fun setBrightness(value: Int) {
+        val clamped = value.coerceIn(SettingsRepository.VOICE_QUALITY_RANGE)
+        viewModelScope.launch {
+            tts.brightness = clamped
+            settings.setBrightness(clamped)
+            _uiState.update { it.copy(brightness = clamped) }
         }
     }
 

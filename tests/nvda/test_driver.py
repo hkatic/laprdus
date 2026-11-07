@@ -18,6 +18,10 @@ What is covered:
   only that letter's, with the Laprdus pitch forced or not; a change NVDA
   replays at the start of a sequence applies to its text;
 - RateCommand and VolumeCommand;
+- speech.volume_boost of settings.json switches the boost on;
+- the voice quality keys of settings.json (head_size, breathiness,
+  roughness, brightness) reach the engine and change the speech, and a
+  file without them leaves the voice as it is;
 - NVDA's delayed character descriptions: the break after a spelled
   character is played as silence and the description follows;
 - the Language setting comes before the Voice setting.
@@ -57,7 +61,10 @@ def check(name, ok):
         failures.append(name)
 
 
-def write_settings(mode="names", force_pitch=False, force_volume=False, volume=1.0, volume_boost=None):
+def write_settings(mode="names", force_pitch=False, force_volume=False, volume=1.0, volume_boost=None,
+                   quality=None):
+    """quality: the voice quality keys to write into the speech section
+    (head_size, breathiness, roughness, brightness), none by default."""
     path = os.path.join(APPDATA, "Laprdus", "settings.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump({
@@ -65,7 +72,8 @@ def write_settings(mode="names", force_pitch=False, force_volume=False, volume=1
             "voice": {"default": "zvonko"},
             "speech": dict({"speed": 1.0, "pitch": 1.0, "volume": volume, "inflection": True,
                             "inflection_level": 0.5, "acceleration": 1.0, "emoji": False},
-                           **({} if volume_boost is None else {"volume_boost": volume_boost})),
+                           **({} if volume_boost is None else {"volume_boost": volume_boost}),
+                           **(quality or {})),
             "spelling": {"speed": 50, "mode": mode},
             "force": {"speed": False, "pitch": force_pitch, "volume": force_volume},
         }, f)
@@ -226,6 +234,47 @@ def test_volume_boost():
     synth.terminate()
 
 
+def test_voice_quality():
+    # Head size, breathiness, roughness and brightness (0-100, 50 = the voice
+    # as it is) are NVDA's own settings: sliders of the voice settings and the
+    # synth settings ring, restored by NVDA through the _set_ methods. The
+    # keys of settings.json are SAPI5's and leave NVDA's values alone.
+    write_settings("names", quality={"head_size": 40, "roughness": 90})
+    synth = new_synth()
+    e = synth._engine
+
+    def quality():
+        return (e.get_head_size(), e.get_breathiness(), e.get_roughness(), e.get_brightness())
+    ids = [s if isinstance(s, str) else getattr(s, "id", None) for s in synth.supportedSettings]
+    check("the four sliders are NVDA settings, after the volume",
+          ids[-4:] == ["headSize", "breathiness", "roughness", "brightness"] and "volume" in ids
+          and ids.index("volume") < ids.index("headSize"))
+    check("they start at 50, whatever settings.json says",
+          quality() == (50, 50, 50, 50)
+          and (synth._get_headSize(), synth._get_breathiness(), synth._get_roughness(), synth._get_brightness())
+          == (50, 50, 50, 50))
+    plain = run(synth, ["Dobar dan", IndexCommand(1)])
+    synth._set_headSize(20)
+    synth._set_breathiness(80)
+    synth._set_roughness(70)
+    synth._set_brightness(10)
+    check("the sliders reach the engine", quality() == (20, 80, 70, 10))
+    changed = run(synth, ["Dobar dan", IndexCommand(2)])
+    check("the voice quality changes the rendered speech",
+          len(plain) == 1 and len(changed) == 1 and changed[0] != plain[0])
+    synth._set_headSize(120)
+    synth._set_brightness(-5)
+    check("voice quality values outside 0-100 are clamped",
+          quality() == (100, 80, 70, 0) and synth._get_headSize() == 100 and synth._get_brightness() == 0)
+    write_settings("names", quality={"head_size": 30, "breathiness": 30, "roughness": 30, "brightness": 30})
+    synth._checkConfigChanged()
+    check("the voice quality keys of settings.json are SAPI5's and leave NVDA's values alone",
+          quality() == (100, 80, 70, 0))
+    synth._set_voice("stojan")
+    check("a voice change keeps the voice quality", quality() == (100, 80, 70, 0))
+    synth.terminate()
+
+
 def test_delayed_description():
     write_settings("sounds")
     synth = new_synth()
@@ -255,6 +304,7 @@ if __name__ == "__main__":
     test_capital_pitch(force_pitch=True)
     test_rate_and_volume()
     test_volume_boost()
+    test_voice_quality()
     test_delayed_description()
     print("%d failed" % len(failures))
     sys.exit(1 if failures else 0)

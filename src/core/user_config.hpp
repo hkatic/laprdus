@@ -23,6 +23,10 @@ struct UserSettings {
     bool volume_boost = false;        // Louder output through a peak limiter
     float inflection_level = INFLECTION_LEVEL_DEFAULT;  // Size of pitch movements (0.0 - 1.0)
     float acceleration = ACCELERATION_DEFAULT;          // Rate multiplier (0.5 - 3.0)
+    int head_size = VOICE_QUALITY_DEFAULT;    // Voice quality, 0-100 each, 50 = the voice as it is
+    int breathiness = VOICE_QUALITY_DEFAULT;
+    int roughness = VOICE_QUALITY_DEFAULT;
+    int brightness = VOICE_QUALITY_DEFAULT;
     bool emoji_enabled = false;       // Enable emoji to text conversion
 
     // Number processing

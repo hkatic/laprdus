@@ -40,6 +40,11 @@ std::string WideToUtf8(const std::wstring& wstr) {
     return result;
 }
 
+} // namespace
+
+// Shared with the voice quality dialog of config_dialog.cpp: these three
+// have external linkage within laprdus.
+
 // A string of the resource table, or "" when it is missing
 std::wstring LoadResourceString(HINSTANCE hInstance, UINT id) {
     wchar_t buffer[512];
@@ -93,6 +98,8 @@ void CenterOnParent(HWND hDlg) {
 
     SetWindowPos(hDlg, nullptr, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
 }
+
+namespace {
 
 // Escape a string for JSON output
 std::string EscapeJsonString(const std::string& str) {

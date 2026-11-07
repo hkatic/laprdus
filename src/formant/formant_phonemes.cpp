@@ -94,7 +94,7 @@ void nasal(PhDef& d, float m2, float m3, float l2, float c2, float l3, float c3,
     // Oral place of articulation as seen by neighbouring vowels.
     set3(d.loc, 280.0f, l2, l3);
     // F1 of a neighbouring vowel hardly gives way before the closure: it
-    // jumps to the murmur's (in Eloquence and eSpeak within 10 ms).
+    // jumps to the murmur's (in synthesizer A and synthesizer B within 10 ms).
     set3(d.coart, 0.70f, c2, c3);
     d.av = 1.0f;
     d.dur = dur;
@@ -127,7 +127,7 @@ Table::Table() {
     t[Ph::SIL].min_dur = 0.0f;
 
     // ---- Vowels: F1 F2 F3 F4, B1 B2 B3, level, inherent duration ----
-    // Bandwidths are wider than Klatt's defaults: measured on Eloquence's
+    // Bandwidths are wider than Klatt's defaults: measured on synthesizer A's
     // vowels they are 100-140 Hz, and the narrow ones rang (see "Voice
     // colour" in docs/formant.md).
     vowel(t[Ph::A], 710.0f, 1230.0f, 2500.0f, 3600.0f, 105.0f, 110.0f, 140.0f, 1.00f, 80.0f);
@@ -167,9 +167,9 @@ Table::Table() {
 
     // ---- Glides and liquids ----
     // /j/ is a true constriction, not a weak /i/: F1 low (250-300 Hz in
-    // Eloquence and in the recordings at a word start), F2 about 2000 Hz
+    // synthesizer A and in the recordings at a word start), F2 about 2000 Hz
     // between two a's, and above all F3 well above the vowels' (2900-3400 Hz
-    // in the recorded "ja", "ji", "moj"; 3000 Hz in Eloquence's "ieri"). The
+    // in the recorded "ja", "ji", "moj"; 3000 Hz in synthesizer A's "ieri"). The
     // high F3 and the low F1 are what tell /j/ from /i/ in "ji", "ija",
     // "moj"; with F3 at 2750 the two were the same sound. Transitions are
     // quicker than a diphthong's.
@@ -177,11 +177,11 @@ Table::Table() {
              60.0f, 110.0f, 180.0f, 0.88f, 58.0f, 0.20f, 48.0f, 3, 0.18f);
     t[Ph::J].f4 = 3600.0f;
     // /v/ is labiodental: a weak, dull murmur with some friction, as in
-    // the classic synthesizers (Eloquence's v carries flat noise up to
-    // 5 kHz, DECtalk's is a voiced fricative). Without the friction, and
+    // the classic synthesizers (synthesizer A's v carries flat noise up to
+    // 5 kHz, synthesizer C's is a voiced fricative). Without the friction, and
     // with F1-F3 where an l has them (300 / 1130 / 2400 Hz), a phoneme
     // recognizer heard it as l in nearly every word ("voli" as "loli") and
-    // listeners could not tell V from L; the lips also lower F3 (DECtalk
+    // listeners could not tell V from L; the lips also lower F3 (synthesizer C
     // 2080 Hz) where an l keeps it high. Its voicing is weak: a louder
     // murmur with this low F1 is heard as m. See "v, l, nj and d" in
     // docs/formant.md.
@@ -191,18 +191,18 @@ Table::Table() {
     t[Ph::V].af = 0.12f;
     set_formant_noise(t[Ph::V], 0.3f, 0.4f, 0.5f);
     set_noise(t[Ph::V], 2500.0f, 2500.0f, 0.7f, 4500.0f, 3000.0f, 1.0f,
-              7000.0f, 3000.0f, 0.7f, 0.10f);
+              7000.0f, 3000.0f, 0.35f, 0.10f);
     // /l/: clearly louder than /v/, visible F2 and F3. It is a dark l: F2
     // stays low whatever the vowels around it (recorded 1150-1300 Hz next to
     // e and i, 1000-1100 Hz next to o and u). With more colour from the
     // vowels it reached 1460 Hz next to i, on the way to the clear l of
     // Slovenian (1650-1800 Hz). F1 is the low one of the classic
-    // synthesizers (Eloquence 310, DECtalk 310, eSpeak 390-430 Hz), not the
+    // synthesizers (synthesizer A 310, synthesizer C 310, synthesizer B 390-430 Hz), not the
     // recorded speaker's 450 Hz: the deep, quick dip of F1 is what makes an
     // l stand out between vowels, most of all at high rates. F3 and F4 lie
     // close together in laterals and reinforce each other; with them a
     // little higher and F3 sharper (2600 / 3000 Hz, between the recorded
-    // speaker's 2500 / 2900 and eSpeak's and DECtalk's 2700-2900 Hz) an l
+    // speaker's 2500 / 2900 and synthesizer B's and synthesizer C's 2700-2900 Hz) an l
     // next to e and i is no longer heard as n or m.
     // Slovenian [w] (the u̯ of bil, vse, nov, polno): a labiovelar glide,
     // a brief close back vocoid with F2 well below the u's (Šuštaršič,
@@ -221,12 +221,12 @@ Table::Table() {
 
     // ---- Nasals: murmur F2 F3, oral locus F2 (coart), F3 (coart) ----
     // The murmurs of m and n are told apart by their second resonance: near
-    // 1050 Hz for m and 1650 Hz for n, as in Eloquence (1000 / 1700) and
-    // eSpeak (1080 / 1620). The recorded speaker's are closer (1150 / 1400),
+    // 1050 Hz for m and 1650 Hz for n, as in synthesizer A (1000 / 1700) and
+    // synthesizer B (1080 / 1620). The recorded speaker's are closer (1150 / 1400),
     // and with those n was taken for m. The murmur of n is also the duller
     // of the two: a clear one is taken for l. The murmur of nj lies a
     // little above that of n (it was below it, and nj was heard as n), but
-    // far below Eloquence's and eSpeak's 2100 Hz, which was heard as j;
+    // far below synthesizer A's and synthesizer B's 2100 Hz, which was heard as j;
     // its oral locus is a firm palatal one, so the vowel after it starts
     // high (see also the slow release in formant_synthesizer.cpp).
     nasal(t[Ph::M], 1050.0f, 2250.0f, 900.0f, 0.70f, 2150.0f, 0.65f, 60.0f, 36.0f);
@@ -238,7 +238,7 @@ Table::Table() {
     // ---- Tap /r/ ----
     // The values are those of the vocalic stretch around the contacts (F1
     // about 430, F2 about 1350 Hz; F3 drops some 300 Hz below the vowel's,
-    // to 2250 Hz, in the recordings and in Eloquence alike). av is the level
+    // to 2250 Hz, in the recordings and in synthesizer A alike). av is the level
     // left during a contact; the noise spectrum is that of the brief
     // transient when the tongue tip leaves the ridge.
     obstruent(t[Ph::R], PhClass::Tap, true, 430.0f, 1350.0f, 2250.0f,
@@ -261,11 +261,11 @@ Table::Table() {
     obstruent(t[Ph::B], PhClass::Stop, true, 200.0f, 850.0f, 2100.0f,
               0.25f, 0.70f, 0.65f, 65.0f, 36.0f, 8);
     // The labial burst is a click with a spectrum of its own, the same
-    // before every vowel (so it is in Eloquence and eSpeak): strongest below
+    // before every vowel (so it is in synthesizer A and synthesizer B): strongest below
     // 500 Hz, with a flat floor up to 5 kHz about 10 dB under it. Following
     // the formants it could peak where a /t/ or /k/ burst does.
     for (Ph ph : {Ph::P, Ph::B}) {
-        t[ph].af = 0.63f;
+        t[ph].af = 0.45f;
         set_formant_noise(t[ph], 0.0f, 0.0f, 0.0f);
         set_noise(t[ph], 350.0f, 500.0f, 0.8f, 4000.0f, 3000.0f, 0.0f,
                   6000.0f, 3000.0f, 0.0f, 0.20f);
@@ -276,14 +276,22 @@ Table::Table() {
     obstruent(t[Ph::D], PhClass::Stop, true, 200.0f, 1750.0f, 2800.0f,
               0.25f, 0.40f, 0.40f, 56.0f, 45.0f, 8);
     // The /t/ burst is strongest at 3.5-4.5 kHz (the recorded speaker's
-    // final /t/ 3.5-4 kHz, Eloquence's 4-5 kHz). With F3 as its strongest
+    // final /t/ 3.5-4 kHz, synthesizer A's 4-5 kHz). With F3 as its strongest
     // part it peaked at 2.7 kHz, where the /k/ burst sits next to e and i,
-    // and the two were hard to tell apart there.
+    // and the two were hard to tell apart there. The fixed peak was
+    // 4300/900 at full strength until November 2026; the broader, lower
+    // one takes 1 dB off the burst and nothing off its place (measured at
+    // -20 dB re the vowel, the recording's -19; see "Consonants on a phone"
+    // in docs/formant.md).
+    // t's af was 0.50 until the match to the reference balance: the burst's
+    // loudest 6 ms 17 dB under the vowel against synthesizer A's 22; 0.27 gives 23
+    // (the 16 ms of the release -24, synthesizer A -25). p 0.63 -> 0.45 (-24
+    // against -23), k 0.65 -> 0.85 with less breath and the shares below.
     for (Ph ph : {Ph::T, Ph::D}) {
-        t[ph].af = 0.50f;
+        t[ph].af = 0.27f;
         set_formant_noise(t[ph], 0.2f, 0.3f, 1.0f);
-        set_noise(t[ph], 4300.0f, 900.0f, 1.0f, 6200.0f, 2000.0f, 0.15f,
-                  8000.0f, 2500.0f, 0.0f, 0.02f);
+        set_noise(t[ph], 4000.0f, 1600.0f, 0.85f, 6200.0f, 2000.0f, 0.15f,
+                  8000.0f, 2500.0f, 0.0f, 0.05f);
     }
 
     obstruent(t[Ph::K], PhClass::Stop, false, 240.0f, 1700.0f, 2100.0f,
@@ -291,32 +299,42 @@ Table::Table() {
     obstruent(t[Ph::G], PhClass::Stop, true, 220.0f, 1700.0f, 2100.0f,
               0.25f, 0.45f, 0.45f, 62.0f, 60.0f, 8);
     for (Ph ph : {Ph::K, Ph::G}) {
-        t[ph].af = 1.0f;
-        set_formant_noise(t[ph], 1.0f, 0.35f, 0.30f);
+        t[ph].af = 0.85f;
+        set_formant_noise(t[ph], 1.0f, 0.25f, 0.15f);
         set_noise(t[ph], 1800.0f, 350.0f, 0.0f, 3600.0f, 1000.0f, 0.0f,
                   5500.0f, 2000.0f, 0.08f, 0.01f);
     }
 
     // ---- Fricatives ----
     // Sibilants are softer and lower than in natural speech on purpose: they
-    // follow the classic 10-11 kHz formant synthesizers (measured on ETI
-    // Eloquence: /s/ centred near 4.3 kHz, /sh/ near 3.1 kHz, both 13-17 dB
-    // below the vowels). See "Sibilants" in docs/formant.md.
+    // follow the classic 10-11 kHz formant synthesizers, and since November
+    // 2026 they match synthesizer A's levels and centroids exactly (the
+    // maintainer's choice after listening on a phone at full volume): s
+    // -15 dB re the loudest vowel frame at 4.3 kHz, š -17.5 at 3.2, c -15 at
+    // 4.3, č -15.6 at 3.1, ć -14.4 at 3.7 (tools/formant/sibilants.py on asa,
+    // aša, aca, ača, aća; synthesizer A -14.4, -17.1, -14.7, -15.2), with
+    // broader peaks and nothing above the 5.3 kHz ceiling. Until then s was
+    // -12 dB at 5.0 kHz, š -13 at 3.6, č -12 at 3.3, ć -10 at 3.9. See
+    // "Sibilants", "Consonants on a phone" and "The reference balance" in
+    // docs/formant.md.
     obstruent(t[Ph::F], PhClass::Fricative, false, 290.0f, 1000.0f, 2250.0f,
               0.40f, 0.75f, 0.70f, 88.0f, 34.0f, 7);
-    t[Ph::F].af = 0.13f;
+    // f was 0.13 until the match to the reference balance: -21.5 dB re the vowel
+    // against synthesizer A's -29.5; 0.08 gives -26.4, kept a little stronger for
+    // Croatian, where f carries hvala, kafa, telefon.
+    t[Ph::F].af = 0.08f;
     set_formant_noise(t[Ph::F], 0.3f, 0.4f, 0.5f);
     set_noise(t[Ph::F], 2500.0f, 2500.0f, 0.7f, 4500.0f, 3000.0f, 1.0f,
-              7000.0f, 3000.0f, 0.7f, 0.10f);
+              7000.0f, 3000.0f, 0.35f, 0.10f);
 
     obstruent(t[Ph::S], PhClass::Fricative, false, 290.0f, 1650.0f, 2650.0f,
               0.40f, 0.45f, 0.50f, 95.0f, 44.0f, 7);
     obstruent(t[Ph::Z], PhClass::Fricative, true, 270.0f, 1650.0f, 2650.0f,
               0.40f, 0.45f, 0.50f, 70.0f, 44.0f, 7);
     for (Ph ph : {Ph::S, Ph::Z}) {
-        t[ph].af = 0.62f;
-        set_noise(t[ph], 4850.0f, 750.0f, 1.0f, 5800.0f, 1000.0f, 0.60f,
-                  7000.0f, 1500.0f, 0.15f, 0.0f);
+        t[ph].af = 0.44f;
+        set_noise(t[ph], 4450.0f, 900.0f, 1.0f, 5400.0f, 1200.0f, 0.40f,
+                  6800.0f, 1500.0f, 0.08f, 0.0f);
     }
 
     // BCS š/ž are "hard" (flat postalveolar), lower-pitched than English sh.
@@ -325,9 +343,9 @@ Table::Table() {
     obstruent(t[Ph::ZH], PhClass::Fricative, true, 270.0f, 1800.0f, 2400.0f,
               0.40f, 0.35f, 0.40f, 72.0f, 50.0f, 7);
     for (Ph ph : {Ph::SH, Ph::ZH}) {
-        t[ph].af = 0.60f;
-        set_noise(t[ph], 2700.0f, 450.0f, 0.75f, 3650.0f, 750.0f, 1.0f,
-                  4800.0f, 1000.0f, 0.35f, 0.0f);
+        t[ph].af = 0.31f;
+        set_noise(t[ph], 2550.0f, 550.0f, 0.75f, 3300.0f, 850.0f, 1.0f,
+                  4400.0f, 1100.0f, 0.30f, 0.0f);
     }
 
     // Alveolo-palatal [ɕ ʑ]: the friction of ć/đ, and š/ž before them.
@@ -336,9 +354,9 @@ Table::Table() {
     obstruent(t[Ph::ZJ], PhClass::Fricative, true, 260.0f, 2150.0f, 2850.0f,
               0.40f, 0.25f, 0.30f, 70.0f, 55.0f, 7);
     for (Ph ph : {Ph::SJ, Ph::ZJ}) {
-        t[ph].af = 0.60f;
-        set_noise(t[ph], 3200.0f, 450.0f, 0.50f, 4050.0f, 750.0f, 1.0f,
-                  5300.0f, 1200.0f, 0.40f, 0.0f);
+        t[ph].af = 0.40f;
+        set_noise(t[ph], 3050.0f, 550.0f, 0.50f, 3800.0f, 850.0f, 1.0f,
+                  5000.0f, 1300.0f, 0.35f, 0.0f);
     }
 
     // Velar fricative: aspiration and friction shaped by the neighbouring
@@ -347,9 +365,11 @@ Table::Table() {
               0.90f, 0.92f, 0.92f, 72.0f, 30.0f, 2);
     obstruent(t[Ph::GH], PhClass::Fricative, true, 380.0f, 1400.0f, 2400.0f,
               0.90f, 0.92f, 0.92f, 60.0f, 30.0f, 2);
+    // h was af 0.06, ah 0.30 until the match to the reference balance: -14 dB re
+    // the vowel against synthesizer A's -20 to -22; now -20.
     for (Ph ph : {Ph::H, Ph::GH}) {
-        t[ph].af = 0.06f;
-        t[ph].ah = 0.30f;
+        t[ph].af = 0.032f;
+        t[ph].ah = 0.16f;
         set3(t[ph].bw, 160.0f, 160.0f, 240.0f);
         set_formant_noise(t[ph], 1.0f, 0.6f, 0.5f);
         set_noise(t[ph], 1500.0f, 450.0f, 0.0f, 3500.0f, 1200.0f, 0.0f,
@@ -361,12 +381,12 @@ Table::Table() {
               0.30f, 0.45f, 0.50f, 110.0f, 44.0f, 8);
     obstruent(t[Ph::DZ], PhClass::Affricate, true, 230.0f, 1650.0f, 2650.0f,
               0.30f, 0.45f, 0.50f, 80.0f, 44.0f, 8);
-    // c is a little lower and softer than s (Eloquence's [ts] sits at
-    // 4.4 kHz, 16 dB down; a listening test found ours too sharp).
+    // c is a little softer than s (synthesizer A's [ts] sits at 4.4 kHz,
+    // 16 dB down; a listening test found ours too sharp).
     for (Ph ph : {Ph::C, Ph::DZ}) {
-        t[ph].af = 0.60f;
-        set_noise(t[ph], 4500.0f, 750.0f, 1.0f, 5400.0f, 1000.0f, 0.50f,
-                  6500.0f, 1500.0f, 0.10f, 0.0f);
+        t[ph].af = 0.40f;
+        set_noise(t[ph], 4350.0f, 900.0f, 1.0f, 5400.0f, 1200.0f, 0.35f,
+                  6500.0f, 1500.0f, 0.08f, 0.0f);
     }
 
     obstruent(t[Ph::CH], PhClass::Affricate, false, 250.0f, 1800.0f, 2400.0f,
@@ -377,9 +397,9 @@ Table::Table() {
     // [ɕ]: measured on recordings the affricates' centroids are lower than
     // the fricatives', and the listening test asked for it.
     for (Ph ph : {Ph::CH, Ph::DZH}) {
-        t[ph].af = 0.70f;
-        set_noise(t[ph], 2550.0f, 450.0f, 0.75f, 3450.0f, 750.0f, 1.0f,
-                  4550.0f, 1000.0f, 0.35f, 0.0f);
+        t[ph].af = 0.48f;
+        set_noise(t[ph], 2500.0f, 550.0f, 0.70f, 3250.0f, 850.0f, 1.0f,
+                  4350.0f, 1100.0f, 0.32f, 0.0f);
     }
 
     obstruent(t[Ph::TJ], PhClass::Affricate, false, 240.0f, 2150.0f, 2850.0f,
@@ -387,9 +407,9 @@ Table::Table() {
     obstruent(t[Ph::DJ], PhClass::Affricate, true, 220.0f, 2150.0f, 2850.0f,
               0.30f, 0.25f, 0.30f, 88.0f, 55.0f, 8);
     for (Ph ph : {Ph::TJ, Ph::DJ}) {
-        t[ph].af = 0.70f;
-        set_noise(t[ph], 3000.0f, 450.0f, 0.50f, 3850.0f, 750.0f, 1.0f,
-                  5050.0f, 1200.0f, 0.40f, 0.0f);
+        t[ph].af = 0.52f;
+        set_noise(t[ph], 2850.0f, 550.0f, 0.50f, 3600.0f, 850.0f, 1.0f,
+                  4800.0f, 1300.0f, 0.35f, 0.0f);
     }
 }
 

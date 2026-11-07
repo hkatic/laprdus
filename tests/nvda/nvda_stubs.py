@@ -219,7 +219,9 @@ ds = types.ModuleType("autoSettingsUtils.driverSetting")
 
 class DriverSetting:
     def __init__(self, *a, **k):
-        pass
+        self.id = a[0] if a else k.get("id")
+        self.displayName = k.get("displayName")
+        self.defaultVal = k.get("defaultVal")
 
 
 class NumericDriverSetting(DriverSetting):

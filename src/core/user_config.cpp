@@ -6,6 +6,7 @@
 #include <sstream>
 #include <filesystem>
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
 
 #ifdef _WIN32
@@ -31,6 +32,10 @@ VoiceParams UserSettings::to_voice_params() const {
     params.volume_boost = volume_boost;
     params.inflection_level = inflection_level;
     params.acceleration = acceleration;
+    params.head_size = head_size;
+    params.breathiness = breathiness;
+    params.roughness = roughness;
+    params.brightness = brightness;
     params.emoji_enabled = emoji_enabled;
     params.number_mode = number_mode;
     params.pause_settings = get_pause_settings();
@@ -47,6 +52,10 @@ void UserSettings::from_voice_params(const VoiceParams& params) {
     volume_boost = params.volume_boost;
     inflection_level = params.inflection_level;
     acceleration = params.acceleration;
+    head_size = params.head_size;
+    breathiness = params.breathiness;
+    roughness = params.roughness;
+    brightness = params.brightness;
     emoji_enabled = params.emoji_enabled;
     number_mode = params.number_mode;
     apply_pause_settings(params.pause_settings);
@@ -216,6 +225,10 @@ std::string generate_settings_json(const UserSettings& settings) {
     json << "        \"speech.volume_boost\": \"Louder speech through a peak limiter, for noisy places and a phone's earpiece (true/false, default false)\",\n";
     json << "        \"speech.inflection_level\": \"Size of the pitch movements: 0.0 (monotone) to 1.0 (maximum), default 0.5\",\n";
     json << "        \"speech.acceleration\": \"Rate multiplier from 0.5 to 3.0, default 1.0 (2.0 doubles the rate the rate slider reaches)\",\n";
+    json << "        \"speech.head_size\": \"Voice quality: length of the vocal tract, 0 (a quarter longer, lower formants) to 100 (a quarter shorter, higher formants), default 50 = the voice as it is\",\n";
+    json << "        \"speech.breathiness\": \"Voice quality: breath noise of the formant voices, 0 (none) to 100 (five times the voice's own), default 50\",\n";
+    json << "        \"speech.roughness\": \"Voice quality: jitter and shimmer of the formant voices, 0 (none) to 100 (five times the voice's own), default 50\",\n";
+    json << "        \"speech.brightness\": \"Voice quality: tone, 0 (dull) to 100 (sharp), default 50 = the voice as it is\",\n";
     json << "        \"speech.emoji\": \"Convert emoji to spoken text descriptions (true/false)\",\n";
     json << "        \"numbers.mode\": \"Number reading: 'words' (twenty-three) or 'digits' (two-three)\",\n";
     json << "        \"pauses.sentence\": \"Pause after sentences (. ! ?) in milliseconds, 0-2000\",\n";
@@ -241,6 +254,10 @@ std::string generate_settings_json(const UserSettings& settings) {
     json << "        \"volume_boost\": " << (settings.volume_boost ? "true" : "false") << ",\n";
     json << "        \"inflection_level\": " << settings.inflection_level << ",\n";
     json << "        \"acceleration\": " << settings.acceleration << ",\n";
+    json << "        \"head_size\": " << settings.head_size << ",\n";
+    json << "        \"breathiness\": " << settings.breathiness << ",\n";
+    json << "        \"roughness\": " << settings.roughness << ",\n";
+    json << "        \"brightness\": " << settings.brightness << ",\n";
     json << "        \"emoji\": " << (settings.emoji_enabled ? "true" : "false") << "\n";
     json << "    },\n";
     json << "\n";
@@ -293,6 +310,11 @@ bool parse_settings_json(const std::string& json, UserSettings& settings) {
         extract_number_value(json, "inflection_level", INFLECTION_LEVEL_DEFAULT));
     settings.acceleration = static_cast<float>(
         extract_number_value(json, "acceleration", ACCELERATION_DEFAULT));
+    // Voice quality (November 2026); a file without the keys keeps the voice as it is.
+    settings.head_size = static_cast<int>(std::lround(extract_number_value(json, "head_size", VOICE_QUALITY_DEFAULT)));
+    settings.breathiness = static_cast<int>(std::lround(extract_number_value(json, "breathiness", VOICE_QUALITY_DEFAULT)));
+    settings.roughness = static_cast<int>(std::lround(extract_number_value(json, "roughness", VOICE_QUALITY_DEFAULT)));
+    settings.brightness = static_cast<int>(std::lround(extract_number_value(json, "brightness", VOICE_QUALITY_DEFAULT)));
     settings.emoji_enabled = extract_bool_value(json, "emoji", false);
 
     // Extract number mode

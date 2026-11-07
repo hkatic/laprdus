@@ -459,6 +459,54 @@ TEST_CASE("Letter sounds work with a recorded voice", "[concat][spelling]") {
     REQUIRE(spell("\xC5\xA1") == speak(engine.handle, "\xC5\xA1" "a"));
 }
 
+TEST_CASE("Head size and brightness shape the recorded voices", "[concat][params]") {
+    // Head size lengthens or shortens the vocal tract through the bank warp,
+    // so the formants move and the pitch stays; brightness tilts the top
+    // around 1.5 kHz. 50 is the recording as it is.
+    const char* dir = data_dir();
+    if (!dir) return;
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "josip", dir) == LAPRDUS_OK);
+    REQUIRE(laprdus_get_head_size(engine.handle) == 50);
+    REQUIRE(laprdus_get_brightness(engine.handle) == 50);
+    std::vector<int16_t> plain = speak(engine.handle, "Pozivam Marka na mobitel.");
+
+    // The share of the energy above about 1.5 kHz (a one-pole high-pass).
+    auto top_share = [](const std::vector<int16_t>& audio) {
+        double low = 0.0, top = 0.0, total = 0.0;
+        const double coef = std::exp(-2.0 * 3.14159265 * 1500.0 / 22050.0);
+        for (int16_t s : audio) {
+            low = coef * low + (1.0 - coef) * s;
+            const double hp = s - low;
+            top += hp * hp;
+            total += double(s) * s;
+        }
+        return total > 0.0 ? top / total : 0.0;
+    };
+
+    REQUIRE(laprdus_set_head_size(engine.handle, 100) == LAPRDUS_OK);
+    std::vector<int16_t> big = speak(engine.handle, "Pozivam Marka na mobitel.");
+    // The bank is resampled, so the length moves by a few periods' worth;
+    // the pitch does not (the formants do: see "Voice quality settings" in
+    // docs/formant.md for the measured spectra).
+    REQUIRE(std::abs(double(big.size()) - double(plain.size())) < 0.02 * double(plain.size()));
+    REQUIRE(big != plain);
+    const double plain_pitch = median_pitch(plain);
+    REQUIRE(std::abs(median_pitch(big) - plain_pitch) < 0.03 * plain_pitch);
+
+    REQUIRE(laprdus_set_head_size(engine.handle, 50) == LAPRDUS_OK);
+    REQUIRE(speak(engine.handle, "Pozivam Marka na mobitel.") == plain);
+
+    REQUIRE(laprdus_set_brightness(engine.handle, 0) == LAPRDUS_OK);
+    std::vector<int16_t> dull = speak(engine.handle, "Pozivam Marka na mobitel.");
+    REQUIRE(dull.size() == plain.size());
+    REQUIRE(top_share(dull) < top_share(plain) * 0.7);
+    REQUIRE(laprdus_set_brightness(engine.handle, 100) == LAPRDUS_OK);
+    REQUIRE(top_share(speak(engine.handle, "Pozivam Marka na mobitel.")) > top_share(plain));
+    REQUIRE(laprdus_set_brightness(engine.handle, 50) == LAPRDUS_OK);
+    REQUIRE(speak(engine.handle, "Pozivam Marka na mobitel.") == plain);
+}
+
 TEST_CASE("Volume scales the output", "[concat][volume]") {
     const char* dir = data_dir();
     if (!dir) return;
@@ -472,8 +520,11 @@ TEST_CASE("Volume scales the output", "[concat][volume]") {
 }
 
 TEST_CASE("The volume boost makes the recorded voices louder without clipping", "[concat][volume]") {
-    // The recordings already touch full scale, so the boost gains less here
-    // than on the formant voices, but the level still rises and nothing clips.
+    // The recordings already touch full scale and are compressed, so a
+    // limiter that does not clip gains little here: +1.3 dB for Josip and
+    // +2.1 dB for Baba (the boost of 2.0 gave them +5 dB by rounding the
+    // peaks off, at 10 % distortion). The level still rises and nothing
+    // clips.
     const char* dir = data_dir();
     if (!dir) return;
     Engine engine;
@@ -484,7 +535,7 @@ TEST_CASE("The volume boost makes the recorded voices louder without clipping", 
         REQUIRE(laprdus_set_volume_boost(engine.handle, 1) == LAPRDUS_OK);
         std::vector<int16_t> boosted = speak(engine.handle, "Pozivam Marka na mobitel.");
         REQUIRE(boosted.size() == plain.size());
-        REQUIRE(rms(boosted) > rms(plain) * 1.15);
+        REQUIRE(rms(boosted) > rms(plain) * 1.10);
         REQUIRE(peak(boosted) <= 32000);
         REQUIRE(speak(engine.handle, "Pozivam Marka na mobitel.") == boosted);
         // The volume scales the boosted output

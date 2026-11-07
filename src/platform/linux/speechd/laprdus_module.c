@@ -444,7 +444,8 @@ int module_init(char **msg)
     laprdus_load_spelling_dictionary(engine, dict_path);
 
     /* Load user configuration from ~/.config/Laprdus (speed, pitch, pauses,
-     * the inflection level and acceleration of the formant voices, ...) */
+     * the inflection level and acceleration, the voice quality settings
+     * head size, breathiness, roughness and brightness, ...) */
     laprdus_load_user_config(engine);
     configured_inflection = laprdus_get_inflection_level(engine);
     configured_speed = laprdus_get_speed(engine);

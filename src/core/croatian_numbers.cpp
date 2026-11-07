@@ -785,7 +785,7 @@ size_t parse_date(const std::string& text, size_t i, std::vector<std::string_vie
 // stoljeću), which the converter cannot know, so it is read as the
 // cardinal (sedam listopada). The period is silent and does not end the
 // clause. Before an uppercase word the period ends the sentence as usual
-// ("Ima ih 7. Sutra ..."); eSpeak draws the same line. Returns the position
+// ("Ima ih 7. Sutra ..."); synthesizer B draws the same line. Returns the position
 // after the period, 0 when the number is not such an ordinal.
 size_t CroatianNumbers::silent_dot_end(const std::string& text, size_t start, size_t end) {
     if (end - start > 4 || text[start] == '0') return 0;
@@ -3160,10 +3160,10 @@ std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
 
         // Digits after a period or comma glued to the number. A period is
         // read by name and every group of digits as a whole number, as
-        // eSpeak reads it ("1.317" -> jedan.tristo sedamnaest, "3.14" ->
+        // synthesizer B reads it ("1.317" -> jedan.tristo sedamnaest, "3.14" ->
         // tri.četrnaest, "192.168.1.1" and "2.0.1" group by group), leading
         // zeros each as "nula" ("3.05" -> tri.nula pet). One comma is the
-        // decimal comma (eSpeak's rule for Croatian): up to two digits after
+        // decimal comma (synthesizer B's rule for Croatian): up to two digits after
         // it are read as one number, more are read one by one ("3,14" -> tri
         // zarez četrnaest, "3,14159" -> tri zarez jedan četiri jedan pet
         // devet); with two or more commas every group is a whole number.

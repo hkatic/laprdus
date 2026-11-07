@@ -2496,6 +2496,270 @@
         }
       }
     },
+    "Head size" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Veličina glave"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Veličina glave"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velikost glave"
+          }
+        }
+      }
+    },
+    "Length of the vocal tract: 0% a quarter longer (lower formants), 50% the voice as it is, 100% a quarter shorter (higher formants)" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duljina govornog trakta: 0% četvrtinu dulji (niži formanti), 50% glas kakav jest, 100% četvrtinu kraći (viši formanti)"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dužina govornog trakta: 0% četvrtinu duži (niži formanti), 50% glas kakav jeste, 100% četvrtinu kraći (viši formanti)"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dolžina govornega trakta: 0 % četrtino daljši (nižji formanti), 50 % glas, kakršen je, 100 % četrtino krajši (višji formanti)"
+          }
+        }
+      }
+    },
+    "Restore default head size" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrati zadanu veličinu glave"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrati podrazumevanu veličinu glave"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obnovi privzeto velikost glave"
+          }
+        }
+      }
+    },
+    "Breathiness" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dah"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dah"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dih"
+          }
+        }
+      }
+    },
+    "Breath noise of the voice: 0% none, 50% the voice as it is, 100% five times as much (formant voices)" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šum daha u glasu: 0% bez daha, 50% glas kakav jest, 100% pet puta više (formantni glasovi)"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šum daha u glasu: 0% bez daha, 50% glas kakav jeste, 100% pet puta više (formantni glasovi)"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šum diha v glasu: 0 % brez, 50 % glas, kakršen je, 100 % petkrat več (formantni glasovi)"
+          }
+        }
+      }
+    },
+    "Restore default breathiness" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrati zadani dah"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrati podrazumevani dah"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obnovi privzeti dih"
+          }
+        }
+      }
+    },
+    "Roughness" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hrapavost"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hrapavost"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hrapavost"
+          }
+        }
+      }
+    },
+    "Jitter and shimmer of the voice: 0% none, 50% the voice as it is, 100% five times as much (formant voices)" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hrapavost glasa: 0% glatko, 50% glas kakav jest, 100% pet puta hrapavije (formantni glasovi)"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hrapavost glasa: 0% glatko, 50% glas kakav jeste, 100% pet puta hrapavije (formantni glasovi)"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hrapavost glasu: 0 % gladko, 50 % glas, kakršen je, 100 % petkrat bolj hrapavo (formantni glasovi)"
+          }
+        }
+      }
+    },
+    "Restore default roughness" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrati zadanu hrapavost"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrati podrazumevanu hrapavost"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obnovi privzeto hrapavost"
+          }
+        }
+      }
+    },
+    "Brightness" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svjetlina"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svetlina"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Svetlost"
+          }
+        }
+      }
+    },
+    "Tone of the voice: 0% dull, 50% the voice as it is, 100% sharp" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Boja tona: 0% tamno, 50% glas kakav jest, 100% oštro"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Boja tona: 0% tamno, 50% glas kakav jeste, 100% oštro"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barva tona: 0 % temno, 50 % glas, kakršen je, 100 % ostro"
+          }
+        }
+      }
+    },
+    "Restore default brightness" : {
+      "localizations" : {
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrati zadanu svjetlinu"
+          }
+        },
+        "sr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vrati podrazumevanu svetlinu"
+          }
+        },
+        "sl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obnovi privzeto svetlost"
+          }
+        }
+      }
+    },
     "Accent Dictionary" : {
       "localizations" : {
         "hr" : {

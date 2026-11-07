@@ -19,13 +19,14 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 // Dialog Template
 // =============================================================================
 
-IDD_CONFIG_DIALOG DIALOGEX 0, 0, 320, 482
+IDD_CONFIG_DIALOG DIALOGEX 0, 0, 320, 492
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "LaprdusTTS Settings"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
-    // Voice Settings Group: rate and acceleration, pitch and inflection, volume
-    GROUPBOX        "", IDC_GROUP_VOICE, 7, 7, 306, 207
+    // Voice Settings Group: rate and acceleration, pitch and inflection, volume,
+    // and the button of the voice quality dialog
+    GROUPBOX        "", IDC_GROUP_VOICE, 7, 7, 306, 217
 
     LTEXT           "Voice:", IDC_VOICE_LABEL, 14, 22, 50, 8
     COMBOBOX        IDC_VOICE_COMBO, 70, 20, 180, 100, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
@@ -54,43 +55,82 @@ BEGIN
     AUTOCHECKBOX    "", IDC_FORCE_VOLUME, 14, 170, 290, 10, WS_TABSTOP
     AUTOCHECKBOX    "", IDC_VOLUME_BOOST_CHECK, 14, 185, 290, 10, WS_TABSTOP
 
+    // Head size, breathiness, roughness and brightness have a dialog of their own
+    PUSHBUTTON      "", IDC_VOICE_QUALITY_BUTTON, 14, 199, 120, 14, WS_TABSTOP
+
     // Pause Settings Group
-    GROUPBOX        "", IDC_GROUP_PAUSES, 7, 219, 306, 113
+    GROUPBOX        "", IDC_GROUP_PAUSES, 7, 229, 306, 113
 
-    LTEXT           "Comma pause:", IDC_COMMA_LABEL, 14, 234, 80, 8
-    CONTROL         "", IDC_COMMA_SLIDER, TRACKBAR_CLASS, TBS_HORZ | TBS_AUTOTICKS | WS_TABSTOP, 100, 232, 150, 18
-    LTEXT           "100 ms", IDC_COMMA_VALUE, 260, 234, 40, 8
+    LTEXT           "Comma pause:", IDC_COMMA_LABEL, 14, 244, 80, 8
+    CONTROL         "", IDC_COMMA_SLIDER, TRACKBAR_CLASS, TBS_HORZ | TBS_AUTOTICKS | WS_TABSTOP, 100, 242, 150, 18
+    LTEXT           "100 ms", IDC_COMMA_VALUE, 260, 244, 40, 8
 
-    LTEXT           "Sentence pause:", IDC_SENTENCE_LABEL, 14, 257, 80, 8
-    CONTROL         "", IDC_SENTENCE_SLIDER, TRACKBAR_CLASS, TBS_HORZ | TBS_AUTOTICKS | WS_TABSTOP, 100, 255, 150, 18
-    LTEXT           "100 ms", IDC_SENTENCE_VALUE, 260, 257, 40, 8
+    LTEXT           "Sentence pause:", IDC_SENTENCE_LABEL, 14, 267, 80, 8
+    CONTROL         "", IDC_SENTENCE_SLIDER, TRACKBAR_CLASS, TBS_HORZ | TBS_AUTOTICKS | WS_TABSTOP, 100, 265, 150, 18
+    LTEXT           "100 ms", IDC_SENTENCE_VALUE, 260, 267, 40, 8
 
-    LTEXT           "Newline pause:", IDC_NEWLINE_LABEL, 14, 280, 80, 8
-    CONTROL         "", IDC_NEWLINE_SLIDER, TRACKBAR_CLASS, TBS_HORZ | TBS_AUTOTICKS | WS_TABSTOP, 100, 278, 150, 18
-    LTEXT           "100 ms", IDC_NEWLINE_VALUE, 260, 280, 40, 8
+    LTEXT           "Newline pause:", IDC_NEWLINE_LABEL, 14, 290, 80, 8
+    CONTROL         "", IDC_NEWLINE_SLIDER, TRACKBAR_CLASS, TBS_HORZ | TBS_AUTOTICKS | WS_TABSTOP, 100, 288, 150, 18
+    LTEXT           "100 ms", IDC_NEWLINE_VALUE, 260, 290, 40, 8
 
-    LTEXT           "Spelling speed:", IDC_SPELLING_SPEED_LABEL, 14, 303, 80, 8
-    CONTROL         "", IDC_SPELLING_SPEED_SLIDER, TRACKBAR_CLASS, TBS_HORZ | TBS_AUTOTICKS | WS_TABSTOP, 100, 301, 150, 18
-    LTEXT           "50%", IDC_SPELLING_SPEED_VALUE, 260, 303, 40, 8
+    LTEXT           "Spelling speed:", IDC_SPELLING_SPEED_LABEL, 14, 313, 80, 8
+    CONTROL         "", IDC_SPELLING_SPEED_SLIDER, TRACKBAR_CLASS, TBS_HORZ | TBS_AUTOTICKS | WS_TABSTOP, 100, 311, 150, 18
+    LTEXT           "50%", IDC_SPELLING_SPEED_VALUE, 260, 313, 40, 8
 
     // Options Group
-    GROUPBOX        "", IDC_GROUP_OPTIONS, 7, 337, 306, 61
+    GROUPBOX        "", IDC_GROUP_OPTIONS, 7, 347, 306, 61
 
-    AUTOCHECKBOX    "", IDC_EMOJI_CHECK, 14, 352, 290, 10, WS_TABSTOP
-    AUTOCHECKBOX    "", IDC_DIGITS_CHECK, 14, 367, 290, 10, WS_TABSTOP
-    AUTOCHECKBOX    "", IDC_SPELLING_SOUNDS_CHECK, 14, 382, 290, 10, WS_TABSTOP
+    AUTOCHECKBOX    "", IDC_EMOJI_CHECK, 14, 362, 290, 10, WS_TABSTOP
+    AUTOCHECKBOX    "", IDC_DIGITS_CHECK, 14, 377, 290, 10, WS_TABSTOP
+    AUTOCHECKBOX    "", IDC_SPELLING_SOUNDS_CHECK, 14, 392, 290, 10, WS_TABSTOP
 
     // Dictionaries Group
-    GROUPBOX        "", IDC_GROUP_DICTIONARIES, 7, 403, 306, 40
+    GROUPBOX        "", IDC_GROUP_DICTIONARIES, 7, 413, 306, 40
 
-    AUTOCHECKBOX    "", IDC_USER_DICT_CHECK, 14, 418, 170, 10, WS_TABSTOP
-    PUSHBUTTON      "", IDC_DICT_BUTTON, 213, 416, 90, 14, WS_TABSTOP
+    AUTOCHECKBOX    "", IDC_USER_DICT_CHECK, 14, 428, 170, 10, WS_TABSTOP
+    PUSHBUTTON      "", IDC_DICT_BUTTON, 213, 426, 90, 14, WS_TABSTOP
 
     // Buttons
-    PUSHBUTTON      "Test", IDC_TEST_BUTTON, 7, 461, 60, 14, WS_TABSTOP
-    DEFPUSHBUTTON   "OK", IDOK, 140, 461, 50, 14, WS_TABSTOP
-    PUSHBUTTON      "Cancel", IDCANCEL, 196, 461, 50, 14, WS_TABSTOP
-    PUSHBUTTON      "Apply", IDC_APPLY_BUTTON, 252, 461, 50, 14, WS_TABSTOP
+    PUSHBUTTON      "Test", IDC_TEST_BUTTON, 7, 471, 60, 14, WS_TABSTOP
+    DEFPUSHBUTTON   "OK", IDOK, 140, 471, 50, 14, WS_TABSTOP
+    PUSHBUTTON      "Cancel", IDCANCEL, 196, 471, 50, 14, WS_TABSTOP
+    PUSHBUTTON      "Apply", IDC_APPLY_BUTTON, 252, 471, 50, 14, WS_TABSTOP
+END
+
+// =============================================================================
+// Voice Quality Dialog
+// Head size, breathiness, roughness and brightness (0-100 each, 50 = the voice
+// as it is), after the voice-parameter model of a classic formant synthesizer. Every text is set at run time
+// from the string tables; each label stands right before its slider so that
+// its access key reaches the slider.
+// =============================================================================
+
+IDD_VOICE_QUALITY_DIALOG DIALOGEX 0, 0, 320, 154
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Voice quality"
+FONT 8, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    LTEXT           "", IDC_VOICE_QUALITY_HELP, 14, 7, 292, 24
+
+    LTEXT           "Head size:", IDC_HEAD_SIZE_LABEL, 14, 38, 80, 8
+    CONTROL         "", IDC_HEAD_SIZE_SLIDER, TRACKBAR_CLASS, TBS_HORZ | TBS_AUTOTICKS | WS_TABSTOP, 100, 36, 150, 18
+    LTEXT           "50%", IDC_HEAD_SIZE_VALUE, 260, 38, 40, 8
+
+    LTEXT           "Breathiness:", IDC_BREATHINESS_LABEL, 14, 61, 80, 8
+    CONTROL         "", IDC_BREATHINESS_SLIDER, TRACKBAR_CLASS, TBS_HORZ | TBS_AUTOTICKS | WS_TABSTOP, 100, 59, 150, 18
+    LTEXT           "50%", IDC_BREATHINESS_VALUE, 260, 61, 40, 8
+
+    LTEXT           "Roughness:", IDC_ROUGHNESS_LABEL, 14, 84, 80, 8
+    CONTROL         "", IDC_ROUGHNESS_SLIDER, TRACKBAR_CLASS, TBS_HORZ | TBS_AUTOTICKS | WS_TABSTOP, 100, 82, 150, 18
+    LTEXT           "50%", IDC_ROUGHNESS_VALUE, 260, 84, 40, 8
+
+    LTEXT           "Brightness:", IDC_BRIGHTNESS_LABEL, 14, 107, 80, 8
+    CONTROL         "", IDC_BRIGHTNESS_SLIDER, TRACKBAR_CLASS, TBS_HORZ | TBS_AUTOTICKS | WS_TABSTOP, 100, 105, 150, 18
+    LTEXT           "50%", IDC_BRIGHTNESS_VALUE, 260, 107, 40, 8
+
+    PUSHBUTTON      "", IDC_VOICE_QUALITY_RESTORE, 7, 133, 110, 14, WS_TABSTOP
+    DEFPUSHBUTTON   "OK", IDOK, 207, 133, 50, 14, WS_TABSTOP
+    PUSHBUTTON      "Cancel", IDCANCEL, 263, 133, 50, 14, WS_TABSTOP
 END
 
 // =============================================================================
@@ -195,6 +235,15 @@ BEGIN
     IDS_VALUE_WPM               "%.1fx (up to %d WPM)"
     IDS_SPELLING_SPEED_LABEL    "Spelling speed:"
     IDS_SPELLING_SOUNDS         "Spell letters by their s&ounds (b, c, d) instead of their names (be, ce, de)"
+    // Voice quality dialog (head size, breathiness, roughness, brightness)
+    IDS_VOICE_QUALITY_BUTTON    "Voice &quality..."
+    IDS_VOICE_QUALITY_TITLE     "Voice quality"
+    IDS_VOICE_QUALITY_HELP      "0 to 100, 50 is the voice as it is. Head size and brightness work for every voice, breathiness and roughness for the voices synthesized by rule."
+    IDS_HEAD_SIZE_LABEL         "&Head size:"
+    IDS_BREATHINESS_LABEL       "&Breathiness:"
+    IDS_ROUGHNESS_LABEL         "&Roughness:"
+    IDS_BRIGHTNESS_LABEL        "Bri&ghtness:"
+    IDS_VOICE_QUALITY_RESTORE   "Restore &defaults"
     IDS_VOICE_KIND_RECORDED     "recorded voice"
     IDS_VOICE_KIND_CHILD        "child"
     IDS_VOICE_KIND_GRANDMA      "grandma"
@@ -299,6 +348,15 @@ BEGIN
     IDS_VALUE_WPM               "%.1fx (do %d riječi/min)"
     IDS_SPELLING_SPEED_LABEL    "Brzina slovkanja:"
     IDS_SPELLING_SOUNDS         "Slovkaj slova g&lasovima (b, c, d) umjesto nazivima (be, ce, de)"
+    // Voice quality dialog (head size, breathiness, roughness, brightness)
+    IDS_VOICE_QUALITY_BUTTON    "&Kvaliteta glasa..."
+    IDS_VOICE_QUALITY_TITLE     "Kvaliteta glasa"
+    IDS_VOICE_QUALITY_HELP      "0 do 100, 50 je glas kakav jest. Veličina glave i svjetlina djeluju na sve glasove, dah i hrapavost na glasove sintetizirane po pravilima."
+    IDS_HEAD_SIZE_LABEL         "Veličina &glave:"
+    IDS_BREATHINESS_LABEL       "&Dah:"
+    IDS_ROUGHNESS_LABEL         "&Hrapavost:"
+    IDS_BRIGHTNESS_LABEL        "&Svjetlina:"
+    IDS_VOICE_QUALITY_RESTORE   "Vrati &zadano"
     IDS_VOICE_KIND_RECORDED     "snimljeni glas"
     IDS_VOICE_KIND_CHILD        "dijete"
     IDS_VOICE_KIND_GRANDMA      "baka"
@@ -404,6 +462,15 @@ BEGIN
     IDS_VALUE_WPM               "%.1fx (do %d reči/min)"
     IDS_SPELLING_SPEED_LABEL    "Brzina sricanja:"
     IDS_SPELLING_SOUNDS         "Sriči slova g&lasovima (b, c, d) umesto nazivima (be, ce, de)"
+    // Voice quality dialog (head size, breathiness, roughness, brightness)
+    IDS_VOICE_QUALITY_BUTTON    "&Kvalitet glasa..."
+    IDS_VOICE_QUALITY_TITLE     "Kvalitet glasa"
+    IDS_VOICE_QUALITY_HELP      "0 do 100, 50 je glas kakav jeste. Veličina glave i svetlina deluju na sve glasove, dah i hrapavost na glasove sintetizovane po pravilima."
+    IDS_HEAD_SIZE_LABEL         "Veličina &glave:"
+    IDS_BREATHINESS_LABEL       "&Dah:"
+    IDS_ROUGHNESS_LABEL         "&Hrapavost:"
+    IDS_BRIGHTNESS_LABEL        "&Svetlina:"
+    IDS_VOICE_QUALITY_RESTORE   "Vrati &podrazumevano"
     IDS_VOICE_KIND_RECORDED     "snimljeni glas"
     IDS_VOICE_KIND_CHILD        "dete"
     IDS_VOICE_KIND_GRANDMA      "baka"
@@ -509,6 +576,15 @@ BEGIN
     IDS_VALUE_WPM               "%.1fx (do %d besed/min)"
     IDS_SPELLING_SPEED_LABEL    "Hitrost črkovanja:"
     IDS_SPELLING_SOUNDS         "Pri črkovanju beri g&lasove črk (b, c, d) namesto njihovih imen (be, ce, de)"
+    // Voice quality dialog (head size, breathiness, roughness, brightness)
+    IDS_VOICE_QUALITY_BUTTON    "Kak&ovost glasu..."
+    IDS_VOICE_QUALITY_TITLE     "Kakovost glasu"
+    IDS_VOICE_QUALITY_HELP      "0 do 100, 50 je glas, kakršen je. Velikost glave in svetlost delujeta na vse glasove, dih in hrapavost na glasove, sintetizirane po pravilih."
+    IDS_HEAD_SIZE_LABEL         "Velikost &glave:"
+    IDS_BREATHINESS_LABEL       "&Dih:"
+    IDS_ROUGHNESS_LABEL         "&Hrapavost:"
+    IDS_BRIGHTNESS_LABEL        "&Svetlost:"
+    IDS_VOICE_QUALITY_RESTORE   "Obnovi &privzeto"
     IDS_VOICE_KIND_RECORDED     "posneti glas"
     IDS_VOICE_KIND_CHILD        "otrok"
     IDS_VOICE_KIND_GRANDMA      "babica"

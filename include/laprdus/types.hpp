@@ -315,19 +315,86 @@ inline float spelling_rate_factor(int spelling_speed) {
     return std::pow(2.0f, (static_cast<float>(s) - 100.0f) / 100.0f);
 }
 
-// Volume boost (VoiceParams::volume_boost): a loudness maximizer for a phone's
-// earpiece in traffic, after Google TTS's "amplify speech volume". The speech
+// Volume boost (VoiceParams::volume_boost): louder speech for a phone's
+// earpiece in traffic, after the amplified speech volume of phone systems. The speech
 // of the formant voices peaks near full scale but sits around -20 dBFS (median
 // RMS), so a plain gain would clip hard. src/audio/volume_boost.hpp drives the
-// clause with VOLUME_BOOST_GAIN (+14 dB), holds the peaks under
-// VOLUME_BOOST_CEILING with a fast peak limiter (the ceiling is above full
-// scale on purpose) and rounds what is left above VOLUME_BOOST_KNEE off with a
-// soft clipper, so the output stays under full scale: the loud stretches come
-// up by about 8 dB, the quieter ones by about 11 dB, at the price of a mild,
-// deliberate saturation of the strongest vowel peaks.
+// clause with VOLUME_BOOST_GAIN (+14 dB) and holds the peaks under
+// VOLUME_BOOST_CEILING with a lookahead peak limiter whose gain moves only
+// between syllables (a hold longer than a glottal period), so nothing is
+// waveshaped: the quiet stretches come up by about 10 dB, the loud ones by
+// about 3 dB. The soft clipper above VOLUME_BOOST_KNEE is a safety net that
+// the ceiling keeps idle. (Until November 2026 the ceiling was 1.4, the knee
+// 0.6 and the release 30 ms: 3 dB louder, at 10 % distortion.)
 constexpr float VOLUME_BOOST_GAIN = 5.0f;
-constexpr float VOLUME_BOOST_CEILING = 1.4f;
-constexpr float VOLUME_BOOST_KNEE = 0.6f;
+constexpr float VOLUME_BOOST_CEILING = 0.97f;
+constexpr float VOLUME_BOOST_KNEE = 0.9f;
+// The limiter lifts the quiet stretches between the syllables, consonants
+// first, by up to the whole gain while it holds the vowels down, so the
+// consonants came 3-5 dB closer to the vowels and the sibilants of a phone at
+// full volume bit; and a phone's speaker has its own peak around 4 kHz. In
+// boost mode the gain may rise at most VOLUME_BOOST_MAX_LIFT_DB above the
+// gain of the loudest syllable of the last LIFT_WINDOW_SECONDS, and the
+// treble above VOLUME_BOOST_TREBLE_HZ is shelved down by VOLUME_BOOST_TREBLE_DB
+// for every voice (the listener's choice of November 2026).
+constexpr float VOLUME_BOOST_MAX_LIFT_DB = 2.0f;   // 6 for a day in November 2026: the bursts still came 4 dB closer to the vowels
+constexpr float VOLUME_BOOST_TREBLE_DB = -3.0f;
+constexpr float VOLUME_BOOST_TREBLE_HZ = 4000.0f;
+
+// Voice quality (VoiceParams::head_size, breathiness, roughness, brightness):
+// four settings of 0-100 after the voice-parameter model of a classic formant synthesizer
+// (gender, head size, pitch baseline, pitch fluctuation, roughness,
+// breathiness, speed, volume, each 0-100, read from its binary in November
+// 2026; pitch baseline, fluctuation, speed and volume are Laprdus's pitch,
+// inflection level, rate and volume already). 50 is the voice as its tables
+// define it, so the defaults change nothing. Head size scales every formant
+// (the vocal tract length: 0 a quarter longer, formants a fifth lower;
+// 100 a quarter shorter, a higher voice) for every voice, recorded ones through their bank
+// warp. Breathiness scales the voice's own breath noise (0 none, 100 five
+// times), roughness its jitter and shimmer (0 none, 100 eight times) with
+// diplophonia above 50 (roughness_diplophonia(); formant voices). Brightness is
+// the tone: for the formant voices the source emphasis (0 the bare pulse,
+// 50 the voice's own, 100 the sharpest), for the recorded voices a tilt of
+// the output around 1.5 kHz (0 the top folded away, 100 the top doubled).
+constexpr int VOICE_QUALITY_MIN = 0;
+constexpr int VOICE_QUALITY_MAX = 100;
+constexpr int VOICE_QUALITY_DEFAULT = 50;
+constexpr float HEAD_SIZE_SPAN = 1.25f;      // formant factor at 100 (and 1/1.25 at 0)
+constexpr float BRIGHTNESS_MAX_EMPHASIS = 0.85f;  // source emphasis at 100 (klatt_synth.hpp brightness)
+
+/** Factor every formant frequency is multiplied by for a head size setting:
+ *  0.8 at 0 (a tract a quarter longer, a deeper voice), 1 at 50, 1.25 at 100
+ *  (a quarter shorter, a higher voice). The maintainer asked for the higher
+ *  value to be the higher voice (November 2026); synthesizer A's head size runs
+ *  the other way. */
+inline float head_size_factor(int head_size) {
+    const int h = std::clamp(head_size, VOICE_QUALITY_MIN, VOICE_QUALITY_MAX);
+    return std::pow(HEAD_SIZE_SPAN, (static_cast<float>(h) - 50.0f) / 50.0f);
+}
+
+/** Diplophonia share for a roughness setting: 0 up to 50, 1 at 100, and the
+ *  square root of the distance from 50 in between (0.45 at 60, 0.71 at 75), so
+ *  that the rasp is heard from the first steps above 50 (a listener heard
+ *  nothing with the straight line of 2026-11-07). */
+inline float roughness_diplophonia(int roughness) {
+    const int v = std::clamp(roughness, VOICE_QUALITY_MIN, VOICE_QUALITY_MAX);
+    return v <= 50 ? 0.0f : std::sqrt(static_cast<float>(v - 50) / 50.0f);
+}
+
+/** Factor a voice's own breath noise, jitter or shimmer is multiplied by:
+ *  0 at 0, 1 at 50, 5 at 100. */
+inline float voice_quality_scale(int value) {
+    const int v = std::clamp(value, VOICE_QUALITY_MIN, VOICE_QUALITY_MAX);
+    return v <= 50 ? static_cast<float>(v) / 50.0f
+                   : 1.0f + static_cast<float>(v - 50) / 50.0f * 4.0f;
+}
+
+/** Source emphasis for a brightness setting around a voice's own `base`. */
+inline float brightness_emphasis(int brightness, float base) {
+    const int v = std::clamp(brightness, VOICE_QUALITY_MIN, VOICE_QUALITY_MAX);
+    if (v <= 50) return base * static_cast<float>(v) / 50.0f;
+    return base + (BRIGHTNESS_MAX_EMPHASIS - base) * static_cast<float>(v - 50) / 50.0f;
+}
 
 struct VoiceParams {
     // Both kinds of voices apply these at the source: durations and the
@@ -337,7 +404,7 @@ struct VoiceParams {
     float pitch = 1.0f;       // Voice character pitch (0.25 - 4.0)
     float user_pitch = 1.0f;  // User pitch preference (0.5 - 2.0; formant voices 0.25 - 4.0)
     float volume = 1.0f;      // Volume (0.0 - 1.0)
-    bool volume_boost = false; // Much louder output: gain, peak limiter and soft clipper (see volume_boost.hpp)
+    bool volume_boost = false; // Louder output: gain and a peak limiter that moves only between syllables (see volume_boost.hpp)
     float inflection_level = INFLECTION_LEVEL_DEFAULT;  // Size of the pitch movements (0.0 - 1.0)
     float acceleration = ACCELERATION_DEFAULT;          // Rate multiplier (0.5 - 3.0)
     bool emoji_enabled = false;      // Enable emoji to text conversion (disabled by default)
@@ -345,6 +412,10 @@ struct VoiceParams {
     PauseSettings pause_settings;    // Pause duration settings
     SpellingMode spelling_mode = SpellingMode::LetterSounds; // Letter sounds (default) or names when spelling
     int spelling_speed = SPELLING_SPEED_DEFAULT;        // Spelling cadence (0-100); lower adds more silence
+    int head_size = VOICE_QUALITY_DEFAULT;    // Vocal tract length, 0-100 (see above)
+    int breathiness = VOICE_QUALITY_DEFAULT;  // Breath noise, 0-100
+    int roughness = VOICE_QUALITY_DEFAULT;    // Jitter and shimmer, 0-100
+    int brightness = VOICE_QUALITY_DEFAULT;   // Tone, 0-100
 
     void clamp() {
         // std::clamp passes NaN through, and a NaN rate or pitch would reach
@@ -363,6 +434,10 @@ struct VoiceParams {
         acceleration = std::clamp(acceleration, ACCELERATION_MIN, ACCELERATION_MAX);
         spelling_speed = std::clamp(spelling_speed, SPELLING_SPEED_MIN, SPELLING_SPEED_MAX);
         if (spelling_mode != SpellingMode::LetterSounds) spelling_mode = SpellingMode::LetterNames;
+        head_size = std::clamp(head_size, VOICE_QUALITY_MIN, VOICE_QUALITY_MAX);
+        breathiness = std::clamp(breathiness, VOICE_QUALITY_MIN, VOICE_QUALITY_MAX);
+        roughness = std::clamp(roughness, VOICE_QUALITY_MIN, VOICE_QUALITY_MAX);
+        brightness = std::clamp(brightness, VOICE_QUALITY_MIN, VOICE_QUALITY_MAX);
         pause_settings.clamp();
     }
 

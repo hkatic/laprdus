@@ -19,6 +19,8 @@ namespace laprdus {
  * - Voice selection dropdown
  * - Speed, pitch, volume sliders with force checkboxes
  * - Speed and acceleration, pitch and inflection, volume sliders
+ * - Voice quality dialog (head size, breathiness, roughness, brightness;
+ *   0-100 each, 50 = the voice as it is, after the voice-parameter model of a classic formant synthesizer)
  * - Pause settings sliders (comma, sentence, newline) and the spelling speed
  * - Options checkboxes (emoji, digits, letter sounds when spelling)
  * - Test button to speak sample text
@@ -70,6 +72,7 @@ private:
     void OnApply(HWND hDlg);
     void OnTest(HWND hDlg);
     void OnDictionaries(HWND hDlg);
+    void OnVoiceQuality(HWND hDlg);
 
     // Dark mode
     void ApplyDarkMode(HWND hDlg);

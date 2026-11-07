@@ -30,6 +30,7 @@ Verzija 2.0
     - [4.6 Intonacija](#46-intonacija)
     - [4.7 Sricanje](#47-sricanje)
     - [4.8 Laprdus konfigurator (Windows)](#48-laprdus-konfigurator-windows)
+    - [4.9 Kvalitet glasa](#49-kvalitet-glasa)
 5. [Rečnici](#5-rečnici)
     - [5.1 Vrste rečnika](#51-vrste-rečnika)
     - [5.2 Lokacije datoteka rečnika](#52-lokacije-datoteka-rečnika)
@@ -352,6 +353,10 @@ echo "Tekst" | laprdus
 | `-p, --speech-pitch` | Visina glasa (0.5-2.0, podrazumevano: 1.0; formantni glasovi 0.25-4.0) |
 | `-I, --inflection` | Nivo intonacije, 0-100 (podrazumevano: 50; 0 je monotono) |
 | `-a, --acceleration` | Ubrzanje, množilac brzine 0.5-3.0 (podrazumevano: 1.0) |
+| `--head-size PERCENT` | Kvalitet glasa: dužina govornog trakta, 0-100 (podrazumevano: 50 = glas kakav jeste) |
+| `--breathiness PERCENT` | Šum daha, 0-100 (podrazumevano: 50; formantni glasovi) |
+| `--roughness PERCENT` | Hrapavost (jitter i shimmer), 0-100 (podrazumevano: 50; formantni glasovi) |
+| `--brightness PERCENT` | Boja tona, 0-100 (podrazumevano: 50; 0 tamno, 100 oštro) |
 | `-V, --speech-volume` | Jačina (0.0-1.0, podrazumevano: 1.0) |
 | `-B, --volume-boost` | Pojačanje jačine: glasniji govor kroz ograničavač vrhova, za bučna mesta |
 | `-d, --numbers-digits` | Čitaj brojeve cifru po cifru |
@@ -385,7 +390,7 @@ Kada koristite Laprdus sa NVDA čitačem ekrana, podešavanja glasa možete da p
     - Jačinu
     - Povećanje brzine ili Rate Boost (svaki položaj klizača brzine čini tri puta bržim)
 
-**Jezik je odvojen od glasa.** Svaki Laprdus glas govori sva četiri jezika, pa je spisak glasova isti za svaki jezik, a jezik birate u zasebnom padajućem meniju „Jezik”, kao kod sintetizatora eSpeak. Jezik određuje pravila izgovora, naglasni rečnik, nazive slova pri sricanju i reči za brojeve (*tisuća*, *milijun* na hrvatskom; *hiljada*, *milion* na srpskom i bosanskom; *tisoč*, *milijon* na slovenačkom): Josip tako može da govori srpski, a Stojan hrvatski ili slovenački. Nova instalacija počinje na jeziku NVDA-a ako je to hrvatski, srpski, bosanski ili slovenački, inače na hrvatskom; jezik koji sami izaberete NVDA pamti kao i ostala podešavanja. Jezik se nalazi i u krugu govornih podešavanja (Control + NVDA taster + strelice).
+**Jezik je odvojen od glasa.** Svaki Laprdus glas govori sva četiri jezika, pa je spisak glasova isti za svaki jezik, a jezik birate u zasebnom padajućem meniju „Jezik”, kao kod drugih sintetizatora. Jezik određuje pravila izgovora, naglasni rečnik, nazive slova pri sricanju i reči za brojeve (*tisuća*, *milijun* na hrvatskom; *hiljada*, *milion* na srpskom i bosanskom; *tisoč*, *milijon* na slovenačkom): Josip tako može da govori srpski, a Stojan hrvatski ili slovenački. Nova instalacija počinje na jeziku NVDA-a ako je to hrvatski, srpski, bosanski ili slovenački, inače na hrvatskom; jezik koji sami izaberete NVDA pamti kao i ostala podešavanja. Jezik se nalazi i u krugu govornih podešavanja (Control + NVDA taster + strelice).
 
 **Automatska promena jezika.** Kada je u NVDA podešavanjima govora uključena opcija „Automatska promena jezika (kada je podržana)”, tekst označen kao hrvatski, srpski, bosanski ili slovenački Laprdus izgovara na tom jeziku, istim glasom; tekst na bilo kom drugom jeziku izgovara na jeziku koji ste izabrali. Glas se pritom nikada ne menja.
 
@@ -422,7 +427,7 @@ Brzina govora određuje koliko brzo Laprdus izgovara tekst. Opseg je od 0,5 (upo
 - **1,5** - Umereno brzo, za iskusne korisnike
 - **2,0** - Brzo, za napredne korisnike
 
-Napomena: U NVDA dodatku opcija „Povećanje brzine” ili „Rate Boost” svaki položaj klizača brzine čini tri puta bržim, kao kod sintetizatora eSpeak i OneCore; Josip, Vlado i glasovi izvedeni iz njih zaustavljaju se na četvorostrukoj brzini.
+Napomena: U NVDA dodatku opcija „Povećanje brzine” ili „Rate Boost” svaki položaj klizača brzine čini tri puta bržim, kao kod drugih sintetizatora; Josip, Vlado i glasovi izvedeni iz njih zaustavljaju se na četvorostrukoj brzini.
 
 **Brzina u Laprdusu i brzina čitača ekrana.** Brzina iz Laprdus podešavanja normalna je brzina glasa, a čitač ekrana ili aplikacija (TalkBack, VoiceOver, NVDA, programi koji koriste SAPI5, Speech Dispatcher) svoju brzinu zadaje u odnosu na nju. Dok čitač ekrana govori svojom normalnom brzinom, Laprdus govori upravo brzinom iz svojih podešavanja; dvostruko brži čitač ekrana daje dvostruko veću brzinu. Zato govor ubrzavaju i usporavaju i klizač brzine u Laprdusu i klizač u čitaču ekrana. Prekidač „Prinudno koristi Laprdus brzinu” (u Windows konfiguratoru „Prinudno koristi Laprdus brzinu govora u svim aplikacijama”) zanemaruje brzinu koju traži čitač ekrana ili aplikacija, pa Laprdus govori samo brzinom iz svojih podešavanja. [Ubrzanje](#46-intonacija) na kraju množi tu brzinu.
 
@@ -446,7 +451,7 @@ Jačina određuje koliko će govor biti glasan. Opseg je od 0,0 (tiho) do 1,0 (m
 
 #### Pojačanje jačine govora
 
-Prekidač **Pojačaj jačinu govora (za bučna mesta)** u Laprdus konfiguratoru čini govor glasnijim nego što to dozvoljava klizač jačine na 100%. Namenjen je bučnim mestima (saobraćaj, ulica) i slušalici telefona kada je zvučnik isključen: na primer da čujete koga zovete dok se poziv uspostavlja ili da pronađete dugme za uključivanje zvučnika tokom poziva. Govor prolazi kroz jako pojačanje, ograničavač vrhova i meko odsecanje najjačih vrhova, kao kod Google opcije za pojačavanje jačine govora: tihi delovi postaju glasniji za oko 11 dB, glasni za oko 8 dB, a zvuk se ne lomi, iako su najglasniji samoglasnici blago sabijeni. NVDA klizač jačine i dalje menja pojačani govor. Prekidač je podrazumevano isključen i važi za sve glasove.
+Prekidač **Pojačaj jačinu govora (za bučna mesta)** u Laprdus konfiguratoru čini govor glasnijim nego što to dozvoljava klizač jačine na 100%. Namenjen je bučnim mestima (saobraćaj, ulica) i slušalici telefona kada je zvučnik isključen: na primer da čujete koga zovete dok se poziv uspostavlja ili da pronađete dugme za uključivanje zvučnika tokom poziva. Govor prolazi kroz jako pojačanje i ograničavač vrhova koji pojačanje menja samo između slogova, kao kod pojačavanja jačine govora u telefonima: tihi delovi postaju glasniji za oko 8 dB, glasni za oko 3 dB, a unutar sloga ništa se ne odseca niti sabija, pa zvuk ostaje čist. Suglasnici zadržavaju razmak prema samoglasnicima, a visine iznad 4 kHz utišane su za 3 dB, jer zvučnik telefona na najvećoj jačini tamo ima sopstveni vrh. NVDA klizač jačine i dalje menja pojačani govor. Prekidač je podrazumevano isključen i važi za sve glasove.
 
 ### 4.4 Pauze
 
@@ -499,7 +504,7 @@ U NVDA-u nivo intonacije određuje NVDA klizač Modulacija u podešavanjima glas
 Kada čitač ekrana sriče tekst ili izgovara znakove dok kucate, Laprdus svako slovo čita na jedan od dva načina:
 
 - **Nazivima slova**: *a, be, ce, če, će, de, dže, đe, e, ef, ge, ha, i, je, ka, el, elj, em, en, enj, o, pe, er, es, eš, te, u, ve, ze, že*; strana slova *ku, duplo ve, iks, ipsilon*. To su nazivi iz hrvatskog pravopisa, a važe i za bosanski. Na srpskom svaki glas sledi odluku Odbora za standardizaciju srpskog jezika: *lje, nje* i *ša* umesto *elj, enj* i *eš*, ostala slova isto, ćirilična kao i latinična (*Љ* je *lje*, *Ш* je *ša*). Na slovenačkom važe nazivi iz Slovenačkog pravopisa: isti nazivi za njegovih 25 slova, *dvojni ve* za W i *mehki če* i *mehki dže* za Ć i Đ. Nazive određuje izabrani jezik, ne glas: Josip na srpskom kaže *lje*, Stojan na hrvatskom *elj*.
-- **Glasovima slova** (podrazumevano): umesto naziva izgovara se glas koji slovo označava, kao kada dete uči da čita i kao što slova sriče hrvatski eSpeak: suglasnik i posle njega kratak neutralni samoglasnik (*bə, cə, čə, fə, sə, mə*), samoglasnici kao samoglasnici. Strana slova *q, w, x* i *y* nisu slova naše abecede, pa se i ovde čitaju nazivima (*ku, duplo ve, iks, ipsilon*). Engleski nazivi i engleski izgovor se ne koriste.
+- **Glasovima slova** (podrazumevano): umesto naziva izgovara se glas koji slovo označava, kao kada dete uči da čita i kao što ih sriču neki sintetizatori: suglasnik i posle njega kratak neutralni samoglasnik (*bə, cə, čə, fə, sə, mə*), samoglasnici kao samoglasnici. Strana slova *q, w, x* i *y* nisu slova naše abecede, pa se i ovde čitaju nazivima (*ku, duplo ve, iks, ipsilon*). Engleski nazivi i engleski izgovor se ne koriste.
 
 Način sricanja je prekidač „Sriči slova glasovima”, uključen pri novoj instalaciji, u naprednim podešavanjima (Windows: grupa Opcije u konfiguratoru; Android i Apple: odeljak Napredno; NVDA: konfigurator; program za komandnu liniju: `-m`). Odnosi se na sricanje, kucanje i slovo koje u poruci stoji samo; reči se i dalje izgovaraju normalno. Brojevi, interpunkcija i simboli se u oba načina čitaju imenom iz rečnika sricanja. Brzina sricanja opisana je u [4.4](#44-pauze).
 
@@ -522,12 +527,22 @@ Konfigurator omogućava podešavanje:
 
 - Brzine, visine i jačine govora (brzinu i visinu NVDA klizači ubrzavaju, usporavaju, podižu i spuštaju, osim kada je uključeno prinudno korišćenje Laprdus vrednosti; pogledajte [4.1](#41-brzina-govora))
 - Intonacije i ubrzanja, za sve glasove: intonacija od 0% (monotono) preko 50% (podrazumevano, prirodni pokreti) do 100% (dvostruko veći pokreti), u SAPI5 programima (u NVDA-u je određuje NVDA klizač Modulacija); ubrzanje množi brzinu govora u SAPI5 programima (0,5x-3,0x, podrazumevano 1,0x), a u NVDA-u se ne koristi jer veće brzine daje NVDA opcija Povećanje brzine. Klizači brzine i visine za formantne glasove idu od 0,25x do 4,0x.
+- Kvaliteta glasa: veličine glave, daha, hrapavosti i svetline, dugmetom „Kvalitet glasa...” ispod pojačanja jačine (pogledajte [4.9](#49-kvalitet-glasa))
 - Načina čitanja brojeva
 - Trajanja pauza i brzine sricanja
 - Sricanja slova glasovima umesto nazivima
 - Prilagođavanja korisničkih rečnika
 
 Podešavanja se čuvaju u korisničkoj fascikli `%APPDATA%\Laprdus` i dele se između SAPI5 i NVDA dodatka.
+
+### 4.9 Kvalitet glasa
+
+Četiri podešavanja kvaliteta glasa slede model glasovnih parametara klasičnih formantnih sintetizatora: veličina glave, dah, hrapavost i svetlina. U NVDA to su NVDA sopstvena podešavanja glasa: klizači Veličina glave, Dah, Hrapavost i Svetlina u NVDA podešavanjima glasa, iza jačine, i u krugu govornih podešavanja (Control + NVDA taster + strelice), svako od 0 do 100, a 50 je glas kakav jeste; NVDA ih pamti kao i ostala svoja podešavanja. Laprdus konfigurator ima ista četiri iza dugmeta „Kvalitet glasa...”, ali te vrednosti važe samo za SAPI5 (u datoteci `settings.json` zapisana su kao `speech.head_size`, `speech.breathiness`, `speech.roughness` i `speech.brightness`), kao i njegova podešavanja infleksije.
+
+- **Veličina glave** – dužina govornog trakta: 0 je četvrtinu duži (niži formanti, krupniji glas), 100 četvrtinu kraći (viši formanti, sitniji glas). Deluje na sve glasove.
+- **Dah** – šum daha u glasu: 0 ga nema, 100 ga je pet puta više nego u glasu kakav jeste. Deluje na formantne glasove (Zvonko, Stojan, Mirsad i pevajući glasovi).
+- **Hrapavost** – nepravilnosti visine i jačine od titraja do titraja (jitter i shimmer): 0 ih nema, 50 je glas kakav jeste; iznad 50 svaki drugi titraj glasa dolazi ranije i slabiji je, promuklost koja raste do 100. Deluje na formantne glasove.
+- **Svetlina** – boja tona: 0 je tamno i prigušeno, 100 oštro i svetlo. Deluje na sve glasove: na formantne kroz izvor glasa, a na snimljene kroz nagib spektra oko 1,5 kHz.
 
 ---
 
@@ -1345,7 +1360,7 @@ Laprdus sadrži osamnaest glasova - dva osnovna, tri izvedena, tri formantna i d
 
 Osnovni i izvedeni glasovi, kao i svi ostali, govore sva četiri jezika: Josip na srpskom kaže *hiljada* i sriče *lje*, Vlado na hrvatskom *tisuća* i *elj*, a na slovenačkom *tisoč*.
 
-**Formantni glasovi** (Zvonko, Stojan, Mirsad) ne koriste snimke. Govor se u celosti izračunava po pravilima, kao kod sintetizatora Eloquence i DECtalk: iz teksta se određuju glasovi, naglasak i rečenična intonacija, a zatim formantni sintetizator stvara zvuk. Zato ovi glasovi:
+**Formantni glasovi** (Zvonko, Stojan, Mirsad) ne koriste snimke. Govor se u celosti izračunava po pravilima, kao kod klasičnih formantnih sintetizatora: iz teksta se određuju glasovi, naglasak i rečenična intonacija, a zatim formantni sintetizator stvara zvuk. Zato ovi glasovi:
 
 - ne traže datoteke sa glasovnim podacima
 - ostaju čisti i razumljivi pri veoma velikim brzinama, jer se brzina i visina ne dobijaju naknadnom obradom zvuka
@@ -1354,7 +1369,7 @@ Osnovni i izvedeni glasovi, kao i svi ostali, govore sva četiri jezika: Josip n
 
 Ako formantni glas neku reč naglasi na pogrešnom slogu, naglasak možete da odredite u rečniku izgovora uobičajenim naglasnim znakovima, na primer `telèfon`, `gláva`, `kȕća` ili `grȃd`.
 
-**Pevajući glasovi** (Orguljaš - Vila Velebita, Dalmacija Klapa, Lika Velebit i Bećarac Zvonkovim glasom, Trubač - Kreće se lađa francuska, Harmonikaš - Kreće se lađa francuska i Solunac Stojanovim, Sevdalija - Kad ja pođoh na Bembašu, Sazlija - Kad ja pođoh na Bembašu i Sarajevo Bembaša Mirsadovim) formantni su glasovi koji tekst ne govore nego pevaju, kao što su to radili DECtalk i glasovi Pipe Organ i Cellos na Macintoshu. Svaki slog dobija jednu notu narodne pesme (Zvonkovi glasovi pevaju *Vilu Velebita*, Stojanovi *Kreće se lađa francuska*, Mirsadovi *Kad ja pođoh na Bembašu*), na onom od četiri jezika koji je izabran; prva strofa pesme tačno leže na melodiju, a svaki drugi tekst peva se na istu melodiju, slog po slog, ispočetka sa svakom novom rečenicom koju program pošalje. Brzina govora određuje tempo, visina transponuje pesmu, a intonacija određuje dubinu vibrata (0% ga isključuje). Umesto grkljana svaki glas ima svoj „instrument”: orgulje sa odjekom crkve, klapu od nekoliko glasova sa basom oktavu niže, trubu, dva harmonikaška piska štimovana s razlikom od nekoliko centi, sevdalijski glas sa širokim vibratom i saz sa tremolom. Lika Velebit, Solunac i Sarajevo Bembaša pevaju običnim glasom Zvonka, Stojana i Mirsada, bez instrumenta i odjeka, a pesma im je preneta u visinu u kojoj inače govore.
+**Pevajući glasovi** (Orguljaš - Vila Velebita, Dalmacija Klapa, Lika Velebit i Bećarac Zvonkovim glasom, Trubač - Kreće se lađa francuska, Harmonikaš - Kreće se lađa francuska i Solunac Stojanovim, Sevdalija - Kad ja pođoh na Bembašu, Sazlija - Kad ja pođoh na Bembašu i Sarajevo Bembaša Mirsadovim) formantni su glasovi koji tekst ne govore nego pevaju, kao što su to radili pevajući glasovi klasičnih sintetizatora i stonih računara. Svaki slog dobija jednu notu narodne pesme (Zvonkovi glasovi pevaju *Vilu Velebita*, Stojanovi *Kreće se lađa francuska*, Mirsadovi *Kad ja pođoh na Bembašu*), na onom od četiri jezika koji je izabran; prva strofa pesme tačno leže na melodiju, a svaki drugi tekst peva se na istu melodiju, slog po slog, ispočetka sa svakom novom rečenicom koju program pošalje. Brzina govora određuje tempo, visina transponuje pesmu, a intonacija određuje dubinu vibrata (0% ga isključuje). Umesto grkljana svaki glas ima svoj „instrument”: orgulje sa odjekom crkve, klapu od nekoliko glasova sa basom oktavu niže, trubu, dva harmonikaška piska štimovana s razlikom od nekoliko centi, sevdalijski glas sa širokim vibratom i saz sa tremolom. Lika Velebit, Solunac i Sarajevo Bembaša pevaju običnim glasom Zvonka, Stojana i Mirsada, bez instrumenta i odjeka, a pesma im je preneta u visinu u kojoj inače govore.
 
 ### 6.3 Izbor glasa
 

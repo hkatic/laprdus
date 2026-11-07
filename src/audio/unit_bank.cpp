@@ -3,7 +3,7 @@
 //
 // See unit_bank.hpp for what is computed and why. The methods are the
 // classic ones of pitch-synchronous synthesis (Moulines & Charpentier 1990;
-// MBROLA): a normalised-autocorrelation pitch track with a voice prior,
+// diphone synthesizers): a normalised-autocorrelation pitch track with a voice prior,
 // pitch marks at the peaks of the low-passed waveform, marks at a fixed
 // spacing in noise.
 

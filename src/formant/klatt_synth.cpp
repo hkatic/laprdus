@@ -18,6 +18,18 @@ constexpr double MAX_FREQ = SAMPLE_RATE * 0.46;
 // and sibilants come out with natural loudness ratios at amplitude 1.0.
 constexpr double VOICE_GAIN = 1.0;
 constexpr double ASPIRATION_GAIN = 1.0;
+
+// (Klatt's one-pole low-pass on the aspiration noise, klatt.c gen_noise with
+// the pole 0.75 at 10 kHz, was tried here in November 2026 and rejected: with
+// the broadband power kept, the k and p releases became thumps, the band
+// below 500 Hz 1 dB under the whole release, and the h of "aha" rose from
+// -14 dB to -8 dB with its centroid at 800 Hz; the 4.5 kHz spike of the t
+// burst, which it was meant to cure, is in the parallel branch, not here.)
+
+// Diplophonia at full roughness: the odd periods come this much sooner
+// (as a share of the period) and this much weaker than the even ones.
+constexpr double ROUGHNESS_PERIOD_ALTERNATION = 0.05;
+constexpr double ROUGHNESS_AMPLITUDE_DIP = 0.6;
 constexpr double FRICATION_GAIN = 3.0;
 
 // Coefficients are refreshed twice per frame.
@@ -34,11 +46,21 @@ constexpr double FRICATION_CUTOFF = 6600.0;
 constexpr double FRICATION_LP_Q[2] = {0.54119610, 1.30656296};
 
 // The voiced path (cascade output: voicing, breath, aspiration) gets a gentler
-// second-order roll-off. Eloquence's vowels have nothing above 5.5 kHz; ours
+// second-order roll-off. synthesizer A's vowels have nothing above 5.5 kHz; ours
 // carried source brightness and breath noise up to 11 kHz, a hiss the classic
-// voices never had.
+// voices never had. Since the match to the reference balance (November 2026)
+// this and FRICATION_CUTOFF serve the singing presets only: the speaking
+// voices run through the 6th-order ceiling below instead.
 constexpr double VOICE_CUTOFF = 6000.0;
 constexpr double VOICE_LP_Q = 0.65;
+
+// The speaking voices' ceiling (VoiceQuality::ceiling_hz): a 6th-order
+// Butterworth, three second-order sections with these Q values, on the whole
+// output, in place of the two low-passes above. At 5300 Hz it is -0.2 dB at
+// 4.45 kHz, -3 at 5.3, -15 at 6.3 and -44 at 8 kHz: synthesizer A's 11 kHz
+// sampling has nothing above 5.5 kHz, and the voices' 6.3 kHz band stood
+// 10 dB, their 8 kHz band 28 dB above synthesizer A's (November 2026).
+constexpr double SPEECH_CEILING_Q[3] = {0.51763809, 0.70710678, 1.93185165};
 
 // Fixed frication peaks from here up have zeros at 0 Hz and Nyquist.
 constexpr double NOISE_ZERO_MIN_HZ = 1000.0;
@@ -103,6 +125,21 @@ void KlattSynth::LowPass::set(double freq, double q) {
     a2 = (1.0 - alpha) / a0;
 }
 
+void KlattSynth::Biquad::set_low_shelf(double freq, double db) {
+    // The Audio EQ Cookbook's low shelf with the slope 1: db from freq down,
+    // half of it at freq, nothing an octave and a half above.
+    const double A = std::pow(10.0, db / 40.0);
+    const double w0 = 2.0 * PI * freq * T;
+    const double cw = std::cos(w0);
+    const double sa = 2.0 * std::sqrt(A) * std::sin(w0) / 2.0 * std::sqrt(2.0);
+    const double a0 = (A + 1.0) + (A - 1.0) * cw + sa;
+    b0 = A * ((A + 1.0) - (A - 1.0) * cw + sa) / a0;
+    b1 = 2.0 * A * ((A - 1.0) - (A + 1.0) * cw) / a0;
+    b2 = A * ((A + 1.0) - (A - 1.0) * cw - sa) / a0;
+    a1 = -2.0 * ((A - 1.0) + (A + 1.0) * cw) / a0;
+    a2 = ((A + 1.0) + (A - 1.0) * cw - sa) / a0;
+}
+
 void KlattSynth::AntiResonator::set(double freq, double bw) {
     freq = std::clamp(freq, 50.0, MAX_FREQ);
     bw = std::max(bw, 20.0);
@@ -134,6 +171,12 @@ void KlattSynth::set_quality(const VoiceQuality& quality) {
         m_fric_lp[i].set(FRICATION_CUTOFF, FRICATION_LP_Q[i]);
     }
     m_voice_lp.set(VOICE_CUTOFF, VOICE_LP_Q);
+    m_bass_on = m_quality.bass_db > 0.05f && m_quality.bass_hz > 0.0f;
+    if (m_bass_on) m_bass.set_low_shelf(m_quality.bass_hz, m_quality.bass_db);
+    m_ceiling_on = m_quality.ceiling_hz > 0.0f;
+    if (m_ceiling_on) {
+        for (int i = 0; i < 3; ++i) m_ceiling[i].set(m_quality.ceiling_hz, SPEECH_CEILING_Q[i]);
+    }
 }
 
 void KlattSynth::reset() {
@@ -143,6 +186,8 @@ void KlattSynth::reset() {
     for (auto& r : m_parallel) r.clear();
     for (auto& r : m_fric_lp) r.clear();
     m_voice_lp.clear();
+    m_bass.clear();
+    for (auto& s : m_ceiling) s.clear();
     m_nasal_pole.clear();
     m_nasal_zero.clear();
     m_phase = 0.0;
@@ -150,6 +195,7 @@ void KlattSynth::reset() {
     m_reverb.clear();
     m_period_jitter = 1.0;
     m_period_shimmer = 1.0;
+    m_period_odd = false;
     m_tilt_state = 0.0;
     m_bright_x1 = 0.0;
     m_dc_x1 = m_dc_y1 = 0.0;
@@ -267,7 +313,7 @@ double KlattSynth::source_sample(double f0, double oq_now, double av, bool& open
 
         case SourceKind::Organ: {
             // Stops over the 16' phase: 16', 8', 4', 2 2/3', 2', 1 3/5',
-            // 1 1/3', 1'. As in MacinTalk's organ the fundamental is weak
+            // 1 1/3', 1'. As in a classic desktop organ voice the fundamental is weak
             // and the energy sits on the fourth to eighth harmonics, where
             // the upper stops of a principal chorus put it.
             static const double HARMONIC[] = {1, 2, 4, 6, 8, 10, 12, 16};
@@ -312,8 +358,13 @@ double KlattSynth::source_sample(double f0, double oq_now, double av, bool& open
     m_phase += dt;
     if (m_phase >= 1.0) {
         m_phase -= 1.0;
+        m_period_odd = !m_period_odd;
         m_period_jitter = 1.0 + q.jitter * noise() * 2.0;
         m_period_shimmer = 1.0 + q.shimmer * noise() * 2.0;
+        if (q.roughness > 0.0f && m_period_odd) {
+            m_period_jitter *= 1.0 + ROUGHNESS_PERIOD_ALTERNATION * q.roughness;
+            m_period_shimmer *= 1.0 - ROUGHNESS_AMPLITUDE_DIP * q.roughness;
+        }
         m_period_oq = std::clamp(oq_now, 0.3, 0.9);
     }
     return g;
@@ -431,6 +482,10 @@ void KlattSynth::render(const Frame* frames, size_t count, std::vector<float>& o
                 double k = m_quality.brightness;
                 double bright = (m_tilt_state - k * m_bright_x1) / (1.0 - k);
                 m_bright_x1 = m_tilt_state;
+                // The low shelf lifts the voicing alone: the breath and the
+                // frication stay flat (bassy breath made the stop releases
+                // thumps when a low-pass on the aspiration was tried).
+                if (m_bass_on) bright = m_bass.tick(bright);
                 double voice = bright * av * m_period_shimmer * VOICE_GAIN;
 
                 // ---- Aspiration and breath noise (through the cascade) ----
@@ -448,7 +503,7 @@ void KlattSynth::render(const Frame* frames, size_t count, std::vector<float>& o
                 for (int i = CASCADE_VARIABLE - 1; i >= 0; --i) {
                     y = m_cascade[i].tick(y);
                 }
-                y = m_voice_lp.tick(y);
+                if (!m_ceiling_on) y = m_voice_lp.tick(y);
 
                 // ---- Parallel frication branch ----
                 // The filters are heard to the end of their ringing: dropped
@@ -462,7 +517,7 @@ void KlattSynth::render(const Frame* frames, size_t count, std::vector<float>& o
                     double fmod = (av > 0.05 && !open_phase) ? 0.45 : 1.0;
                     src = n2 * af * fmod * FRICATION_GAIN;
                 }
-                src = m_fric_lp[1].tick(m_fric_lp[0].tick(src));
+                if (!m_ceiling_on) src = m_fric_lp[1].tick(m_fric_lp[0].tick(src));
                 double sign = 1.0;
                 for (int i = 0; i < PARALLEL_FORMANTS; ++i) {
                     double amp = lerp(prev.pa[i], next.pa[i], t);
@@ -477,6 +532,9 @@ void KlattSynth::render(const Frame* frames, size_t count, std::vector<float>& o
                 fric += lerp(prev.bypass, next.bypass, t) * src;
 
                 double sample = y + fric;
+                if (m_ceiling_on) {
+                    for (auto& section : m_ceiling) sample = section.tick(sample);
+                }
                 if (m_quality.reverb > 0.0f) {
                     sample += m_quality.reverb * m_reverb.tick(sample);
                 }

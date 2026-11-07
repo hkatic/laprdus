@@ -486,7 +486,7 @@ class LaprdusTTSService : TextToSpeechService() {
      * instead of LANG_NOT_SUPPORTED: TTS settings and screen readers probe
      * with the device locale, and on a negative answer some of them (e.g.
      * Honor MagicOS settings) disable the engine entirely even though the
-     * user explicitly selected it. eSpeak NG and RhVoice apply the same
+     * user explicitly selected it. Other engines apply the same
      * "never silent" fallback - synthesis proceeds with the default voice.
      */
     override fun onIsLanguageAvailable(lang: String, country: String?, variant: String?): Int {

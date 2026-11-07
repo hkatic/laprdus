@@ -109,7 +109,7 @@ Intonation::Intonation(const Utterance& utt, const std::vector<Syllable>& syls,
 
         // Every content word gets an audible movement (the "pointed
         // hats" of the classic rule-based synthesizers), the first one
-        // the largest: read Croatian (and Eloquence) opens a sentence
+        // the largest: read Croatian (and synthesizer A) opens a sentence
         // high, then keeps the voice on a level with movements of two to
         // three semitones. A clause that goes on a sentence after a
         // comma starts again, but lower than the sentence did.
@@ -202,7 +202,7 @@ Intonation::Intonation(const Utterance& utt, const std::vector<Syllable>& syls,
         Bump b;
         if (kind == ClauseKind::Continuation) {
             // A comma: a smaller fall after the last accent and a slight
-            // rise on the last syllable, DECtalk's "weaker fall followed
+            // rise on the last syllable, synthesizer C's "weaker fall followed
             // by a slight continuation rise". Croatian Radio readers
             // raise the last word before a pause inside a sentence by
             // 2.4 to 3.2 semitones (Langston 2018). Until October 2026
@@ -241,7 +241,7 @@ Intonation::Intonation(const Utterance& utt, const std::vector<Syllable>& syls,
     }
 
     // A sentence starts high: the stretch before its first accent is
-    // raised and comes down into the accent's peak (Lana and the
+    // raised and comes down into the accent's peak (voice D and the
     // natural voices start a sentence three to four semitones above the
     // level they then keep).
     if (sentence_onset) {

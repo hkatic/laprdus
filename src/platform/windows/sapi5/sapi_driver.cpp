@@ -356,6 +356,10 @@ HRESULT LaprdusSAPIDriver::InitializeEngine() {
         params.volume_boost = settings.volume_boost;
         params.inflection_level = settings.inflection_level;
         params.acceleration = settings.acceleration;
+        params.head_size = settings.head_size;
+        params.breathiness = settings.breathiness;
+        params.roughness = settings.roughness;
+        params.brightness = settings.brightness;
         params.emoji_enabled = settings.emoji_enabled;
         params.number_mode = settings.number_mode;
         params.pause_settings = settings.get_pause_settings();

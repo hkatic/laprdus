@@ -10,8 +10,8 @@ What is covered:
 - --language=<tag> picks the table (NVDA's forms, BCP 47; Bosnian reads
   Croatian, a language without a table English) on a machine with or without
   that language installed;
-- all the text of the main dialog, the dictionary dialog and both entry
-  dialogs comes from that table and fits its control.
+- all the text of the main dialog, the voice quality dialog, the dictionary
+  dialog and both entry dialogs comes from that table and fits its control.
 
 The dialogs run on a desktop of their own, so no window appears on the user's
 screen, takes the focus or gets announced by a screen reader. They are closed
@@ -39,7 +39,9 @@ DIALOG_KEYS = {
     "main": ["VOICE_LABEL", "SPEED_LABEL", "FORCE_SPEED", "ACCELERATION_LABEL", "PITCH_LABEL", "FORCE_PITCH",
              "INFLECTION_LABEL", "VOLUME_LABEL", "FORCE_VOLUME", "VOLUME_BOOST", "COMMA_LABEL", "SENTENCE_LABEL",
              "NEWLINE_LABEL", "SPELLING_SPEED_LABEL", "EMOJI", "DIGITS", "SPELLING_SOUNDS", "USER_DICT_CHECK",
-             "DICT_BUTTON", "TEST", "APPLY"],
+             "DICT_BUTTON", "VOICE_QUALITY_BUTTON", "TEST", "APPLY"],
+    "voice_quality": ["HEAD_SIZE_LABEL", "BREATHINESS_LABEL", "ROUGHNESS_LABEL", "BRIGHTNESS_LABEL",
+                      "VOICE_QUALITY_RESTORE"],
     "dictionary": ["DICT_TYPE_LABEL", "DICT_ADD", "DICT_EDIT", "DICT_DUPLICATE", "DICT_DELETE", "DICT_CLOSE"],
     "entry": ["ENTRY_ORIGINAL_LABEL", "ENTRY_REPLACEMENT_LABEL", "ENTRY_COMMENT_LABEL", "ENTRY_CASE_SENSITIVE",
               "ENTRY_WHOLE_WORD"],
@@ -374,6 +376,7 @@ def check_dialog(name, dialog, table, expected, shots):
 
 def test_dialogs(exe, tables, shots):
     IDC_DICT_BUTTON, IDC_DICT_ADD, IDC_DICT_TYPE_COMBO = 1096, 2004, 2002
+    IDC_VOICE_QUALITY_BUTTON, IDC_HEAD_SIZE_VALUE = 1044, 2304
     name = "laprdus_test_%d" % os.getpid()
     desktop = user32.CreateDesktopW(name, None, None, 0, 0x10000000, None)  # GENERIC_ALL
     if not desktop:
@@ -386,7 +389,7 @@ def test_dialogs(exe, tables, shots):
                      "i": "VOLUME_BOOST", "j": "COMMA_LABEL", "k": "SENTENCE_LABEL", "l": "NEWLINE_LABEL",
                      "m": "SPELLING_SPEED_LABEL", "n": "GROUP_OPTIONS", "o": "EMOJI", "p": "DIGITS",
                      "q": "SPELLING_SOUNDS", "r": "GROUP_DICTIONARIES", "s": "USER_DICT_CHECK", "t": "DICT_BUTTON",
-                     "u": "TEST", "v": "OK", "w": "CANCEL", "x": "APPLY"}
+                     "u": "TEST", "v": "OK", "w": "CANCEL", "x": "APPLY", "y": "VOICE_QUALITY_BUTTON"}
     # Without the option: Windows's display language (the machine's, so only the
     # ones with a table of their own can be told from here)
     display = {0x0409: "en", 0x041A: "hr", 0x241A: "sr", 0x0424: "sl"}.get(kernel32.GetUserDefaultUILanguage())
@@ -425,6 +428,18 @@ def test_dialogs(exe, tables, shots):
             value_label = user32.GetDlgItem(app.main, 1084)
             check("%s the widest acceleration value fits" % tag, text_width(app.main, widest) <= client_width(value_label),
                   (widest, text_width(app.main, widest), client_width(value_label)))
+
+            # The voice quality dialog, opened by its button under the volume boost
+            quality = app.open(app.main, IDC_VOICE_QUALITY_BUTTON)
+            check_dialog("%s voice quality" % tag, quality, table,
+                         {"TITLE": "VOICE_QUALITY_TITLE", "a": "VOICE_QUALITY_HELP", "b": "HEAD_SIZE_LABEL",
+                          "c": "BREATHINESS_LABEL", "d": "ROUGHNESS_LABEL", "e": "BRIGHTNESS_LABEL",
+                          "f": "VOICE_QUALITY_RESTORE", "g": "OK", "h": "CANCEL"}, shots)
+            if quality:
+                value = get_text(user32.GetDlgItem(quality, IDC_HEAD_SIZE_VALUE))
+                check("%s head size value is written the language's way" % tag,
+                      re.fullmatch(r"\d+" + (" " if tag in ("hr", "sl") else "") + "%", value) is not None, value)
+                app.close(quality)
 
             dictionaries = app.open(app.main, IDC_DICT_BUTTON)
             check_dialog("%s dictionaries" % tag, dictionaries, table,

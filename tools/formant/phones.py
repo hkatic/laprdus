@@ -5,7 +5,7 @@ phones.py - Which consonant a listener-like phoneme recognizer hears.
 
 Synthesizes short items (VCV, CV, words) and spelled letters with the
 laprdus CLI and runs them through a multilingual phoneme recognizer
-(wav2vec2 XLSR-53 fine-tuned on Common Voice with eSpeak phoneme labels,
+(wav2vec2 XLSR-53 fine-tuned on Common Voice with phoneme labels,
 "facebook/wav2vec2-xlsr-53-espeak-cv-ft"), which writes out the IPA phones
 it hears. A word recognizer such as Whisper guesses whole words from its
 language model and hides what happened to one consonant; this shows it:
@@ -15,13 +15,13 @@ Items count as right when the expected consonant is among the phones.
 Every item is synthesized in three voices at two rates (spelled letters at
 two spelling speeds, in both spelling modes, and also high-passed at 500 Hz
 as a phone speaker plays them), so one run gives 6-24 trials per item.
-Recordings of other voices can be checked with --say ("MBROLA NG Croatian
-male (cr1)", "Lana (Croatian (Croatia))", ...). See "v, l, nj and d" in
+Recordings of other voices can be checked with --say (the name of a macOS
+voice). See "v, l, nj and d" in
 docs/formant.md.
 
 Usage:
     phones.py [--classes v,l,nj,d,n,m] [--letters] CLI [CLI2 ...]
-    phones.py --say "Lana (Croatian (Croatia))" --classes nj
+    phones.py --say "<a macOS voice>" --classes nj
 
 Requires numpy, scipy, torch, transformers (the model is about 1.2 GB and
 is downloaded on first use).

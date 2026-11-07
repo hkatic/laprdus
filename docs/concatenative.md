@@ -137,7 +137,7 @@ unchanged by the extraction (verified sample for sample).
 ### Rendering (`src/audio/psola.cpp`)
 
 Time-domain pitch-synchronous overlap-add (Moulines & Charpentier 1990), the
-method of MBROLA, Festival's diphone voices and Praat's pitch manipulation:
+method of diphone synthesizers and of Praat's pitch manipulation:
 
 - Output pitch marks are placed one target period apart (the period from the
   contour at that time). At each, one period of the recording is taken: a
@@ -150,7 +150,7 @@ method of MBROLA, Festival's diphone voices and Praat's pitch manipulation:
 - Unvoiced marks are placed every 5 ms regardless of pitch, with unit gain.
   When a frame must be repeated to lengthen a fricative, the repeat is played
   **backwards**, which prevents the buzz of a periodically repeated noise
-  (the MBROLA trick).
+  (a diphone synthesizer's trick).
 - At a **join** between two voiced recordings, the output marks within 7 ms
   on either side of the boundary get windows from both recordings, weighted
   linearly across the 14 ms: the join is a crossfade of whole periods at the
@@ -188,12 +188,14 @@ samples (`tests/linux/test_concat.cpp`).
 | pitch (voice character) | 0.25 - 4.0 | spectrum warp `sqrt(pitch)` at analysis, pitch × `pitch` at rendering |
 | user_pitch | 0.5 - 2.0 | pitch × `user_pitch` at rendering, formants unchanged |
 | inflection_level | 0 - 1 | scales the whole contour, as for the formant voices |
+| head_size | 0 - 100 | the bank warp times `head_size_factor()` (1.25 at 0, 0.8 at 100), formants only, the pitch stays |
+| brightness | 0 - 100 | a one-pole tilt around 1.5 kHz after rendering (`tilt_brightness()`): the top folded away at 0, doubled at 100 |
 | volume | 0 - 1 | gain before the limiter |
 
 Spelling by letter sounds (`AudioSynthesizer::synthesize_letter_sound`) plays
 the consonant's recording with the planner's fixed durations for an isolated
 sound and the "e" recording after it as the release vowel ("bə", "sə", as
-eSpeak sounds letters out); a vowel letter is the vowel alone.
+Synthesizer B sounds letters out); a vowel letter is the vowel alone.
 
 ## Testing and tuning
 

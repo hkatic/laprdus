@@ -3,9 +3,18 @@
 Zvonko (Croatian), Stojan (Serbian) and Mirsad (Bosnian) are synthesized by
 rule. Nothing is recorded: the text is turned into sounds, the sounds into
 control tracks (formants, amplitudes, pitch), and the tracks into audio by a
-formant synthesizer. This is the approach of DECtalk and Eloquence. Every
+formant synthesizer. This is the approach of the classic formant synthesizers. Every
 voice also speaks Slovenian, which has a text front end of its own
 (section 4a).
+
+The synthesizers the voices were compared with are not named in this
+document or in the code; they were used for comparison only. They appear as
+**synthesizer A** (a classic commercial formant synthesizer of the 1990s,
+11 kHz output, whose control model the voice quality settings follow),
+**synthesizer B** (an open-source formant synthesizer with a Croatian voice),
+**synthesizer C** (a formant synthesizer of the 1980s after Klatt's design,
+known from its published tables), **a recorded Croatian speaker** (a diphone
+database) and the **commercial concatenative voices D, E and F**.
 
 This document explains how the pieces fit together, where the numbers come
 from, and how to check a change. Code lives in `src/formant/`.
@@ -22,7 +31,7 @@ text ──▶ TTSEngine::preprocess_text()        emoji, pronunciation dictiona
 
 The first two steps are shared with the concatenative voices. A mark ends a
 clause only when whitespace, a bracket or quote, or the end of the text follows
-it (eSpeak's rule); glued to the next character ("12:30", "Hej!ti") it stays
+it (synthesizer B's rule); glued to the next character ("12:30", "Hej!ti") it stays
 in the clause and the front end's symbol table reads it by name
 (*dvotočka*/*dvotačka*, *uskličnik*/*uzvičnik*). A glued period is read by
 name (*točka*/*tačka*) only before a file extension or domain label, one to
@@ -33,12 +42,12 @@ glued period ends the clause like one before a space, because a screen
 reader glues the items of a label that way ("Preslušano.Nestajuća poruka",
 "1.Prvi"). A period after a single letter is the dot of an abbreviation
 ("s.a.r.s.", "U.S.A."): the tokenizer drops it and reads the letters by
-name, as eSpeak and RHVoice do. A number glued to letters is set off from them by the number converter
+name, as other synthesizers do. A number glued to letters is set off from them by the number converter
 ("u20:03" *u dvadeset nula tri*; before, "udvadeset" was one word stressed
 on the *u*), and the period that joins a word to such letters, as a screen
 reader glues the parts of a label ("7.listopada.u20:03"), becomes a word
 break instead of *točka*. The number converter reads every group of digits after a period as a
-whole number ("1.317" *jedan točka tristo sedamnaest*, eSpeak's reading),
+whole number ("1.317" *jedan točka tristo sedamnaest*, synthesizer B's reading),
 writes the decimal comma as *zarez*, except between the single digits of a
 phone number spelled out by a screen reader ("+ 1 2 3,5 6,7 8 9,8 7 6": at
 least six single digits separated by spaces or glued commas, at least two of
@@ -86,7 +95,9 @@ A cascade/parallel formant synthesizer after Klatt (1980).
   The fixed ones shape sibilants; from 1 kHz up they are true band-passes,
   with zeros at 0 Hz and at the Nyquist frequency (see "Spelled d and n, c,
   and clicks" below). All frication noise first passes a fourth-order
-  low-pass at 6.6 kHz (see "Sibilants" below). The parallel filters are
+  low-pass at 6.6 kHz (see "Sibilants" below) in the singing presets; the
+  speaking voices run the whole output through a 6th-order ceiling at 5.3 kHz
+  instead (see "The reference balance" below). The parallel filters are
   heard to the end of their ringing, also after the noise has stopped.
 
 Control frames are 44 samples long; parameters are interpolated in between
@@ -116,15 +127,15 @@ Points specific to Croatian/Serbian/Bosnian:
   an utterance and before a consonant or a pause two (a short trill with a
   period of about 35 ms); with a single contact the lone vocalic onset of an
   initial /r/ was heard as /v/. This was measured on the
-  recorded speaker and on Eloquence (Italian and Spanish *ara*, *arra*,
+  recorded speaker and on synthesizer A (Italian and Spanish *ara*, *arra*,
   *cara*): both keep the vowel nearly full between contacts. The earlier
   version, a 60 ms stretch 20 dB down with two contacts and no F3 movement,
   was heard as a muffled /l/ or /d/. Syllabic r is vocoid + contact + weaker
   vocoid.
-- **/j/** is a real constriction, not a weak /i/: F1 about 270 Hz (Eloquence
+- **/j/** is a real constriction, not a weak /i/: F1 about 270 Hz (synthesizer A
   250-300, the recorded speaker 250-400), F2 near 2000 Hz between two a's,
   and F3 at 3050 Hz, well above the vowels' 2500-2700. The high F3 is what
-  the recordings show in *ja*, *ji*, *moj* (2900-3400 Hz) and Eloquence in
+  the recordings show in *ja*, *ji*, *moj* (2900-3400 Hz) and synthesizer A in
   *ieri* (3000 Hz), and it is the only thing that separates /j/ from /i/ in
   *ji*, *ija*, *moj*: with F3 at 2750 the two were the same sound and *ji*
   was a long *i*. Transitions take about 50 ms. The earlier version had F1
@@ -141,7 +152,7 @@ Points specific to Croatian/Serbian/Bosnian:
   lower č, ć and đ. The voiced affricates' friction was also raised a little
   (đ was 17 dB down, the recorded speaker's is 8 dB down). **c** no longer
   shares the /s/ spectrum: its friction is centred at 4.5 kHz and 12 dB
-  below the vowels (before 5.0 kHz and 9 dB; Eloquence's [ts] 4.4 kHz and
+  below the vowels (before 5.0 kHz and 9 dB; synthesizer A's [ts] 4.4 kHz and
   17 dB), after a listening test found it too sharp.
 - **/h/** is aspiration shaped by the neighbouring vowel.
 - Unstressed vowels are only slightly centralized; there is no vowel
@@ -160,7 +171,7 @@ Points specific to Croatian/Serbian/Bosnian:
   syllables per second.
 - **Consonant spectra, levels and transitions**: measured with
   `tools/formant/analyze.py` on recordings of a male Croatian speaker (the
-  MBROLA `cr1` diphone database, 16 kHz) and, for the range above 8 kHz, on a
+  diphone database of a recorded Croatian speaker, 16 kHz) and, for the range above 8 kHz, on a
   wide-band Croatian voice. Some of the values the table was matched to
   (levels relative to the loudest vowel frame):
 
@@ -208,34 +219,42 @@ spectral centroid of the friction):
 
 | | s | š | č | ć |
 |---|---|---|---|---|
-| Recorded Croatian (MBROLA cr1, 16 kHz) | -6 dB, 5.6 kHz | -1 dB, 4.1 kHz | -1 dB, 4.4 kHz | -2 dB, 4.1 kHz |
-| ETI Eloquence (Reed; English, Italian) | -13 to -17 dB, 4.1-4.4 kHz | -13 to -17 dB, 3.1-3.2 kHz | -12 to -13 dB, 3.1-3.2 kHz | - |
+| Recorded Croatian (diphone database, 16 kHz) | -6 dB, 5.6 kHz | -1 dB, 4.1 kHz | -1 dB, 4.4 kHz | -2 dB, 4.1 kHz |
+| synthesizer A (English, Italian) | -13 to -17 dB, 4.1-4.4 kHz | -13 to -17 dB, 3.1-3.2 kHz | -12 to -13 dB, 3.1-3.2 kHz | - |
 | Zvonko before | -5 dB, 6.4 kHz | -6 dB, 3.9 kHz | -2 dB, 4.0 kHz | -2 dB, 4.6 kHz |
 | Zvonko now | -11 dB, 4.8 kHz | -12 dB, 3.6 kHz | -8 dB, 3.7 kHz | -8 dB, 4.1 kHz |
+| Zvonko, November 2026 | -12 dB, 5.0 kHz | -13 dB, 3.6 kHz | -12 dB, 3.3 kHz | -10 dB, 3.9 kHz |
+| Zvonko, 7 November 2026 (synthesizer A's levels) | -15 dB, 4.4 kHz | -15 dB, 3.2 kHz | -13 dB, 3.1 kHz | -14 dB, 3.7 kHz |
+| Zvonko, the reference balance (the same day, under the 5.3 kHz ceiling) | -15 dB, 4.3 kHz | -17.5 dB, 3.2 kHz | -15.6 dB, 3.1 kHz | -14.4 dB, 3.7 kHz |
 
-Eloquence has no energy at all above 5.5 kHz; Zvonko's /s/ now has about
-20 dB less in 6.5-8 kHz than in its peak band. The peaks sit a little above
-Eloquence's because an exact match was judged slightly too dull by ear. The distance between s and š is the same
-as in Eloquence (about 1.2 kHz), and the order s > ć > č > š is kept. Stojan
+Synthesizer A has no energy at all above 5.5 kHz; Zvonko's /s/ now has about
+25 dB less in 6.5-8 kHz than in its peak band. (The fourth row is the state
+after the 2 dB of November 2026, see "Hiss, crackle and the boost" below;
+the affricates measured on the same items read -10.6 and -9.0 dB before it.
+The last row is the exact match to synthesizer A of 7 November 2026, at the
+maintainer's word after listening on a phone at full volume, see "Consonants
+on a phone" below; until then the peaks sat a little above synthesizer A's because
+an exact match had been judged slightly too dull by ear.) The distance between s and š is the same
+as in synthesizer A (about 1.2 kHz), and the order s > ć > č > š is kept. Stojan
 and Mirsad differ from this only through their vocal tract length and their
 č/ć separation.
 
 Other things taken from the same comparison and from the published
-descriptions of Eloquence and of Klatt's synthesizers:
+descriptions of synthesizer A and of Klatt's synthesizers:
 
-- **Sharp friction edges.** In Eloquence's phone-and-transition model noise
+- **Sharp friction edges.** In synthesizer A's phone-and-transition model noise
   switches at the edge of the sound; Klatt interpolates noise amplitude over
   5 ms. Friction amplitude used to be smoothed over about 40 ms here, which
   smeared s, š, f into the neighbouring vowels; it is now about 14 ms.
-- **Brighter vowels.** Eloquence's vowels carry 5-8 dB more energy in
+- **Brighter vowels.** synthesizer A's vowels carry 5-8 dB more energy in
   2.5-5 kHz than Zvonko's did; the source emphasis was raised by about 3 dB
   at 3 kHz (and the output gain lowered to keep the same peak level).
 - **Stronger voice bar.** The murmur during b, d, g was 24-26 dB below the
   vowels, at the weak end of the recorded range (-13 to -25 dB) and far below
-  Eloquence (-6 to -10 dB). It is now about -20 dB (falling to -28 dB before
+  synthesizer A (-6 to -10 dB). It is now about -20 dB (falling to -28 dB before
   the release, see "Sharp releases"), so voiced and voiceless stops are
   further apart.
-- Bursts of p, t, k before a vowel already matched Eloquence in level and
+- Bursts of p, t, k before a vowel already matched synthesizer A in level and
   length and were left alone (what surrounds them was not right yet, see
   "Stops", and the p burst was later raised towards the recorded one, see
   "Sharp releases"). Klatt's own advice applies: exaggerated cues ("super speech")
@@ -248,9 +267,9 @@ after s and š (*st*, *sk*, *št*, *šk*). Measured with `tools/formant/stops.py
 on the same items, the bursts before a vowel were fine, but what surrounds
 them was not:
 
-| | Recorded Croatian (MBROLA cr1) | ETI Eloquence (Reed) | Zvonko before | Zvonko now |
+| | Recorded Croatian (diphone database) | synthesizer A | Zvonko before | Zvonko now |
 |---|---|---|---|---|
-| Silent gap in *asta*, *aska* | 65-90 ms (timing is eSpeak's) | 40 ms | 20-32 ms | 36-40 ms |
+| Silent gap in *asta*, *aska* | 65-90 ms (timing is synthesizer B's) | 40 ms | 20-32 ms | 36-40 ms |
 | The same, 1.5 times faster | - | 28 ms (1.6 times) | 12 ms | 24-28 ms |
 | The same, twice as fast | - | 12-16 ms (2.9 times) | under 5 ms | 20-22 ms |
 | Release of final t (*pat*, *most*) | 40-45 ms, falling from -12/-22 to -36 dB | 90 ms at -22 to -29 dB | 16 ms | 56 ms, falling from -16/-20 to -36 dB |
@@ -283,7 +302,7 @@ them was not:
 - **The t burst.** Its strongest component was F3, which put its peak at
   2.7 kHz, exactly where the k burst sits next to e and i (*tek*, *lik*:
   2.5-2.7 kHz). It is now carried by F4 and a fixed peak at 4.3 kHz, as in
-  the recordings and in Eloquence. /d/ shares the spectrum; its burst is now
+  the recordings and in synthesizer A. /d/ shares the spectrum; its burst is now
   24-30 dB below the vowels in 3-6 kHz (recorded 26-30, before 27-34).
 - **The place of a final k.** A velar takes its place from the vowel after
   it, or, at the end of a clause, from the vowel before it. That vowel was
@@ -292,7 +311,7 @@ them was not:
   vowel counts; otherwise the velar is neutral (burst at 1.5-2 kHz).
 - **Stop before stop.** The first stop of *tk*, *kt*, *pt* is released
   audibly in the recordings; here it was 8 ms long and 8 dB weaker.
-  Eloquence hardly releases it (Finnish *matka*, Spanish *acto*), but the
+  synthesizer A hardly releases it (Finnish *matka*, Spanish *acto*), but the
   recorded speaker is the reference for the language.
 
 Tried and dropped, all three on the k burst before a vowel: lowering it
@@ -324,7 +343,7 @@ A second listening test found p, b and d a little soft, p most of all before
 r. `tools/formant/onsets.py` prints the level every 2 ms around a release;
 what it showed (levels relative to the loudest part of the item):
 
-| | Recorded Croatian (MBROLA cr1) | ETI Eloquence (Reed) | Zvonko before | Zvonko now |
+| | Recorded Croatian (diphone database) | synthesizer A | Zvonko before | Zvonko now |
 |---|---|---|---|---|
 | p burst in *pa*, first 6 ms | -2 to -5 dB | -32 dB | -21 to -26 dB | -16 dB |
 | p burst in *pra* | -8 to -13 dB | -14 to -18 dB | -23 to -28 dB | -14 to -19 dB |
@@ -393,7 +412,7 @@ Serbian rather than Slovenian, an n that is less like m, and a č that is
 further from ć.
 
 **l.** macOS has a Croatian, a Serbian and a Slovenian voice of the same kind
-(Lana, Dragana, Tina), which shows what the difference is: in *ala* the
+(three commercial Croatian voices), which shows what the difference is: in *ala* the
 Slovenian l keeps F2 at 1650-1790 Hz, as high as the vowel's, while the
 Croatian and the Serbian one drop it by 250-450 Hz (to 1040-1070 and
 1170-1200 Hz). The recorded male speaker has a dark l in every context. F2 of
@@ -401,7 +420,7 @@ the l:
 
 | | *ala* | *ili* | *ele* | *li* | *il* |
 |---|---|---|---|---|---|
-| Recorded Croatian (MBROLA cr1) | 1140 | 1280 | 1220 | 1170 | 1200 |
+| Recorded Croatian (diphone database) | 1140 | 1280 | 1220 | 1170 | 1200 |
 | Zvonko before | 1180 | 1460 | 1400 | 1460 | 1460 |
 | Zvonko now | 1130 | 1270 | 1240 | 1270 | 1260 |
 
@@ -416,7 +435,7 @@ the finding that a bright murmur is heard as l stands.) A recognizer heard n
 as m in 4 of 76 words at the normal rate and in 7
 at 1.5 times the rate (*stan* as *stam*, *vani* as *vami*, *nije* as *mije*).
 The two murmurs were the same dull hum, 12 dB below the vowels (recorded: 8
-to 10, Eloquence 6 to 7), with their upper resonances 23-38 dB down, so only
+to 10, synthesizer A 6 to 7), with their upper resonances 23-38 dB down, so only
 the short transitions told them apart. What was tried, with the number of
 n-words found and how the others were heard:
 
@@ -432,13 +451,13 @@ A murmur as bright as the recorded one (its 1-1.5 and 2-3 kHz bands are only
 13-16 dB down) is no longer taken for m but for l: in a formant synthesizer a
 sonorant with clear upper formants *is* an l. The setting kept raises the
 resonances of n a little, narrows them a little and makes all nasal murmurs
-2 dB louder; m keeps its dull spectrum, as in Eloquence, where the murmur of
+2 dB louder; m keeps its dull spectrum, as in synthesizer A, where the murmur of
 n has 15 dB more energy at 1.5-3 kHz than that of m. At 1.5 times the rate it
 finds 46 words instead of 36 (as m: 4 instead of 7). The recorded speaker: 68.
 
 **č.** For Zvonko the friction of č and ć had the same peak and centroids 400
 Hz apart (3.55 and 3.95 kHz); Stojan's are 920 Hz apart, Mirsad's 810 Hz, the
-Croatian voice Lana's 550 Hz (the recorded male speaker merges them, as many
+commercial voice D's 550 Hz (the recorded male speaker merges them, as many
 Croatian speakers do). `hard_palatal_shift` could not be used, because it
 moves š and ž as well. A new speaker property, `hard_affricate_shift`, lowers
 the friction of č and dž alone: 0.93 for Zvonko, which puts č at 3.3 kHz, 670
@@ -458,17 +477,16 @@ section 7 Zvonko, Stojan and Mirsad moved by -0.9, 0.0 and -0.6 points.
 ### l, m, n and p after the classic synthesizers
 
 After the three rounds above l, m, n and p were still judged soft, and hard
-to make out at high rates; the request was to follow Eloquence, DECtalk,
-Orpheus and eSpeak. Eloquence and eSpeak are installed on macOS (`say -v
-"Reed (Italian (Italy))"`, `say -v "(null) - ESpeak (Croatian (Croatia))"`,
-with `-r 300` or `-r 450` for high rates); for DECtalk there are Klatt's
-published tables. Segment durations at high rates turned out to be the same
-as Eloquence's. What differs is the manner: the classic synthesizers switch
+to make out at high rates; the request was to follow the classic formant synthesizers. Two of them
+(synthesizers A and B) are installed on macOS as system voices, in Italian
+and Croatian, with `-r 300` or `-r 450` for high rates; for synthesizer C
+there are Klatt's published tables. Segment durations at high rates turned out to be the same
+as synthesizer A's. What differs is the manner: the classic synthesizers switch
 these sounds on and off within a few milliseconds and make them very unlike
 the vowels around them, where the recorded speaker, and Zvonko after him,
 glide.
 
-| | Eloquence | eSpeak (Croatian) | DECtalk (Klatt 1980) | Zvonko before | Zvonko now |
+| | synthesizer A | synthesizer B (Croatian) | synthesizer C (Klatt 1980) | Zvonko before | Zvonko now |
 |---|---|---|---|---|---|
 | F1 of l in *ala* | 310-330 Hz | 390-430 Hz | 310 Hz | 490 Hz | 370 Hz |
 | Energy above 1 kHz in that l | -24 to -40 dB | - | - | -12 to -24 dB | -20 to -32 dB |
@@ -484,9 +502,9 @@ glide.
   stays in the table of recorded values above). The deep and quick dip of F1
   is what sets an l off from the vowels; with the shallow one a recognizer
   heard *mali Luka voli* as *valio uka volio*, the l as part of the vowels.
-  The lower F1 also takes 8 dB off the upper formants, as in Eloquence. F2
+  The lower F1 also takes 8 dB off the upper formants, as in synthesizer A. F2
   stays where the previous round put it (a dark l), which is also where
-  eSpeak's Croatian l is (1360-1410 Hz in *ili*; Eloquence's Italian l is a
+  synthesizer B's Croatian l is (1360-1410 Hz in *ili*; synthesizer A's Italian l is a
   clear one, 1750 Hz).
 - **m and n.** The two murmurs differ by their second resonance, and the
   classic synthesizers put those further apart than a speaker does; so do
@@ -499,7 +517,7 @@ glide.
   heard as l in none instead of 3). All murmurs are 1.5 dB louder.
 - **p.** Three versions were compared at 1.7 times the rate, where the
   complaint was: the previous burst (strongest below 500 Hz, following the
-  formants, with aspiration), a flat one as in Eloquence, and one that is
+  formants, with aspiration), a flat one as in synthesizer A, and one that is
   strongest below 500 Hz with a flat floor 10 dB under it, the same before
   every vowel, followed by silence instead of aspiration. A flat burst of 8
   ms is a different sample of noise each time and now and then peaked at 3-4
@@ -532,11 +550,9 @@ word boundaries, *padala kiša* as *pada lakiša*, and one lost p in *ptice*).
 ### p and b once more
 
 After the rounds above p and b were still judged not noticeable enough, with
-Eloquence, DECtalk and eSpeak named as the reference. On the Mac there are
-Eloquence (`say -v "Reed (Italian (Italy))"`), eSpeak (`say -v "(null) -
-ESpeak (Croatian (Croatia))"`) and a third-party Klatt-type Croatian voice
-(`say -v "(null) - Klatt (Croatian (Croatia))"`, the nearest thing to
-DECtalk); the envelopes of *apa*, *aba*, *ipi*, *ibi*, *upu*, *ubu* every 2 ms
+the classic formant synthesizers named as the reference. On the Mac there
+are synthesizer A (Italian), synthesizer B (Croatian) and a third-party
+Klatt-type Croatian voice (the nearest thing to synthesizer C); the envelopes of *apa*, *aba*, *ipi*, *ibi*, *upu*, *ubu* every 2 ms
 (whole signal and above 1 kHz, relative to the loudest 3 ms) were compared at
 the normal rate and at 1.7 times it (`say -r 300`, `laprdus -r 1.7`). It was
 not the burst's level, as the two earlier rounds had assumed: the classic
@@ -544,7 +560,7 @@ synthesizers make a stop out of sharp events, and Zvonko glided through
 them. The three synthesizers do not agree with each other, though, and the
 first attempt followed the wrong two.
 
-| | Eloquence | eSpeak (Croatian) | Klatt voice | Zvonko before | Zvonko now |
+| | synthesizer A | synthesizer B (Croatian) | Klatt voice | Zvonko before | Zvonko now |
 |---|---|---|---|---|---|
 | Vowel cut off before p (-8 to -60 dB) | 16 ms | 8-16 ms | within 2 ms | 22-26 ms | 16 ms |
 | p release in *apa* | 22-28 ms of flat noise at -31 to -45 dB, into the vowel | 18 ms burst at -17 to -25 dB, then 12 ms of silence | 20 ms burst at -3 to -21 dB, then 10 ms of silence | 8 ms click from -20 dB, then the vowel | 24 ms: the click, then breath at -20 to -27 dB, into the vowel |
@@ -556,25 +572,25 @@ first attempt followed the wrong two.
   vowel's 70 Hz bandwidth through the closure and rang on for 20-25 ms (4 dB
   per 2 ms, the decay of that bandwidth), so the vowel faded into the stop.
   The closure of p and b now damps F1 (bandwidth 250 Hz; the lips are shut),
-  and the vowel is cut off within 16 ms, as in Eloquence; F1 also moves into
+  and the vowel is cut off within 16 ms, as in synthesizer A; F1 also moves into
   the closure of p and b within 14 ms instead of gliding over 36. (Applied to
   every stop, the fast F1 close did nothing for p and b and cost the
   recognizer a few t and k words, so t, d, k and g are untouched.)
-- **The p release follows Eloquence**, not eSpeak: the click (14 ms, 2 dB
+- **The p release follows synthesizer A**, not synthesizer B: the click (14 ms, 2 dB
   stronger than before) and then breath through the opening glottis for the
   rest of 24 ms (16 ms when fast), running straight into the vowel or the r
   of *pra*. Before, p had no aspiration at all and its click was over in 8
-  ms. The first attempt copied eSpeak and the Klatt voice instead, an 18 ms
+  ms. The first attempt copied synthesizer B and the Klatt voice instead, an 18 ms
   flat burst and then 8-10 ms of silence before the voice; the recognizer
   lost one word in ten with the flat burst (not with its level: a 14 ms
   burst at the new level cost nothing), and the user heard the silence as a
   gap in the word. Both are gone.
-- **b** has the loud, steady voice bar of Eloquence and DECtalk (voicing at
+- **b** has the loud, steady voice bar of synthesizer A and synthesizer C (voicing at
   95% instead of 60%, 4 dB less tilt, fading by 4 dB over the second half
   of the closure instead of 7), and after both labials the vowel snaps in
   (F1 72% of the way at the boundary and the rest within 8 ms, against 55%
   and 12 ms for the other stops). A version that held the voicing back under
-  the b release to 20%, so that the burst stood out as in eSpeak, was no
+  the b release to 20%, so that the burst stood out as in synthesizer B, was no
   better for the recognizer and no better to the ear; the burst now runs
   under voicing at 70% as before, 2 dB stronger. d and g keep the recorded
   speaker's weaker bar.
@@ -585,7 +601,7 @@ run gives the same count and differences are between engines, not runs):
 at the normal rate it found 156 of those words with the previous engine and
 148 now (6.6% and 7.3% of the characters wrong), at 1.7 times the rate 93
 and 83 (17.3% and 19.1%). On 20 sentences full of t and k (77 words) it
-finds 55 against 56 before. The intermediate version with the eSpeak-style
+finds 55 against 56 before. The intermediate version with the synthesizer B-style
 burst and gap scored 152 and 87, and its 18 ms flat burst 141 and 78. The
 recognizer is a guard against gross regressions, not the judge: the sound
 the user asked for is that of the classic synthesizers, which it hears worse
@@ -604,7 +620,7 @@ barely told apart, on a phone speaker and on headphones alike; the letter C
 "sounds different from the others"; and small clicks could be heard in
 running speech. Measured with 4 ms envelopes (whole signal, above 1 kHz,
 below 400 Hz) of the spelled letters at the default spelling speed, against
-MBROLA cr1 (a recorded Croatian speaker), Eloquence (`Reed`, Italian), eSpeak
+a recorded Croatian speaker (diphone database), synthesizer A (Italian), synthesizer B
 and the Klatt voice.
 
 **D and N.** The spelled d is clause-initial, and there the voice bar is
@@ -616,7 +632,7 @@ two letters were a weak hum and a vowel each.
 
 | Initial voice bar | length | level (re the vowel's peak) | above 1 kHz |
 |---|---|---|---|
-| Eloquence *da, ba, ga* | 56-70 ms | -6 dB | -38 to -43 dB |
+| synthesizer A *da, ba, ga* | 56-70 ms | -6 dB | -38 to -43 dB |
 | Recorded Croatian *da, ba, ga* | 34-94 ms | -11 to -13 dB | -25 to -35 dB |
 | Zvonko before, *da* / spelled *de* | 54 / 98 ms | -10 / -6 dB | -33 / -31 dB |
 | Zvonko now, *da* / spelled *de* | 54 / 64 ms | -14 / -10 dB | -36 / -33 dB |
@@ -631,7 +647,7 @@ the spelled d is now 30 dB under the vowel, the murmur of n 13 dB: before,
 25 and 13. A first version that also weakened the bar to 19 dB under the
 vowel was dropped: that is far below both references and risks hearing b, d,
 g as p, t, k. The burst of d was left alone: above 2 kHz its first 15 ms are
-1-5 dB under the vowel's, between Eloquence's (-14 dB) and the recorded
+1-5 dB under the vowel's, between synthesizer A's (-14 dB) and the recorded
 speaker's (+3 dB). Between vowels nothing changed (the bar of *dvadeset*,
 see "Sharp releases").
 
@@ -639,7 +655,7 @@ see "Sharp releases").
 each passed low frequencies some 17 dB under its peak. Where neighbouring
 peaks of opposite sign have similar amplitudes this cancels (č, ć, š), but c
 has one dominant peak at 4.5 kHz, and its hiss carried a rumble: 15 dB under
-the peak band in 50-200 Hz, where Eloquence's [ts] is 30 dB under and the
+the peak band in 50-200 Hz, where synthesizer A's [ts] is 30 dB under and the
 recorded speaker's 36 dB. From 1 kHz up the peaks are now true band-passes
 with zeros at 0 Hz and Nyquist (the labial peak at 350 Hz keeps its skirt);
 c's rumble is 46 dB under, the floor at 0.8-2.5 kHz 5-10 dB lower, and the
@@ -661,7 +677,7 @@ silence with a large sample within 0.5 ms of it, and by high-band (above
   the normal rate and from 2 to 0 at twice the rate. The edges that remain
   are the onsets of bursts, which are meant to be sharp.
 - The pulse of each glottal period stands out above 3.5 kHz by 7 dB (median
-  per period), as in Eloquence (8 dB) and the recorded speaker (8 dB); it is
+  per period), as in synthesizer A (8 dB) and the recorded speaker (8 dB); it is
   not a source of clicks.
 - The recorded voices had the real clicks (see "Rendering" in
   `docs/concatenative.md`).
@@ -684,7 +700,7 @@ little bit harder", further from n.
 **A phoneme recognizer.** A word recognizer guesses whole words from its
 language model, so it hides what happened to one consonant, and it cannot
 score a spelled letter at all. A multilingual phoneme recognizer (wav2vec2
-XLSR-53 fine-tuned on Common Voice with eSpeak phoneme labels) writes out
+XLSR-53 fine-tuned on Common Voice with phoneme labels) writes out
 the phones it hears. `tools/formant/phones.py` runs 14-20 items per
 consonant (VCV, CV and words) in the three voices at the normal rate and
 1.7 times it, or the spelled letters in both spelling modes at two spelling
@@ -700,10 +716,10 @@ of it (the reference voices once each, so out of 14-20):
 |---|---|---|---|---|
 | Zvonko, Stojan, Mirsad before | 6 of 120 | 93 of 114 | 48 of 90 | 30 of 84 |
 | Zvonko, Stojan, Mirsad now | 96 of 120 | 109 of 114 | 56 of 90 | 65 of 84 |
-| Recorded Croatian (MBROLA cr1) | 12 of 20 | 16 of 19 | 11 of 15 | 14 of 14 |
-| Lana | 18 of 20 | 17 of 19 | 10 of 15 | 14 of 14 |
-| eSpeak (Croatian) | 10 of 20 | 15 of 19 | 3 of 15 | 3 of 14 |
-| Eloquence (Italian) | 17 of 20 | 13 of 19 | - | 8 of 14 |
+| Recorded Croatian (diphone database) | 12 of 20 | 16 of 19 | 11 of 15 | 14 of 14 |
+| voice D | 18 of 20 | 17 of 19 | 10 of 15 | 14 of 14 |
+| synthesizer B (Croatian) | 10 of 20 | 15 of 19 | 3 of 15 | 3 of 14 |
+| synthesizer A (Italian) | 17 of 20 | 13 of 19 | - | 8 of 14 |
 
 | Spelled letter (of 12 per mode) | V | L | D | NJ | N | M |
 |---|---|---|---|---|---|---|
@@ -718,8 +734,8 @@ only where both did (Whisper "small" on sentences, section 7).
 **v.** The old v had nearly the formants of l (F1-F3 300 / 1130 / 2400
 against 330 / 1100 / 2470 Hz), no friction and a third less level: a
 quieter l. Speakers' v is an approximant, but the classic synthesizers
-make it a voiced fricative (Eloquence's carries flat noise up to 5 kHz;
-DECtalk's has F3 at 2080 Hz, its l at 2880), and that is what told it from
+make it a voiced fricative (synthesizer A's carries flat noise up to 5 kHz;
+Synthesizer C's has F3 at 2080 Hz, its l at 2880), and that is what told it from
 l: without friction 13 of 120, with weak friction 60, with the friction of
 the version kept 95. The lips also lower F3; with F3 at 2400 instead of
 2100 Hz the same v scored 76. The voicing is weak, because Whisper heard a
@@ -737,11 +753,11 @@ affricate (*tvoj* as "zvoj"). Against the vowel's peak, in *ava*:
 |---|---|---|---|
 | v before | -14 dB | -48 dB | -58 dB |
 | v now | -17 dB | -32 dB | -29 dB |
-| Eloquence | -14 dB | -37 dB | -42 dB |
+| synthesizer A | -14 dB | -37 dB | -42 dB |
 | Recorded Croatian | -19 dB | -36 dB | -40 dB |
 | Klatt voice | -25 dB | -32 dB | -32 dB |
 
-It is now as fricative as the Klatt voice's v and more than Eloquence's or
+It is now as fricative as the Klatt voice's v and more than synthesizer A's or
 the recorded speaker's; less friction (0.09) scored as well at the normal
 rate but lost words on the v/l sentences at 1.7 times it.
 
@@ -749,9 +765,9 @@ rate but lost words on the v/l sentences at 1.7 times it.
 vowels scored best, 105 of 114, but that is the bright l taken out at the
 user's request). F3 and F4 are a little higher and F3 sharper (2600 / 3000
 Hz, bandwidth 60 instead of 2470 / 2880, 90; the recorded speaker has 2500
-/ 2900, eSpeak and DECtalk 2700-2900): next to e and i the l was heard as n
+/ 2900, synthesizer B and synthesizer C 2700-2900): next to e and i the l was heard as n
 or m (*le* "ne", *ele* "eme"). A clause-final l keeps a higher F1 (420 Hz
-instead of 330; the recorded speaker's l has 450, eSpeak's in *el* 390-450):
+instead of 330; the recorded speaker's l has 450, synthesizer B's in *el* 390-450):
 with the low F1 that sets an l off between vowels, a final one was heard as
 a nasal (*sol* "son", the spelled "el" as "em" in all 12 trials, now in
 none).
@@ -761,22 +777,22 @@ and nj was heard as n (*knjiga* "knida", *njegova* "ne", *svinja* "svina").
 Its F2 is now 1750 Hz and its oral locus a firm palatal one (2400 Hz,
 giving way 10% to the vowel instead of 2250 and 20%), and the vowel after
 it leaves that locus slowly: F1 stays low and F2 high (2100-2150 Hz in
-*anja*) for the first 20 ms, as in Lana's *nja* (F2 near 2.3 kHz, F1 rising
+*anja*) for the first 20 ms, as in voice D's *nja* (F2 near 2.3 kHz, F1 rising
 over 35 ms), instead of snapping away as after n. Rejected: the bright
-murmur of Eloquence and eSpeak (2100 Hz) was heard as j (*njenom* "jenom",
+murmur of synthesizer A and synthesizer B (2100 Hz) was heard as j (*njenom* "jenom",
 *manje* "maje"; 0 of 23 nj words in Whisper), and so was a short j between
 murmur and vowel, which has the high F3 of a real j (Whisper liked it, the
 phoneme recognizer heard "ja"); a louder or longer murmur, a sharper one
 and a lower F1 at the boundary changed nothing. Word-final nj (*konj*,
-*panj*) is lost by every voice, the recorded speaker and Lana included.
+*panj*) is lost by every voice, the recorded speaker and voice D included.
 
 **d.** The intervocalic voice bar was as loud as the b's of the "p and b
-once more" round (Eloquence's, 7-9 dB under the vowel) and ran into a short
+once more" round (synthesizer A's, 7-9 dB under the vowel) and ran into a short
 burst: d was heard as l or n (*ada* "ala", *idi* "ili", *do* "no"). The
 recorded speaker's bar is 10-20 dB under the vowel and dies away before the
-release, his clause-initial release 16-20 ms of noise; Lana's closure is
+release, his clause-initial release 16-20 ms of noise; voice D's closure is
 nearly silent. d (only d; b and g are unchanged) now has a voice bar at
-0.45 of b's (median -21 dB in *ada*, before -14; recorded -16, Eloquence
+0.45 of b's (median -21 dB in *ada*, before -14; recorded -16, synthesizer A
 -8) that fades to 40% over the 15 ms before the release, a burst 1.5 times
 stronger (above 2 kHz -15.5 dB, before -19; recorded -18) with voicing at
 0.55 instead of 0.70 under it, and the vowel opens as fast as after p and b
@@ -818,50 +834,429 @@ like n; playing a piece of their j recording after it was heard as l or r.
 ```bash
 python3 tools/formant/phones.py build/macos-arm64-release/laprdus
 python3 tools/formant/phones.py --letters build/macos-arm64-release/laprdus
-python3 tools/formant/phones.py --say "Lana (Croatian (Croatia))" --classes nj
+python3 tools/formant/phones.py --say "<a macOS voice>" --classes nj
 ```
 
 ### Voice colour
 
-Vowels of the same sentence (*papa*, *pipi*, *pupu*... in Italian for Reed,
+Vowels of the same sentence (*papa*, *pipi*, *pupu*... in Italian for synthesizer A,
 in Croatian for Zvonko) were compared with `tools/formant/analyze.py` and a
 long-term spectrum. Three differences were systematic and were taken over:
 
-- **Formant bandwidths.** Eloquence's F1-F3 bandwidths measure 100-140 Hz;
+- **Formant bandwidths.** synthesizer A's F1-F3 bandwidths measure 100-140 Hz;
   Zvonko's measured 20-100 Hz, and the narrow ones rang (the harmonic at F1
-  of *i* stood 13 dB above its neighbours, in Reed 3 dB). The vowel
+  of *i* stood 13 dB above its neighbours, in synthesizer A 3 dB). The vowel
   bandwidths in `formant_phonemes.cpp` were widened by 20-30 Hz.
-- **A fixed resonance near 3.9 kHz.** In every Eloquence vowel there is a
+- **A fixed resonance near 3.9 kHz.** In every synthesizer A vowel there is a
   peak at 3.8-3.9 kHz, the first of its fixed upper formants (the synthesizer
   runs at 11025 Hz). Ours sat at 4.4 kHz; F5 is now 3950 Hz and the others
   were moved down with it (`VoiceQuality::upper_f`). This also moved energy
-  from 4-5 kHz, where Zvonko had 4-8 dB more than Reed, to 3-4 kHz, where it
+  from 4-5 kHz, where Zvonko had 4-8 dB more than synthesizer A, to 3-4 kHz, where it
   had less.
-- **Nothing above 6 kHz.** Eloquence's vowels have no energy above 5.5 kHz;
+- **Nothing above 6 kHz.** synthesizer A's vowels have no energy above 5.5 kHz;
   ours carried source brightness and breath noise up to 11 kHz, about 40 dB
   below the vowel peak, a hiss the classic voices never had. The voiced path
   now has a second-order low-pass at 6 kHz (`VOICE_CUTOFF`); the frication
-  path keeps its own 6.6 kHz filter.
+  path keeps its own 6.6 kHz filter. (Since "The reference balance" below both
+  serve the singing presets only; the speaking voices have a 6th-order
+  ceiling at 5.3 kHz on the whole output.)
 
 The same comparison showed the output limiter at work on plain vowels: the
-formant voices were 11 dB louder than Reed and the loudest /a/ frames hit the
+formant voices were 11 dB louder than synthesizer A and the loudest /a/ frames hit the
 soft limiter, which put distortion products at 6-11 kHz. The output gain was
 lowered from 0.39 to 0.28 and the limiter knee raised to 0.8, so limiting now
 touches about 0.02% of the samples of a sentence (Zvonko is still a little
-louder than Reed and about 7 dB quieter than the recorded Josip, whose
+louder than synthesizer A and about 7 dB quieter than the recorded Josip, whose
 recordings clip).
 
-Not taken over: Eloquence's default male pitch (90 Hz in the Italian Reed;
+Not taken over: synthesizer A's default male pitch (90 Hz in its Italian voice;
 the user can set it), its complete lack of breathiness, and its sibilants
 (see above).
 
 The reference voices are part of macOS:
 
 ```bash
-say -v "Reed (Italian (Italy))" -o assa.wav --data-format=LEI16@22050 "assa"
-say -v "Reed (English (US))"    -o asha.wav --data-format=LEI16@22050 "asha"
+# synthesizer A's Italian and English system voices on macOS, 16-bit 22050 Hz: "assa", "asha"
 python3 tools/formant/sibilants.py assa.wav asha.wav
 ```
+
+### Hiss, crackle and the boost (November 2026)
+
+Users of Android and iOS phones reported a hiss that hurt at high volume
+("around 3 kHz", in the maintainer's words, with the mids a little weak), a
+crackle in places, and distortion with the volume boost on. The round was
+measured on Windows with a new script, `tools/formant/spectrum.py`, which
+prints for a WAV file the level statistics of its speech frames (median and
+90th-percentile RMS, sample and true peak, crest), the long-term third-octave
+spectrum of those frames (flat, through a fourth-order 500 Hz high-pass that
+stands in for a phone's speaker, and split into voiced and friction frames by
+the spectral centroid), click metrics (`--clicks`: sample steps against the
+level before them, bursts above 7 kHz, runs of digital silence), friction
+tails (`--tail`), the floor between the harmonics of a sustained vowel
+(`--floor`), the boost's gain and residual (`--boost`) and the aliasing of the
+glottal pulse as the synthesizer computes it (`--alias`). A paragraph of 37 s
+with every consonant and the clusters sp, šp, ks, sv, zb and ps was rendered
+by Zvonko, Stojan, Mirsad, Josip and Vlado and by the four references at hand:
+Synthesizer B (Croatian, 22050 Hz), two commercial voices, D and E (both
+hr-HR, through SAPI at 22050 Hz) and the recorded Josip, a Croatian speaker.
+Synthesizer A was not at hand; its figures above still hold.
+
+**What was not the hiss.** Three suspects were cleared by measurement before
+anything moved. The band-limited closing edge of the glottal pulse aliases at
+-74 to -80 dB under the harmonics, with or without the brightness emphasis
+after it (`--alias`: an 8× oversampled replica against the direct
+computation). The floor between the harmonics of Zvonko's sustained *a*, *o*
+and *i* at a flat pitch (`-I 0`) is 24-26 dB under them in 2-6 kHz, the same
+as in Josip's recordings (23-28 dB), so the breath noise is at a natural
+level. And above 5 kHz Zvonko's voiced frames were already darker than every
+reference (the 6.3 kHz band 32 dB under the total; Josip 25, synthesizer B 30, voice D
+25, voice E 19), so neither a steeper voiced low-pass nor Klatt's low-passed
+aspiration noise was taken.
+
+**What was.** One band. In the voiced frames of the paragraph the 4 kHz
+third-octave band stood 6 dB under the 500 Hz band in Zvonko, where Josip,
+Synthesizer B and voice D have 13 dB and voice E 16; the 2.5 and 3.15 kHz bands were
+inside the references' range. That is F5, fixed at 3950 Hz with a bandwidth
+of 260 Hz (a resonator with unity gain at DC peaks 25 dB over it at that
+bandwidth), under a source emphasis of +10.7 dB at 4 kHz. The friction frames
+stood 3 dB over every reference at 3-4 kHz, and their median was 3.2 dB under
+the voiced median, where synthesizer B is 6.6 and voice D 4.9 dB under (Josip 1.9
+under, voice E 1.4 over). Changed, each step measured on its own:
+
+- F5's bandwidth 260 → 500 Hz (`VoiceQuality::upper_b`: 4 dB less at its
+  peak, nothing at 3 kHz) and the source brightness 0.72 → 0.65
+  (`VoiceQuality::brightness`: -2.5 dB at 4 kHz and -2 dB at 2.5 kHz relative
+  to 500 Hz). The voiced 4 kHz band is now 10 dB under the 500 Hz band, and
+  the voiced 2.5-6 kHz region 11.0 dB under 300-1000 Hz (8.8 before; Josip
+  12.7, synthesizer B 10.3, voice D 15.0, voice E 12.8).
+- The friction of the whole sibilant class 2 dB down (`af` 0.62 → 0.50,
+  0.60 → 0.48, 0.70 → 0.56 in `formant_phonemes.cpp`): the friction frames
+  are now 4.6 dB under the voiced median (voice D's 4.9), and the sibilant table
+  above gets its last row (s -12 dB at 5.0 kHz, š -13 dB at 3.6 kHz, č -12 dB
+  at 3.3 kHz, ć -10 dB at 3.9 kHz; the same items measured -11.4, -11.6,
+  -10.6 and -9.0 dB before), at the edge of synthesizer A's -13 to -17 dB.
+- The 7 kHz peak of v and f halved (0.7 → 0.35 in `set_noise`): the recorded
+  f is flat over 2-6.5 kHz and the recorded v has almost nothing above
+  500 Hz, while ours rose towards 5-6.5 kHz; f's bands over 2-6.5 kHz now lie
+  within 3 dB of each other.
+
+Over the whole paragraph the 2.5-6 kHz region relative to 300-1000 Hz went
+from -6.3 to -8.2 dB (Josip -7.9, synthesizer B -9.4, voice D -11.6, voice E -6.7), and
+through the 500 Hz high-pass from -4.4 to -6.1 dB (Josip -4.1, synthesizer B -7.3,
+voice D -7.2, voice E -1.0). Stojan and Mirsad take the same constants (voiced
+2.5-6 kHz 13.1 and 11.0 dB under). The level was left alone: Zvonko's peaks
+are set by the vowels (99.6 % of the samples above half scale are voiced), his
+median sits at -20.6 dBFS with a crest of 20 dB (Josip -11.3 dBFS and 11 dB,
+voice D -12.0 and 12 dB: clipped recordings and a compressed commercial voice;
+Synthesizer B -25.4 and 25 dB; voice E -24.0 and 22 dB), and a phase rotator (four
+first-order allpasses, the broadcast trick against peaky speech) freed no
+headroom at all (±0.2 dB on every voice), so the loudness for a phone is the
+boost's job.
+
+**Crackle.** Of everything the click metrics flagged on the paragraph and on
+sapa, sata, saka, spavati, škola, ksilofon, sve, zvono, psi, zbog, prst and
+bistro, every event but one was a stop release, by design (the segment table
+behind any click is printed on stderr by a CLI run with
+`LAPRDUS_TRACE_SEGMENTS=1`). The one was a tick at the start of every clause
+that opens with s, š, f or h: the friction track is box-smoothed with a radius
+of 3 frames and the lead was 3 frames, so the first output sample of "sapa"
+jumped to 4 % of full scale (-28 dBFS). The lead is now `LEAD_FRAMES` = 4:
+the first 2 ms are digital silence and the friction ramps up from there
+(tested in `test_formant.cpp`). A second fault was found by reading the track
+assembly: the frames after a noisy segment took the spectrum of the *next*
+noisy segment at once, while the friction of the first was still being
+smoothed out over 6 ms, so the tail of every s, š or f before a labial went
+through the labial burst's bank (a peak at 350 Hz and a flat share), and the
+voiced tail of z before b likewise. It measured quiet (about -52 dB under the
+loudest frame in "sapa") but is wrong: a noisy segment's bank now stays in
+place for `NOISE_HOLD_FRAMES` = 4 frames after it ends, also over the start
+of a closure, never over the two frames before another noisy segment, so a
+burst still finds its own bank in place. Three more suspects were measured and
+left alone: the per-period shimmer multiplies a pulse that is zero in the
+closed phase, the last millisecond of a clause is under -50 dBFS, and Josip's
+and Vlado's zero-run edges (66 and 12 above 150 on the paragraph, none above
+488) are where "Clicks" in docs/concatenative.md left them.
+
+**The boost.** Until this round it was a gain of +14 dB, a limiter with a
+1 ms attack and a 30 ms release and a ceiling of 1.4, and a soft clipper from
+0.6 up: every vowel peak was driven up to 7 dB into the tanh and the gain
+recovered inside a glottal cycle. The sweep below (a Python replica of the
+algorithm on Zvonko's plain paragraph; the chosen setting then confirmed in
+the build) measures each setting by its median gain over the speech frames,
+its gain on the loud frames (the 90th percentile of the plain), and the
+*residual*: how far the loudest fifth of the 10 ms frames depart from a scaled
+copy of the plain output.
+
+| Setting | Median gain | Loud gain | Residual | Zvonko's median |
+|---|---|---|---|---|
+| 2.0: ceiling 1.4, knee 0.6, 1 ms attack, 30 ms release | +13.4 dB | +5.9 dB | -18 dB | -8.3 dBFS |
+| Limiter, ceiling 0.97, knee 0.9, hold 20 ms, release 50 ms (chosen) | +10.5 dB | +2.8 dB | -51 dB | -11.0 dBFS |
+| the same with a 12 ms hold | +10.8 dB | +2.9 dB | -49 dB | -10.8 dBFS |
+| the same with a 120 ms release | +9.8 dB | +2.8 dB | -55 dB | -11.6 dBFS |
+| ceiling 1.1, knee 0.8, hold 20 ms, release 50 ms | +11.4 dB | +3.9 dB | -33 dB | -10.1 dBFS |
+| ceiling 1.25, knee 0.7, hold 20 ms, release 50 ms | +12.2 dB | +4.7 dB | -24 dB | -9.5 dBFS |
+
+The chosen limiter (`src/audio/volume_boost.hpp`) takes the minimum of the
+wanted gains over a window that reaches 5 ms ahead and 20 ms back, ramps down
+to it linearly over the 5 ms and recovers with a 50 ms one-pole: the hold is
+longer than a glottal period down to 50 Hz, so the gain never moves inside a
+cycle, and the knee at 0.9 is an idle safety net. Both renderers now apply
+only the volume and a hard clamp after it (they used to bend the limited
+signal a second time with their own knee). The price is 3 dB of loudness
+against 2.0; letting the clipper work again buys 1 dB per 10 dB of residual,
+as the last two rows show. The recorded voices, compressed recordings at full
+scale already, gain +1.3 dB (Josip) to +2.1 dB (Baba) at the median instead
+of 2.0's +5 dB; on the test sentence the formant voices' RMS comes up 2.1-2.8
+times, Josip's 1.16 and Baba's 1.28.
+
+Constants for the listening pass: `VoiceQuality::upper_b[0]` (500) and
+`brightness` (0.65) in `klatt_synth.hpp`, the sibilant `af` values in
+`formant_phonemes.cpp`, `LEAD_FRAMES` and `NOISE_HOLD_FRAMES` in
+`formant_synthesizer.cpp`, `VOLUME_BOOST_CEILING` / `VOLUME_BOOST_KNEE`
+(0.97 / 0.9; 1.1 / 0.8 is the next notch up) in `types.hpp`, and
+`HOLD_SECONDS` / `RELEASE_SECONDS` in `volume_boost.hpp`. To repeat the
+measurements (the CLI must have the `-B` and `-I` options, which the Windows
+CLI gained in this round):
+
+```bash
+export LAPRDUS_CLI=build/windows-x64-release/laprdus.exe LAPRDUS_DATA=build/windows-x64-release
+python tools/formant/spectrum.py --voice zvonko --voice josip -i paragraph.txt   # levels, spectra
+python tools/formant/spectrum.py reference_b.wav voice_d.wav voice_e.wav      # the references
+python tools/formant/spectrum.py --clicks --voice zvonko sapa zbog bistro         # clicks
+python tools/formant/spectrum.py --floor --voice zvonko --rate 0.5 --inflection 0 aaa
+python tools/formant/spectrum.py --boost plain.wav boosted.wav                    # the boost
+python tools/formant/spectrum.py --alias
+```
+
+### Voice quality settings (November 2026)
+
+The library the maintainer provided for study turned out to be the API
+layer of a classic commercial formant synthesizer (synthesizer A below), with
+no synthesis code of its own, so only its control model could be learnt,
+read from the binary with objdump: eight voice parameters checked against a
+range table (gender 0-1; head size, pitch baseline, pitch fluctuation,
+roughness, breathiness and volume 0-100; speed 0-250), eight built-in
+voices, output at 8000 or 11025 Hz only (no 22050 in the code, which is why
+it has nothing above 5.5 kHz), and the real-world units of its converter: pitch baseline Hz = 4.89 · 2^(0.063·v) +
+35.1 (40-422 Hz, 0.76 semitones per unit, 65 → 119 Hz), speed words/min =
+1.406·v + 70.25 + 0.014·v² (50 → 176, Zvonko's 175 at rate 1.0), volume
+amplitude = 1.117^v (about 1 dB per unit, 92 → -7.7 dBFS).
+
+Laprdus had pitch baseline, fluctuation, speed and volume already (pitch,
+inflection level, rate, volume) and the rest as fixed constants per voice,
+so the four missing ones became user settings of 0-100 with 50 the voice as
+it is (`VoiceParams::head_size`, `breathiness`, `roughness`, `brightness`;
+the C API, `settings.json`, every settings screen and both CLIs carry them):
+
+| Setting | 0 | 50 | 100 | Where |
+|---|---|---|---|---|
+| head size | every formant × 0.8 (a quarter longer tract, a deeper voice) | the voice | × 1.25 (a quarter shorter, a higher voice; synthesizer A's head size runs the other way, the maintainer asked for this one) | `formant_scale` of a per-utterance copy of the voice and the fixed F5-F8 (`voice_with_quality()`, `quality_for()`); recorded voices: the bank warp, pitch unchanged |
+| breathiness | no breath noise | the voice's own (`FormantVoice::breathiness`) | five times | the same copy (formant voices) |
+| roughness | no jitter or shimmer | the voice's own (0.4 %, 3 %) | eight times, and from 50 up diplophonia: every second period up to 5 % shorter and 60 % weaker | `VoiceQuality::jitter`, `shimmer`, `roughness` (formant voices) |
+| brightness | the bare pulse (emphasis 0) | the voice's own emphasis (0.55 since "The reference balance" below; 0.65 before) | emphasis 0.85 | `VoiceQuality::brightness`; recorded voices: a one-pole tilt around 1.5 kHz, the top folded away at 0 and doubled at 100 |
+
+The mappings are `head_size_factor()`, `voice_quality_scale()`,
+`roughness_diplophonia()` and `brightness_emphasis()` in `types.hpp`; at 50
+each returns the voice's own value exactly, and the tests require the samples
+to be identical. Brightness 0 is the setting at which a phone's speaker at
+full volume stops biting; the listening pass came back the same day, see the
+next section.
+
+### Consonants on a phone (November 2026)
+
+The listening pass of the round above came back the same day (7 November
+2026), from the maintainer on a Galaxy S22 at full speaker volume: brightness
+at 0 helps the vowels, but t, d, s, š, č and ć stay "spiky, ear-piercing";
+with the boost on the same highs bite on Josip too; head size runs the wrong
+way for them; the roughness slider does nothing. Decisions taken with the
+maintainer: the sibilants and affricates match synthesizer A exactly, the boost
+caps its lift and shelves the treble, head size is inverted.
+
+**Sibilants and affricates.** The levels and centroids of the table in
+"Sibilants" are now synthesizer A's (`sibilants.py` on asa, aša, aca, ača, aća,
+level re the loudest vowel frame): s -15.5 dB at 4.39 kHz (was -12.3 at
+4.95), š -15.4 at 3.24 (-12.9 at 3.61), c -16.1 at 4.42 (-12.7 at 4.64), č
+-13.3 at 3.14 (-11.9 at 3.30), ć -14.1 at 3.72 (-10.3 at 3.95). In
+`formant_phonemes.cpp`: af S/Z 0.36, SH/ZH 0.38, SJ/ZJ 0.52, C/DZ 0.32,
+CH/DZH 0.60, TJ/DJ 0.52; the peaks 150-400 Hz lower, 100-200 Hz wider and
+weaker at the top (s 4450/900, 5400/1200 × 0.4, 6800/1500 × 0.08; š 2550/550
+× 0.75, 3300/850, 4400/1100 × 0.3; č 2500/550 × 0.7, 3250/850, 4350/1100 ×
+0.32; c 4350/900, 5400/1200 × 0.35, 6500/1500 × 0.08; ć 2850/550 × 0.5,
+3600/850, 4800/1300 × 0.35; [ɕ] 3050/550 × 0.5, 3800/850, 5000/1300 × 0.35);
+and the transient that opens an affricate's friction (`AFFRICATE_ATTACK` in
+`formant_synthesizer.cpp`) is 1.15 instead of 1.5 (1.25 for c): it was the
+strongest friction in the voice after the k burst. The distances are kept:
+s−š 1.15 kHz, c−č 1.28, ć−č 0.58.
+
+**Bursts.** `stops.py` labels each 500 Hz band by its upper edge ("4.5" is
+4.0-4.5 kHz); read that way, the t burst sits at 3.5-4.5 kHz, where the
+recorded speaker (3.5-4 kHz) and synthesizer A (4-5 kHz) have it, and a
+sample-exact replica of the parallel branch written for the round shows no
+spike. The fixed peak of t and d is nevertheless broader and lower (4000/1600
+× 0.85 with a bypass of 0.05, was 4300/900 × 1.0 and 0.02): the burst
+-20.2 dB re the vowel (was -19.3; the recording -19), its energy per 500 Hz
+band from 3.0 kHz up -14 -7 -4 -11 dB re the burst (was -13 -8 -3 -10). d's
+burst factor `D_BURST` is 1.15 (was 1.5): above 1 kHz the release of "ada" is
+3 dB softer (`onsets.py`: -19 dB re the loudest 3 ms, was -16) and still
+11 dB above the bar. k's friction af is 0.65 (was 1.0) and its F3 share before
+front vowels 0.7 (was 0.9): the k burst -16.6 dB (was -15.2); the rest of its
+release is breath (ah 0.45), which is why it did not move further and was left
+alone.
+
+**Aspiration low-pass, tried and rejected.** Klatt's one-pole low-pass on the
+aspiration noise (klatt.c `gen_noise`, pole 0.75 at 10 kHz, 0.877 at
+22050 Hz, the broadband power kept) was meant to cure the t spike before the
+band labels were read right. It darkened the breath as intended but moved its
+energy down: the h of "aha" rose from -14 to -8 dB with its centroid from
+1.2-1.6 kHz to 0.8 kHz, the k release from -16.6 to -10.9 dB with the band
+below 500 Hz 1 dB under the whole release (a thump), p from -21 to -16.
+Reverted; the aspiration stays white.
+
+**The boost.** On the 37 s paragraph the limiter alone lifted Zvonko's
+friction frames from 7.1 dB under the voiced median (plain) to 3.7 dB under,
+and the long-term spectrum of the boosted speech 5.1 dB up at 4-5 kHz against
+0.3-1 kHz (it holds the vowels down and lifts the rest): the "high annoying
+frequencies" of the report. Two changes in `volume_boost.hpp`, both in boost
+mode only: the gain may rise at most `VOLUME_BOOST_MAX_LIFT_DB` (6 dB) above
+the running minimum of the envelope over the last 0.6 s (applied to the
+envelope before the 5 ms attack average, so the gain still moves only in the
+attack's ramps and the release's curve), and a second-order high shelf (the
+Audio EQ Cookbook's, slope 1) takes the treble down by `VOLUME_BOOST_TREBLE_DB`
+(3 dB) from `VOLUME_BOOST_TREBLE_HZ` (4 kHz) up before the limiter. Measured
+with a Python replica of the limiter (it matched the engine to -68 dB) and
+then on the engine: the cap at 6 dB leaves the friction median 1.0 dB closer to
+the vowels than plain (4 dB: 0.3, 3 dB: 0.1) at a median gain of 8.3 dB (was
+10.5; 4 dB: 7.0, 3 dB: 6.2); the first-order shelf tried first reached only
+-1.3 dB at 4-5 kHz; with the second-order one the long-term spectrum is 2.6 dB
+up at 4-5 kHz (was 5.1), 2.0 at 5-6, 1.6 at 6-8; the residual of the loudest
+frames against a scaled copy of the shelved plain output stays under -40 dB
+(against the unshelved one -24 dB, the shelf's own work; the test compares
+against the shelved copy). Josip: median gain 1.4 dB, friction median 2.3 dB
+under the voiced (plain 1.9), his treble 0.2-1.0 dB down instead of up.
+
+**Head size** runs the other way since this round: 0 a quarter longer tract
+(every formant × 0.8), 100 a quarter shorter (× 1.25), the higher value the
+higher voice, at the maintainer's word; synthesizer A's head size is the reverse.
+Measured on a sustained a: F1-F4 684, 1234, 2510, 3586 Hz at 50; 550, 994,
+1992, 2894 at 0; 886, 1562, 3139, 4488 at 100.
+
+**Roughness** was not heard: five times the voice's random jitter and shimmer
+(σ 2.3 % and 17 % per period at 100) is noise, not roughness. From 50 up the
+setting now adds diplophonia (`VoiceQuality::roughness`,
+`roughness_diplophonia()` in `types.hpp`, `source_sample()` in
+`klatt_synth.cpp`): every second glottal period comes up to 5 % sooner and up
+to 60 % weaker, a subharmonic an octave under the voice, the rasp of a creaky
+or hoarse voice; the random jitter and shimmer rise to eight times at 100. The
+share grows with the square root of the distance above 50 (0.45 at 60, 0.71
+at 75), since the listener heard nothing with a straight line. Measured in
+running speech (`build/measure/r2/subharm.py` of the round: the series of
+odd multiples of F0/2 against the harmonics), the subharmonics rise from
+-18.5 dB at 50 to -10.8 at 75 and -5.1 at 100 on the straight line. On
+a sustained a (`spectrum.py --floor`) the floor between the harmonics at
+0.5-1 kHz comes up from 8 dB under them at 50 to 4-6 dB at 75 and 100, and
+the pitch tracker locks onto F0/2 at 75. 50 is still bit-identical to the
+voice without the setting.
+
+### The reference balance (November 2026)
+
+The same evening the maintainer still heard, with the boost on at full phone
+volume and brightness and breathiness at 0, "too much frequencies" in some
+consonants, and asked for the global spectrum and the individual sounds to be
+compared with the sample TTS, "which also has some lows and mids". The
+reference, at the maintainer's word: synthesizer A's **English male voice at
+its default settings** (speed 95, pitch 65, 11025 Hz), installed on the
+development machine and driven to WAV files by a small tool kept outside the
+repository (section 7), resampled to 22050 Hz; its Italian voice was measured
+too and agrees within 2-3 dB. Decisions: the whole
+balance becomes the voices' default; the recorded voices stay as they are.
+
+**What was measured** (`spectrum.py`, 1/3-octave bands of the voiced frames
+re the frame total, centre kHz; Zvonko on the 37 s paragraph, synthesizer A on a
+12 s English one):
+
+| kHz | 0.1 | 0.12 | 0.16 | 0.2 | 0.25 | 0.32 | 0.4 | 0.5 | 0.63 | 0.8 | 1.0 | 1.2 | 1.6 | 2.0 | 2.5 | 3.1 | 4.0 | 5.0 | 6.3 | 8.0 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| synthesizer A en | -10 | -9 | -17 | -9 | -6 | -12 | -11 | -11 | -14 | -16 | -17 | -17 | -17 | -18 | -19 | -25 | -22 | -29 | -47 | -81 |
+| synthesizer A it | -10 | -11 | -15 | -8 | -8 | -12 | -11 | -11 | -14 | -15 | -17 | -18 | -16 | -16 | -16 | -21 | -20 | -28 | -47 | -78 |
+| Zvonko before | -15 | -11 | -23 | -16 | -8 | -13 | -12 | -9 | -9 | -10 | -14 | -11 | -19 | -20 | -17 | -19 | -19 | -27 | -37 | -53 |
+| Zvonko after | -10 | -6 | -19 | -14 | -7 | -14 | -14 | -11 | -11 | -13 | -17 | -14 | -23 | -23 | -21 | -23 | -23 | -29 | -48 | -78 |
+
+Zvonko had 5-7 dB less than synthesizer A in 0.1-0.25 kHz, 3-6 dB more in 0.5-1.2
+kHz, 2-6 dB more at 3-4 kHz, 10 dB more at 6.3 kHz and 28 dB more at 8 kHz
+(synthesizer A's 11 kHz sampling has nothing above 5.5 kHz). The sustained /a/
+(`analyze.py` bands, upper edges 0.5 1 1.5 2 2.5 3 4 5 6.5 kHz): synthesizer A -5
+-4 -6 -22 -24 -24 -25 -34 -59, Zvonko before -10 -2 -6 -22 -21 -19 -18 -31 -50,
+after -5 -3 -7 -24 -23 -22 -22 -35 -53. The consonants (`sibilants.py` level re
+the loudest vowel frame / centroid, `stops.py` burst, `analyze.py` for h):
+
+| | s | š | č | c | f | h | t burst | p | k before a / i / u |
+|---|---|---|---|---|---|---|---|---|---|
+| synthesizer A | -14.4 / 4.19 kHz | -17.1 / 3.15 | -15.2 / 3.16 | -14.7 / 4.25 | -29.5 | -20 to -22 | -25.1 | -23.1 | -15.6 / -20.5 / -20.6 |
+| Zvonko before | -15.5 / 4.39 | -15.4 / 3.24 | -13.3 / 3.14 | -16.1 / 4.42 | -21.5 | -14 to -15 | -20.2 | -21.2 | -16.6 / -16.3 / -20.3 |
+| Zvonko after | -14.8 / 4.35 | -17.5 / 3.24 | -15.6 / 3.14 | -14.9 / 4.33 | -26.4 | -20 | -24.2 | -22.3 | -17.1 / -19.4 / -20.2 |
+
+Synthesizer A's k is one peak at 1.5-2 kHz before a and 5 dB quieter before i and
+u; Zvonko's was spread over 0.5-2.5 kHz (its release breath through the
+cascade) and loudest before i. The friction frames of running speech sit
+12.5 dB under the voiced median in synthesizer A (English; 14.6 Italian), 7.1 in
+Zvonko before and 9.1 after (Stojan 8.5, Mirsad 9.6): the individual sounds
+match, the rest is Croatian's share of fricatives and the voices' quieter
+voiced frames.
+
+**What changed** (all gated so that the singing presets' vowels stay byte for
+byte what they were; their consonants follow the tables):
+
+- *The lows*: a second-order low shelf (the Audio EQ Cookbook's, slope 1) of
+  `VoiceQuality::bass_db` 7 dB from `bass_hz` 230 Hz down on the voicing alone,
+  after the brightness emphasis in `KlattSynth::render()` (+6.7 dB at 100 Hz,
+  +4.4 at 200, +1.6 at 315, nothing from 800 up). The breath and the
+  frication stay flat: a bassy breath made the stop releases thumps when
+  Klatt's low-pass on the aspiration was tried (above). The bare KLGLOTT88
+  derivative already peaks at H1; the deficit was F1's 16-18 dB over DC in a
+  cascade with unity gain at DC against a source falling 6 dB per octave. The
+  vowels' peaks rose about 1 dB (the median level of the paragraph from -20.6
+  to -17.6 dBFS, its crest from 20 to 14 dB, nothing nearer the ceiling), the
+  voice bars 5-6 dB: `VOICE_BAR_AV` went from 0.95 to 0.70 and
+  `INITIAL_VOICE_BAR_AV` from 1.20 to 1.0, so b's closure sits 13-16 dB under
+  the vowel and 8-9 under its own release (synthesizer A: the closure 35 dB
+  down, the release 5), d's release 11 dB over its bar.
+- *The top*: a 6th-order Butterworth ceiling at `VoiceQuality::ceiling_hz`
+  5300 Hz on the whole output (three sections, `SPEECH_CEILING_Q`), in place of
+  the voice low-pass (6 kHz, second order) and the frication low-pass (6.6
+  kHz, fourth order), which the presets keep: -0.2 dB at 4.45 kHz, -3 at 5.3,
+  -15 at 6.3, -44 at 8 kHz. F7 and F8 stay in the cascade: their skirts are +6
+  and +4 dB of its gain at 4 kHz.
+- *The presence region*: the source emphasis `VoiceQuality::brightness` 0.65 →
+  0.55 (the brightness setting still maps 0..50..100 onto 0..0.55..0.85), F5's
+  bandwidth 500 → 650 Hz and F4's 180 → 220 Hz for the speaking voices
+  (`SPEAKING_F5_BANDWIDTH`, `SPEAKING_F4_BANDWIDTH` in `formant_synthesizer.cpp`;
+  the presets keep 500 and 180). The /a/'s 3-4 kHz went from -19/-18 to
+  -22/-22 dB re the vowel (synthesizer A -24/-25).
+- *The consonants* (`formant_phonemes.cpp`): af F 0.13 → 0.08; H/GH af 0.06 →
+  0.032 and ah 0.30 → 0.16; T/D af 0.50 → 0.27 with `D_BURST` 1.15 → 1.5 and
+  t's release breath `rel.ah` 0.20 → 0.15 (synthesizer A's release after the burst
+  is -24 to -27 dB, ours was -22 to -24) and a prepausal tail 0.65 so that pat
+  and most keep their 30 ms; P/B af 0.63 → 0.45; S/Z 0.36 → 0.44 and C/DZ 0.32
+  → 0.40 (the ceiling took their 5-6.5 kHz skirt and a decibel); SH/ZH 0.38 →
+  0.31; CH/DZH 0.60 → 0.48; K/G af 0.65 → 0.85, formant shares 1.0/0.35/0.30 →
+  1.0/0.25/0.15, the F3 share before front vowels 0.7 → 0.3, k's release
+  breath 0.45 → 0.15, and the velar burst scaled by the vowel after it
+  (`VELAR_CENTRAL_BURST` 1.6 before a central vowel, `VELAR_FRONT_BURST` 0.8
+  before a front one).
+- *The boost*: `VOLUME_BOOST_MAX_LIFT_DB` 6 → 2: the bursts of k, t, p and the
+  friction of c in VCV items had come 3.5-4.5 dB closer to the vowel in boost
+  mode than in plain speech; with 2 dB they stay within 1 dB, and the friction
+  median of the boosted paragraph is 10.3 dB under the voiced one against 9.1
+  plain. The median gain is 6.4 dB on the new voice (the shelf made the plain
+  speech 3 dB louder and denser), the loud frames +4.9, the quiet +8.0.
+
+Tests: "The speaking voices have the reference balance", "Friction sits
+about ten decibels under the voice", "f, h, t, p, k and the sibilants sit at
+Synthesizer A's levels" and "The singing presets keep their top" in
+`test_formant.cpp`, with the same measures as `build/measure`'s
+`testmetrics.py` of the round (an FFT over the frames within 35 dB of the
+loudest; a zero-crossing-rate class for friction; the burst as the loudest
+6 ms within 10 ms after the gap, since a longer window reaches the vowel).
 
 ## 4. Text to sounds (`formant_frontend.cpp`)
 
@@ -2166,7 +2561,7 @@ The remaining shared rendering of *dvadeset* (Stojan and Mirsad) and
 tests to avoid a perceived split into two words. Stojan and Mirsad also
 retain their separate ordinals *dvadèsētī, tridèsētī*. The earlier acoustic
 fix for the closure of *d* remains: between vowels it dipped 21 dB
-below the vowels, where Eloquence's *d* between vowels dips 7-9 dB and a
+below the vowels, where synthesizer A's *d* between vowels dips 7-9 dB and a
 recorded speaker's 10 dB, so the voice bar of *d* and *g* now has the level
 of *b*'s (see "p and b once more"). *Četrdeset* to *devedeset*
 stress the *de* in every dictionary (*četrdèsēt*); Zvonko has them without
@@ -4527,7 +4922,7 @@ transitions shrink less than steady states.
 The rate the builder uses is `VoiceParams::effective_speed()`: the speed (0.25
 to 4.0, wider than the 0.5 to 2.0 of the recorded voices) times the
 **acceleration** setting (0.5 to 3.0), capped at 8.0. Acceleration is a plain
-multiplier, as eSpeak's rate boost is, so the centre of a host's rate slider
+multiplier, as synthesizer B's rate boost is, so the centre of a host's rate slider
 moves with its top; it exists so that a screen reader's slider, which stops
 at 2.0, can reach the rates the formant voices are still intelligible at. The
 recorded voices use the same product, narrowed to their own 0.5 to 4.0.
@@ -4601,27 +4996,28 @@ one-syllable question keeps its whole rise and a one-syllable exclamation
 one with a baseline falling two semitones per second (up to six), first
 accents of 4.5 and later ones of 3.6 semitones, and a 4-semitone rise at
 every comma. Asked for "the intonation of a Croatian radio announcer", it was
-compared with the natural Croatian voices of macOS (Lana, Marija), with
-Eloquence (Italian, the same news sentences translated) and with eSpeak, on
+compared with two commercial natural Croatian voices (D and F), with
+Synthesizer A (Italian, the same news sentences translated) and with
+Synthesizer B, on
 ten news sentences (`tools/formant/pitch.py`, plus plots of the engine's own
 contour with the words marked):
 
-- The natural voices and Eloquence keep the middle of a sentence on a level:
-  averaged over eight statements and twelve slices of their length, Lana's
+- The natural voices and synthesizer A keep the middle of a sentence on a level:
+  averaged over eight statements and twelve slices of their length, voice D's
   pitch lies between -0.2 and +0.7 semitones of her median from the second
-  slice to the tenth, Eloquence's between -0.7 and +0.5, and the slope of
+  slice to the tenth, synthesizer A's between -0.7 and +0.5, and the slope of
   that stretch is -0.1 and 0.0 semitones. Zvonko fell steadily, 0.6 semitones
   over the same stretch and -1.9 in the eleventh slice already, so the
   second half of a long sentence sounded like its end.
-- All of them fall on the last word: Lana from about 0 to -5, Eloquence and
-  Marija to -4.5, the old Zvonko to -7.5 below the start of the plateau.
+- All of them fall on the last word: voice D from about 0 to -5, synthesizer A and
+  voice F to -4.5, the old Zvonko to -7.5 below the start of the plateau.
 - The local movements were larger in Zvonko (standard deviation around the
-  trend 1.73 semitones) than in Lana (1.42), Eloquence (1.22) and Marija
-  (1.15); Lana and Eloquence open a sentence 3 to 5 semitones up and then
+  trend 1.73 semitones) than in voice D (1.42), synthesizer A (1.22) and voice F
+  (1.15); voice D and synthesizer A open a sentence 3 to 5 semitones up and then
   move by about two.
-- At a comma Lana and Marija fall to 2 to 3.5 semitones below the level
+- At a comma voices D and F fall to 2 to 3.5 semitones below the level
   (*statistiku,*, *stupnjeva,*, *financija,*) and start the next part of
-  the sentence 2.5 to 4.5 up; Eloquence's Italian does the same. Zvonko
+  the sentence 2.5 to 4.5 up; synthesizer A's Italian does the same. Zvonko
   rose 4 semitones from the level there, ending as high as the question.
 
 The published measurements were checked as well. No study gives a
@@ -4630,12 +5026,12 @@ following word of a phrase as downstepped, with one peak raised again in a
 long phrase. Readers of Croatian Radio (Langston 2018, *Govorimo hrvatski*
 on HR1) raise the last word before a pause inside a sentence by 1.5 to 4.6
 semitones, typically 2.4 to 3.2, from its accented to its next syllable,
-and DECtalk's rules give a comma "a weaker fall followed by a slight
+and synthesizer C's rules give a comma "a weaker fall followed by a slight
 continuation rise" (12 Hz below the baseline, then two small impulses at
 the end of the last vowel). The natural voices' fall at the comma is
 therefore not followed: the comma has a small fall and a slight rise.
-Eloquence ends a statement 6.1 semitones below its last peak (Hertz et al.
-1999) and DECtalk 6.6; Zvonko's fall of 4.5 on top of the declination ends
+Synthesizer A ends a statement 6.1 semitones below its last peak (Hertz et al.
+1999) and synthesizer C 6.6; Zvonko's fall of 4.5 on top of the declination ends
 5 to 6 below the level. Standard speakers realize a rising accent as a high,
 nearly level stressed syllable with the next one starting as high and
 falling (Pletikos Olof and Bradfield 2019), which is the new shape of the
@@ -4652,7 +5048,7 @@ hear the question mark by, and three things used to hide it:
 
 - A wh-question fell like a statement. *Kako si ti?* and *Kako si ti.* had
   the same contour to within a semitone, as had *Zašto?* and *Zašto.*
-  Natural Croatian often does fall there, but Eloquence ends every question
+  Natural Croatian often does fall there, but synthesizer A ends every question
   with a rise, question word or not (*Come stai tu?* goes from 3 semitones
   below the median to 3 above on the last syllable, *Perché?* rises 7), and
   a listener who cannot see the punctuation needs it.
@@ -4660,7 +5056,7 @@ hear the question mark by, and three things used to hide it:
   for half of the vowel and reached its top in the final 20 ms, where the
   voice has already faded: 3 to 4 audible semitones out of 7. It now starts
   2 semitones low at the beginning of the vowel, is at the top after three
-  quarters of it and stays there. Eloquence's *Tu?*, in steps of 30 ms:
+  quarters of it and stays there. Synthesizer A's *Tu?*, in steps of 30 ms:
   -3 -3 -1 +1 +3 +3. Zvonko's *Ti?*, in steps of 20 ms: 0 0 0 0 +1 +3 +4 +5
   before, -1 -1 0 +1 +3 +5 +5 +5 now.
 - A yes/no question with its peak early (*Jesi li dobro?*) drifted down to 2
@@ -4676,11 +5072,11 @@ unnatural. *Kako si ti?* now ends 6 semitones above *Kako si ti.* (5 at 2x
 speed). The last syllable of a wh-question is no longer made quieter
 the way a statement's is.
 
-The sizes were set against contours of Eloquence measured with
+The sizes were set against contours of synthesizer A measured with
 `tools/formant/pitch.py` (same sentence as statement, question and
 exclamation: accent peaks of 3-5 semitones, a final low 4-8 semitones below
 the median, a question rise of 6-7 semitones) and against the published rules
-of DECtalk (a rise-fall on every stressed syllable, baseline falling 16 Hz
+of synthesizer C (a rise-fall on every stressed syllable, baseline falling 16 Hz
 per second) and of the Dutch IPO model (declination, standard rises and
 falls). L&H TruVoice, often praised for its intonation, was a diphone
 synthesizer whose intonation rules were never published, so it could not be
@@ -4695,10 +5091,10 @@ formant transition on each side, they came out at 30-40 ms, 6-9 dB below
 their neighbours, and never reached their own formants (Zvonko's *i* in *ja i
 ona* peaked at F2 2010 Hz instead of 2150). Between two vowels such a word
 was only a glide: *ja i ona* was heard as *jajona*, *mislim o tome* as
-*mislimo tome*, *ona u vlaku* as *ona vlaku*. Eloquence gives the same words
+*mislimo tome*, *ona u vlaku* as *ona vlaku*. Synthesizer A gives the same words
 of Spanish and Italian (*y, o, u, a; e, o, a*) 50-70 ms at the level of the
 vowels around them with the target held (*siete u ocho*: F2 at 870 Hz for
-60 ms); the natural Croatian voice Lana gives the *i* of *ja i ona* about
+60 ms); the natural Croatian voice voice D gives the *i* of *ja i ona* about
 100 ms and sets it off from both vowels with a break in the voice.
 
 Since October 2026 the front end marks such a word (`Phone::vowel_word`: the
@@ -4787,8 +5183,8 @@ with each voice in its native language.
 ## 6a. Singing presets
 
 Each speaking voice has two singing presets, after the singing voices of
-DECtalk (`[dey<400,22>]`: a phoneme, a duration and a note code) and of
-the Macintosh (Pipe Organ, Cellos, Bad News, Good News), which sing any
+classic synthesizers (a phoneme, a duration and a note code) and of classic
+desktop computers (organ, cellos and other singing voices), which sing any
 text to a fixed tune, one syllable per note, and start the tune over with
 every utterance. Ours do the same with a public-domain folk song of the
 base voice's country. The presets are voices like any other: their display
@@ -4803,7 +5199,7 @@ whichever of the three languages is chosen:
 | Dalmacija Klapa | `dalmacija_klapa` (was `klapa`) | Zvonko | three glottal voices ±10 cents and a bass an octave down, light reverb, vibrato 5.5 Hz ±30 cents | the same |
 | Trubač - Kreće se lađa francuska | `trubac` | Stojan | sawtooth through a tanh that saturates with level (the lips), slow attack, vibrato 6 Hz ±25 cents setting in late | *Kreće se lađa francuska* (Milosavljević d. 1944) |
 | Harmonikaš - Kreće se lađa francuska | `harmonikas` | Stojan | two sawtooth reeds, the second 14 cents sharp (musette beating), no vibrato | the same |
-| Sevdalija - Kad ja pođoh na Bembašu | `sevdalija` | Mirsad | the glottal voice, breathier, F5 pulled down to 3.1 kHz and narrowed (singer's formant, DECtalk's f5/b5 trick), vibrato 5.5 Hz ±60 cents, 90 ms portamento | *Kad ja pođoh na Bembašu* (traditional, printed 1906) |
+| Sevdalija - Kad ja pođoh na Bembašu | `sevdalija` | Mirsad | the glottal voice, breathier, F5 pulled down to 3.1 kHz and narrowed (singer's formant, synthesizer C's f5/b5 trick), vibrato 5.5 Hz ±60 cents, 90 ms portamento | *Kad ja pođoh na Bembašu* (traditional, printed 1906) |
 | Sazlija - Kad ja pođoh na Bembašu | `sazlija` | Mirsad | sawtooth with a chorus and a sub-octave, plucked: 350 ms decay, re-picked every eighth note (tremolo), brightness falling as it decays | the same |
 | Bećarac | `becarac` | Zvonko | dry voice, vibrato 6 Hz ±20 cents, 30 ms portamento | the bećarac tune of Slavonia (traditional; 2/4, quarter = 75), as transcribed for "U mog strica osam kobasica, sedam prži, osmu strina drži": two ten-syllable lines, so any bećarac couplet fits |
 | Lika Velebit, Solunac, Sarajevo Bembaša | `lika_velebit` (was `pjevac`), `solunac` (was `pevac`), `sarajevo_bembasa` (was `solist`) | Zvonko, Stojan, Mirsad | the voice itself ("dry": its own source and phonation, no chorus or hall), vibrato 5.5 Hz ±40 cents, 60 ms portamento; the song transposed in whole semitones so the middle of its range lies five semitones above the voice's speaking pitch (Zvonko then sings *Vila Velebita* between G2 and G3, 98-196 Hz) | the song of the base voice |
@@ -4837,7 +5233,7 @@ How it works (`ClauseBuilder` with `m_singing`):
   and the rests after it. The cursor lives in `FormantSynthesizer` so the
   clauses of one utterance continue the song; `TTSEngine::begin_utterance()`
   rewinds it, so every synthesis call (every line a screen reader sends)
-  starts the song from its first note, as the Macintosh voices do at a
+  starts the song from its first note, as those desktop voices do at a
   period. The notation is `pitch/value` (`G4/4`, `Bb3/8.`, `R/2`), parsed
   once by `parse_song()`.
 - **Durations.** The consonants keep their spoken durations (at the tempo
@@ -4866,7 +5262,7 @@ How it works (`ClauseBuilder` with `m_singing`):
   PolyBLEP sawtooth (strings, reed, brass with a drive of 1 + 4·AV into
   tanh) and an additive organ (partials 1, 2, 4, 6, 8, 10, 12, 16 of the
   16' pitch; the fundamental weak and the energy on the 4th-8th harmonics,
-  which is what MacinTalk's organ measures as). `chorus` adds two copies
+  which is what a classic desktop organ voice measures as). `chorus` adds two copies
   ±`chorus_cents` (the accordion only the sharp one), `sub_octave` one an
   octave down, `reverb` a Schroeder reverberator (four combs, two
   allpasses, Freeverb's lengths halved for 22 kHz). All of it goes through
@@ -4923,11 +5319,22 @@ consonants and spelled letters a phoneme recognizer is more telling, since
 it writes out the phones it hears instead of guessing words:
 `tools/formant/phones.py` (see "v, l, nj and d").
 
+**The reference synthesizer.** The classic commercial formant synthesizer
+the voices are compared with (synthesizer A of section 3) runs as a 32-bit
+engine on the development machine. The small tool that drives it to WAV files
+and the script that synthesizes the reference set of "The reference balance"
+(an English and an Italian paragraph, the vowel-consonant-vowel items and the
+sustained vowels) are kept outside the repository, in
+`build/measure/reference-tool/`, since they are that engine's interface and
+not Laprdus's. Its output (11025 Hz) is resampled to 22050 Hz
+(`scipy.signal.resample_poly`) before `spectrum.py`, `sibilants.py`,
+`stops.py` and `analyze.py` read it.
+
 For the record, when the voices were introduced a small general-purpose
 recognizer (Whisper "small", Croatian/Serbian/Bosnian) made these character
 errors on 20 everyday sentences that had not been used for tuning: Zvonko
 10.5%, Stojan 10.8%, Mirsad 11.8%; a diphone voice built from recordings of a
-Croatian speaker 11.1%; eSpeak NG Croatian 23.2%; Josip 33.1%.
+Croatian speaker 11.1%; synthesizer B (Croatian) 23.2%; Josip 33.1%.
 
 ## 8. Known limits
 
@@ -4951,7 +5358,7 @@ Croatian speaker 11.1%; eSpeak NG Croatian 23.2%; Josip 33.1%.
   any voice can switch (`formant::letter_name`), or spelled by their sounds
   (`Frontend::letter_sound`: an `Utterance` with `isolated_sound` set, whose
   durations the builder fixes: the consonant and a neutral release vowel
-  after it, "bə", "sə", as eSpeak's Croatian voice sounds letters out). The
+  after it, "bə", "sə", as synthesizer B's Croatian voice sounds letters out). The
   foreign letters q, x and y (`formant::is_foreign_letter`, which also has w)
   have no sound of their own in the language and keep their names (ku, iks,
   ipsilon) in that mode too; w is duplo v, with the sound of the v (`expand_words()`).
@@ -4963,12 +5370,11 @@ Croatian speaker 11.1%; eSpeak NG Croatian 23.2%; Josip 33.1%.
 - D. H. Klatt, L. C. Klatt, "Analysis, synthesis, and perception of voice
   quality variations among female and male talkers", J. Acoust. Soc. Am. 87
   (1990) - the KLGLOTT88 source.
-- S. R. Hertz, R. J. Younes, N. Zinovieva, "Language-universal and
-  language-specific components in the multi-language ETI-Eloquence
-  text-to-speech system", ICPhS 1999; S. R. Hertz, "Integration of rule-based
-  formant synthesis and waveform concatenation", IEEE Workshop on Speech
-  Synthesis 2002 - how Eloquence is built (phones and transitions, a
-  KLSYN88-like synthesizer at 11025 Hz).
+- S. R. Hertz, R. J. Younes, N. Zinovieva, ICPhS 1999 (the language-universal
+  and language-specific components of synthesizer A); S. R. Hertz,
+  "Integration of rule-based formant synthesis and waveform concatenation",
+  IEEE Workshop on Speech Synthesis 2002 - how synthesizer A is built (phones
+  and transitions, a KLSYN88-like synthesizer at 11025 Hz).
 - D. H. Klatt, "Review of text-to-speech conversion for English",
   J. Acoust. Soc. Am. 82 (1987).
 - A. Cohen, R. Collier, J. 't Hart, "Declination: construct or intrinsic

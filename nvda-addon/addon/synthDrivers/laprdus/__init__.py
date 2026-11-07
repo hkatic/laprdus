@@ -252,7 +252,7 @@ RATE_MIN = 0.5          # Rate at the bottom of NVDA's slider
 RATE_MAX = 2.0          # Rate at the top of NVDA's slider
 RATE_BOOST = 3.0        # Rate boost multiplies every slider position
 # The rate from NVDA's slider scales the Laprdus rate from settings.json (the
-# voice's normal). Rate boost, as in eSpeak and OneCore, makes every position
+# voice's normal). Rate boost, as in other synthesizers, makes every position
 # of the slider about three times faster: it is the engine's acceleration
 # (the "acceleration" from settings.json is not used under NVDA), so the
 # formant voices reach 6x and the recorded voices stop at their 4x.
@@ -298,14 +298,57 @@ def _nvda_to_inflection_level(nvda_inflection):
 # Custom Settings Factory Functions (only if autoSettingsUtils is available)
 # =============================================================================
 
-def _createCustomSettings():
-    """Create custom settings if autoSettingsUtils is available.
+def _clampQuality(value):
+    """A voice quality value as the engine takes it: an integer 0-100."""
+    try:
+        value = int(round(float(value)))
+    except (TypeError, ValueError):
+        value = 50
+    return max(0, min(100, value))
 
-    Note: All Laprdus-specific settings (pauses, number mode, inflection)
-    are now managed via the shared settings.json file edited by laprdgui.exe.
-    This function returns an empty list as no NVDA-specific settings are needed.
+
+def _createCustomSettings():
+    """The voice quality settings (head size, breathiness, roughness and
+    brightness, 0-100 each, 50 = the voice as it is, after synthesizer A's voice
+    parameters) as NVDA settings of the add-on's own: sliders in NVDA's voice
+    settings, after the volume, and in the synth settings ring, saved by NVDA
+    as speechSynths.laprdus.headSize and so on (a listener asked for them in
+    NVDA, November 2026). The values of the Laprdus Configurator apply to
+    SAPI5 only, as its inflection settings do. The pauses, the number mode,
+    the spelling and the rest stay in the shared settings.json.
     """
-    return []
+    if not HAS_AUTO_SETTINGS:
+        return []
+    return [
+        NumericDriverSetting(
+            "headSize",
+            # Translators: Label for the head size setting (the length of the vocal tract) in NVDA's voice settings
+            _("&Head size"),
+            availableInSettingsRing=True, defaultVal=50, minStep=1, normalStep=5, largeStep=10,
+            # Translators: Label for the head size setting in the synth settings ring
+            displayName=_("Head size")),
+        NumericDriverSetting(
+            "breathiness",
+            # Translators: Label for the breathiness setting (breath noise in the voice) in NVDA's voice settings
+            _("Breathi&ness"),
+            availableInSettingsRing=True, defaultVal=50, minStep=1, normalStep=5, largeStep=10,
+            # Translators: Label for the breathiness setting in the synth settings ring
+            displayName=_("Breathiness")),
+        NumericDriverSetting(
+            "roughness",
+            # Translators: Label for the roughness setting (a smooth to a rasping voice) in NVDA's voice settings
+            _("Ro&ughness"),
+            availableInSettingsRing=True, defaultVal=50, minStep=1, normalStep=5, largeStep=10,
+            # Translators: Label for the roughness setting in the synth settings ring
+            displayName=_("Roughness")),
+        NumericDriverSetting(
+            "brightness",
+            # Translators: Label for the brightness setting (a dull to a sharp tone) in NVDA's voice settings
+            _("Bri&ghtness"),
+            availableInSettingsRing=True, defaultVal=50, minStep=1, normalStep=5, largeStep=10,
+            # Translators: Label for the brightness setting in the synth settings ring
+            displayName=_("Brightness")),
+    ]
 
 
 # =============================================================================
@@ -425,6 +468,13 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         # Voice selection
         self._voice = _default_voice()
         self._availableVoices = None  # Cached voice dict
+
+        # Voice quality: NVDA's own settings (NVDA restores the saved values
+        # through loadSettings after __init__); 50 is the voice as it is
+        self._headSize = 50
+        self._breathiness = 50
+        self._roughness = 50
+        self._brightness = 50
 
         # Language selection: the Language setting (NVDA restores the saved
         # one through loadSettings after __init__) and the language the
@@ -660,7 +710,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                     synthDriverHandler.synthIndexReached.notify(synth=self, index=index)
                 if isSpellingItem:
                     self._spellingDone.set()
-                # Immediate synthDoneSpeaking (like eSpeak, OneCore, SAPI5)
+                # Immediate synthDoneSpeaking (like other synthesizers)
                 with self._speakLock:
                     if self._speakQueue.empty():
                         self._isSpeaking = False
@@ -707,7 +757,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             if isSpellingItem:
                 self._spellingDone.set()
 
-            # Immediate synthDoneSpeaking (like eSpeak, OneCore, SAPI5)
+            # Immediate synthDoneSpeaking (like other synthesizers)
             # Say All is driven by synthIndexReached, not synthDoneSpeaking
             with self._speakLock:
                 if self._speakQueue.empty():
@@ -758,7 +808,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             # setting; a LangChangeCommand for Croatian, Serbian, Bosnian or Slovenian
             # sets it for the rest of the utterance (the next utterance
             # starts from the setting again), one for any other language,
-            # or with None, returns to the setting, as the eSpeak driver does
+            # or with None, returns to the setting, as the synthesizer B driver does
             "lang": None,
         }
         textParts = []
@@ -972,6 +1022,16 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             self._applyPitch()
             self._applyRate()
             self._applyInflection()
+            self._applyVoiceQuality()
+
+    def _applyVoiceQuality(self):
+        """Hand NVDA's head size, breathiness, roughness and brightness to
+        the engine (after a voice change too: every voice takes them)."""
+        if self._engine:
+            self._engine.set_head_size(self._headSize)
+            self._engine.set_breathiness(self._breathiness)
+            self._engine.set_roughness(self._roughness)
+            self._engine.set_brightness(self._brightness)
 
     def _applyProsody(self, prosody):
         """Apply the pitch, rate and volume for one queued item: the sliders,
@@ -1055,6 +1115,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
 
         Settings loaded from settings.json structure:
         - speech.speed, speech.pitch, speech.volume (with force flags)
+        - speech.volume_boost: louder speech through a peak limiter
         - speech.emoji: whether to convert emoji to text
         - numbers.mode: 'words' or 'digits'
         - pauses.sentence, pauses.comma, pauses.newline, pauses.spelling
@@ -1128,6 +1189,11 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             volume_boost = bool(speech.get('volume_boost', False))
             self._engine.set_volume_boost(volume_boost)
             _debug_log("_loadSharedSettings: volume_boost=%s" % volume_boost)
+
+            # The voice quality keys (speech.head_size, breathiness,
+            # roughness, brightness) are SAPI5's: under NVDA the four are
+            # NVDA's own settings (see _createCustomSettings), so the file's
+            # values are not read here.
 
             # NVDA's inflection slider sets the intonation, not settings.json
             self._applyInflection()
@@ -1344,6 +1410,42 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         self._applyVolume()
 
     # =========================================================================
+    # Voice quality properties (NVDA's own settings, see _createCustomSettings)
+    # =========================================================================
+
+    def _get_headSize(self):
+        return self._headSize
+
+    def _set_headSize(self, value):
+        self._headSize = _clampQuality(value)
+        if self._engine:
+            self._engine.set_head_size(self._headSize)
+
+    def _get_breathiness(self):
+        return self._breathiness
+
+    def _set_breathiness(self, value):
+        self._breathiness = _clampQuality(value)
+        if self._engine:
+            self._engine.set_breathiness(self._breathiness)
+
+    def _get_roughness(self):
+        return self._roughness
+
+    def _set_roughness(self, value):
+        self._roughness = _clampQuality(value)
+        if self._engine:
+            self._engine.set_roughness(self._roughness)
+
+    def _get_brightness(self):
+        return self._brightness
+
+    def _set_brightness(self, value):
+        self._brightness = _clampQuality(value)
+        if self._engine:
+            self._engine.set_brightness(self._brightness)
+
+    # =========================================================================
     # Voice property
     # =========================================================================
 
@@ -1382,6 +1484,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                 # Reapply user pitch preference (formant-preserving)
                 self._applyPitch()
                 self._applyInflection()
+                self._applyVoiceQuality()
 
     @property
     def availableVoices(self):

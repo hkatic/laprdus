@@ -70,6 +70,11 @@ class SettingsRepository internal constructor(
         private val KEY_EMOJI_ENABLED = booleanPreferencesKey("emoji_enabled")
         private val KEY_INFLECTION_LEVEL = floatPreferencesKey("inflection_level")
         private val KEY_ACCELERATION = floatPreferencesKey("acceleration")
+        // Voice quality keys (shared with Apple): 0-100 each, 50 = the voice as it is
+        private val KEY_HEAD_SIZE = intPreferencesKey("head_size")
+        private val KEY_BREATHINESS = intPreferencesKey("breathiness")
+        private val KEY_ROUGHNESS = intPreferencesKey("roughness")
+        private val KEY_BRIGHTNESS = intPreferencesKey("brightness")
         private val KEY_SENTENCE_PAUSE = intPreferencesKey("sentence_pause")
         private val KEY_COMMA_PAUSE = intPreferencesKey("comma_pause")
         private val KEY_NEWLINE_PAUSE = intPreferencesKey("newline_pause")
@@ -107,6 +112,15 @@ class SettingsRepository internal constructor(
         val ACCELERATION_RANGE = 0.5f..3.0f
         /** Speed and pitch the repository accepts; the engine narrows it for the recorded voices. */
         val SPEED_PITCH_RANGE = 0.25f..4.0f
+        /**
+         * Voice quality (head size, breathiness, roughness, brightness), after
+         * the voice-parameter model of a classic formant synthesizer: 0-100 each, 50 = the voice as it is.
+         */
+        const val DEFAULT_HEAD_SIZE = 50
+        const val DEFAULT_BREATHINESS = 50
+        const val DEFAULT_ROUGHNESS = 50
+        const val DEFAULT_BRIGHTNESS = 50
+        val VOICE_QUALITY_RANGE = 0..100
         const val DEFAULT_SENTENCE_PAUSE = 100
         const val DEFAULT_COMMA_PAUSE = 100
         const val DEFAULT_NEWLINE_PAUSE = 100
@@ -536,6 +550,94 @@ class SettingsRepository internal constructor(
     }
 
     // ==========================================================================
+    // Voice Quality Settings (head size, breathiness, roughness, brightness)
+    // ==========================================================================
+
+    /**
+     * Flow of the head size (0-100, default 50): the length of the vocal
+     * tract, 0 a quarter longer (lower formants), 50 the voice as it is,
+     * 100 a quarter shorter (higher formants). Every voice.
+     */
+    val headSize: Flow<Int> = prefs
+        .map { preferences ->
+            preferences[KEY_HEAD_SIZE] ?: DEFAULT_HEAD_SIZE
+        }
+
+    /**
+     * Set the head size.
+     * @param value 0-100, 50 = the voice as it is
+     */
+    suspend fun setHeadSize(value: Int) {
+        ensureMigrated()
+        dataStore.edit { preferences ->
+            preferences[KEY_HEAD_SIZE] = value.coerceIn(VOICE_QUALITY_RANGE)
+        }
+    }
+
+    /**
+     * Flow of the breathiness (0-100, default 50): the voice's own breath
+     * noise, 0 none, 50 the voice as it is, 100 five times as much. Formant
+     * voices only.
+     */
+    val breathiness: Flow<Int> = prefs
+        .map { preferences ->
+            preferences[KEY_BREATHINESS] ?: DEFAULT_BREATHINESS
+        }
+
+    /**
+     * Set the breathiness.
+     * @param value 0-100, 50 = the voice as it is
+     */
+    suspend fun setBreathiness(value: Int) {
+        ensureMigrated()
+        dataStore.edit { preferences ->
+            preferences[KEY_BREATHINESS] = value.coerceIn(VOICE_QUALITY_RANGE)
+        }
+    }
+
+    /**
+     * Flow of the roughness (0-100, default 50): the voice's jitter and
+     * shimmer, 0 none, 50 the voice as it is, 100 five times as much.
+     * Formant voices only.
+     */
+    val roughness: Flow<Int> = prefs
+        .map { preferences ->
+            preferences[KEY_ROUGHNESS] ?: DEFAULT_ROUGHNESS
+        }
+
+    /**
+     * Set the roughness.
+     * @param value 0-100, 50 = the voice as it is
+     */
+    suspend fun setRoughness(value: Int) {
+        ensureMigrated()
+        dataStore.edit { preferences ->
+            preferences[KEY_ROUGHNESS] = value.coerceIn(VOICE_QUALITY_RANGE)
+        }
+    }
+
+    /**
+     * Flow of the brightness (0-100, default 50): the tone, 0 dull, 50 the
+     * voice as it is, 100 sharp (formant voices: the source emphasis;
+     * recorded voices: a tilt around 1.5 kHz).
+     */
+    val brightness: Flow<Int> = prefs
+        .map { preferences ->
+            preferences[KEY_BRIGHTNESS] ?: DEFAULT_BRIGHTNESS
+        }
+
+    /**
+     * Set the brightness.
+     * @param value 0-100, 50 = the voice as it is
+     */
+    suspend fun setBrightness(value: Int) {
+        ensureMigrated()
+        dataStore.edit { preferences ->
+            preferences[KEY_BRIGHTNESS] = value.coerceIn(VOICE_QUALITY_RANGE)
+        }
+    }
+
+    // ==========================================================================
     // Pause Settings
     // ==========================================================================
 
@@ -774,6 +876,11 @@ class SettingsRepository internal constructor(
         val emojiEnabled: Boolean = DEFAULT_EMOJI_ENABLED,
         val inflectionLevel: Float = DEFAULT_INFLECTION_LEVEL,
         val acceleration: Float = DEFAULT_ACCELERATION,
+        /** Voice quality, 0-100 each, 50 = the voice as it is. */
+        val headSize: Int = DEFAULT_HEAD_SIZE,
+        val breathiness: Int = DEFAULT_BREATHINESS,
+        val roughness: Int = DEFAULT_ROUGHNESS,
+        val brightness: Int = DEFAULT_BRIGHTNESS,
         val sentencePause: Int = DEFAULT_SENTENCE_PAUSE,
         val commaPause: Int = DEFAULT_COMMA_PAUSE,
         val newlinePause: Int = DEFAULT_NEWLINE_PAUSE,
@@ -815,6 +922,10 @@ class SettingsRepository internal constructor(
         emojiEnabled = this[KEY_EMOJI_ENABLED] ?: DEFAULT_EMOJI_ENABLED,
         inflectionLevel = this[KEY_INFLECTION_LEVEL] ?: DEFAULT_INFLECTION_LEVEL,
         acceleration = this[KEY_ACCELERATION] ?: DEFAULT_ACCELERATION,
+        headSize = this[KEY_HEAD_SIZE] ?: DEFAULT_HEAD_SIZE,
+        breathiness = this[KEY_BREATHINESS] ?: DEFAULT_BREATHINESS,
+        roughness = this[KEY_ROUGHNESS] ?: DEFAULT_ROUGHNESS,
+        brightness = this[KEY_BRIGHTNESS] ?: DEFAULT_BRIGHTNESS,
         sentencePause = this[KEY_SENTENCE_PAUSE] ?: DEFAULT_SENTENCE_PAUSE,
         commaPause = this[KEY_COMMA_PAUSE] ?: DEFAULT_COMMA_PAUSE,
         newlinePause = this[KEY_NEWLINE_PAUSE] ?: DEFAULT_NEWLINE_PAUSE,

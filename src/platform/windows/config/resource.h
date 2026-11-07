@@ -38,6 +38,7 @@
 #define IDC_VOLUME_VALUE        1042
 #define IDC_FORCE_VOLUME        1043
 #define IDC_VOLUME_BOOST_CHECK  1087   // louder speech through a peak limiter
+#define IDC_VOICE_QUALITY_BUTTON 1044  // opens the voice quality dialog
 
 // Pause controls
 #define IDC_COMMA_LABEL         1050
@@ -112,6 +113,24 @@
 #define IDC_ACCENT_COMMENT_LABEL    2207
 #define IDC_ACCENT_COMMENT_EDIT     2208
 #define IDC_ACCENT_HELP             2209
+
+// Voice Quality Dialog: head size, breathiness, roughness, brightness
+// (0-100 each, 50 = the voice as it is), after the voice-parameter model of a classic formant synthesizer
+#define IDD_VOICE_QUALITY_DIALOG    203
+#define IDC_VOICE_QUALITY_HELP      2301
+#define IDC_HEAD_SIZE_LABEL         2302
+#define IDC_HEAD_SIZE_SLIDER        2303
+#define IDC_HEAD_SIZE_VALUE         2304
+#define IDC_BREATHINESS_LABEL       2305
+#define IDC_BREATHINESS_SLIDER      2306
+#define IDC_BREATHINESS_VALUE       2307
+#define IDC_ROUGHNESS_LABEL         2308
+#define IDC_ROUGHNESS_SLIDER        2309
+#define IDC_ROUGHNESS_VALUE         2310
+#define IDC_BRIGHTNESS_LABEL        2311
+#define IDC_BRIGHTNESS_SLIDER       2312
+#define IDC_BRIGHTNESS_VALUE        2313
+#define IDC_VOICE_QUALITY_RESTORE   2314
 
 // String IDs
 #define IDS_APP_TITLE           1100
@@ -214,5 +233,14 @@
 #define IDS_ERROR_TITLE             1260
 #define IDS_DECIMAL_SEPARATOR       1261  // "," or "."
 #define IDS_DUPLICATE_SUFFIX        1262  // " (copy)", after a duplicated entry's text
+// Voice quality dialog
+#define IDS_VOICE_QUALITY_BUTTON    1263  // "Voice &quality..." in the main dialog
+#define IDS_VOICE_QUALITY_TITLE     1264
+#define IDS_VOICE_QUALITY_HELP      1265
+#define IDS_HEAD_SIZE_LABEL         1266
+#define IDS_BREATHINESS_LABEL       1267
+#define IDS_ROUGHNESS_LABEL         1268
+#define IDS_BRIGHTNESS_LABEL        1269
+#define IDS_VOICE_QUALITY_RESTORE   1270
 
 #endif // LAPRDUS_CONFIG_RESOURCE_H

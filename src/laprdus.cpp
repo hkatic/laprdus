@@ -167,6 +167,23 @@ float Laprdus::acceleration() const {
     return ACCELERATION_DEFAULT;
 }
 
+#define LAPRDUS_VOICE_QUALITY_ACCESSORS(Setter, Getter, field)                       \
+    void Laprdus::Setter(int value) {                                                \
+        if (m_engine) {                                                              \
+            VoiceParams params = m_engine->voice_params();                           \
+            params.field = value;                                                    \
+            m_engine->set_voice_params(params);                                      \
+        }                                                                            \
+    }                                                                                \
+    int Laprdus::Getter() const {                                                    \
+        return m_engine ? m_engine->voice_params().field : VOICE_QUALITY_DEFAULT;    \
+    }
+LAPRDUS_VOICE_QUALITY_ACCESSORS(setHeadSize, headSize, head_size)
+LAPRDUS_VOICE_QUALITY_ACCESSORS(setBreathiness, breathiness, breathiness)
+LAPRDUS_VOICE_QUALITY_ACCESSORS(setRoughness, roughness, roughness)
+LAPRDUS_VOICE_QUALITY_ACCESSORS(setBrightness, brightness, brightness)
+#undef LAPRDUS_VOICE_QUALITY_ACCESSORS
+
 void Laprdus::setSpellingMode(SpellingMode mode) {
     if (m_engine) {
         m_engine->set_spelling_mode(mode);

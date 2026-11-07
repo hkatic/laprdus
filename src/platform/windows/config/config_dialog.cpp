@@ -70,6 +70,166 @@ static const int PAUSE_MIN = 0;
 static const int PAUSE_MAX = 2000;
 static const int PAUSE_DEFAULT = 100;
 
+// Shared with the dictionary dialogs (dictionary_dialog.cpp)
+std::wstring LoadResourceString(HINSTANCE hInstance, UINT id);
+INT_PTR DarkCtlColor(bool darkMode, UINT msg, HDC hdc);
+void CenterOnParent(HWND hDlg);
+
+// =============================================================================
+// Voice quality dialog
+// Head size, breathiness, roughness and brightness (0-100 each, 50 = the
+// voice as it is), after the voice-parameter model of a classic formant synthesizer. A dialog of its own
+// because the main dialog is already as tall as a screen. It edits the four
+// fields of a UserSettings: OK writes the sliders back, Cancel leaves them.
+// =============================================================================
+
+namespace {
+
+struct VoiceQualitySlider {
+    int labelId;
+    int sliderId;
+    int valueId;
+    UINT stringId;
+    int UserSettings::*field;
+};
+
+const VoiceQualitySlider VOICE_QUALITY_SLIDERS[] = {
+    { IDC_HEAD_SIZE_LABEL,   IDC_HEAD_SIZE_SLIDER,   IDC_HEAD_SIZE_VALUE,   IDS_HEAD_SIZE_LABEL,   &UserSettings::head_size },
+    { IDC_BREATHINESS_LABEL, IDC_BREATHINESS_SLIDER, IDC_BREATHINESS_VALUE, IDS_BREATHINESS_LABEL, &UserSettings::breathiness },
+    { IDC_ROUGHNESS_LABEL,   IDC_ROUGHNESS_SLIDER,   IDC_ROUGHNESS_VALUE,   IDS_ROUGHNESS_LABEL,   &UserSettings::roughness },
+    { IDC_BRIGHTNESS_LABEL,  IDC_BRIGHTNESS_SLIDER,  IDC_BRIGHTNESS_VALUE,  IDS_BRIGHTNESS_LABEL,  &UserSettings::brightness },
+};
+
+class VoiceQualityDialog {
+public:
+    VoiceQualityDialog(HINSTANCE hInstance, UserSettings& settings)
+        : m_hInstance(hInstance), m_settings(settings), m_darkMode(IsSystemDarkMode()) {}
+
+    INT_PTR Show(HWND hParent) {
+        return DialogBoxParamW(
+            m_hInstance,
+            MAKEINTRESOURCEW(IDD_VOICE_QUALITY_DIALOG),
+            hParent,
+            DialogProc,
+            reinterpret_cast<LPARAM>(this)
+        );
+    }
+
+private:
+    static INT_PTR CALLBACK DialogProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
+        VoiceQualityDialog* pThis = nullptr;
+
+        if (msg == WM_INITDIALOG) {
+            pThis = reinterpret_cast<VoiceQualityDialog*>(lParam);
+            SetWindowLongPtrW(hDlg, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pThis));
+            return pThis->OnInitDialog(hDlg);
+        }
+
+        pThis = reinterpret_cast<VoiceQualityDialog*>(GetWindowLongPtrW(hDlg, GWLP_USERDATA));
+        if (!pThis) {
+            return FALSE;
+        }
+
+        switch (msg) {
+        case WM_COMMAND:
+            return pThis->OnCommand(hDlg, wParam);
+
+        case WM_HSCROLL:
+            pThis->UpdateValues(hDlg);
+            return TRUE;
+
+        case WM_CTLCOLORSTATIC:
+        case WM_CTLCOLORBTN:
+        case WM_CTLCOLORDLG:
+            return DarkCtlColor(pThis->m_darkMode, msg, (HDC)wParam);
+
+        case WM_CLOSE:
+            EndDialog(hDlg, IDCANCEL);
+            return TRUE;
+        }
+
+        return FALSE;
+    }
+
+    INT_PTR OnInitDialog(HWND hDlg) {
+        SetWindowTextW(hDlg, LoadResourceString(m_hInstance, IDS_VOICE_QUALITY_TITLE).c_str());
+        SetText(hDlg, IDC_VOICE_QUALITY_HELP, IDS_VOICE_QUALITY_HELP);
+        SetText(hDlg, IDC_VOICE_QUALITY_RESTORE, IDS_VOICE_QUALITY_RESTORE);
+        SetText(hDlg, IDOK, IDS_OK);
+        SetText(hDlg, IDCANCEL, IDS_CANCEL);
+
+        for (const VoiceQualitySlider& s : VOICE_QUALITY_SLIDERS) {
+            SetText(hDlg, s.labelId, s.stringId);
+            HWND hSlider = GetDlgItem(hDlg, s.sliderId);
+            if (!hSlider) continue;
+            SendMessageW(hSlider, TBM_SETRANGE, TRUE, MAKELPARAM(VOICE_QUALITY_MIN, VOICE_QUALITY_MAX));
+            SendMessageW(hSlider, TBM_SETTICFREQ, 10, 0);
+            SendMessageW(hSlider, TBM_SETPOS, TRUE,
+                         std::clamp(m_settings.*(s.field), VOICE_QUALITY_MIN, VOICE_QUALITY_MAX));
+        }
+        UpdateValues(hDlg);
+
+        if (m_darkMode) {
+            ApplyDarkTitleBar(hDlg, true);
+            ApplyDarkModeToAllControls(hDlg, true);
+            InvalidateRect(hDlg, nullptr, TRUE);
+        }
+
+        CenterOnParent(hDlg);
+        return TRUE;
+    }
+
+    INT_PTR OnCommand(HWND hDlg, WPARAM wParam) {
+        switch (LOWORD(wParam)) {
+        case IDOK:
+            for (const VoiceQualitySlider& s : VOICE_QUALITY_SLIDERS) {
+                m_settings.*(s.field) = static_cast<int>(SendDlgItemMessageW(hDlg, s.sliderId, TBM_GETPOS, 0, 0));
+            }
+            EndDialog(hDlg, IDOK);
+            return TRUE;
+
+        case IDCANCEL:
+            EndDialog(hDlg, IDCANCEL);
+            return TRUE;
+
+        // Restore defaults: every slider back to 50, the voice as it is
+        case IDC_VOICE_QUALITY_RESTORE:
+            for (const VoiceQualitySlider& s : VOICE_QUALITY_SLIDERS) {
+                SendDlgItemMessageW(hDlg, s.sliderId, TBM_SETPOS, TRUE, VOICE_QUALITY_DEFAULT);
+            }
+            UpdateValues(hDlg);
+            return TRUE;
+        }
+
+        return FALSE;
+    }
+
+    // The value labels: "50%" or "50 %", as the language writes it
+    void UpdateValues(HWND hDlg) {
+        std::wstring format = LoadResourceString(m_hInstance, IDS_VALUE_PERCENT);
+        if (format.empty()) format = L"%d%%";
+        for (const VoiceQualitySlider& s : VOICE_QUALITY_SLIDERS) {
+            int pos = static_cast<int>(SendDlgItemMessageW(hDlg, s.sliderId, TBM_GETPOS, 0, 0));
+            wchar_t text[32];
+            swprintf_s(text, format.c_str(), pos);
+            SetDlgItemTextW(hDlg, s.valueId, text);
+        }
+    }
+
+    void SetText(HWND hDlg, int ctrlId, UINT stringId) {
+        std::wstring text = LoadResourceString(m_hInstance, stringId);
+        if (!text.empty()) {
+            SetDlgItemTextW(hDlg, ctrlId, text.c_str());
+        }
+    }
+
+    HINSTANCE m_hInstance;
+    UserSettings& m_settings;
+    bool m_darkMode;
+};
+
+} // namespace
+
 // =============================================================================
 // ConfigDialog Implementation
 // =============================================================================
@@ -165,6 +325,7 @@ INT_PTR ConfigDialog::OnInitDialog(HWND hDlg) {
     SetControlText(hDlg, IDC_VOLUME_LABEL, IDS_VOLUME_LABEL);
     SetControlText(hDlg, IDC_FORCE_VOLUME, IDS_FORCE_VOLUME);
     SetControlText(hDlg, IDC_VOLUME_BOOST_CHECK, IDS_VOLUME_BOOST);
+    SetControlText(hDlg, IDC_VOICE_QUALITY_BUTTON, IDS_VOICE_QUALITY_BUTTON);
     SetControlText(hDlg, IDC_COMMA_LABEL, IDS_COMMA_LABEL);
     SetControlText(hDlg, IDC_SENTENCE_LABEL, IDS_SENTENCE_LABEL);
     SetControlText(hDlg, IDC_NEWLINE_LABEL, IDS_NEWLINE_LABEL);
@@ -531,6 +692,10 @@ INT_PTR ConfigDialog::OnCommand(HWND hDlg, WPARAM wParam, LPARAM lParam) {
         OnDictionaries(hDlg);
         return TRUE;
 
+    case IDC_VOICE_QUALITY_BUTTON:
+        OnVoiceQuality(hDlg);
+        return TRUE;
+
     // The top rate shown with the acceleration depends on the forced rate
     case IDC_FORCE_SPEED:
         if (HIWORD(wParam) == BN_CLICKED) {
@@ -770,6 +935,18 @@ void ConfigDialog::OnTest(HWND hDlg) {
 void ConfigDialog::OnDictionaries(HWND hDlg) {
     DictionaryDialog dictDlg;
     dictDlg.Show(m_hInstance, hDlg);
+}
+
+// The four voice quality values have no controls in the main dialog: they
+// live in m_settings alone and are saved with the rest by OK, Apply and
+// Test. The pending edits of the main dialog are collected first so that
+// the main dialog's OK, which collects them again, does not lose anything.
+void ConfigDialog::OnVoiceQuality(HWND hDlg) {
+    CollectSettingsFromControls(hDlg);
+    VoiceQualityDialog qualityDlg(m_hInstance, m_settings);
+    if (qualityDlg.Show(hDlg) == IDOK) {
+        m_settingsChanged = true;
+    }
 }
 
 void ConfigDialog::ApplyDarkMode(HWND hDlg) {

@@ -15,9 +15,11 @@ namespace {
 // Output above this level is bent back softly instead of clipped
 constexpr float LIMIT_KNEE = 0.90f;
 
-int16_t to_sample(float v) {
+// `limited` output (the volume boost's) is already held under full scale
+// and is not bent again: a second knee would only add distortion.
+int16_t to_sample(float v, bool limited = false) {
     float a = std::abs(v);
-    if (a > LIMIT_KNEE) {
+    if (!limited && a > LIMIT_KNEE) {
         const float over = (a - LIMIT_KNEE) / (1.0f - LIMIT_KNEE);
         a = LIMIT_KNEE + (1.0f - LIMIT_KNEE) * std::tanh(over);
     }
@@ -70,7 +72,11 @@ float AudioSynthesizer::formant_warp_for_pitch(float pitch) {
 }
 
 void AudioSynthesizer::ensure_bank() {
-    const float warp = formant_warp_for_pitch(m_voice_params.pitch);
+    // The head size setting lengthens or shortens the vocal tract on top of
+    // the character pitch's warp; the bank is rebuilt only when the warp
+    // moves (a settings change, not every clause).
+    const float warp = formant_warp_for_pitch(m_voice_params.pitch) *
+                       head_size_factor(m_voice_params.head_size);
     if (m_bank_warp > 0.0f && std::abs(warp - m_bank_warp) < 1e-3f) return;
     if (!m_phoneme_data.is_loaded()) return;
     m_bank.build(m_phoneme_data, warp);
@@ -79,6 +85,27 @@ void AudioSynthesizer::ensure_bank() {
     // the unwarped one, and the character pitch is applied by the planner.
     m_natural_f0 = m_bank.base_f0() / warp;
 }
+
+namespace {
+
+// Brightness for the recorded voices: a tilt around 1.5 kHz. The signal is
+// split by a one-pole low-pass into its body and its top, and the top is
+// scaled: 50 leaves the recording as it is, 0 folds the top away (the
+// setting at which a phone's speaker at full volume stops biting), 100
+// doubles it (+6 dB).
+void tilt_brightness(std::vector<float>& wave, uint32_t fs, int brightness) {
+    const int v = std::clamp(brightness, VOICE_QUALITY_MIN, VOICE_QUALITY_MAX);
+    if (v == VOICE_QUALITY_DEFAULT || wave.empty()) return;
+    const float top_gain = 1.0f + static_cast<float>(v - 50) / 50.0f;   // 0 .. 2
+    const float coef = std::exp(-2.0f * 3.14159265f * 1500.0f / static_cast<float>(fs));
+    float low = 0.0f;
+    for (float& x : wave) {
+        low = coef * low + (1.0f - coef) * x;
+        x = low + top_gain * (x - low);
+    }
+}
+
+} // namespace
 
 // =============================================================================
 // Synthesis
@@ -130,14 +157,18 @@ AudioBuffer AudioSynthesizer::render_utterance(const formant::Utterance& utt) {
     while (last > end && std::abs(wave[last - 1]) < 1e-4f) --last;
     wave.resize(std::max(end, last));
 
-    // The volume boost raises the level before the volume and limits the
-    // peaks (volume_boost.hpp); to_sample's soft knee stays as the safety net.
-    if (m_voice_params.volume_boost) boost_volume(wave, fs);
+    tilt_brightness(wave, fs, m_voice_params.brightness);
+
+    // The volume boost raises the level before the volume and holds the
+    // peaks under its ceiling (volume_boost.hpp); to_sample's soft knee is
+    // for the plain output only.
+    const bool boosted = m_voice_params.volume_boost;
+    if (boosted) boost_volume(wave, fs);
     const float volume = m_voice_params.volume;
     result.sample_rate = fs;
     result.samples.resize(wave.size());
     for (size_t i = 0; i < wave.size(); ++i) {
-        result.samples[i] = to_sample(wave[i] * volume);
+        result.samples[i] = to_sample(wave[i] * volume, boosted);
     }
     return result;
 }

@@ -17,6 +17,10 @@ enum SettingsKey {
     static let emojiEnabled = "emoji_enabled"
     static let inflectionLevel = "inflection_level"
     static let acceleration = "acceleration"
+    static let headSize = "head_size"
+    static let breathiness = "breathiness"
+    static let roughness = "roughness"
+    static let brightness = "brightness"
     static let sentencePause = "sentence_pause"
     static let commaPause = "comma_pause"
     static let newlinePause = "newline_pause"
@@ -46,6 +50,13 @@ struct SettingsSnapshot: Sendable {
     var inflectionLevel: Float = SettingsSnapshot.defaultInflectionLevel
     /// Multiplier on the speech rate, 0.5 to 3.0.
     var acceleration: Float = SettingsSnapshot.defaultAcceleration
+    /// Voice quality after a classic formant synthesizer's parameters, 0 to 100, 50 the
+    /// voice as it is: the length of the vocal tract (every voice), the
+    /// breath noise and the jitter and shimmer (formant voices), the tone.
+    var headSize = SettingsSnapshot.defaultHeadSize
+    var breathiness = SettingsSnapshot.defaultBreathiness
+    var roughness = SettingsSnapshot.defaultRoughness
+    var brightness = SettingsSnapshot.defaultBrightness
     var sentencePause = 100
     var commaPause = 100
     var newlinePause = 100
@@ -62,6 +73,11 @@ struct SettingsSnapshot: Sendable {
     static let defaultInflectionLevel: Float = 0.5
     static let defaultAcceleration: Float = 1.0
     static let accelerationRange: ClosedRange<Float> = 0.5...3.0
+    static let defaultHeadSize = 50
+    static let defaultBreathiness = 50
+    static let defaultRoughness = 50
+    static let defaultBrightness = 50
+    static let voiceQualityRange: ClosedRange<Int> = 0...100
 
     static func load(from defaults: UserDefaults = AppGroup.defaults) -> SettingsSnapshot {
         var snapshot = SettingsSnapshot()
@@ -81,6 +97,10 @@ struct SettingsSnapshot: Sendable {
         if defaults.object(forKey: SettingsKey.acceleration) != nil {
             snapshot.acceleration = defaults.float(forKey: SettingsKey.acceleration)
         }
+        if defaults.object(forKey: SettingsKey.headSize) != nil { snapshot.headSize = defaults.integer(forKey: SettingsKey.headSize) }
+        if defaults.object(forKey: SettingsKey.breathiness) != nil { snapshot.breathiness = defaults.integer(forKey: SettingsKey.breathiness) }
+        if defaults.object(forKey: SettingsKey.roughness) != nil { snapshot.roughness = defaults.integer(forKey: SettingsKey.roughness) }
+        if defaults.object(forKey: SettingsKey.brightness) != nil { snapshot.brightness = defaults.integer(forKey: SettingsKey.brightness) }
         if defaults.object(forKey: SettingsKey.sentencePause) != nil { snapshot.sentencePause = defaults.integer(forKey: SettingsKey.sentencePause) }
         if defaults.object(forKey: SettingsKey.commaPause) != nil { snapshot.commaPause = defaults.integer(forKey: SettingsKey.commaPause) }
         if defaults.object(forKey: SettingsKey.newlinePause) != nil { snapshot.newlinePause = defaults.integer(forKey: SettingsKey.newlinePause) }
@@ -113,6 +133,10 @@ struct SettingsSnapshot: Sendable {
         volume = volume.clamped(to: 0.0...1.0, fallback: 1.0)
         inflectionLevel = inflectionLevel.clamped(to: 0.0...1.0, fallback: SettingsSnapshot.defaultInflectionLevel)
         acceleration = acceleration.clamped(to: SettingsSnapshot.accelerationRange, fallback: SettingsSnapshot.defaultAcceleration)
+        headSize = min(max(headSize, 0), 100)
+        breathiness = min(max(breathiness, 0), 100)
+        roughness = min(max(roughness, 0), 100)
+        brightness = min(max(brightness, 0), 100)
         sentencePause = min(max(sentencePause, 0), 2000)
         commaPause = min(max(commaPause, 0), 2000)
         newlinePause = min(max(newlinePause, 0), 2000)
@@ -146,6 +170,10 @@ final class SettingsStore: ObservableObject {
     @Published var emojiEnabled: Bool { didSet { defaults.set(emojiEnabled, forKey: SettingsKey.emojiEnabled) } }
     @Published var inflectionLevel: Float { didSet { defaults.set(inflectionLevel, forKey: SettingsKey.inflectionLevel) } }
     @Published var acceleration: Float { didSet { defaults.set(acceleration, forKey: SettingsKey.acceleration) } }
+    @Published var headSize: Int { didSet { defaults.set(headSize, forKey: SettingsKey.headSize) } }
+    @Published var breathiness: Int { didSet { defaults.set(breathiness, forKey: SettingsKey.breathiness) } }
+    @Published var roughness: Int { didSet { defaults.set(roughness, forKey: SettingsKey.roughness) } }
+    @Published var brightness: Int { didSet { defaults.set(brightness, forKey: SettingsKey.brightness) } }
     @Published var sentencePause: Int { didSet { defaults.set(sentencePause, forKey: SettingsKey.sentencePause) } }
     @Published var commaPause: Int { didSet { defaults.set(commaPause, forKey: SettingsKey.commaPause) } }
     @Published var newlinePause: Int { didSet { defaults.set(newlinePause, forKey: SettingsKey.newlinePause) } }
@@ -169,6 +197,10 @@ final class SettingsStore: ObservableObject {
         emojiEnabled = snapshot.emojiEnabled
         inflectionLevel = snapshot.inflectionLevel
         acceleration = snapshot.acceleration
+        headSize = snapshot.headSize
+        breathiness = snapshot.breathiness
+        roughness = snapshot.roughness
+        brightness = snapshot.brightness
         sentencePause = snapshot.sentencePause
         commaPause = snapshot.commaPause
         newlinePause = snapshot.newlinePause
@@ -192,6 +224,10 @@ final class SettingsStore: ObservableObject {
             emojiEnabled: emojiEnabled,
             inflectionLevel: inflectionLevel,
             acceleration: acceleration,
+            headSize: headSize,
+            breathiness: breathiness,
+            roughness: roughness,
+            brightness: brightness,
             sentencePause: sentencePause,
             commaPause: commaPause,
             newlinePause: newlinePause,

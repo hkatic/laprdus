@@ -445,6 +445,23 @@ TEST_CASE("C API sets parameters", "[api]") {
         REQUIRE(laprdus_get_number_mode(engine) == LAPRDUS_NUMBER_MODE_WHOLE);
     }
 
+    SECTION("Voice quality") {
+        // 0-100 each, 50 by default, out-of-range values clamped
+        REQUIRE(laprdus_get_head_size(engine) == 50);
+        REQUIRE(laprdus_get_breathiness(engine) == 50);
+        REQUIRE(laprdus_get_roughness(engine) == 50);
+        REQUIRE(laprdus_get_brightness(engine) == 50);
+        REQUIRE(laprdus_set_head_size(engine, 80) == LAPRDUS_OK);
+        REQUIRE(laprdus_get_head_size(engine) == 80);
+        REQUIRE(laprdus_set_breathiness(engine, 120) == LAPRDUS_OK);
+        REQUIRE(laprdus_get_breathiness(engine) == 100);
+        REQUIRE(laprdus_set_roughness(engine, -5) == LAPRDUS_OK);
+        REQUIRE(laprdus_get_roughness(engine) == 0);
+        REQUIRE(laprdus_set_brightness(engine, 10) == LAPRDUS_OK);
+        REQUIRE(laprdus_get_brightness(engine) == 10);
+        REQUIRE(laprdus_get_brightness(nullptr) == 50);
+    }
+
     laprdus_destroy(engine);
 }
 

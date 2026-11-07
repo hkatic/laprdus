@@ -358,6 +358,77 @@ Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetAcceleration(
     engine->set_voice_params(params);
 }
 
+// Voice quality (VoiceParams::head_size, breathiness, roughness, brightness):
+// 0-100 each, 50 = the voice as it is; VoiceParams::clamp() bounds them.
+
+JNIEXPORT void JNICALL
+Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetHeadSize(
+    JNIEnv* env,
+    jobject thiz,
+    jlong handle,
+    jint value) {
+
+    (void)env;
+    (void)thiz;
+    LockedEngine engine(handle);
+    if (!engine) return;
+
+    laprdus::VoiceParams params = engine->voice_params();
+    params.head_size = static_cast<int>(value);
+    engine->set_voice_params(params);
+}
+
+JNIEXPORT void JNICALL
+Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetBreathiness(
+    JNIEnv* env,
+    jobject thiz,
+    jlong handle,
+    jint value) {
+
+    (void)env;
+    (void)thiz;
+    LockedEngine engine(handle);
+    if (!engine) return;
+
+    laprdus::VoiceParams params = engine->voice_params();
+    params.breathiness = static_cast<int>(value);
+    engine->set_voice_params(params);
+}
+
+JNIEXPORT void JNICALL
+Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetRoughness(
+    JNIEnv* env,
+    jobject thiz,
+    jlong handle,
+    jint value) {
+
+    (void)env;
+    (void)thiz;
+    LockedEngine engine(handle);
+    if (!engine) return;
+
+    laprdus::VoiceParams params = engine->voice_params();
+    params.roughness = static_cast<int>(value);
+    engine->set_voice_params(params);
+}
+
+JNIEXPORT void JNICALL
+Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSetBrightness(
+    JNIEnv* env,
+    jobject thiz,
+    jlong handle,
+    jint value) {
+
+    (void)env;
+    (void)thiz;
+    LockedEngine engine(handle);
+    if (!engine) return;
+
+    laprdus::VoiceParams params = engine->voice_params();
+    params.brightness = static_cast<int>(value);
+    engine->set_voice_params(params);
+}
+
 JNIEXPORT jfloat JNICALL
 Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeGetNominalWpm(
     JNIEnv* env,

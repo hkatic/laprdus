@@ -479,6 +479,76 @@ class SettingsRepositoryTest {
     }
 
     // ==========================================================================
+    // Voice Quality Settings Tests (head size, breathiness, roughness, brightness)
+    // ==========================================================================
+
+    @Test
+    fun `voice quality defaults to the voice as it is`() = runTest {
+        assertEquals(50, repository.headSize.first())
+        assertEquals(50, repository.breathiness.first())
+        assertEquals(50, repository.roughness.first())
+        assertEquals(50, repository.brightness.first())
+        val settings = repository.allSettings.first()
+        assertEquals(SettingsRepository.DEFAULT_HEAD_SIZE, settings.headSize)
+        assertEquals(SettingsRepository.DEFAULT_BREATHINESS, settings.breathiness)
+        assertEquals(SettingsRepository.DEFAULT_ROUGHNESS, settings.roughness)
+        assertEquals(SettingsRepository.DEFAULT_BRIGHTNESS, settings.brightness)
+    }
+
+    @Test
+    fun `setHeadSize persists and clamps`() = runTest {
+        repository.setHeadSize(75)
+        assertEquals(75, repository.headSize.first())
+        repository.setHeadSize(150)
+        assertEquals(100, repository.headSize.first())
+        repository.setHeadSize(-5)
+        assertEquals(0, repository.headSize.first())
+    }
+
+    @Test
+    fun `setBreathiness persists and clamps`() = runTest {
+        repository.setBreathiness(25)
+        assertEquals(25, repository.breathiness.first())
+        repository.setBreathiness(101)
+        assertEquals(100, repository.breathiness.first())
+        repository.setBreathiness(-1)
+        assertEquals(0, repository.breathiness.first())
+    }
+
+    @Test
+    fun `setRoughness persists and clamps`() = runTest {
+        repository.setRoughness(10)
+        assertEquals(10, repository.roughness.first())
+        repository.setRoughness(1000)
+        assertEquals(100, repository.roughness.first())
+        repository.setRoughness(-100)
+        assertEquals(0, repository.roughness.first())
+    }
+
+    @Test
+    fun `setBrightness persists and clamps`() = runTest {
+        repository.setBrightness(90)
+        assertEquals(90, repository.brightness.first())
+        repository.setBrightness(200)
+        assertEquals(100, repository.brightness.first())
+        repository.setBrightness(-50)
+        assertEquals(0, repository.brightness.first())
+    }
+
+    @Test
+    fun `allSettings includes the voice quality settings`() = runTest {
+        repository.setHeadSize(40)
+        repository.setBreathiness(60)
+        repository.setRoughness(10)
+        repository.setBrightness(90)
+        val settings = repository.allSettings.first()
+        assertEquals(40, settings.headSize)
+        assertEquals(60, settings.breathiness)
+        assertEquals(10, settings.roughness)
+        assertEquals(90, settings.brightness)
+    }
+
+    // ==========================================================================
     // Don't Ask Default TTS Settings Tests
     // ==========================================================================
 

@@ -38,6 +38,7 @@ The language is a separate setting, with word stress and natural sentence melody
 - Word stress and natural sentence melody for every voice; Josip and Vlado have a new engine without clicks, with a natural tempo and rate and pitch that no longer affect each other
 - Ten singing voices: Orguljaš, Dalmacija Klapa, Trubač, Harmonikaš, Sevdalija, Sazlija, Lika Velebit, Solunac, Sarajevo Bembaša and Bećarac
 - NVDA's Inflection slider controls the sentence melody of every voice, and an accent dictionary (accents.json) to correct the stress of a word
+- Voice quality: head size, breathiness, roughness and brightness (0-100, 50 = the voice as it is), after the voice-parameter model of a classic formant synthesizer, as sliders in NVDA's voice settings and the synth settings ring
 - Letters are spelled by their sounds (b, c, d) unless the Configurator says names; capital letters are spelled at NVDA's capital pitch change, as with NVDA's other synthesizers
 - The add-on, its user guide and the Laprdus Configurator are available in English, Croatian, Serbian and Slovenian: all follow NVDA's language
 - Fixed: user spelling and emoji dictionary entries had no effect

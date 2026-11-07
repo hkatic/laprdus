@@ -93,6 +93,11 @@ fun SettingsScreen(
     onEmojiEnabledChange: (Boolean) -> Unit,
     onInflectionLevelChange: (Float) -> Unit,
     onAccelerationChange: (Float) -> Unit,
+    // Voice quality (0-100, 50 = the voice as it is)
+    onHeadSizeChange: (Int) -> Unit = {},
+    onBreathinessChange: (Int) -> Unit = {},
+    onRoughnessChange: (Int) -> Unit = {},
+    onBrightnessChange: (Int) -> Unit = {},
     onSentencePauseChange: (Int) -> Unit,
     onCommaPauseChange: (Int) -> Unit,
     onNewlinePauseChange: (Int) -> Unit,
@@ -204,7 +209,8 @@ fun SettingsScreen(
 
                 // Each slider is followed by its restore button and, where there
                 // is one, the switch that forces the value on every app: speed and
-                // acceleration, then pitch and inflection, then volume.
+                // acceleration, then pitch and inflection, then volume, then the
+                // voice quality: head size, breathiness, roughness, brightness.
                 // Speech Rate Slider (0.5x-2.0x; the formant voices reach 0.25x-4.0x)
                 item {
                     SliderSettingItem(
@@ -212,8 +218,7 @@ fun SettingsScreen(
                         value = uiState.speed,
                         valueRange = uiState.speedPitchRange,
                         onValueChange = onSpeedChange,
-                        valueLabel = formatMultiplier(uiState.speed),
-                        description = stringResource(R.string.cd_slider_adjust)
+                        valueLabel = formatMultiplier(uiState.speed)
                     )
                 }
 
@@ -262,8 +267,7 @@ fun SettingsScreen(
                         value = uiState.pitch,
                         valueRange = uiState.speedPitchRange,
                         onValueChange = onPitchChange,
-                        valueLabel = formatMultiplier(uiState.pitch),
-                        description = stringResource(R.string.cd_slider_adjust)
+                        valueLabel = formatMultiplier(uiState.pitch)
                     )
                 }
 
@@ -312,8 +316,7 @@ fun SettingsScreen(
                         value = uiState.volume,
                         valueRange = 0.0f..1.0f,
                         onValueChange = onVolumeChange,
-                        valueLabel = "${(uiState.volume * 100).toInt()}%",
-                        description = stringResource(R.string.cd_slider_adjust)
+                        valueLabel = "${(uiState.volume * 100).toInt()}%"
                     )
                 }
 
@@ -342,6 +345,85 @@ fun SettingsScreen(
                         subtitle = stringResource(R.string.setting_volume_boost_subtitle),
                         checked = uiState.volumeBoost,
                         onCheckedChange = onVolumeBoostChange
+                    )
+                }
+
+                // Voice quality, after a classic formant synthesizer's parameters: head size,
+                // breathiness, roughness and brightness (0-100, 50 = the voice
+                // as it is), each slider followed by its restore button.
+                item {
+                    SliderSettingItem(
+                        title = stringResource(R.string.setting_head_size),
+                        value = uiState.headSize.toFloat(),
+                        valueRange = 0f..100f,
+                        onValueChange = { onHeadSizeChange(it.roundToInt()) },
+                        valueLabel = "${uiState.headSize}%",
+                        description = stringResource(R.string.setting_head_size_desc)
+                    )
+                }
+
+                item {
+                    RestoreDefaultButton(
+                        text = stringResource(R.string.restore_default_head_size),
+                        description = stringResource(R.string.cd_restore_head_size_desc),
+                        onClick = { onHeadSizeChange(50) }
+                    )
+                }
+
+                item {
+                    SliderSettingItem(
+                        title = stringResource(R.string.setting_breathiness),
+                        value = uiState.breathiness.toFloat(),
+                        valueRange = 0f..100f,
+                        onValueChange = { onBreathinessChange(it.roundToInt()) },
+                        valueLabel = "${uiState.breathiness}%",
+                        description = stringResource(R.string.setting_breathiness_desc)
+                    )
+                }
+
+                item {
+                    RestoreDefaultButton(
+                        text = stringResource(R.string.restore_default_breathiness),
+                        description = stringResource(R.string.cd_restore_breathiness_desc),
+                        onClick = { onBreathinessChange(50) }
+                    )
+                }
+
+                item {
+                    SliderSettingItem(
+                        title = stringResource(R.string.setting_roughness),
+                        value = uiState.roughness.toFloat(),
+                        valueRange = 0f..100f,
+                        onValueChange = { onRoughnessChange(it.roundToInt()) },
+                        valueLabel = "${uiState.roughness}%",
+                        description = stringResource(R.string.setting_roughness_desc)
+                    )
+                }
+
+                item {
+                    RestoreDefaultButton(
+                        text = stringResource(R.string.restore_default_roughness),
+                        description = stringResource(R.string.cd_restore_roughness_desc),
+                        onClick = { onRoughnessChange(50) }
+                    )
+                }
+
+                item {
+                    SliderSettingItem(
+                        title = stringResource(R.string.setting_brightness),
+                        value = uiState.brightness.toFloat(),
+                        valueRange = 0f..100f,
+                        onValueChange = { onBrightnessChange(it.roundToInt()) },
+                        valueLabel = "${uiState.brightness}%",
+                        description = stringResource(R.string.setting_brightness_desc)
+                    )
+                }
+
+                item {
+                    RestoreDefaultButton(
+                        text = stringResource(R.string.restore_default_brightness),
+                        description = stringResource(R.string.cd_restore_brightness_desc),
+                        onClick = { onBrightnessChange(50) }
                     )
                 }
 
@@ -783,13 +865,17 @@ private fun languageName(language: String): String = when (language) {
 }
 
 /**
- * Slider setting item for rate, pitch, and volume.
+ * Slider setting item for rate, pitch, volume and the other numeric settings.
+ *
+ * The [description], when there is one, is shown under the title like a
+ * switch's subtitle and read by TalkBack together with the title.
  *
  * Accessibility for TalkBack:
- * - Visual text row is hidden; Slider keeps native SeekBar accessibility
+ * - Visual text is hidden; Slider keeps native SeekBar accessibility
  * - mergeDescendants on Slider merges internal thumb/track into one node
- * - contentDescription provides the label, stateDescription the formatted value
- * - Announcement: "Title, Slider, Value, Use volume keys to adjust"
+ * - contentDescription provides the label (title and description),
+ *   stateDescription the formatted value
+ * - Announcement: "Title. Description, Value, Slider, Use volume keys to adjust"
  */
 @Composable
 fun SliderSettingItem(
@@ -800,40 +886,54 @@ fun SliderSettingItem(
     valueLabel: String,
     description: String = ""
 ) {
+    val hasDescription = description.isNotBlank()
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
     ) {
-        // Visual text row - hidden from TalkBack
-        Row(
+        // Visual text - hidden from TalkBack, which reads it from the slider
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clearAndSetSemantics {},
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .clearAndSetSemantics {}
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge
-            )
-            Text(
-                text = valueLabel,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Text(
+                    text = valueLabel,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            if (hasDescription) {
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
         // Slider keeps its native SeekBar accessibility (className, role, range, setProgress).
         // mergeDescendants merges internal thumb/track into one node.
-        // contentDescription provides the label, stateDescription overrides the default
-        // percentage with our formatted value (e.g. "1.0x", "500 ms").
+        // contentDescription provides the label and the description (as SwitchSettingItem
+        // does with its subtitle), stateDescription overrides the default percentage with
+        // our formatted value (e.g. "1.0x", "500 ms").
+        val label = if (hasDescription) "$title. $description" else title
         Slider(
             value = value,
             onValueChange = onValueChange,
             valueRange = valueRange,
             modifier = Modifier.semantics(mergeDescendants = true) {
                 isTraversalGroup = true
-                contentDescription = title
+                contentDescription = label
                 stateDescription = valueLabel
             }
         )

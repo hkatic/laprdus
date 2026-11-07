@@ -165,12 +165,68 @@ struct SettingsView: View {
                 restoreLabel: String(localized: "Restore default speech volume"),
                 restore: { settings.volume = 1.0 }
             )
+            SliderRow(
+                title: String(localized: "Head size"),
+                value: Binding(
+                    get: { Float(settings.headSize) },
+                    set: { settings.headSize = Int($0.rounded()) }
+                ),
+                range: 0.0...100.0,
+                step: 5,
+                format: { "\(Int($0.rounded()))%" },
+                subtitle: String(localized: "Length of the vocal tract: 0% a quarter longer (lower formants), 50% the voice as it is, 100% a quarter shorter (higher formants)"),
+                restoreLabel: String(localized: "Restore default head size"),
+                restore: { settings.headSize = SettingsSnapshot.defaultHeadSize }
+            )
+            SliderRow(
+                title: String(localized: "Breathiness"),
+                value: Binding(
+                    get: { Float(settings.breathiness) },
+                    set: { settings.breathiness = Int($0.rounded()) }
+                ),
+                range: 0.0...100.0,
+                step: 5,
+                format: { "\(Int($0.rounded()))%" },
+                subtitle: String(localized: "Breath noise of the voice: 0% none, 50% the voice as it is, 100% five times as much (formant voices)"),
+                restoreLabel: String(localized: "Restore default breathiness"),
+                restore: { settings.breathiness = SettingsSnapshot.defaultBreathiness }
+            )
+            SliderRow(
+                title: String(localized: "Roughness"),
+                value: Binding(
+                    get: { Float(settings.roughness) },
+                    set: { settings.roughness = Int($0.rounded()) }
+                ),
+                range: 0.0...100.0,
+                step: 5,
+                format: { "\(Int($0.rounded()))%" },
+                subtitle: String(localized: "Jitter and shimmer of the voice: 0% none, 50% the voice as it is, 100% five times as much (formant voices)"),
+                restoreLabel: String(localized: "Restore default roughness"),
+                restore: { settings.roughness = SettingsSnapshot.defaultRoughness }
+            )
+            SliderRow(
+                title: String(localized: "Brightness"),
+                value: Binding(
+                    get: { Float(settings.brightness) },
+                    set: { settings.brightness = Int($0.rounded()) }
+                ),
+                range: 0.0...100.0,
+                step: 5,
+                format: { "\(Int($0.rounded()))%" },
+                subtitle: String(localized: "Tone of the voice: 0% dull, 50% the voice as it is, 100% sharp"),
+                restoreLabel: String(localized: "Restore default brightness"),
+                restore: { settings.brightness = SettingsSnapshot.defaultBrightness }
+            )
 
             Button("Restore default speech rate") { settings.speed = 1.0 }
             Button("Restore default acceleration") { settings.acceleration = SettingsSnapshot.defaultAcceleration }
             Button("Restore default speech pitch") { settings.pitch = 1.0 }
             Button("Restore default inflection") { settings.inflectionLevel = SettingsSnapshot.defaultInflectionLevel }
             Button("Restore default speech volume") { settings.volume = 1.0 }
+            Button("Restore default head size") { settings.headSize = SettingsSnapshot.defaultHeadSize }
+            Button("Restore default breathiness") { settings.breathiness = SettingsSnapshot.defaultBreathiness }
+            Button("Restore default roughness") { settings.roughness = SettingsSnapshot.defaultRoughness }
+            Button("Restore default brightness") { settings.brightness = SettingsSnapshot.defaultBrightness }
         }
     }
 

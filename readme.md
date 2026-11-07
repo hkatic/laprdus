@@ -6,7 +6,7 @@ A Retro-type speech synthesizer for Croatian, Serbian, Bosnian and Slovenian lan
 
 ## About
 
-Laprdus is a text-to-speech (TTS) synthesizer for Croatian, Serbian, Bosnian and Slovenian languages. Its original voices use concatenative synthesis technology, joining pre-recorded phoneme units to produce speech output. Its formant voices are synthesized entirely by rule, in the tradition of Eloquence and DECtalk, and need no recordings at all. While not matching modern neural TTS quality, Laprdus offers high performance and minimal memory usage.
+Laprdus is a text-to-speech (TTS) synthesizer for Croatian, Serbian, Bosnian and Slovenian languages. Its original voices use concatenative synthesis technology, joining pre-recorded phoneme units to produce speech output. Its formant voices are synthesized entirely by rule, in the tradition of synthesizer A and synthesizer C, and need no recordings at all. While not matching modern neural TTS quality, Laprdus offers high performance and minimal memory usage.
 
 Laprdus was developed to provide screen reader users with simple and fast access to computers and mobile devices in their native language, for free.
 
@@ -75,7 +75,7 @@ Zvonko, Stojan and Mirsad do not play back recordings. A text front end turns th
 
 ### Singing presets
 
-In the tradition of the singing voices of DECtalk and of the Macintosh (Pipe Organ, Cellos, Bad News), each formant voice also comes as two singing presets. A preset sings whatever text it is given, one syllable per note, to a folk song of its country that is in the public domain, and starts the song over with every utterance; the first stanza of the song fits its tune syllable for syllable. The voice's vocal tract is kept, so the words stay understandable, and only the "larynx" is replaced: a pipe organ with a sub-octave stop and a church reverb, a small choir of detuned voices with a bass an octave down, a trumpet that gets brighter the louder it plays, two accordion reeds tuned a few cents apart, a sung voice with a wide slow vibrato and a singer's formant, and a plucked saz with tremolo picking.
+In the tradition of the singing voices of classic synthesizers and desktop computers (pipe organ, cellos and the like), each formant voice also comes as two singing presets. A preset sings whatever text it is given, one syllable per note, to a folk song of its country that is in the public domain, and starts the song over with every utterance; the first stanza of the song fits its tune syllable for syllable. The voice's vocal tract is kept, so the words stay understandable, and only the "larynx" is replaced: a pipe organ with a sub-octave stop and a church reverb, a small choir of detuned voices with a bass an octave down, a trumpet that gets brighter the louder it plays, two accordion reeds tuned a few cents apart, a sung voice with a wide slow vibrato and a singer's formant, and a plucked saz with tremolo picking.
 
 | Preset | ID | Sings | Song |
 |--------|----|-------|------|
@@ -205,12 +205,13 @@ laprdus -l
 | `-l, --list-voices` | List available voices with their native language |
 | `-h, --help` | Show help |
 
-### Formant voice settings
+### Inflection, acceleration and voice quality
 
-Zvonko, Stojan and Mirsad (and their singing presets) have two settings of their own, shown on every platform only while one of them is selected:
+Every voice has these settings, on every platform:
 
 - **Inflection** (0-100%, default 50%): how much the pitch moves. 0% is a monotone, 50% the melody measured on real speech, 100% twice that.
 - **Acceleration** (0.5x-3.0x, default 1.0x): multiplies the speech rate, so the top of the rate slider of your screen reader or app reaches a higher (or lower) rate. The setting shows the rate the top of the slider then reaches in words per minute (Zvonko speaks about 175 words per minute at the normal rate, so 2.0x acceleration takes the slider's top from 350 to 700 words per minute).
+- **Voice quality** (each 0-100, default 50 = the voice as it is), after the voice-parameter model of a classic formant synthesizer: **Head size** (the length of the vocal tract: 0 a quarter longer with lower formants, 100 a quarter shorter with higher formants; every voice), **Breathiness** and **Roughness** (the voice's own breath noise, jitter and shimmer from none to five times; Zvonko, Stojan, Mirsad and the singing presets) and **Brightness** (the tone from dull to sharp; for the recorded voices a tilt of the top; 0 takes the edge off a phone's speaker at full volume). The Windows Configurator has them behind the "Voice quality..." button, Android and the Apple app as sliders under the volume, the CLIs as `--head-size`, `--breathiness`, `--roughness`, `--brightness`.
 
 The rate and pitch sliders of the formant voices also go further than those of the recorded voices: 0.25x to 4.0x instead of 0.5x to 2.0x.
 

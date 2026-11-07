@@ -142,7 +142,7 @@ struct EngineTests {
         #expect(renamedWithLanguage.voice.id == "solunac")
         #expect(renamedWithLanguage.language.code == "hr-HR")
 
-        #expect(VoiceCatalog.providerVoice(forIdentifier: "com.apple.voice.compact.hr-HR.Lana") == nil)
+        #expect(VoiceCatalog.providerVoice(forIdentifier: "com.example.voice.compact.hr-HR.Other") == nil)
         #expect(VoiceCatalog.providerVoice(forIdentifier: "com.hrvojekatic.laprdus.nobody.hr") == nil)
         #expect(VoiceCatalog.providerVoice(forIdentifier: "com.hrvojekatic.laprdus.zvonko.en") == nil)
     }
@@ -280,6 +280,15 @@ struct EngineTests {
         engine.apply(snapshot)
         let slowest = try engine.synthesize("Dobar dan, kako ste?")
         #expect(slowest.samples.count > normal.samples.count * 3)
+
+        // Brightness 0 (the bare pulse) changes the sound, not the timing.
+        snapshot.speed = 1.0
+        snapshot.brightness = 0
+        engine.apply(snapshot)
+        let dull = try engine.synthesize("Dobar dan, kako ste?")
+        #expect(dull.samples.count == normal.samples.count)
+        #expect(dull.samples != normal.samples)
+        snapshot.brightness = SettingsSnapshot.defaultBrightness
 
         // Kind from the registry: no data file means formant, a formant
         // voice with a base voice sings.
@@ -758,6 +767,10 @@ struct SettingsTests {
         #expect(snapshot.emojiEnabled == false)
         #expect(snapshot.inflectionLevel == 0.5)
         #expect(snapshot.acceleration == 1.0)
+        #expect(snapshot.headSize == 50)
+        #expect(snapshot.breathiness == 50)
+        #expect(snapshot.roughness == 50)
+        #expect(snapshot.brightness == 50)
         #expect(snapshot.sentencePause == 100)
         #expect(snapshot.commaPause == 100)
         #expect(snapshot.newlinePause == 100)
@@ -773,12 +786,15 @@ struct SettingsTests {
         let store = SettingsStore(defaults: defaults)
         store.speed = 1.7
         store.inflectionLevel = 0.2
+        store.brightness = 20
         store.defaultVoice = "vlado"
         store.language = "bs-BA"
 
         let reloaded = SettingsSnapshot.load(from: defaults)
         #expect(reloaded.speed == 1.7)
         #expect(reloaded.inflectionLevel == 0.2)
+        #expect(reloaded.brightness == 20)
+        #expect(defaults.integer(forKey: "brightness") == 20)
         #expect(reloaded.defaultVoice == "vlado")
         #expect(reloaded.language == "bs-BA")
         #expect(defaults.string(forKey: "language") == "bs-BA")
@@ -802,5 +818,13 @@ struct SettingsTests {
         #expect(SettingsSnapshot.load(from: defaults).language == "sr-RS")
         defaults.set("en-US", forKey: SettingsKey.language)
         #expect(SettingsSnapshot.load(from: defaults).language == VoiceCatalog.defaultLanguageCode)
+
+        // The voice quality settings are clamped to 0-100 and default to 50.
+        defaults.set(140, forKey: SettingsKey.headSize)
+        #expect(SettingsSnapshot.load(from: defaults).headSize == 100)
+        defaults.set(-3, forKey: SettingsKey.headSize)
+        #expect(SettingsSnapshot.load(from: defaults).headSize == 0)
+        defaults.removeObject(forKey: SettingsKey.headSize)
+        #expect(SettingsSnapshot.load(from: defaults).headSize == 50)
     }
 }

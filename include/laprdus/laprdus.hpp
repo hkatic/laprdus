@@ -169,6 +169,20 @@ public:
     float acceleration() const;
 
     /**
+     * Voice quality (every voice; 0 - 100, 50 is the voice as it is): head
+     * size (vocal tract length), breathiness, roughness (jitter and
+     * shimmer) and brightness (tone). See laprdus_set_head_size().
+     */
+    void setHeadSize(int value);
+    int headSize() const;
+    void setBreathiness(int value);
+    int breathiness() const;
+    void setRoughness(int value);
+    int roughness() const;
+    void setBrightness(int value);
+    int brightness() const;
+
+    /**
      * Choose whether spelled letters are read by their names ("be", "ce")
      * or by their sounds.
      */

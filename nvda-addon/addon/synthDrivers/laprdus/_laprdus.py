@@ -167,6 +167,33 @@ def _configure_functions(lib):
     lib.laprdus_get_acceleration.argtypes = [LaprdusHandle]
     lib.laprdus_get_acceleration.restype = ctypes.c_float
 
+    # Voice quality after the voice-parameter model of a classic formant synthesizer: head size,
+    # breathiness, roughness and brightness, 0-100 each, 50 = the voice
+    # as it is
+    lib.laprdus_set_head_size.argtypes = [LaprdusHandle, ctypes.c_int]
+    lib.laprdus_set_head_size.restype = LaprdusError
+
+    lib.laprdus_get_head_size.argtypes = [LaprdusHandle]
+    lib.laprdus_get_head_size.restype = ctypes.c_int
+
+    lib.laprdus_set_breathiness.argtypes = [LaprdusHandle, ctypes.c_int]
+    lib.laprdus_set_breathiness.restype = LaprdusError
+
+    lib.laprdus_get_breathiness.argtypes = [LaprdusHandle]
+    lib.laprdus_get_breathiness.restype = ctypes.c_int
+
+    lib.laprdus_set_roughness.argtypes = [LaprdusHandle, ctypes.c_int]
+    lib.laprdus_set_roughness.restype = LaprdusError
+
+    lib.laprdus_get_roughness.argtypes = [LaprdusHandle]
+    lib.laprdus_get_roughness.restype = ctypes.c_int
+
+    lib.laprdus_set_brightness.argtypes = [LaprdusHandle, ctypes.c_int]
+    lib.laprdus_set_brightness.restype = LaprdusError
+
+    lib.laprdus_get_brightness.argtypes = [LaprdusHandle]
+    lib.laprdus_get_brightness.restype = ctypes.c_int
+
     lib.laprdus_get_nominal_wpm.argtypes = [ctypes.c_char_p]
     lib.laprdus_get_nominal_wpm.restype = ctypes.c_float
 
@@ -687,6 +714,51 @@ class LaprdusEngine(object):
     def get_acceleration(self):
         """Get the acceleration of the formant voices."""
         return float(self._lib.laprdus_get_acceleration(self._handle))
+
+    # Voice quality (0-100 each, default 50 = the voice as it is), after
+    # synthesizer A's voice parameters; the engine clamps the value
+
+    def set_head_size(self, value):
+        """Set the head size: the length of the vocal tract, 0 a quarter
+        longer (lower formants), 100 a quarter shorter (higher formants).
+        Every voice."""
+        result = self._lib.laprdus_set_head_size(self._handle, int(value))
+        return result == LAPRDUS_OK
+
+    def get_head_size(self):
+        """Get the head size (0-100)."""
+        return int(self._lib.laprdus_get_head_size(self._handle))
+
+    def set_breathiness(self, value):
+        """Set the breath noise: 0 none, 100 five times the voice's own.
+        Formant voices."""
+        result = self._lib.laprdus_set_breathiness(self._handle, int(value))
+        return result == LAPRDUS_OK
+
+    def get_breathiness(self):
+        """Get the breathiness (0-100)."""
+        return int(self._lib.laprdus_get_breathiness(self._handle))
+
+    def set_roughness(self, value):
+        """Set the roughness (jitter and shimmer): 0 none, 100 five times
+        the voice's own. Formant voices."""
+        result = self._lib.laprdus_set_roughness(self._handle, int(value))
+        return result == LAPRDUS_OK
+
+    def get_roughness(self):
+        """Get the roughness (0-100)."""
+        return int(self._lib.laprdus_get_roughness(self._handle))
+
+    def set_brightness(self, value):
+        """Set the brightness of the tone: 0 dull, 100 sharp. Every voice
+        (the formant voices through the source, the recorded voices through
+        a tilt around 1.5 kHz)."""
+        result = self._lib.laprdus_set_brightness(self._handle, int(value))
+        return result == LAPRDUS_OK
+
+    def get_brightness(self):
+        """Get the brightness (0-100)."""
+        return int(self._lib.laprdus_get_brightness(self._handle))
 
     def get_nominal_wpm(self, voice_id=None):
         """Words per minute of a voice at speed 1.0 and acceleration 1.0."""

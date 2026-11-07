@@ -325,7 +325,7 @@ struct SymbolName {
 
 // Symbols that are read by name wherever they stand. The marks are here for
 // the cases where InflectionProcessor leaves them inside a clause: glued to
-// the next character, as in "datoteka.txt", "3.14", "12:30" (eSpeak reads
+// the next character, as in "datoteka.txt", "3.14", "12:30" (synthesizer B reads
 // them the same way; a comma, semicolon or question mark inside a word is
 // silent there and here).
 const SymbolName SYMBOLS[] = {
@@ -510,7 +510,7 @@ std::vector<Word> tokenize(const std::u32string& text, VoiceLanguage language) {
         // A period after a single letter is the dot of an abbreviation
         // ("s.a.r.s.", "U.S.A.", "t.j."): it is silent, and the letter
         // before it and a single letter after it are read by name, as
-        // eSpeak and RHVoice read them. (The dot after the last letter is
+        // synthesizer B reads them. (The dot after the last letter is
         // a clause end and never reaches the front end.)
         if (c == U'.' && current.w.size() == 1) {
             current.spell = true;
@@ -3313,7 +3313,7 @@ bool is_letter_name(const std::u32string& letter, const std::u32string& text) {
 
 // A consonant alone is spoken as the consonant followed by a short neutral
 // vowel ("bə", "sə", "mə"), the way the letters are sounded out when
-// children learn to read and the way eSpeak's Croatian voice spells them: a
+// children learn to read and the way synthesizer B's Croatian voice spells them: a
 // held fricative or a bare burst with nothing after it is hard to tell from
 // the next letter, and a stop cannot be heard at all without a release.
 Utterance Frontend::letter_sound(const std::u32string& letter) const {

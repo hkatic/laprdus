@@ -227,7 +227,7 @@ ClausePlan plan_clause(const formant::Utterance& utt, const UnitBank& bank,
             // A letter's sound alone (spelling by sounds): a vowel letter as
             // a stressed syllable; a consonant letter as the consonant
             // (fricatives held a little, stops and affricates with their
-            // whole recording) and the release vowel after it, as eSpeak
+            // whole recording) and the release vowel after it, as synthesizer B
             // sounds the letters out.
             switch (def.cls) {
                 case formant::PhClass::Vowel: d = 190.0f; break;

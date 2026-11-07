@@ -30,6 +30,7 @@ Version 2.0
     - [4.6 Inflection](#46-inflection)
     - [4.7 Spelling](#47-spelling)
     - [4.8 Laprdus Configurator (Windows)](#48-laprdus-configurator-windows)
+    - [4.9 Voice quality](#49-voice-quality)
 5. [Dictionaries](#5-dictionaries)
     - [5.1 Types of dictionaries](#51-types-of-dictionaries)
     - [5.2 Dictionary file locations](#52-dictionary-file-locations)
@@ -352,6 +353,10 @@ echo "Tekst" | laprdus
 | `-p, --speech-pitch` | Pitch (0.5-2.0, default: 1.0; formant voices 0.25-4.0) |
 | `-I, --inflection` | Inflection level, 0-100 (default: 50; 0 is a monotone) |
 | `-a, --acceleration` | Acceleration, a speech rate multiplier 0.5-3.0 (default: 1.0) |
+| `--head-size PERCENT` | Voice quality: vocal tract length, 0-100 (default: 50 = the voice as it is) |
+| `--breathiness PERCENT` | Breath noise, 0-100 (default: 50; formant voices) |
+| `--roughness PERCENT` | Jitter and shimmer, 0-100 (default: 50; formant voices) |
+| `--brightness PERCENT` | Tone, 0-100 (default: 50; 0 dull, 100 sharp) |
 | `-V, --speech-volume` | Volume (0.0-1.0, default: 1.0) |
 | `-B, --volume-boost` | Volume boost: louder speech through a peak limiter, for noisy places |
 | `-d, --numbers-digits` | Read numbers digit by digit |
@@ -385,7 +390,7 @@ When you use Laprdus with the NVDA screen reader, you can change the voice setti
     - Volume
     - Rate boost (makes every position of the rate slider three times faster)
 
-**The language is separate from the voice.** Every Laprdus voice speaks all four languages, so the list of voices is the same for every language, and you choose the language in a separate "Language" drop-down list, as in eSpeak. The language determines the pronunciation rules, the accent dictionary, the letter names when spelling and the words for numbers (*tisuća*, *milijun* in Croatian; *hiljada*, *milion* in Serbian and Bosnian; *tisoč*, *milijon* in Slovenian): this way, Josip can speak Serbian, and Stojan Croatian or Slovenian. A new installation starts in NVDA's language if that's Croatian, Serbian, Bosnian or Slovenian, and otherwise in Croatian; NVDA remembers the language you choose, like its other settings. Language is also in the synth settings ring (Ctrl+NVDA+arrow keys).
+**The language is separate from the voice.** Every Laprdus voice speaks all four languages, so the list of voices is the same for every language, and you choose the language in a separate "Language" drop-down list, as in synthesizer B. The language determines the pronunciation rules, the accent dictionary, the letter names when spelling and the words for numbers (*tisuća*, *milijun* in Croatian; *hiljada*, *milion* in Serbian and Bosnian; *tisoč*, *milijon* in Slovenian): this way, Josip can speak Serbian, and Stojan Croatian or Slovenian. A new installation starts in NVDA's language if that's Croatian, Serbian, Bosnian or Slovenian, and otherwise in Croatian; NVDA remembers the language you choose, like its other settings. Language is also in the synth settings ring (Ctrl+NVDA+arrow keys).
 
 **Automatic language switching.** When "Automatic language switching (when supported)" is turned on in NVDA's speech settings, Laprdus speaks text marked as Croatian, Serbian, Bosnian or Slovenian in that language, with the same voice; it speaks text in any other language in the language you chose. The voice never changes.
 
@@ -422,7 +427,7 @@ Speech rate determines how fast Laprdus speaks text. The range is 0.5 (half spee
 - **1.5** - Moderately fast, for experienced users
 - **2.0** - Fast, for advanced users
 
-Note: In the NVDA add-on, the "Rate boost" option makes every position of the rate slider three times faster, as in eSpeak and OneCore; Josip, Vlado and the voices derived from them stop at four times the normal rate.
+Note: In the NVDA add-on, the "Rate boost" option makes every position of the rate slider three times faster, as in other synthesizers; Josip, Vlado and the voices derived from them stop at four times the normal rate.
 
 **The Laprdus rate and the screen reader's rate.** The rate in the Laprdus settings is the voice's normal rate, and the screen reader or app (TalkBack, VoiceOver, NVDA, programs that use SAPI5, Speech Dispatcher) sets its own rate relative to it. While the screen reader speaks at its normal rate, Laprdus speaks at exactly the rate in its settings; a screen reader running twice as fast gives twice that rate. That's why both the rate slider in Laprdus and the slider in the screen reader speed up and slow down the speech. The "Force Laprdus speech rate" switch ("Force Laprdus speech speed for all applications" in the Windows Configurator) ignores the rate the screen reader or app asks for, so Laprdus speaks at the rate in its settings alone. [Acceleration](#46-inflection) then multiplies that rate.
 
@@ -446,7 +451,7 @@ Volume determines how loud the speech is. The range is 0.0 (silent) to 1.0 (maxi
 
 #### Volume boost
 
-The **Boost speech volume (for noisy places)** switch in the Laprdus Configurator makes speech louder than the volume slider allows at 100%. It's meant for noisy places (traffic, the street) and for the phone's earpiece when the speaker is off: for example, to hear who you're calling while the call connects, or to find the button that turns on the speaker during a call. Speech goes through strong amplification, a peak limiter and soft clipping of the strongest peaks, as in Google's "amplify speech volume" setting: quiet parts get about 11 dB louder and loud parts about 8 dB louder, and the sound doesn't break up, although the loudest vowels are slightly compressed. NVDA's volume slider still changes the boosted speech. The switch is off by default and applies to all voices.
+The **Boost speech volume (for noisy places)** switch in the Laprdus Configurator makes speech louder than the volume slider allows at 100%. It's meant for noisy places (traffic, the street) and for the phone's earpiece when the speaker is off: for example, to hear who you're calling while the call connects, or to find the button that turns on the speaker during a call. Speech goes through strong amplification and a peak limiter that changes its gain only between syllables, as in the speech amplification setting of phone systems: quiet parts get about 8 dB louder and loud parts about 3 dB louder, and nothing inside a syllable is clipped or compressed, so the sound stays clean. The consonants keep their distance from the vowels, and the treble above 4 kHz is turned down by 3 dB, since a phone's speaker at full volume has a peak of its own there. NVDA's volume slider still changes the boosted speech. The switch is off by default and applies to all voices.
 
 ### 4.4 Pauses
 
@@ -499,7 +504,7 @@ In NVDA, NVDA's Inflection slider in the voice settings sets the inflection leve
 When the screen reader spells text or speaks characters as you type, Laprdus reads each letter in one of two ways:
 
 - **By letter name**: *a, be, ce, če, će, de, dže, đe, e, ef, ge, ha, i, je, ka, el, elj, em, en, enj, o, pe, er, es, eš, te, u, ve, ze, že*; foreign letters *ku, duplo ve, iks, ipsilon*. These are the names from the Croatian orthography, and they also apply in Bosnian. In Serbian, every voice follows the decision of the Committee for the Standardization of the Serbian Language: *lje, nje* and *ša* instead of *elj, enj* and *eš*, with the other letters the same, Cyrillic as well as Latin (*Љ* is *lje*, *Ш* is *ša*). In Slovenian, the names follow Slovenski pravopis: the same names for its 25 letters, *dvojni ve* for W, and *mehki če* and *mehki dže* for Ć and Đ. The selected language determines the names, not the voice: Josip says *lje* in Serbian, Stojan says *elj* in Croatian.
-- **By letter sound** (default): instead of the name, Laprdus speaks the sound the letter stands for, as when a child learns to read and as eSpeak's Croatian voice spells letters: the consonant followed by a short neutral vowel (*bə, cə, čə, fə, sə, mə*), and vowels as vowels. The foreign letters *q, w, x* and *y* aren't part of the native alphabet, so they're read by name here too (*ku, duplo ve, iks, ipsilon*). English names and English pronunciation aren't used.
+- **By letter sound** (default): instead of the name, Laprdus speaks the sound the letter stands for, as when a child learns to read and as synthesizer B's Croatian voice spells letters: the consonant followed by a short neutral vowel (*bə, cə, čə, fə, sə, mə*), and vowels as vowels. The foreign letters *q, w, x* and *y* aren't part of the native alphabet, so they're read by name here too (*ku, duplo ve, iks, ipsilon*). English names and English pronunciation aren't used.
 
 The spelling mode is the "Spell letters by their sounds" switch, on in a new installation, in the advanced settings (Windows: the Options group in the Configurator; Android and Apple: the Advanced section; NVDA: the Configurator; command line: `-m`). It applies to spelling, typing and a letter standing alone in a message; words are still spoken normally. In both modes, numbers, punctuation and symbols are read by their names from the spelling dictionary. Spelling speed is described in [4.4](#44-pauses).
 
@@ -522,12 +527,22 @@ The Configurator lets you adjust:
 
 - Speech rate, pitch and volume (NVDA's sliders speed up, slow down, raise and lower the rate and pitch, unless forcing the Laprdus values is on; see [4.1](#41-speech-rate))
 - Inflection and acceleration, for all voices: inflection from 0% (monotone) through 50% (default, natural movements) to 100% (movements twice as large), in SAPI5 programs (in NVDA, NVDA's Inflection slider sets it); acceleration multiplies the speech rate in SAPI5 programs (0.5x-3.0x, default 1.0x) and isn't used in NVDA, because NVDA's Rate boost provides higher rates. The speed and pitch sliders go from 0.25x to 4.0x for the formant voices.
+- Voice quality: head size, breathiness, roughness and brightness, with the "Voice quality..." button under the volume boost (see [4.9](#49-voice-quality))
 - How numbers are read
 - Pause lengths and spelling speed
 - Spelling letters by their sounds instead of their names
 - Customizing the user dictionaries
 
 Settings are saved in the user folder `%APPDATA%\Laprdus` and are shared between SAPI5 and the NVDA add-on.
+
+### 4.9 Voice quality
+
+The four voice quality settings follow the voice-parameter model of a classic formant synthesizer: head size, breathiness, roughness and brightness. Under NVDA they are NVDA's own voice settings: the sliders Head size, Breathiness, Roughness and Brightness in NVDA's voice settings, after the volume, and in the synth settings ring (Ctrl+NVDA+arrow keys), each from 0 to 100, where 50 is the voice as it is; NVDA saves them like its other settings. The Laprdus Configurator has the same four behind its "Voice quality..." button, but those values apply to SAPI5 only (stored in `settings.json` as `speech.head_size`, `speech.breathiness`, `speech.roughness` and `speech.brightness`), as its inflection settings do.
+
+- **Head size** – the length of the vocal tract: 0 is a quarter longer (lower formants, a bigger voice), 100 a quarter shorter (higher formants, a smaller voice). Works for every voice.
+- **Breathiness** – the breath noise in the voice: 0 is none, 100 five times as much as in the voice as it is. Works for the formant voices (Zvonko, Stojan, Mirsad and the singing voices).
+- **Roughness** – the cycle-to-cycle irregularities of pitch and loudness (jitter and shimmer): 0 is none, 50 the voice as it is; above 50 every second cycle of the voice comes sooner and weaker, a rasp that grows up to 100. Works for the formant voices.
+- **Brightness** – the tone: 0 is dark and muffled, 100 sharp and bright. Works for every voice: for the formant voices through the voice source, for the recorded voices through a spectral tilt around 1.5 kHz.
 
 ---
 
@@ -1345,7 +1360,7 @@ Laprdus includes eighteen voices - two base, three derived, three formant and te
 
 Base and derived voices, like all the others, speak all four languages: Josip says *hiljada* and spells *lje* in Serbian, Vlado says *tisuća* and *elj* in Croatian, and *tisoč* in Slovenian.
 
-**Formant voices** (Zvonko, Stojan, Mirsad) use no recordings. Speech is computed entirely by rule, as with the Eloquence and DECtalk synthesizers: the sounds, stress and sentence intonation are worked out from the text, and then a formant synthesizer generates the audio. As a result, these voices:
+**Formant voices** (Zvonko, Stojan, Mirsad) use no recordings. Speech is computed entirely by rule, as with classic formant synthesizers: the sounds, stress and sentence intonation are worked out from the text, and then a formant synthesizer generates the audio. As a result, these voices:
 
 - don't need voice data files
 - stay clean and intelligible at very high rates, because rate and pitch don't come from audio processing after the fact
@@ -1354,7 +1369,7 @@ Base and derived voices, like all the others, speak all four languages: Josip sa
 
 If a formant voice stresses a word on the wrong syllable, you can set the stress in the pronunciation dictionary with the usual accent marks, for example, `telèfon`, `gláva`, `kȕća` or `grȃd`.
 
-**Singing voices** (Orguljaš - Vila Velebita, Dalmacija Klapa, Lika Velebit and Bećarac in Zvonko's voice; Trubač - Kreće se lađa francuska, Harmonikaš - Kreće se lađa francuska and Solunac in Stojan's; Sevdalija - Kad ja pođoh na Bembašu, Sazlija - Kad ja pođoh na Bembašu and Sarajevo Bembaša in Mirsad's) are formant voices that sing text instead of speaking it, as DECtalk and the Pipe Organ and Cellos voices on the Macintosh did. Each syllable gets one note of a folk song (Zvonko's voices sing *Vila Velebita*, Stojan's *Kreće se lađa francuska*, Mirsad's *Kad ja pođoh na Bembašu*), in whichever of the four languages is selected; the first verse of the song fits the melody exactly, and any other text is sung to the same melody, syllable by syllable, starting over with each new sentence the program sends. Speech rate sets the tempo, pitch transposes the song, and inflection sets the vibrato depth (0% turns it off). Instead of a larynx, each voice has its own "instrument": an organ with church reverb, a klapa of several voices with a bass an octave lower, a trumpet, two accordion reeds tuned a few cents apart, a sevdah singer's voice with a wide vibrato, and a saz with tremolo. Lika Velebit, Solunac and Sarajevo Bembaša sing in the ordinary voices of Zvonko, Stojan and Mirsad, with no instrument or reverb, and their song is transposed to the pitch at which they normally speak.
+**Singing voices** (Orguljaš - Vila Velebita, Dalmacija Klapa, Lika Velebit and Bećarac in Zvonko's voice; Trubač - Kreće se lađa francuska, Harmonikaš - Kreće se lađa francuska and Solunac in Stojan's; Sevdalija - Kad ja pođoh na Bembašu, Sazlija - Kad ja pođoh na Bembašu and Sarajevo Bembaša in Mirsad's) are formant voices that sing text instead of speaking it, as the singing voices of classic synthesizers and desktop computers did. Each syllable gets one note of a folk song (Zvonko's voices sing *Vila Velebita*, Stojan's *Kreće se lađa francuska*, Mirsad's *Kad ja pođoh na Bembašu*), in whichever of the four languages is selected; the first verse of the song fits the melody exactly, and any other text is sung to the same melody, syllable by syllable, starting over with each new sentence the program sends. Speech rate sets the tempo, pitch transposes the song, and inflection sets the vibrato depth (0% turns it off). Instead of a larynx, each voice has its own "instrument": an organ with church reverb, a klapa of several voices with a bass an octave lower, a trumpet, two accordion reeds tuned a few cents apart, a sevdah singer's voice with a wide vibrato, and a saz with tremolo. Lika Velebit, Solunac and Sarajevo Bembaša sing in the ordinary voices of Zvonko, Stojan and Mirsad, with no instrument or reverb, and their song is transposed to the pitch at which they normally speak.
 
 ### 6.3 Choosing a voice
 

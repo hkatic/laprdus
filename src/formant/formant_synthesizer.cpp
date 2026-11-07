@@ -6,6 +6,8 @@
 #include "../audio/volume_boost.hpp"
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <functional>
 #include <utility>
@@ -211,7 +213,23 @@ constexpr float SCHWA_F[3] = {500.0f, 1380.0f, 2600.0f};
 // ones. Samples below LIMIT_KNEE pass unchanged; the few peaks above it are
 // rounded off instead of clipped.
 constexpr float OUTPUT_GAIN = 0.28f;
+// F4's bandwidth in the cascade for the speaking voices (the singing presets
+// keep 180): with 180 Hz the /a/'s 3-4 kHz stood 3-5 dB above synthesizer A's
+// after the source and F5 had been matched (November 2026).
+constexpr float SPEAKING_F4_BANDWIDTH = 220.0f;
 constexpr float LIMIT_KNEE = 0.8f;
+
+// Silent frames before the first sound. The friction track is box-smoothed
+// with a radius of 3 frames, so the lead must be one frame longer than that
+// for a clause that opens with s, š, f or h to rise from zero: with 3 lead
+// frames the first output sample of "sapa" jumped to 4 % of full scale
+// (-28 dBFS), a tick at the start of every such utterance (November 2026).
+constexpr int LEAD_FRAMES = 4;
+
+// How long a noisy segment's filter bank stays in place after the segment
+// ends: the smoothing radius of the friction track plus one frame for the
+// bank to ring out. Measured in frames of FRAME_MS.
+constexpr int NOISE_HOLD_FRAMES = 4;
 
 // Longest stretch synthesized in one go (see synthesize_clause).
 constexpr size_t MAX_GROUP_WORDS = 48;
@@ -320,7 +338,39 @@ public:
         compute_formants();
         build_tracks();
         build_pitch();
+        if (std::getenv("LAPRDUS_TRACE_SEGMENTS")) trace_segments();
         return std::move(m_frames);
+    }
+
+    // Debug aid: the segment table on stderr, with the time of each segment
+    // in the rendered clause (the lead frames included), so that a click or
+    // a spectral event measured in the output can be put to its sound.
+    void trace_segments() const {
+        static const char* const NAMES[] = {
+            "SIL", "A", "E", "I", "O", "U", "SCHWA", "EH", "OH", "EE", "OO", "AX", "W",
+            "J", "V", "L", "LJ", "M", "N", "NJ", "NG", "R", "P", "B", "T", "D", "K", "G",
+            "C", "DZ", "CH", "DZH", "TJ", "DJ", "F", "S", "Z", "SH", "ZH", "SJ", "ZJ", "H", "GH"};
+        static const char* const KINDS[] = {"plain", "closure", "release"};
+        const float lead_ms = static_cast<float>(m_lead) * FRAME_MS;
+        std::fprintf(stderr, "segments (ms from the clause start; lead %.0f ms):\n", lead_ms);
+        std::fprintf(stderr, "  start   dur  phone   kind     av    af  burst    ah  tilt  noise f/bw/a + bypass\n");
+        for (const Seg& seg : m_segs) {
+            const size_t ph = static_cast<size_t>(seg.ph);
+            std::fprintf(stderr, "  %5.0f %5.0f  %-6s  %-7s %5.2f %5.2f  %5.2f %5.2f %5.1f",
+                         lead_ms + seg.start, seg.dur,
+                         ph < sizeof(NAMES) / sizeof(NAMES[0]) ? NAMES[ph] : "?",
+                         KINDS[static_cast<size_t>(seg.kind)], seg.av, seg.af, seg.burst,
+                         seg.ah, seg.tilt);
+            if (seg.has_noise) {
+                for (int k = 0; k < NOISE_PEAKS; ++k) {
+                    std::fprintf(stderr, "  %.0f/%.0f/%.2f", seg.noise.f[k], seg.noise.b[k],
+                                 seg.noise.a[k]);
+                }
+                std::fprintf(stderr, " +%.2f fa %.2f/%.2f/%.2f", seg.noise.bypass,
+                             seg.noise.fa[0], seg.noise.fa[1], seg.noise.fa[2]);
+            }
+            std::fprintf(stderr, "\n");
+        }
     }
 
 private:
@@ -458,7 +508,7 @@ private:
 
     // A letter's sound alone (spelling by sounds): a vowel letter as a
     // stressed syllable; a consonant letter as the consonant and a neutral
-    // vowel after it, as eSpeak's Croatian voice sounds the letters out
+    // vowel after it, as synthesizer B's Croatian voice sounds the letters out
     // (measured at its default rate: 70-90 ms of consonant, 110-130 ms of
     // vowel at the level of a full vowel).
     static float isolated_duration(const Phone& p, const PhDef& def, const Phone* next) {
@@ -478,7 +528,7 @@ private:
     }
 
     // An affricate alone holds its friction for long enough to be told
-    // from a stop. The consonant keeps its own level: eSpeak's sit at
+    // from a stop. The consonant keeps its own level: synthesizer B's sit at
     // 20-45% of the vowel that follows, and so do these.
     static constexpr float ISOLATED_AFFRICATE_MS = 110.0f;
 
@@ -504,10 +554,15 @@ private:
 
     // The closure of a stop or affricate at the start of a clause: silence
     // kept short; a voice bar with F1 damped (the source is raised to keep
-    // its level), duller and no longer than Eloquence's.
+    // its level), duller and no longer than synthesizer A's.
     static constexpr float INITIAL_CLOSURE_MS = 14.0f;
     static constexpr float INITIAL_VOICE_BAR_MS = 60.0f;
-    static constexpr float INITIAL_VOICE_BAR_AV = 1.20f;
+    static constexpr float INITIAL_VOICE_BAR_AV = 1.0f;    // 1.20 until the low shelf of November 2026 lifted every bar 5-6 dB
+    // The voice bar of b, d, g between vowels (d's own is D_BAR_AV). 0.95
+    // until November 2026, when the low shelf on the voicing lifted the bars
+    // by 5-6 dB: b's closure then stood 10 dB under the vowel, 5 dB under its
+    // own release (synthesizer A: the closure 35 dB down, the release 5).
+    static constexpr float VOICE_BAR_AV = 0.70f;
     static constexpr float INITIAL_VOICE_BAR_TILT = 30.0f;
     static constexpr float INITIAL_VOICE_BAR_B1 = 200.0f;
 
@@ -532,7 +587,18 @@ private:
     static constexpr float D_INITIAL_BAR_MS = 40.0f;
     static constexpr float D_BAR_FADE_MS = 15.0f;
     static constexpr float D_BAR_FADE = 0.60f;
-    static constexpr float D_BURST = 1.5f;
+    static constexpr float D_BURST = 1.5f;      // t's af fell from 0.50 to 0.27 for synthesizer A's burst (November 2026); d keeps most of its release
+    // The velar burst by the vowel after it (synthesizer A: k -15.6 dB re
+    // the vowel before a, -20.5 before i and u; ours were alike until
+    // November 2026): louder before a central vowel, weaker before a front one.
+    static constexpr float VELAR_CENTRAL_BURST = 1.6f;
+    static constexpr float VELAR_FRONT_BURST = 0.8f;
+
+    // The first 6 ms of an affricate's friction, over its body: the
+    // transient of the stop release. It was 1.5 (1.25 for c) until November
+    // 2026, the strongest friction in the voice after the k burst; on a
+    // phone at full volume it was the spike listeners heard in č, ć, c.
+    static constexpr float AFFRICATE_ATTACK = 1.15f;
     static constexpr float D_RELEASE_AV = 0.55f;
     static constexpr float D_RELEASE_MS = 8.0f;
     static constexpr float D_INITIAL_RELEASE_MS = 16.0f;
@@ -540,7 +606,7 @@ private:
     static constexpr float D_F1_SNAP = 0.72f;
 
     // A clause-final l keeps a higher F1 (the recorded speaker's 450 Hz,
-    // eSpeak's 390-450): with the low F1 of an l between vowels it was
+    // synthesizer B's 390-450): with the low F1 of an l between vowels it was
     // heard as a nasal at the end ("sol" as "son", the spelled "el" as
     // "em"), and no vowel follows that the deep dip would set it off from.
     static constexpr float FINAL_L_F1 = 420.0f;
@@ -839,11 +905,11 @@ private:
                     // (the recorded speaker's "atka", "akta": 24-40 ms of
                     // noise 16-28 dB below the vowels).
                     if (weak_release) release = voiced ? 7.0f : 14.0f;
-                    // The labial release follows Eloquence: the click and
+                    // The labial release follows synthesizer A: the click and
                     // then breath through the opening glottis, 22-28 ms of
                     // broadband noise some 30 dB below the vowel, running
                     // straight into it (16 ms when fast). A version with a
-                    // silent gap between burst and voice, as in eSpeak and
+                    // silent gap between burst and voice, as in synthesizer B and
                     // the Klatt voice, was heard as a gap in the word. See
                     // "p and b once more" in docs/formant.md.
                     if (!voiced && labial && !weak_release) release = rate(24.0f, 14.0f);
@@ -855,7 +921,7 @@ private:
                     // After friction the silent gap is the only thing that
                     // separates the stop from the noise before it: when it
                     // shrinks to 10-20 ms, "st", "sk", "št", "šk", "čk" are
-                    // heard as the bare fricative. Eloquence keeps 40 ms
+                    // heard as the bare fricative. synthesizer A keeps 40 ms
                     // there (28 ms at a 60% faster rate, 12-16 ms at three
                     // times the rate), so the gap has a floor of its own
                     // that gives way to speed only slowly.
@@ -869,7 +935,7 @@ private:
                     // the release has to: after the burst the friction at
                     // the place of articulation dies away slowly (over 40-55
                     // ms in the recordings, falling about 15 dB; 90 ms in
-                    // Eloquence). With only the 16 ms burst, final t and k
+                    // synthesizer A). With only the 16 ms burst, final t and k
                     // were easy to miss. The velar's is weaker and flatter.
                     const bool prepausal = !voiced && !next;
                     if (prepausal) {
@@ -879,7 +945,7 @@ private:
                     // At the start of a clause nothing before the closure
                     // shows it. A voiceless one is only silence, and the
                     // word came late: 106 ms before "ce", "ka", "pe" at the
-                    // default spelling speed, where eSpeak, MBROLA and the
+                    // default spelling speed, where synthesizer B, diphone synthesizers and the
                     // Klatt voice start the release at once. A voiced one
                     // is the voice bar alone (see below).
                     const bool initial = !prev;
@@ -890,14 +956,14 @@ private:
                     Seg& cl = add_seg(p.ph, SegKind::Closure, i, closure);
                     if (voiced) {
                         // Voice bar: low-frequency murmur during the closure,
-                        // the loud, steady buzz of Eloquence and DECtalk
+                        // the loud, steady buzz of synthesizer A and synthesizer C
                         // (6-20 dB below the vowels, nothing above 1 kHz),
-                        // which is what makes their b stand out. Eloquence's
+                        // which is what makes their b stand out. synthesizer A's
                         // d and g between vowels dip just as little (7-9 dB
                         // in "ada", a recorded speaker 10 dB); with the
                         // weaker bar they had before (21 dB down) the closure
                         // of "dvadeset" was a gap that split the word.
-                        cl.av = 0.95f;
+                        cl.av = VOICE_BAR_AV;
                         cl.tilt = 22.0f;
                         cl.f0_shift = -0.8f;
                         if (initial) {
@@ -910,13 +976,13 @@ private:
                             // F1 damped as in the closure of p and b the bar
                             // is a plain low hum, kept about as loud as a
                             // recorded Croatian speaker's (11-13 dB under the
-                            // vowel; Eloquence 6 dB, but duller still) and no
-                            // longer than Eloquence's 56-70 ms.
+                            // vowel; synthesizer A 6 dB, but duller still) and no
+                            // longer than synthesizer A's 56-70 ms.
                             cl.av = INITIAL_VOICE_BAR_AV;
                             cl.tilt = INITIAL_VOICE_BAR_TILT;
                             cl.bw[0] = INITIAL_VOICE_BAR_B1;
                         }
-                        if (p.ph == Ph::D) cl.av *= D_BAR_AV / 0.95f;
+                        if (p.ph == Ph::D) cl.av *= D_BAR_AV / VOICE_BAR_AV;
                     }
                     // The first formant is heavily damped once the lips
                     // close. With the vowel's 70 Hz bandwidth kept through
@@ -933,7 +999,7 @@ private:
                                 (voiced && !labial ? 0.90f : 1.0f) *
                                 (weak_release ? (voiced ? 0.4f : 0.7f) : 1.0f);
                     if (prepausal) {
-                        rel.burst_tail = p.ph == Ph::K ? 0.20f : 0.50f;
+                        rel.burst_tail = p.ph == Ph::K ? 0.20f : (p.ph == Ph::T ? 0.65f : 0.50f);
                         rel.tail_decay = p.ph == Ph::K ? 40.0f : 25.0f;
                         // Breath through the open glottis goes with it. It
                         // is what a released stop has and an affricate has
@@ -959,7 +1025,14 @@ private:
                     } else if (next_vocalic || next_cls == PhClass::Tap) {
                         // /r/ after a stop opens with a vocalic stretch, so
                         // the stop is released into it as into a vowel.
-                        rel.ah = p.ph == Ph::K ? 0.45f : (p.ph == Ph::P ? 0.32f : 0.20f);
+                        // k's breath was 0.45 until November 2026: through the
+                        // cascade it spread the release over 0.5-2.5 kHz where
+                        // synthesizer A's k is one peak at 1.5-2 kHz.
+                        // t's breath was 0.20 until November 2026: with the burst
+                        // at synthesizer A's level (its loudest 6 ms 22 dB under the
+                        // vowel, ours 23) the release after it was 2-4 dB louder
+                        // than synthesizer A's (-24/-22 against -26/-27 dB).
+                        rel.ah = p.ph == Ph::K ? 0.15f : (p.ph == Ph::P ? 0.32f : 0.15f);
                     }
                     break;
                 }
@@ -1145,7 +1218,7 @@ private:
             // Loci; the velar place follows the vowel (front before front
             // vowels, back before back vowels), with F2 and F3 close together.
             // A vowel that lies behind another consonant has no hold on it:
-            // the k of "disk" is neutral (as Eloquence's in "risk", "desk"),
+            // the k of "disk" is neutral (as synthesizer A's in "risk", "desk"),
             // not the fronted one of "ki", whose burst is close to a /t/'s.
             float loc[3] = {def.loc[0] * scale, def.loc[1] * scale, def.loc[2] * scale};
             const bool velar = seg.ph == Ph::K || seg.ph == Ph::G || seg.ph == Ph::NG;
@@ -1194,18 +1267,25 @@ private:
                     seg.coart[k] = def.coart[k];
                     seg.self[k] = loc[k] + def.coart[k] * (cv[k] - loc[k]);
                 }
-                // Before front vowels the velar burst sits where F2 and F3
-                // meet, so both carry it.
-                if (seg.has_noise && (seg.ph == Ph::K || seg.ph == Ph::G) &&
-                    cv[1] > 1500.0f * scale) {
-                    seg.noise.fa[1] = 0.9f;
+                // The velar burst follows the vowel: before front vowels it
+                // sits where F2 and F3 meet, so F3 carries a share of it and
+                // the whole is weaker; before a it is the loudest.
+                if (seg.has_noise && (seg.ph == Ph::K || seg.ph == Ph::G)) {
+                    float gain = 1.0f;
+                    if (cv[1] > 1500.0f * scale) {
+                        seg.noise.fa[1] = 0.3f;
+                        gain = VELAR_FRONT_BURST;
+                    } else if (cv[1] > 1100.0f * scale) {
+                        gain = VELAR_CENTRAL_BURST;
+                    }
+                    for (float& share : seg.noise.fa) share *= gain;
                 }
             }
         }
 
         // The vowel after nj leaves the palatal locus slowly, with F1 low
         // and F2 high for its first milliseconds, as the tongue body comes
-        // off the palate (Lana's "nja": F2 near 2.3 kHz, F1 rising over 35
+        // off the palate (voice D's "nja": F2 near 2.3 kHz, F1 rising over 35
         // ms). Leaving it fast, as after n, nj was heard as n; a separate j
         // there, with the high F3 of a real j, was heard as j.
         for (int i = 1; i < n; ++i) {
@@ -1253,7 +1333,7 @@ private:
                     // swelled over 20-30 ms and p, b, d sounded soft.
                     if (k == 0 && &dom == &x && x.kind == SegKind::Release &&
                         ph_def(x.ph).cls == PhClass::Stop) {
-                        // After p and b the vowel snaps in, as in eSpeak and
+                        // After p and b the vowel snaps in, as in synthesizer B and
                         // the Klatt voice (full level within 6-8 ms).
                         bool labial = x.ph == Ph::P || x.ph == Ph::B;
                         v = x.anchor[0] + (labial ? 0.72f : (x.ph == Ph::D ? D_F1_SNAP : 0.55f)) *
@@ -1261,8 +1341,8 @@ private:
                         t_other = std::min(t_other, transition_rate(labial ? 8.0f : 12.0f));
                     }
                     // The lips close as fast as they open: F1 reaches the
-                    // closure of p and b within about 14 ms (Eloquence 16 ms,
-                    // eSpeak 10-20, the Klatt voice within a frame). Gliding
+                    // closure of p and b within about 14 ms (synthesizer A 16 ms,
+                    // synthesizer B 10-20, the Klatt voice within a frame). Gliding
                     // down over 36 ms, the vowel faded into the stop instead
                     // of being cut off by it. (Applied to every stop it did
                     // nothing for p and b and cost a recognizer a few t and
@@ -1357,7 +1437,7 @@ private:
     // -------------------------------------------------------------------------
 
     void build_tracks() {
-        const int lead = 3;                 // frames of silence before speech
+        const int lead = LEAD_FRAMES;       // frames of silence before speech
         // Let the resonators ring out; a hall needs longer to fall silent,
         // but not so long that the next clause comes in late.
         const int trail = m_singing && m_style->reverb > 0.0f
@@ -1439,7 +1519,7 @@ private:
                         // with the transient of the stop release in front
                         float fall = std::min(12.0f, seg.dur * 0.3f);
                         float remain = seg.dur - t;
-                        float attack = t < 6.0f ? (seg.ph == Ph::C ? 1.25f : 1.5f) : 1.0f;
+                        float attack = t < 6.0f ? AFFRICATE_ATTACK : 1.0f;
                         burst[idx] = seg.burst * attack * (remain < fall ? remain / fall : 1.0f);
                     }
                 }
@@ -1544,12 +1624,55 @@ private:
         }
         // Nasality reaches a little into the neighbouring vowels, and no
         // further: spread over 16 ms each way it blurred the edges of m and
-        // n, which Eloquence and eSpeak switch within a few milliseconds.
+        // n, which synthesizer A and synthesizer B switch within a few milliseconds.
         smooth(nasal, 3);
         smooth(level, 4);
 
-        // Frication spectrum: silent frames take the spectrum of the next
-        // noisy segment, so the filter bank is already in place at a burst.
+        // Frication spectrum. A segment's friction is smoothed past its end
+        // (smooth(af, 3) above), so its filter bank must stay in place that
+        // long: until November 2026 the frames after a fricative took the
+        // next noisy segment's spectrum at once, and the tail of every s, š
+        // or f before a labial went through the labial burst's bank (a peak
+        // at 350 Hz and a flat share), the voiced tail of z before b
+        // likewise. The hold covers frames without a noisy segment of their
+        // own and the start of a closure, which injects nothing before its
+        // release, but never the two frames before another noisy segment,
+        // so that a burst finds its own bank in place.
+        {
+            const std::vector<int> own = noise_seg;
+            auto noisy_at = [&](int j) {
+                return j >= 0 && j < total && own[static_cast<size_t>(j)] >= 0;
+            };
+            auto closure_at = [&](int j) {
+                const int si = m_seg_of_frame[static_cast<size_t>(j)];
+                return si >= 0 && m_segs[static_cast<size_t>(si)].kind == SegKind::Closure;
+            };
+            int held = -1;
+            int held_for = 0;
+            for (int j = 0; j < total; ++j) {
+                if (noisy_at(j) && !closure_at(j)) {
+                    held = own[static_cast<size_t>(j)];
+                    held_for = 0;
+                    continue;
+                }
+                if (held < 0) continue;
+                bool next_is_other = false;
+                for (int k = 1; k <= 2; ++k) {
+                    if (noisy_at(j + k) && own[static_cast<size_t>(j + k)] != held &&
+                        !closure_at(j + k)) {
+                        next_is_other = true;
+                    }
+                }
+                if (held_for < NOISE_HOLD_FRAMES && !next_is_other) {
+                    noise_seg[static_cast<size_t>(j)] = held;
+                    ++held_for;
+                } else {
+                    held = -1;
+                }
+            }
+        }
+        // Silent frames take the spectrum of the next noisy segment, so the
+        // filter bank is already in place at a burst.
         int upcoming = -1;
         for (int j = total - 1; j >= 0; --j) {
             if (noise_seg[static_cast<size_t>(j)] >= 0) {
@@ -1578,7 +1701,7 @@ private:
             fr.f[1] = std::max(fr.f[1], fr.f[0] + 200.0f);
             fr.f[2] = std::max(fr.f[2], fr.f[1] + 250.0f);
             fr.f[3] = std::max(f4[idx], fr.f[2] + 300.0f);
-            fr.b[3] = 180.0f;
+            fr.b[3] = m_singing ? 180.0f : SPEAKING_F4_BANDWIDTH;
             fr.av = av[idx] * level[idx];
             fr.ah = ah[idx] * level[idx];
             fr.af = (af[idx] + burst[idx]) * level[idx];
@@ -1943,13 +2066,33 @@ void FormantSynthesizer::set_language(VoiceLanguage language) {
     m_frontend.set_user_lexicon(lexicon);
 }
 
-FormantSynthesizer::FormantSynthesizer(const FormantVoice& voice)
-    : m_voice(voice), m_frontend(voice.language) {
+namespace {
+
+// The voice as the user's voice quality settings shape it: head size scales
+// the vocal tract (every formant target goes through formant_scale), and
+// breathiness scales the breath noise. The speaker's own values are the
+// setting 50.
+FormantVoice voice_with_quality(const FormantVoice& base, const VoiceParams& params) {
+    FormantVoice voice = base;
+    voice.formant_scale *= head_size_factor(params.head_size);
+    voice.breathiness *= voice_quality_scale(params.breathiness);
+    return voice;
+}
+
+// The synthesizer's source and fixed resonators for that voice, with the
+// roughness (jitter and shimmer) and brightness (source emphasis) settings
+// applied around the voice's or the singing style's own values.
+// F5's bandwidth for the speaking voices: 500 Hz left the vowels' 3-4 kHz
+// 3-5 dB above synthesizer A's (November 2026); the singing presets keep 500.
+constexpr float SPEAKING_F5_BANDWIDTH = 650.0f;
+
+VoiceQuality quality_for(const FormantVoice& voice, const VoiceParams& params) {
     VoiceQuality quality;
     for (int i = 0; i < CASCADE_FIXED; ++i) {
         quality.upper_f[i] *= voice.formant_scale;
     }
     quality.breathiness = voice.breathiness;
+    if (!voice.singing) quality.upper_b[0] = SPEAKING_F5_BANDWIDTH;
     if (voice.singing) {
         const SingingStyle& style = *voice.singing;
         quality.source = style.source;
@@ -1961,15 +2104,34 @@ FormantSynthesizer::FormantSynthesizer(const FormantVoice& voice)
         quality.flutter = style.flutter;
         quality.jitter = style.jitter;
         quality.shimmer = style.shimmer;
+        // The presets keep their source and their top: no low shelf, and the
+        // voice and frication low-passes instead of the speaking ceiling.
+        quality.bass_db = 0.0f;
+        quality.ceiling_hz = 0.0f;
         if (style.f5 > 0.0f) {
             // The singer's formant: F5 pulled down towards F4 and narrowed
-            // (DECtalk's f5/b5 trick), a ring the speaking voice has not.
+            // (synthesizer C's f5/b5 trick), a ring the speaking voice has not.
             quality.upper_f[0] = style.f5 * voice.formant_scale;
             quality.upper_b[0] = style.b5;
         }
-        m_melody = parse_song(*style.song);
     }
-    m_synth.set_quality(quality);
+    // Roughness: the voice's own jitter and shimmer from none to eight
+    // times, and above 50 diplophonia on top (klatt_synth.hpp roughness).
+    const float diplophonia = roughness_diplophonia(params.roughness);
+    const float rough = voice_quality_scale(params.roughness) * (1.0f + 0.6f * diplophonia);
+    quality.jitter *= rough;
+    quality.shimmer *= rough;
+    quality.roughness = diplophonia;
+    quality.brightness = brightness_emphasis(params.brightness, quality.brightness);
+    return quality;
+}
+
+} // namespace
+
+FormantSynthesizer::FormantSynthesizer(const FormantVoice& voice)
+    : m_voice(voice), m_frontend(voice.language) {
+    if (voice.singing) m_melody = parse_song(*voice.singing->song);
+    m_synth.set_quality(quality_for(voice, VoiceParams{}));
 }
 
 void FormantSynthesizer::rewind_song() {
@@ -2043,7 +2205,11 @@ void FormantSynthesizer::render_utterance(const Utterance& utt, const VoiceParam
         return;
     }
 
-    ClauseBuilder builder(m_voice, params, utt, sing ? &m_melody : nullptr,
+    // The user's voice quality settings (head size, breathiness, roughness,
+    // brightness) shape the voice and the synthesizer per utterance; at
+    // their defaults of 50 both are the speaker's own.
+    const FormantVoice voice = voice_with_quality(m_voice, params);
+    ClauseBuilder builder(voice, params, utt, sing ? &m_melody : nullptr,
                           sing ? &m_cursor : nullptr);
     std::vector<Frame> frames = builder.build();
     if (frames.empty()) {
@@ -2051,11 +2217,14 @@ void FormantSynthesizer::render_utterance(const Utterance& utt, const VoiceParam
     }
 
     std::vector<float> pcm;
+    m_synth.set_quality(quality_for(voice, params));
     m_synth.reset();
     m_synth.render(frames.data(), frames.size(), pcm);
 
-    // The volume boost raises the level before the volume and limits the
-    // peaks (volume_boost.hpp); the soft knee below stays as the safety net.
+    // The volume boost raises the level before the volume and holds the
+    // peaks under its ceiling (volume_boost.hpp); the soft knee below is for
+    // the plain output only, since bending the limited signal a second time
+    // would add distortion of its own.
     float gain = OUTPUT_GAIN * std::clamp(params.volume, 0.0f, 1.0f);
     if (params.volume_boost) {
         for (float& sample : pcm) sample *= OUTPUT_GAIN;
@@ -2066,11 +2235,12 @@ void FormantSynthesizer::render_utterance(const Utterance& utt, const VoiceParam
     for (float sample : pcm) {
         float x = sample * gain;
         float magnitude = std::abs(x);
-        if (magnitude > LIMIT_KNEE) {
+        if (!params.volume_boost && magnitude > LIMIT_KNEE) {
             float over = (magnitude - LIMIT_KNEE) / (1.0f - LIMIT_KNEE);
             magnitude = LIMIT_KNEE + (1.0f - LIMIT_KNEE) * std::tanh(over);
             x = x < 0.0f ? -magnitude : magnitude;
         }
+        x = std::clamp(x, -1.0f, 1.0f);
         audio.samples.push_back(static_cast<AudioSample>(std::lround(x * 32000.0f)));
     }
 }

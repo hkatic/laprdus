@@ -145,7 +145,7 @@ std::vector<TextSegment> InflectionProcessor::analyze_text(const std::string& te
             continue;
         }
 
-        // A run of marks ("...", "?!", ".)") is one boundary. Like eSpeak,
+        // A run of marks ("...", "?!", ".)") is one boundary. Like synthesizer B,
         // a mark ends the clause only when whitespace, a bracket or quote,
         // or the end of the text follows it. A mark glued to the next
         // character is part of a word ("12:30", "Hej!ti") and stays in the

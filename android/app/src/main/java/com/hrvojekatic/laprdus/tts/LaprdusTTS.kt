@@ -62,6 +62,9 @@ class LaprdusTTS private constructor() {
         const val DEFAULT_INFLECTION_LEVEL = 0.5f
         const val DEFAULT_ACCELERATION = 1.0f
         val ACCELERATION_RANGE = 0.5f..3.0f
+        /** Voice quality (head size, breathiness, roughness, brightness): 0-100, 50 = the voice as it is. */
+        const val DEFAULT_VOICE_QUALITY = 50
+        val VOICE_QUALITY_RANGE = 0..100
 
         /** The engine of the speech service: TalkBack and every other app. */
         val service: LaprdusTTS by lazy { LaprdusTTS() }
@@ -101,6 +104,10 @@ class LaprdusTTS private constructor() {
     private external fun nativeSetVolumeBoost(handle: Long, enabled: Boolean)
     private external fun nativeSetInflectionLevel(handle: Long, level: Float)
     private external fun nativeSetAcceleration(handle: Long, acceleration: Float)
+    private external fun nativeSetHeadSize(handle: Long, value: Int)
+    private external fun nativeSetBreathiness(handle: Long, value: Int)
+    private external fun nativeSetRoughness(handle: Long, value: Int)
+    private external fun nativeSetBrightness(handle: Long, value: Int)
     private external fun nativeGetNominalWpm(voiceId: String): Float
     private external fun nativeGetSampleRate(handle: Long): Int
     private external fun nativeCancel()
@@ -286,6 +293,48 @@ class LaprdusTTS private constructor() {
         }
 
     /**
+     * Head size (0-100, default 50), after the voice-parameter model of a classic formant synthesizer: the
+     * length of the vocal tract, 0 a quarter longer (lower formants), 50
+     * the voice as it is, 100 a quarter shorter (higher formants). Every voice.
+     */
+    var headSize: Int = DEFAULT_VOICE_QUALITY
+        set(value) {
+            field = value.coerceIn(VOICE_QUALITY_RANGE)
+            nativeSetHeadSize(handle, field)
+        }
+
+    /**
+     * Breathiness (0-100, default 50): the voice's own breath noise, 0 none,
+     * 50 the voice as it is, 100 five times as much. Formant voices only.
+     */
+    var breathiness: Int = DEFAULT_VOICE_QUALITY
+        set(value) {
+            field = value.coerceIn(VOICE_QUALITY_RANGE)
+            nativeSetBreathiness(handle, field)
+        }
+
+    /**
+     * Roughness (0-100, default 50): the voice's jitter and shimmer, 0 none,
+     * 50 the voice as it is, 100 five times as much. Formant voices only.
+     */
+    var roughness: Int = DEFAULT_VOICE_QUALITY
+        set(value) {
+            field = value.coerceIn(VOICE_QUALITY_RANGE)
+            nativeSetRoughness(handle, field)
+        }
+
+    /**
+     * Brightness (0-100, default 50): the tone, 0 dull, 50 the voice as it
+     * is, 100 sharp (formant voices: the source emphasis; recorded voices: a
+     * tilt around 1.5 kHz).
+     */
+    var brightness: Int = DEFAULT_VOICE_QUALITY
+        set(value) {
+            field = value.coerceIn(VOICE_QUALITY_RANGE)
+            nativeSetBrightness(handle, field)
+        }
+
+    /**
      * Words per minute a voice speaks at speed 1.0 and acceleration 1.0
      * (0 for an unknown voice).
      */
@@ -412,6 +461,10 @@ class LaprdusTTS private constructor() {
         emojiEnabled = settings.emojiEnabled
         inflectionLevel = settings.inflectionLevel
         acceleration = settings.acceleration
+        headSize = settings.headSize
+        breathiness = settings.breathiness
+        roughness = settings.roughness
+        brightness = settings.brightness
         sentencePause = settings.sentencePause
         commaPause = settings.commaPause
         newlinePause = settings.newlinePause
