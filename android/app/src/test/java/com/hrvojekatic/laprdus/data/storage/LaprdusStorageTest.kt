@@ -40,7 +40,7 @@ import java.io.File
  * path; its UserManager reports the user as unlocked.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [36], manifest = Config.NONE)
+@Config(sdk = [37], manifest = Config.NONE)
 class LaprdusStorageTest {
 
     companion object {

@@ -14,25 +14,30 @@ Works on Windows (Git Bash/MINGW) and Linux.
 
 ### Debug Build (default)
 ```bash
-cd /c/Users/hrvoj/source/repos/github/hkatic/laprdus/android && if [[ "$(uname -s)" == MINGW* ]] || [[ "$(uname -s)" == MSYS* ]]; then export JAVA_HOME="/c/Program Files/Android/Android Studio/jbr"; else export JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk-amd64}"; fi && ./gradlew assembleDebug
+cd "$(git rev-parse --show-toplevel)/android" && case "$(uname -s)" in MINGW*|MSYS*) export JAVA_HOME="/c/Program Files/Android/Android Studio/jbr";; Darwin) export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home";; *) export JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk-amd64}";; esac && ./gradlew assembleDebug
 ```
 
 ### Release Build
 ```bash
-cd /c/Users/hrvoj/source/repos/github/hkatic/laprdus/android && if [[ "$(uname -s)" == MINGW* ]] || [[ "$(uname -s)" == MSYS* ]]; then export JAVA_HOME="/c/Program Files/Android/Android Studio/jbr"; else export JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk-amd64}"; fi && ./gradlew assembleRelease
+cd "$(git rev-parse --show-toplevel)/android" && case "$(uname -s)" in MINGW*|MSYS*) export JAVA_HOME="/c/Program Files/Android/Android Studio/jbr";; Darwin) export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home";; *) export JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk-amd64}";; esac && ./gradlew assembleRelease
 ```
+
+### Release-like Build for the Device
+`assembleBenchmarkRelease` (same command, other task) builds the release code (R8, optimized native engine, baseline profile) signed with the debug key, so it installs over a debug build with `adb install -r` and keeps the app's data.
 
 ## Arguments
 
 - `$ARGUMENTS` or no argument: Build debug APK
 - `release`: Build release APK
+- `benchmark`: Build the release-like, debug-signed APK
 
-If user specifies "release", use `assembleRelease` instead of `assembleDebug`.
+If user specifies "release", use `assembleRelease` instead of `assembleDebug`; "benchmark", `assembleBenchmarkRelease`.
 
 ## Expected Output
 
 - Debug APK: `android/app/build/outputs/apk/debug/app-debug.apk`
-- Release APK: `android/app/build/outputs/apk/release/app-release.apk`
+- Release APK: `android/app/build/outputs/apk/release/app-release-unsigned.apk` (the project has no signing config; sign it with the release key before distributing)
+- Release-like APK: `android/app/build/outputs/apk/benchmarkRelease/app-benchmarkRelease.apk`
 
 ## Automatic Voice Data Generation
 

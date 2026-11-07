@@ -12,7 +12,7 @@ import org.robolectric.annotation.Config
 import java.util.Locale
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [32, 36])
+@Config(sdk = [32, 37])
 class SystemLanguageTest {
     @Test
     fun speechFollowsSystemEvenWhenAppUsesCroatian() {

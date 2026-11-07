@@ -10,7 +10,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -20,6 +19,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.hrvojekatic.laprdus.ui.screens.MainScreen
 import com.hrvojekatic.laprdus.ui.theme.LaprdusTheme
 import com.hrvojekatic.laprdus.viewmodel.TTSViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 
 /**
@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             LaprdusTheme {
                 val viewModel: TTSViewModel = hiltViewModel()
-                val uiState by viewModel.uiState.collectAsState()
+                val uiState by viewModel.uiState.collectAsStateWithLifecycle()
                 val lifecycleOwner = LocalLifecycleOwner.current
 
                 // Check if Laprdus is the default TTS engine on resume

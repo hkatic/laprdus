@@ -1,746 +1,546 @@
 package com.hrvojekatic.laprdus.ui.screens
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.disabled
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.unit.dp
-import android.content.Intent
-import androidx.compose.material.icons.filled.ChevronRight
-import com.hrvojekatic.laprdus.AboutActivity
-import com.hrvojekatic.laprdus.DictionaryActivity
 import com.hrvojekatic.laprdus.R
+import com.hrvojekatic.laprdus.data.SettingsRepository
 import com.hrvojekatic.laprdus.tts.Language
 import com.hrvojekatic.laprdus.tts.VoiceInfo
+import com.hrvojekatic.laprdus.ui.components.ChoiceDialog
+import com.hrvojekatic.laprdus.ui.components.ChoiceOption
+import com.hrvojekatic.laprdus.ui.components.ClickableRow
+import com.hrvojekatic.laprdus.ui.components.ExpandRow
+import com.hrvojekatic.laprdus.ui.components.SettingsSection
+import com.hrvojekatic.laprdus.ui.components.SliderRow
+import com.hrvojekatic.laprdus.ui.components.SwitchRow
+import com.hrvojekatic.laprdus.ui.settings.SettingFormat
+import com.hrvojekatic.laprdus.viewmodel.SettingsActions
 import com.hrvojekatic.laprdus.viewmodel.SettingsUiState
-import androidx.compose.ui.platform.LocalContext
 import kotlin.math.roundToInt
 
+private val FractionRange = 0f..1f
+private val PercentRange = 0f..100f
+private val PauseRange = 0f..2000f
+
+/** Test tags, exposed as resource ids for UiAutomator and the macrobenchmarks. */
+object SettingsTags {
+    const val COLUMN = "settings_column"
+    const val VOICE = "settings_voice"
+    const val LANGUAGE = "settings_language"
+    const val MORE_VOICE = "settings_more_voice"
+}
+
 /**
- * Settings screen for the Laprdus TTS application.
- * Provides UI for configuring voice, rate, pitch, volume, and advanced settings.
+ * The Settings screen, after Android's settings guidelines: sections with
+ * headings TalkBack can jump between, grouped rows, and the settings few
+ * people change ("More voice settings") collapsed until asked for.
  *
- * Accessibility: Uses merged semantics so TalkBack announces each setting as a single
- * item with name, value, control type, and description in one swipe.
+ * 1. Voice: voice, language, rate, pitch, volume; more voice settings
+ *    (acceleration, inflection, volume boost, head size, breathiness,
+ *    roughness, brightness).
+ * 2. Apps and screen readers: the four force switches.
+ * 3. Reading: phonetic spelling, spelling speed, digits, emoji.
+ * 4. Reading pauses. 5. Dictionaries. 6. About.
+ *
+ * @param systemLanguage the system language when Laprdus speaks it, else
+ *   null: spoken unless the language is forced
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
 fun SettingsScreen(
     uiState: SettingsUiState,
+    systemLanguage: String?,
+    actions: SettingsActions,
     onNavigateBack: () -> Unit,
-    onVoiceSelected: (String) -> Unit,
-    onLanguageSelected: (String) -> Unit,
-    onSpeedChange: (Float) -> Unit,
-    onPitchChange: (Float) -> Unit,
-    onVolumeChange: (Float) -> Unit,
-    onForceSpeedChange: (Boolean) -> Unit,
-    onForcePitchChange: (Boolean) -> Unit,
-    onForceVolumeChange: (Boolean) -> Unit,
-    onVolumeBoostChange: (Boolean) -> Unit,
-    onForceLanguageChange: (Boolean) -> Unit,
-    onRestoreDefaultSpeed: () -> Unit,
-    onRestoreDefaultPitch: () -> Unit,
-    onRestoreDefaultVolume: () -> Unit,
-    // Advanced settings
-    onEmojiEnabledChange: (Boolean) -> Unit,
-    onInflectionLevelChange: (Float) -> Unit,
-    onAccelerationChange: (Float) -> Unit,
-    // Voice quality (0-100, 50 = the voice as it is)
-    onHeadSizeChange: (Int) -> Unit = {},
-    onBreathinessChange: (Int) -> Unit = {},
-    onRoughnessChange: (Int) -> Unit = {},
-    onBrightnessChange: (Int) -> Unit = {},
-    onSentencePauseChange: (Int) -> Unit,
-    onCommaPauseChange: (Int) -> Unit,
-    onNewlinePauseChange: (Int) -> Unit,
-    onNumberModeChange: (Int) -> Unit,
-    onSpellingSpeedChange: (Int) -> Unit,
-    onLetterSoundsChange: (Boolean) -> Unit,
-    // Dictionary settings
-    onUserDictionariesEnabledChange: (Boolean) -> Unit
+    onOpenDictionaries: () -> Unit,
+    onOpenAbout: () -> Unit,
+    initiallyExpanded: Boolean = false,
 ) {
-    val context = LocalContext.current
-    val backButtonDescription = stringResource(R.string.cd_back_button)
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // A failed voice load and the like: announced (Snackbar is a live region).
+    LaunchedEffect(uiState.error) {
+        val message = uiState.error ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(message)
+        actions.clearError()
+    }
 
     Scaffold(
+        modifier = Modifier
+            .fillMaxSize()
+            .semantics { testTagsAsResourceId = true },
         topBar = {
+            // A plain bar: a collapsing one draws its title twice and moves
+            // while TalkBack speaks, which cut announcements short.
             TopAppBar(
                 title = {
                     Text(
                         text = stringResource(R.string.settings_title),
-                        modifier = Modifier.semantics { heading() }
+                        modifier = Modifier.semantics { heading() },
                     )
                 },
                 navigationIcon = {
-                    IconButton(
-                        onClick = onNavigateBack,
-                        modifier = Modifier.semantics {
-                            contentDescription = backButtonDescription
-                        }
-                    ) {
+                    IconButton(onClick = onNavigateBack) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = null
+                            painter = painterResource(R.drawable.ic_arrow_back),
+                            contentDescription = stringResource(R.string.cd_back_button),
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+    ) { padding ->
+        if (uiState.isLoading) {
+            val loading = stringResource(R.string.loading)
+            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(Modifier.semantics { contentDescription = loading })
+            }
+            return@Scaffold
+        }
+
+        val layoutDirection = LocalLayoutDirection.current
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(
+                    top = padding.calculateTopPadding(),
+                    start = padding.calculateStartPadding(layoutDirection),
+                    end = padding.calculateEndPadding(layoutDirection),
+                ),
+            contentAlignment = Alignment.TopCenter,
+        ) {
+            Column(
+                modifier = Modifier
+                    // Settings guidelines: a readable width on large screens.
+                    .widthIn(max = 840.dp)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .testTag(SettingsTags.COLUMN)
+                    .padding(horizontal = 16.dp)
+                    // Scroll under the navigation bar, but let the last row clear it.
+                    .padding(bottom = padding.calculateBottomPadding() + 24.dp),
+            ) {
+                uiState.storageError?.let { message ->
+                    Text(
+                        text = message,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
+                            .semantics { liveRegion = LiveRegionMode.Polite },
+                    )
+                }
+                VoiceSection(uiState, systemLanguage, actions, initiallyExpanded)
+                AppsSection(uiState, actions)
+                ReadingSection(uiState, actions)
+                PausesSection(uiState, actions)
+                SettingsSection(stringResource(R.string.category_dictionaries)) {
+                    SwitchRow(
+                        title = stringResource(R.string.setting_user_dict_enabled_title),
+                        summary = stringResource(R.string.setting_user_dict_enabled_subtitle),
+                        checked = uiState.userDictionariesEnabled,
+                        onCheckedChange = actions::setUserDictionariesEnabled,
+                    )
+                    ClickableRow(
+                        title = stringResource(R.string.setting_manage_dictionaries),
+                        summary = stringResource(R.string.setting_manage_dictionaries_desc),
+                        onClick = onOpenDictionaries,
+                        showChevron = true,
+                    )
+                }
+                SettingsSection(stringResource(R.string.category_about)) {
+                    ClickableRow(
+                        title = stringResource(R.string.setting_about),
+                        summary = stringResource(R.string.setting_about_desc),
+                        onClick = onOpenAbout,
+                        showChevron = true,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun VoiceSection(
+    uiState: SettingsUiState,
+    systemLanguage: String?,
+    actions: SettingsActions,
+    initiallyExpanded: Boolean,
+) {
+    val locale = LocalConfiguration.current.locales[0]
+    var voiceDialog by remember { mutableStateOf(false) }
+    var languageDialog by remember { mutableStateOf(false) }
+    var moreExpanded by rememberSaveable { mutableStateOf(initiallyExpanded) }
+
+    val selectedVoice = uiState.availableVoices.find { it.id == VoiceInfo.normalizeId(uiState.selectedVoiceId) }
+    // With "Force language" off, the system language is spoken when Laprdus
+    // speaks it: the row shows that language, disabled, and says why.
+    val followedLanguage = if (uiState.forceLanguage) null else systemLanguage
+    val shownLanguage = languageName(followedLanguage ?: uiState.language)
+    val multiplier = remember(locale) { { value: Float -> SettingFormat.multiplier(value, locale) } }
+
+    SettingsSection(stringResource(R.string.category_voice)) {
+        ClickableRow(
+            title = stringResource(R.string.voice_label),
+            summary = selectedVoice?.displayName ?: stringResource(R.string.select_voice),
+            onClick = { voiceDialog = true },
+            modifier = Modifier.testTag(SettingsTags.VOICE),
+        )
+        ClickableRow(
+            title = stringResource(R.string.language_label),
+            summary = if (followedLanguage != null) {
+                stringResource(R.string.language_follows_system, shownLanguage)
+            } else {
+                shownLanguage
+            },
+            enabled = followedLanguage == null,
+            onClick = { languageDialog = true },
+            modifier = Modifier.testTag(SettingsTags.LANGUAGE),
+        )
+        SliderRow(
+            title = stringResource(R.string.setting_speech_rate),
+            value = uiState.speed,
+            onValueChange = actions::setSpeed,
+            valueRange = uiState.speedPitchRange,
+            step = SettingFormat.MULTIPLIER_STEP,
+            valueText = multiplier,
+            defaultValue = SettingsRepository.DEFAULT_SPEED,
+        )
+        SliderRow(
+            title = stringResource(R.string.setting_speech_pitch),
+            value = uiState.pitch,
+            onValueChange = actions::setPitch,
+            valueRange = uiState.speedPitchRange,
+            step = SettingFormat.MULTIPLIER_STEP,
+            valueText = multiplier,
+            defaultValue = SettingsRepository.DEFAULT_PITCH,
+        )
+        val percentText = percentFormatter()
+        SliderRow(
+            title = stringResource(R.string.setting_speech_volume),
+            value = uiState.volume,
+            onValueChange = actions::setVolume,
+            valueRange = FractionRange,
+            step = SettingFormat.FRACTION_STEP,
+            valueText = { percentText(SettingFormat.fractionToPercent(it)) },
+            defaultValue = SettingsRepository.DEFAULT_VOLUME,
+        )
+
+        val hidden = listOf(
+            stringResource(R.string.setting_acceleration),
+            stringResource(R.string.setting_inflection_level),
+            stringResource(R.string.setting_volume_boost_title),
+            stringResource(R.string.setting_head_size),
+            stringResource(R.string.setting_breathiness),
+            stringResource(R.string.setting_roughness),
+            stringResource(R.string.setting_brightness),
+        )
+        ExpandRow(
+            title = stringResource(R.string.setting_more_voice),
+            expanded = moreExpanded,
+            onExpandedChange = { moreExpanded = it },
+            collapsedSummary = hidden.joinToString(", "),
+            modifier = Modifier.testTag(SettingsTags.MORE_VOICE),
+        )
+        if (moreExpanded) {
+            val wpmText = { value: Float ->
+                SettingFormat.topWordsPerMinute(
+                    nominalWpm = uiState.nominalWpm,
+                    speed = uiState.speed,
+                    acceleration = value,
+                    forceSpeed = uiState.forceSpeed,
+                    speedRange = uiState.speedPitchRange,
+                    formantVoice = uiState.isFormantVoice,
                 )
+            }
+            val accelerationSpoken = accelerationFormatter(multiplier, wpmText)
+            SliderRow(
+                title = stringResource(R.string.setting_acceleration),
+                summary = stringResource(R.string.setting_acceleration_desc),
+                value = uiState.acceleration,
+                onValueChange = actions::setAcceleration,
+                valueRange = SettingsRepository.ACCELERATION_RANGE,
+                step = SettingFormat.ACCELERATION_STEP,
+                valueText = multiplier,
+                spokenValue = accelerationSpoken,
+                note = accelerationSpoken(uiState.acceleration),
+                defaultValue = SettingsRepository.DEFAULT_ACCELERATION,
+            )
+            SliderRow(
+                title = stringResource(R.string.setting_inflection_level),
+                summary = stringResource(R.string.setting_inflection_level_desc),
+                value = uiState.inflectionLevel,
+                onValueChange = actions::setInflectionLevel,
+                valueRange = FractionRange,
+                step = SettingFormat.FRACTION_STEP,
+                valueText = { percentText(SettingFormat.fractionToPercent(it)) },
+                defaultValue = SettingsRepository.DEFAULT_INFLECTION_LEVEL,
+            )
+            SwitchRow(
+                title = stringResource(R.string.setting_volume_boost_title),
+                summary = stringResource(R.string.setting_volume_boost_subtitle),
+                checked = uiState.volumeBoost,
+                onCheckedChange = actions::setVolumeBoost,
+            )
+            VoiceQualitySlider(
+                R.string.setting_head_size, R.string.setting_head_size_desc,
+                uiState.headSize, SettingsRepository.DEFAULT_HEAD_SIZE, actions::setHeadSize, percentText,
+            )
+            VoiceQualitySlider(
+                R.string.setting_breathiness, R.string.setting_breathiness_desc,
+                uiState.breathiness, SettingsRepository.DEFAULT_BREATHINESS, actions::setBreathiness, percentText,
+            )
+            VoiceQualitySlider(
+                R.string.setting_roughness, R.string.setting_roughness_desc,
+                uiState.roughness, SettingsRepository.DEFAULT_ROUGHNESS, actions::setRoughness, percentText,
+            )
+            VoiceQualitySlider(
+                R.string.setting_brightness, R.string.setting_brightness_desc,
+                uiState.brightness, SettingsRepository.DEFAULT_BRIGHTNESS, actions::setBrightness, percentText,
             )
         }
-    ) { paddingValues ->
-        if (uiState.isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    CircularProgressIndicator()
-                    Text(
-                        text = stringResource(R.string.loading),
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Storage problem reported by the repository (e.g. settings from an
-                // older version could not be moved to device-protected storage)
-                uiState.storageError?.let { errorMessage ->
-                    item {
-                        Text(
-                            text = errorMessage,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 8.dp)
-                                .semantics { liveRegion = LiveRegionMode.Polite }
-                        )
-                    }
-                }
+    }
 
-                // Voice Category
-                item {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    SettingsCategoryHeader(title = stringResource(R.string.category_voice))
-                }
-
-                // Voice Selector
-                item {
-                    VoiceSettingItem(
-                        voices = uiState.availableVoices,
-                        selectedVoiceId = uiState.selectedVoiceId,
-                        onVoiceSelected = onVoiceSelected
-                    )
-                }
-
-                // Language Selector (every voice speaks every language). With
-                // "Force language" off, the system language is spoken when
-                // Laprdus speaks it, and the selector shows that instead.
-                item {
-                    LanguageSettingItem(
-                        selectedLanguage = uiState.language,
-                        systemLanguage = if (uiState.forceLanguage) null else uiState.systemLanguage,
-                        onLanguageSelected = onLanguageSelected
-                    )
-                }
-
-                // Each slider is followed by its restore button and, where there
-                // is one, the switch that forces the value on every app: speed and
-                // acceleration, then pitch and inflection, then volume, then the
-                // voice quality: head size, breathiness, roughness, brightness.
-                // Speech Rate Slider (0.5x-2.0x; the formant voices reach 0.25x-4.0x)
-                item {
-                    SliderSettingItem(
-                        title = stringResource(R.string.setting_speech_rate),
-                        value = uiState.speed,
-                        valueRange = uiState.speedPitchRange,
-                        onValueChange = onSpeedChange,
-                        valueLabel = formatMultiplier(uiState.speed)
-                    )
-                }
-
-                item {
-                    RestoreDefaultButton(
-                        text = stringResource(R.string.restore_default_speed),
-                        description = stringResource(R.string.cd_restore_speed_desc),
-                        onClick = onRestoreDefaultSpeed
-                    )
-                }
-
-                // Force Speed Toggle
-                item {
-                    SwitchSettingItem(
-                        title = stringResource(R.string.setting_force_speed_title),
-                        subtitle = stringResource(R.string.setting_force_speed_subtitle),
-                        checked = uiState.forceSpeed,
-                        onCheckedChange = onForceSpeedChange
-                    )
-                }
-
-                item {
-                    val topWpm = topWordsPerMinute(uiState)
-                    SliderSettingItem(
-                        title = stringResource(R.string.setting_acceleration),
-                        value = uiState.acceleration,
-                        valueRange = 0.5f..3.0f,
-                        onValueChange = onAccelerationChange,
-                        valueLabel = stringResource(R.string.acceleration_value, uiState.acceleration, topWpm),
-                        description = stringResource(R.string.setting_acceleration_desc)
-                    )
-                }
-
-                item {
-                    RestoreDefaultButton(
-                        text = stringResource(R.string.restore_default_acceleration),
-                        description = stringResource(R.string.cd_restore_acceleration_desc),
-                        onClick = { onAccelerationChange(1.0f) }
-                    )
-                }
-
-                // Speech Pitch Slider
-                item {
-                    SliderSettingItem(
-                        title = stringResource(R.string.setting_speech_pitch),
-                        value = uiState.pitch,
-                        valueRange = uiState.speedPitchRange,
-                        onValueChange = onPitchChange,
-                        valueLabel = formatMultiplier(uiState.pitch)
-                    )
-                }
-
-                item {
-                    RestoreDefaultButton(
-                        text = stringResource(R.string.restore_default_pitch),
-                        description = stringResource(R.string.cd_restore_pitch_desc),
-                        onClick = onRestoreDefaultPitch
-                    )
-                }
-
-                // Force Pitch Toggle
-                item {
-                    SwitchSettingItem(
-                        title = stringResource(R.string.setting_force_pitch_title),
-                        subtitle = stringResource(R.string.setting_force_pitch_subtitle),
-                        checked = uiState.forcePitch,
-                        onCheckedChange = onForcePitchChange
-                    )
-                }
-
-                // Inflection level (every voice)
-                item {
-                    SliderSettingItem(
-                        title = stringResource(R.string.setting_inflection_level),
-                        value = uiState.inflectionLevel,
-                        valueRange = 0.0f..1.0f,
-                        onValueChange = onInflectionLevelChange,
-                        valueLabel = "${(uiState.inflectionLevel * 100).roundToInt()}%",
-                        description = stringResource(R.string.setting_inflection_level_desc)
-                    )
-                }
-
-                item {
-                    RestoreDefaultButton(
-                        text = stringResource(R.string.restore_default_inflection_level),
-                        description = stringResource(R.string.cd_restore_inflection_level_desc),
-                        onClick = { onInflectionLevelChange(0.5f) }
-                    )
-                }
-
-                // Speech Volume Slider
-                item {
-                    SliderSettingItem(
-                        title = stringResource(R.string.setting_speech_volume),
-                        value = uiState.volume,
-                        valueRange = 0.0f..1.0f,
-                        onValueChange = onVolumeChange,
-                        valueLabel = "${(uiState.volume * 100).toInt()}%"
-                    )
-                }
-
-                item {
-                    RestoreDefaultButton(
-                        text = stringResource(R.string.restore_default_volume),
-                        description = stringResource(R.string.cd_restore_volume_desc),
-                        onClick = onRestoreDefaultVolume
-                    )
-                }
-
-                // Force Volume Toggle
-                item {
-                    SwitchSettingItem(
-                        title = stringResource(R.string.setting_force_volume_title),
-                        subtitle = stringResource(R.string.setting_force_volume_subtitle),
-                        checked = uiState.forceVolume,
-                        onCheckedChange = onForceVolumeChange
-                    )
-                }
-
-                // Volume Boost Toggle
-                item {
-                    SwitchSettingItem(
-                        title = stringResource(R.string.setting_volume_boost_title),
-                        subtitle = stringResource(R.string.setting_volume_boost_subtitle),
-                        checked = uiState.volumeBoost,
-                        onCheckedChange = onVolumeBoostChange
-                    )
-                }
-
-                // Voice quality, after a classic formant synthesizer's parameters: head size,
-                // breathiness, roughness and brightness (0-100, 50 = the voice
-                // as it is), each slider followed by its restore button.
-                item {
-                    SliderSettingItem(
-                        title = stringResource(R.string.setting_head_size),
-                        value = uiState.headSize.toFloat(),
-                        valueRange = 0f..100f,
-                        onValueChange = { onHeadSizeChange(it.roundToInt()) },
-                        valueLabel = "${uiState.headSize}%",
-                        description = stringResource(R.string.setting_head_size_desc)
-                    )
-                }
-
-                item {
-                    RestoreDefaultButton(
-                        text = stringResource(R.string.restore_default_head_size),
-                        description = stringResource(R.string.cd_restore_head_size_desc),
-                        onClick = { onHeadSizeChange(50) }
-                    )
-                }
-
-                item {
-                    SliderSettingItem(
-                        title = stringResource(R.string.setting_breathiness),
-                        value = uiState.breathiness.toFloat(),
-                        valueRange = 0f..100f,
-                        onValueChange = { onBreathinessChange(it.roundToInt()) },
-                        valueLabel = "${uiState.breathiness}%",
-                        description = stringResource(R.string.setting_breathiness_desc)
-                    )
-                }
-
-                item {
-                    RestoreDefaultButton(
-                        text = stringResource(R.string.restore_default_breathiness),
-                        description = stringResource(R.string.cd_restore_breathiness_desc),
-                        onClick = { onBreathinessChange(50) }
-                    )
-                }
-
-                item {
-                    SliderSettingItem(
-                        title = stringResource(R.string.setting_roughness),
-                        value = uiState.roughness.toFloat(),
-                        valueRange = 0f..100f,
-                        onValueChange = { onRoughnessChange(it.roundToInt()) },
-                        valueLabel = "${uiState.roughness}%",
-                        description = stringResource(R.string.setting_roughness_desc)
-                    )
-                }
-
-                item {
-                    RestoreDefaultButton(
-                        text = stringResource(R.string.restore_default_roughness),
-                        description = stringResource(R.string.cd_restore_roughness_desc),
-                        onClick = { onRoughnessChange(50) }
-                    )
-                }
-
-                item {
-                    SliderSettingItem(
-                        title = stringResource(R.string.setting_brightness),
-                        value = uiState.brightness.toFloat(),
-                        valueRange = 0f..100f,
-                        onValueChange = { onBrightnessChange(it.roundToInt()) },
-                        valueLabel = "${uiState.brightness}%",
-                        description = stringResource(R.string.setting_brightness_desc)
-                    )
-                }
-
-                item {
-                    RestoreDefaultButton(
-                        text = stringResource(R.string.restore_default_brightness),
-                        description = stringResource(R.string.cd_restore_brightness_desc),
-                        onClick = { onBrightnessChange(50) }
-                    )
-                }
-
-                // Advanced Category
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    SettingsCategoryHeader(title = stringResource(R.string.category_advanced))
-                }
-
-                // Force Language Toggle
-                item {
-                    SwitchSettingItem(
-                        title = stringResource(R.string.setting_force_language_title),
-                        subtitle = stringResource(R.string.setting_force_language_subtitle),
-                        checked = uiState.forceLanguage,
-                        onCheckedChange = onForceLanguageChange
-                    )
-                }
-
-                // Emoji Enable Toggle
-                item {
-                    SwitchSettingItem(
-                        title = stringResource(R.string.setting_emoji_enabled_title),
-                        subtitle = stringResource(R.string.setting_emoji_enabled_subtitle),
-                        checked = uiState.emojiEnabled,
-                        onCheckedChange = onEmojiEnabledChange
-                    )
-                }
-
-                // Number Mode Toggle
-                item {
-                    SwitchSettingItem(
-                        title = stringResource(R.string.setting_number_mode_title),
-                        subtitle = stringResource(R.string.setting_number_mode_subtitle),
-                        checked = uiState.numberMode == 1,
-                        onCheckedChange = { checked ->
-                            onNumberModeChange(if (checked) 1 else 0)
-                        }
-                    )
-                }
-
-                // Spelling: letter names or letter sounds
-                item {
-                    SwitchSettingItem(
-                        title = stringResource(R.string.setting_spelling_mode),
-                        subtitle = stringResource(R.string.setting_spelling_mode_subtitle),
-                        checked = uiState.letterSounds,
-                        onCheckedChange = onLetterSoundsChange
-                    )
-                }
-
-                // Pause Settings Category
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    SettingsCategoryHeader(title = stringResource(R.string.category_pause_settings))
-                }
-
-                // Sentence Pause Slider
-                item {
-                    SliderSettingItem(
-                        title = stringResource(R.string.setting_sentence_pause),
-                        value = uiState.sentencePause.toFloat(),
-                        valueRange = 0f..2000f,
-                        onValueChange = { onSentencePauseChange(it.toInt()) },
-                        valueLabel = "${uiState.sentencePause} ms",
-                        description = stringResource(R.string.setting_sentence_pause_desc)
-                    )
-                }
-
-                // Comma Pause Slider
-                item {
-                    SliderSettingItem(
-                        title = stringResource(R.string.setting_comma_pause),
-                        value = uiState.commaPause.toFloat(),
-                        valueRange = 0f..2000f,
-                        onValueChange = { onCommaPauseChange(it.toInt()) },
-                        valueLabel = "${uiState.commaPause} ms",
-                        description = stringResource(R.string.setting_comma_pause_desc)
-                    )
-                }
-
-                // Newline Pause Slider
-                item {
-                    SliderSettingItem(
-                        title = stringResource(R.string.setting_newline_pause),
-                        value = uiState.newlinePause.toFloat(),
-                        valueRange = 0f..2000f,
-                        onValueChange = { onNewlinePauseChange(it.toInt()) },
-                        valueLabel = "${uiState.newlinePause} ms",
-                        description = stringResource(R.string.setting_newline_pause_desc)
-                    )
-                }
-
-                // Spelling Speed Slider (lower values add longer pauses)
-                item {
-                    SliderSettingItem(
-                        title = stringResource(R.string.setting_spelling_speed),
-                        value = uiState.spellingSpeed.toFloat(),
-                        valueRange = 0f..100f,
-                        onValueChange = { onSpellingSpeedChange(it.roundToInt()) },
-                        valueLabel = "${uiState.spellingSpeed}%",
-                        description = stringResource(R.string.setting_spelling_speed_desc)
-                    )
-                }
-
-                item {
-                    RestoreDefaultButton(
-                        text = stringResource(R.string.restore_default_spelling_speed),
-                        description = stringResource(R.string.cd_restore_spelling_speed_desc),
-                        onClick = { onSpellingSpeedChange(50) }
-                    )
-                }
-
-                // Dictionary Category
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    SettingsCategoryHeader(title = stringResource(R.string.category_dictionaries))
-                }
-
-                // User Dictionaries Enabled Toggle
-                item {
-                    SwitchSettingItem(
-                        title = stringResource(R.string.setting_user_dict_enabled_title),
-                        subtitle = stringResource(R.string.setting_user_dict_enabled_subtitle),
-                        checked = uiState.userDictionariesEnabled,
-                        onCheckedChange = onUserDictionariesEnabledChange
-                    )
-                }
-
-                // Manage Dictionaries Button
-                item {
-                    NavigationSettingItem(
-                        title = stringResource(R.string.setting_manage_dictionaries),
-                        subtitle = stringResource(R.string.setting_manage_dictionaries_desc),
-                        onClick = {
-                            context.startActivity(Intent(context, DictionaryActivity::class.java))
-                        }
-                    )
-                }
-
-                // About Category
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    SettingsCategoryHeader(title = stringResource(R.string.category_about))
-                }
-
-                // About Laprdus Button
-                item {
-                    NavigationSettingItem(
-                        title = stringResource(R.string.setting_about),
-                        subtitle = stringResource(R.string.setting_about_desc),
-                        onClick = {
-                            context.startActivity(Intent(context, AboutActivity::class.java))
-                        }
-                    )
-                }
-
-                // Bottom padding
-                item {
-                    Spacer(modifier = Modifier.height(24.dp))
-                }
-            }
+    if (voiceDialog) {
+        val options = uiState.availableVoices.map { voice ->
+            ChoiceOption(voice.id, voice.displayName, voiceDescription(voice))
         }
+        ChoiceDialog(
+            title = stringResource(R.string.voice_label),
+            options = options,
+            selectedId = selectedVoice?.id,
+            onSelect = { id ->
+                voiceDialog = false
+                actions.selectVoice(id)
+            },
+            onDismiss = { voiceDialog = false },
+        )
+    }
+    if (languageDialog) {
+        val options = Language.ALL.map { ChoiceOption(it, languageName(it)) }
+        ChoiceDialog(
+            title = stringResource(R.string.language_label),
+            options = options,
+            selectedId = uiState.language,
+            onSelect = { code ->
+                languageDialog = false
+                actions.selectLanguage(code)
+            },
+            onDismiss = { languageDialog = false },
+        )
     }
 }
 
-/**
- * Words per minute at the top of an app's rate range (2.0x, which scales the
- * Laprdus rate; the Laprdus rate alone when it is forced) with the
- * acceleration, up to the fastest rate the voice renders.
- */
-private fun topWordsPerMinute(uiState: SettingsUiState): Int {
-    val rate = if (uiState.forceSpeed) {
-        uiState.speed
-    } else {
-        (2.0f * uiState.speed).coerceIn(uiState.speedPitchRange)
-    }
-    val fastest = if (uiState.isFormantVoice) 8.0f else 4.0f
-    return (uiState.nominalWpm * (rate * uiState.acceleration).coerceAtMost(fastest)).roundToInt()
-}
-
-/** "1.5x", or "0.25x" where one decimal would round the value away. */
-private fun formatMultiplier(value: Float): String {
-    val hundredths = (value * 100).roundToInt()
-    return if (hundredths % 10 == 0) "%.1fx".format(value) else "%.2fx".format(value)
-}
-
-/**
- * Category header for settings sections.
- * Marked as heading for TalkBack navigation with swipe up/down to headings.
- */
 @Composable
-fun SettingsCategoryHeader(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-            .semantics { heading() }
+private fun AppsSection(uiState: SettingsUiState, actions: SettingsActions) {
+    SettingsSection(stringResource(R.string.category_apps)) {
+        SwitchRow(
+            title = stringResource(R.string.setting_force_language_title),
+            summary = stringResource(R.string.setting_force_language_subtitle),
+            checked = uiState.forceLanguage,
+            onCheckedChange = actions::setForceLanguage,
+        )
+        SwitchRow(
+            title = stringResource(R.string.setting_force_speed_title),
+            summary = stringResource(R.string.setting_force_speed_subtitle),
+            checked = uiState.forceSpeed,
+            onCheckedChange = actions::setForceSpeed,
+        )
+        SwitchRow(
+            title = stringResource(R.string.setting_force_pitch_title),
+            summary = stringResource(R.string.setting_force_pitch_subtitle),
+            checked = uiState.forcePitch,
+            onCheckedChange = actions::setForcePitch,
+        )
+        SwitchRow(
+            title = stringResource(R.string.setting_force_volume_title),
+            summary = stringResource(R.string.setting_force_volume_subtitle),
+            checked = uiState.forceVolume,
+            onCheckedChange = actions::setForceVolume,
+        )
+    }
+}
+
+@Composable
+private fun ReadingSection(uiState: SettingsUiState, actions: SettingsActions) {
+    val percentText = percentFormatter()
+    SettingsSection(stringResource(R.string.category_reading)) {
+        SwitchRow(
+            // The title says what "on" does ("Sricanje" suggested the letter
+            // names); no example letters, which Laprdus reads by this switch.
+            title = stringResource(R.string.setting_spelling_mode),
+            summary = stringResource(R.string.setting_spelling_mode_subtitle),
+            checked = uiState.letterSounds,
+            onCheckedChange = actions::setLetterSounds,
+        )
+        SliderRow(
+            title = stringResource(R.string.setting_spelling_speed),
+            summary = stringResource(R.string.setting_spelling_speed_desc),
+            value = uiState.spellingSpeed.toFloat(),
+            onValueChange = { actions.setSpellingSpeed(it.roundToInt()) },
+            valueRange = PercentRange,
+            step = SettingFormat.PERCENT_STEP,
+            valueText = { percentText(it.roundToInt()) },
+            defaultValue = SettingsRepository.DEFAULT_SPELLING_SPEED.toFloat(),
+        )
+        SwitchRow(
+            title = stringResource(R.string.setting_number_mode_title),
+            summary = stringResource(R.string.setting_number_mode_subtitle),
+            checked = uiState.numberMode == 1,
+            onCheckedChange = { actions.setNumberMode(if (it) 1 else 0) },
+        )
+        SwitchRow(
+            title = stringResource(R.string.setting_emoji_enabled_title),
+            summary = stringResource(R.string.setting_emoji_enabled_subtitle),
+            checked = uiState.emojiEnabled,
+            onCheckedChange = actions::setEmojiEnabled,
+        )
+    }
+}
+
+@Composable
+private fun PausesSection(uiState: SettingsUiState, actions: SettingsActions) {
+    val msText = millisecondsFormatter()
+    SettingsSection(stringResource(R.string.category_pause_settings)) {
+        PauseSlider(
+            R.string.setting_sentence_pause, R.string.setting_sentence_pause_desc,
+            uiState.sentencePause, SettingsRepository.DEFAULT_SENTENCE_PAUSE, actions::setSentencePause, msText,
+        )
+        PauseSlider(
+            R.string.setting_comma_pause, R.string.setting_comma_pause_desc,
+            uiState.commaPause, SettingsRepository.DEFAULT_COMMA_PAUSE, actions::setCommaPause, msText,
+        )
+        PauseSlider(
+            R.string.setting_newline_pause, R.string.setting_newline_pause_desc,
+            uiState.newlinePause, SettingsRepository.DEFAULT_NEWLINE_PAUSE, actions::setNewlinePause, msText,
+        )
+    }
+}
+
+@Composable
+private fun VoiceQualitySlider(
+    title: Int,
+    summary: Int,
+    value: Int,
+    default: Int,
+    onChange: (Int) -> Unit,
+    percentText: (Int) -> String,
+) {
+    SliderRow(
+        title = stringResource(title),
+        summary = stringResource(summary),
+        value = value.toFloat(),
+        onValueChange = { onChange(it.roundToInt()) },
+        valueRange = PercentRange,
+        step = SettingFormat.PERCENT_STEP,
+        valueText = { percentText(it.roundToInt()) },
+        defaultValue = default.toFloat(),
     )
 }
 
-/**
- * Voice selector dropdown for settings.
- *
- * Accessibility for TalkBack:
- * - Same pattern as SwitchSettingItem: Row wrapper with clickable + stateDescription
- * - Uses isTraversalGroup to ensure proper navigation order
- * - Announcement: "Label. Dropdown. Selected value"
- */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun VoiceSettingItem(
-    voices: List<VoiceInfo>,
-    selectedVoiceId: String,
-    onVoiceSelected: (String) -> Unit
+private fun PauseSlider(
+    title: Int,
+    summary: Int,
+    value: Int,
+    default: Int,
+    onChange: (Int) -> Unit,
+    msText: (Int) -> String,
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    val selectedVoice = voices.find { it.id == VoiceInfo.normalizeId(selectedVoiceId) }
-    val voiceSelectorLabel = stringResource(R.string.voice_label)
-    val selectVoiceText = stringResource(R.string.select_voice)
-    val selectedVoiceName = selectedVoice?.displayName ?: selectVoiceText
-    val dropdownDesc = stringResource(R.string.cd_voice_dropdown_desc)
+    SliderRow(
+        title = stringResource(title),
+        summary = stringResource(summary),
+        value = value.toFloat(),
+        onValueChange = { onChange(it.roundToInt()) },
+        valueRange = PauseRange,
+        step = SettingFormat.PAUSE_STEP,
+        valueText = { msText(it.roundToInt()) },
+        defaultValue = default.toFloat(),
+    )
+}
 
-    // Row wrapper with Role.DropdownList for native TalkBack role announcement
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-            .semantics(mergeDescendants = true) {
-                isTraversalGroup = true
-                contentDescription = voiceSelectorLabel
-                stateDescription = selectedVoiceName
-            }
-            .clickable(
-                role = Role.DropdownList,
-                onClickLabel = dropdownDesc
-            ) { expanded = true }
-    ) {
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = it },
-            modifier = Modifier.clearAndSetSemantics { }
-        ) {
-            OutlinedTextField(
-                value = selectedVoiceName,
-                onValueChange = {},
-                readOnly = true,
-                label = {
-                    Text(
-                        text = voiceSelectorLabel,
-                        modifier = Modifier.clearAndSetSemantics { }
-                    )
-                },
-                trailingIcon = {
-                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-                },
-                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                    .clearAndSetSemantics { }
-            )
+/** "50 %" in Croatian and Slovenian, "50%" in English and Serbian (CLDR). */
+@Composable
+private fun percentFormatter(): (Int) -> String {
+    val format = stringResource(R.string.format_percent)
+    val locale = LocalConfiguration.current.locales[0]
+    return remember(format, locale) { { value: Int -> String.format(locale, format, value) } }
+}
 
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
-                voices.forEach { voice ->
-                    // Capture composable values before entering non-composable lambda
-                    val voiceDescription = getVoiceDescription(voice)
-                    val itemContentDescription = "${voice.displayName}, $voiceDescription"
+@Composable
+private fun millisecondsFormatter(): (Int) -> String {
+    val format = stringResource(R.string.format_milliseconds)
+    val locale = LocalConfiguration.current.locales[0]
+    return remember(format, locale) { { value: Int -> String.format(locale, format, value) } }
+}
 
-                    DropdownMenuItem(
-                        text = {
-                            Column {
-                                Text(
-                                    text = voice.displayName,
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
-                                Text(
-                                    text = voiceDescription,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        },
-                        onClick = {
-                            onVoiceSelected(voice.id)
-                            expanded = false
-                        },
-                        modifier = Modifier.semantics {
-                            contentDescription = itemContentDescription
-                        }
-                    )
-                }
-            }
-        }
-    }
+/** The acceleration with the top rate it gives: "1,5x (do 525 riječi/min)". */
+@Composable
+private fun accelerationFormatter(
+    multiplier: (Float) -> String,
+    topWpm: (Float) -> Int,
+): (Float) -> String {
+    val format = stringResource(R.string.acceleration_value)
+    val locale = LocalConfiguration.current.locales[0]
+    return { value: Float -> String.format(locale, format, multiplier(value), topWpm(value)) }
 }
 
 /**
- * Get a user-friendly description for a voice: gender, age and kind. No
- * language: every voice speaks every language (see [LanguageSettingItem]).
+ * A voice's gender, age and kind. No language: every voice speaks every
+ * language.
  */
 @Composable
-private fun getVoiceDescription(voice: VoiceInfo): String {
-    val ageDesc = when (voice.age) {
+private fun voiceDescription(voice: VoiceInfo): String {
+    val age = when (voice.age) {
         "Child" -> stringResource(R.string.age_child)
         "Adult" -> stringResource(R.string.age_adult)
         "Senior" -> stringResource(R.string.age_senior)
         else -> voice.age
     }
-    val genderDesc = if (voice.gender == "Male") {
+    val gender = if (voice.gender == "Male") {
         stringResource(R.string.gender_male)
     } else {
         stringResource(R.string.gender_female)
@@ -750,109 +550,7 @@ private fun getVoiceDescription(voice: VoiceInfo): String {
         voice.isFormantVoice -> stringResource(R.string.voice_kind_formant)
         else -> stringResource(R.string.voice_kind_recorded)
     }
-    return "$genderDesc, $ageDesc, $kind"
-}
-
-/**
- * Language selector dropdown for settings: Croatian, Serbian, Bosnian or
- * Slovenian, spoken by whichever voice is selected.
- *
- * [systemLanguage] is the system language when Laprdus speaks it and the
- * language is not forced: that language is spoken then, so the selector
- * shows it, disabled, with a note that "Force language" makes the choice
- * count; null shows the chosen language, enabled.
- *
- * Accessibility for TalkBack: the same pattern as [VoiceSettingItem].
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun LanguageSettingItem(
-    selectedLanguage: String,
-    systemLanguage: String?,
-    onLanguageSelected: (String) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val languageSelectorLabel = stringResource(R.string.language_label)
-    val enabled = systemLanguage == null
-    val shownLanguageName = languageName(systemLanguage ?: selectedLanguage)
-    val followsSystem = if (systemLanguage == null) null
-        else stringResource(R.string.language_follows_system, shownLanguageName)
-    val dropdownDesc = stringResource(R.string.cd_language_dropdown_desc)
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-            .semantics(mergeDescendants = true) {
-                isTraversalGroup = true
-                contentDescription = languageSelectorLabel
-                stateDescription = followsSystem ?: shownLanguageName
-                if (!enabled) disabled()
-            }
-            .clickable(
-                enabled = enabled,
-                role = Role.DropdownList,
-                onClickLabel = dropdownDesc
-            ) { expanded = true }
-    ) {
-        if (followsSystem != null) {
-            Text(
-                text = followsSystem,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(bottom = 4.dp).clearAndSetSemantics { }
-            )
-        }
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = it },
-            modifier = Modifier.clearAndSetSemantics { }
-        ) {
-            OutlinedTextField(
-                value = shownLanguageName,
-                onValueChange = {},
-                readOnly = true,
-                enabled = enabled,
-                label = {
-                    Text(
-                        text = languageSelectorLabel,
-                        modifier = Modifier.clearAndSetSemantics { }
-                    )
-                },
-                trailingIcon = {
-                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-                },
-                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled)
-                    .clearAndSetSemantics { }
-            )
-
-            ExposedDropdownMenu(
-                expanded = expanded && enabled,
-                onDismissRequest = { expanded = false }
-            ) {
-                Language.ALL.forEach { language ->
-                    val name = languageName(language)
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = name,
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                        },
-                        onClick = {
-                            onLanguageSelected(language)
-                            expanded = false
-                        },
-                        modifier = Modifier.semantics {
-                            contentDescription = name
-                        }
-                    )
-                }
-            }
-        }
-    }
+    return "$gender, $age, $kind"
 }
 
 /** The localized name of a language code ("hr", "sr", "bs", "sl"). */
@@ -862,231 +560,4 @@ private fun languageName(language: String): String = when (language) {
     Language.BOSNIAN -> stringResource(R.string.language_bosnian)
     Language.SLOVENIAN -> stringResource(R.string.language_slovenian)
     else -> stringResource(R.string.language_croatian)
-}
-
-/**
- * Slider setting item for rate, pitch, volume and the other numeric settings.
- *
- * The [description], when there is one, is shown under the title like a
- * switch's subtitle and read by TalkBack together with the title.
- *
- * Accessibility for TalkBack:
- * - Visual text is hidden; Slider keeps native SeekBar accessibility
- * - mergeDescendants on Slider merges internal thumb/track into one node
- * - contentDescription provides the label (title and description),
- *   stateDescription the formatted value
- * - Announcement: "Title. Description, Value, Slider, Use volume keys to adjust"
- */
-@Composable
-fun SliderSettingItem(
-    title: String,
-    value: Float,
-    valueRange: ClosedFloatingPointRange<Float>,
-    onValueChange: (Float) -> Unit,
-    valueLabel: String,
-    description: String = ""
-) {
-    val hasDescription = description.isNotBlank()
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-    ) {
-        // Visual text - hidden from TalkBack, which reads it from the slider
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clearAndSetSemantics {}
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Text(
-                    text = valueLabel,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-            if (hasDescription) {
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-        // Slider keeps its native SeekBar accessibility (className, role, range, setProgress).
-        // mergeDescendants merges internal thumb/track into one node.
-        // contentDescription provides the label and the description (as SwitchSettingItem
-        // does with its subtitle), stateDescription overrides the default percentage with
-        // our formatted value (e.g. "1.0x", "500 ms").
-        val label = if (hasDescription) "$title. $description" else title
-        Slider(
-            value = value,
-            onValueChange = onValueChange,
-            valueRange = valueRange,
-            modifier = Modifier.semantics(mergeDescendants = true) {
-                isTraversalGroup = true
-                contentDescription = label
-                stateDescription = valueLabel
-            }
-        )
-    }
-}
-
-/**
- * Switch setting item for toggles.
- *
- * Accessibility for TalkBack:
- * - Uses toggleable(role = Role.Switch) for native role announcement
- * - Uses isTraversalGroup to ensure proper navigation order
- * - TalkBack announces: "Title. Subtitle, Switch, On/Off, Double-tap to toggle"
- */
-@Composable
-fun SwitchSettingItem(
-    title: String,
-    subtitle: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp)
-            .semantics(mergeDescendants = true) {
-                isTraversalGroup = true
-                contentDescription = "$title. $subtitle"
-            }
-            .toggleable(
-                value = checked,
-                onValueChange = onCheckedChange,
-                role = Role.Switch
-            ),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.clearAndSetSemantics { }
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.clearAndSetSemantics { }
-            )
-        }
-        Spacer(modifier = Modifier.width(16.dp))
-        Switch(
-            checked = checked,
-            onCheckedChange = null, // Handled by parent Row's clickable
-            modifier = Modifier.clearAndSetSemantics { }
-        )
-    }
-}
-
-/**
- * Button to restore default values.
- *
- * Accessibility for TalkBack:
- * - Uses Role.Button for native role announcement
- * - Uses isTraversalGroup to ensure proper navigation order
- * - TalkBack: "Text, Button, Double-tap to Description"
- */
-@Composable
-fun RestoreDefaultButton(
-    text: String,
-    description: String,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .semantics(mergeDescendants = true) {
-                isTraversalGroup = true
-                contentDescription = text
-            }
-            .clickable(
-                role = Role.Button,
-                onClickLabel = description,
-                onClick = onClick
-            ),
-        horizontalArrangement = Arrangement.Center
-    ) {
-        // Visual button appearance without its own semantics
-        Button(
-            onClick = onClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clearAndSetSemantics { },
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-            )
-        ) {
-            Text(text = text)
-        }
-    }
-}
-
-/**
- * Navigation setting item that opens another screen.
- *
- * Accessibility for TalkBack:
- * - Uses Role.Button for native role announcement
- * - Uses isTraversalGroup to ensure proper navigation order
- * - TalkBack: "Title, Button, Double-tap to Subtitle"
- */
-@Composable
-fun NavigationSettingItem(
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp)
-            .semantics(mergeDescendants = true) {
-                isTraversalGroup = true
-                contentDescription = title
-                stateDescription = subtitle
-            }
-            .clickable(
-                role = Role.Button,
-                onClickLabel = subtitle,
-                onClick = onClick
-            ),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.clearAndSetSemantics { }
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.clearAndSetSemantics { }
-            )
-        }
-        Icon(
-            imageVector = Icons.Default.ChevronRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.clearAndSetSemantics { }
-        )
-    }
 }

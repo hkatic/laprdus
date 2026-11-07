@@ -405,17 +405,15 @@ Kada koristite Laprdus s NVDA čitačem ekrana, postavke glasa možete promijeni
 
 ### 3.4 Android aplikacija
 
-Laprdus Android aplikacija uključuje zaslon s postavkama gdje možete:
+Laprdus Android aplikacija uključuje zaslon s postavkama, složen kao Androidove postavke: odjeljci s naslovima (TalkBackovom navigacijom po naslovima prelazite s odjeljka na odjeljak), u svakom skupina postavki:
 
-1. Odabrati glas
-2. Odabrati jezik (hrvatski, srpski, bosanski ili slovenski) za govor u samoj aplikaciji; govor koji traže druge aplikacije i TalkBack ide na jeziku koji one zatraže, osim uz uključeno prisilno korištenje jezika
-3. Podesiti brzinu govora
-4. Podesiti visinu glasa
-5. Podesiti glasnoću
-6. Podesiti mogućnost čitanja emodžija
-7. Podesiti način čitanja brojeva
-8. Podesiti trajanje pauza i brzinu slovkanja
-9. Odabrati slovkanje nazivima slova ili glasovima
+1. **Glas**: glas; jezik (hrvatski, srpski, bosanski ili slovenski) za govor u samoj aplikaciji, dok govor koji traže druge aplikacije i TalkBack ide na jeziku koji one zatraže, osim uz uključeno prisilno korištenje jezika; brzina, visina i glasnoća govora; te **Više postavki glasa**, sažeto dok ga ne otvorite: ubrzanje, intonacija, pojačanje glasnoće govora, veličina glave, dah, hrapavost i svjetlina
+2. **Aplikacije i čitači zaslona**: prisilno korištenje jezika, brzine, visine i glasnoće Laprdusa, bez obzira na ono što aplikacija ili TalkBack zatraže
+3. **Čitanje**: *Slova kao glasovi* (slovkanje glasovima slova, vidi [4.7](#47-slovkanje)), brzina slovkanja, čitanje brojeva znamenku po znamenku, čitanje emodžija
+4. **Pauze prilikom čitanja**: pauze nakon rečenice, nakon zareza i kod novog retka
+5. **Rječnici** i **O Laprdusu**
+
+Glas i jezik birate s popisa u kojem je označen trenutačni odabir. Svaki klizač TalkBack čita imenom, opisom i vrijednošću; pokretom prsta prema gore ili dolje pomiče se za jedan korak (0,05x za brzinu i visinu, 5 % za postotke, 50 ms za pauze), a zadanu vrijednost vraća radnja „Vrati zadano” u TalkBackovu izborniku radnji (dodir s tri prsta) ili gumb uz klizač.
 
 Za pristup postavkama:
 
@@ -531,7 +529,7 @@ Kad čitač ekrana slovka tekst ili izgovara znakove dok tipkate, Laprdus svako 
 - **Nazivima slova**: *a, be, ce, če, će, de, dže, đe, e, ef, ge, ha, i, je, ka, el, elj, em, en, enj, o, pe, er, es, eš, te, u, ve, ze, že*; strana slova *ku, duplo ve, iks, ipsilon*. To su nazivi iz hrvatskog pravopisa, a vrijede i na bosanskom. Na srpskom svaki glas slijedi odluku Odbora za standardizaciju srpskog jezika: *lje, nje* i *ša* umjesto *elj, enj* i *eš*, ostala slova jednako, ćirilična kao i latinična (*Љ* je *lje*, *Ш* je *ša*). Na slovenskom nazivi su oni Slovenskog pravopisa: *a, be, ce, če, de, e, ef, ge, ha, i, je, ka, el, em, en, o, pe, er, es, eš, te, u, ve, ze, že*, strana slova *ku, dvojni ve, iks, ipsilon*, a ć i đ *mehki če* i *mehki dže*. Nazive određuje odabrani jezik, ne glas: Josip na srpskom kaže *lje*, Stojan na hrvatskom *elj*.
 - **Glasovima slova** (zadano): umjesto naziva izgovara se glas koji slovo označava, kao kad dijete uči čitati i kao što ih slovkaju neki sintetizatori: suglasnik i za njim kratak neutralni samoglasnik (*bə, cə, čə, fə, sə, mə*), samoglasnici kao samoglasnici. Strana slova *q, x* i *y* nisu slova naše abecede, pa se i ovdje čitaju nazivima (*ku, iks, ipsilon*), a *w* je *duplo v* (na slovenskom *dvojni v*), s *v* izgovorenim kao glas. Engleski nazivi i engleski izgovor ne koriste se.
 
-Način slovkanja prekidač je „Slovkaj slova glasovima”, uključen pri novoj instalaciji, u naprednim postavkama (Windows: skupina Opcije u Konfiguratoru; Android i Apple: odjeljak Napredno; NVDA: Konfigurator; naredbeni program: `-m`). Odnosi se na slovkanje, tipkanje i na slovo koje u poruci stoji samo; riječi se i dalje izgovaraju normalno. Brojevi, interpunkcija i simboli u oba se načina čitaju imenom iz rječnika slovkanja. Brzina slovkanja opisana je u [4.4](#44-pauze).
+Način slovkanja prekidač je „Slovkaj slova glasovima”, uključen pri novoj instalaciji, u naprednim postavkama (Windows: skupina Opcije u Konfiguratoru; Android: prekidač *Slova kao glasovi* u odjeljku Čitanje; Apple: odjeljak Napredno; NVDA: Konfigurator; naredbeni program: `-m`). Odnosi se na slovkanje, tipkanje i na slovo koje u poruci stoji samo; riječi se i dalje izgovaraju normalno. Brojevi, interpunkcija i simboli u oba se načina čitaju imenom iz rječnika slovkanja. Brzina slovkanja opisana je u [4.4](#44-pauze).
 
 **Velika slova.** Ako je čitač ekrana podešen da najavljuje velika slova riječju („veliko N” u NVDA-u, „veliko slovo N” u TalkBacku, „veliko početno slovo N” u VoiceOveru, „cap N” na engleskom), Laprdus riječ izgovara normalno, a slovo slovka kao i svako drugo: nazivom ili glasom, prema odabranom načinu, i brzinom slovkanja. NVDA velika slova najčešće označava povišenim glasom: postavka „Postotak promjene visine glasa za velika slova” u postavkama glasa (zadano 30) podiže visinu slovkanog velikog slova, a sljedeći znak ili riječ vraća se na visinu klizača. To vrijedi i uz uključeno prisilno korištenje Laprdusove visine: promjena se tada računa od sredine NVDA-ova klizača visine.
 
@@ -1460,9 +1458,9 @@ Laprdus sustavu nudi svaki glas pod hrvatskim, srpskim, bosanskim i slovenskim (
 
 1. Otvorite Laprdus aplikaciju
 2. Dodirnite "Laprdus postavke"
-3. U odjeljku "Glas" dodirnite **"Glas"** padajući izbornik
-4. Odaberite željeni glas iz popisa
-5. Izbornik **"Jezik"** prikazuje jezik kojim Laprdus govori. Kad je jezik uređaja jedan od četiri koja Laprdus govori, govori se taj jezik, u aplikaciji i u TalkBacku, a izbornik to pokazuje i ne da se mijenjati; drugi jezik odaberete tako da uključite "Prisilno koristi jezik" (u naprednim postavkama) i zatim odaberete jezik u izborniku: tada se njime govori svugdje, koji god jezik aplikacije zatražile. Kad jezik uređaja nije jedan od četiri, govori se jezik iz izbornika
+3. U odjeljku "Glas" dodirnite **"Glas"**
+4. Odaberite željeni glas s popisa
+5. Postavka **"Jezik"** prikazuje jezik kojim Laprdus govori. Kad je jezik uređaja jedan od četiri koja Laprdus govori, govori se taj jezik, u aplikaciji i u TalkBacku, a postavka to pokazuje i ne da se mijenjati; drugi jezik odaberete tako da uključite "Prisilno koristi jezik" (u odjeljku "Aplikacije i čitači zaslona") i zatim odaberete jezik: tada se njime govori svugdje, koji god jezik aplikacije zatražile. Kad jezik uređaja nije jedan od četiri, govori se odabrani jezik
 
 Za promjenu zadanog glasa u sustavu:
 1. Otvorite Postavke > Pristupačnost > Tekst u govor

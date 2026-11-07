@@ -13,11 +13,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material.icons.outlined.RecordVoiceOver
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -37,7 +32,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.annotation.DrawableRes
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -161,7 +157,7 @@ fun MainScreen(
                             onClick = onStop,
                             containerColor = MaterialTheme.colorScheme.error,
                             contentColor = MaterialTheme.colorScheme.onError,
-                            icon = Icons.Default.Stop
+                            icon = R.drawable.ic_stop
                         )
                     } else {
                         val speakText = stringResource(R.string.speak_button)
@@ -172,7 +168,7 @@ fun MainScreen(
                             description = speakDesc,
                             onClick = onSpeak,
                             enabled = isEnabled,
-                            icon = Icons.Default.PlayArrow
+                            icon = R.drawable.ic_play_arrow
                         )
                     }
 
@@ -183,7 +179,7 @@ fun MainScreen(
                         text = laprdusSettingsText,
                         description = laprdusSettingsDesc,
                         onClick = onOpenSettings,
-                        icon = Icons.Default.Settings
+                        icon = R.drawable.ic_settings
                     )
 
                     // Android TTS Settings button
@@ -193,7 +189,7 @@ fun MainScreen(
                         text = ttsSettingsText,
                         description = ttsSettingsDesc,
                         onClick = onOpenTTSSettings,
-                        icon = Icons.Outlined.RecordVoiceOver
+                        icon = R.drawable.ic_record_voice_over
                     )
                 }
 
@@ -306,7 +302,7 @@ private fun AccessibleButton(
     enabled: Boolean = true,
     containerColor: Color = MaterialTheme.colorScheme.primary,
     contentColor: Color = MaterialTheme.colorScheme.onPrimary,
-    icon: ImageVector
+    @DrawableRes icon: Int
 ) {
     Row(
         modifier = Modifier
@@ -336,7 +332,7 @@ private fun AccessibleButton(
             )
         ) {
             Icon(
-                imageVector = icon,
+                painter = painterResource(icon),
                 contentDescription = null
             )
             Spacer(Modifier.width(8.dp))
@@ -355,7 +351,7 @@ private fun AccessibleOutlinedButton(
     text: String,
     description: String,
     onClick: () -> Unit,
-    icon: ImageVector
+    @DrawableRes icon: Int
 ) {
     Row(
         modifier = Modifier
@@ -379,7 +375,7 @@ private fun AccessibleOutlinedButton(
                 .clearAndSetSemantics { }
         ) {
             Icon(
-                imageVector = icon,
+                painter = painterResource(icon),
                 contentDescription = null
             )
             Spacer(Modifier.width(8.dp))

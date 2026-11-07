@@ -1,15 +1,17 @@
 package com.hrvojekatic.laprdus
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hrvojekatic.laprdus.tts.Language
 import com.hrvojekatic.laprdus.tts.SystemLanguage
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.hrvojekatic.laprdus.ui.screens.SettingsScreen
 import com.hrvojekatic.laprdus.ui.theme.LaprdusTheme
 import com.hrvojekatic.laprdus.viewmodel.SettingsViewModel
@@ -34,45 +36,25 @@ class SettingsActivity : ComponentActivity() {
         setContent {
             LaprdusTheme {
                 val viewModel: SettingsViewModel = hiltViewModel()
-                val uiState by viewModel.uiState.collectAsState()
-                // Re-read after a configuration change even when the ViewModel
-                // survives it and no saved preference has changed.
-                val systemLocale = androidx.compose.runtime.remember(LocalConfiguration.current) {
-                    SystemLanguage.locale(this@SettingsActivity)
+                val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+                // The system language (a system service call): read again only
+                // when the configuration changes, not on every recomposition.
+                val configuration = LocalConfiguration.current
+                val systemLanguage = remember(configuration) {
+                    Language.deviceLanguage(SystemLanguage.locale(this@SettingsActivity))
                 }
 
                 SettingsScreen(
-                    uiState = uiState.copy(systemLanguage = Language.deviceLanguage(systemLocale)),
+                    uiState = uiState,
+                    systemLanguage = systemLanguage,
+                    actions = viewModel,
                     onNavigateBack = { finish() },
-                    onVoiceSelected = viewModel::selectVoice,
-                    onLanguageSelected = viewModel::selectLanguage,
-                    onSpeedChange = viewModel::setSpeed,
-                    onPitchChange = viewModel::setPitch,
-                    onVolumeChange = viewModel::setVolume,
-                    onForceSpeedChange = viewModel::setForceSpeed,
-                    onForcePitchChange = viewModel::setForcePitch,
-                    onForceVolumeChange = viewModel::setForceVolume,
-                    onVolumeBoostChange = viewModel::setVolumeBoost,
-                    onForceLanguageChange = viewModel::setForceLanguage,
-                    onRestoreDefaultSpeed = viewModel::restoreDefaultSpeed,
-                    onRestoreDefaultPitch = viewModel::restoreDefaultPitch,
-                    onRestoreDefaultVolume = viewModel::restoreDefaultVolume,
-                    // Advanced settings
-                    onEmojiEnabledChange = viewModel::setEmojiEnabled,
-                    onInflectionLevelChange = viewModel::setInflectionLevel,
-                    onAccelerationChange = viewModel::setAcceleration,
-                    onHeadSizeChange = viewModel::setHeadSize,
-                    onBreathinessChange = viewModel::setBreathiness,
-                    onRoughnessChange = viewModel::setRoughness,
-                    onBrightnessChange = viewModel::setBrightness,
-                    onSentencePauseChange = viewModel::setSentencePause,
-                    onCommaPauseChange = viewModel::setCommaPause,
-                    onNewlinePauseChange = viewModel::setNewlinePause,
-                    onNumberModeChange = viewModel::setNumberMode,
-                    onSpellingSpeedChange = viewModel::setSpellingSpeed,
-                    onLetterSoundsChange = viewModel::setLetterSounds,
-                    // Dictionary settings
-                    onUserDictionariesEnabledChange = viewModel::setUserDictionariesEnabled
+                    onOpenDictionaries = {
+                        startActivity(Intent(this@SettingsActivity, DictionaryActivity::class.java))
+                    },
+                    onOpenAbout = {
+                        startActivity(Intent(this@SettingsActivity, AboutActivity::class.java))
+                    },
                 )
             }
         }

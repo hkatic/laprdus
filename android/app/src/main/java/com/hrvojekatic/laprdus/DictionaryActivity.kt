@@ -4,7 +4,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
@@ -14,6 +13,7 @@ import com.hrvojekatic.laprdus.ui.screens.DictionaryEditScreen
 import com.hrvojekatic.laprdus.ui.screens.DictionaryListScreen
 import com.hrvojekatic.laprdus.ui.theme.LaprdusTheme
 import com.hrvojekatic.laprdus.viewmodel.DictionaryViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 
 /**
@@ -31,7 +31,7 @@ class DictionaryActivity : ComponentActivity() {
             LaprdusTheme {
                 val navController = rememberNavController()
                 val viewModel: DictionaryViewModel = hiltViewModel()
-                val uiState by viewModel.uiState.collectAsState()
+                val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
                 NavHost(
                     navController = navController,

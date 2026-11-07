@@ -660,7 +660,9 @@ class StorageMigrationInstrumentedTest {
         val LEGACY_DICTIONARIES: Map<String, ByteArray> = mapOf(
             "user.json" to """{"version":"1.0","entries":[{"grapheme":"Čačak","phoneme":"Ča-čak","caseSensitive":false,"wholeWord":true}]}""",
             "spelling.json" to """{"version":"1.0","entries":[{"character":"Đ","pronunciation":"Đe"}]}""",
-            "emoji.json" to """{"version":"1.0","entries":[{"emoji":"😀","text":"nasmijano lice"}]}"""
+            "emoji.json" to """{"version":"1.0","entries":[{"emoji":"😀","text":"nasmijano lice"}]}""",
+            // The accent lexicon became the fourth dictionary file (DICTIONARY_FILE_NAMES).
+            "accents.json" to """{"version":"1.0","entries":[{"word":"kontr'o:l*","comment":"žičani"}]}"""
         ).mapValues { it.value.toByteArray(Charsets.UTF_8) }
     }
 }

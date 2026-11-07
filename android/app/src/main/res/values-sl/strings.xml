@@ -29,7 +29,12 @@
     <!-- Settings -->
     <string name="settings_title">Nastavitve</string>
     <string name="category_voice">Glas</string>
-    <string name="category_advanced">Napredno</string>
+    <string name="category_apps">Aplikacije in bralniki zaslona</string>
+    <string name="category_reading">Branje</string>
+    <string name="setting_more_voice">Več nastavitev glasu</string>
+    <string name="action_restore_default">Obnovi privzeto (%1$s)</string>
+    <string name="format_percent">%1$d %%</string>
+    <string name="format_milliseconds">%1$d ms</string>
     <string name="setting_speech_rate">Hitrost govora</string>
     <string name="setting_speech_pitch">Višina glasu</string>
     <string name="setting_speech_volume">Glasnost govora</string>
@@ -50,35 +55,21 @@
     <string name="setting_inflection_level_desc">Obseg spreminjanja višine glasu: 0% pomeni enoličen govor, 50% naravno spreminjanje, 100% največje spreminjanje</string>
     <string name="setting_acceleration">Pospešek</string>
     <string name="setting_acceleration_desc">Pomnoži hitrost govora, tako da zgornja meja razpona doseže višjo ali nižjo hitrost</string>
-    <string name="acceleration_value">%1$.1fx (do %2$d besed/min)</string>
-    <string name="restore_default_inflection_level">Obnovi privzeto intonacijo</string>
-    <string name="restore_default_acceleration">Obnovi privzeti pospešek</string>
-    <string name="cd_restore_inflection_level_desc">Nastavi intonacijo na 50%</string>
-    <string name="cd_restore_acceleration_desc">Nastavi pospešek na 1,0x</string>
+    <string name="acceleration_value">%1$s (do %2$d besed/min)</string>
     <string name="setting_head_size">Velikost glave</string>
     <string name="setting_head_size_desc">Dolžina govornega trakta: 0 % veliko daljši (nižji formanti, velikan), 50 % glas, kakršen je, 100 % veliko krajši (višji formanti, otrok)</string>
-    <string name="restore_default_head_size">Obnovi privzeto velikost glave</string>
-    <string name="cd_restore_head_size_desc">Nastavi velikost glave na 50 %</string>
     <string name="setting_breathiness">Dih</string>
     <string name="setting_breathiness_desc">Dih v glasu: 0 % napet, trd glas, 50 % glas, kakršen je, 100 % šepet (formantni glasovi)</string>
-    <string name="restore_default_breathiness">Obnovi privzeti dih</string>
-    <string name="cd_restore_breathiness_desc">Nastavi dih na 50 %</string>
     <string name="setting_roughness">Hrapavost</string>
     <string name="setting_roughness_desc">Hrapavost glasu: 0 % povsem miren glas, 50 % glas, kakršen je, nad 50 % hripavost, ki narašča do 100 % (formantni glasovi)</string>
-    <string name="restore_default_roughness">Obnovi privzeto hrapavost</string>
-    <string name="cd_restore_roughness_desc">Nastavi hrapavost na 50 %</string>
     <string name="setting_brightness">Svetlost</string>
     <string name="setting_brightness_desc">Barva tona: 0 % temno, 50 % glas, kakršen je, 100 % ostro; nižje vrednosti omilijo tudi glasove, kot sta s in š</string>
-    <string name="restore_default_brightness">Obnovi privzeto svetlost</string>
-    <string name="cd_restore_brightness_desc">Nastavi svetlost na 50 %</string>
     <string name="setting_number_mode_title">Branje števil po števkah</string>
     <string name="setting_number_mode_subtitle">Beri števila kot posamezne števke (123 → ena dva tri)</string>
-    <string name="setting_spelling_mode">Črkovanje</string>
-    <string name="setting_spelling_mode_subtitle">Pri črkovanju in tipkanju beri glasove črk (b, c, d) namesto njihovih imen (be, ce, de)</string>
+    <string name="setting_spelling_mode">Črke kot glasovi</string>
+    <string name="setting_spelling_mode_subtitle">Pri črkovanju in tipkanju</string>
     <string name="setting_spelling_speed">Hitrost črkovanja</string>
     <string name="setting_spelling_speed_desc">Nižje vrednosti dodajo daljše premore za vsakim znakom. Znaki se vedno izgovarjajo z običajno hitrostjo govora. 100% ne doda premora; privzeto je 50%.</string>
-    <string name="restore_default_spelling_speed">Obnovi privzeto hitrost črkovanja</string>
-    <string name="cd_restore_spelling_speed_desc">Nastavi hitrost črkovanja na 50%</string>
     <string name="category_pause_settings">Premori med branjem</string>
     <string name="setting_sentence_pause">Premor za povedmi</string>
     <string name="setting_sentence_pause_desc">Trajanje tišine za pikami, klicaji in vprašaji</string>
@@ -86,24 +77,15 @@
     <string name="setting_comma_pause_desc">Trajanje tišine za vejicami za naraven ritem govora</string>
     <string name="setting_newline_pause">Premor ob novi vrstici</string>
     <string name="setting_newline_pause_desc">Trajanje tišine ob prehodu v novo vrstico ali odstavek</string>
-    <string name="restore_default_speed">Obnovi privzeto hitrost govora</string>
-    <string name="restore_default_pitch">Obnovi privzeto višino glasu</string>
-    <string name="restore_default_volume">Obnovi privzeto glasnost govora</string>
 
     <!-- Accessibility labels and hints -->
-    <string name="cd_voice_dropdown_desc">Izberite glas za sintezo govora</string>
-    <string name="cd_language_dropdown_desc">Izberite jezik govora</string>
     <string name="cd_dict_type_dropdown_desc">Izberite vrsto slovarja</string>
-    <string name="cd_restore_speed_desc">Nastavi hitrost govora na privzeto vrednost</string>
-    <string name="cd_restore_pitch_desc">Nastavi višino glasu na privzeto vrednost</string>
-    <string name="cd_restore_volume_desc">Nastavi glasnost govora na privzeto vrednost</string>
     <string name="cd_speak_desc">Prebere vneseno besedilo</string>
     <string name="cd_stop_desc">Ustavi trenutni govor</string>
     <string name="cd_laprdus_settings_desc">Odpre nastavitve govornega sintetizatorja Laprdus</string>
     <string name="cd_android_tts_settings_desc">Odpre sistemske nastavitve pretvorbe besedila v govor v Androidu</string>
     <string name="button_laprdus_settings">Nastavitve Laprdusa</string>
     <string name="button_android_tts_settings">Nastavitve govora v Androidu</string>
-    <string name="cd_slider_adjust">Podrsajte za prilagoditev</string>
     <string name="cd_text_input">Polje za vnos besedila, ki bo prebrano</string>
     <string name="cd_back_button">Nazaj</string>
 

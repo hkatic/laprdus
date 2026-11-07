@@ -36,7 +36,7 @@ import java.io.File
  * temporary directory, so no Android storage singleton is touched.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [36], manifest = Config.NONE)
+@Config(sdk = [37], manifest = Config.NONE)
 class DictionaryRepositoryTest {
 
     @get:Rule

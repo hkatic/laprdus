@@ -38,6 +38,9 @@ class SlovenianSpeechInstrumentedTest {
         settings.setDefaultVoice("zvonko")
         settings.setUserDictionariesEnabled(false)
         settings.setForceLanguage(false)
+        // Letter names: "w" is "dvojni ve" by name, "dvojni v" by its sounds
+        // (the default since 2026-10-18).
+        settings.setSpellingMode(SettingsRepository.SPELLING_MODE_NAMES)
         val ready = CountDownLatch(1)
         val result = AtomicInteger(Int.MIN_VALUE)
         client = TextToSpeech(context, { status ->
@@ -46,6 +49,10 @@ class SlovenianSpeechInstrumentedTest {
         }, context.packageName)
         assertTrue(ready.await(30, TimeUnit.SECONDS))
         assertEquals(TextToSpeech.SUCCESS, result.get())
+        // The service follows the saved settings asynchronously.
+        val deadline = System.currentTimeMillis() + 10_000
+        while (LaprdusTTS.service.letterSounds && System.currentTimeMillis() < deadline) Thread.sleep(25)
+        assertFalse("the service still spells by sounds", LaprdusTTS.service.letterSounds)
     }
 
     @After
@@ -57,6 +64,7 @@ class SlovenianSpeechInstrumentedTest {
             settings.setLanguage(saved.language)
             settings.setForceLanguage(saved.forceLanguage)
             settings.setUserDictionariesEnabled(saved.userDictionariesEnabled)
+            settings.setSpellingMode(saved.spellingMode)
         }
     }
 

@@ -68,6 +68,14 @@ target_compile_options(laprdus PRIVATE
     -fvisibility=hidden
 )
 
+# Memory safety while testing: debug builds trap out-of-bounds container and
+# iterator use in libc++ (vector[], string_view, span, ...) instead of reading
+# past the end, so the instrumented tests find such bugs. Release builds stay
+# as they are: a trap there would silence the screen reader.
+target_compile_definitions(laprdus PRIVATE
+    $<$<CONFIG:Debug>:_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_EXTENSIVE>
+)
+
 # Link Android libraries
 find_library(log-lib log)
 find_library(android-lib android)
@@ -77,6 +85,7 @@ target_link_libraries(laprdus
     ${android-lib}
 )
 
-# 16KB page size alignment for Android 15+ compatibility
-# Required starting November 2025 for Google Play submissions
+# 16 KB page size alignment (Android 15+ devices with 16 KB pages; Google
+# Play rejects updates without it from 1 February 2027). NDK r28+ aligns this
+# way by default; the flag keeps it explicit.
 target_link_options(laprdus PRIVATE "-Wl,-z,max-page-size=16384")

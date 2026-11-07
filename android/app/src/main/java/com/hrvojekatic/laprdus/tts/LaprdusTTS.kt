@@ -160,6 +160,9 @@ class LaprdusTTS private constructor() {
 
     private val clientLock = Any()
 
+    /** The settings [applySettings] last gave the engine; guarded by [clientLock]. */
+    private var appliedSettings: SettingsRepository.TTSSettings? = null
+
     /**
      * Runs [block] with this engine to itself: no other thread can change
      * its voice, rate, pitch, volume or dictionaries in between, so "set the
@@ -457,22 +460,29 @@ class LaprdusTTS private constructor() {
      * itself. The user dictionaries switch takes effect on the next
      * [setVoice] or [reloadDictionaries].
      */
-    fun applySettings(settings: SettingsRepository.TTSSettings) {
-        volumeBoost = settings.volumeBoost
-        emojiEnabled = settings.emojiEnabled
-        inflectionLevel = settings.inflectionLevel
-        acceleration = settings.acceleration
-        headSize = settings.headSize
-        breathiness = settings.breathiness
-        roughness = settings.roughness
-        brightness = settings.brightness
-        sentencePause = settings.sentencePause
-        commaPause = settings.commaPause
-        newlinePause = settings.newlinePause
-        numberMode = settings.numberMode
-        spellingSpeed = settings.spellingSpeed
-        letterSounds = settings.spellingMode == SettingsRepository.SPELLING_MODE_SOUNDS
+    fun applySettings(settings: SettingsRepository.TTSSettings) = exclusive {
+        // Every setter is a native call that waits for a synthesis in
+        // progress (TalkBack's speech, on the service's engine): set only
+        // what changed since the last call.
+        val last = appliedSettings
+        if (last == null || last.volumeBoost != settings.volumeBoost) volumeBoost = settings.volumeBoost
+        if (last == null || last.emojiEnabled != settings.emojiEnabled) emojiEnabled = settings.emojiEnabled
+        if (last == null || last.inflectionLevel != settings.inflectionLevel) inflectionLevel = settings.inflectionLevel
+        if (last == null || last.acceleration != settings.acceleration) acceleration = settings.acceleration
+        if (last == null || last.headSize != settings.headSize) headSize = settings.headSize
+        if (last == null || last.breathiness != settings.breathiness) breathiness = settings.breathiness
+        if (last == null || last.roughness != settings.roughness) roughness = settings.roughness
+        if (last == null || last.brightness != settings.brightness) brightness = settings.brightness
+        if (last == null || last.sentencePause != settings.sentencePause) sentencePause = settings.sentencePause
+        if (last == null || last.commaPause != settings.commaPause) commaPause = settings.commaPause
+        if (last == null || last.newlinePause != settings.newlinePause) newlinePause = settings.newlinePause
+        if (last == null || last.numberMode != settings.numberMode) numberMode = settings.numberMode
+        if (last == null || last.spellingSpeed != settings.spellingSpeed) spellingSpeed = settings.spellingSpeed
+        if (last == null || last.spellingMode != settings.spellingMode) {
+            letterSounds = settings.spellingMode == SettingsRepository.SPELLING_MODE_SOUNDS
+        }
         userDictionariesEnabled = settings.userDictionariesEnabled
+        appliedSettings = settings
     }
 
     /**

@@ -34,7 +34,12 @@
     <!-- Settings screen -->
     <string name="settings_title">Settings</string>
     <string name="category_voice">Voice</string>
-    <string name="category_advanced">Advanced</string>
+    <string name="category_apps">Apps and screen readers</string>
+    <string name="category_reading">Reading</string>
+    <string name="setting_more_voice">More voice settings</string>
+    <string name="action_restore_default">Restore default (%1$s)</string>
+    <string name="format_percent">%1$d%%</string>
+    <string name="format_milliseconds">%1$d ms</string>
 
     <!-- Voice settings -->
     <string name="setting_speech_rate">Speech rate</string>
@@ -65,41 +70,29 @@
     <string name="setting_inflection_level_desc">Size of the pitch movements: 0% is a monotone, 50% the natural movements, 100% the maximum</string>
     <string name="setting_acceleration">Acceleration</string>
     <string name="setting_acceleration_desc">Multiplies the speech rate, so the top of the rate range reaches a higher or lower rate</string>
-    <string name="acceleration_value">%1$.1fx (up to %2$d WPM)</string>
-    <string name="restore_default_inflection_level">Restore default inflection</string>
-    <string name="restore_default_acceleration">Restore default acceleration</string>
-    <string name="cd_restore_inflection_level_desc">Sets inflection to 50%</string>
-    <string name="cd_restore_acceleration_desc">Sets acceleration to 1.0x</string>
+    <string name="acceleration_value">%1$s (up to %2$d WPM)</string>
 
     <!-- Voice quality (every voice; breathiness and roughness formant voices only): 0-100, 50 = the voice as it is -->
     <string name="setting_head_size">Head size</string>
     <string name="setting_head_size_desc">Length of the vocal tract: 0% much longer (lower formants, a giant), 50% the voice as it is, 100% much shorter (higher formants, a child)</string>
-    <string name="restore_default_head_size">Restore default head size</string>
-    <string name="cd_restore_head_size_desc">Sets head size to 50%</string>
     <string name="setting_breathiness">Breathiness</string>
     <string name="setting_breathiness_desc">Breath in the voice: 0% a pressed, hard voice, 50% the voice as it is, 100% a whisper (formant voices)</string>
-    <string name="restore_default_breathiness">Restore default breathiness</string>
-    <string name="cd_restore_breathiness_desc">Sets breathiness to 50%</string>
     <string name="setting_roughness">Roughness</string>
     <string name="setting_roughness_desc">Roughness of the voice: 0% perfectly steady, 50% the voice as it is, above 50% a rasp that grows up to 100% (formant voices)</string>
-    <string name="restore_default_roughness">Restore default roughness</string>
-    <string name="cd_restore_roughness_desc">Sets roughness to 50%</string>
     <string name="setting_brightness">Brightness</string>
     <string name="setting_brightness_desc">Tone of the voice: 0% dull, 50% the voice as it is, 100% sharp; lower values also soften sounds such as s and š</string>
-    <string name="restore_default_brightness">Restore default brightness</string>
-    <string name="cd_restore_brightness_desc">Sets brightness to 50%</string>
 
     <!-- Number mode settings -->
     <string name="setting_number_mode_title">Digit-by-digit numbers</string>
     <string name="setting_number_mode_subtitle">Read numbers as individual digits (123 → one two three)</string>
 
     <!-- Spelling settings -->
-    <string name="setting_spelling_mode">Spelling</string>
-    <string name="setting_spelling_mode_subtitle">Read letters by their sounds (b, c, d) instead of their names (be, ce, de) when spelling and when typing</string>
+    <!-- The title says what "on" does: in Croatian and Serbian "Sricanje" (spelling) suggested the letter names.
+         No example letters in the summary: Laprdus reads such letters by this very switch. -->
+    <string name="setting_spelling_mode">Letters as sounds</string>
+    <string name="setting_spelling_mode_subtitle">When spelling and typing</string>
     <string name="setting_spelling_speed">Spelling speed</string>
     <string name="setting_spelling_speed_desc">Lower values add longer pauses after each character. Characters always use the normal speech rate. 100% adds no extra pause; default 50%.</string>
-    <string name="restore_default_spelling_speed">Restore default spelling speed</string>
-    <string name="cd_restore_spelling_speed_desc">Sets spelling speed to 50%</string>
 
     <!-- Pause settings -->
     <string name="category_pause_settings">Reading Pauses</string>
@@ -111,17 +104,9 @@
     <string name="setting_newline_pause_desc">Duration of silence when moving to a new line or paragraph</string>
 
     <!-- Restore default buttons -->
-    <string name="restore_default_speed">Restore default speech rate</string>
-    <string name="restore_default_pitch">Restore default speech pitch</string>
-    <string name="restore_default_volume">Restore default speech volume</string>
 
     <!-- Control descriptions for accessibility -->
-    <string name="cd_voice_dropdown_desc">Select voice for speech synthesis</string>
-    <string name="cd_language_dropdown_desc">Select the language to speak</string>
     <string name="cd_dict_type_dropdown_desc">Select dictionary type</string>
-    <string name="cd_restore_speed_desc">Sets speech rate to default value</string>
-    <string name="cd_restore_pitch_desc">Sets speech pitch to default value</string>
-    <string name="cd_restore_volume_desc">Sets speech volume to default value</string>
     <string name="cd_speak_desc">Speaks the entered text</string>
     <string name="cd_stop_desc">Stops current speech</string>
     <string name="cd_laprdus_settings_desc">Opens Laprdus TTS engine settings</string>
@@ -132,7 +117,6 @@
     <string name="button_android_tts_settings">Android TTS Settings</string>
 
     <!-- Accessibility descriptions -->
-    <string name="cd_slider_adjust">Slide to adjust</string>
 
     <!-- Accessibility content descriptions -->
     <string name="cd_text_input">Text input field for text that will be spoken</string>

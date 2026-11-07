@@ -12,9 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -27,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -38,6 +36,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.hrvojekatic.laprdus.BuildConfig
 import com.hrvojekatic.laprdus.R
+import com.hrvojekatic.laprdus.ui.components.SectionHeading
 
 /**
  * About screen for the Laprdus TTS application.
@@ -71,7 +70,7 @@ fun AboutScreen(
                         }
                     ) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            painter = painterResource(R.drawable.ic_arrow_back),
                             contentDescription = null
                         )
                     }
@@ -93,7 +92,7 @@ fun AboutScreen(
             // Application Information section
             item {
                 Spacer(modifier = Modifier.height(8.dp))
-                SettingsCategoryHeader(title = stringResource(R.string.about_heading_app_info))
+                SectionHeading(title = stringResource(R.string.about_heading_app_info))
             }
 
             item {
@@ -117,7 +116,7 @@ fun AboutScreen(
             // Legal section
             item {
                 Spacer(modifier = Modifier.height(16.dp))
-                SettingsCategoryHeader(title = stringResource(R.string.about_heading_legal))
+                SectionHeading(title = stringResource(R.string.about_heading_legal))
             }
 
             item {
@@ -151,7 +150,7 @@ fun AboutScreen(
             // Support section
             item {
                 Spacer(modifier = Modifier.height(16.dp))
-                SettingsCategoryHeader(title = stringResource(R.string.about_heading_support))
+                SectionHeading(title = stringResource(R.string.about_heading_support))
             }
 
             item {
@@ -227,7 +226,7 @@ private fun AboutLinkItem(
                 .clearAndSetSemantics { }
         )
         Icon(
-            imageVector = Icons.Default.ChevronRight,
+            painter = painterResource(R.drawable.ic_chevron_right),
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.clearAndSetSemantics { }

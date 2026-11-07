@@ -156,8 +156,10 @@ echo.
 echo [INFO] Step 3: Building SAPI5 Installer...
 
 set "ISCC=C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+REM Quote %ISCC% inside the block below: the closing parenthesis of "(x86)"
+REM in the path would end the block.
 if not exist "%ISCC%" (
-    echo [WARNING] InnoSetup not found at %ISCC%
+    echo [WARNING] InnoSetup not found at "%ISCC%"
     echo [WARNING] Skipping SAPI5 installer build
     exit /b 0
 )
@@ -211,7 +213,7 @@ echo [INFO] Step 6: Building Linux components...
 
 scons --platform=linux --arch=x64 --build-config=release linux-all
 if %errorlevel% neq 0 (
-    echo [WARNING] Linux build may have failed (expected on Windows)
+    echo [WARNING] Linux build may have failed ^(expected on Windows^)
 )
 
 echo [INFO] Linux build step completed
@@ -229,7 +231,9 @@ if "%JAVA_HOME%"=="" (
 )
 
 cd /d "%PROJECT_ROOT%\android"
-call gradlew.bat assembleDebug
+REM .\ so that the wrapper is found even where cmd does not search the
+REM current directory (NoDefaultCurrentDirectoryInExePath).
+call .\gradlew.bat assembleDebug
 if %errorlevel% neq 0 (
     echo [ERROR] Failed to build Android APK
     cd /d "%PROJECT_ROOT%"

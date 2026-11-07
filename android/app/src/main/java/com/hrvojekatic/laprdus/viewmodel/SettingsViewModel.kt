@@ -1,37 +1,41 @@
 package com.hrvojekatic.laprdus.viewmodel
 
 import android.content.Context
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.hrvojekatic.laprdus.R
 import com.hrvojekatic.laprdus.data.SettingsRepository
 import com.hrvojekatic.laprdus.tts.Language
-import com.hrvojekatic.laprdus.tts.SystemLanguage
 import com.hrvojekatic.laprdus.tts.LaprdusTTS
 import com.hrvojekatic.laprdus.tts.VoiceInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import com.hrvojekatic.laprdus.R
 import javax.inject.Inject
 
 /**
  * UI state for the Settings screen.
  */
+@Immutable
 data class SettingsUiState(
     val isLoading: Boolean = true,
     val availableVoices: List<VoiceInfo> = emptyList(),
     val selectedVoiceId: String = SettingsRepository.DEFAULT_VOICE,
     /** The chosen language ("hr", "sr", "bs" or "sl"); every voice speaks every language. */
     val language: String = SettingsRepository.DEFAULT_LANGUAGE,
-    /** The system language when Laprdus speaks it, else null: spoken unless the language is forced. */
-    val systemLanguage: String? = Language.deviceLanguage(),
     val speed: Float = SettingsRepository.DEFAULT_SPEED,
     val pitch: Float = SettingsRepository.DEFAULT_PITCH,
     val volume: Float = SettingsRepository.DEFAULT_VOLUME,
@@ -57,8 +61,8 @@ data class SettingsUiState(
     val newlinePause: Int = SettingsRepository.DEFAULT_NEWLINE_PAUSE,
     val numberMode: Int = SettingsRepository.DEFAULT_NUMBER_MODE,
     val spellingSpeed: Int = SettingsRepository.DEFAULT_SPELLING_SPEED,
-    /** True when letters are spelled by their sounds instead of their names. */
-    val letterSounds: Boolean = false,
+    /** True when letters are spelled by their sounds (the default) instead of their names. */
+    val letterSounds: Boolean = SettingsRepository.DEFAULT_SPELLING_MODE == SettingsRepository.SPELLING_MODE_SOUNDS,
     // Dictionary settings
     val userDictionariesEnabled: Boolean = SettingsRepository.DEFAULT_USER_DICTIONARIES_ENABLED,
     val error: String? = null,
@@ -74,23 +78,89 @@ data class SettingsUiState(
         get() = VoiceInfo.rangeFor(selectedVoiceId)
 }
 
+/** What the Settings screen can change; [SettingsViewModel] does it. */
+@Stable
+interface SettingsActions {
+    fun selectVoice(voiceId: String)
+    fun selectLanguage(language: String)
+    fun setSpeed(speed: Float)
+    fun setPitch(pitch: Float)
+    fun setVolume(volume: Float)
+    fun setVolumeBoost(enabled: Boolean)
+    fun setForceSpeed(enabled: Boolean)
+    fun setForcePitch(enabled: Boolean)
+    fun setForceVolume(enabled: Boolean)
+    fun setForceLanguage(enabled: Boolean)
+    fun setEmojiEnabled(enabled: Boolean)
+    fun setInflectionLevel(level: Float)
+    fun setAcceleration(acceleration: Float)
+    fun setHeadSize(value: Int)
+    fun setBreathiness(value: Int)
+    fun setRoughness(value: Int)
+    fun setBrightness(value: Int)
+    fun setSentencePause(pauseMs: Int)
+    fun setCommaPause(pauseMs: Int)
+    fun setNewlinePause(pauseMs: Int)
+    fun setNumberMode(mode: Int)
+    fun setSpellingSpeed(percent: Int)
+    fun setLetterSounds(enabled: Boolean)
+    fun setUserDictionariesEnabled(enabled: Boolean)
+    fun clearError()
+}
+
 /**
  * ViewModel for the Settings screen.
- * Manages settings state and persistence for voice, rate, pitch, volume, and force toggles.
+ *
+ * A change shows at once (the state is updated before it is saved) and is
+ * saved in order by one writer off the main thread. The screen's engine
+ * calls are left to those who speak: the main screen's engine and the
+ * speech service follow the saved settings, so a change here costs one
+ * DataStore write, not a round of engine calls on the main thread.
  */
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val settings: SettingsRepository,
     private val tts: LaprdusTTS
-) : ViewModel() {
+) : ViewModel(), SettingsActions {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
+    /**
+     * Saves run one after the other, in the order the user made them. The
+     * writer is not tied to the ViewModel: a change made just before leaving
+     * the screen is still saved.
+     */
+    private val writes = Channel<suspend (SettingsRepository) -> Unit>(Channel.UNLIMITED)
+    private val writerScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     init {
+        writerScope.launch {
+            for (write in writes) {
+                try {
+                    write(settings)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    _uiState.update { it.copy(error = context.getString(R.string.error_prefix, e.message ?: "")) }
+                }
+            }
+        }
         loadSettings()
         observeStorageErrors()
+    }
+
+    override fun onCleared() {
+        // The writer finishes what is queued, then ends.
+        writes.close()
+        super.onCleared()
+    }
+
+    /** Shows [change] at once and queues the save. */
+    private fun save(change: (SettingsUiState) -> SettingsUiState, write: suspend (SettingsRepository) -> Unit) {
+        _uiState.update(change)
+        writes.trySend(write)
     }
 
     /**
@@ -111,53 +181,53 @@ class SettingsViewModel @Inject constructor(
     }
 
     /**
-     * Load all settings from the repository and initialize available voices.
+     * Load all settings from the repository and the voice list.
      */
     private fun loadSettings() {
         viewModelScope.launch {
             try {
-                // Load available voices
-                val voices = tts.getAllVoices()
-
-                // Collect all settings from repository
-                settings.allSettings.collect { allSettings ->
-                    // The app's engine speaks the system language, or the
-                    // chosen one when that is forced
-                    tts.setLanguage(Language.effective(allSettings.forceLanguage, allSettings.language, SystemLanguage.locale(context)))
+                val voices = withContext(Dispatchers.Default) { tts.getAllVoices() }
+                var wpmVoice: String? = null
+                var wpm = 0f
+                settings.allSettings.distinctUntilChanged().collect { saved ->
+                    if (saved.defaultVoice != wpmVoice) {
+                        wpm = withContext(Dispatchers.Default) { tts.getNominalWpm(saved.defaultVoice) }
+                        wpmVoice = saved.defaultVoice
+                    }
                     _uiState.update { state ->
                         state.copy(
                             isLoading = false,
                             availableVoices = voices,
-                            selectedVoiceId = allSettings.defaultVoice,
-                            language = allSettings.language,
-                            systemLanguage = Language.deviceLanguage(SystemLanguage.locale(context)),
-                            speed = allSettings.speed,
-                            pitch = allSettings.pitch,
-                            volume = allSettings.volume,
-                            volumeBoost = allSettings.volumeBoost,
-                            forceSpeed = allSettings.forceSpeed,
-                            forcePitch = allSettings.forcePitch,
-                            forceVolume = allSettings.forceVolume,
-                            forceLanguage = allSettings.forceLanguage,
-                            emojiEnabled = allSettings.emojiEnabled,
-                            inflectionLevel = allSettings.inflectionLevel,
-                            acceleration = allSettings.acceleration,
-                            headSize = allSettings.headSize,
-                            breathiness = allSettings.breathiness,
-                            roughness = allSettings.roughness,
-                            brightness = allSettings.brightness,
-                            nominalWpm = tts.getNominalWpm(allSettings.defaultVoice),
-                            sentencePause = allSettings.sentencePause,
-                            commaPause = allSettings.commaPause,
-                            newlinePause = allSettings.newlinePause,
-                            numberMode = allSettings.numberMode,
-                            spellingSpeed = allSettings.spellingSpeed,
-                            letterSounds = allSettings.spellingMode == SettingsRepository.SPELLING_MODE_SOUNDS,
-                            userDictionariesEnabled = allSettings.userDictionariesEnabled,
-                            error = null
+                            selectedVoiceId = saved.defaultVoice,
+                            language = saved.language,
+                            speed = saved.speed,
+                            pitch = saved.pitch,
+                            volume = saved.volume,
+                            volumeBoost = saved.volumeBoost,
+                            forceSpeed = saved.forceSpeed,
+                            forcePitch = saved.forcePitch,
+                            forceVolume = saved.forceVolume,
+                            forceLanguage = saved.forceLanguage,
+                            emojiEnabled = saved.emojiEnabled,
+                            inflectionLevel = saved.inflectionLevel,
+                            acceleration = saved.acceleration,
+                            headSize = saved.headSize,
+                            breathiness = saved.breathiness,
+                            roughness = saved.roughness,
+                            brightness = saved.brightness,
+                            nominalWpm = wpm,
+                            sentencePause = saved.sentencePause,
+                            commaPause = saved.commaPause,
+                            newlinePause = saved.newlinePause,
+                            numberMode = saved.numberMode,
+                            spellingSpeed = saved.spellingSpeed,
+                            letterSounds = saved.spellingMode == SettingsRepository.SPELLING_MODE_SOUNDS,
+                            userDictionariesEnabled = saved.userDictionariesEnabled,
                         )
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
@@ -170,445 +240,173 @@ class SettingsViewModel @Inject constructor(
     }
 
     // ==========================================================================
-    // Voice Settings
+    // Voice and language
     // ==========================================================================
 
     /**
-     * Select a voice and persist it.
-     * @param voiceId The ID of the voice to select
+     * Select a voice and persist it. The app's engine loads it first (off the
+     * main thread), so a voice that cannot be loaded is not saved; the speech
+     * service loads it into its own engine when it sees the saved choice.
      */
-    fun selectVoice(voiceId: String) {
+    override fun selectVoice(voiceId: String) {
         viewModelScope.launch {
             try {
-                // Set the voice in the app's engine (the speech service loads
-                // it into its own when it sees the saved choice)
-                val success = withContext(Dispatchers.Default) {
-                    tts.setVoice(voiceId, context.assets)
-                }
-                if (success) {
-                    // Persist the selection
-                    settings.setDefaultVoice(voiceId)
-                    // A recorded voice cannot use the wider rate and pitch
-                    // of the formant voices: pull the values back into its range.
-                    val range = VoiceInfo.rangeFor(voiceId)
-                    val state = _uiState.value
-                    val speed = state.speed.coerceIn(range)
-                    val pitch = state.pitch.coerceIn(range)
-                    if (speed != state.speed) {
-                        tts.speed = speed
-                        settings.setSpeed(speed)
-                    }
-                    if (pitch != state.pitch) {
-                        tts.pitch = pitch
-                        settings.setPitch(pitch)
-                    }
-                    _uiState.update {
-                        it.copy(
-                            selectedVoiceId = voiceId,
-                            speed = speed,
-                            pitch = pitch,
-                            nominalWpm = tts.getNominalWpm(voiceId),
-                            error = null
-                        )
-                    }
-                } else {
+                val loaded = withContext(Dispatchers.Default) { tts.setVoice(voiceId, context.assets) }
+                if (!loaded) {
                     _uiState.update { it.copy(error = context.getString(R.string.error_voice_failed)) }
+                    return@launch
                 }
+                val wpm = withContext(Dispatchers.Default) { tts.getNominalWpm(voiceId) }
+                // A recorded voice cannot use the wider rate and pitch of the
+                // formant voices: pull the values back into its range.
+                val range = VoiceInfo.rangeFor(voiceId)
+                val state = _uiState.value
+                val speed = state.speed.coerceIn(range)
+                val pitch = state.pitch.coerceIn(range)
+                save({ it.copy(selectedVoiceId = voiceId, speed = speed, pitch = pitch, nominalWpm = wpm) }) {
+                    it.setDefaultVoice(voiceId)
+                    if (speed != state.speed) it.setSpeed(speed)
+                    if (pitch != state.pitch) it.setPitch(pitch)
+                }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = context.getString(R.string.error_prefix, e.message ?: "")) }
             }
         }
     }
 
-    // ==========================================================================
-    // Language Settings
-    // ==========================================================================
-
     /**
-     * Choose the language and persist it. Every voice speaks every language:
-     * the voice stays. The chosen language is spoken, by the app and by the
-     * speech service, when "Force language" is on or the system language is
-     * not one Laprdus speaks; otherwise the system language is spoken
-     * (Language.effective).
-     * @param language "hr", "sr", "bs" or "sl"
+     * Choose the language. Every voice speaks every language: the voice
+     * stays. It is spoken when "Force language" is on or the system language
+     * is not one Laprdus speaks (Language.effective).
      */
-    fun selectLanguage(language: String) {
+    override fun selectLanguage(language: String) {
         if (!Language.isValid(language)) return
-        viewModelScope.launch {
-            tts.setLanguage(Language.effective(_uiState.value.forceLanguage, language, SystemLanguage.locale(context)))
-            settings.setLanguage(language)
-            _uiState.update { it.copy(language = language) }
-        }
+        save({ it.copy(language = language) }) { it.setLanguage(language) }
     }
 
     // ==========================================================================
-    // Speed Settings
+    // Rate, pitch, volume and the force switches
     // ==========================================================================
 
-    /**
-     * Set the speech speed and persist it.
-     * @param speed Speed factor (0.5 - 2.0; formant voices 0.25 - 4.0)
-     */
-    fun setSpeed(speed: Float) {
-        val clampedSpeed = speed.coerceIn(_uiState.value.speedPitchRange)
-        viewModelScope.launch {
-            tts.speed = clampedSpeed
-            settings.setSpeed(clampedSpeed)
-            _uiState.update { it.copy(speed = clampedSpeed) }
-        }
+    override fun setSpeed(speed: Float) {
+        val value = speed.coerceIn(_uiState.value.speedPitchRange)
+        save({ it.copy(speed = value) }) { it.setSpeed(value) }
     }
 
-    /**
-     * Set whether to force Laprdus speed settings over application settings.
-     * @param enabled True to force Laprdus speed settings
-     */
-    fun setForceSpeed(enabled: Boolean) {
-        viewModelScope.launch {
-            settings.setForceSpeed(enabled)
-            _uiState.update { it.copy(forceSpeed = enabled) }
-        }
+    override fun setPitch(pitch: Float) {
+        val value = pitch.coerceIn(_uiState.value.speedPitchRange)
+        save({ it.copy(pitch = value) }) { it.setPitch(value) }
     }
 
-    /**
-     * Restore speed to default value (1.0).
-     */
-    fun restoreDefaultSpeed() {
-        viewModelScope.launch {
-            settings.restoreDefaultSpeed()
-            tts.speed = SettingsRepository.DEFAULT_SPEED
-            _uiState.update { it.copy(speed = SettingsRepository.DEFAULT_SPEED) }
-        }
+    override fun setVolume(volume: Float) {
+        val value = volume.coerceIn(0.0f, 1.0f)
+        save({ it.copy(volume = value) }) { it.setVolume(value) }
     }
+
+    /** Louder speech through a peak limiter. */
+    override fun setVolumeBoost(enabled: Boolean) =
+        save({ it.copy(volumeBoost = enabled) }) { it.setVolumeBoost(enabled) }
+
+    override fun setForceSpeed(enabled: Boolean) =
+        save({ it.copy(forceSpeed = enabled) }) { it.setForceSpeed(enabled) }
+
+    override fun setForcePitch(enabled: Boolean) =
+        save({ it.copy(forcePitch = enabled) }) { it.setForcePitch(enabled) }
+
+    override fun setForceVolume(enabled: Boolean) =
+        save({ it.copy(forceVolume = enabled) }) { it.setForceVolume(enabled) }
+
+    /**
+     * Whether the chosen language is spoken everywhere, ignoring the system
+     * language and the language apps request.
+     */
+    override fun setForceLanguage(enabled: Boolean) =
+        save({ it.copy(forceLanguage = enabled) }) { it.setForceLanguage(enabled) }
 
     // ==========================================================================
-    // Pitch Settings
+    // More voice settings
     // ==========================================================================
 
-    /**
-     * Set the pitch and persist it.
-     * @param pitch Pitch factor (0.5 - 2.0; formant voices 0.25 - 4.0)
-     */
-    fun setPitch(pitch: Float) {
-        val clampedPitch = pitch.coerceIn(_uiState.value.speedPitchRange)
-        viewModelScope.launch {
-            tts.pitch = clampedPitch
-            settings.setPitch(clampedPitch)
-            _uiState.update { it.copy(pitch = clampedPitch) }
-        }
+    override fun setEmojiEnabled(enabled: Boolean) =
+        save({ it.copy(emojiEnabled = enabled) }) { it.setEmojiEnabled(enabled) }
+
+    /** 0.0 (monotone) to 1.0, 0.5 as measured. */
+    override fun setInflectionLevel(level: Float) {
+        val value = level.coerceIn(0.0f, 1.0f)
+        save({ it.copy(inflectionLevel = value) }) { it.setInflectionLevel(value) }
     }
 
-    /**
-     * Set whether to force Laprdus pitch settings over application settings.
-     * @param enabled True to force Laprdus pitch settings
-     */
-    fun setForcePitch(enabled: Boolean) {
-        viewModelScope.launch {
-            settings.setForcePitch(enabled)
-            _uiState.update { it.copy(forcePitch = enabled) }
-        }
+    /** Rate multiplier, 0.5 - 3.0. */
+    override fun setAcceleration(acceleration: Float) {
+        val value = acceleration.coerceIn(SettingsRepository.ACCELERATION_RANGE)
+        save({ it.copy(acceleration = value) }) { it.setAcceleration(value) }
     }
 
-    /**
-     * Restore pitch to default value (1.0).
-     */
-    fun restoreDefaultPitch() {
-        viewModelScope.launch {
-            settings.restoreDefaultPitch()
-            tts.pitch = SettingsRepository.DEFAULT_PITCH
-            _uiState.update { it.copy(pitch = SettingsRepository.DEFAULT_PITCH) }
-        }
+    override fun setHeadSize(value: Int) {
+        val v = value.coerceIn(SettingsRepository.VOICE_QUALITY_RANGE)
+        save({ it.copy(headSize = v) }) { it.setHeadSize(v) }
     }
 
-    // ==========================================================================
-    // Volume Settings
-    // ==========================================================================
-
-    /**
-     * Set the volume and persist it.
-     * @param volume Volume level (0.0 - 1.0)
-     */
-    fun setVolume(volume: Float) {
-        val clampedVolume = volume.coerceIn(0.0f, 1.0f)
-        viewModelScope.launch {
-            tts.volume = clampedVolume
-            settings.setVolume(clampedVolume)
-            _uiState.update { it.copy(volume = clampedVolume) }
-        }
+    override fun setBreathiness(value: Int) {
+        val v = value.coerceIn(SettingsRepository.VOICE_QUALITY_RANGE)
+        save({ it.copy(breathiness = v) }) { it.setBreathiness(v) }
     }
 
-    /**
-     * Switch the volume boost (louder speech through a peak limiter) on or
-     * off, for the app's own playback at once and persisted for the service.
-     */
-    fun setVolumeBoost(enabled: Boolean) {
-        viewModelScope.launch {
-            tts.volumeBoost = enabled
-            settings.setVolumeBoost(enabled)
-            _uiState.update { it.copy(volumeBoost = enabled) }
-        }
+    override fun setRoughness(value: Int) {
+        val v = value.coerceIn(SettingsRepository.VOICE_QUALITY_RANGE)
+        save({ it.copy(roughness = v) }) { it.setRoughness(v) }
     }
 
-    /**
-     * Set whether to force Laprdus volume settings over multimedia volume.
-     * @param enabled True to force Laprdus volume settings
-     */
-    fun setForceVolume(enabled: Boolean) {
-        viewModelScope.launch {
-            settings.setForceVolume(enabled)
-            _uiState.update { it.copy(forceVolume = enabled) }
-        }
-    }
-
-    /**
-     * Restore volume to default value (1.0).
-     */
-    fun restoreDefaultVolume() {
-        viewModelScope.launch {
-            settings.restoreDefaultVolume()
-            tts.volume = SettingsRepository.DEFAULT_VOLUME
-            _uiState.update { it.copy(volume = SettingsRepository.DEFAULT_VOLUME) }
-        }
+    override fun setBrightness(value: Int) {
+        val v = value.coerceIn(SettingsRepository.VOICE_QUALITY_RANGE)
+        save({ it.copy(brightness = v) }) { it.setBrightness(v) }
     }
 
     // ==========================================================================
-    // Force Language Settings
+    // Reading
     // ==========================================================================
 
-    /**
-     * Set whether the language chosen above is spoken everywhere, ignoring
-     * the system language and the language apps request. Off, the system
-     * language is spoken when Laprdus speaks it.
-     * @param enabled True to force the chosen language
-     */
-    fun setForceLanguage(enabled: Boolean) {
-        viewModelScope.launch {
-            tts.setLanguage(Language.effective(enabled, _uiState.value.language, SystemLanguage.locale(context)))
-            settings.setForceLanguage(enabled)
-            _uiState.update { it.copy(forceLanguage = enabled) }
-        }
+    override fun setSentencePause(pauseMs: Int) {
+        val v = pauseMs.coerceIn(0, 2000)
+        save({ it.copy(sentencePause = v) }) { it.setSentencePause(v) }
     }
 
-    // ==========================================================================
-    // Emoji Settings
-    // ==========================================================================
-
-    /**
-     * Set whether emoji processing is enabled.
-     * @param enabled True to enable emoji to text conversion
-     */
-    fun setEmojiEnabled(enabled: Boolean) {
-        viewModelScope.launch {
-            tts.emojiEnabled = enabled
-            settings.setEmojiEnabled(enabled)
-            _uiState.update { it.copy(emojiEnabled = enabled) }
-        }
+    override fun setCommaPause(pauseMs: Int) {
+        val v = pauseMs.coerceIn(0, 2000)
+        save({ it.copy(commaPause = v) }) { it.setCommaPause(v) }
     }
 
-    // ==========================================================================
-    // Inflection Settings
-    // ==========================================================================
-
-    /**
-     * Set whether voice inflection is enabled.
-     * @param enabled True to enable pitch variation for questions, exclamations, and pauses
-     */
-    /**
-     * Set the inflection level of the formant voices and persist it.
-     * @param level 0.0 (monotone) to 1.0 (maximum), 0.5 as measured
-     */
-    fun setInflectionLevel(level: Float) {
-        val clamped = level.coerceIn(0.0f, 1.0f)
-        viewModelScope.launch {
-            tts.inflectionLevel = clamped
-            settings.setInflectionLevel(clamped)
-            _uiState.update { it.copy(inflectionLevel = clamped) }
-        }
+    override fun setNewlinePause(pauseMs: Int) {
+        val v = pauseMs.coerceIn(0, 2000)
+        save({ it.copy(newlinePause = v) }) { it.setNewlinePause(v) }
     }
 
-    /**
-     * Set the acceleration and persist it.
-     * @param acceleration Rate multiplier (0.5 - 3.0)
-     */
-    fun setAcceleration(acceleration: Float) {
-        val clamped = acceleration.coerceIn(SettingsRepository.ACCELERATION_RANGE)
-        viewModelScope.launch {
-            tts.acceleration = clamped
-            settings.setAcceleration(clamped)
-            _uiState.update { it.copy(acceleration = clamped) }
-        }
+    /** 0 whole numbers, 1 digit by digit. */
+    override fun setNumberMode(mode: Int) {
+        val v = mode.coerceIn(0, 1)
+        save({ it.copy(numberMode = v) }) { it.setNumberMode(v) }
     }
 
-    // ==========================================================================
-    // Voice Quality Settings (head size, breathiness, roughness, brightness)
-    // ==========================================================================
-
-    /**
-     * Set the head size and persist it.
-     * @param value 0-100, 50 = the voice as it is
-     */
-    fun setHeadSize(value: Int) {
-        val clamped = value.coerceIn(SettingsRepository.VOICE_QUALITY_RANGE)
-        viewModelScope.launch {
-            tts.headSize = clamped
-            settings.setHeadSize(clamped)
-            _uiState.update { it.copy(headSize = clamped) }
-        }
+    /** Spelling cadence 0-100; lower values add longer pauses. */
+    override fun setSpellingSpeed(percent: Int) {
+        val v = percent.coerceIn(SettingsRepository.SPELLING_SPEED_RANGE)
+        save({ it.copy(spellingSpeed = v) }) { it.setSpellingSpeed(v) }
     }
 
-    /**
-     * Set the breathiness and persist it.
-     * @param value 0-100, 50 = the voice as it is
-     */
-    fun setBreathiness(value: Int) {
-        val clamped = value.coerceIn(SettingsRepository.VOICE_QUALITY_RANGE)
-        viewModelScope.launch {
-            tts.breathiness = clamped
-            settings.setBreathiness(clamped)
-            _uiState.update { it.copy(breathiness = clamped) }
-        }
-    }
-
-    /**
-     * Set the roughness and persist it.
-     * @param value 0-100, 50 = the voice as it is
-     */
-    fun setRoughness(value: Int) {
-        val clamped = value.coerceIn(SettingsRepository.VOICE_QUALITY_RANGE)
-        viewModelScope.launch {
-            tts.roughness = clamped
-            settings.setRoughness(clamped)
-            _uiState.update { it.copy(roughness = clamped) }
-        }
-    }
-
-    /**
-     * Set the brightness and persist it.
-     * @param value 0-100, 50 = the voice as it is
-     */
-    fun setBrightness(value: Int) {
-        val clamped = value.coerceIn(SettingsRepository.VOICE_QUALITY_RANGE)
-        viewModelScope.launch {
-            tts.brightness = clamped
-            settings.setBrightness(clamped)
-            _uiState.update { it.copy(brightness = clamped) }
-        }
-    }
-
-    // ==========================================================================
-    // Pause Settings
-    // ==========================================================================
-
-    /**
-     * Set the sentence pause duration.
-     * @param pauseMs Pause duration in milliseconds (0-2000)
-     */
-    fun setSentencePause(pauseMs: Int) {
-        val clamped = pauseMs.coerceIn(0, 2000)
-        viewModelScope.launch {
-            tts.sentencePause = clamped
-            settings.setSentencePause(clamped)
-            _uiState.update { it.copy(sentencePause = clamped) }
-        }
-    }
-
-    /**
-     * Set the comma pause duration.
-     * @param pauseMs Pause duration in milliseconds (0-2000)
-     */
-    fun setCommaPause(pauseMs: Int) {
-        val clamped = pauseMs.coerceIn(0, 2000)
-        viewModelScope.launch {
-            tts.commaPause = clamped
-            settings.setCommaPause(clamped)
-            _uiState.update { it.copy(commaPause = clamped) }
-        }
-    }
-
-    /**
-     * Set the newline pause duration.
-     * @param pauseMs Pause duration in milliseconds (0-2000)
-     */
-    fun setNewlinePause(pauseMs: Int) {
-        val clamped = pauseMs.coerceIn(0, 2000)
-        viewModelScope.launch {
-            tts.newlinePause = clamped
-            settings.setNewlinePause(clamped)
-            _uiState.update { it.copy(newlinePause = clamped) }
-        }
-    }
-
-    // ==========================================================================
-    // Number Mode Settings
-    // ==========================================================================
-
-    /**
-     * Set the number processing mode.
-     * @param mode 0 for whole numbers, 1 for digit by digit
-     */
-    fun setNumberMode(mode: Int) {
-        val clamped = mode.coerceIn(0, 1)
-        viewModelScope.launch {
-            tts.numberMode = clamped
-            settings.setNumberMode(clamped)
-            _uiState.update { it.copy(numberMode = clamped) }
-        }
-    }
-
-    // ==========================================================================
-    // Spelling Settings
-    // ==========================================================================
-
-    /**
-     * Set the spelling speed and persist it.
-     * @param percent Spelling cadence (0-100); lower values add longer pauses
-     */
-    fun setSpellingSpeed(percent: Int) {
-        val clamped = percent.coerceIn(SettingsRepository.SPELLING_SPEED_RANGE)
-        viewModelScope.launch {
-            tts.spellingSpeed = clamped
-            settings.setSpellingSpeed(clamped)
-            _uiState.update { it.copy(spellingSpeed = clamped) }
-        }
-    }
-
-    /**
-     * Choose whether letters are spelled by their sounds (true) or by their
-     * names (false), and persist it.
-     */
-    fun setLetterSounds(enabled: Boolean) {
-        viewModelScope.launch {
-            tts.letterSounds = enabled
-            settings.setSpellingMode(
-                if (enabled) SettingsRepository.SPELLING_MODE_SOUNDS
-                else SettingsRepository.SPELLING_MODE_NAMES
+    /** Letters by their sounds (true, phonetic spelling) or by their names. */
+    override fun setLetterSounds(enabled: Boolean) =
+        save({ it.copy(letterSounds = enabled) }) {
+            it.setSpellingMode(
+                if (enabled) SettingsRepository.SPELLING_MODE_SOUNDS else SettingsRepository.SPELLING_MODE_NAMES
             )
-            _uiState.update { it.copy(letterSounds = enabled) }
         }
-    }
 
-    // ==========================================================================
-    // User Dictionary Settings
-    // ==========================================================================
+    override fun setUserDictionariesEnabled(enabled: Boolean) =
+        save({ it.copy(userDictionariesEnabled = enabled) }) { it.setUserDictionariesEnabled(enabled) }
 
-    /**
-     * Set whether user dictionaries are enabled.
-     * @param enabled True to apply user dictionaries during synthesis
-     */
-    fun setUserDictionariesEnabled(enabled: Boolean) {
-        viewModelScope.launch {
-            settings.setUserDictionariesEnabled(enabled)
-            _uiState.update { it.copy(userDictionariesEnabled = enabled) }
-        }
-    }
-
-    // ==========================================================================
-    // Error Handling
-    // ==========================================================================
-
-    /**
-     * Clear the current error message.
-     */
-    fun clearError() {
+    override fun clearError() {
         _uiState.update { it.copy(error = null) }
     }
 }

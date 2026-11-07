@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.res.Configuration
 import android.media.AudioFormat
 import android.speech.tts.SynthesisCallback
 import android.speech.tts.SynthesisRequest
@@ -31,6 +32,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.launch
@@ -38,6 +40,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import java.text.BreakIterator
+import java.util.Locale
 
 /**
  * Android TextToSpeechService implementation for system-wide TTS.
@@ -118,6 +121,21 @@ class LaprdusTTSService : TextToSpeechService() {
     private var unlockReceiver: BroadcastReceiver? = null
     private val settingsScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
+    /**
+     * The system locale, read once (it is a call to a system service) and
+     * again after a configuration change, instead of on every utterance.
+     */
+    @Volatile
+    private var systemLocaleCache: Locale? = null
+
+    private fun systemLocale(): Locale =
+        systemLocaleCache ?: SystemLanguage.locale(this).also { systemLocaleCache = it }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        systemLocaleCache = null
+    }
+
     override fun onCreate() {
         // Order matters: super.onCreate() synchronously calls onLoadLanguage(),
         // which loads the voice AND the user dictionary, so everything that
@@ -132,6 +150,7 @@ class LaprdusTTSService : TextToSpeechService() {
         settingsRepo = SettingsRepository.getInstance(app)
         dictionaryMigrator = LaprdusStorage.dictionaryMigrator(app)
         dictionaryDir = LaprdusStorage.dictionaryDir(app)
+        SpeechRequestLog.setLogFlagFile(File(dictionaryDir, LaprdusStorage.DEBUG_SPEECH_LOG_RELATIVE_PATH))
         engineRuntime = EngineRuntime(
             engine = ServiceSpeechEngine(),
             crashMarkerFile = LaprdusStorage.engineCrashMarkerFile(app),
@@ -144,7 +163,7 @@ class LaprdusTTSService : TextToSpeechService() {
         cachedSettings = startupSettings
         currentVoiceId = startupSettings.defaultVoice
         selection.requestLanguage(Language.effective(
-            startupSettings.forceLanguage, startupSettings.language, SystemLanguage.locale(this)
+            startupSettings.forceLanguage, startupSettings.language, systemLocale()
         ))
         // Every voice the engine loads gets the user dictionaries from here.
         engine.userDictionaryDir = dictionaryDir
@@ -157,6 +176,7 @@ class LaprdusTTSService : TextToSpeechService() {
         // pending migration completes. A failing store is retried, never abandoned.
         settingsScope.launch {
             settingsRepo.allSettings
+                .distinctUntilChanged()
                 .retryWhen { e, _ ->
                     if (e is SimulatedMigrationCrashException) {
                         false
@@ -660,7 +680,7 @@ class LaprdusTTSService : TextToSpeechService() {
     ): String {
         val settings = cachedSettings ?: SettingsRepository.TTSSettings()
         return selection.defaultVoiceNameFor(
-            lang, Language.effective(settings.forceLanguage, settings.language, SystemLanguage.locale(this))
+            lang, Language.effective(settings.forceLanguage, settings.language, systemLocale())
         )
     }
 
@@ -704,6 +724,7 @@ class LaprdusTTSService : TextToSpeechService() {
      * by its name (e.g., "A" -> "A", "Č" -> "Če", "." -> "točka").
      */
     override fun onSynthesizeText(request: SynthesisRequest, callback: SynthesisCallback) {
+        val receivedAt = SpeechRequestLog.now()
         var engine = tts
 
         // Attempt recovery if the engine is not ready (handles process restart).
@@ -737,6 +758,7 @@ class LaprdusTTSService : TextToSpeechService() {
             callback.done()
             return
         }
+        SpeechRequestLog.begin(receivedAt)
 
         logDebug { "Synthesizing: ${text.take(50)}..." }
 
@@ -748,6 +770,8 @@ class LaprdusTTSService : TextToSpeechService() {
             // and synthesizing (a voice chosen in the app or a dictionary
             // edited there is loaded from another thread).
             val useSpelledMode = isSingleGrapheme(text)
+            var spokenLanguage = ""
+            var synthesisNanos = 0L
             val samples = engine.exclusive {
                 // The configured voice always speaks (the request's voice
                 // name, if any, only names a language; see onLoadVoice). A
@@ -767,9 +791,10 @@ class LaprdusTTSService : TextToSpeechService() {
                 // The language: the request's locale, or the Laprdus setting
                 // when the language is forced. Every voice speaks every one.
                 val language = selection.languageFor(
-                    request.language, settings.forceLanguage, settings.language, SystemLanguage.locale(this)
+                    request.language, settings.forceLanguage, settings.language, systemLocale()
                 )
                 engine.setLanguage(language)
+                spokenLanguage = language
 
                 // Rate and pitch: Android asks relative to normal (100 = 1.0),
                 // and the Laprdus settings are the normal, so TalkBack's rate
@@ -787,12 +812,13 @@ class LaprdusTTSService : TextToSpeechService() {
                 engine.volume = if (settings.forceVolume) settings.volume else 1.0f
 
                 // Synthesize - use spelled mode for single characters (TalkBack accessibility)
-                if (useSpelledMode) {
+                val synthesisStart = SpeechRequestLog.now()
+                (if (useSpelledMode) {
                     logDebug { "Using spelled synthesis for single character: '$text'" }
                     engine.synthesizeSpelled(text)
                 } else {
                     engine.synthesize(text)
-                }
+                }).also { synthesisNanos = SpeechRequestLog.now() - synthesisStart }
             }
 
             if (samples == null || samples.isEmpty()) {
@@ -827,15 +853,31 @@ class LaprdusTTSService : TextToSpeechService() {
             // Write audio in chunks
             val chunkSize = 4096
             var offset = 0
+            var firstAudioNanos = 0L
+            var interrupted = false
             while (offset < bytes.size) {
                 val count = minOf(chunkSize, bytes.size - offset)
+                if (offset == 0) firstAudioNanos = SpeechRequestLog.now() - receivedAt
                 val writeResult = callback.audioAvailable(bytes, offset, count)
                 if (writeResult != TextToSpeech.SUCCESS) {
                     Log.w(TAG, "audioAvailable returned: $writeResult")
+                    interrupted = true
                     break
                 }
                 offset += count
             }
+            SpeechRequestLog.record(
+                SpeechRequestLog.Entry(
+                    text = text,
+                    language = spokenLanguage,
+                    spelled = useSpelledMode,
+                    receivedAtNanos = receivedAt,
+                    synthesisNanos = synthesisNanos,
+                    firstAudioNanos = firstAudioNanos,
+                    interrupted = interrupted,
+                    audioMillis = samples.size * 1000L / engine.sampleRate,
+                )
+            )
 
             callback.done()
             engineRuntime.onSynthesisSucceeded()
@@ -844,6 +886,8 @@ class LaprdusTTSService : TextToSpeechService() {
         } catch (e: Exception) {
             Log.e(TAG, "Exception during synthesis", e)
             callback.error()
+        } finally {
+            SpeechRequestLog.end()
         }
     }
 
@@ -852,6 +896,7 @@ class LaprdusTTSService : TextToSpeechService() {
      */
     override fun onStop() {
         logDebug { "Stop requested" }
+        SpeechRequestLog.recordStop()
         tts?.cancel()
     }
 }

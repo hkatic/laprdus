@@ -1,601 +1,402 @@
 package com.hrvojekatic.laprdus.ui.screens
 
+import androidx.activity.ComponentActivity
+import androidx.annotation.StringRes
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasContentDescription
-import androidx.compose.ui.test.hasStateDescription
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isDialog
+import androidx.compose.ui.test.isHeading
+import androidx.compose.ui.test.isSelectable
+import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
+import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.tryPerformAccessibilityChecks
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.hrvojekatic.laprdus.R
 import com.hrvojekatic.laprdus.tts.VoiceInfo
+import com.hrvojekatic.laprdus.ui.settings.SettingFormat
+import com.hrvojekatic.laprdus.ui.theme.LaprdusTheme
+import com.hrvojekatic.laprdus.viewmodel.SettingsActions
 import com.hrvojekatic.laprdus.viewmodel.SettingsUiState
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
 
 /**
- * Accessibility tests for the Settings screen.
+ * What the Settings screen exposes to TalkBack: one node per setting whose
+ * texts read in the order they are shown (title, then summary), the right
+ * role and state, headings for the sections, the restore-default action of
+ * each slider, and the collapsed "More voice settings".
  *
- * These tests verify that TalkBack announcements follow the correct order:
- * - For switches: "Title. Switch. On/Off, Description"
- * - For sliders: "Title. Slider. Value, Description"
- * - For dropdowns: "Label. Dropdown, Value"
- *
- * Tests also verify:
- * - Sliders remain adjustable
- * - Switches remain toggleable
- * - All settings items have isTraversalGroup set for proper swipe navigation order
+ * The strings come from the app's resources, so the test passes in any
+ * device language. [com.hrvojekatic.laprdus.ui.TalkBackSpeechTest] checks
+ * what TalkBack actually says on a phone.
  */
+@RunWith(AndroidJUnit4::class)
 class SettingsScreenAccessibilityTest {
 
     @get:Rule
-    val composeTestRule = createComposeRule()
+    val rule = createAndroidComposeRule<ComponentActivity>()
 
-    private val testVoices = listOf(
-        VoiceInfo(
-            id = "josip",
-            displayName = "Josip",
-            languageCode = "hr-HR",
-            gender = "Male",
-            age = "Adult",
-            basePitch = 1.0f
-        ),
-        VoiceInfo(
-            id = "vlado",
-            displayName = "Vlado",
-            languageCode = "sr-RS",
-            gender = "Male",
-            age = "Adult",
-            basePitch = 1.0f
-        )
+    private fun s(@StringRes id: Int, vararg args: Any): String =
+        if (args.isEmpty()) rule.activity.getString(id) else rule.activity.getString(id, *args)
+
+    private val locale get() = rule.activity.resources.configuration.locales[0]
+
+    private val voices = listOf(
+        VoiceInfo("zvonko", "Zvonko", "hr-HR", "Male", "Adult", 1.0f, isFormant = true),
+        VoiceInfo("josip", "Josip", "hr-HR", "Male", "Adult", 1.0f),
+        VoiceInfo("vlado", "Vlado", "sr-RS", "Male", "Adult", 1.0f),
     )
 
-    private val defaultUiState = SettingsUiState(
+    private val state = SettingsUiState(
         isLoading = false,
-        availableVoices = testVoices,
-        selectedVoiceId = "josip",
+        availableVoices = voices,
+        selectedVoiceId = "zvonko",
         language = "hr",
-        speed = 1.0f,
-        pitch = 1.0f,
-        volume = 0.8f,
-        forceSpeed = false,
-        forcePitch = false,
-        forceVolume = false,
-        forceLanguage = true,
-        emojiEnabled = true,
-        sentencePause = 500,
-        commaPause = 200,
-        newlinePause = 300,
-        numberMode = 0,
-        error = null
+        speed = 1.5f,
+        letterSounds = true,
     )
 
+    /** Records what the screen asked for. */
+    private class RecordingActions : SettingsActions {
+        val calls = mutableListOf<String>()
+        override fun selectVoice(voiceId: String) { calls += "voice $voiceId" }
+        override fun selectLanguage(language: String) { calls += "language $language" }
+        override fun setSpeed(speed: Float) { calls += "speed $speed" }
+        override fun setPitch(pitch: Float) { calls += "pitch $pitch" }
+        override fun setVolume(volume: Float) { calls += "volume $volume" }
+        override fun setVolumeBoost(enabled: Boolean) { calls += "boost $enabled" }
+        override fun setForceSpeed(enabled: Boolean) { calls += "forceSpeed $enabled" }
+        override fun setForcePitch(enabled: Boolean) { calls += "forcePitch $enabled" }
+        override fun setForceVolume(enabled: Boolean) { calls += "forceVolume $enabled" }
+        override fun setForceLanguage(enabled: Boolean) { calls += "forceLanguage $enabled" }
+        override fun setEmojiEnabled(enabled: Boolean) { calls += "emoji $enabled" }
+        override fun setInflectionLevel(level: Float) { calls += "inflection $level" }
+        override fun setAcceleration(acceleration: Float) { calls += "acceleration $acceleration" }
+        override fun setHeadSize(value: Int) { calls += "headSize $value" }
+        override fun setBreathiness(value: Int) { calls += "breathiness $value" }
+        override fun setRoughness(value: Int) { calls += "roughness $value" }
+        override fun setBrightness(value: Int) { calls += "brightness $value" }
+        override fun setSentencePause(pauseMs: Int) { calls += "sentencePause $pauseMs" }
+        override fun setCommaPause(pauseMs: Int) { calls += "commaPause $pauseMs" }
+        override fun setNewlinePause(pauseMs: Int) { calls += "newlinePause $pauseMs" }
+        override fun setNumberMode(mode: Int) { calls += "numberMode $mode" }
+        override fun setSpellingSpeed(percent: Int) { calls += "spellingSpeed $percent" }
+        override fun setLetterSounds(enabled: Boolean) { calls += "letterSounds $enabled" }
+        override fun setUserDictionariesEnabled(enabled: Boolean) { calls += "userDictionaries $enabled" }
+        override fun clearError() { calls += "clearError" }
+    }
+
+    private val actions = RecordingActions()
+
+    private fun show(
+        uiState: SettingsUiState = state,
+        systemLanguage: String? = null,
+        expanded: Boolean = false,
+    ) {
+        rule.setContent {
+            LaprdusTheme {
+                SettingsScreen(
+                    uiState = uiState,
+                    systemLanguage = systemLanguage,
+                    actions = actions,
+                    onNavigateBack = {},
+                    onOpenDictionaries = {},
+                    onOpenAbout = {},
+                    initiallyExpanded = expanded,
+                )
+            }
+        }
+    }
+
+    private fun texts(node: SemanticsNode): List<String> =
+        node.config.getOrNull(SemanticsProperties.Text)?.map { it.text }.orEmpty()
+
+    private fun hasTexts(vararg expected: String) =
+        SemanticsMatcher("texts ${expected.toList()}") { texts(it) == expected.toList() }
+
+    private fun hasRole(role: Role) =
+        SemanticsMatcher("role $role") { it.config.getOrNull(SemanticsProperties.Role) == role }
+
+    private fun hasState(state: String) =
+        SemanticsMatcher("state $state") { it.config.getOrNull(SemanticsProperties.StateDescription) == state }
+
+    private fun hasNoContentDescription() =
+        SemanticsMatcher("no content description") { it.config.getOrNull(SemanticsProperties.ContentDescription) == null }
+
+    /** A node TalkBack stops on because it can be activated or adjusted. */
+    private val isControl = SemanticsMatcher("control") {
+        it.config.contains(SemanticsActions.OnClick) || it.config.contains(SemanticsActions.SetProgress)
+    }
+
     // ==========================================================================
-    // Switch Accessibility Tests
+    // Switch rows
     // ==========================================================================
 
     @Test
-    fun switchSettingItem_hasCorrectStateDescription_whenOff() {
-        composeTestRule.setContent {
-            SwitchSettingItem(
-                title = "Force Language",
-                subtitle = "Use selected language regardless of system settings",
-                checked = false,
-                onCheckedChange = {}
-            )
-        }
-
-        // Verify stateDescription contains title, switch role, and state
-        val matcher = hasStateDescription("Force Language. Switch. Off")
-        composeTestRule.onNode(matcher).assertExists()
-    }
-
-    @Test
-    fun switchSettingItem_hasCorrectStateDescription_whenOn() {
-        composeTestRule.setContent {
-            SwitchSettingItem(
-                title = "Force Language",
-                subtitle = "Use selected language regardless of system settings",
-                checked = true,
-                onCheckedChange = {}
-            )
-        }
-
-        // Verify stateDescription contains title, switch role, and state
-        val matcher = hasStateDescription("Force Language. Switch. On")
-        composeTestRule.onNode(matcher).assertExists()
-    }
-
-    @Test
-    fun switchSettingItem_hasCorrectContentDescription() {
-        composeTestRule.setContent {
-            SwitchSettingItem(
-                title = "Force Language",
-                subtitle = "Use selected language regardless of system settings",
-                checked = false,
-                onCheckedChange = {}
-            )
-        }
-
-        // Verify contentDescription contains the description/subtitle
-        val matcher = hasContentDescription("Use selected language regardless of system settings")
-        composeTestRule.onNode(matcher).assertExists()
-    }
-
-    @Test
-    fun switchSettingItem_hasToggleableState() {
-        var checkedState = false
-        composeTestRule.setContent {
-            SwitchSettingItem(
-                title = "Force Language",
-                subtitle = "Use selected language regardless of system settings",
-                checked = checkedState,
-                onCheckedChange = { checkedState = it }
-            )
-        }
-
-        // Verify the switch is toggleable by clicking
-        composeTestRule.onNode(hasStateDescription("Force Language. Switch. Off"))
+    fun switchRow_readsTitleThenSummary_asOneSwitch() {
+        show()
+        val title = s(R.string.setting_spelling_mode)
+        val summary = s(R.string.setting_spelling_mode_subtitle)
+        rule.onNode(hasText(title) and hasText(summary))
+            .performScrollTo()
+            .assert(hasTexts(title, summary))
+            .assert(hasRole(Role.Switch))
+            .assert(hasNoContentDescription())
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.ToggleableState, ToggleableState.On))
             .performClick()
-
-        // State should change
-        assertTrue("Switch should toggle when clicked", checkedState)
+        assertEquals(listOf("letterSounds false"), actions.calls)
     }
 
     @Test
-    fun switchSettingItem_hasTraversalGroup() {
-        composeTestRule.setContent {
-            SwitchSettingItem(
-                title = "Force Language",
-                subtitle = "Use selected language regardless of system settings",
-                checked = false,
-                onCheckedChange = {}
-            )
-        }
-
-        // Verify isTraversalGroup is set for proper TalkBack navigation
-        val hasTraversalGroup = SemanticsMatcher("has isTraversalGroup") { node ->
-            node.config.getOrNull(SemanticsProperties.IsTraversalGroup) == true
-        }
-
-        composeTestRule.onNode(hasTraversalGroup).assertExists()
-    }
-
-    // ==========================================================================
-    // Slider Accessibility Tests
-    // ==========================================================================
-
-    @Test
-    fun sliderSettingItem_hasCorrectStateDescription() {
-        composeTestRule.setContent {
-            SliderSettingItem(
-                title = "Speech rate",
-                value = 1.5f,
-                valueRange = 0.5f..2.0f,
-                onValueChange = {},
-                valueLabel = "1.5x",
-                description = "Slide to adjust"
-            )
-        }
-
-        // Verify stateDescription contains title, slider role, and value
-        val matcher = hasStateDescription("Speech rate. Slider. 1.5x")
-        composeTestRule.onNode(matcher).assertExists()
+    fun spellingSwitch_hasTheShortName() {
+        show()
+        // Slova kao glasovi / Črke kot glasovi / Letters as sounds: the title
+        // says what "on" does, in a few words.
+        assertTrue(s(R.string.setting_spelling_mode).split(' ').size <= 3)
+        // A short summary without example letters: Laprdus reads a lone "b"
+        // by this very switch, so an example could never be trusted.
+        val summary = s(R.string.setting_spelling_mode_subtitle)
+        assertTrue(summary, summary.length <= 40)
+        // No list of letters such as "b, c, d" (a lone letter before a comma).
+        assertTrue(summary, !Regex("""(^|[\s,])\p{L},""").containsMatchIn(summary))
     }
 
     @Test
-    fun sliderSettingItem_hasCorrectContentDescription_withDescription() {
-        composeTestRule.setContent {
-            SliderSettingItem(
-                title = "Speech rate",
-                value = 1.5f,
-                valueRange = 0.5f..2.0f,
-                onValueChange = {},
-                valueLabel = "1.5x",
-                description = "Slide to adjust"
-            )
+    fun forceSwitches_areInTheAppsSection() {
+        show()
+        val apps = s(R.string.category_apps)
+        rule.onNode(hasText(apps) and isHeading()).performScrollTo()
+        for (id in listOf(
+            R.string.setting_force_language_title,
+            R.string.setting_force_speed_title,
+            R.string.setting_force_pitch_title,
+            R.string.setting_force_volume_title,
+        )) {
+            rule.onNode(hasText(s(id)) and hasRole(Role.Switch)).performScrollTo()
+                .assert(SemanticsMatcher.expectValue(SemanticsProperties.ToggleableState, ToggleableState.Off))
         }
-
-        // Verify contentDescription contains the description
-        val matcher = hasContentDescription("Slide to adjust")
-        composeTestRule.onNode(matcher).assertExists()
-    }
-
-    @Test
-    fun sliderSettingItem_preservesProgressBarRangeInfo() {
-        composeTestRule.setContent {
-            SliderSettingItem(
-                title = "Speech rate",
-                value = 0.75f,
-                valueRange = 0.5f..2.0f,
-                onValueChange = {},
-                valueLabel = "0.8x",
-                description = ""
-            )
-        }
-
-        // Verify the slider has progressBarRangeInfo (required for adjustability)
-        val hasProgressBarInfo = SemanticsMatcher("has progressBarRangeInfo") { node ->
-            node.config.getOrNull(SemanticsProperties.ProgressBarRangeInfo) != null
-        }
-
-        composeTestRule.onNode(hasProgressBarInfo).assertExists()
-    }
-
-    @Test
-    fun sliderSettingItem_isAdjustable() {
-        var currentValue = 1.0f
-        composeTestRule.setContent {
-            SliderSettingItem(
-                title = "Speech rate",
-                value = currentValue,
-                valueRange = 0.5f..2.0f,
-                onValueChange = { currentValue = it },
-                valueLabel = "%.1fx".format(currentValue),
-                description = ""
-            )
-        }
-
-        // Verify the slider has setProgress action (indicates adjustability)
-        val hasSetProgress = SemanticsMatcher("has setProgress action") { node ->
-            node.config.getOrNull(SemanticsProperties.ProgressBarRangeInfo) != null
-        }
-
-        composeTestRule.onNode(hasSetProgress).assertExists()
-    }
-
-    @Test
-    fun sliderSettingItem_hasTraversalGroup() {
-        composeTestRule.setContent {
-            SliderSettingItem(
-                title = "Speech rate",
-                value = 1.0f,
-                valueRange = 0.5f..2.0f,
-                onValueChange = {},
-                valueLabel = "1.0x",
-                description = ""
-            )
-        }
-
-        // Verify isTraversalGroup is set for proper TalkBack navigation
-        val hasTraversalGroup = SemanticsMatcher("has isTraversalGroup") { node ->
-            node.config.getOrNull(SemanticsProperties.IsTraversalGroup) == true
-        }
-
-        composeTestRule.onNode(hasTraversalGroup).assertExists()
     }
 
     // ==========================================================================
-    // Dropdown Accessibility Tests
+    // Slider rows
     // ==========================================================================
 
     @Test
-    fun voiceSettingItem_hasCorrectStateDescription() {
-        composeTestRule.setContent {
-            VoiceSettingItem(
-                voices = testVoices,
-                selectedVoiceId = "josip",
-                onVoiceSelected = {}
-            )
-        }
-
-        // Verify stateDescription contains label and dropdown role
-        // Note: The exact string depends on localized resources
-        val hasDropdownState = SemanticsMatcher("has Voice and Dropdown in stateDescription") { node ->
-            val stateDesc = node.config.getOrNull(SemanticsProperties.StateDescription)
-            stateDesc != null && stateDesc.contains("Voice") && stateDesc.contains("Dropdown")
-        }
-
-        composeTestRule.onNode(hasDropdownState).assertExists()
+    fun sliderRow_labelIsTheTitle_stateIsTheValue() {
+        show()
+        val title = s(R.string.setting_speech_rate)
+        val node = rule.onNode(hasContentDescription(title) and hasState(SettingFormat.multiplier(1.5f, locale)))
+            .performScrollTo()
+            .fetchSemanticsNode()
+        val range = node.config[SemanticsProperties.ProgressBarRangeInfo]
+        assertEquals(1.5f, range.current, 0.001f)
+        assertEquals(VoiceInfo.FORMANT_RANGE, range.range)
+        // One TalkBack swipe moves 0.05x.
+        assertEquals(SettingFormat.steps(VoiceInfo.FORMANT_RANGE, SettingFormat.MULTIPLIER_STEP), range.steps)
     }
 
     @Test
-    fun voiceSettingItem_hasCorrectContentDescription_withSelectedVoice() {
-        composeTestRule.setContent {
-            VoiceSettingItem(
-                voices = testVoices,
-                selectedVoiceId = "josip",
-                onVoiceSelected = {}
-            )
-        }
-
-        // Verify contentDescription contains the selected voice name
-        val matcher = hasContentDescription("Josip")
-        composeTestRule.onNode(matcher).assertExists()
+    fun sliderRow_restoresTheDefault_throughItsAction() {
+        show()
+        val title = s(R.string.setting_speech_rate)
+        val restore = s(R.string.action_restore_default, SettingFormat.multiplier(1.0f, locale))
+        val node = rule.onNode(hasContentDescription(title)).performScrollTo().fetchSemanticsNode()
+        val action = node.config[SemanticsActions.CustomActions].single { it.label == restore }
+        action.action()
+        assertEquals(listOf("speed 1.0"), actions.calls)
     }
 
     @Test
-    fun voiceSettingItem_updatesContentDescription_whenSelectionChanges() {
-        var selectedId = "josip"
-        composeTestRule.setContent {
-            VoiceSettingItem(
-                voices = testVoices,
-                selectedVoiceId = selectedId,
-                onVoiceSelected = { selectedId = it }
-            )
-        }
-
-        // Initially shows Josip
-        composeTestRule.onNode(hasContentDescription("Josip")).assertExists()
+    fun sliderAtDefault_offersNoRestore() {
+        show()
+        val node = rule.onNode(hasContentDescription(s(R.string.setting_speech_pitch)))
+            .performScrollTo().fetchSemanticsNode()
+        assertNull(node.config.getOrNull(SemanticsActions.CustomActions))
     }
 
     @Test
-    fun voiceSettingItem_hasTraversalGroup() {
-        composeTestRule.setContent {
-            VoiceSettingItem(
-                voices = testVoices,
-                selectedVoiceId = "josip",
-                onVoiceSelected = {}
-            )
-        }
-
-        // Verify isTraversalGroup is set for proper TalkBack navigation
-        val hasTraversalGroup = SemanticsMatcher("has isTraversalGroup") { node ->
-            node.config.getOrNull(SemanticsProperties.IsTraversalGroup) == true
-        }
-
-        composeTestRule.onNode(hasTraversalGroup).assertExists()
+    fun sliderWithSummary_readsTitleThenSummary() {
+        show()
+        val label = s(R.string.setting_spelling_speed) + ", " + s(R.string.setting_spelling_speed_desc)
+        rule.onNode(hasContentDescription(label)).performScrollTo()
+            .assert(hasState(String.format(locale, s(R.string.format_percent), 50)))
     }
 
-    // ==========================================================================
-    // Language Dropdown Tests
-    // ==========================================================================
-
+    /**
+     * What TalkBack receives, not only Compose's semantics: Compose moves a
+     * node's label onto a child node when the node has children, and
+     * TalkBack does not read the children of a slider. Every slider must
+     * reach the platform with its own label and no children.
+     */
     @Test
-    fun languageSettingItem_hasCorrectStateDescription() {
-        composeTestRule.setContent {
-            LanguageSettingItem(
-                selectedLanguage = "sr",
-                systemLanguage = null,
-                onLanguageSelected = {}
-            )
-        }
-
-        // Verify stateDescription contains the label and the dropdown role
-        val hasDropdownState = SemanticsMatcher("has Language and Dropdown in stateDescription") { node ->
-            val stateDesc = node.config.getOrNull(SemanticsProperties.StateDescription)
-            stateDesc != null && stateDesc.contains("Language") && stateDesc.contains("Dropdown")
-        }
-        composeTestRule.onNode(hasDropdownState).assertExists()
-    }
-
-    @Test
-    fun languageSettingItem_hasCorrectContentDescription_withSelectedLanguage() {
-        composeTestRule.setContent {
-            LanguageSettingItem(
-                selectedLanguage = "sr",
-                systemLanguage = null,
-                onLanguageSelected = {}
-            )
-        }
-
-        // Verify contentDescription contains the selected language's name
-        composeTestRule.onNode(hasContentDescription("Serbian")).assertExists()
-    }
-
-    @Test
-    fun languageSettingItem_hasTraversalGroup() {
-        composeTestRule.setContent {
-            LanguageSettingItem(
-                selectedLanguage = "hr",
-                systemLanguage = null,
-                onLanguageSelected = {}
-            )
-        }
-
-        val hasTraversalGroup = SemanticsMatcher("has isTraversalGroup") { node ->
-            node.config.getOrNull(SemanticsProperties.IsTraversalGroup) == true
-        }
-        composeTestRule.onNode(hasTraversalGroup).assertExists()
-    }
-
-    // ==========================================================================
-    // Category Header Tests
-    // ==========================================================================
-
-    @Test
-    fun settingsCategoryHeader_markedAsHeading() {
-        composeTestRule.setContent {
-            SettingsCategoryHeader(title = "Voice")
-        }
-
-        // Verify the header has heading semantics
-        val hasHeading = SemanticsMatcher("has heading") { node ->
-            node.config.getOrNull(SemanticsProperties.Heading) != null
-        }
-
-        composeTestRule.onNode(hasHeading).assertExists()
-    }
-
-    // ==========================================================================
-    // Full Settings Screen Integration Tests
-    // ==========================================================================
-
-    @Test
-    fun settingsScreen_allSwitchesHaveCorrectAccessibility() {
-        composeTestRule.setContent {
-            SettingsScreen(
-                uiState = defaultUiState,
-                onNavigateBack = {},
-                onVoiceSelected = {},
-                onLanguageSelected = {},
-                onSpeedChange = {},
-                onPitchChange = {},
-                onVolumeChange = {},
-                onForceSpeedChange = {},
-                onForcePitchChange = {},
-                onForceVolumeChange = {},
-                onVolumeBoostChange = {},
-                onForceLanguageChange = {},
-                onRestoreDefaultSpeed = {},
-                onRestoreDefaultPitch = {},
-                onRestoreDefaultVolume = {},
-                onEmojiEnabledChange = {},
-                onSentencePauseChange = {},
-                onCommaPauseChange = {},
-                onNewlinePauseChange = {},
-                onNumberModeChange = {},
-                onSpellingSpeedChange = {},
-                onLetterSoundsChange = {},
-                onInflectionLevelChange = {},
-                onAccelerationChange = {},
-                onUserDictionariesEnabledChange = {}
-            )
-        }
-
-        // Verify all switch items have stateDescription containing "Switch"
-        val switchNodes = composeTestRule.onAllNodes(
-            SemanticsMatcher("has Switch in stateDescription") { node ->
-                val stateDesc = node.config.getOrNull(SemanticsProperties.StateDescription)
-                stateDesc != null && stateDesc.contains("Switch")
+    fun everySlider_reachesTalkBackWithItsName() {
+        show(expanded = true)
+        val sliders = rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.SetProgress))
+            .fetchSemanticsNodes()
+        // Rate, pitch, volume, acceleration, inflection, the four voice
+        // quality settings, spelling speed, three pauses.
+        assertEquals(13, sliders.size)
+        for (node in sliders) {
+            val label = node.config[SemanticsProperties.ContentDescription].first()
+            // Compose reports only nodes on screen.
+            rule.onNode(SemanticsMatcher("id ${node.id}") { it.id == node.id }).performScrollTo()
+            rule.runOnUiThread {
+                val provider = composeView(rule.activity.window.decorView)!!.accessibilityNodeProvider!!
+                val info = provider.createAccessibilityNodeInfo(node.id)
+                    ?: throw AssertionError("no accessibility node for slider $label")
+                assertEquals(label, info.contentDescription?.toString())
+                assertEquals("android.widget.SeekBar", info.className?.toString())
+                assertEquals("slider $label has children", 0, info.childCount)
             }
-        )
+        }
+    }
 
-        // There should be 6 switches in the settings screen
-        // (forceSpeed, forcePitch, forceVolume, forceLanguage, emojiEnabled, numberMode)
-        val nodeCount = switchNodes.fetchSemanticsNodes().size
-        assertTrue("Should have at least 6 switch items", nodeCount >= 6)
+    private fun composeView(view: android.view.View): android.view.View? {
+        if (view.javaClass.name.endsWith("AndroidComposeView")) return view
+        if (view is android.view.ViewGroup) {
+            for (i in 0 until view.childCount) composeView(view.getChildAt(i))?.let { return it }
+        }
+        return null
     }
 
     @Test
-    fun settingsScreen_allSlidersPreserveProgressBarRangeInfo() {
-        composeTestRule.setContent {
-            SettingsScreen(
-                uiState = defaultUiState,
-                onNavigateBack = {},
-                onVoiceSelected = {},
-                onLanguageSelected = {},
-                onSpeedChange = {},
-                onPitchChange = {},
-                onVolumeChange = {},
-                onForceSpeedChange = {},
-                onForcePitchChange = {},
-                onForceVolumeChange = {},
-                onVolumeBoostChange = {},
-                onForceLanguageChange = {},
-                onRestoreDefaultSpeed = {},
-                onRestoreDefaultPitch = {},
-                onRestoreDefaultVolume = {},
-                onEmojiEnabledChange = {},
-                onSentencePauseChange = {},
-                onCommaPauseChange = {},
-                onNewlinePauseChange = {},
-                onNumberModeChange = {},
-                onSpellingSpeedChange = {},
-                onLetterSoundsChange = {},
-                onInflectionLevelChange = {},
-                onAccelerationChange = {},
-                onUserDictionariesEnabledChange = {}
-            )
-        }
-
-        // Verify all sliders have progressBarRangeInfo (required for TalkBack adjustability)
-        val sliderNodes = composeTestRule.onAllNodes(
-            SemanticsMatcher("has progressBarRangeInfo") { node ->
-                node.config.getOrNull(SemanticsProperties.ProgressBarRangeInfo) != null
-            }
-        )
-
-        // There should be 6 sliders in the settings screen
-        // (speed, pitch, volume, sentencePause, commaPause, newlinePause)
-        val nodeCount = sliderNodes.fetchSemanticsNodes().size
-        assertTrue("Should have at least 6 sliders with progressBarRangeInfo", nodeCount >= 6)
-    }
-
-    @Test
-    fun settingsScreen_categoryHeadersAreHeadings() {
-        composeTestRule.setContent {
-            SettingsScreen(
-                uiState = defaultUiState,
-                onNavigateBack = {},
-                onVoiceSelected = {},
-                onLanguageSelected = {},
-                onSpeedChange = {},
-                onPitchChange = {},
-                onVolumeChange = {},
-                onForceSpeedChange = {},
-                onForcePitchChange = {},
-                onForceVolumeChange = {},
-                onVolumeBoostChange = {},
-                onForceLanguageChange = {},
-                onRestoreDefaultSpeed = {},
-                onRestoreDefaultPitch = {},
-                onRestoreDefaultVolume = {},
-                onEmojiEnabledChange = {},
-                onSentencePauseChange = {},
-                onCommaPauseChange = {},
-                onNewlinePauseChange = {},
-                onNumberModeChange = {},
-                onSpellingSpeedChange = {},
-                onLetterSoundsChange = {},
-                onInflectionLevelChange = {},
-                onAccelerationChange = {},
-                onUserDictionariesEnabledChange = {}
-            )
-        }
-
-        // Verify category headers are marked as headings
-        val headingNodes = composeTestRule.onAllNodes(
-            SemanticsMatcher("has heading") { node ->
-                node.config.getOrNull(SemanticsProperties.Heading) != null
-            }
-        )
-
-        // There should be 3 category headers (Voice, Advanced, Reading Pauses)
-        val nodeCount = headingNodes.fetchSemanticsNodes().size
-        assertTrue("Should have at least 3 heading elements", nodeCount >= 3)
+    fun tellingTalkBackTheValue_setsItOnce() {
+        show()
+        rule.onNode(hasContentDescription(s(R.string.setting_speech_rate)))
+            .performScrollTo()
+            .performSemanticsAction(SemanticsActions.SetProgress) { it(1.0f) }
+        assertEquals(listOf("speed 1.0"), actions.calls)
     }
 
     // ==========================================================================
-    // Traversal Order Tests (TalkBack swipe navigation)
+    // More voice settings
     // ==========================================================================
 
     @Test
-    fun settingsScreen_allSettingsItemsHaveTraversalGroup() {
-        composeTestRule.setContent {
-            SettingsScreen(
-                uiState = defaultUiState,
-                onNavigateBack = {},
-                onVoiceSelected = {},
-                onLanguageSelected = {},
-                onSpeedChange = {},
-                onPitchChange = {},
-                onVolumeChange = {},
-                onForceSpeedChange = {},
-                onForcePitchChange = {},
-                onForceVolumeChange = {},
-                onVolumeBoostChange = {},
-                onForceLanguageChange = {},
-                onRestoreDefaultSpeed = {},
-                onRestoreDefaultPitch = {},
-                onRestoreDefaultVolume = {},
-                onEmojiEnabledChange = {},
-                onSentencePauseChange = {},
-                onCommaPauseChange = {},
-                onNewlinePauseChange = {},
-                onNumberModeChange = {},
-                onSpellingSpeedChange = {},
-                onLetterSoundsChange = {},
-                onInflectionLevelChange = {},
-                onAccelerationChange = {},
-                onUserDictionariesEnabledChange = {}
-            )
+    fun moreVoiceSettings_areCollapsed_untilExpanded() {
+        show()
+        val more = s(R.string.setting_more_voice)
+        val acceleration = s(R.string.setting_acceleration)
+        rule.onNode(hasContentDescription(acceleration, substring = true)).assertDoesNotExist()
+        // TalkBack says "collapsed" from the expand action; no state of our own.
+        rule.onNode(hasText(more))
+            .performScrollTo()
+            .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.StateDescription))
+            .assert(SemanticsMatcher.keyIsDefined(SemanticsActions.Expand))
+            .assert(SemanticsMatcher.keyNotDefined(SemanticsActions.Collapse))
+            .performSemanticsAction(SemanticsActions.Expand)
+        rule.onNode(hasContentDescription(acceleration, substring = true)).performScrollTo()
+        for (id in listOf(
+            R.string.setting_inflection_level, R.string.setting_head_size, R.string.setting_breathiness,
+            R.string.setting_roughness, R.string.setting_brightness,
+        )) {
+            rule.onNode(hasContentDescription(s(id), substring = true)).performScrollTo()
         }
+        rule.onNode(hasText(s(R.string.setting_volume_boost_title)) and hasRole(Role.Switch)).performScrollTo()
+        rule.onNode(hasText(more))
+            .assert(SemanticsMatcher.keyIsDefined(SemanticsActions.Collapse))
+            .assert(SemanticsMatcher.keyNotDefined(SemanticsActions.Expand))
+            .performSemanticsAction(SemanticsActions.Collapse)
+        rule.onNode(hasContentDescription(acceleration, substring = true)).assertDoesNotExist()
+    }
 
-        // Verify all interactive elements have isTraversalGroup set
-        // This ensures TalkBack navigates through items in order
-        val traversalGroupNodes = composeTestRule.onAllNodes(
-            SemanticsMatcher("has isTraversalGroup") { node ->
-                node.config.getOrNull(SemanticsProperties.IsTraversalGroup) == true
-            }
-        )
+    @Test
+    fun moreVoiceSettings_summaryNamesWhatItHides() {
+        show()
+        val node = rule.onNode(hasText(s(R.string.setting_more_voice))).fetchSemanticsNode()
+        val summary = texts(node).getOrNull(1).orEmpty()
+        for (id in listOf(R.string.setting_acceleration, R.string.setting_inflection_level, R.string.setting_brightness)) {
+            assertTrue(summary.contains(s(id)))
+        }
+    }
 
-        // Count interactive elements:
-        // 1 voice dropdown + 1 language dropdown + 6 sliders + 6 switches + 3 restore buttons = 17 items
-        val nodeCount = traversalGroupNodes.fetchSemanticsNodes().size
-        assertTrue(
-            "Should have at least 17 items with isTraversalGroup for proper TalkBack navigation (found $nodeCount)",
-            nodeCount >= 17
-        )
+    // ==========================================================================
+    // Voice and language
+    // ==========================================================================
+
+    @Test
+    fun voiceRow_readsNameThenVoice_andOpensARadioList() {
+        show()
+        val title = s(R.string.voice_label)
+        // Clicked as TalkBack does (an accessibility click, not a touch at
+        // coordinates, which can land while the dialog is still being laid out).
+        rule.onNode(hasTexts(title, "Zvonko")).assert(isControl).performSemanticsAction(SemanticsActions.OnClick)
+        rule.waitUntil(5_000) { rule.onAllNodes(isDialog()).fetchSemanticsNodes().isNotEmpty() }
+        rule.onNode(hasText("Zvonko") and isSelectable()).assertIsSelected().assert(hasRole(Role.RadioButton))
+        rule.onNode(hasText("Vlado") and isSelectable()).assertIsNotSelected()
+            .performSemanticsAction(SemanticsActions.OnClick)
+        assertEquals(listOf("voice vlado"), actions.calls)
+        rule.onNode(isDialog()).assertDoesNotExist()
+    }
+
+    @Test
+    fun languageRow_followingTheSystem_isDisabledAndSaysWhy() {
+        show(systemLanguage = "sl")
+        val follows = s(R.string.language_follows_system, s(R.string.language_slovenian))
+        rule.onNode(hasTexts(s(R.string.language_label), follows)).assertIsNotEnabled()
+    }
+
+    @Test
+    fun languageRow_forced_isEnabled() {
+        show(uiState = state.copy(forceLanguage = true), systemLanguage = "sl")
+        rule.onNode(hasTexts(s(R.string.language_label), s(R.string.language_croatian))).assertIsEnabled()
+    }
+
+    // ==========================================================================
+    // The screen as a whole
+    // ==========================================================================
+
+    @Test
+    fun sections_areHeadings() {
+        show()
+        for (id in listOf(
+            R.string.category_voice, R.string.category_apps, R.string.category_reading,
+            R.string.category_pause_settings, R.string.category_dictionaries, R.string.category_about,
+        )) {
+            rule.onNode(hasText(s(id)) and isHeading()).performScrollTo()
+        }
+    }
+
+    @Test
+    fun everySetting_isOneStop() {
+        show()
+        // Back; voice, language, rate, pitch, volume, more voice settings;
+        // four force switches; spelling, spelling speed, digits, emoji;
+        // three pauses; user dictionaries, manage dictionaries; about.
+        rule.onAllNodes(isControl).assertCountEquals(21)
+    }
+
+    @Test
+    fun everySetting_isOneStop_whenExpanded() {
+        show(expanded = true)
+        rule.onAllNodes(isControl).assertCountEquals(28)
+    }
+
+    @Test
+    fun accessibilityChecks_pass() {
+        rule.enableAccessibilityChecks()
+        show(expanded = true)
+        rule.onRoot().tryPerformAccessibilityChecks()
     }
 }

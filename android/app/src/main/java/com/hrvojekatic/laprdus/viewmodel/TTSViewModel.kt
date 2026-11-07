@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -110,17 +111,20 @@ class TTSViewModel @Inject constructor(
      */
     private suspend fun observeSettingsChanges() {
         var previous: SettingsRepository.TTSSettings? = null
-        settings.allSettings.collect { savedSettings ->
-            // Update TTS engine with new settings
-            tts.speed = savedSettings.speed
-            tts.pitch = savedSettings.pitch
-            tts.volume = savedSettings.volume
+        settings.allSettings.distinctUntilChanged().collect { savedSettings ->
+            // The engine's setters are native calls that wait for a preview
+            // in progress: never on the main thread.
+            val language = withContext(Dispatchers.Default) {
+                tts.speed = savedSettings.speed
+                tts.pitch = savedSettings.pitch
+                tts.volume = savedSettings.volume
 
-            // Apply advanced settings
-            tts.applySettings(savedSettings)
-            // The language, whatever the voice: the system's unless forced
-            val language = Language.effective(savedSettings.forceLanguage, savedSettings.language, SystemLanguage.locale(context))
-            tts.setLanguage(language)
+                // Apply advanced settings (only what changed)
+                tts.applySettings(savedSettings)
+                // The language, whatever the voice: the system's unless forced
+                Language.effective(savedSettings.forceLanguage, savedSettings.language, SystemLanguage.locale(context))
+                    .also { tts.setLanguage(it) }
+            }
 
             // If voice changed, reload it (unless the settings screen already
             // loaded it into this engine)

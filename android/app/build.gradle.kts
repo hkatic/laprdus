@@ -3,19 +3,21 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.baselineprofile)
 }
 
 android {
     namespace = "com.hrvojekatic.laprdus"
     compileSdk = 37
 
-    ndkVersion = "26.1.10909125"
+    // NDK r30 (LTS): 16 KB-aligned ELF segments by default, sysroot up to API 37.
+    ndkVersion = "30.0.16248370"
 
     defaultConfig {
         applicationId = "com.hrvojekatic.laprdus"
         minSdk = 24
-        targetSdk = 36
-        versionCode = 34
+        targetSdk = 37
+        versionCode = 35
         versionName = "2.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -33,11 +35,17 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Symbol tables of the native library in the bundle, so that
+            // Google Play symbolicates native crashes and ANRs (Android vitals).
+            ndk {
+                debugSymbolLevel = "SYMBOL_TABLE"
+            }
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        // Built-in Kotlin takes its JVM target from here.
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures {
         compose = true
@@ -54,21 +62,35 @@ android {
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
-            version = "3.22.1"
+            version = "4.1.2"
         }
     }
+}
+
+// The baseline profile (app start, Settings, the voice list) lives in
+// src/main/generated/baselineProfiles; regenerate it with a device connected:
+// ./gradlew :app:generateBaselineProfile (see baselineprofile/build.gradle.kts).
+baselineProfile {
+    mergeIntoMain = true
 }
 
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.navigation.compose)
+    // Brought in by Hilt and profileinstaller at old versions; current releases
+    // (the instrumented tests' libraries need them, and the test classpath
+    // must resolve to the app's versions).
+    implementation(libs.androidx.fragment)
+    implementation(libs.androidx.concurrent.futures)
 
     // ViewModel for Compose
     implementation(libs.androidx.lifecycle.viewmodel.compose)
@@ -79,38 +101,51 @@ dependencies {
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
 
-    // Material Icons Extended
-    implementation(libs.androidx.compose.material.icons.extended)
+    // Installs the baseline profile (app start, Settings) on devices without Play
+    implementation(libs.androidx.profileinstaller)
+    "baselineProfile"(project(":baselineprofile"))
 
     // Hilt Dependency Injection
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
-    implementation(libs.hilt.navigation.compose)
+    implementation(libs.hilt.lifecycle.viewmodel.compose)
 
     // Unit tests
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.turbine)
     testImplementation(libs.robolectric)
-    testImplementation(libs.hilt.android.testing)
-    testImplementation(libs.arch.core.testing)
-    kspTest(libs.hilt.android.compiler)
 
     // Instrumented tests
     androidTestImplementation(libs.androidx.junit)
+    // Not used directly, but Compose's test rules run on Espresso and the
+    // runner: without these the 3.5.0 / 1.5.0 they bring win, and Espresso
+    // 3.5 calls InputManager.getInstance(), which Android 17 removed.
     androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
-    androidTestImplementation(libs.mockk.android)
-    androidTestImplementation(libs.kotlinx.coroutines.test)
-    androidTestImplementation(libs.turbine)
-    androidTestImplementation(libs.hilt.android.testing)
-    kspAndroidTest(libs.hilt.android.compiler)
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4.accessibility)
 
     // Debug implementations
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+}
+
+// Robolectric's Android 17 (SDK 37) sandbox sets up shared memory through
+// FileDescriptor internals that JDK 21 keeps in a non-exported package.
+tasks.withType<Test>().configureEach {
+    jvmArgs(
+        "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED",
+        "--add-opens=java.base/java.io=ALL-UNNAMED",
+    )
+}
+
+// The accessibility checks bring Guava, which carries ListenableFuture
+// itself and asks for the empty "9999.0" listenablefuture; the app has the
+// stand-alone 1.0, and the test classpath must resolve to the app's versions.
+configurations.matching { it.name.contains("AndroidTest") }.configureEach {
+    exclude(group = "com.google.guava", module = "listenablefuture")
 }
 
 // =============================================================================

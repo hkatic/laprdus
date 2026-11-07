@@ -34,7 +34,12 @@
     <!-- Settings screen -->
     <string name="settings_title">Postavke</string>
     <string name="category_voice">Glas</string>
-    <string name="category_advanced">Napredno</string>
+    <string name="category_apps">Aplikacije i čitači zaslona</string>
+    <string name="category_reading">Čitanje</string>
+    <string name="setting_more_voice">Više postavki glasa</string>
+    <string name="action_restore_default">Vrati zadano (%1$s)</string>
+    <string name="format_percent">%1$d %%</string>
+    <string name="format_milliseconds">%1$d ms</string>
 
     <!-- Voice settings -->
     <string name="setting_speech_rate">Brzina govora</string>
@@ -65,41 +70,27 @@
     <string name="setting_inflection_level_desc">Veličina pokreta visine glasa: 0% je monotono, 50% prirodni pokreti, 100% najveći</string>
     <string name="setting_acceleration">Ubrzanje</string>
     <string name="setting_acceleration_desc">Množi brzinu govora, pa vrh raspona brzine doseže veću ili manju brzinu</string>
-    <string name="acceleration_value">%1$.1fx (do %2$d riječi/min)</string>
-    <string name="restore_default_inflection_level">Vrati zadanu intonaciju</string>
-    <string name="restore_default_acceleration">Vrati zadano ubrzanje</string>
-    <string name="cd_restore_inflection_level_desc">Postavlja intonaciju na 50%</string>
-    <string name="cd_restore_acceleration_desc">Postavlja ubrzanje na 1.0x</string>
+    <string name="acceleration_value">%1$s (do %2$d riječi/min)</string>
 
     <!-- Kvaliteta glasa (svi glasovi; dah i hrapavost samo formantni): 0-100, 50 = glas kakav jest -->
     <string name="setting_head_size">Veličina glave</string>
     <string name="setting_head_size_desc">Duljina govornog trakta: 0% znatno dulji (niži formanti, div), 50% glas kakav jest, 100% znatno kraći (viši formanti, dijete)</string>
-    <string name="restore_default_head_size">Vrati zadanu veličinu glave</string>
-    <string name="cd_restore_head_size_desc">Postavlja veličinu glave na 50%</string>
     <string name="setting_breathiness">Dah</string>
     <string name="setting_breathiness_desc">Dah u glasu: 0% napet, tvrd glas, 50% glas kakav jest, 100% šapat (formantni glasovi)</string>
-    <string name="restore_default_breathiness">Vrati zadani dah</string>
-    <string name="cd_restore_breathiness_desc">Postavlja dah na 50%</string>
     <string name="setting_roughness">Hrapavost</string>
     <string name="setting_roughness_desc">Hrapavost glasa: 0% potpuno miran glas, 50% glas kakav jest, iznad 50% promuklost koja raste do 100% (formantni glasovi)</string>
-    <string name="restore_default_roughness">Vrati zadanu hrapavost</string>
-    <string name="cd_restore_roughness_desc">Postavlja hrapavost na 50%</string>
     <string name="setting_brightness">Svjetlina</string>
     <string name="setting_brightness_desc">Boja tona: 0% tamno, 50% glas kakav jest, 100% oštro; niže vrijednosti ublažavaju i glasove poput s i š</string>
-    <string name="restore_default_brightness">Vrati zadanu svjetlinu</string>
-    <string name="cd_restore_brightness_desc">Postavlja svjetlinu na 50%</string>
 
     <!-- Number mode settings -->
     <string name="setting_number_mode_title">Čitaj brojeve znamenku po znamenku</string>
     <string name="setting_number_mode_subtitle">Čitaj brojeve kao pojedinačne znamenke (123 → jedan dva tri)</string>
 
     <!-- Postavke slovkanja -->
-    <string name="setting_spelling_mode">Slovkanje</string>
-    <string name="setting_spelling_mode_subtitle">Čitaj slova kao glasove (b, c, d) umjesto nazivima (be, ce, de) pri slovkanju i tipkanju</string>
+    <string name="setting_spelling_mode">Slova kao glasovi</string>
+    <string name="setting_spelling_mode_subtitle">Pri slovkanju i tipkanju</string>
     <string name="setting_spelling_speed">Brzina slovkanja</string>
     <string name="setting_spelling_speed_desc">Niže vrijednosti produljuju pauze nakon svakog znaka. Znakovi se uvijek izgovaraju uobičajenom brzinom govora. 100% ne dodaje pauzu; zadano je 50%.</string>
-    <string name="restore_default_spelling_speed">Vrati zadanu brzinu slovkanja</string>
-    <string name="cd_restore_spelling_speed_desc">Postavlja brzinu slovkanja na 50%</string>
 
     <!-- Pause settings -->
     <string name="category_pause_settings">Pauze prilikom čitanja</string>
@@ -111,17 +102,9 @@
     <string name="setting_newline_pause_desc">Trajanje tišine prilikom prelaska u novi redak ili odlomak</string>
 
     <!-- Restore default buttons -->
-    <string name="restore_default_speed">Vrati zadanu brzinu</string>
-    <string name="restore_default_pitch">Vrati zadanu visinu</string>
-    <string name="restore_default_volume">Vrati zadanu glasnoću</string>
 
     <!-- Control descriptions for accessibility -->
-    <string name="cd_voice_dropdown_desc">Odabir glasa za sintezu govora</string>
-    <string name="cd_language_dropdown_desc">Odabir jezika govora</string>
     <string name="cd_dict_type_dropdown_desc">Odabir vrste rječnika</string>
-    <string name="cd_restore_speed_desc">Postavlja brzinu govora na zadanu vrijednost</string>
-    <string name="cd_restore_pitch_desc">Postavlja visinu govora na zadanu vrijednost</string>
-    <string name="cd_restore_volume_desc">Postavlja glasnoću govora na zadanu vrijednost</string>
     <string name="cd_speak_desc">Izgovara uneseni tekst</string>
     <string name="cd_stop_desc">Zaustavlja trenutni govor</string>
     <string name="cd_laprdus_settings_desc">Otvara postavke Laprdusa</string>
@@ -132,7 +115,6 @@
     <string name="button_android_tts_settings">Android TTS postavke</string>
 
     <!-- Accessibility descriptions -->
-    <string name="cd_slider_adjust">Povucite za podešavanje</string>
 
     <!-- Accessibility content descriptions -->
     <string name="cd_text_input">Polje za unos teksta koji će biti izgovoren</string>
