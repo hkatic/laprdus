@@ -304,8 +304,8 @@ class LaprdusTTS private constructor() {
         }
 
     /**
-     * Breathiness (0-100, default 50): the voice's own breath noise, 0 none,
-     * 50 the voice as it is, 100 five times as much. Formant voices only.
+     * Breathiness (0-100, default 50): 0 a tense, clear voice without
+     * breath, 50 the voice as it is, 100 a whisper. Formant voices only.
      */
     var breathiness: Int = DEFAULT_VOICE_QUALITY
         set(value) {
@@ -315,7 +315,8 @@ class LaprdusTTS private constructor() {
 
     /**
      * Roughness (0-100, default 50): the voice's jitter and shimmer, 0 none,
-     * 50 the voice as it is, 100 five times as much. Formant voices only.
+     * 50 the voice as it is, 100 eight times as much and, above 50, a rasp.
+     * Formant voices only.
      */
     var roughness: Int = DEFAULT_VOICE_QUALITY
         set(value) {

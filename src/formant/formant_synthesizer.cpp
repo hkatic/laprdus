@@ -2070,12 +2070,13 @@ namespace {
 
 // The voice as the user's voice quality settings shape it: head size scales
 // the vocal tract (every formant target goes through formant_scale), and
-// breathiness scales the breath noise. The speaker's own values are the
+// breathiness below 50 takes the voice's own breath noise away (above 50 the
+// whisper of quality_for() adds breath). The speaker's own values are the
 // setting 50.
 FormantVoice voice_with_quality(const FormantVoice& base, const VoiceParams& params) {
     FormantVoice voice = base;
     voice.formant_scale *= head_size_factor(params.head_size);
-    voice.breathiness *= voice_quality_scale(params.breathiness);
+    voice.breathiness *= breathiness_noise_scale(params.breathiness);
     return voice;
 }
 
@@ -2122,6 +2123,9 @@ VoiceQuality quality_for(const FormantVoice& voice, const VoiceParams& params) {
     quality.jitter *= rough;
     quality.shimmer *= rough;
     quality.roughness = diplophonia;
+    // Breathiness: a whisper above 50, a tense voice below (klatt_synth.hpp).
+    quality.whisper = breathiness_whisper(params.breathiness);
+    quality.tension = breathiness_tension(params.breathiness);
     quality.brightness = brightness_emphasis(params.brightness, quality.brightness);
     return quality;
 }

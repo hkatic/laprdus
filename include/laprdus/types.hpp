@@ -350,9 +350,11 @@ constexpr float VOLUME_BOOST_TREBLE_HZ = 4000.0f;
 // define it, so the defaults change nothing. Head size scales every formant
 // (the vocal tract length: 0 a quarter longer, formants a fifth lower;
 // 100 a quarter shorter, a higher voice) for every voice, recorded ones through their bank
-// warp. Breathiness scales the voice's own breath noise (0 none, 100 five
-// times), roughness its jitter and shimmer (0 none, 100 eight times) with
-// diplophonia above 50 (roughness_diplophonia(); formant voices). Brightness is
+// warp. Breathiness runs from a tense, clear voice at 0 (no breath, a
+// shorter open phase) to a whisper at 100 (no voicing, only breath through
+// the vocal tract; breathiness_tension(), breathiness_whisper()); roughness
+// scales the jitter and shimmer (0 none, 100 eight times) with diplophonia
+// above 50 (roughness_diplophonia(); both formant voices). Brightness is
 // the tone: for the formant voices the source emphasis (0 the bare pulse,
 // 50 the voice's own, 100 the sharpest), for the recorded voices a tilt of
 // the output around 1.5 kHz (0 the top folded away, 100 the top doubled).
@@ -381,7 +383,33 @@ inline float roughness_diplophonia(int roughness) {
     return v <= 50 ? 0.0f : std::sqrt(static_cast<float>(v - 50) / 50.0f);
 }
 
-/** Factor a voice's own breath noise, jitter or shimmer is multiplied by:
+/** Whisper share for a breathiness setting: 0 up to 50, 1 at 100. The
+ *  synthesizer opens the glottis wider, steepens the source, takes the
+ *  voicing away with the square of it and puts breath in its place, so 100
+ *  is a whisper (klatt_synth.hpp VoiceQuality::whisper). Until 2026-11-07
+ *  breathiness only multiplied the voice's own faint breath noise by up to
+ *  five, which a listener could not hear at all. */
+inline float breathiness_whisper(int breathiness) {
+    const int v = std::clamp(breathiness, VOICE_QUALITY_MIN, VOICE_QUALITY_MAX);
+    return v <= 50 ? 0.0f : static_cast<float>(v - 50) / 50.0f;
+}
+
+/** Tension share for a breathiness setting: 0 from 50 up, 1 at 0: a pressed,
+ *  clear voice, the glottis closed for longer and the source flatter
+ *  (VoiceQuality::tension). */
+inline float breathiness_tension(int breathiness) {
+    const int v = std::clamp(breathiness, VOICE_QUALITY_MIN, VOICE_QUALITY_MAX);
+    return v >= 50 ? 0.0f : static_cast<float>(50 - v) / 50.0f;
+}
+
+/** Factor the voice's own breath noise is multiplied by for a breathiness
+ *  setting: 0 at 0, 1 from 50 up (above 50 the whisper adds the breath). */
+inline float breathiness_noise_scale(int breathiness) {
+    const int v = std::clamp(breathiness, VOICE_QUALITY_MIN, VOICE_QUALITY_MAX);
+    return v >= 50 ? 1.0f : static_cast<float>(v) / 50.0f;
+}
+
+/** Factor a voice's own jitter or shimmer is multiplied by:
  *  0 at 0, 1 at 50, 5 at 100. */
 inline float voice_quality_scale(int value) {
     const int v = std::clamp(value, VOICE_QUALITY_MIN, VOICE_QUALITY_MAX);
@@ -413,7 +441,7 @@ struct VoiceParams {
     SpellingMode spelling_mode = SpellingMode::LetterSounds; // Letter sounds (default) or names when spelling
     int spelling_speed = SPELLING_SPEED_DEFAULT;        // Spelling cadence (0-100); lower adds more silence
     int head_size = VOICE_QUALITY_DEFAULT;    // Vocal tract length, 0-100 (see above)
-    int breathiness = VOICE_QUALITY_DEFAULT;  // Breath noise, 0-100
+    int breathiness = VOICE_QUALITY_DEFAULT;  // Breath, 0-100: 0 a tense voice, 100 a whisper
     int roughness = VOICE_QUALITY_DEFAULT;    // Jitter and shimmer, 0-100
     int brightness = VOICE_QUALITY_DEFAULT;   // Tone, 0-100
 

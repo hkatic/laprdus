@@ -60,11 +60,11 @@
     <string name="restore_default_head_size">Obnovi privzeto velikost glave</string>
     <string name="cd_restore_head_size_desc">Nastavi velikost glave na 50 %</string>
     <string name="setting_breathiness">Dih</string>
-    <string name="setting_breathiness_desc">Šum diha v glasu: 0 % brez, 50 % glas, kakršen je, 100 % petkrat več (formantni glasovi)</string>
+    <string name="setting_breathiness_desc">Dih v glasu: 0 % napet, čist glas, 50 % glas, kakršen je, 100 % šepet (formantni glasovi)</string>
     <string name="restore_default_breathiness">Obnovi privzeti dih</string>
     <string name="cd_restore_breathiness_desc">Nastavi dih na 50 %</string>
     <string name="setting_roughness">Hrapavost</string>
-    <string name="setting_roughness_desc">Hrapavost glasu: 0 % gladko, 50 % glas, kakršen je, 100 % petkrat bolj hrapavo (formantni glasovi)</string>
+    <string name="setting_roughness_desc">Hrapavost glasu: 0 % gladko, 50 % glas, kakršen je, nad 50 % hripavost, ki narašča do 100 % (formantni glasovi)</string>
     <string name="restore_default_roughness">Obnovi privzeto hrapavost</string>
     <string name="cd_restore_roughness_desc">Nastavi hrapavost na 50 %</string>
     <string name="setting_brightness">Svetlost</string>

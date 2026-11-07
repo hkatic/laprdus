@@ -95,6 +95,15 @@ struct VoiceQuality {
     // Random jitter and shimmer alone, even five times the voice's own,
     // were not heard as roughness (a listener's report of November 2026).
     float roughness = 0.0f;
+    // The breathiness setting (types.hpp breathiness_whisper/_tension):
+    // whisper 0..1 above 50 opens the glottis wider (WHISPER_OQ), steepens
+    // the source (WHISPER_TILT_DB), takes the voicing away with whisper² and
+    // adds breath through the cascade (WHISPER_BREATH) that no glottal cycle
+    // modulates, so 1 is a whisper; tension 0..1 below 50 closes the glottis
+    // for longer (TENSE_OQ) and flattens the source (TENSE_TILT_DB), a
+    // pressed, clear voice. Both 0 leave the voice bit for bit as it is.
+    float whisper = 0.0f;
+    float tension = 0.0f;
 
     // Singing presets. chorus adds two copies of the source detuned by
     // chorus_cents up and down (a section of players, a klapa); sub_octave

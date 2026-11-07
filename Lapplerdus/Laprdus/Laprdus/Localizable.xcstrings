@@ -2584,24 +2584,24 @@
         }
       }
     },
-    "Breath noise of the voice: 0% none, 50% the voice as it is, 100% five times as much (formant voices)" : {
+    "Breath in the voice: 0% a tense, clear voice, 50% the voice as it is, 100% a whisper (formant voices)" : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Šum daha u glasu: 0% bez daha, 50% glas kakav jest, 100% pet puta više (formantni glasovi)"
+            "value" : "Dah u glasu: 0% napet, čist glas, 50% glas kakav jest, 100% šapat (formantni glasovi)"
           }
         },
         "sr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Šum daha u glasu: 0% bez daha, 50% glas kakav jeste, 100% pet puta više (formantni glasovi)"
+            "value" : "Dah u glasu: 0% napet, čist glas, 50% glas kakav jeste, 100% šapat (formantni glasovi)"
           }
         },
         "sl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Šum diha v glasu: 0 % brez, 50 % glas, kakršen je, 100 % petkrat več (formantni glasovi)"
+            "value" : "Dih v glasu: 0 % napet, čist glas, 50 % glas, kakršen je, 100 % šepet (formantni glasovi)"
           }
         }
       }
@@ -2650,24 +2650,24 @@
         }
       }
     },
-    "Jitter and shimmer of the voice: 0% none, 50% the voice as it is, 100% five times as much (formant voices)" : {
+    "Jitter and shimmer of the voice: 0% none, 50% the voice as it is, above 50% a rasp that grows up to 100% (formant voices)" : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hrapavost glasa: 0% glatko, 50% glas kakav jest, 100% pet puta hrapavije (formantni glasovi)"
+            "value" : "Hrapavost glasa: 0% glatko, 50% glas kakav jest, iznad 50% promuklost koja raste do 100% (formantni glasovi)"
           }
         },
         "sr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hrapavost glasa: 0% glatko, 50% glas kakav jeste, 100% pet puta hrapavije (formantni glasovi)"
+            "value" : "Hrapavost glasa: 0% glatko, 50% glas kakav jeste, iznad 50% promuklost koja raste do 100% (formantni glasovi)"
           }
         },
         "sl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hrapavost glasu: 0 % gladko, 50 % glas, kakršen je, 100 % petkrat bolj hrapavo (formantni glasovi)"
+            "value" : "Hrapavost glasu: 0 % gladko, 50 % glas, kakršen je, nad 50 % hripavost, ki narašča do 100 % (formantni glasovi)"
           }
         }
       }

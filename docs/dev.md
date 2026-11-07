@@ -551,8 +551,11 @@ the other way)
 (`head_size_factor()` in `types.hpp`): the formant voices through a
 per-utterance copy of the voice with a scaled `formant_scale` (also the fixed
 F5-F8), the recorded voices through the bank warp of `ensure_bank()`, which
-leaves the pitch where it was. Breathiness scales the voice's own breath noise
-(0 none, 100 five times); roughness its jitter and shimmer (0 none, 100 eight
+leaves the pitch where it was. Breathiness runs from a tense, clear voice at 0
+(the glottis closed for longer, a flatter source, no breath noise;
+`breathiness_tension()`) to a whisper at 100 (the voicing replaced by breath
+through the cascade; `breathiness_whisper()`, `VoiceQuality::whisper`);
+roughness its jitter and shimmer (0 none, 100 eight
 times) and from 50 up adds diplophonia, every second glottal period shorter
 and weaker (`VoiceQuality::roughness`, `roughness_diplophonia()`), since five
 times the random jitter alone was not heard (formant voices only). Brightness is the source emphasis of the formant voices (0 the

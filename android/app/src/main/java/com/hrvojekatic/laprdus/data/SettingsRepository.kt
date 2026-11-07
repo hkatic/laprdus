@@ -575,9 +575,9 @@ class SettingsRepository internal constructor(
     }
 
     /**
-     * Flow of the breathiness (0-100, default 50): the voice's own breath
-     * noise, 0 none, 50 the voice as it is, 100 five times as much. Formant
-     * voices only.
+     * Flow of the breathiness (0-100, default 50): 0 a tense, clear voice
+     * without breath, 50 the voice as it is, 100 a whisper. Formant voices
+     * only.
      */
     val breathiness: Flow<Int> = prefs
         .map { preferences ->
@@ -597,8 +597,8 @@ class SettingsRepository internal constructor(
 
     /**
      * Flow of the roughness (0-100, default 50): the voice's jitter and
-     * shimmer, 0 none, 50 the voice as it is, 100 five times as much.
-     * Formant voices only.
+     * shimmer, 0 none, 50 the voice as it is, 100 eight times as much and,
+     * above 50, a rasp. Formant voices only.
      */
     val roughness: Flow<Int> = prefs
         .map { preferences ->

@@ -1051,11 +1051,12 @@ the C API, `settings.json`, every settings screen and both CLIs carry them):
 | Setting | 0 | 50 | 100 | Where |
 |---|---|---|---|---|
 | head size | every formant × 0.8 (a quarter longer tract, a deeper voice) | the voice | × 1.25 (a quarter shorter, a higher voice; synthesizer A's head size runs the other way, the maintainer asked for this one) | `formant_scale` of a per-utterance copy of the voice and the fixed F5-F8 (`voice_with_quality()`, `quality_for()`); recorded voices: the bank warp, pitch unchanged |
-| breathiness | no breath noise | the voice's own (`FormantVoice::breathiness`) | five times | the same copy (formant voices) |
+| breathiness | a tense, clear voice: no breath noise, open quotient towards 0.40, the source 4 dB flatter | the voice's own (`FormantVoice::breathiness`, open quotient, tilt) | a whisper: no voicing, breath through the cascade, open quotient 0.85, the source 10 dB steeper, B1 150 Hz wider | `VoiceQuality::whisper`, `tension` (`breathiness_whisper()`, `breathiness_tension()`); the noise scale on the same copy (formant voices) |
 | roughness | no jitter or shimmer | the voice's own (0.4 %, 3 %) | eight times, and from 50 up diplophonia: every second period up to 5 % shorter and 60 % weaker | `VoiceQuality::jitter`, `shimmer`, `roughness` (formant voices) |
 | brightness | the bare pulse (emphasis 0) | the voice's own emphasis (0.55 since "The reference balance" below; 0.65 before) | emphasis 0.85 | `VoiceQuality::brightness`; recorded voices: a one-pole tilt around 1.5 kHz, the top folded away at 0 and doubled at 100 |
 
-The mappings are `head_size_factor()`, `voice_quality_scale()`,
+The mappings are `head_size_factor()`, `breathiness_whisper()`,
+`breathiness_tension()`, `breathiness_noise_scale()`, `voice_quality_scale()`,
 `roughness_diplophonia()` and `brightness_emphasis()` in `types.hpp`; at 50
 each returns the voice's own value exactly, and the tests require the samples
 to be identical. Brightness 0 is the setting at which a phone's speaker at
@@ -1156,6 +1157,60 @@ a sustained a (`spectrum.py --floor`) the floor between the harmonics at
 0.5-1 kHz comes up from 8 dB under them at 50 to 4-6 dB at 75 and 100, and
 the pitch tracker locks onto F0/2 at 75. 50 is still bit-identical to the
 voice without the setting.
+
+### Breathiness, from a tense voice to a whisper (November 2026)
+
+**What was.** Breathiness multiplied the voice's own breath noise
+(`FormantVoice::breathiness`: Zvonko 0.020, Stojan 0.015, Mirsad 0.030, mixed
+into the source at the gain of the aspiration and cut to 35 % in the closed
+phase) from none at 0 to five times at 100. At 100 that was still far under
+the aspiration of an h (0.16), nothing took the voicing away, and the
+maintainer heard no difference anywhere on the slider; the test asked only
+that the samples change. The maintainer's decision: 100 a whisper, 0 a tense,
+clear voice, 50 the voice as it is.
+
+**What it is now** (`klatt_synth.cpp`, after Klatt & Klatt 1990: a breathy
+voice has a larger open quotient, more spectral tilt and more aspiration, a
+pressed one the reverse). Above 50, `breathiness_whisper()` (0 at 50, 1 at
+100, linear) moves the open quotient towards `WHISPER_OQ` 0.85, steepens the
+source by up to `WHISPER_TILT_DB` 10 dB at 3 kHz, widens B1 by up to
+`WHISPER_B1_HZ` 150 Hz (the open glottis couples the trachea to the tract;
+without it the whispered a rang in a narrow F1 and came out 3 dB louder than
+the voiced one), multiplies the voicing by 1 - w² (so 75 is a breathy voice,
+not yet a whisper) and adds breath of `WHISPER_BREATH` 0.6 times the voicing
+amplitude through the cascade, which the glottal cycle no longer modulates
+(the closed-phase cut goes from 0.35 to 1). Below 50, `breathiness_tension()`
+(1 at 0) moves the open quotient towards `TENSE_OQ` 0.40, flattens the source
+by up to `TENSE_TILT_DB` 4 dB, and `breathiness_noise_scale()` takes the
+voice's own breath noise to none. The frication branch is untouched, so s, š
+and f stay as they are; the breath scales with the voicing amplitude, so a
+whispered word keeps its timing and its voiced consonants their place. 50
+leaves every term out and is bit for bit the voice as it was (20 renderings:
+Zvonko, Stojan, Mirsad, Bećarac and Josip in hr, sr, bs and sl).
+
+**Measured** (a sustained a at half rate with a flat pitch, `-r 0.5 -I 0`:
+periodicity is the best normalised autocorrelation of the loudest 93 ms at a
+lag of 2.5-20 ms, H1-H2 the first harmonic over the second; the floor is
+`spectrum.py --floor` at 0.5-1 kHz; the median and peak of a 15 s Croatian
+paragraph at the default rate):
+
+| Zvonko | periodicity | H1-H2 dB | floor under the harmonics dB | a dBFS | paragraph median dBFS | peak dBFS |
+|---|---|---|---|---|---|---|
+| 0 | 0.987 | -1.0 | 37 | -13.4 | -17.8 | -3.4 |
+| 50 | 0.974 | 4.3 | 35 | -12.7 | -16.6 | -3.9 |
+| 60 | 0.943 | 6.3 | 25 | -13.2 | -17.2 | -3.9 |
+| 75 | 0.685 | 9.3 | 15 | -14.5 | -19.1 | -3.9 |
+| 100 | 0.340 | (no F0) | 4 | -13.8 | -24.8 | -2.2 |
+
+At 100 the pitch tracker finds no F0 and no harmonics stand out of the noise:
+a whisper, as loud as the voiced a when held and 8 dB under the voice in
+running speech, where the whispered nasals, l and j lose most of their level,
+as they do in a real whisper. Stojan and Mirsad measure alike (periodicity
+0.981/0.977 at 50, 0.671/0.715 at 75, 0.368/0.286 at 100; paragraph 8 dB
+under 50 at 100; peaks at -1.5 dBFS or lower). H1-H2 falls 3.9 and 6.7 dB from 50
+to 0 for them. The singing presets follow the same curve (periodicity 0.35-0.40
+at 100). Test: `test_formant.cpp` "Breathiness runs from a tense voice to a
+whisper".
 
 ### The reference balance (November 2026)
 

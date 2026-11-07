@@ -77,11 +77,11 @@
     <string name="restore_default_head_size">Vrati podrazumevanu veličinu glave</string>
     <string name="cd_restore_head_size_desc">Postavlja veličinu glave na 50%</string>
     <string name="setting_breathiness">Dah</string>
-    <string name="setting_breathiness_desc">Šum daha u glasu: 0% bez daha, 50% glas kakav jeste, 100% pet puta više (formantni glasovi)</string>
+    <string name="setting_breathiness_desc">Dah u glasu: 0% napet, čist glas, 50% glas kakav jeste, 100% šapat (formantni glasovi)</string>
     <string name="restore_default_breathiness">Vrati podrazumevani dah</string>
     <string name="cd_restore_breathiness_desc">Postavlja dah na 50%</string>
     <string name="setting_roughness">Hrapavost</string>
-    <string name="setting_roughness_desc">Hrapavost glasa: 0% glatko, 50% glas kakav jeste, 100% pet puta hrapavije (formantni glasovi)</string>
+    <string name="setting_roughness_desc">Hrapavost glasa: 0% glatko, 50% glas kakav jeste, iznad 50% promuklost koja raste do 100% (formantni glasovi)</string>
     <string name="restore_default_roughness">Vrati podrazumevanu hrapavost</string>
     <string name="cd_restore_roughness_desc">Postavlja hrapavost na 50%</string>
     <string name="setting_brightness">Svetlina</string>

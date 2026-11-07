@@ -77,11 +77,11 @@
     <string name="restore_default_head_size">Restore default head size</string>
     <string name="cd_restore_head_size_desc">Sets head size to 50%</string>
     <string name="setting_breathiness">Breathiness</string>
-    <string name="setting_breathiness_desc">Breath noise of the voice: 0% none, 50% the voice as it is, 100% five times as much (formant voices)</string>
+    <string name="setting_breathiness_desc">Breath in the voice: 0% a tense, clear voice, 50% the voice as it is, 100% a whisper (formant voices)</string>
     <string name="restore_default_breathiness">Restore default breathiness</string>
     <string name="cd_restore_breathiness_desc">Sets breathiness to 50%</string>
     <string name="setting_roughness">Roughness</string>
-    <string name="setting_roughness_desc">Jitter and shimmer of the voice: 0% none, 50% the voice as it is, 100% five times as much (formant voices)</string>
+    <string name="setting_roughness_desc">Jitter and shimmer of the voice: 0% none, 50% the voice as it is, above 50% a rasp that grows up to 100% (formant voices)</string>
     <string name="restore_default_roughness">Restore default roughness</string>
     <string name="cd_restore_roughness_desc">Sets roughness to 50%</string>
     <string name="setting_brightness">Brightness</string>

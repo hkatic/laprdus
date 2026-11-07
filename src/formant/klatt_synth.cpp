@@ -30,6 +30,24 @@ constexpr double ASPIRATION_GAIN = 1.0;
 // (as a share of the period) and this much weaker than the even ones.
 constexpr double ROUGHNESS_PERIOD_ALTERNATION = 0.05;
 constexpr double ROUGHNESS_AMPLITUDE_DIP = 0.6;
+
+// The breathiness setting (VoiceQuality::whisper above 50, tension below).
+// At full whisper the glottis stays open for most of the cycle, the source
+// is steeper by WHISPER_TILT_DB at 3 kHz, the voicing is gone (it falls with
+// whisper², so 75 is a breathy voice and not yet a whisper) and breath noise
+// of WHISPER_BREATH times the voicing amplitude goes through the cascade in
+// its place, unmodulated by the glottal cycle. At full tension the glottis
+// closes for longer (TENSE_OQ) and the source is flatter by TENSE_TILT_DB,
+// a pressed voice whose H1-H2 is lower (Klatt & Klatt 1990: breathy voice
+// has a larger open quotient, more tilt and more aspiration, pressed voice
+// the reverse). Measured values in "Breathiness, from a tense voice to a
+// whisper" in docs/formant.md.
+constexpr double WHISPER_OQ = 0.85;
+constexpr double WHISPER_TILT_DB = 10.0;
+constexpr double WHISPER_BREATH = 0.6;
+constexpr double WHISPER_B1_HZ = 150.0;
+constexpr double TENSE_OQ = 0.40;
+constexpr double TENSE_TILT_DB = 4.0;
 constexpr double FRICATION_GAIN = 3.0;
 
 // Coefficients are refreshed twice per frame.
@@ -219,6 +237,12 @@ void KlattSynth::update_coefficients(const Frame& fr) {
     for (int i = 0; i < CASCADE_VARIABLE; ++i) {
         m_cascade[i].set(fr.f[i], fr.b[i]);
     }
+    // An open glottis couples the trachea to the tract: F1's bandwidth
+    // widens in a breathy voice and a whisper, which also keeps the noise
+    // from ringing in a narrow F1.
+    if (m_quality.whisper > 0.0f) {
+        m_cascade[0].set(fr.f[0], fr.b[0] + m_quality.whisper * WHISPER_B1_HZ);
+    }
 
     double zero = m_quality.nasal_pole +
         std::clamp(static_cast<double>(fr.nasal), 0.0, 1.0) *
@@ -233,7 +257,10 @@ void KlattSynth::update_coefficients(const Frame& fr) {
     }
 
     // One-pole low-pass giving `tilt` dB of attenuation at 3 kHz.
-    double tilt = std::clamp(static_cast<double>(fr.tilt), 0.0, 40.0);
+    double tilt = static_cast<double>(fr.tilt);
+    if (m_quality.whisper > 0.0f) tilt += m_quality.whisper * WHISPER_TILT_DB;
+    if (m_quality.tension > 0.0f) tilt -= m_quality.tension * TENSE_TILT_DB;
+    tilt = std::clamp(tilt, 0.0, 40.0);
     if (tilt < 0.05) {
         m_tilt_coef = 0.0;
     } else {
@@ -365,7 +392,10 @@ double KlattSynth::source_sample(double f0, double oq_now, double av, bool& open
             m_period_jitter *= 1.0 + ROUGHNESS_PERIOD_ALTERNATION * q.roughness;
             m_period_shimmer *= 1.0 - ROUGHNESS_AMPLITUDE_DIP * q.roughness;
         }
-        m_period_oq = std::clamp(oq_now, 0.3, 0.9);
+        double oq_next = oq_now;
+        if (q.whisper > 0.0f) oq_next += q.whisper * (WHISPER_OQ - oq_next);
+        if (q.tension > 0.0f) oq_next += q.tension * (TENSE_OQ - oq_next);
+        m_period_oq = std::clamp(oq_next, 0.3, 0.9);
     }
     return g;
 }
@@ -492,6 +522,13 @@ void KlattSynth::render(const Frame* frames, size_t count, std::vector<float>& o
                 double n1 = noise();
                 double breath = m_quality.breathiness * av;
                 double asp_mod = (av > 0.01 && !open_phase) ? 0.35 : 1.0;
+                if (m_quality.whisper > 0.0f) {
+                    // The breathiness setting above 50: voicing out, breath in.
+                    const double w = m_quality.whisper;
+                    voice *= 1.0 - w * w;
+                    breath += w * WHISPER_BREATH * av;
+                    if (asp_mod < 1.0) asp_mod += w * (1.0 - asp_mod);
+                }
                 double source = voice + n1 * (ah + breath) * asp_mod * ASPIRATION_GAIN;
 
                 // ---- Cascade vocal tract ----

@@ -354,7 +354,7 @@ echo "Tekst" | laprdus
 | `-I, --inflection` | Raven intonacije, 0–100 (privzeto: 50; 0 je enoličen govor) |
 | `-a, --acceleration` | Pospešek, množitelj hitrosti 0.5-3.0 (privzeto: 1.0) |
 | `--head-size PERCENT` | Kakovost glasu: dolžina govornega trakta, 0–100 (privzeto: 50 = glas, kakršen je) |
-| `--breathiness PERCENT` | Šum diha, 0–100 (privzeto: 50; formantni glasovi) |
+| `--breathiness PERCENT` | Dih, 0–100: 0 napet glas, 100 šepet (privzeto: 50; formantni glasovi) |
 | `--roughness PERCENT` | Hrapavost (jitter in shimmer), 0–100 (privzeto: 50; formantni glasovi) |
 | `--brightness PERCENT` | Barva tona, 0–100 (privzeto: 50; 0 zamolklo, 100 ostro) |
 | `-V, --speech-volume` | Glasnost (0.0-1.0, privzeto: 1.0) |
@@ -540,7 +540,7 @@ Nastavitve se shranijo v uporabniško mapo `%APPDATA%\Laprdus`, uporabljata pa j
 Štiri nastavitve kakovosti glasu sledijo modelu glasovnih parametrov klasičnih formantnih sintetizatorjev: velikost glave, dih, hrapavost in svetlost. V NVDA so to NVDA-jeve lastne nastavitve glasu: drsniki Velikost glave, Dih, Hrapavost in Svetlost v NVDA-jevih nastavitvah glasu, za glasnostjo, in v krogu nastavitev sinteze (Control + tipka NVDA + puščice), vsak od 0 do 100, pri čemer je 50 glas, kakršen je; NVDA si jih zapomni kot druge svoje nastavitve. Konfigurator Laprdus ima iste štiri za gumbom »Kakovost glasu...«, vendar te vrednosti veljajo le za SAPI5 (v datoteki `settings.json` so zapisane kot `speech.head_size`, `speech.breathiness`, `speech.roughness` in `speech.brightness`), tako kot njegove nastavitve intonacije.
 
 - **Velikost glave** – dolžina govornega trakta: 0 je za četrtino daljši (nižji formanti, polnejši glas), 100 za četrtino krajši (višji formanti, drobnejši glas). Deluje na vse glasove.
-- **Dih** – šum diha v glasu: 0 ga ni, 100 ga je petkrat več kot v glasu, kakršen je. Deluje na formantne glasove (Zvonko, Stojan, Mirsad in pojoči glasovi).
+- **Dih** – dih v glasu: 0 je napet, čist glas brez diha, 50 glas, kakršen je; nad 50 je v glasu vse več diha, 100 pa je šepet, samo dih brez zvenečnosti. Deluje na formantne glasove (Zvonko, Stojan, Mirsad in pojoči glasovi).
 - **Hrapavost** – nepravilnosti višine in glasnosti od nihaja do nihaja (jitter in shimmer): 0 jih ni, 50 je glas, kakršen je; nad 50 vsak drugi nihaj glasu pride prej in šibkejši, hripavost, ki narašča do 100. Deluje na formantne glasove.
 - **Svetlost** – barva tona: 0 je temno in zamolklo, 100 ostro in svetlo. Deluje na vse glasove: na formantne prek vira glasu, na posnete pa prek nagiba spektra okoli 1,5 kHz.
 

@@ -730,8 +730,8 @@ class LaprdusEngine(object):
         return int(self._lib.laprdus_get_head_size(self._handle))
 
     def set_breathiness(self, value):
-        """Set the breath noise: 0 none, 100 five times the voice's own.
-        Formant voices."""
+        """Set the breathiness: 0 a tense, clear voice without breath, 50 the
+        voice as it is, 100 a whisper. Formant voices."""
         result = self._lib.laprdus_set_breathiness(self._handle, int(value))
         return result == LAPRDUS_OK
 
@@ -740,8 +740,8 @@ class LaprdusEngine(object):
         return int(self._lib.laprdus_get_breathiness(self._handle))
 
     def set_roughness(self, value):
-        """Set the roughness (jitter and shimmer): 0 none, 100 five times
-        the voice's own. Formant voices."""
+        """Set the roughness (jitter and shimmer): 0 none, 100 eight times
+        the voice's own and, above 50, a rasp. Formant voices."""
         result = self._lib.laprdus_set_roughness(self._handle, int(value))
         return result == LAPRDUS_OK
 

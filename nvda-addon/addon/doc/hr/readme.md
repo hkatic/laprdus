@@ -354,7 +354,7 @@ echo "Tekst" | laprdus
 | `-I, --inflection` | Razina infleksije, 0-100 (zadano: 50; 0 je monotono) |
 | `-a, --acceleration` | Ubrzanje, množitelj brzine 0.5-3.0 (zadano: 1.0) |
 | `--head-size PERCENT` | Kvaliteta glasa: duljina govornog trakta, 0-100 (zadano: 50 = glas kakav jest) |
-| `--breathiness PERCENT` | Šum daha, 0-100 (zadano: 50; formantni glasovi) |
+| `--breathiness PERCENT` | Dah, 0-100: 0 napet glas, 100 šapat (zadano: 50; formantni glasovi) |
 | `--roughness PERCENT` | Hrapavost (jitter i shimmer), 0-100 (zadano: 50; formantni glasovi) |
 | `--brightness PERCENT` | Boja tona, 0-100 (zadano: 50; 0 tamno, 100 oštro) |
 | `-V, --speech-volume` | Glasnoća (0.0-1.0, zadano: 1.0) |
@@ -540,7 +540,7 @@ Postavke se spremaju u korisničkoj mapi `%APPDATA%\Laprdus` i dijele se između
 Četiri postavke kvalitete glasa slijede model glasovnih parametara klasičnih formantnih sintetizatora: veličina glave, dah, hrapavost i svjetlina. U NVDA-u to su NVDA-ove vlastite postavke glasa: klizači Veličina glave, Dah, Hrapavost i Svjetlina u NVDA-ovim postavkama glasa, iza glasnoće, i u prstenu postavki sintetizatora (Control + NVDA tipka + strelice), svaki od 0 do 100, a 50 je glas kakav jest; NVDA ih pamti kao i ostale svoje postavke. Laprdus Konfigurator ima ista četiri iza gumba „Kvaliteta glasa...”, ali te vrijednosti vrijede samo za SAPI5 (u datoteci `settings.json` zapisane su kao `speech.head_size`, `speech.breathiness`, `speech.roughness` i `speech.brightness`), kao i njegove postavke infleksije.
 
 - **Veličina glave** – duljina govornog trakta: 0 je četvrtinu dulji (niži formanti, krupniji glas), 100 četvrtinu kraći (viši formanti, sitniji glas). Djeluje na sve glasove.
-- **Dah** – šum daha u glasu: 0 ga nema, 100 ga je pet puta više nego u glasu kakav jest. Djeluje na formantne glasove (Zvonko, Stojan, Mirsad i pjevajući glasovi).
+- **Dah** – dah u glasu: 0 je napet, čist glas bez daha, 50 glas kakav jest; iznad 50 u glasu je sve više daha, a 100 je šapat, samo dah bez zvučnosti. Djeluje na formantne glasove (Zvonko, Stojan, Mirsad i pjevajući glasovi).
 - **Hrapavost** – nepravilnosti visine i glasnoće od titraja do titraja (jitter i shimmer): 0 ih nema, 50 je glas kakav jest; iznad 50 svaki drugi titraj glasa dolazi ranije i slabiji je, promuklost koja raste do 100. Djeluje na formantne glasove.
 - **Svjetlina** – boja tona: 0 je tamno i prigušeno, 100 oštro i svijetlo. Djeluje na sve glasove: na formantne kroz izvor glasa, a na snimljene kroz nagib spektra oko 1,5 kHz.
 

@@ -315,8 +315,9 @@ LAPRDUS_API float LAPRDUS_CALL laprdus_get_inflection_level(LaprdusHandle handle
  * a classic formant synthesizer; 50 (the default of each) is the voice as its tables define
  * it. Head size is the length of the vocal tract, for every voice: every
  * formant is multiplied by 0.8 at 0 (a longer tract, a deeper voice) and by
- * 1.25 at 100 (a shorter tract, a higher voice). Breathiness scales the
- * voice's own breath noise (0 none, 100 five times); roughness its jitter
+ * 1.25 at 100 (a shorter tract, a higher voice). Breathiness runs from a
+ * tense, clear voice at 0 to a whisper at 100 (no voicing, only breath
+ * through the vocal tract); roughness scales the jitter
  * and shimmer (0 none, 100 eight times) and, above 50, adds diplophonia,
  * every second glottal period shorter and weaker (formant voices).
  * Brightness is the tone:

@@ -354,7 +354,7 @@ echo "Tekst" | laprdus
 | `-I, --inflection` | Inflection level, 0-100 (default: 50; 0 is a monotone) |
 | `-a, --acceleration` | Acceleration, a speech rate multiplier 0.5-3.0 (default: 1.0) |
 | `--head-size PERCENT` | Voice quality: vocal tract length, 0-100 (default: 50 = the voice as it is) |
-| `--breathiness PERCENT` | Breath noise, 0-100 (default: 50; formant voices) |
+| `--breathiness PERCENT` | Breath, 0-100: 0 a tense voice, 100 a whisper (default: 50; formant voices) |
 | `--roughness PERCENT` | Jitter and shimmer, 0-100 (default: 50; formant voices) |
 | `--brightness PERCENT` | Tone, 0-100 (default: 50; 0 dull, 100 sharp) |
 | `-V, --speech-volume` | Volume (0.0-1.0, default: 1.0) |
@@ -540,7 +540,7 @@ Settings are saved in the user folder `%APPDATA%\Laprdus` and are shared between
 The four voice quality settings follow the voice-parameter model of a classic formant synthesizer: head size, breathiness, roughness and brightness. Under NVDA they are NVDA's own voice settings: the sliders Head size, Breathiness, Roughness and Brightness in NVDA's voice settings, after the volume, and in the synth settings ring (Ctrl+NVDA+arrow keys), each from 0 to 100, where 50 is the voice as it is; NVDA saves them like its other settings. The Laprdus Configurator has the same four behind its "Voice quality..." button, but those values apply to SAPI5 only (stored in `settings.json` as `speech.head_size`, `speech.breathiness`, `speech.roughness` and `speech.brightness`), as its inflection settings do.
 
 - **Head size** – the length of the vocal tract: 0 is a quarter longer (lower formants, a bigger voice), 100 a quarter shorter (higher formants, a smaller voice). Works for every voice.
-- **Breathiness** – the breath noise in the voice: 0 is none, 100 five times as much as in the voice as it is. Works for the formant voices (Zvonko, Stojan, Mirsad and the singing voices).
+- **Breathiness** – the breath in the voice: 0 is a tense, clear voice without breath, 50 the voice as it is; above 50 there is more and more breath in the voice, and 100 is a whisper, only breath and no voicing. Works for the formant voices (Zvonko, Stojan, Mirsad and the singing voices).
 - **Roughness** – the cycle-to-cycle irregularities of pitch and loudness (jitter and shimmer): 0 is none, 50 the voice as it is; above 50 every second cycle of the voice comes sooner and weaker, a rasp that grows up to 100. Works for the formant voices.
 - **Brightness** – the tone: 0 is dark and muffled, 100 sharp and bright. Works for every voice: for the formant voices through the voice source, for the recorded voices through a spectral tilt around 1.5 kHz.
 

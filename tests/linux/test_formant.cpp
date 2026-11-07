@@ -4283,11 +4283,17 @@ TEST_CASE("Voice quality settings shape the voice and 50 leaves it alone", "[for
     REQUIRE(top_share(sharp) > top_share(normal));
     REQUIRE(laprdus_set_brightness(engine.handle, 50) == LAPRDUS_OK);
 
-    // Breathiness and roughness change the voice and nothing else.
+    // Breathiness and roughness change the voice and nothing else (what
+    // breathiness does is measured in "Breathiness runs from a tense voice
+    // to a whisper").
     REQUIRE(laprdus_set_breathiness(engine.handle, 100) == LAPRDUS_OK);
     std::vector<int16_t> breathy = speak(engine.handle, text);
     REQUIRE(breathy.size() == normal.size());
     REQUIRE(breathy != normal);
+    REQUIRE(laprdus_set_breathiness(engine.handle, 0) == LAPRDUS_OK);
+    std::vector<int16_t> tense = speak(engine.handle, text);
+    REQUIRE(tense.size() == normal.size());
+    REQUIRE(tense != normal);
     REQUIRE(laprdus_set_breathiness(engine.handle, 50) == LAPRDUS_OK);
     // Roughness above 50 adds diplophonia (every second period shorter
     // and weaker), so 75 and 100 are different voices, not more of the
@@ -4314,6 +4320,123 @@ TEST_CASE("Voice quality settings shape the voice and 50 leaves it alone", "[for
         REQUIRE(laprdus_set_head_size(engine.handle, 50) == LAPRDUS_OK);
     }
 }
+
+namespace {
+
+// The loudest 2048 samples (93 ms) of the audio.
+std::vector<double> loudest_window(const std::vector<int16_t>& audio) {
+    const size_t window = 2048;
+    size_t best_start = 0;
+    double best_energy = -1.0;
+    for (size_t start = 0; start + window <= audio.size(); start += 256) {
+        const double energy = energy_at(audio, start, window);
+        if (energy > best_energy) {
+            best_energy = energy;
+            best_start = start;
+        }
+    }
+    std::vector<double> x;
+    for (size_t i = best_start; i < best_start + window && i < audio.size(); ++i) x.push_back(audio[i]);
+    return x;
+}
+
+// How periodic the loudest window is: the best normalised autocorrelation
+// at a lag of 2.5-20 ms (1 a steady voice, near 0 noise).
+double periodicity(const std::vector<int16_t>& audio) {
+    std::vector<double> x = loudest_window(audio);
+    double mean = 0.0;
+    for (double v : x) mean += v;
+    mean /= static_cast<double>(x.size());
+    for (double& v : x) v -= mean;
+    double best = 0.0;
+    for (size_t lag = 22050 / 400; lag < 22050 / 50 && lag < x.size(); ++lag) {
+        double sum = 0.0, left = 0.0, right = 0.0;
+        for (size_t i = 0; i + lag < x.size(); ++i) {
+            sum += x[i] * x[i + lag];
+            left += x[i] * x[i];
+            right += x[i + lag] * x[i + lag];
+        }
+        if (left > 0.0 && right > 0.0) best = std::max(best, sum / std::sqrt(left * right));
+    }
+    return best;
+}
+
+// The level of the strongest component within 12 Hz of `freq` in the
+// loudest window (Hann window, Goertzel at 1 Hz steps), in dB.
+double component_db(const std::vector<int16_t>& audio, double freq) {
+    const std::vector<double> x = loudest_window(audio);
+    const double n = static_cast<double>(x.size());
+    double best = 0.0;
+    for (double f = freq - 12.0; f <= freq + 12.0; f += 1.0) {
+        double re = 0.0, im = 0.0;
+        for (size_t i = 0; i < x.size(); ++i) {
+            const double w = 0.5 - 0.5 * std::cos(2.0 * 3.14159265358979 * static_cast<double>(i) / (n - 1.0));
+            const double phase = 2.0 * 3.14159265358979 * f * static_cast<double>(i) / 22050.0;
+            re += w * x[i] * std::cos(phase);
+            im -= w * x[i] * std::sin(phase);
+        }
+        best = std::max(best, re * re + im * im);
+    }
+    return 10.0 * std::log10(best + 1e-12);
+}
+
+} // namespace
+
+TEST_CASE("Breathiness runs from a tense voice to a whisper", "[formant][params][quality]") {
+    // A sustained a at half rate and a flat pitch, as spectrum.py --floor
+    // measures it (docs/formant.md, "Breathiness, from a tense voice to a
+    // whisper"). Measured for Zvonko: periodicity 0.987 at 0, 0.974 at 50,
+    // 0.685 at 75, 0.340 at 100; H1-H2 -1.0 dB at 0, 4.3 at 50; the
+    // whispered a 1 dB under the voiced one. Until 2026-11-07 breathiness
+    // only scaled a breath noise too faint to hear, and 0 and 100 sounded
+    // like 50.
+    for (const char* voice : {"zvonko", "stojan", "mirsad"}) {
+        INFO(voice);
+        Engine engine;
+        REQUIRE(laprdus_set_voice(engine.handle, voice, NO_DATA) == LAPRDUS_OK);
+        REQUIRE(laprdus_set_speed(engine.handle, 0.5f) == LAPRDUS_OK);
+        REQUIRE(laprdus_set_inflection_level(engine.handle, 0.0f) == LAPRDUS_OK);
+        auto at = [&](int breathiness) {
+            REQUIRE(laprdus_set_breathiness(engine.handle, breathiness) == LAPRDUS_OK);
+            return speak(engine.handle, "aaaaaa");
+        };
+        const std::vector<int16_t> tense = at(0);
+        const std::vector<int16_t> normal = at(50);
+        const std::vector<int16_t> breathy = at(75);
+        const std::vector<int16_t> whisper = at(100);
+        REQUIRE(tense.size() == normal.size());
+        REQUIRE(breathy.size() == normal.size());
+        REQUIRE(whisper.size() == normal.size());
+
+        // Voiced at 0, 50 and (less steadily) 75; no voice at all at 100.
+        const double p50 = periodicity(normal);
+        INFO("periodicity 0 " << periodicity(tense) << ", 50 " << p50 << ", 75 "
+             << periodicity(breathy) << ", 100 " << periodicity(whisper));
+        REQUIRE(p50 > 0.9);
+        REQUIRE(periodicity(tense) > 0.9);
+        REQUIRE(periodicity(breathy) < p50 - 0.15);
+        REQUIRE(periodicity(breathy) > 0.5);
+        REQUIRE(periodicity(whisper) < 0.5);
+
+        // The whisper keeps the loudness of the vowel within a few dB.
+        const double level_db = 20.0 * std::log10(rms(whisper) / rms(normal));
+        INFO("whisper re voice " << level_db << " dB");
+        REQUIRE(level_db > -8.0);
+        REQUIRE(level_db < 3.0);
+
+        // Tense: the first harmonic sinks towards the second (a pressed
+        // voice); breathy: it rises above it.
+        const double f0 = pitch_hz(normal);
+        REQUIRE(f0 > 80.0);
+        auto h1_h2 = [&](const std::vector<int16_t>& audio) {
+            return component_db(audio, f0) - component_db(audio, 2.0 * f0);
+        };
+        INFO("H1-H2 0 " << h1_h2(tense) << ", 50 " << h1_h2(normal) << ", 75 " << h1_h2(breathy));
+        REQUIRE(h1_h2(tense) < h1_h2(normal) - 3.0);
+        REQUIRE(h1_h2(breathy) > h1_h2(normal) + 2.0);
+    }
+}
+
 
 TEST_CASE("A clause that opens with a fricative rises from silence", "[formant][quality]") {
     // Until November 2026 the friction track's smoothing reached into the

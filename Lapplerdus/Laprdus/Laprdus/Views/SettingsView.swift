@@ -187,7 +187,7 @@ struct SettingsView: View {
                 range: 0.0...100.0,
                 step: 5,
                 format: { "\(Int($0.rounded()))%" },
-                subtitle: String(localized: "Breath noise of the voice: 0% none, 50% the voice as it is, 100% five times as much (formant voices)"),
+                subtitle: String(localized: "Breath in the voice: 0% a tense, clear voice, 50% the voice as it is, 100% a whisper (formant voices)"),
                 restoreLabel: String(localized: "Restore default breathiness"),
                 restore: { settings.breathiness = SettingsSnapshot.defaultBreathiness }
             )
@@ -200,7 +200,7 @@ struct SettingsView: View {
                 range: 0.0...100.0,
                 step: 5,
                 format: { "\(Int($0.rounded()))%" },
-                subtitle: String(localized: "Jitter and shimmer of the voice: 0% none, 50% the voice as it is, 100% five times as much (formant voices)"),
+                subtitle: String(localized: "Jitter and shimmer of the voice: 0% none, 50% the voice as it is, above 50% a rasp that grows up to 100% (formant voices)"),
                 restoreLabel: String(localized: "Restore default roughness"),
                 restore: { settings.roughness = SettingsSnapshot.defaultRoughness }
             )
