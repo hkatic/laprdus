@@ -1269,6 +1269,35 @@ boost); with 0.944 the vowels rise by 1.1 dB for Josip, 0.2 for Vlado and
 6.2 for Zvonko (1.5, 0.4 and 6.4 before), the paragraph's median 0.3 dB under
 the old boost.
 
+**The vowels** were checked the same way, at the maintainer's request: the
+mean spectrum of the steady part of a sustained a, e, i, o, u (rate 0.5, flat
+pitch) and of the voiced frames of a paragraph, through the 500 Hz high-pass,
+as the 2-5 kHz presence re the 0.5-2 kHz body, against synthesizer A's
+Italian vowels (the reference set of "The reference balance"), synthesizer B
+(Croatian) and voice E (a natural Croatian voice):
+
+| presence, dB | a | e | i | o | u | paragraph |
+|---|---|---|---|---|---|---|
+| Zvonko | -15.1 | -2.8 | 11.7 | -20.2 | -21.0 | -10.6 |
+| Zvonko, boost | -15.9 | -3.4 | 11.1 | -20.8 | -21.4 | -10.7 |
+| Stojan | -16.7 | -3.5 | 6.8 | -20.9 | -22.0 | -11.8 |
+| Mirsad | -15.3 | -3.3 | 11.6 | -20.5 | -21.1 | -10.7 |
+| Josip | -18.0 | -1.2 | 11.6 | -23.1 | -28.8 | -8.1 |
+| Vlado | -21.8 | 4.2 | 10.6 | -29.3 | -29.1 | -9.9 |
+| synthesizer A (it) | -11.1 | 6.0 | 15.2 | -22.9 | -23.4 | -4.7 |
+| synthesizer B (hr) | -12.5 | -4.4 | 15.0 | -9.6 | -8.1 | -7.3 |
+| voice E (hr) | -16.5 | -4.1 | 7.6 | -21.3 | -18.9 | -13.0 |
+
+The formant voices' vowels lie between the references (darker than
+synthesizers A and B, brighter than voice E), and the boost takes 0.1-0.8 dB
+more off; the hiss limiter leaves every voice's vowels alone (Josip's bands
+bit for bit those of the old boost). Josip's recordings carry air above
+6.3 kHz (-18.5 dB re the body in the paragraph, -4 dB in i), which the
+maintainer chose to keep. What the check did find was the plain output of the
+recorded voices clipping at full volume: Vlado's i had -29 dB in 5-6.3 kHz at
+full volume and -66 dB at half volume, the soft knee's distortion; see
+`docs/concatenative.md` for the limiter that replaced the knee.
+
 **Brightness** did nothing for the hiss of the formant voices: it moved their
 source emphasis, which the frication never passes through (Zvonko's s -14.3
 dB re the vowel at 0, -14.9 at 50). The one-pole tilt of the recorded voices

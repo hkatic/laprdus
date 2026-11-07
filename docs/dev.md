@@ -518,7 +518,10 @@ voices -0.7). The hold is longer than a glottal period down
 to 50 Hz, so the gain moves only between syllables and the waveform of a
 syllable stays a scaled copy of the plain one; the tanh soft clipper above
 `VOLUME_BOOST_KNEE` 0.9 is a safety net the ceiling keeps idle, and the
-renderers apply no knee of their own after the boost. In boost mode two more
+renderers apply no knee of their own after the boost (the recorded voices'
+plain output goes through the same limiter at unity gain after the volume,
+its ceiling at their 0.9 knee, since at full volume Vlado and Đedo drove the
+knee into heavy distortion; see `docs/concatenative.md`). In boost mode two more
 things happen, since the listening of 7 November 2026 on a phone at full
 volume: the gain may rise at most `VOLUME_BOOST_MAX_LIFT_DB` (2 dB; 6 for a
 day, which still let the bursts of k, t and p come 4 dB closer to the vowels)

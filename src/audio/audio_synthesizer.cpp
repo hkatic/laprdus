@@ -143,15 +143,23 @@ AudioBuffer AudioSynthesizer::render_utterance(const formant::Utterance& utt) {
     tilt_brightness(wave, fs, m_voice_params.brightness);
 
     // The volume boost raises the level before the volume and holds the
-    // peaks under its ceiling (volume_boost.hpp); to_sample's soft knee is
-    // for the plain output only.
+    // peaks under its ceiling (volume_boost.hpp). The plain output goes
+    // through the same limiter at unity gain after the volume, with its
+    // ceiling at the soft knee: the recordings touch full scale, and at full
+    // volume Vlado and Đedo drove the knee so hard that above 5 kHz half of
+    // Đedo's sound was its distortion (November 2026). The limiter's gain
+    // moves only between syllables, so nothing is waveshaped, and an
+    // utterance that stays under the knee, between the samples too, is bit
+    // for bit what it was (every lower volume included).
     const bool boosted = m_voice_params.volume_boost;
-    if (boosted) boost_volume(wave, fs);
     const float volume = m_voice_params.volume;
+    if (boosted) boost_volume(wave, fs);
+    for (float& x : wave) x *= volume;
+    if (!boosted) boost_volume(wave, fs, 1.0f, LIMIT_KNEE, 0.0f, 0.0f, 0.0f, 0.0f);
     result.sample_rate = fs;
     result.samples.resize(wave.size());
     for (size_t i = 0; i < wave.size(); ++i) {
-        result.samples[i] = to_sample(wave[i] * volume, boosted);
+        result.samples[i] = to_sample(wave[i], boosted);
     }
     return result;
 }

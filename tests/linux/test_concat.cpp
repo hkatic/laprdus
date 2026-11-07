@@ -619,6 +619,28 @@ double vowel_level_db(const std::vector<int16_t>& x) {
     return levels.empty() ? -200.0 : levels[levels.size() / 2];
 }
 
+// What of `full` is not a scaled copy of `half`: the residual after the best
+// gain over every 2 ms (a limiter's gain is constant there, a clipper's
+// waveshaping is not), re `full`, in dB.
+double waveshaping_db(const std::vector<int16_t>& full, const std::vector<int16_t>& half) {
+    const size_t n = std::min(full.size(), half.size()), m = 44;
+    double res = 0.0, total = 0.0;
+    for (size_t s = 0; s + m <= n; s += m) {
+        double xy = 0.0, xx = 0.0;
+        for (size_t i = s; i < s + m; ++i) {
+            xy += double(half[i]) * full[i];
+            xx += double(half[i]) * half[i];
+        }
+        const double g = xx > 0.0 ? xy / xx : 0.0;
+        for (size_t i = s; i < s + m; ++i) {
+            const double r = full[i] - g * half[i];
+            res += r * r;
+            total += double(full[i]) * full[i];
+        }
+    }
+    return 10.0 * std::log10(res / (total + 1e-9) + 1e-15);
+}
+
 } // namespace
 
 TEST_CASE("The volume boost makes the recorded voices louder without clipping", "[concat][volume]") {
@@ -660,6 +682,35 @@ TEST_CASE("The volume boost makes the recorded voices louder without clipping", 
         REQUIRE(rms(half) < rms(boosted) * 0.6);
         REQUIRE(laprdus_set_volume(engine.handle, 1.0f) == LAPRDUS_OK);
     }
+}
+
+TEST_CASE("The recorded voices do not clip at full volume", "[concat][volume]") {
+    // The recordings touch full scale, and at full volume Vlado and Đedo drove
+    // the soft knee of the renderer so hard that above 5 kHz half of Đedo's
+    // sound was its distortion (November 2026): the waveshaping residual of a
+    // paragraph -31 dB for Đedo, -38 for Vlado, -45 for Josip. A limiter at
+    // unity gain now holds the peaks under the knee after the volume
+    // (-51, -55, -55 dB measured; the true peak -0.6 to -0.9 dBTP), and an
+    // utterance at half volume is what it was.
+    const char* dir = data_dir();
+    if (!dir) return;
+    const char* text = "Dobar dan, kako ste? Danas je lijep dan, pa smo otišli u šetnju uz rijeku.";
+    Engine engine;
+    for (const char* voice : {"djedo", "vlado", "josip"}) {
+        INFO(voice);
+        REQUIRE(laprdus_set_voice(engine.handle, voice, dir) == LAPRDUS_OK);
+        REQUIRE(laprdus_set_volume(engine.handle, 1.0f) == LAPRDUS_OK);
+        const std::vector<int16_t> full = speak(engine.handle, text);
+        REQUIRE(laprdus_set_volume(engine.handle, 0.5f) == LAPRDUS_OK);
+        const std::vector<int16_t> half = speak(engine.handle, text);
+        REQUIRE(full.size() == half.size());
+        INFO("waveshaping " << waveshaping_db(full, half) << " dB, true peak "
+             << 20.0 * std::log10(true_peak(full) / 32768.0) << " dBFS");
+        REQUIRE(waveshaping_db(full, half) < -45.0);
+        REQUIRE(true_peak(full) < 32768.0 * std::pow(10.0, -0.2 / 20.0));
+        REQUIRE(peak(full) <= static_cast<int>(32767 * 0.9f) + 1);   // under the knee
+    }
+    REQUIRE(laprdus_set_volume(engine.handle, 1.0f) == LAPRDUS_OK);
 }
 
 TEST_CASE("Recorded voices share surname stress and vowel length", "[concat][text]") {

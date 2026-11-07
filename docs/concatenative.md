@@ -173,8 +173,17 @@ method of diphone synthesizers and of Praat's pitch manipulation:
   in whose whole window lies clear of the faded ends (one of the same kind
   if there is one within four marks), and only when there is none shortens
   the window's halves to what the recording holds.
-- The sum is limited softly above 90% of full scale (the recordings are
-  clipped at the peaks already) and scaled by the volume.
+- The sum is scaled by the volume and then held under 90% of full scale by
+  the peak limiter of `volume_boost.hpp` at unity gain (its gain moves only
+  between syllables, so nothing is waveshaped; the peaks between the samples
+  are counted too). Until November 2026 a soft knee bent everything above 90%:
+  the recordings touch full scale, and at full volume Vlado and Đedo drove the
+  knee so hard that above 5 kHz half of Đedo's sound was its distortion (the
+  waveshaping residual of a paragraph, after the best gain per 2 ms, -31 dB
+  for Đedo, -38 for Vlado, -45 for Josip; now -51, -55, -55, the true peak
+  -0.6 to -0.9 dBTP, the vowels 0.1-0.5 dB quieter, Đedo's 1.2). An
+  utterance that stays under the knee, at a lower volume for one, is what it
+  was. In boost mode the boost's own limiter does the work instead.
 
 Everything is deterministic: the same text and settings give the same
 samples (`tests/linux/test_concat.cpp`).
