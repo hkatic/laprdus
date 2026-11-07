@@ -3,6 +3,7 @@
 
 #include "formant_synthesizer.hpp"
 #include "formant_intonation.hpp"
+#include "../audio/brightness_tilt.hpp"
 #include "../audio/volume_boost.hpp"
 #include <algorithm>
 #include <cmath>
@@ -2123,6 +2124,9 @@ VoiceQuality quality_for(const FormantVoice& voice, const VoiceParams& params) {
     quality.jitter *= rough;
     quality.shimmer *= rough;
     quality.roughness = diplophonia;
+    // Below 50 the slow pitch drift goes too, so 0 is a perfectly steady
+    // voice (the jitter and shimmer alone were too small to hear go).
+    if (params.roughness < VOICE_QUALITY_DEFAULT) quality.flutter *= voice_quality_scale(params.roughness);
     // Breathiness: a whisper above 50, a tense voice below (klatt_synth.hpp).
     quality.whisper = breathiness_whisper(params.breathiness);
     quality.tension = breathiness_tension(params.breathiness);
@@ -2224,6 +2228,11 @@ void FormantSynthesizer::render_utterance(const Utterance& utt, const VoiceParam
     m_synth.set_quality(quality_for(voice, params));
     m_synth.reset();
     m_synth.render(frames.data(), frames.size(), pcm);
+
+    // Brightness reaches the whole output, the frication and the bursts too
+    // (brightness_tilt.hpp; the source emphasis of quality_for() shapes the
+    // voicing alone). 50 leaves it out.
+    tilt_brightness(pcm, static_cast<uint32_t>(SAMPLE_RATE), params.brightness);
 
     // The volume boost raises the level before the volume and holds the
     // peaks under its ceiling (volume_boost.hpp); the soft knee below is for

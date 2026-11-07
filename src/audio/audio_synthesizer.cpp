@@ -2,6 +2,7 @@
 // audio_synthesizer.cpp - Synthesis with the recorded voices (see the header)
 
 #include "audio_synthesizer.hpp"
+#include "brightness_tilt.hpp"
 #include "concat_prosody.hpp"
 #include "psola.hpp"
 #include "volume_boost.hpp"
@@ -86,26 +87,8 @@ void AudioSynthesizer::ensure_bank() {
     m_natural_f0 = m_bank.base_f0() / warp;
 }
 
-namespace {
-
-// Brightness for the recorded voices: a tilt around 1.5 kHz. The signal is
-// split by a one-pole low-pass into its body and its top, and the top is
-// scaled: 50 leaves the recording as it is, 0 folds the top away (the
-// setting at which a phone's speaker at full volume stops biting), 100
-// doubles it (+6 dB).
-void tilt_brightness(std::vector<float>& wave, uint32_t fs, int brightness) {
-    const int v = std::clamp(brightness, VOICE_QUALITY_MIN, VOICE_QUALITY_MAX);
-    if (v == VOICE_QUALITY_DEFAULT || wave.empty()) return;
-    const float top_gain = 1.0f + static_cast<float>(v - 50) / 50.0f;   // 0 .. 2
-    const float coef = std::exp(-2.0f * 3.14159265f * 1500.0f / static_cast<float>(fs));
-    float low = 0.0f;
-    for (float& x : wave) {
-        low = coef * low + (1.0f - coef) * x;
-        x = low + top_gain * (x - low);
-    }
-}
-
-} // namespace
+// Brightness: tilt_brightness() in brightness_tilt.hpp, shared with the
+// formant voices.
 
 // =============================================================================
 // Synthesis

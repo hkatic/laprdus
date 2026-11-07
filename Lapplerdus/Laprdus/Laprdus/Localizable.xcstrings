@@ -2650,24 +2650,24 @@
         }
       }
     },
-    "Jitter and shimmer of the voice: 0% none, 50% the voice as it is, above 50% a rasp that grows up to 100% (formant voices)" : {
+    "Roughness of the voice: 0% perfectly steady, 50% the voice as it is, above 50% a rasp that grows up to 100% (formant voices)" : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hrapavost glasa: 0% glatko, 50% glas kakav jest, iznad 50% promuklost koja raste do 100% (formantni glasovi)"
+            "value" : "Hrapavost glasa: 0% potpuno miran glas, 50% glas kakav jest, iznad 50% promuklost koja raste do 100% (formantni glasovi)"
           }
         },
         "sr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hrapavost glasa: 0% glatko, 50% glas kakav jeste, iznad 50% promuklost koja raste do 100% (formantni glasovi)"
+            "value" : "Hrapavost glasa: 0% potpuno miran glas, 50% glas kakav jeste, iznad 50% promuklost koja raste do 100% (formantni glasovi)"
           }
         },
         "sl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hrapavost glasu: 0 % gladko, 50 % glas, kakršen je, nad 50 % hripavost, ki narašča do 100 % (formantni glasovi)"
+            "value" : "Hrapavost glasu: 0 % povsem miren glas, 50 % glas, kakršen je, nad 50 % hripavost, ki narašča do 100 % (formantni glasovi)"
           }
         }
       }
@@ -2716,24 +2716,24 @@
         }
       }
     },
-    "Tone of the voice: 0% dull, 50% the voice as it is, 100% sharp" : {
+    "Tone of the voice: 0% dull, 50% the voice as it is, 100% sharp; lower values also soften sounds such as s and š" : {
       "localizations" : {
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Boja tona: 0% tamno, 50% glas kakav jest, 100% oštro"
+            "value" : "Boja tona: 0% tamno, 50% glas kakav jest, 100% oštro; niže vrijednosti ublažavaju i glasove poput s i š"
           }
         },
         "sr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Boja tona: 0% tamno, 50% glas kakav jeste, 100% oštro"
+            "value" : "Boja tona: 0% tamno, 50% glas kakav jeste, 100% oštro; niže vrednosti ublažavaju i glasove kao što su s i š"
           }
         },
         "sl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Barva tona: 0 % temno, 50 % glas, kakršen je, 100 % ostro"
+            "value" : "Barva tona: 0 % temno, 50 % glas, kakršen je, 100 % ostro; nižje vrednosti omilijo tudi glasove, kot sta s in š"
           }
         }
       }

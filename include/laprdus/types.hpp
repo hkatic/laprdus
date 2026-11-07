@@ -327,7 +327,14 @@ inline float spelling_rate_factor(int spelling_speed) {
 // the ceiling keeps idle. (Until November 2026 the ceiling was 1.4, the knee
 // 0.6 and the release 30 ms: 3 dB louder, at 10 % distortion.)
 constexpr float VOLUME_BOOST_GAIN = 5.0f;
-constexpr float VOLUME_BOOST_CEILING = 0.97f;
+// The ceiling is on the true peak (the limiter also looks between the
+// samples): the phone resamples 22.05 to 48 kHz, and Josip's boosted
+// speech, held at 0.97 sample by sample, reached +1.4 dBFS between them,
+// which the phone's audio path clipped (November 2026). 0.944 keeps every
+// voice under full scale between the samples (-0.35 dBTP for Josip, -0.7
+// for the formant voices); -1 dBTP (0.87) cost the recorded voices,
+// whose recordings already touch full scale, all of the boost's loudness.
+constexpr float VOLUME_BOOST_CEILING = 0.944f;
 constexpr float VOLUME_BOOST_KNEE = 0.9f;
 // The limiter lifts the quiet stretches between the syllables, consonants
 // first, by up to the whole gain while it holds the vowels down, so the
@@ -340,6 +347,18 @@ constexpr float VOLUME_BOOST_KNEE = 0.9f;
 constexpr float VOLUME_BOOST_MAX_LIFT_DB = 2.0f;   // 6 for a day in November 2026: the bursts still came 4 dB closer to the vowels
 constexpr float VOLUME_BOOST_TREBLE_DB = -3.0f;
 constexpr float VOLUME_BOOST_TREBLE_HZ = 4000.0f;
+// The hiss limiter of boost mode (volume_boost.hpp): while the band above
+// VOLUME_BOOST_HISS_HZ dominates the sound (a sibilant, not a vowel), the
+// part above VOLUME_BOOST_HISS_SPLIT_HZ (a fourth-order split, so that the
+// 2-5 kHz of š, č and ć can come down too) is held VOLUME_BOOST_HISS_DB under
+// the loudest nearby vowel, cut by at most VOLUME_BOOST_HISS_MAX_CUT_DB. A listener heard the hissing
+// consonants pierce at full phone volume with every voice (November 2026);
+// Zvonko's s and c stood 13 dB under the vowel through a phone speaker's
+// 500 Hz high-pass, Josip's s, č and ć level with it.
+constexpr float VOLUME_BOOST_HISS_DB = -22.0f;
+constexpr float VOLUME_BOOST_HISS_HZ = 3000.0f;
+constexpr float VOLUME_BOOST_HISS_SPLIT_HZ = 2000.0f;
+constexpr float VOLUME_BOOST_HISS_MAX_CUT_DB = 24.0f;
 
 // Voice quality (VoiceParams::head_size, breathiness, roughness, brightness):
 // four settings of 0-100 after the voice-parameter model of a classic formant synthesizer

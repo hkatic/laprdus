@@ -355,8 +355,8 @@ echo "Tekst" | laprdus
 | `-a, --acceleration` | Ubrzanje, množitelj brzine 0.5-3.0 (zadano: 1.0) |
 | `--head-size PERCENT` | Kvaliteta glasa: duljina govornog trakta, 0-100 (zadano: 50 = glas kakav jest) |
 | `--breathiness PERCENT` | Dah, 0-100: 0 napet glas, 100 šapat (zadano: 50; formantni glasovi) |
-| `--roughness PERCENT` | Hrapavost (jitter i shimmer), 0-100 (zadano: 50; formantni glasovi) |
-| `--brightness PERCENT` | Boja tona, 0-100 (zadano: 50; 0 tamno, 100 oštro) |
+| `--roughness PERCENT` | Hrapavost, 0-100: 0 potpuno miran glas, iznad 50 promuklost (zadano: 50; formantni glasovi) |
+| `--brightness PERCENT` | Boja tona, 0-100 (zadano: 50; 0 tamno, s blažim s i š, 100 oštro) |
 | `-V, --speech-volume` | Glasnoća (0.0-1.0, zadano: 1.0) |
 | `-B, --volume-boost` | Pojačanje glasnoće: glasniji govor kroz ograničivač vrhova, za bučna mjesta |
 | `-d, --numbers-digits` | Čitaj brojeve znamenka po znamenka |
@@ -541,8 +541,8 @@ Postavke se spremaju u korisničkoj mapi `%APPDATA%\Laprdus` i dijele se između
 
 - **Veličina glave** – duljina govornog trakta: 0 je četvrtinu dulji (niži formanti, krupniji glas), 100 četvrtinu kraći (viši formanti, sitniji glas). Djeluje na sve glasove.
 - **Dah** – dah u glasu: 0 je napet, čist glas bez daha, 50 glas kakav jest; iznad 50 u glasu je sve više daha, a 100 je šapat, samo dah bez zvučnosti. Djeluje na formantne glasove (Zvonko, Stojan, Mirsad i pjevajući glasovi).
-- **Hrapavost** – nepravilnosti visine i glasnoće od titraja do titraja (jitter i shimmer): 0 ih nema, 50 je glas kakav jest; iznad 50 svaki drugi titraj glasa dolazi ranije i slabiji je, promuklost koja raste do 100. Djeluje na formantne glasove.
-- **Svjetlina** – boja tona: 0 je tamno i prigušeno, 100 oštro i svijetlo. Djeluje na sve glasove: na formantne kroz izvor glasa, a na snimljene kroz nagib spektra oko 1,5 kHz.
+- **Hrapavost** – nepravilnosti visine i glasnoće od titraja do titraja (jitter i shimmer): 0 ih nema, a ni visina ne koleba (potpuno miran glas), 50 je glas kakav jest; iznad 50 svaki drugi titraj glasa dolazi ranije i slabiji je, promuklost koja raste do 100. Djeluje na formantne glasove.
+- **Svjetlina** – boja tona: 0 je tamno i prigušeno, 100 oštro i svijetlo. Djeluje na sve glasove kroz nagib cijelog zvuka oko 1,5 kHz (na formantne i kroz izvor glasa), pa niže vrijednosti ublažavaju i glasove poput s i š.
 
 ---
 

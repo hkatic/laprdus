@@ -4166,6 +4166,83 @@ TEST_CASE("Acceleration multiplies the speech rate", "[formant][params]") {
     REQUIRE(laprdus_get_acceleration(engine.handle) == Catch::Approx(3.0f));
 }
 
+namespace {
+
+// Hiss and true peak (the hiss limiter of boost mode and the brightness tilt,
+// November 2026).
+
+// One second-order Butterworth section at 3 kHz (bilinear, as the Audio EQ
+// Cookbook gives it), high- or low-pass.
+std::vector<double> butterworth_3k(const std::vector<int16_t>& x, bool highpass) {
+    const double w0 = 2.0 * 3.14159265358979 * 3000.0 / 22050.0;
+    const double cw = std::cos(w0), alpha = std::sin(w0) / 2.0 * std::sqrt(2.0), a0 = 1.0 + alpha;
+    const double b0 = (highpass ? (1.0 + cw) : (1.0 - cw)) / 2.0 / a0;
+    const double b1 = (highpass ? -(1.0 + cw) : (1.0 - cw)) / a0;
+    const double a1 = -2.0 * cw / a0, a2 = (1.0 - alpha) / a0;
+    std::vector<double> y(x.size());
+    double x1 = 0.0, x2 = 0.0, y1 = 0.0, y2 = 0.0;
+    for (size_t i = 0; i < x.size(); ++i) {
+        const double v = b0 * x[i] + b1 * x1 + b0 * x2 - a1 * y1 - a2 * y2;
+        x2 = x1; x1 = x[i]; y2 = y1; y1 = v;
+        y[i] = v;
+    }
+    return y;
+}
+
+// The hiss of two renderings of the same item, measured on the 12 ms frames
+// where the first one's band above 3 kHz outweighs the rest (a sibilant, not
+// a vowel's own top): the loudest such frame's band above 3 kHz, each re its
+// own loudest frame, in dB.
+std::pair<double, double> hiss_pair_db(const std::vector<int16_t>& plain, const std::vector<int16_t>& other) {
+    const std::vector<double> ph = butterworth_3k(plain, true), pl = butterworth_3k(plain, false);
+    const std::vector<double> oh = butterworth_3k(other, true);
+    const size_t n = 265, hop = 88, len = std::min(plain.size(), other.size());
+    double top_p = 1e-9, top_o = 1e-9, hiss_p = 1e-9, hiss_o = 1e-9;
+    for (size_t s = 0; s + n <= len; s += hop) {
+        double ep = 0.0, eo = 0.0, hp = 0.0, lp = 0.0, ho = 0.0;
+        for (size_t i = s; i < s + n; ++i) {
+            ep += double(plain[i]) * plain[i];
+            eo += double(other[i]) * other[i];
+            hp += ph[i] * ph[i];
+            lp += pl[i] * pl[i];
+            ho += oh[i] * oh[i];
+        }
+        top_p = std::max(top_p, ep);
+        top_o = std::max(top_o, eo);
+        if (hp > lp) {
+            hiss_p = std::max(hiss_p, hp);
+            hiss_o = std::max(hiss_o, ho);
+        }
+    }
+    return {10.0 * std::log10(hiss_p / top_p), 10.0 * std::log10(hiss_o / top_o)};
+}
+
+// The true peak: the largest magnitude of the signal 8 times oversampled by a
+// 64-tap Hann-windowed sinc (what a phone's resampler reconstructs).
+double true_peak(const std::vector<int16_t>& x) {
+    const int taps = 32;
+    double best = 0.0;
+    for (int16_t v : x) best = std::max(best, std::abs(double(v)));
+    for (int f = 1; f < 8; ++f) {
+        const double frac = f / 8.0;
+        double w[2 * taps];
+        for (int k = -taps + 1; k <= taps; ++k) {
+            const double t = k - frac;
+            const double sinc = std::abs(t) < 1e-12 ? 1.0 : std::sin(3.14159265358979 * t) / (3.14159265358979 * t);
+            const double hann = 0.5 + 0.5 * std::cos(3.14159265358979 * t / taps);
+            w[k + taps - 1] = sinc * hann;
+        }
+        for (size_t i = taps; i + taps < x.size(); ++i) {
+            double v = 0.0;
+            for (int k = -taps + 1; k <= taps; ++k) v += w[k + taps - 1] * x[i + static_cast<size_t>(k)];
+            best = std::max(best, std::abs(v));
+        }
+    }
+    return best;
+}
+
+} // namespace
+
 TEST_CASE("The volume boost makes the speech louder without clipping", "[formant][params][volume]") {
     // The formant voices peak near full scale with a median level near
     // -20 dBFS; the boost drives them through a peak limiter whose gain
@@ -4217,6 +4294,30 @@ TEST_CASE("The volume boost makes the speech louder without clipping", "[formant
         std::vector<int16_t> loud = speak(engine.handle, text);
         REQUIRE(rms(loud) > rms(quiet) * 1.2);
         REQUIRE(peak(loud) < 32000);
+        REQUIRE(laprdus_set_volume_boost(engine.handle, 0) == LAPRDUS_OK);
+    }
+
+    // The hissing consonants are held under the vowels in boost mode
+    // (VOLUME_BOOST_HISS_DB; a listener heard them pierce at full phone
+    // volume), and nothing goes over full scale between the samples, which a
+    // phone's resampler would clip. Measured: s, c and ć 4-8 dB further
+    // under the vowel than without the boost; the true peak -0.7 dBTP.
+    for (const char* voice : {"zvonko", "stojan", "mirsad"}) {
+        INFO(voice);
+        REQUIRE(laprdus_set_voice(engine.handle, voice, NO_DATA) == LAPRDUS_OK);
+        for (const char* item : {"asa", "aca", u8"aća"}) {
+            INFO(item);
+            REQUIRE(laprdus_set_volume_boost(engine.handle, 0) == LAPRDUS_OK);
+            const std::vector<int16_t> quiet = speak(engine.handle, item);
+            REQUIRE(laprdus_set_volume_boost(engine.handle, 1) == LAPRDUS_OK);
+            const std::vector<int16_t> loud = speak(engine.handle, item);
+            const auto hiss = hiss_pair_db(quiet, loud);
+            INFO("hiss re the vowel: plain " << hiss.first << " dB, boosted " << hiss.second << " dB");
+            REQUIRE(hiss.second < hiss.first - 3.0);
+        }
+        const std::vector<int16_t> sentence = speak(engine.handle, text);
+        INFO("true peak " << 20.0 * std::log10(true_peak(sentence) / 32768.0) << " dBFS");
+        REQUIRE(true_peak(sentence) < 32768.0 * std::pow(10.0, -0.2 / 20.0));
         REQUIRE(laprdus_set_volume_boost(engine.handle, 0) == LAPRDUS_OK);
     }
 }
@@ -4281,6 +4382,19 @@ TEST_CASE("Voice quality settings shape the voice and 50 leaves it alone", "[for
     REQUIRE(dull.size() == normal.size());
     REQUIRE(top_share(dull) < top_share(normal));
     REQUIRE(top_share(sharp) > top_share(normal));
+    // Brightness reaches the hiss too (brightness_tilt.hpp; until November
+    // 2026 it shaped the voicing alone and 0 left the s as sharp as before).
+    // Measured: the s of asa 8 dB further under the vowel at 0 than at 50; at
+    // 100 the vowels and the hiss grow sharper together (top_share above).
+    {
+        REQUIRE(laprdus_set_brightness(engine.handle, 50) == LAPRDUS_OK);
+        const std::vector<int16_t> s50 = speak(engine.handle, "asa");
+        REQUIRE(laprdus_set_brightness(engine.handle, 0) == LAPRDUS_OK);
+        const std::vector<int16_t> s0 = speak(engine.handle, "asa");
+        const auto dull_s = hiss_pair_db(s50, s0);
+        INFO("hiss of asa re the vowel: 0 " << dull_s.second << ", 50 " << dull_s.first);
+        REQUIRE(dull_s.second < dull_s.first - 5.0);
+    }
     REQUIRE(laprdus_set_brightness(engine.handle, 50) == LAPRDUS_OK);
 
     // Breathiness and roughness change the voice and nothing else (what
@@ -4381,6 +4495,47 @@ double component_db(const std::vector<int16_t>& audio, double freq) {
 }
 
 } // namespace
+
+TEST_CASE("Roughness is a rasp above 50 and a steady voice at 0", "[formant][params][quality]") {
+    // A sustained a at half rate and a flat pitch. Above 50 diplophonia puts
+    // a series at odd multiples of F0/2 between the harmonics; it is
+    // measured in 0.5-3 kHz, which a phone's speaker plays. Measured on
+    // Zvonko's paragraph (November 2026): the series 9 dB under the
+    // harmonics at 50, 0.7 dB under them at 75 and 0.4 dB over them at 100
+    // (3.2 and 1.6 dB under with the weaker diplophonia before). At 0 the
+    // slow drift of the pitch goes too: a perfectly steady voice.
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_speed(engine.handle, 0.5f) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_inflection_level(engine.handle, 0.0f) == LAPRDUS_OK);
+    auto at = [&](int roughness) {
+        REQUIRE(laprdus_set_roughness(engine.handle, roughness) == LAPRDUS_OK);
+        return speak(engine.handle, "aaaaaa");
+    };
+    const std::vector<int16_t> steady = at(0);
+    const std::vector<int16_t> normal = at(50);
+    const std::vector<int16_t> rasp = at(75);
+    const std::vector<int16_t> hoarse = at(100);
+    REQUIRE(steady.size() == normal.size());
+    REQUIRE(steady != normal);
+    const double f0 = pitch_hz(normal);
+    REQUIRE(f0 > 80.0);
+    auto subharmonics_db = [&](const std::vector<int16_t>& audio) {
+        double harm = 0.0, sub = 0.0;
+        for (int k = 1; k * f0 <= 3000.0; ++k) {
+            if (k * f0 >= 500.0) harm += std::pow(10.0, component_db(audio, k * f0) / 10.0);
+            if ((k + 0.5) * f0 >= 500.0 && (k + 0.5) * f0 <= 3000.0) {
+                sub += std::pow(10.0, component_db(audio, (k + 0.5) * f0) / 10.0);
+            }
+        }
+        return 10.0 * std::log10(sub / harm);
+    };
+    const double s50 = subharmonics_db(normal), s75 = subharmonics_db(rasp), s100 = subharmonics_db(hoarse);
+    INFO("F0/2 series re the harmonics in 0.5-3 kHz: 50 " << s50 << ", 75 " << s75 << ", 100 " << s100);
+    REQUIRE(s75 > s50 + 6.0);
+    REQUIRE(s100 > s50 + 6.0);
+    REQUIRE(periodicity(steady) >= periodicity(normal));
+}
 
 TEST_CASE("Breathiness runs from a tense voice to a whisper", "[formant][params][quality]") {
     // A sustained a at half rate and a flat pitch, as spectrum.py --floor

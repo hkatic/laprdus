@@ -200,7 +200,7 @@ struct SettingsView: View {
                 range: 0.0...100.0,
                 step: 5,
                 format: { "\(Int($0.rounded()))%" },
-                subtitle: String(localized: "Jitter and shimmer of the voice: 0% none, 50% the voice as it is, above 50% a rasp that grows up to 100% (formant voices)"),
+                subtitle: String(localized: "Roughness of the voice: 0% perfectly steady, 50% the voice as it is, above 50% a rasp that grows up to 100% (formant voices)"),
                 restoreLabel: String(localized: "Restore default roughness"),
                 restore: { settings.roughness = SettingsSnapshot.defaultRoughness }
             )
@@ -213,7 +213,7 @@ struct SettingsView: View {
                 range: 0.0...100.0,
                 step: 5,
                 format: { "\(Int($0.rounded()))%" },
-                subtitle: String(localized: "Tone of the voice: 0% dull, 50% the voice as it is, 100% sharp"),
+                subtitle: String(localized: "Tone of the voice: 0% dull, 50% the voice as it is, 100% sharp; lower values also soften sounds such as s and š"),
                 restoreLabel: String(localized: "Restore default brightness"),
                 restore: { settings.brightness = SettingsSnapshot.defaultBrightness }
             )

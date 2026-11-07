@@ -227,8 +227,8 @@ std::string generate_settings_json(const UserSettings& settings) {
     json << "        \"speech.acceleration\": \"Rate multiplier from 0.5 to 3.0, default 1.0 (2.0 doubles the rate the rate slider reaches)\",\n";
     json << "        \"speech.head_size\": \"Voice quality: length of the vocal tract, 0 (a quarter longer, lower formants) to 100 (a quarter shorter, higher formants), default 50 = the voice as it is\",\n";
     json << "        \"speech.breathiness\": \"Voice quality: breath in the formant voices, 0 (a tense, clear voice without breath) to 100 (a whisper), default 50 = the voice as it is\",\n";
-    json << "        \"speech.roughness\": \"Voice quality: jitter and shimmer of the formant voices, 0 (none) to 100 (eight times the voice's own), above 50 also a rasp (every second cycle shorter and weaker), default 50\",\n";
-    json << "        \"speech.brightness\": \"Voice quality: tone, 0 (dull) to 100 (sharp), default 50 = the voice as it is\",\n";
+    json << "        \"speech.roughness\": \"Voice quality: jitter and shimmer of the formant voices, 0 (none, and no slow drift of the pitch: a perfectly steady voice) to 100 (eight times the voice's own), above 50 also a rasp (every second cycle shorter and weaker), default 50\",\n";
+    json << "        \"speech.brightness\": \"Voice quality: tone of the whole sound, 0 (dull, with softer s and sh) to 100 (sharp), default 50 = the voice as it is\",\n";
     json << "        \"speech.emoji\": \"Convert emoji to spoken text descriptions (true/false)\",\n";
     json << "        \"numbers.mode\": \"Number reading: 'words' (twenty-three) or 'digits' (two-three)\",\n";
     json << "        \"pauses.sentence\": \"Pause after sentences (. ! ?) in milliseconds, 0-2000\",\n";

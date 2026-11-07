@@ -320,10 +320,10 @@ LAPRDUS_API float LAPRDUS_CALL laprdus_get_inflection_level(LaprdusHandle handle
  * through the vocal tract); roughness scales the jitter
  * and shimmer (0 none, 100 eight times) and, above 50, adds diplophonia,
  * every second glottal period shorter and weaker (formant voices).
- * Brightness is the tone:
- * the source emphasis of the formant voices (0 the bare pulse, 100 the
- * sharpest) and a tilt around 1.5 kHz for the recorded voices (0 the top
- * folded away, 100 doubled). Out-of-range values are clamped.
+ * Brightness is the tone, for every voice: a tilt of the whole output
+ * around 1.5 kHz (0 the top folded away, which also softens s and š, 100
+ * doubled), and for the formant voices the source emphasis too (0 the bare
+ * pulse, 100 the sharpest). Out-of-range values are clamped.
  * @param handle Engine handle.
  * @param value Setting (0 - 100, default 50).
  * @return LAPRDUS_OK on success, error code on failure.

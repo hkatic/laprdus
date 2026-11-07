@@ -519,12 +519,115 @@ TEST_CASE("Volume scales the output", "[concat][volume]") {
     REQUIRE(rms(quiet) < rms(loud) * 0.4);
 }
 
+namespace {
+
+// Hiss and true peak (the hiss limiter of boost mode and the brightness tilt,
+// November 2026).
+
+// One second-order Butterworth section at 3 kHz (bilinear, as the Audio EQ
+// Cookbook gives it), high- or low-pass.
+std::vector<double> butterworth_3k(const std::vector<int16_t>& x, bool highpass) {
+    const double w0 = 2.0 * 3.14159265358979 * 3000.0 / 22050.0;
+    const double cw = std::cos(w0), alpha = std::sin(w0) / 2.0 * std::sqrt(2.0), a0 = 1.0 + alpha;
+    const double b0 = (highpass ? (1.0 + cw) : (1.0 - cw)) / 2.0 / a0;
+    const double b1 = (highpass ? -(1.0 + cw) : (1.0 - cw)) / a0;
+    const double a1 = -2.0 * cw / a0, a2 = (1.0 - alpha) / a0;
+    std::vector<double> y(x.size());
+    double x1 = 0.0, x2 = 0.0, y1 = 0.0, y2 = 0.0;
+    for (size_t i = 0; i < x.size(); ++i) {
+        const double v = b0 * x[i] + b1 * x1 + b0 * x2 - a1 * y1 - a2 * y2;
+        x2 = x1; x1 = x[i]; y2 = y1; y1 = v;
+        y[i] = v;
+    }
+    return y;
+}
+
+// The hiss of two renderings of the same item, measured on the 12 ms frames
+// where the first one's band above 3 kHz outweighs the rest (a sibilant, not
+// a vowel's own top): the loudest such frame's band above 3 kHz, each re its
+// own loudest frame, in dB.
+std::pair<double, double> hiss_pair_db(const std::vector<int16_t>& plain, const std::vector<int16_t>& other) {
+    const std::vector<double> ph = butterworth_3k(plain, true), pl = butterworth_3k(plain, false);
+    const std::vector<double> oh = butterworth_3k(other, true);
+    const size_t n = 265, hop = 88, len = std::min(plain.size(), other.size());
+    double top_p = 1e-9, top_o = 1e-9, hiss_p = 1e-9, hiss_o = 1e-9;
+    for (size_t s = 0; s + n <= len; s += hop) {
+        double ep = 0.0, eo = 0.0, hp = 0.0, lp = 0.0, ho = 0.0;
+        for (size_t i = s; i < s + n; ++i) {
+            ep += double(plain[i]) * plain[i];
+            eo += double(other[i]) * other[i];
+            hp += ph[i] * ph[i];
+            lp += pl[i] * pl[i];
+            ho += oh[i] * oh[i];
+        }
+        top_p = std::max(top_p, ep);
+        top_o = std::max(top_o, eo);
+        if (hp > lp) {
+            hiss_p = std::max(hiss_p, hp);
+            hiss_o = std::max(hiss_o, ho);
+        }
+    }
+    return {10.0 * std::log10(hiss_p / top_p), 10.0 * std::log10(hiss_o / top_o)};
+}
+
+// The true peak: the largest magnitude of the signal 8 times oversampled by a
+// 64-tap Hann-windowed sinc (what a phone's resampler reconstructs).
+double true_peak(const std::vector<int16_t>& x) {
+    const int taps = 32;
+    double best = 0.0;
+    for (int16_t v : x) best = std::max(best, std::abs(double(v)));
+    for (int f = 1; f < 8; ++f) {
+        const double frac = f / 8.0;
+        double w[2 * taps];
+        for (int k = -taps + 1; k <= taps; ++k) {
+            const double t = k - frac;
+            const double sinc = std::abs(t) < 1e-12 ? 1.0 : std::sin(3.14159265358979 * t) / (3.14159265358979 * t);
+            const double hann = 0.5 + 0.5 * std::cos(3.14159265358979 * t / taps);
+            w[k + taps - 1] = sinc * hann;
+        }
+        for (size_t i = taps; i + taps < x.size(); ++i) {
+            double v = 0.0;
+            for (int k = -taps + 1; k <= taps; ++k) v += w[k + taps - 1] * x[i + static_cast<size_t>(k)];
+            best = std::max(best, std::abs(v));
+        }
+    }
+    return best;
+}
+
+// The median level of the vowel frames (12 ms, within 30 dB of the loudest,
+// their band under 3 kHz ten times the band above it), in dB.
+double vowel_level_db(const std::vector<int16_t>& x) {
+    const std::vector<double> h = butterworth_3k(x, true), l = butterworth_3k(x, false);
+    const size_t n = 265;
+    double top = 0.0;
+    for (size_t s = 0; s + n <= x.size(); s += n) {
+        double e = 0.0;
+        for (size_t i = s; i < s + n; ++i) e += double(x[i]) * x[i];
+        top = std::max(top, e);
+    }
+    std::vector<double> levels;
+    for (size_t s = 0; s + n <= x.size(); s += n) {
+        double e = 0.0, eh = 0.0, el = 0.0;
+        for (size_t i = s; i < s + n; ++i) {
+            e += double(x[i]) * x[i];
+            eh += h[i] * h[i];
+            el += l[i] * l[i];
+        }
+        if (e > top * 1e-3 && el > 10.0 * eh) levels.push_back(10.0 * std::log10(e / n + 1e-9));
+    }
+    std::sort(levels.begin(), levels.end());
+    return levels.empty() ? -200.0 : levels[levels.size() / 2];
+}
+
+} // namespace
+
 TEST_CASE("The volume boost makes the recorded voices louder without clipping", "[concat][volume]") {
     // The recordings already touch full scale and are compressed, so a
-    // limiter that does not clip gains little here: +1.3 dB for Josip and
-    // +2.1 dB for Baba (the boost of 2.0 gave them +5 dB by rounding the
-    // peaks off, at 10 % distortion). The level still rises and nothing
-    // clips.
+    // limiter that does not clip gains little here: the vowels +1.1 dB for
+    // Josip (the boost of 2.0 gave +5 dB by rounding the peaks off, at 10 %
+    // distortion). Since November 2026 the hiss limiter takes his s, as loud
+    // as his vowels, 18 dB down, so the overall level is no measure of the
+    // boost any more: the vowels still rise and nothing clips.
     const char* dir = data_dir();
     if (!dir) return;
     Engine engine;
@@ -535,9 +638,22 @@ TEST_CASE("The volume boost makes the recorded voices louder without clipping", 
         REQUIRE(laprdus_set_volume_boost(engine.handle, 1) == LAPRDUS_OK);
         std::vector<int16_t> boosted = speak(engine.handle, "Pozivam Marka na mobitel.");
         REQUIRE(boosted.size() == plain.size());
-        REQUIRE(rms(boosted) > rms(plain) * 1.10);
+        INFO("vowels: plain " << vowel_level_db(plain) << " dB, boosted " << vowel_level_db(boosted) << " dB");
+        REQUIRE(vowel_level_db(boosted) > vowel_level_db(plain) + 0.5);
         REQUIRE(peak(boosted) <= 32000);
         REQUIRE(speak(engine.handle, "Pozivam Marka na mobitel.") == boosted);
+        // Nothing over full scale between the samples (Josip's boosted speech
+        // reached +1.4 dBFS there, November 2026), and the recorded s, whose
+        // hiss band is as loud as the vowel, comes down by about 18 dB.
+        INFO("true peak " << 20.0 * std::log10(true_peak(boosted) / 32768.0) << " dBFS");
+        REQUIRE(true_peak(boosted) < 32768.0 * std::pow(10.0, -0.2 / 20.0));
+        REQUIRE(laprdus_set_volume_boost(engine.handle, 0) == LAPRDUS_OK);
+        const std::vector<int16_t> s_plain = speak(engine.handle, "asa");
+        REQUIRE(laprdus_set_volume_boost(engine.handle, 1) == LAPRDUS_OK);
+        const std::vector<int16_t> s_boosted = speak(engine.handle, "asa");
+        const auto hiss = hiss_pair_db(s_plain, s_boosted);
+        INFO("hiss of asa re the vowel: plain " << hiss.first << " dB, boosted " << hiss.second << " dB");
+        REQUIRE(hiss.second < hiss.first - 10.0);
         // The volume scales the boosted output
         REQUIRE(laprdus_set_volume(engine.handle, 0.5f) == LAPRDUS_OK);
         std::vector<int16_t> half = speak(engine.handle, "Pozivam Marka na mobitel.");

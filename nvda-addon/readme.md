@@ -355,8 +355,8 @@ echo "Tekst" | laprdus
 | `-a, --acceleration` | Acceleration, a speech rate multiplier 0.5-3.0 (default: 1.0) |
 | `--head-size PERCENT` | Voice quality: vocal tract length, 0-100 (default: 50 = the voice as it is) |
 | `--breathiness PERCENT` | Breath, 0-100: 0 a tense voice, 100 a whisper (default: 50; formant voices) |
-| `--roughness PERCENT` | Jitter and shimmer, 0-100 (default: 50; formant voices) |
-| `--brightness PERCENT` | Tone, 0-100 (default: 50; 0 dull, 100 sharp) |
+| `--roughness PERCENT` | Roughness, 0-100: 0 perfectly steady, above 50 a rasp (default: 50; formant voices) |
+| `--brightness PERCENT` | Tone, 0-100 (default: 50; 0 dull, with softer s and š, 100 sharp) |
 | `-V, --speech-volume` | Volume (0.0-1.0, default: 1.0) |
 | `-B, --volume-boost` | Volume boost: louder speech through a peak limiter, for noisy places |
 | `-d, --numbers-digits` | Read numbers digit by digit |
@@ -541,8 +541,8 @@ The four voice quality settings follow the voice-parameter model of a classic fo
 
 - **Head size** – the length of the vocal tract: 0 is a quarter longer (lower formants, a bigger voice), 100 a quarter shorter (higher formants, a smaller voice). Works for every voice.
 - **Breathiness** – the breath in the voice: 0 is a tense, clear voice without breath, 50 the voice as it is; above 50 there is more and more breath in the voice, and 100 is a whisper, only breath and no voicing. Works for the formant voices (Zvonko, Stojan, Mirsad and the singing voices).
-- **Roughness** – the cycle-to-cycle irregularities of pitch and loudness (jitter and shimmer): 0 is none, 50 the voice as it is; above 50 every second cycle of the voice comes sooner and weaker, a rasp that grows up to 100. Works for the formant voices.
-- **Brightness** – the tone: 0 is dark and muffled, 100 sharp and bright. Works for every voice: for the formant voices through the voice source, for the recorded voices through a spectral tilt around 1.5 kHz.
+- **Roughness** – the cycle-to-cycle irregularities of pitch and loudness (jitter and shimmer): 0 is none, and no slow drift of the pitch either (a perfectly steady voice), 50 the voice as it is; above 50 every second cycle of the voice comes sooner and weaker, a rasp that grows up to 100. Works for the formant voices.
+- **Brightness** – the tone: 0 is dark and muffled, 100 sharp and bright. Works for every voice, through a tilt of the whole sound around 1.5 kHz (for the formant voices also through the voice source), so lower values also soften sounds such as s and š.
 
 ---
 

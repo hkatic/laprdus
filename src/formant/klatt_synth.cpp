@@ -28,8 +28,10 @@ constexpr double ASPIRATION_GAIN = 1.0;
 
 // Diplophonia at full roughness: the odd periods come this much sooner
 // (as a share of the period) and this much weaker than the even ones.
-constexpr double ROUGHNESS_PERIOD_ALTERNATION = 0.05;
-constexpr double ROUGHNESS_AMPLITUDE_DIP = 0.6;
+// (0.05 and 0.6 until a listener found 75 and 100 too faint on a phone in
+// November 2026.)
+constexpr double ROUGHNESS_PERIOD_ALTERNATION = 0.10;
+constexpr double ROUGHNESS_AMPLITUDE_DIP = 0.8;
 
 // The breathiness setting (VoiceQuality::whisper above 50, tension below).
 // At full whisper the glottis stays open for most of the cycle, the source

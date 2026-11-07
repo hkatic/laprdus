@@ -81,11 +81,11 @@
     <string name="restore_default_breathiness">Restore default breathiness</string>
     <string name="cd_restore_breathiness_desc">Sets breathiness to 50%</string>
     <string name="setting_roughness">Roughness</string>
-    <string name="setting_roughness_desc">Jitter and shimmer of the voice: 0% none, 50% the voice as it is, above 50% a rasp that grows up to 100% (formant voices)</string>
+    <string name="setting_roughness_desc">Roughness of the voice: 0% perfectly steady, 50% the voice as it is, above 50% a rasp that grows up to 100% (formant voices)</string>
     <string name="restore_default_roughness">Restore default roughness</string>
     <string name="cd_restore_roughness_desc">Sets roughness to 50%</string>
     <string name="setting_brightness">Brightness</string>
-    <string name="setting_brightness_desc">Tone of the voice: 0% dull, 50% the voice as it is, 100% sharp</string>
+    <string name="setting_brightness_desc">Tone of the voice: 0% dull, 50% the voice as it is, 100% sharp; lower values also soften sounds such as s and š</string>
     <string name="restore_default_brightness">Restore default brightness</string>
     <string name="cd_restore_brightness_desc">Sets brightness to 50%</string>
 

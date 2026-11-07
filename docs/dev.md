@@ -510,7 +510,11 @@ Apple, CLI `-B`): louder speech for a phone's earpiece in traffic, after the amp
 `src/audio/volume_boost.hpp` before the volume is applied: a gain of
 `VOLUME_BOOST_GAIN` (5.0, +14 dB), then a lookahead peak limiter (5 ms
 lookahead, a 20 ms hold, a 50 ms release) with its ceiling
-`VOLUME_BOOST_CEILING` at 0.97. The hold is longer than a glottal period down
+`VOLUME_BOOST_CEILING` at 0.944 on the true peak (`inter_sample_peak()`, an
+8-tap Lanczos interpolator at a quarter, a half and three quarters of each
+sample step: Josip, held at 0.97 sample by sample, reached +1.4 dBFS between
+the samples, which a phone's resampler clips; now -0.35 dBTP, the formant
+voices -0.7). The hold is longer than a glottal period down
 to 50 Hz, so the gain moves only between syllables and the waveform of a
 syllable stays a scaled copy of the plain one; the tanh soft clipper above
 `VOLUME_BOOST_KNEE` 0.9 is a safety net the ceiling keeps idle, and the
@@ -523,7 +527,20 @@ between loud vowels keep their distance from them (without the cap the limiter
 lifted Zvonko's friction frames 3.4 dB closer to the voiced median; with 2 dB
 they end 1.2 dB further away), and a second-order high shelf takes the treble
 down by `VOLUME_BOOST_TREBLE_DB` (3 dB) from `VOLUME_BOOST_TREBLE_HZ` (4 kHz)
-up before the limiter, for every voice. Measured on a 37 s paragraph
+up before the limiter, for every voice. After the shelf, the hiss limiter
+(`limit_hiss()`, since a listener heard the hissing consonants pierce at full
+phone volume with every voice): while the band above `VOLUME_BOOST_HISS_HZ`
+(3 kHz) outweighs the rest of the sound (gate from -12 to -3 dB; no vowel
+gets there, every sibilant does), the part above `VOLUME_BOOST_HISS_SPLIT_HZ`
+(2 kHz, a fourth-order split, so the 2-5 kHz of š, č and ć come down too) is
+held `VOLUME_BOOST_HISS_DB` (-22 dB) under the loudest nearby vowel (the low
+band averaged over 20 ms, the loudest within 250 ms either side), cut by at
+most `VOLUME_BOOST_HISS_MAX_CUT_DB` (24 dB). The band is the signal minus its
+low-passed part, so at unity gain the output is the input. Through a phone
+speaker's 500 Hz high-pass every voice's sibilants now sit 16-21 dB under the
+vowels (Zvonko's s and c were 13 dB under, Josip's s, č and ć level with
+them); see "The hissing consonants in boost mode" in `docs/formant.md`.
+Measured on a 37 s paragraph
 (`tools/formant/spectrum.py --boost`) with the voice of "The reference balance":
 Zvonko's median speech level -17.6 → -11.2 dBFS, his loud stretches -13.9 →
 -9.0 dBFS, the residual of the loudest frames against a scaled copy of the
@@ -558,11 +575,18 @@ through the cascade; `breathiness_whisper()`, `VoiceQuality::whisper`);
 roughness its jitter and shimmer (0 none, 100 eight
 times) and from 50 up adds diplophonia, every second glottal period shorter
 and weaker (`VoiceQuality::roughness`, `roughness_diplophonia()`), since five
-times the random jitter alone was not heard (formant voices only). Brightness is the source emphasis of the formant voices (0 the
-bare pulse, 100 the 0.85 cap; the voice's own is 0.55 since the match to
-the reference balance, see "The reference balance" in `docs/formant.md`) and a
-one-pole tilt around 1.5 kHz for the recorded voices (0 the top folded away,
-100 doubled). The engine applies them
+times the random jitter alone was not heard (formant voices only); since
+November 2026 the diplophonia is twice as strong (every second period up to
+10 % shorter and 80 % weaker) and below 50 the slow pitch drift goes too, so
+0 is a perfectly steady voice. Brightness is a one-pole tilt of the whole
+output around 1.5 kHz for every voice (`tilt_brightness()` in
+`src/audio/brightness_tilt.hpp`: 0 the top folded away, 100 doubled), which
+also reaches the hissing consonants and the bursts (Zvonko's s 8 dB further
+under the vowel at 0), plus, for the formant voices, the source emphasis (0
+the bare pulse, 100 the 0.85 cap; the voice's own is 0.55 since the match to
+the reference balance, see "The reference balance" in `docs/formant.md`).
+Until November 2026 the formant voices had the emphasis alone, and 0 left
+their s as sharp as before. The engine applies them
 per clause, so a change is heard with the next utterance. Tests: `[quality]` in
 `test_formant.cpp`, "Head size and brightness shape the recorded voices" in
 `test_concat.cpp`, `test_voice_quality` in `tests/nvda/test_driver.py`.

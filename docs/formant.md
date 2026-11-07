@@ -1052,8 +1052,8 @@ the C API, `settings.json`, every settings screen and both CLIs carry them):
 |---|---|---|---|---|
 | head size | every formant × 0.8 (a quarter longer tract, a deeper voice) | the voice | × 1.25 (a quarter shorter, a higher voice; synthesizer A's head size runs the other way, the maintainer asked for this one) | `formant_scale` of a per-utterance copy of the voice and the fixed F5-F8 (`voice_with_quality()`, `quality_for()`); recorded voices: the bank warp, pitch unchanged |
 | breathiness | a tense, clear voice: no breath noise, open quotient towards 0.40, the source 4 dB flatter | the voice's own (`FormantVoice::breathiness`, open quotient, tilt) | a whisper: no voicing, breath through the cascade, open quotient 0.85, the source 10 dB steeper, B1 150 Hz wider | `VoiceQuality::whisper`, `tension` (`breathiness_whisper()`, `breathiness_tension()`); the noise scale on the same copy (formant voices) |
-| roughness | no jitter or shimmer | the voice's own (0.4 %, 3 %) | eight times, and from 50 up diplophonia: every second period up to 5 % shorter and 60 % weaker | `VoiceQuality::jitter`, `shimmer`, `roughness` (formant voices) |
-| brightness | the bare pulse (emphasis 0) | the voice's own emphasis (0.55 since "The reference balance" below; 0.65 before) | emphasis 0.85 | `VoiceQuality::brightness`; recorded voices: a one-pole tilt around 1.5 kHz, the top folded away at 0 and doubled at 100 |
+| roughness | no jitter, shimmer or slow pitch drift: a perfectly steady voice | the voice's own (0.4 %, 3 %, flutter 0.2) | eight times, and from 50 up diplophonia: every second period up to 10 % shorter and 80 % weaker (5 % and 60 % until November 2026) | `VoiceQuality::jitter`, `shimmer`, `flutter`, `roughness` (formant voices) |
+| brightness | the bare pulse (emphasis 0) and the top of the whole sound folded away | the voice's own emphasis (0.55 since "The reference balance" below; 0.65 before), no tilt | emphasis 0.85 and the top doubled | `VoiceQuality::brightness` and `tilt_brightness()` (`brightness_tilt.hpp`, a one-pole tilt of the whole output around 1.5 kHz, for every voice; the recorded voices have the tilt alone) |
 
 The mappings are `head_size_factor()`, `breathiness_whisper()`,
 `breathiness_tension()`, `breathiness_noise_scale()`, `voice_quality_scale()`,
@@ -1211,6 +1211,94 @@ under 50 at 100; peaks at -1.5 dBFS or lower). H1-H2 falls 3.9 and 6.7 dB from 5
 to 0 for them. The singing presets follow the same curve (periodicity 0.35-0.40
 at 100). Test: `test_formant.cpp` "Breathiness runs from a tense voice to a
 whisper".
+
+### The hissing consonants in boost mode; brightness and roughness heard (November 2026)
+
+**What was.** On a phone at full volume the hissing consonants (s, š, z, ž,
+c, č, ć) pierced the maintainer's ears with every voice, worst with the
+volume boost. Measured (`tools/formant/sibilants.py`-like: the loudest
+12 ms frame's band above 3 kHz among the frames where that band outweighs
+the rest, re the loudest frame, through a phone speaker's 500 Hz high-pass),
+plain and boosted:
+
+| | s | š | c | č | ć |
+|---|---|---|---|---|---|
+| Zvonko plain / boost before / boost now | -13.0 / -14.0 / -18.7 | -16.9 / -16.4 / -19.6 | -13.3 / -13.7 / -20.3 | -16.6 / -16.3 / -20.6 | -13.1 / -12.9 / -19.4 |
+| Stojan | -12.8 / -13.8 / -18.1 | -18.7 / -18.3 / -19.8 | -12.4 / -12.8 / -19.3 | -17.4 / -17.0 / -20.5 | -12.6 / -12.2 / -19.7 |
+| Mirsad | -13.8 / -14.4 / -19.4 | -18.4 / -18.0 / -19.6 | -15.4 / -15.5 / -19.2 | -16.7 / -16.1 / -19.3 | -13.2 / -12.7 / -18.7 |
+| Josip | -0.8 / -0.7 / -18.6 | -7.9 / -6.4 / -17.6 | -1.9 / -2.1 / -18.4 | -0.3 / -0.6 / -18.0 | -0.6 / -0.7 / -16.2 |
+| Vlado | -12.9 / -10.6 / -18.3 | -4.8 / -5.4 / -17.6 | -12.7 / -10.0 / -20.0 | -2.3 / -2.5 / -17.7 | -2.7 / -2.0 / -18.1 |
+
+The boost did not move the formant voices' hiss against their vowels (the
+treble shelf offset the limiter's lift), but it made everything 6.5 dB
+louder, and the recorded voices' hiss stood level with their vowels. The
+boosted recorded voices also went over full scale between the samples:
+Josip's paragraph +1.39 dBTP, Vlado's -0.03 (and their plain output +0.65
+and +0.75 dBTP), which a phone's resampler clips.
+
+**The hiss limiter** (`limit_hiss()` in `volume_boost.hpp`, boost mode only,
+after the treble shelf and before the limiter, so the limiter never lifts
+what it lowered). Detection: second-order Butterworth high- and low-pass at
+`VOLUME_BOOST_HISS_HZ` 3 kHz, their power followed over 2 and 5 ms; the cut
+acts while the high band stands above -12 dB re the low band (fully from
+-3 dB: no vowel's top reaches that, their band above 3 kHz lies 15-25 dB
+under the rest). The vowel reference is the low band's power averaged over
+20 ms (two glottal periods: a 5 ms follower rode on the pulses and overstated
+the vowel by a few dB), the loudest within 250 ms either side. The hiss band
+is the signal minus a fourth-order low-pass at `VOLUME_BOOST_HISS_SPLIT_HZ`
+2 kHz (with a second-order split at 3 kHz the low part still carried 3-5 kHz
+at -6 dB, so Josip's č and ć, whose energy lies there, came down by 6-9 dB at
+most; 2.5 kHz left Vlado's š at -19.5, 2 kHz at -23.4 before the limiter),
+held `VOLUME_BOOST_HISS_DB` -22 dB under the vowel reference, cut by at most
+24 dB, with 2 ms lookahead, 5 ms hold and 15 ms release. The values were
+tuned on a Python copy of the function (the scratchpad of the round) and
+checked on the engine: the residual of the voiced frames of Zvonko's
+paragraph against the unprocessed ones is -31 dB at the 95th percentile
+(Josip -13, frames next to his loud sibilants), and the boost-off output is
+bit for bit the same. The table above is the result: every voice's hiss
+16-21 dB under its vowels in boost mode.
+
+**The true peak.** The limiter's `want` now looks between the samples
+(`inter_sample_peak()`, an 8-tap Lanczos interpolator at a quarter, a half
+and three quarters; a cubic through four samples missed 0.3 dB) with
+`VOLUME_BOOST_CEILING` 0.944: Josip -0.35 dBTP, Vlado -0.50, the formant
+voices -0.7 (measured 4 times oversampled). A ceiling of 0.87 (-1 dBTP) took
+all the boost's loudness from the recorded voices, whose recordings already
+touch full scale (Vlado's vowels came out 0.5 dB quieter than without the
+boost); with 0.944 the vowels rise by 1.1 dB for Josip, 0.2 for Vlado and
+6.2 for Zvonko (1.5, 0.4 and 6.4 before), the paragraph's median 0.3 dB under
+the old boost.
+
+**Brightness** did nothing for the hiss of the formant voices: it moved their
+source emphasis, which the frication never passes through (Zvonko's s -14.3
+dB re the vowel at 0, -14.9 at 50). The one-pole tilt of the recorded voices
+(`tilt_brightness()`, now in `src/audio/brightness_tilt.hpp`) is applied to
+the whole output of the formant voices too, after the emphasis: the s of asa
+-23.0 at 0, -17.8 at 25, -14.9 at 50, -13.8 at 75, -11.8 at 100, the a's 3.5-4.5
+kHz band -37.2 / -31.2 / -24.5 / -19.5 / -15.7 dB re its total (before: -29.7
+at 0, -17.7 at 100). At 100 the vowels sharpen as much as the hiss.
+
+**Roughness** was measured as the series at odd multiples of F0/2 against the
+harmonics over the voiced frames of a paragraph (as `subharm.py` of the
+first round), also within 0.5-3 kHz, which a phone's speaker plays:
+
+| roughness | 0 | 50 | 60 | 75 | 100 |
+|---|---|---|---|---|---|
+| before, all / 0.5-3 kHz | -16.7 / -9.5 | -16.6 / -9.0 | -11.7 / -5.8 | -8.5 / -3.2 | -5.4 / -1.6 |
+| now | -16.9 / -9.3 | -16.6 / -9.0 | -9.3 / -3.0 | -6.0 / -0.7 | -2.4 / +0.4 |
+
+`ROUGHNESS_PERIOD_ALTERNATION` went from 0.05 to 0.10 and
+`ROUGHNESS_AMPLITUDE_DIP` from 0.6 to 0.8; at 100 the subharmonics stand as
+high as the harmonics and the pitch tracker cannot follow the voice. Below 50
+`VoiceQuality::flutter`, the slow drift of the pitch, goes to none at 0
+(`quality_for()`): the spread of a held a at a flat pitch went from 6.5 cents
+at 50 to 0.0 at 0 (5.0 before). Tests: `test_formant.cpp` "The volume boost
+makes the speech louder without clipping" (s, c and ć further under the
+vowel in boost mode, the true peak), "Voice quality settings shape the voice
+and 50 leaves it alone" (the hiss of asa at brightness 0), "Roughness is a
+rasp above 50 and a steady voice at 0"; `test_concat.cpp` "The volume boost
+makes the recorded voices louder without clipping" (the vowels rise, Josip's
+s comes down by more than 10 dB, the true peak).
 
 ### The reference balance (November 2026)
 

@@ -355,8 +355,8 @@ echo "Tekst" | laprdus
 | `-a, --acceleration` | Pospešek, množitelj hitrosti 0.5-3.0 (privzeto: 1.0) |
 | `--head-size PERCENT` | Kakovost glasu: dolžina govornega trakta, 0–100 (privzeto: 50 = glas, kakršen je) |
 | `--breathiness PERCENT` | Dih, 0–100: 0 napet glas, 100 šepet (privzeto: 50; formantni glasovi) |
-| `--roughness PERCENT` | Hrapavost (jitter in shimmer), 0–100 (privzeto: 50; formantni glasovi) |
-| `--brightness PERCENT` | Barva tona, 0–100 (privzeto: 50; 0 zamolklo, 100 ostro) |
+| `--roughness PERCENT` | Hrapavost, 0–100: 0 povsem miren glas, nad 50 hripavost (privzeto: 50; formantni glasovi) |
+| `--brightness PERCENT` | Barva tona, 0–100 (privzeto: 50; 0 zamolklo, z mehkejšima s in š, 100 ostro) |
 | `-V, --speech-volume` | Glasnost (0.0-1.0, privzeto: 1.0) |
 | `-B, --volume-boost` | Povečanje glasnosti: glasnejši govor prek omejevalnika vrhov, za hrupna okolja |
 | `-d, --numbers-digits` | Beri števila po števkah |
@@ -541,8 +541,8 @@ Nastavitve se shranijo v uporabniško mapo `%APPDATA%\Laprdus`, uporabljata pa j
 
 - **Velikost glave** – dolžina govornega trakta: 0 je za četrtino daljši (nižji formanti, polnejši glas), 100 za četrtino krajši (višji formanti, drobnejši glas). Deluje na vse glasove.
 - **Dih** – dih v glasu: 0 je napet, čist glas brez diha, 50 glas, kakršen je; nad 50 je v glasu vse več diha, 100 pa je šepet, samo dih brez zvenečnosti. Deluje na formantne glasove (Zvonko, Stojan, Mirsad in pojoči glasovi).
-- **Hrapavost** – nepravilnosti višine in glasnosti od nihaja do nihaja (jitter in shimmer): 0 jih ni, 50 je glas, kakršen je; nad 50 vsak drugi nihaj glasu pride prej in šibkejši, hripavost, ki narašča do 100. Deluje na formantne glasove.
-- **Svetlost** – barva tona: 0 je temno in zamolklo, 100 ostro in svetlo. Deluje na vse glasove: na formantne prek vira glasu, na posnete pa prek nagiba spektra okoli 1,5 kHz.
+- **Hrapavost** – nepravilnosti višine in glasnosti od nihaja do nihaja (jitter in shimmer): 0 jih ni, pa tudi višina ne niha (povsem miren glas), 50 je glas, kakršen je; nad 50 vsak drugi nihaj glasu pride prej in šibkejši, hripavost, ki narašča do 100. Deluje na formantne glasove.
+- **Svetlost** – barva tona: 0 je temno in zamolklo, 100 ostro in svetlo. Deluje na vse glasove prek nagiba celotnega zvoka okoli 1,5 kHz (na formantne tudi prek vira glasu), zato nižje vrednosti omilijo tudi glasove, kot sta s in š.
 
 ---
 

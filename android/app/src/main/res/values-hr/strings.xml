@@ -81,11 +81,11 @@
     <string name="restore_default_breathiness">Vrati zadani dah</string>
     <string name="cd_restore_breathiness_desc">Postavlja dah na 50%</string>
     <string name="setting_roughness">Hrapavost</string>
-    <string name="setting_roughness_desc">Hrapavost glasa: 0% glatko, 50% glas kakav jest, iznad 50% promuklost koja raste do 100% (formantni glasovi)</string>
+    <string name="setting_roughness_desc">Hrapavost glasa: 0% potpuno miran glas, 50% glas kakav jest, iznad 50% promuklost koja raste do 100% (formantni glasovi)</string>
     <string name="restore_default_roughness">Vrati zadanu hrapavost</string>
     <string name="cd_restore_roughness_desc">Postavlja hrapavost na 50%</string>
     <string name="setting_brightness">Svjetlina</string>
-    <string name="setting_brightness_desc">Boja tona: 0% tamno, 50% glas kakav jest, 100% oštro</string>
+    <string name="setting_brightness_desc">Boja tona: 0% tamno, 50% glas kakav jest, 100% oštro; niže vrijednosti ublažavaju i glasove poput s i š</string>
     <string name="restore_default_brightness">Vrati zadanu svjetlinu</string>
     <string name="cd_restore_brightness_desc">Postavlja svjetlinu na 50%</string>
 

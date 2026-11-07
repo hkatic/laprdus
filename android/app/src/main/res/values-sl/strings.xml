@@ -64,11 +64,11 @@
     <string name="restore_default_breathiness">Obnovi privzeti dih</string>
     <string name="cd_restore_breathiness_desc">Nastavi dih na 50 %</string>
     <string name="setting_roughness">Hrapavost</string>
-    <string name="setting_roughness_desc">Hrapavost glasu: 0 % gladko, 50 % glas, kakršen je, nad 50 % hripavost, ki narašča do 100 % (formantni glasovi)</string>
+    <string name="setting_roughness_desc">Hrapavost glasu: 0 % povsem miren glas, 50 % glas, kakršen je, nad 50 % hripavost, ki narašča do 100 % (formantni glasovi)</string>
     <string name="restore_default_roughness">Obnovi privzeto hrapavost</string>
     <string name="cd_restore_roughness_desc">Nastavi hrapavost na 50 %</string>
     <string name="setting_brightness">Svetlost</string>
-    <string name="setting_brightness_desc">Barva tona: 0 % temno, 50 % glas, kakršen je, 100 % ostro</string>
+    <string name="setting_brightness_desc">Barva tona: 0 % temno, 50 % glas, kakršen je, 100 % ostro; nižje vrednosti omilijo tudi glasove, kot sta s in š</string>
     <string name="restore_default_brightness">Obnovi privzeto svetlost</string>
     <string name="cd_restore_brightness_desc">Nastavi svetlost na 50 %</string>
     <string name="setting_number_mode_title">Branje števil po števkah</string>
