@@ -4803,6 +4803,46 @@ TEST_CASE("Volume scales the output level", "[formant][params]") {
     REQUIRE(peak(silent) == 0);
 }
 
+TEST_CASE("Currency amounts speak their value minus and unit before punctuation", "[formant][text][currency]") {
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    // Turning punctuation pauses off cannot remove semantic signs or units.
+    REQUIRE(laprdus_set_comma_pause(engine.handle, 0) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_sentence_pause(engine.handle, 0) == LAPRDUS_OK);
+    const auto expected = speak(engine.handle, "minus dvije tisuće petsto zarez nula nula eura");
+    REQUIRE(!expected.empty());
+    REQUIRE(speak(engine.handle, "-2.500,00 €") == expected);
+    REQUIRE(speak(engine.handle, "€−2,500.00") == expected);
+    REQUIRE(speak(engine.handle, "(2.500,00 EUR)") == expected);
+    REQUIRE(speak(engine.handle, "Stanje 2.150,00") ==
+            speak(engine.handle, "Stanje dvije tisuće sto pedeset zarez nula nula"));
+    REQUIRE(speak(engine.handle, "$2,150.00") ==
+            speak(engine.handle, "dvije tisuće sto pedeset zarez nula nula dolara"));
+    REQUIRE(laprdus_set_number_mode(engine.handle, LAPRDUS_NUMBER_MODE_DIGIT) == LAPRDUS_OK);
+    REQUIRE(speak(engine.handle, "-$2,150.00") ==
+            speak(engine.handle, "minus dva jedan pet nula zarez nula nula dolara"));
+}
+
+TEST_CASE("Telephone grouping reaches the audio and honors comma pauses", "[formant][text][phone]") {
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_number_mode(engine.handle, LAPRDUS_NUMBER_MODE_DIGIT) == LAPRDUS_OK);
+    const char* words = "plus tri osam pet, devet jedan, jedan dva tri četiri, pet šest sedam";
+    const auto spoken = speak(engine.handle, "+385911234567");
+    REQUIRE(!spoken.empty());
+    REQUIRE(spoken == speak(engine.handle, words));
+    REQUIRE(spoken == speak(engine.handle, "+385 91/123-4567"));
+    REQUIRE(laprdus_set_comma_pause(engine.handle, 0) == LAPRDUS_OK);
+    const auto without = speak(engine.handle, "+385911234567");
+    REQUIRE(laprdus_set_comma_pause(engine.handle, 100) == LAPRDUS_OK);
+    const auto with = speak(engine.handle, "+385911234567");
+    // Three group boundaries, each adding exactly 100 ms at 22050 Hz.
+    REQUIRE(with.size() == without.size() + 3 * 2205);
+    REQUIRE(laprdus_set_number_mode(engine.handle, LAPRDUS_NUMBER_MODE_WHOLE) == LAPRDUS_OK);
+    REQUIRE(speak(engine.handle, "+385911234567") == speak(engine.handle,
+            "plus tristo osamdeset pet, devedeset jedan, tisuću dvjesto trideset četiri, petsto šezdeset sedam"));
+}
+
 TEST_CASE("Punctuation selects intonation", "[formant][prosody]") {
     Engine engine;
     REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);

@@ -176,6 +176,36 @@ $B/laprdus -D $B -v zvonko -L sr "Zvonko govori srpski: dve hiljade."
 $B/laprdus -D $B -v vlado -L hr "Vlado govori hrvatski: dvije tisuće."
 ```
 
+### Telephone numbers
+
+`CroatianNumbers::convert_phone_number()` runs before grammatical number rules
+in both reading modes. `+` / `00` international numbers and domestic leading-zero
+numbers accept compact digits, spaces, slashes, dashes and parenthesized codes.
+Country code, area/network code and the subscriber number after its fourth digit
+are separated by the user's comma pause (`+385 91 1234567` → `+385 | 91 | 1234 | 567`).
+Digit mode uses standalone digit names (Slovenian *dve*); whole-number mode reads
+cardinal groups. Surrounding words never inflect phone groups. Preserve every
+leading zero, including optional `(0)` and Italy's significant zero. Country
+codes and regional exceptions, ambiguity limits and sources are documented in
+`docs/formant.md`, "Telephone numbers". Tests: `test_numbers.cpp` and the `[phone]`
+audio tests in `test_formant.cpp` / `test_concat.cpp`.
+
+### Currency amounts
+
+`convert_currency_number()` recognizes clear grouped decimals such as
+`2.150,00` before the phone/identifier guards, so UI labels such as *Stanje*
+and *Račun* cannot turn the thousands separator into a spoken dot. Explicit
+`€` / `$` / `EUR` / `USD` amounts accept prefix/suffix currency, European and
+US separators, space/NBSP/thin-space and apostrophe grouping, Unicode minus,
+negative suffixes and accounting parentheses. Minus, decimal and currency
+become words before punctuation segmentation; currency follows the amount
+with the existing language's grammatical forms. Preserve fractional zeros
+and the number mode. Digit mode also speaks an ordinary unary minus. Do not
+infer a negative value from parentheses without a currency marker or mistake
+an identifier/range hyphen for a minus. Sources, ambiguities and limits are in
+`docs/formant.md`, "Currency amounts"; `[currency]` tests cover normalization
+and both audio renderers.
+
 ## C API
 
 ```c

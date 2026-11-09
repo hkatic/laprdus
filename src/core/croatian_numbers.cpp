@@ -2988,7 +2988,11 @@ size_t CroatianNumbers::hr_number_at(const std::string& text, size_t i, std::str
             const char head = prev_raw.ahead > 0 ? text[prev_raw.ahead - 1] : '.';
             const bool after_name = prev_capital && head != '.' && head != '!' && head != '?' && head != ':' &&
                                     head != ';' && head != '\n' && head != ',' && head != '(';
-            if (phone || after_name) continue;
+            // These guards protect space-separated identifiers. A dotted
+            // thousands group is still a number after a UI label (Stanje,
+            // Račun); treating it as a phone made positive balances differ
+            // from negative ones, whose minus hid the preceding label.
+            if (spaced && (phone || after_name)) continue;
             if (pos < length && (is_letter_byte(text[pos]) || text[pos] == ':')) continue;
             if (pos < length && text[pos] == '.' && pos + 1 < length && is_digit(text[pos + 1])) continue;
             size_t stop = pos;
@@ -3083,6 +3087,463 @@ size_t CroatianNumbers::hr_number_at(const std::string& text, size_t i, std::str
     return 0;
 }
 
+namespace {
+
+// ITU E.164: country codes are prefix-free, 1--3 digits; the international
+// prefix is not part of the 15-digit limit. Code assignments and the regional
+// formatting exceptions below were checked against Google's libphonenumber
+// resources/PhoneNumberMetadata.xml (2026-11-09). This is a reading heuristic,
+// not a validator of assigned subscriber numbers.
+size_t phone_country_length(std::string_view digits) {
+    static const std::unordered_set<std::string_view> codes = {
+        "1", "7", "20", "27", "30", "31", "32", "33", "34", "36", "39", "40", "41", "43", "44", "45",
+        "46", "47", "48", "49", "51", "52", "53", "54", "55", "56", "57", "58", "60", "61", "62", "63",
+        "64", "65", "66", "81", "82", "84", "86", "90", "91", "92", "93", "94", "95", "98",
+        "211", "212", "213", "216", "218", "220", "221", "222", "223", "224", "225", "226", "227",
+        "228", "229", "230", "231", "232", "233", "234", "235", "236", "237", "238", "239", "240",
+        "241", "242", "243", "244", "245", "246", "247", "248", "249", "250", "251", "252", "253",
+        "254", "255", "256", "257", "258", "260", "261", "262", "263", "264", "265", "266", "267",
+        "268", "269", "290", "291", "297", "298", "299", "350", "351", "352", "353", "354", "355",
+        "356", "357", "358", "359", "370", "371", "372", "373", "374", "375", "376", "377", "378",
+        "380", "381", "382", "383", "385", "386", "387", "389", "420", "421", "423", "500", "501",
+        "502", "503", "504", "505", "506", "507", "508", "509", "590", "591", "592", "593", "594",
+        "595", "596", "597", "598", "599", "670", "672", "673", "674", "675", "676", "677", "678",
+        "679", "680", "681", "682", "683", "685", "686", "687", "688", "689", "690", "691", "692",
+        "800", "808", "850", "852", "853", "855", "856", "870", "878", "880", "881", "882", "883",
+        "886", "888", "960", "961", "962", "963", "964", "965", "966", "967", "968", "970", "971",
+        "972", "973", "974", "975", "976", "977", "979", "992", "993", "994", "995", "996", "998",
+    };
+    for (size_t n = 1; n <= 3 && n < digits.size(); ++n) {
+        if (codes.count(digits.substr(0, n))) return n;
+    }
+    return 0;
+}
+
+size_t phone_space_end(const std::string& text, size_t pos) {
+    while (pos < text.size()) {
+        if (text[pos] == ' ' || text[pos] == '\t') ++pos;
+        else if (text.compare(pos, 2, u8"\u00a0") == 0) pos += 2;
+        else if (text.compare(pos, 3, u8"\u2009") == 0 || text.compare(pos, 3, u8"\u202f") == 0) pos += 3;
+        else break;
+    }
+    return pos;
+}
+
+// Known regional destination codes take precedence over length guesses for
+// compact numbers. Written code boundaries elsewhere are retained (Germany,
+// for example, has 2--5 digit area codes). Italy's initial zero is significant.
+size_t phone_area_length(std::string_view country, std::string_view national) {
+    if (national.empty()) return 0;
+    if (country == "1" || country == "7") return 3;
+    if (country == "385") return national[0] == '1' ? 1 : national[0] == '8' ? 3 : 2;
+    if (country == "387") return 2;
+    if (country == "381") {
+        const auto prefix = national.substr(0, 3);
+        return national[0] >= '7' || prefix == "230" || prefix == "280" || prefix == "290" || prefix == "390" ? 3 : 2;
+    }
+    if (country == "386") {
+        const auto prefix = national.substr(0, 2);
+        if (prefix == "59" || (national[0] == '8' && prefix != "80" && prefix != "89")) return 3;
+        static const std::unordered_set<std::string_view> mobile = {
+            "30", "31", "40", "41", "43", "51", "64", "65", "68", "69", "70", "71",
+        };
+        if (mobile.count(prefix) || national[0] == '8' || national[0] == '9') return 2;
+        if (national[0] >= '1' && national[0] <= '7') return 1;
+    }
+    if (country == "39" && national[0] == '0') {
+        if (national.size() > 1 && (national[1] == '2' || national[1] == '6')) return 2;
+        if (national.size() > 2) return std::string_view("0159").find(national[2]) != std::string_view::npos ? 3 : 4;
+    }
+    if (country == "44") {
+        if (national[0] == '2') return 2;  // London etc.: eight subscriber digits
+        if (national[0] == '7') return 4;  // mobile: six subscriber digits
+    }
+    // No geographic area code in these international service numbers.
+    if (country == "800" || country == "808" || country == "870" || country == "878" ||
+        country == "881" || country == "882" || country == "883" || country == "888" || country == "979") return 0;
+    // The requested common 2/3-digit code + 6/7-digit subscriber pattern.
+    // Nine digits are ambiguous: default to 2+7 unless written otherwise.
+    if (national.size() == 8 || national.size() == 9) return 2;
+    if (national.size() == 10) return 3;
+    return 0;
+}
+
+} // namespace
+
+size_t CroatianNumbers::convert_phone_number(const std::string& text, size_t i,
+                                             std::string& result, bool by_digit) {
+    size_t head = i;
+    while (head > 0) {
+        if (text[head - 1] == ' ' || text[head - 1] == '\t') --head;
+        else if (head >= 2 && text.compare(head - 2, 2, u8"\u00a0") == 0) head -= 2;
+        else if (head >= 3 && (text.compare(head - 3, 3, u8"\u2009") == 0 ||
+                              text.compare(head - 3, 3, u8"\u202f") == 0)) head -= 3;
+        else break;
+    }
+    const bool plus = head > 0 && text[head - 1] == '+';
+    if (plus) --head;
+    else head = i;
+    const bool outer_bracket = !plus && i > 0 && text[i - 1] == '(';
+    if (outer_bracket) head = i - 1;
+    if (head > 0 && (is_word_byte(text[head - 1]) || text[head - 1] == '+' ||
+                    text[head - 1] == '-' || text[head - 1] == '/' || text[head - 1] == '_')) return 0;
+    const bool double_zero = !plus && text.compare(i, 2, "00") == 0;
+    const bool international = plus || double_zero;
+    if (!international && text[i] != '0') return 0;
+
+    std::string digits;
+    std::vector<size_t> boundaries;
+    size_t pos = i, end = i;
+    bool bracket = outer_bracket;
+    while (pos < text.size() && is_digit(text[pos])) {
+        const size_t stop = digits_end(text, pos);
+        if (digits.size() + stop - pos > (double_zero ? 17u : 15u)) return 0;
+        digits.append(text, pos, stop - pos);
+        end = stop;
+        if (bracket) {
+            if (end >= text.size() || text[end] != ')') return 0;
+            ++end;
+            bracket = false;
+        }
+        size_t next = phone_space_end(text, end);
+        if (next < text.size() && (text[next] == '/' || text[next] == '-')) {
+            next = phone_space_end(text, next + 1);
+        } else if (text.compare(next, 3, u8"\u2011") == 0 || text.compare(next, 3, u8"\u2013") == 0) {
+            next = phone_space_end(text, next + 3);
+        }
+        if (next < text.size() && text[next] == '(') {
+            bracket = true;
+            ++next;
+        }
+        if ((next == end && end == stop) || next >= text.size() || !is_digit(text[next])) break;
+        boundaries.push_back(digits.size());
+        pos = next;
+    }
+    if (end < text.size() && phone_space_end(text, end) == end &&
+        (is_word_byte(text[end]) || text[end] == '_' || text[end] == ':' ||
+         is_separator_between_digits(text, end))) return 0;
+
+    size_t country_end = 0;
+    std::string_view country;
+    if (international) {
+        const size_t prefix = double_zero ? 2 : 0;
+        if (digits.size() < prefix + 7 || digits.size() > prefix + 15) return 0;
+        const size_t count = phone_country_length(std::string_view(digits).substr(prefix));
+        if (!count) return 0;
+        country = std::string_view(digits).substr(prefix, count);
+        country_end = prefix + count;
+    } else {
+        if (digits.size() < 8 || digits.size() > 11) return 0;
+        country = slovenian() ? "386" : m_dialect == Dialect::Serbian ? "381" :
+                  m_dialect == Dialect::Bosnian ? "387" : "385";
+    }
+
+    // Keep a written domestic/optional trunk zero with the area code. Never
+    // discard a digit, particularly the significant zero of +39 (Italy).
+    const size_t trunk = digits[country_end] == '0' && country != "39" ? 1 : 0;
+    size_t area = 0;
+    for (size_t boundary : boundaries) {
+        if (boundary > country_end + trunk && boundary <= country_end + trunk + 5 &&
+            digits.size() - boundary >= 4) {
+            area = boundary - country_end;
+            break;
+        }
+    }
+    if (!area) area = trunk + phone_area_length(country, std::string_view(digits).substr(country_end + trunk));
+    size_t subscriber = country_end + area;
+    if (subscriber > digits.size() || digits.size() - subscriber < 4) return 0;
+    if (!international && (area < 2 || area > 4 || digits.size() - subscriber > 7)) return 0;
+
+    if (outer_bracket && !result.empty() && result.back() == '(') result.pop_back();
+    if (plus) {
+        result.resize(result.find_last_of('+') + 1);
+        result += ' ';
+    }
+    auto append_group = [&](size_t first, size_t stop) {
+        if (by_digit) {
+            for (size_t d = first; d < stop; ++d) {
+                if (d > first) result += ' ';
+                result += digit_name(digits[d]);
+            }
+        } else {
+            // No hr_agree/slovenian_agree: surrounding words must never
+            // inflect an identifier, including its last one or two.
+            while (first + 1 < stop && digits[first] == '0') {
+                result += zero_word();
+                result += ' ';
+                ++first;
+            }
+            result += stop - first == 1 ? std::string(digit_name(digits[first])) :
+                      number_to_words(std::string_view(digits).substr(first, stop - first));
+        }
+    };
+    if (country_end) {
+        append_group(0, country_end);
+        result += ", ";
+    }
+    if (area) {
+        append_group(country_end, subscriber);
+        result += ", ";
+    }
+    // A short comma pause after the fourth subscriber digit, also for the
+    // less common longer service numbers. Existing comma-pause settings apply.
+    while (subscriber < digits.size()) {
+        const size_t stop = std::min(subscriber + 4, digits.size());
+        append_group(subscriber, stop);
+        subscriber = stop;
+        if (subscriber < digits.size()) result += ", ";
+    }
+    return end;
+}
+
+namespace {
+
+size_t number_space_start(const std::string& text, size_t pos) {
+    while (pos > 0) {
+        if (text[pos - 1] == ' ' || text[pos - 1] == '\t') --pos;
+        else if (pos >= 2 && text.compare(pos - 2, 2, u8"\u00a0") == 0) pos -= 2;
+        else if (pos >= 3 && (text.compare(pos - 3, 3, u8"\u2009") == 0 ||
+                             text.compare(pos - 3, 3, u8"\u202f") == 0)) pos -= 3;
+        else break;
+    }
+    return pos;
+}
+
+bool amount_boundary(const std::string& text, size_t pos) {
+    if (pos == 0 || number_space_start(text, pos) != pos) return true;
+    const char c = text[pos - 1];
+    return !is_word_byte(c) && c != '_' && c != '/' && c != '-' && c != '+' && c != '.' && c != ',';
+}
+
+size_t minus_before(const std::string& text, size_t end) {
+    if (end > 0 && text[end - 1] == '-') return end - 1;
+    if (end >= 3 && (text.compare(end - 3, 3, u8"\u2212") == 0 ||
+                     text.compare(end - 3, 3, u8"\u2013") == 0)) return end - 3;
+    return end;
+}
+
+// Digit mode has no grammatical hook to expand a unary minus. Make it a
+// word before punctuation is segmented, preserving T-2, ranges and phones.
+void read_digit_mode_minus(const std::string& text, size_t i, std::string& result) {
+    const size_t end = number_space_start(text, i);
+    const size_t start = minus_before(text, end);
+    if (start == end || !amount_boundary(text, start) || result.size() < i - start) return;
+    if (result.compare(result.size() - (i - start), i - start, text, start, i - start) != 0) return;
+    result.resize(result.size() - (i - start));
+    result += "minus ";
+}
+
+// Values are indices in the existing language-specific unit tables.
+enum class Currency : size_t { None = 0, Euro = 1, Dollar = 2 };
+struct CurrencyToken { const char* text; Currency currency; bool code; };
+const CurrencyToken CURRENCY_TOKENS[] = {
+    {u8"€", Currency::Euro, false}, {"$", Currency::Dollar, false},
+    {"EUR", Currency::Euro, true}, {"USD", Currency::Dollar, true},
+};
+
+Currency currency_at(const std::string& text, size_t pos, size_t& end) {
+    for (const auto& token : CURRENCY_TOKENS) {
+        const size_t n = std::strlen(token.text);
+        if (text.compare(pos, n, token.text) != 0) continue;
+        const size_t stop = pos + n;
+        if (token.code && stop < text.size() && is_word_byte(text[stop])) continue;
+        end = stop;
+        return token.currency;
+    }
+    return Currency::None;
+}
+
+struct Amount {
+    std::vector<std::string_view> groups;
+    std::string separators; // '.' ',' ' ' or apostrophe (straight/curly)
+    size_t end = 0;
+};
+
+Amount scan_amount(const std::string& text, size_t i) {
+    Amount a;
+    size_t pos = i;
+    for (;;) {
+        const size_t stop = digits_end(text, pos);
+        a.groups.emplace_back(text.data() + pos, stop - pos);
+        a.end = stop;
+        if (a.groups.size() > 105) return {}; // the engine's centillion limit
+        char separator = 0;
+        size_t next = stop;
+        if (next < text.size() && (text[next] == '.' || text[next] == ',')) separator = text[next++];
+        else if (next < text.size() && text[next] == '\'') { separator = '\''; ++next; }
+        else if (text.compare(next, 3, u8"’") == 0) { separator = '\''; next += 3; }
+        else {
+            next = sl_skip_spaces(text, next);
+            if (next > stop) separator = ' ';
+        }
+        if (!separator || next >= text.size() || !is_digit(text[next])) break;
+        // Whitespace can separate unrelated values. Only exact groups of
+        // three are candidates; newlines never join an amount.
+        if ((separator == ' ' || separator == '\'') &&
+            (a.groups.front().size() > 3 || digits_end(text, next) - next != 3)) break;
+        a.separators += separator;
+        pos = next;
+    }
+    return a;
+}
+
+} // namespace
+
+size_t CroatianNumbers::convert_currency_number(const std::string& text, size_t i,
+                                                std::string& result, bool by_digit) {
+    // CLDR UTS #35, Numbers: decimal/group symbols are locale-specific;
+    // currency and sign affixes may occur on either side, and accounting
+    // negatives use parentheses. Recognize structure, then speak semantic
+    // words so punctuation settings cannot silence the sign or currency.
+    // https://unicode.org/reports/tr35/tr35-numbers.html#Number_Format_Patterns
+    Currency currency = Currency::None;
+    size_t start = i;
+    bool negative = false, positive = false, bracket = false;
+    for (int part = 0; part < 3; ++part) {
+        const size_t end = number_space_start(text, start);
+        if (!negative && !positive && minus_before(text, end) != end) {
+            start = minus_before(text, end);
+            negative = true;
+        } else if (!negative && !positive && end > 0 && text[end - 1] == '+') {
+            start = end - 1;
+            positive = true;
+        } else if (!bracket && end > 0 && text[end - 1] == '(') {
+            start = end - 1;
+            bracket = true;
+        } else {
+            bool found = false;
+            if (currency == Currency::None) for (const auto& token : CURRENCY_TOKENS) {
+                const size_t n = std::strlen(token.text);
+                if (end >= n && text.compare(end - n, n, token.text) == 0 &&
+                    (!token.code || amount_boundary(text, end - n))) {
+                    currency = token.currency;
+                    start = end - n;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) break;
+        }
+    }
+    if (!amount_boundary(text, start)) return 0;
+    const Amount a = scan_amount(text, i);
+    if (a.groups.empty()) return 0;
+    size_t end = a.end;
+    if (currency == Currency::None) {
+        size_t stop = 0;
+        const size_t affix = sl_skip_spaces(text, end);
+        currency = currency_at(text, affix, stop);
+        // Some exports put the sign between the amount and its currency:
+        // 2.150,00- € (CLDR negative suffix patterns).
+        if (currency == Currency::None && !negative && !positive) {
+            size_t sign_end = affix;
+            if (affix < text.size() && text[affix] == '-') ++sign_end;
+            else if (text.compare(affix, 3, u8"\u2212") == 0) sign_end += 3;
+            if (sign_end > affix) {
+                currency = currency_at(text, sl_skip_spaces(text, sign_end), stop);
+                if (currency != Currency::None) negative = true;
+            }
+        }
+        if (currency != Currency::None) end = stop;
+    }
+    // A trailing minus is financial notation only with an explicit currency,
+    // and at the end of the token; a dash followed by another value stays a range.
+    if (currency != Currency::None && !negative && !positive) {
+        const size_t sign_start = sl_skip_spaces(text, end);
+        size_t stop = sign_start;
+        if (stop < text.size() && text[stop] == '-') ++stop;
+        else if (text.compare(stop, 3, u8"\u2212") == 0) stop += 3;
+        const size_t next = sl_skip_spaces(text, stop);
+        if (stop > sign_start && (next == text.size() || (!is_word_byte(text[next]) && text[next] != '$'))) {
+            negative = true;
+            end = stop;
+        }
+    }
+    if (bracket) {
+        const size_t close = sl_skip_spaces(text, end);
+        // Bare parenthesized numbers are not accounting balances.
+        if (currency == Currency::None || close >= text.size() || text[close] != ')') return 0;
+        end = close + 1;
+        negative = true;
+    }
+    if (end < text.size() && sl_skip_spaces(text, end) == end &&
+        (is_word_byte(text[end]) || text[end] == '_' || text[end] == ':' ||
+         is_separator_between_digits(text, end))) return 0;
+
+    bool decimal = false;
+    if (!a.separators.empty()) {
+        const char last = a.separators.back();
+        if (last == '.' || last == ',') {
+            const bool repeated = a.separators.find(last) < a.separators.size() - 1;
+            if (!repeated) {
+                decimal = a.separators.size() > 1 || last == ',' || a.groups.back().size() != 3;
+                // A single separator with three following digits is ambiguous.
+                // Keep local dot grouping; a dollar amount also accepts the
+                // common US comma grouping ($2,150). €2,150 stays decimal.
+                if (a.separators.size() == 1 && last == ',' && a.groups.back().size() == 3 &&
+                    currency == Currency::Dollar) decimal = false;
+            }
+        }
+    }
+    const size_t integer_groups = a.groups.size() - (decimal ? 1 : 0);
+    if (integer_groups > 1) {
+        if (a.groups.front().size() > 3) return 0;
+        for (size_t k = 1; k < integer_groups; ++k) {
+            if (a.groups[k].size() != 3 || a.separators[k - 1] != a.separators[0]) return 0;
+        }
+    }
+    if (currency == Currency::None) {
+        // Without a currency marker only an unambiguous grouped decimal is
+        // monetary here. Leave times, dates, identifiers and ordinary number
+        // grammar to their existing paths, including spaced phone digits.
+        if (!decimal || integer_groups < 2 || (a.separators.back() != ',' && a.separators.back() != '.')) return 0;
+        size_t unit_end = 0;
+        std::string_view scale;
+        if (sl_unit_at(text, end, unit_end, scale)) return 0;
+    }
+    if (decimal && integer_groups > 1 && a.separators.back() == a.separators.front()) return 0;
+
+    std::string whole;
+    for (size_t k = 0; k < integer_groups; ++k) whole += a.groups[k];
+    const SlUnit* units = slovenian() ? SL_UNITS : m_dialect == Dialect::Croatian ? HR_UNITS_HR :
+                          m_dialect == Dialect::Serbian ? HR_UNITS_SR : HR_UNITS_BS;
+    const SlUnit& unit = units[static_cast<size_t>(currency)];
+    std::string counted;
+    if (currency != Currency::None && !decimal) {
+        counted = slovenian() ? slovenian_count(whole, unit, "", sl_unit_case(text, sl_prev_word(text, start))) :
+                               hr_count(whole, unit, "");
+    }
+    std::string words;
+    if (by_digit) {
+        auto digits = [&](std::string_view part) {
+            for (size_t k = 0; k < part.size(); ++k) {
+                if (k) words += ' ';
+                words += digit_name(part[k]);
+            }
+        };
+        digits(whole);
+        if (decimal) { words += separator_words(','); digits(a.groups.back()); }
+    } else if (decimal) {
+        words = slovenian() ? slovenian_decimal(whole, a.groups.back()) : hr_decimal(whole, a.groups.back());
+    } else {
+        words = counted;
+    }
+    if (currency != Currency::None && (by_digit || decimal)) {
+        words += ' ';
+        words += decimal ? unit.genitive_singular : counted.substr(counted.find_last_of(' ') + 1);
+    }
+    if (result.size() < i - start) return 0;
+    // A preceding affix may already belong to an earlier number (1€2€).
+    // Only replace literal input still present at the end of the output.
+    if (result.compare(result.size() - (i - start), i - start, text, start, i - start) != 0) return 0;
+    result.resize(result.size() - (i - start));
+    if (!result.empty() && is_word_byte(result.back())) result += ' ';
+    if (negative) result += "minus ";
+    else if (positive) result += "plus ";
+    result += words;
+    return end;
+}
+
 std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
     std::string result;
     result.reserve(text.size() * 2);  // Estimate - numbers expand to words
@@ -3106,6 +3567,11 @@ std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
         }
 
         if (i >= length) break;
+        if (size_t end = convert_currency_number(text, i, result, false)) {
+            i = end;
+            after_number = true;
+            continue;
+        }
         {
             size_t digits = digits_end(text, i);
             bool compound = (digits < length && text[digits] == ':') ||
@@ -3114,20 +3580,8 @@ std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
         }
         after_number = true;
 
-        // Compact international telephone notation: preserve the plus and
-        // speak each digit in the selected language. Short signed quantities,
-        // decimals, identifiers and runs outside E.164's 15 digits stay numeric.
-        const size_t phone_end = digits_end(text, i);
-        if (i > 0 && text[i - 1] == '+' && (i == 1 ||
-            (!is_word_byte(text[i - 2]) && text[i - 2] != '+')) &&
-            text[i] != '0' && phone_end - i >= 7 && phone_end - i <= 15 &&
-            (phone_end == length || (!is_word_byte(text[phone_end]) &&
-                                     !is_separator_between_digits(text, phone_end)))) {
-            if (!result.empty() && result.back() != ' ') result += ' ';
-            for (; i < phone_end; ++i) {
-                if (text[i - 1] != '+') result += ' ';
-                result += number_to_words(text.substr(i, 1));
-            }
+        if (size_t end = convert_phone_number(text, i, result, false)) {
+            i = end;
             continue;
         }
 
@@ -3322,6 +3776,17 @@ std::string CroatianNumbers::convert_digits_in_text(const std::string& text) {
         }
 
         if (i >= length) break;
+
+        if (size_t end = convert_currency_number(text, i, result, true)) {
+            i = end;
+            continue;
+        }
+        if (size_t end = convert_phone_number(text, i, result, true)) {
+            i = end;
+            continue;
+        }
+
+        read_digit_mode_minus(text, i, result);
 
         // A time or a date is not a string of digits: read it as in the
         // whole-number mode

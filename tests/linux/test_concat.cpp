@@ -769,3 +769,30 @@ TEST_CASE("Recorded voices share surname stress and vowel length", "[concat][tex
                 speak(engine.handle, u8"Knȇžević"));
     }
 }
+
+TEST_CASE("Recorded voices pause between telephone groups", "[concat][phone]") {
+    if (!data_dir()) return;
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "josip", data_dir()) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_number_mode(engine.handle, LAPRDUS_NUMBER_MODE_DIGIT) == LAPRDUS_OK);
+    const auto spoken = speak(engine.handle, "00385 91/123-4567");
+    REQUIRE(!spoken.empty());
+    REQUIRE(spoken == speak(engine.handle,
+            "nula nula tri osam pet, devet jedan, jedan dva tri četiri, pet šest sedam"));
+    REQUIRE(laprdus_set_comma_pause(engine.handle, 0) == LAPRDUS_OK);
+    const auto without = speak(engine.handle, "00385911234567");
+    REQUIRE(laprdus_set_comma_pause(engine.handle, 100) == LAPRDUS_OK);
+    const auto with = speak(engine.handle, "00385911234567");
+    REQUIRE(with.size() == without.size() + 3 * 2205);
+}
+
+TEST_CASE("Recorded voices speak currency signs and localized amounts", "[concat][currency]") {
+    if (!data_dir()) return;
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "josip", data_dir()) == LAPRDUS_OK);
+    const auto expected = speak(engine.handle, "minus dvije tisuće petsto zarez nula nula eura");
+    REQUIRE(!expected.empty());
+    REQUIRE(speak(engine.handle, "−2.500,00 €") == expected);
+    REQUIRE(speak(engine.handle, "Stanje $2,150.00") ==
+            speak(engine.handle, "Stanje dvije tisuće sto pedeset zarez nula nula dolara"));
+}

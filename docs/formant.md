@@ -5176,12 +5176,79 @@ before *zemljišče*. Each changes an erroneous feminine *-e* to neuter *-o*;
 all were inspected. The corpus has little coverage of the newly tested
 feminine ordinal phrases, so the explicit case matrices are necessary too.
 
-Compact international numbers with an attached `+`, 7–15 digits and a nonzero
-first digit now read as plus followed by individual digits in all four
-languages, including `+38641453375`. Ordinary large numbers, short signed
-quantities, decimals and embedded identifiers keep their previous paths.
-This is a pronunciation heuristic, not country-code validation. Settings and
-user dictionaries are unaffected.
+**Telephone numbers (2026-11-09).** `CroatianNumbers::convert_phone_number()`
+recognizes international `+` / `00` numbers, compact or separated by spaces,
+slashes or dashes, before the ordinary grammatical rules in both number modes.
+It emits comma pauses after the country code, after the area/network code,
+and after four subscriber digits: `+385911234567`, `+385 91/123-4567` →
+`+385 | 91 | 1234 | 567`; a six-digit subscriber number becomes `1234 | 56`.
+These pauses use the existing comma-pause setting, for recorded and formant
+voices alike. Digit mode speaks every digit with its standalone name
+(Slovenian *ena, dve*, as sourced above); whole-number mode reads each group
+as a cardinal. Neither mode applies agreement or declension from surrounding
+words. Leading zeros are retained, including a written optional `(0)`.
+
+The country-code table follows [ITU E.164](https://www.itu.int/rec/T-REC-E.164),
+including the one-digit codes `1` and `7`, and counts at most 15 digits without
+`00`. Regional formatting exceptions were checked against
+[libphonenumber's metadata](https://github.com/google/libphonenumber/blob/master/resources/PhoneNumberMetadata.xml)
+on 2026-11-09: Zagreb's one-digit destination code, Slovenian geographic,
+mobile and service codes, Serbian three-digit codes, Italian significant
+leading zeros, North American three-digit area codes, and London's eight-digit
+subscriber numbers. Croatia's definitions also follow
+[HAKOM's numbering plan](https://narodne-novine.nn.hr/clanci/sluzbeni/full/2023_04_45_783.html).
+Domestic numbers beginning in `0` use the selected language's regional plan;
+written area-code boundaries take precedence. Parenthesized area codes,
+nonbreaking spaces, thin spaces and nonbreaking/en dashes are accepted too.
+
+This is a pronunciation heuristic, not validation of an assigned number.
+Unlisted compact destination formats use 2+6, 2+7 or 3+7 by length; a compact
+nine-digit national number is ambiguous between 2+7 and 3+6 and defaults to
+2+7. Writing the area code separately resolves that ambiguity, including
+longer German area codes. Longer subscriber/service numbers continue in
+four-digit groups. Short codes such as `112` have no inserted group pause;
+ordinary numbers, dates, decimals, identifiers and the comma grouping of
+screen-reader-spelled digits keep their existing paths.
+
+**Currency amounts (2026-11-09).** The shared number normalizer now recognizes
+monetary structure before the phone/identifier and grammatical fallback rules.
+A capital label (*Stanje 2.150,00*) and the account-number guard (*Račun
+2.150,00*) previously prevented thousands grouping, although a preceding minus
+hid that context and let the amount read correctly. Clear grouped decimals now
+read consistently: *dvije tisuće sto pedeset zarez nula nula*. The capital-name
+and telephone guards apply to space grouping; dotted thousands also work after
+labels without a fractional part.
+
+Sources: [CLDR UTS #35, number format patterns](https://unicode.org/reports/tr35/tr35-numbers.html#Number_Format_Patterns)
+distinguishes grouping from the decimal mark and defines positive/negative
+prefixes and suffixes, including accounting parentheses. Its
+[Croatian locale data](https://github.com/unicode-org/cldr/blob/main/common/main/hr.xml)
+uses decimal comma, grouping dot, and a suffix currency; [Hrvatski pravopis,
+Zarez](https://pravopis.hr/pravilo/zarez/60/) specifies the decimal comma.
+The parser accepts the foreign display formats applications also supply:
+`$2,150.00`, `2.150,00 €`, `EUR 2150.00`, `2 150,00`, NBSP/narrow NBSP/thin
+spaces, and straight/curly apostrophe grouping (`2’150.00 EUR`). Group sizes
+must be three, with one to three digits in the first group. This is a reader,
+not an exhaustive implementation of all CLDR locales: Indian 3/2 grouping,
+other currency signs/codes and ambiguous malformed amounts keep the ordinary
+number path. A lone dot before three digits is grouping; a lone comma before
+three digits remains decimal except for a marked dollar amount (`$2,150`).
+Mixed `2,150.00` and `2.150,00` identify the decimal mark from their structure.
+
+Both prefix/suffix `€`, `$`, `EUR`, `USD` are read as the currency noun after
+the value. Existing hr/sr/bs/sl unit agreement and Slovenian decimal grammar
+are reused. The parser keeps exact digit strings, including `.00` / `,00`
+and leading fractional zeros, with no floating-point conversion or rounding.
+Whole-number mode reads cardinal values; digit mode reads the digits without
+speaking thousands separators. Hyphen-minus and Unicode minus become *minus*,
+including `-$2,150.00`, `$-2,150.00`, `2.150,00- €` and `2.150,00 €−`;
+`($2,150.00)` is negative, while `(2.150,00)` alone is ordinary parentheses.
+A minus, currency noun and decimal word are emitted before punctuation
+segmentation, so the engine's punctuation processing cannot silence them.
+A host must still supply those characters; symbols removed before synthesis
+cannot be reconstructed. Tests cover the supplied Croatian balances, all four
+languages, both number modes and renderers, and preservation of dates, times,
+IP addresses, ranges and the telephone grouping above.
 
 Regression tests: `test_frontend.cpp` and `test_numbers.cpp`. Build the latter:
 

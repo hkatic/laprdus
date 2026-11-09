@@ -139,6 +139,10 @@ private:
     std::string digit_group_to_words(std::string_view group);
     std::string separator_words(char separator) const;
 
+    // Telephone groups bypass grammatical agreement in both reading modes.
+    size_t convert_phone_number(const std::string& text, size_t i, std::string& result, bool by_digit);
+    size_t convert_currency_number(const std::string& text, size_t i, std::string& result, bool by_digit);
+
     // Clock times and dates ("12:30", "7.10.2026")
     size_t convert_time_or_date(const std::string& text, size_t i, std::string& result);
     std::string time_to_words(const std::vector<std::string_view>& groups);
