@@ -5122,6 +5122,77 @@ of section 7, built with `formant_slovenian.cpp` added, shows the phones a
 Slovenian text gets; a Whisper run on twenty everyday sentences (section 7)
 is the rough intelligibility check used when the language was added.
 
+**Listener follow-up, 2026-11-09: samo and numeral agreement.**
+[SP 2001 / SSKJ² on Fran, sam](https://fran.si/iskanje?Query=sam&View=2)
+distinguish *sám -a -o* (alone/itself) from
+[*samó*](https://fran.si/iskanje?Query=samo&View=2) (only).
+`clause_reading()` now uses *sámo* after *eno*, in reflexive phrases
+(*samo sebe/sebi, samo od sebe, samo po sebi*, excluding *ne samo*), and
+in a restricted solitude construction: immediately after *čisto, povsem,
+popolnoma, pustil, pustila, pustili, pustiti* at the clause end or before
+*doma/tam*. Thus *Pustil sem čisto sámo, čeprav samó za 10 minut*.
+The pronoun gets a content-word accent; explicit written accents and user
+lexicon entries retain their precedence. Capitalized personal-name handling
+remains ahead of this rule. Other ambiguous contexts keep *samó*.
+
+SUK 1.1's five JOS files contain 750 tokens spelled samo: 676 particles,
+45 forms of sam and 29 names. The cues move 24 sam forms (tags Ppnzet,
+Ppnzeo, Ppnset, Ppnsei) to the first syllable, with no particle or name
+selected. Every moved sentence was inspected. An initial version also
+changed *ne samo sebe, marveč tudi fante*; that false positive was removed.
+The listener's *čisto samo* construction is covered by a regression test;
+this corpus does not establish exhaustive coverage of solitude expressions.
+GaMS-9B-Instruct-Nemotron Q4_K_M was also attempted locally as required:
+full Metal offload failed with an out-of-memory error on this 8 GB Mac;
+reduced offload was cancelled after severe slowdown without a usable response. No
+GaMS linguistic claim was used; the accents above follow Fran.
+
+Ordinals recognize neuter *dete*, *-šče*, *ime* and *dekle*, alongside the
+existing *-je*: *prvo dete, prvo letališče, prvo ognjišče, tretje ime,
+tretje dekle*. Sources: Fran's entries
+[dete](https://fran.si/iskanje?Query=dete&View=1),
+[ime](https://fran.si/iskanje?Query=ime&View=1),
+[dekle](https://fran.si/iskanje?Query=dekle&View=1), and SP adjectival agreement.
+Regular feminine noun stems now distinguish forms such as *do prve ure,
+s tretjo hišo, k prvim hišam, s prvima hišama* instead of guessing gender
+from the last letter alone. The same approach fixes common Croatian,
+Serbian and Bosnian feminine paradigms (*u prvu godinu, u prvoj godini,
+s prvom godinom, s trećom školom*); feminine *-om* must survive the soft-stem
+rule that produces masculine *trećem*. Serbian masculine *minut* retains
+*s prvim minutom*, versus Croatian/Bosnian *s prvom minutom*. The existing compound-year rules
+produce *dvije tisuće dvadeset šeste godine / šesta godina*, with the Serbian
+and Bosnian scale words. Reference for ordinal endings:
+[IHJJ Hrvatska školska gramatika, Brojevi](https://gramatika.hr/pravilo/brojevi/32/).
+The direct tests exercise all six Slovenian cases, seven hr/sr/bs cases
+(including feminine vocative), plural and Slovenian dual forms, and Serbian
+Cyrillic context. This is still bounded lexical/suffix agreement, not a full
+parser: ambiguous case, intervening adjectives, irregular and unseen nouns
+can require further rules. Cardinal oblique 2–4 in hr/sr/bs remain an existing
+limitation; this change does not claim complete declension coverage.
+
+Comparing old/new normalization on all 8,918 SUK sentences containing digits
+changes seven sentences, nine ordinal tokens: eight before *ime* and one
+before *zemljišče*. Each changes an erroneous feminine *-e* to neuter *-o*;
+all were inspected. The corpus has little coverage of the newly tested
+feminine ordinal phrases, so the explicit case matrices are necessary too.
+
+Compact international numbers with an attached `+`, 7–15 digits and a nonzero
+first digit now read as plus followed by individual digits in all four
+languages, including `+38641453375`. Ordinary large numbers, short signed
+quantities, decimals and embedded identifiers keep their previous paths.
+This is a pronunciation heuristic, not country-code validation. Settings and
+user dictionaries are unaffected.
+
+Regression tests: `test_frontend.cpp` and `test_numbers.cpp`. Build the latter:
+
+```bash
+clang++ -std=c++17 -I include -I src -I tests/linux \
+  tests/linux/test_numbers.cpp src/core/croatian_numbers.cpp \
+  src/formant/formant_slovenian.cpp src/formant/formant_phonemes.cpp \
+  src/core/phoneme_mapper.cpp -o build/macos-arm64-release/test_numbers
+build/macos-arm64-release/test_numbers
+```
+
 ## 5. Timing and melody (`formant_synthesizer.cpp`)
 
 **Durations** start from the inherent value and are scaled by context:

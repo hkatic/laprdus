@@ -2690,3 +2690,21 @@ TEST_CASE("Slovenian listener's report of 2026-11-03: meni to me, menu phrases, 
     marked.push_back(slovenian::BEFORE_COMPLEMENT_MARK);
     REQUIRE(phones_of(frontend.process(marked, Punctuation::COMMA)) == "v'é:dnO mE upr'a:šaj");
 }
+
+TEST_CASE("Slovenian samo distinguishes solitude from only", "[frontend][slovenian]") {
+    Frontend frontend(VoiceLanguage::Slovenian);
+    const std::pair<const char32_t*, const char32_t*> cases[] = {
+        {U"Pustil sem čisto samo", U"Pustil sem čisto sámo"},
+        {U"čeprav samo za deset minut", U"čeprav samó za deset minut"},
+        {U"Pustil sem jo samo doma", U"Pustil sem jo samó doma"}, // ambiguous: retain particle
+        {U"sem te pustil samo", U"sem te pustil sámo"},
+        {U"eno samo besedo", U"eno sámo besedo"},
+        {U"samo po sebi", U"sámo po sebi"},
+        {U"samo od sebe", U"sámo od sebe"},
+        {U"presenetila samo sebe", U"presenetila sámo sebe"},
+        {U"ne samo sebe", U"ne samó sebe"},
+        {U"samo eno besedo", U"samó eno besedo"},
+        {U"čisto samo zate", U"čisto samó zate"},
+    };
+    for (auto c : cases) REQUIRE(phones_of(read(frontend, c.first)) == phones_of(read(frontend, c.second)));
+}

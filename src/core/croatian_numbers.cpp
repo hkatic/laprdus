@@ -475,6 +475,7 @@ std::string CroatianNumbers::slovenian_ordinal(std::string_view number, std::str
         const char last = stem.back();
         if (last == 'j' || last == 'c' || sl_ends(stem, u8"č") || sl_ends(stem, u8"š") || sl_ends(stem, u8"ž")) end = "e";
     }
+    if (end == "Om") end = "om";
     words.replace(token, std::string::npos, stem + end);
     return words;
 }
@@ -1129,6 +1130,44 @@ bool sl_neuter_o(std::string_view next, std::string_view after_next) {
     return formant::slovenian::is_neuter_noun_o(next);
 }
 
+// Regular feminine a-stems: lexical identity avoids treating e.g. ure as
+// neuter (the broad -re guess) or godinom as masculine. Singular oblique
+// forms and plural forms are shared by many everyday/UI nouns. Sources:
+// SP 2001 paradigms (Fran); IHJJ Hrvatska školska gramatika, Brojevi.
+std::string_view feminine_ordinal_ending(std::string_view word, bool sl, bool genitive,
+                                        bool instrumental) {
+    static const std::unordered_set<std::string_view> hr_stems = {
+        "godin", "minut", "sekund", "ur", "knjig", "sob", "osob", "stranic", "nagrad",
+        "drzav", u8"držav", u8"kuć", u8"žen", u8"škol", "zgrad", "ulic", "slik", "poruk",
+        "datotek", "map", "aplikacij", "verzij", "točk", "tačk", "grup", "skupin", "lig",
+        "sezon", "vrst", "smjen", "smen", "knjiz", "ruc", "noz", "općin", "opštin", "opcin", "opstin",
+    };
+    static const std::unordered_set<std::string_view> sl_stems = {
+        "ur", "minut", "sekund", "knjig", "sob", "oseb", "nagrad", u8"držav", u8"hiš", u8"žen",
+        u8"šol", "stavb", "ulic", "slik", "datotek", "map", "aplikacij", "različic", "točk",
+        "skupin", "lig", "sezon", "vrst", "občin", "naprav", "nalog", "besed", "strank",
+    };
+    const auto& stems = sl ? sl_stems : hr_stems;
+    for (size_t n = 1; n <= 3 && n < word.size(); ++n) {
+        if (!stems.count(word.substr(0, word.size() - n))) continue;
+        const auto end = word.substr(word.size() - n);
+        if (end == "a") return genitive ? "ih" : "a";
+        if (end == "e") return "e";
+        if (end == "i") return sl ? (genitive ? "ih" : "i") :
+                                      (genitive ? "ih" : (instrumental ? "im" : "oj"));
+        if (end == "u" && !sl) return "u";
+        if (end == "om" && !sl) return "Om"; // feminine, including trećom
+        if (end == "o" && !sl) return "a"; // vocative: prva ženo
+        if (end == "ama" && !sl) return "im";
+        if (end == "o" && sl) return "O";
+        if (end == "ah" && sl) return "ih";
+        if (end == "am" && sl) return "im";
+        if (end == "ami" && sl) return "imi";
+        if (end == "ama" && sl) return "ima";
+    }
+    return "";
+}
+
 // The ending of an ordinal before the word `next`, after the word `prev`
 // (both in small letters; `after_next` the lowercase word after `next`, or
 // empty): the adjectival endings as the noun's case, gender and number show
@@ -1140,6 +1179,7 @@ std::string_view sl_ordinal_ending(const std::string& prev, std::string_view nex
     const bool genitive = SL_WITH_GENITIVE.count(prev) != 0 || prev == "z" || prev == "s";
     const bool dative = SL_WITH_DATIVE.count(prev) != 0;
     const bool instrumental = SL_WITH_INSTRUMENTAL.count(prev) != 0;
+    if (auto ending = feminine_ordinal_ending(next, true, genitive, instrumental); !ending.empty()) return ending;
     if (sl_ends(next, "ega")) return "ega";
     if (sl_ends(next, "emu")) return "emu";
     if (sl_ends(next, "ima") || sl_ends(next, "ema") || sl_ends(next, "oma")) return "ima";
@@ -1171,7 +1211,8 @@ std::string_view sl_ordinal_ending(const std::string& prev, std::string_view nex
             if (kind == formant::slovenian::NOUN_A_MASCULINE) return "i";
             return prev.empty() || before_subject.count(prev) ? "a" : "ega";        // prva stran; odstavka tretjega člena
         }
-        case 'e': return (sl_ends(next, "je") && !sl_ends(next, "ije")) ? "o" : "e";    // tretje nadstropje; prve knjige
+        case 'e': return (next == "dete" || next == "ime" || next == "dekle" || sl_ends(next, u8"šče") ||
+                          (sl_ends(next, "je") && !sl_ends(next, "ije"))) ? "o" : "e";    // tretje nadstropje; prve knjige
         case 'o': return sl_neuter_o(next, after_next) ? "o" : "O";     // prvo mesto, tretje mesto; tretjo nagrado
         case 'u': return dative ? "emu" : "em";                     // k prvemu členu; na prvem mestu
         case 'i': return "i";                                       // na prvi strani, ob peti uri, prvi koraki
@@ -2387,7 +2428,7 @@ bool hr_soft_stem(const std::string& stem) {
 
 // The ending of an ordinal before the word `next`, after the word `prev`:
 // "" keeps the cardinal
-std::string_view hr_ordinal_ending(const std::string& prev, std::string_view next) {
+std::string_view hr_ordinal_ending(const std::string& prev, std::string_view next, bool serbian) {
     if (hr_month_genitive(next)) return "og";                             // sedmog listopada
     if (next.size() < 3) return "";
     if (HR_NOT_COUNTED.count(next) || sl_ends(next, "ti")) return "";
@@ -2399,6 +2440,11 @@ std::string_view hr_ordinal_ending(const std::string& prev, std::string_view nex
         "ali", u8"također", u8"takođe", u8"još", "kao", "to", "ta", "taj", "ovo", "ova", "ovaj", "samo", "zatim",
         "potom", "onda", "sada", "sad", "danas", "npr", "odnosno", "dakle", "naime", u8"već",
     };
+    // godina alone can also be genitive plural (konac 80. godina).
+    if (!(next == "godina" && !prev.empty() && !before_subject.count(prev)) &&
+        !(serbian && next.substr(0, 5) == "minut")) {
+        if (auto ending = feminine_ordinal_ending(next, false, genitive, instrumental); !ending.empty()) return ending;
+    }
     if (sl_ends(next, "og") || sl_ends(next, "eg") || sl_ends(next, "oga") || sl_ends(next, "ega")) return "og";
     if (sl_ends(next, "im") || sl_ends(next, "ima") || sl_ends(next, "ama")) return "im";       // u devedesetim godinama
     if (sl_ends(next, "ih")) return "ih";
@@ -2497,6 +2543,7 @@ std::string CroatianNumbers::hr_ordinal(std::string_view number, std::string_vie
         else if (end == "og") end = "eg";
         else if (end == "om") end = "em";
     }
+    if (end == "Om") end = "om";
     words.replace(token, std::string::npos, stem + end);
     return words;
 }
@@ -2512,7 +2559,7 @@ std::string CroatianNumbers::hr_ordinal_before(const std::string& text, size_t s
     const std::string next = hr_latin(next_raw.word, nullptr);
     const SlPrev prev_raw = sl_prev_word(text, start);
     const std::string prev = hr_latin(prev_raw.word, nullptr);
-    const std::string_view ending = hr_ordinal_ending(prev, next);
+    const std::string_view ending = hr_ordinal_ending(prev, next, m_dialect == Dialect::Serbian);
     if (ending.empty()) return "";
     return hr_ordinal(number, ending);
 }
@@ -2852,7 +2899,7 @@ size_t CroatianNumbers::hr_number_at(const std::string& text, size_t i, std::str
                     const std::string noun = hr_latin(noun_raw.word, nullptr);
                     if (noun_raw.lowercase && r_end - c <= 4) {
                         const size_t after = r_end + 1;
-                        const std::string_view ending = hr_month_genitive(noun) ? "og" : hr_ordinal_ending(prev, noun);
+                        const std::string_view ending = hr_month_genitive(noun) ? "og" : hr_ordinal_ending(prev, noun, m_dialect == Dialect::Serbian);
                         if (ending.empty()) {
                             result += number_to_words(digits) + join + number_to_words(right);
                         } else {
@@ -3066,6 +3113,23 @@ std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
             set_off_from_letters(result, compound);
         }
         after_number = true;
+
+        // Compact international telephone notation: preserve the plus and
+        // speak each digit in the selected language. Short signed quantities,
+        // decimals, identifiers and runs outside E.164's 15 digits stay numeric.
+        const size_t phone_end = digits_end(text, i);
+        if (i > 0 && text[i - 1] == '+' && (i == 1 ||
+            (!is_word_byte(text[i - 2]) && text[i - 2] != '+')) &&
+            text[i] != '0' && phone_end - i >= 7 && phone_end - i <= 15 &&
+            (phone_end == length || (!is_word_byte(text[phone_end]) &&
+                                     !is_separator_between_digits(text, phone_end)))) {
+            if (!result.empty() && result.back() != ' ') result += ' ';
+            for (; i < phone_end; ++i) {
+                if (text[i - 1] != '+') result += ' ';
+                result += number_to_words(text.substr(i, 1));
+            }
+            continue;
+        }
 
         // What Slovenian reads in its own way: a minus, the hours after ob, a
         // range, a date without a year, thousands with spaces, 2-krat and

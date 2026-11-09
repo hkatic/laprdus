@@ -2064,6 +2064,22 @@ const char32_t* clause_reading(const std::vector<std::u32string>& words, const s
                                const std::vector<bool>& acronym, size_t i, bool before_complement, bool question,
                                bool exclamation) {
     const std::u32string& w = words[i];
+    // SSKJ² / SP 2001 (Fran), sám -a -o versus samó (only).
+    // Keep the common particle unless an agreeing eno, reflexive phrase,
+    // or an explicit solitude construction identifies the pronoun.
+    // SUK 1.1 lemma/tag audit is documented in docs/formant.md.
+    if (w == U"samo") {
+        const std::u32string prev = i ? words[i - 1] : U"";
+        const std::u32string next = i + 1 < words.size() ? words[i + 1] : U"";
+        const bool reflexive = next == U"sebe" || next == U"sebi" ||
+            ((next == U"od" || next == U"po") && i + 2 < words.size() &&
+             (words[i + 2] == U"sebe" || words[i + 2] == U"sebi"));
+        const bool alone = (prev == U"čisto" || prev == U"povsem" || prev == U"popolnoma" ||
+                            prev == U"pustil" || prev == U"pustila" || prev == U"pustili" ||
+                            prev == U"pustiti") &&
+                           (next.empty() || next == U"doma" || next == U"tam");
+        return prev == U"eno" || (reflexive && prev != U"ne") || alone ? U"sámo" : U"samó";
+    }
     if (w == U"vprašaj") return vprasaj_reading(words, i, question, exclamation);
     if (w == U"je") return je_reading(words, capitalized, i);
     // Veseli se! Veseli se novega dneva! The imperative vesêli (SP 2001
@@ -2170,6 +2186,7 @@ bool is_address(const std::u32string& text) {
 
 bool clause_reading_is_content(const std::u32string& w, const char32_t* reading) {
     if (!reading) return false;
+    if (w == U"samo") return std::u32string(reading) == U"sámo";
     if (w == U"je") return std::u32string(reading) == U"jé";       // "eats", a verb with an accent of its own
     return w == U"lahko" && std::u32string(reading) == U"láhko";
 }
