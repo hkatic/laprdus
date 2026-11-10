@@ -96,7 +96,7 @@ void AudioSynthesizer::ensure_bank() {
 
 AudioBuffer AudioSynthesizer::synthesize_clause(const std::u32string& text, Punctuation punct,
                                                 bool sentence_initial, bool letter_sounds,
-                                                uint32_t minor_pause_ms) {
+                                                uint32_t minor_pause_ms, uint32_t item_pause_ms) {
     AudioBuffer result;
     result.sample_rate = SAMPLE_RATE;
     result.bits_per_sample = BITS_PER_SAMPLE;
@@ -118,7 +118,7 @@ AudioBuffer AudioSynthesizer::synthesize_clause(const std::u32string& text, Punc
         if (part.samples.empty()) continue;
         result.sample_rate = part.sample_rate;
         result.samples.insert(result.samples.end(), part.samples.begin(), part.samples.end());
-        if (k + 1 < parts.size()) result.append_silence(minor_pause_ms);
+        if (k + 1 < parts.size()) result.append_silence(parts[k].item_break ? item_pause_ms : minor_pause_ms);
     }
     return result;
 }

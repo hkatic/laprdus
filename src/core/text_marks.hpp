@@ -2,10 +2,10 @@
 // text_marks.hpp - Marks the number converter leaves in the text for the
 // front end and the synthesizers
 //
-// Both are Unicode noncharacters (U+FDD0..U+FDEF are set aside for a
+// All are Unicode noncharacters (U+FDD0..U+FDEF are set aside for a
 // program's internal use and are not interchanged), so no text a host sends
 // has them: a private use character can come from an icon font in the label
-// of a button. Both sit between two spaces or after a word, and the clause
+// of a button. They sit between two spaces or after a word, and the clause
 // splitter (InflectionProcessor) passes them on as it does any letter.
 //
 // The engine's other marks, the Slovenian ones of formant_slovenian.hpp, are
@@ -32,6 +32,15 @@ constexpr char MINOR_BREAK_UTF8[] = "\xEF\xB7\x90";
 // na, do, on).
 constexpr char32_t LETTER_CODE_MARK = 0xFDD1;
 constexpr char LETTER_CODE_UTF8[] = "\xEF\xB7\x91";
+
+// A pause between two items a screen reader says in one breath, before the
+// next word: the contents of a spreadsheet cell and its address (Marjan A17),
+// an address and the number after it (A20 5). As MINOR_BREAK_MARK in every
+// way but its length, the user's whole comma pause: half of it, 54 ms at a
+// screen reader's settings, was not heard as a pause between the two
+// (a listener's report through NVDA in Excel, November 2026).
+constexpr char32_t ITEM_BREAK_MARK = 0xFDD2;
+constexpr char ITEM_BREAK_UTF8[] = "\xEF\xB7\x92";
 
 } // namespace laprdus
 

@@ -51,6 +51,8 @@ struct Engine {
 // (core/text_marks.hpp, U+FDD0 as a word of its own): the words a number is
 // expected to be read as have it too
 #define BRK " \xEF\xB7\x90 "
+// The pause between two items, a cell's contents and its address (ITEM_BREAK_MARK)
+#define IBRK " \xEF\xB7\x92 "
 
 std::vector<int16_t> speak(LaprdusHandle engine, const char* text) {
     int16_t* samples = nullptr;
@@ -4927,6 +4929,13 @@ TEST_CASE("Telephone grouping reaches the audio and honors comma pauses", "[form
     REQUIRE(laprdus_set_number_mode(engine.handle, LAPRDUS_NUMBER_MODE_WHOLE) == LAPRDUS_OK);
     REQUIRE(speak(engine.handle, "+385911234567") == speak(engine.handle,
             "plus tristo osamdeset pet, devedeset jedan, sto dvadeset tri, četiri tisuće petsto šezdeset sedam"));
+    // The plus sign taken by a screen reader (NVDA at the punctuation level
+    // "none" sends a space for it, at the higher levels the word)
+    const auto bare = speak(engine.handle, " 385 91 123 4567  ");
+    REQUIRE(bare == speak(engine.handle,
+            "tristo osamdeset pet, devedeset jedan, sto dvadeset tri, četiri tisuće petsto šezdeset sedam"));
+    REQUIRE(bare == speak(engine.handle, " 385911234567  "));
+    REQUIRE(speak(engine.handle, "plus 385 91 1234567  ") == speak(engine.handle, "+385911234567"));
 }
 
 // A listener's report of November 2026: a screen reader says a spreadsheet
@@ -4968,23 +4977,32 @@ TEST_CASE("Clock times, dates and cell addresses have short pauses", "[formant][
         const auto cell = speak(engine.handle, "Marjan A17");
         REQUIRE(!cell.empty());
         // The pause and the letter: the marks typed into the words give the same samples
-        REQUIRE(cell == speak(engine.handle, "Marjan" BRK "A\xEF\xB7\x91 sedamnaest"));
+        REQUIRE(cell == speak(engine.handle, "Marjan" IBRK "A\xEF\xB7\x91 sedamnaest"));
         // NVDA ends every item with two spaces, and the driver joins them with a third
         REQUIRE(cell == speak(engine.handle, "Marjan   A17  "));
+        // NVDA in Excel says the address as two words ('Marijan  ', 'A 3  ' in
+        // the driver's log): the same letter and the same pause
+        REQUIRE(speak(engine.handle, "Marijan   A 3  ") == speak(engine.handle, "Marijan A3"));
+        REQUIRE(speak(engine.handle, "Marjan   A 17  ") == cell);
+        REQUIRE(speak(engine.handle, "A 5  ") == speak(engine.handle, "A5"));
+        // but not inside a sentence, where the letter is a word
+        REQUIRE(speak(engine.handle, "U 5 sati dolazim") == speak(engine.handle, "u pet sati dolazim"));
         // Before, the A was the conjunction a and leaned on the number
         REQUIRE(cell != speak(engine.handle, "Marjan A sedamnaest"));
-        // The silence itself, told from the closure of a stop (56 ms in
-        // "Marijana 17") by a comma pause of 300 ms, of which it is half
+        // The silence itself: the whole comma pause (half of it, 54 ms at a
+        // screen reader's settings, was not heard as a pause through NVDA in
+        // Excel; "Marijana 17" has a stop's closure of 56 ms)
+        REQUIRE(gap_ms(cell) >= 100.0);
         INFO("silence in Marjan A17 " << gap_ms(cell) << " ms, in Marijana 17 "
              << gap_ms(speak(engine.handle, "Marijana 17")) << " ms");
         REQUIRE(laprdus_set_comma_pause(engine.handle, 300) == LAPRDUS_OK);
-        REQUIRE(gap_ms(speak(engine.handle, "Marjan A17")) >= 150.0);
+        REQUIRE(gap_ms(speak(engine.handle, "Marjan A17")) >= 300.0);
         REQUIRE(gap_ms(speak(engine.handle, "Marijana 17")) < 80.0);
         // The same with a consonant letter and with a number as the contents
-        REQUIRE(gap_ms(speak(engine.handle, "Ukupno B2")) >= 150.0);
+        REQUIRE(gap_ms(speak(engine.handle, "Ukupno B2")) >= 300.0);
         REQUIRE(laprdus_set_comma_pause(engine.handle, 100) == LAPRDUS_OK);
         REQUIRE(speak(engine.handle, "1250 C3") ==
-                speak(engine.handle, "tisu\xC4\x87u dvjesto pedeset" BRK "C\xEF\xB7\x91 tri"));
+                speak(engine.handle, "tisu\xC4\x87u dvjesto pedeset" IBRK "C\xEF\xB7\x91 tri"));
         // The address alone, after a comma or after a preposition has no pause of its own
         REQUIRE(speak(engine.handle, "A17") == speak(engine.handle, "A\xEF\xB7\x91 sedamnaest"));
         REQUIRE(speak(engine.handle, "u A17") == speak(engine.handle, "u A\xEF\xB7\x91 sedamnaest"));
@@ -4992,12 +5010,17 @@ TEST_CASE("Clock times, dates and cell addresses have short pauses", "[formant][
         REQUIRE(speak(engine.handle, "S22 je nov") != speak(engine.handle, "S dvadeset dva je nov"));
     }
     SECTION("The pause is half the comma pause and shrinks with the rate") {
-        // 50 ms at the default 100, 150 ms at 300
-        auto samples = [](uint32_t comma_ms) { return static_cast<size_t>(22050u * (comma_ms / 2u) / 1000u); };
-        struct Case { const char* text; int pauses; };
+        // 50 ms at the default 100, 150 ms at 300; before a cell's address
+        // (`items`) the whole comma pause
+        auto samples = [](uint32_t comma_ms, int pauses, int items) {
+            return static_cast<size_t>(pauses) * static_cast<size_t>(22050u * (comma_ms / 2u) / 1000u) +
+                   static_cast<size_t>(items) * static_cast<size_t>(22050u * comma_ms / 1000u);
+        };
+        struct Case { const char* text; int pauses; int items; };
         const Case cases[] = {
-            {"Marjan A17", 1}, {"12:30", 1}, {"12:30:45", 2}, {"10.11.2026.", 2}, {"10. 11. 2026.", 2},
-            {"Sastanak je u 12:30 u uredu.", 1}, {"A1 B2 C3", 2}, {"Dobar dan svima", 0}, {"3.14", 0},
+            {"Marjan A17", 0, 1}, {"12:30", 1, 0}, {"12:30:45", 2, 0}, {"10.11.2026.", 2, 0}, {"10. 11. 2026.", 2, 0},
+            {"Sastanak je u 12:30 u uredu.", 1, 0}, {"A1 B2 C3", 0, 2}, {"12:30 A17", 1, 1},
+            {"Dobar dan svima", 0, 0}, {"3.14", 0, 0},
         };
         for (const Case& c : cases) {
             INFO(c.text);
@@ -5005,9 +5028,9 @@ TEST_CASE("Clock times, dates and cell addresses have short pauses", "[formant][
             const auto without = speak(engine.handle, c.text);
             REQUIRE(laprdus_set_comma_pause(engine.handle, 100) == LAPRDUS_OK);
             const auto with = speak(engine.handle, c.text);
-            REQUIRE(with.size() == without.size() + static_cast<size_t>(c.pauses) * samples(100));
+            REQUIRE(with.size() == without.size() + samples(100, c.pauses, c.items));
             REQUIRE(laprdus_set_comma_pause(engine.handle, 300) == LAPRDUS_OK);
-            REQUIRE(speak(engine.handle, c.text).size() == without.size() + static_cast<size_t>(c.pauses) * samples(300));
+            REQUIRE(speak(engine.handle, c.text).size() == without.size() + samples(300, c.pauses, c.items));
         }
         REQUIRE(laprdus_set_comma_pause(engine.handle, 100) == LAPRDUS_OK);
         // A date is the same written together and with spaces
@@ -5021,9 +5044,12 @@ TEST_CASE("Clock times, dates and cell addresses have short pauses", "[formant][
             INFO("rate " << rate.speed);
             REQUIRE(laprdus_set_speed(engine.handle, rate.speed) == LAPRDUS_OK);
             REQUIRE(laprdus_set_comma_pause(engine.handle, 0) == LAPRDUS_OK);
-            const auto without = speak(engine.handle, "Marjan A17");
+            const auto without = speak(engine.handle, "u 12:30");
+            const auto cell = speak(engine.handle, "Marjan A17");
             REQUIRE(laprdus_set_comma_pause(engine.handle, 100) == LAPRDUS_OK);
-            REQUIRE(speak(engine.handle, "Marjan A17").size() == without.size() + 22050u * rate.pause_ms / 1000u);
+            REQUIRE(speak(engine.handle, "u 12:30").size() == without.size() + 22050u * rate.pause_ms / 1000u);
+            // the pause before a cell's address is the comma pause at every rate
+            REQUIRE(speak(engine.handle, "Marjan A17").size() == cell.size() + 2205u);
             // while the comma pause itself is the user's at every rate
             REQUIRE(speak(engine.handle, "Marjan, Ana").size() ==
                     speak(engine.handle, "Marjan,").size() + speak(engine.handle, "Ana").size());
@@ -5058,21 +5084,21 @@ TEST_CASE("Clock times, dates and cell addresses have short pauses", "[formant][
     }
     SECTION("Every language and both number modes") {
         REQUIRE(laprdus_set_number_mode(engine.handle, LAPRDUS_NUMBER_MODE_DIGIT) == LAPRDUS_OK);
-        REQUIRE(speak(engine.handle, "Marjan A17") == speak(engine.handle, "Marjan" BRK "A\xEF\xB7\x91 jedan sedam"));
+        REQUIRE(speak(engine.handle, "Marjan A17") == speak(engine.handle, "Marjan" IBRK "A\xEF\xB7\x91 jedan sedam"));
         REQUIRE(speak(engine.handle, "12:30") == speak(engine.handle, "dvanaest" BRK "trideset"));
         REQUIRE(laprdus_set_number_mode(engine.handle, LAPRDUS_NUMBER_MODE_WHOLE) == LAPRDUS_OK);
         REQUIRE(laprdus_set_comma_pause(engine.handle, 300) == LAPRDUS_OK);
         for (const char* language : {"sr", "bs", "sl"}) {
             INFO(language);
             REQUIRE(laprdus_set_language(engine.handle, language) == LAPRDUS_OK);
-            REQUIRE(gap_ms(speak(engine.handle, "Marjan A17")) >= 150.0);
+            REQUIRE(gap_ms(speak(engine.handle, "Marjan A17")) >= 300.0);
             REQUIRE(gap_ms(speak(engine.handle, "12:30")) >= 150.0);
             REQUIRE(speak(engine.handle, "10.11.2026.") == speak(engine.handle, "10. 11. 2026."));
         }
         REQUIRE(laprdus_set_comma_pause(engine.handle, 100) == LAPRDUS_OK);
         REQUIRE(laprdus_set_language(engine.handle, "sl") == LAPRDUS_OK);
         // v is a preposition in Slovenian, [u] before a word; in an address it is the letter
-        REQUIRE(speak(engine.handle, "Marjan V5") == speak(engine.handle, "Marjan" BRK "V\xEF\xB7\x91 pet"));
+        REQUIRE(speak(engine.handle, "Marjan V5") == speak(engine.handle, "Marjan" IBRK "V\xEF\xB7\x91 pet"));
         REQUIRE(speak(engine.handle, "V5 je prazna") != speak(engine.handle, "V pet je prazna"));
         REQUIRE(speak(engine.handle, "12:21") == speak(engine.handle, "dvanajst" BRK "enaindvajset"));
         REQUIRE(laprdus_set_language(engine.handle, "hr") == LAPRDUS_OK);

@@ -2159,12 +2159,14 @@ AudioBuffer FormantSynthesizer::synthesize_clause(const std::u32string& text,
                                                   Punctuation punct,
                                                   const VoiceParams& params,
                                                   bool sentence_initial,
-                                                  uint32_t minor_pause_ms) {
+                                                  uint32_t minor_pause_ms,
+                                                  uint32_t item_pause_ms) {
     AudioBuffer audio;
     audio.sample_rate = SAMPLE_RATE;
     audio.bits_per_sample = BITS_PER_SAMPLE;
     audio.channels = NUM_CHANNELS;
     m_minor_pause_ms = minor_pause_ms;
+    m_item_pause_ms = item_pause_ms;
 
     // A clause without any punctuation can be arbitrarily long (a screen
     // reader may send a whole unpunctuated paragraph). It is spoken in breath
@@ -2228,7 +2230,9 @@ void FormantSynthesizer::append_group(const std::u32string& text, Punctuation pu
     for (size_t k = 0; k < parts.size(); ++k) {
         const size_t before = audio.samples.size();
         render_utterance(parts[k], params, audio, false);
-        if (k + 1 < parts.size() && audio.samples.size() > before) audio.append_silence(m_minor_pause_ms);
+        if (k + 1 < parts.size() && audio.samples.size() > before) {
+            audio.append_silence(parts[k].item_break ? m_item_pause_ms : m_minor_pause_ms);
+        }
     }
 }
 

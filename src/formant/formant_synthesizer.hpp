@@ -135,11 +135,14 @@ public:
      *        before a cell's address: formant::split_at_breaks()); the engine
      *        passes formant::minor_break_pause_ms(): half of the user's comma
      *        pause, less at a fast rate. A singing preset has none.
+     * @param item_pause_ms Length of the pause between two items (before a
+     *        cell's address, Utterance::item_break): the engine passes
+     *        formant::item_break_pause_ms(), the user's comma pause.
      * @return 16-bit mono audio at SAMPLE_RATE, without a trailing pause.
      */
     AudioBuffer synthesize_clause(const std::u32string& text, Punctuation punct,
                                   const VoiceParams& params, bool sentence_initial = true,
-                                  uint32_t minor_pause_ms = 50);
+                                  uint32_t minor_pause_ms = 50, uint32_t item_pause_ms = 100);
 
     /**
      * The sound of one letter alone, for spelling by sounds (see
@@ -188,6 +191,7 @@ private:
     std::vector<Note> m_melody;     // singing presets: the song
     size_t m_cursor = 0;            // next note to sing
     uint32_t m_minor_pause_ms = 50;     // the short pause inside a clause (synthesize_clause)
+    uint32_t m_item_pause_ms = 100;     // the pause between two items of a clause
 };
 
 } // namespace formant

@@ -2976,6 +2976,23 @@ TEST_CASE("A short pause inside a clause splits it into parts", "[frontend][brea
         }
     }
 
+    // The longer pause between two items (a cell's contents and its address)
+    // splits the clause the same way and says which pause it is
+    const Utterance items = hr.process(U"dvanaest \uFDD0 trideset \uFDD2 A\uFDD1 sedamnaest", Punctuation::PERIOD, true);
+    REQUIRE(breaks(items) == (std::vector<int>{1, 2}));
+    const std::vector<Utterance> cell_parts = split_at_breaks(items);
+    REQUIRE(cell_parts.size() == 3);
+    REQUIRE(cell_parts[0].minor_break);
+    REQUIRE(!cell_parts[0].item_break);
+    REQUIRE(cell_parts[1].minor_break);
+    REQUIRE(cell_parts[1].item_break);
+    REQUIRE(!cell_parts[2].minor_break);
+    REQUIRE(!cell_parts[2].item_break);
+    for (const Utterance& part : cell_parts) {
+        for (const auto& phone : part.phones) REQUIRE(!phone.item_break);
+    }
+    for (const Utterance& part : parts) REQUIRE(!part.item_break);
+
     // Three parts of a date; a question keeps its kind and its rise in the last part
     const Utterance date = hr.process(U"desetog \uFDD0 jedanaestog \uFDD0 dvije tisuće dvadeset šeste",
                                       Punctuation::QUESTION, true);

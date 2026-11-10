@@ -66,11 +66,14 @@ public:
      *        before a cell's address: formant::split_at_breaks()); the engine
      *        passes formant::minor_break_pause_ms(): half of the user's comma
      *        pause, less at a fast rate.
+     * @param item_pause_ms Length of the pause between two items (before a
+     *        cell's address, Utterance::item_break): the engine passes
+     *        formant::item_break_pause_ms(), the user's comma pause.
      * @return The clause's sound; no pause is appended.
      */
     AudioBuffer synthesize_clause(const std::u32string& text, Punctuation punct,
                                   bool sentence_initial = true, bool letter_sounds = false,
-                                  uint32_t minor_pause_ms = 50);
+                                  uint32_t minor_pause_ms = 50, uint32_t item_pause_ms = 100);
 
     /**
      * The sound of one letter alone, for spelling by sounds (see

@@ -728,6 +728,10 @@ bool is_lowercase_letter(char32_t c) {
 // November 2026).
 const std::string PART_BREAK = std::string(" ") + MINOR_BREAK_UTF8 + " ";
 
+// The pause between two items said in one breath, a cell's contents and its
+// address: the whole comma pause (ITEM_BREAK_MARK in text_marks.hpp)
+const std::string ITEM_BREAK = std::string(" ") + ITEM_BREAK_UTF8 + " ";
+
 // Value of a group of at most 4 digits
 int group_value(std::string_view group) {
     int value = 0;
@@ -3233,6 +3237,53 @@ size_t phone_area_length(std::string_view country, std::string_view national) {
     return 0;
 }
 
+// A number written without its plus sign: a screen reader takes the sign away
+// before the synthesizer sees the text (NVDA at the punctuation level "none"
+// sends "+385 91 123 4567" as " 385 91 123 4567", at "some" and above as
+// "plus 385 ..."; a listener's report of November 2026). Without the sign
+// only the country codes of the four languages are read as a telephone
+// number, and only when what follows the code is a national number of that
+// country by its first digit and its length (the trunk zero left out):
+//   385  1 + 7 digits (Zagreb), 2x-5x and 9x + 6 or 7
+//   386  1-7 + 7 digits (geographic 1-5 and 7, mobile 30-71)
+//   387  3x-5x + 6 digits, 6x + 6 or 7
+//   381  1x-3x and 6x + 6 or 7 digits
+// so a price, a year or a quantity that begins with 385 stays a number.
+bool bare_international_ok(std::string_view country, std::string_view national) {
+    if (national.empty()) return false;
+    const char first = national[0];
+    const size_t n = national.size();
+    if (country == "385") return first == '1' ? n == 8 : ((first >= '2' && first <= '5') || first == '9') && (n == 8 || n == 9);
+    if (country == "386") return first >= '1' && first <= '7' && n == 8;
+    if (country == "387") return first == '6' ? n == 8 || n == 9 : first >= '3' && first <= '5' && n == 8;
+    if (country == "381") return ((first >= '1' && first <= '3') || first == '6') && (n == 8 || n == 9);
+    return false;
+}
+
+// The word a screen reader says for the plus sign, right before `pos` (spaces
+// skipped): plus, Plus, PLUS, and the Cyrillic плус. Not after a number:
+// "2 plus 385" is a sum, and `sum` says so.
+bool plus_word_before(const std::string& text, size_t pos, bool& sum) {
+    sum = false;
+    while (pos > 0 && (text[pos - 1] == ' ' || text[pos - 1] == '\t')) --pos;
+    size_t start = std::string::npos;
+    if (pos >= 4) {
+        std::string word = text.substr(pos - 4, 4);
+        for (char& c : word) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+        if (word == "plus") start = pos - 4;
+    }
+    if (start == std::string::npos && pos >= 8) {
+        const std::string_view word(text.data() + pos - 8, 8);
+        if (word == u8"плус" || word == u8"Плус" || word == u8"ПЛУС") start = pos - 8;
+    }
+    if (start == std::string::npos) return false;
+    if (start > 0 && (is_word_byte(text[start - 1]) || text[start - 1] == '_')) return false;
+    size_t before = start;
+    while (before > 0 && (text[before - 1] == ' ' || text[before - 1] == '\t')) --before;
+    sum = before > 0 && is_digit(text[before - 1]);
+    return !sum;
+}
+
 } // namespace
 
 size_t CroatianNumbers::convert_phone_number(const std::string& text, size_t i,
@@ -3252,9 +3303,19 @@ size_t CroatianNumbers::convert_phone_number(const std::string& text, size_t i,
     if (outer_bracket) head = i - 1;
     if (head > 0 && (is_word_byte(text[head - 1]) || text[head - 1] == '+' ||
                     text[head - 1] == '-' || text[head - 1] == '/' || text[head - 1] == '_')) return 0;
-    const bool double_zero = !plus && text.compare(i, 2, "00") == 0;
-    const bool international = plus || double_zero;
-    if (!international && text[i] != '0') return 0;
+    bool sum = false;
+    const bool plus_word = !plus && !outer_bracket && head == i && head > 0 && plus_word_before(text, i, sum);
+    if (sum) return 0;
+    const bool double_zero = !plus && !plus_word && text.compare(i, 2, "00") == 0;
+    // Neither a sign nor a leading zero: a number whose plus sign the screen
+    // reader took (see bare_international_ok()), never right after a number
+    const bool bare = !plus && !plus_word && !double_zero && text[i] != '0';
+    if (bare) {
+        size_t before = i;
+        while (before > 0 && (text[before - 1] == ' ' || text[before - 1] == '\t')) --before;
+        if (before > 0 && (is_digit(text[before - 1]) || text[before - 1] == '.' || text[before - 1] == ',')) return 0;
+    }
+    const bool international = plus || plus_word || double_zero || bare;
 
     std::string digits;
     std::vector<size_t> boundaries;
@@ -3297,6 +3358,16 @@ size_t CroatianNumbers::convert_phone_number(const std::string& text, size_t i,
         if (!count) return 0;
         country = std::string_view(digits).substr(prefix, count);
         country_end = prefix + count;
+        if (bare) {
+            // Written in groups, the code is the first group, and groups of
+            // three throughout are the thousands of one number (385 912 345 678)
+            if (!boundaries.empty() && boundaries.front() != country_end) return 0;
+            bool threes = boundaries.size() >= 2 && digits.size() % 3 == 0;
+            for (size_t b = 0; threes && b < boundaries.size(); ++b) threes = boundaries[b] == 3 * (b + 1);
+            if (threes && boundaries.size() == digits.size() / 3 - 1) return 0;
+            const size_t zero = digits[country_end] == '0' ? 1 : 0;
+            if (!bare_international_ok(country, std::string_view(digits).substr(country_end + zero))) return 0;
+        }
     } else {
         if (digits.size() < 8 || digits.size() > 11) return 0;
         country = slovenian() ? "386" : m_dialect == Dialect::Serbian ? "381" :
@@ -3663,6 +3734,38 @@ size_t code_begin(const std::string& text, size_t digits, bool& alone) {
     return begin;
 }
 
+// A cell's address as NVDA says it in Excel: the letters and the number as
+// two words, "A 3" (the driver's log of November 2026: the items 'Marijan  '
+// and 'A 3  '; with the glued form alone the listener heard no change, the A
+// stayed the conjunction a). Written so, the letters are far more often a
+// word (U 5 sati, A 3 su došla, NA 5 mjesta), so this form is an address only
+// as an item of its own: one space between the letters and the number, and
+// after the number the end of the text, of the line or of a screen reader's
+// item (two spaces or more). `digits` is the first digit; returns the first
+// letter or npos.
+size_t spaced_code_begin(const std::string& text, size_t digits) {
+    if (digits < 2 || text[digits - 1] != ' ') return std::string::npos;
+    const size_t letters_end = digits - 1;
+    size_t begin = letters_end;
+    while (begin > 0 && text[begin - 1] >= 'A' && text[begin - 1] <= 'Z') --begin;
+    if (begin == letters_end || letters_end - begin > 2) return std::string::npos;
+    if (begin > 0 && spaces_begin(text, begin) == begin) {
+        const char before = text[begin - 1];
+        if (before != '\n' && before != '\r' && !is_formula_sign(before)) return std::string::npos;
+    }
+    // In a text of capitals the letters are a word: DOLAZIM U 5
+    {
+        size_t word_end = spaces_begin(text, begin), word = word_end;
+        while (word > 0 && text[word - 1] >= 'A' && text[word - 1] <= 'Z') --word;
+        if (word_end - word >= 3 && (word == 0 || !is_word_byte(text[word - 1]))) return std::string::npos;
+    }
+    const size_t end = digits_end(text, digits);
+    if (text[digits] == '0' || end - digits > 7) return std::string::npos;
+    const bool item_end =end >= text.size() || text[end] == '\n' || text[end] == '\r' ||
+                          (text[end] == ' ' && (end + 1 >= text.size() || text[end + 1] == ' '));
+    return item_end ? begin : std::string::npos;
+}
+
 // The words after which the designation belongs to the phrase and no pause
 // stands before it (u A1, od A1 do B5, A1 i B2, v A1): the prepositions and
 // conjunctions of the four languages
@@ -3695,14 +3798,24 @@ void trim_spaces(std::string& result) {
 // A designation at the number that starts at `digits` (see code_begin()):
 // its letters, already in the result, get the mark that makes them letters
 // (A is not the conjunction a, S not the preposition, NA not the word), and
-// one that stands alone, as a cell's address does, has a short pause before
-// it when the cell's contents or any other item came first: "Marjan A17" was
+// one that stands alone, as a cell's address does, has a pause before it (the
+// whole comma pause: half of it was not heard through a screen reader) when
+// the cell's contents or any other item came first: "Marjan A17" was
 // heard as "Marijana 17" (a listener's report of November 2026). The number
 // itself is read by the caller as before. A number right after an address
 // gets the pause too: "A20 5" is the cell A20 with a 5 in it, not A25.
 void mark_cell_address(const std::string& text, size_t digits, std::string& result) {
     bool alone = false;
-    const size_t begin = code_begin(text, digits, alone);
+    size_t begin = code_begin(text, digits, alone);
+    // "A 3", the address as two words: the space goes with the letters
+    size_t gap = 0;
+    if (begin == std::string::npos) {
+        begin = spaced_code_begin(text, digits);
+        if (begin != std::string::npos) {
+            gap = 1;
+            alone = true;
+        }
+    }
     if (begin == std::string::npos) {
         // The contents after the address: A20 5
         const size_t before = spaces_begin(text, digits);
@@ -3711,17 +3824,18 @@ void mark_cell_address(const std::string& text, size_t digits, std::string& resu
         while (number > 0 && is_digit(text[number - 1])) --number;
         if (code_begin(text, number, alone) == std::string::npos || !alone) return;
         trim_spaces(result);
-        result += PART_BREAK;
+        result += ITEM_BREAK;
         return;
     }
-    const size_t letters = digits - begin;
-    if (result.size() < letters || result.compare(result.size() - letters, letters, text, begin, letters) != 0) {
+    const size_t letters = digits - gap - begin;
+    if (result.size() < letters + gap ||
+        result.compare(result.size() - letters - gap, letters, text, begin, letters) != 0) {
         return;
     }
-    result.resize(result.size() - letters);
+    result.resize(result.size() - letters - gap);
     if (alone && follows_an_item(text, begin)) {
         trim_spaces(result);
-        result += PART_BREAK;
+        result += ITEM_BREAK;
     }
     result.append(text, begin, letters);
     result += LETTER_CODE_UTF8;

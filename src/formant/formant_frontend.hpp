@@ -37,13 +37,15 @@ struct Utterance {
     bool sentence_initial = true;   // false: the clause goes on a sentence (after a comma)
     bool slovenian = false;         // made by the Slovenian front end (process_slovenian)
     bool minor_break = false;       // ends at a short pause inside the clause (split_at_breaks())
+    bool item_break = false;        // ... the pause between two items: item_break_pause_ms()
     bool continued = false;         // goes on after such a pause
 };
 
 /**
  * The parts of a clause between its short pauses (Phone::break_before, from
  * MINOR_BREAK_MARK in the text: the colon of a clock time, the periods of a
- * numeric date, the place before a spreadsheet cell's address). The front end
+ * numeric date; ITEM_BREAK_MARK, the longer pause before a spreadsheet cell's
+ * address, Utterance::item_break). The front end
  * reads the clause whole, so every word keeps its context; the synthesizers
  * render the parts one after another with a silence between them. A part
  * before a pause is a continuation that only suspends the melody
@@ -73,6 +75,13 @@ constexpr uint32_t MINOR_BREAK_PAUSE_PERCENT = 50;
 inline uint32_t minor_break_pause_ms(uint32_t comma_pause_ms, float speed) {
     const float ms = static_cast<float>(comma_pause_ms) * static_cast<float>(MINOR_BREAK_PAUSE_PERCENT) / 100.0f;
     return static_cast<uint32_t>(std::lround(speed > 1.0f ? ms / std::sqrt(speed) : ms));
+}
+
+// The silence between two items said in one breath (ITEM_BREAK_MARK: a
+// cell's contents and its address): the user's comma pause as it is, at every
+// rate, like the pause of a comma. The melody still goes on over it.
+inline uint32_t item_break_pause_ms(uint32_t comma_pause_ms) {
+    return comma_pause_ms;
 }
 
 /**

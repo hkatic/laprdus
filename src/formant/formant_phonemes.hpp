@@ -131,6 +131,7 @@ struct Phone {
     bool word_start = false;
     bool vowel_word = false;    // the whole word is this one unstressed vowel (i, a, u, o)
     bool break_before = false;  // a short pause stands before this word (split_at_breaks())
+    bool item_break = false;    // ... and it is the longer one between two items (ITEM_BREAK_MARK)
     Accent accent = Accent::None;
     uint8_t prominence = 0;     // 0 clitic, 1 function word, 2 content word
     uint16_t word = 0;          // word index within the clause

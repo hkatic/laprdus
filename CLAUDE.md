@@ -28,7 +28,7 @@ It has two kinds of voices:
 | `src/core/phoneme_mapper.cpp` | UTF-8 text → phoneme token conversion |
 | `src/core/croatian_numbers.cpp` | Number-to-words (supports up to centillions) |
 | `src/core/inflection.cpp` | Clause segmentation at punctuation, pause settings |
-| `src/core/text_marks.hpp` | Marks the number converter leaves for the front end: a short pause inside a clause, the letters of a designation such as A17 |
+| `src/core/text_marks.hpp` | Marks the number converter leaves for the front end: a short pause inside a clause, the longer pause before a cell's address, the letters of a designation such as A17 |
 | `src/core/voice_registry.cpp` | Voice definitions (Josip, Vlado, derived voices) |
 | `src/audio/audio_synthesizer.cpp` | Recorded voices: clause synthesis (front end → planner → renderer) |
 | `src/audio/unit_bank.cpp` | Recorded voices: analysis of the recordings (pitch marks, voicing, bursts) |
@@ -188,7 +188,17 @@ are separated by the user's comma pause (`+385 91 1234567` → `+385 | 91 | 123 
 six digits `123 | 456`; up to four digits are one group, eight are 4+4).
 Digit mode uses standalone digit names (Slovenian *dve*); whole-number mode reads
 cardinal groups. Surrounding words never inflect phone groups. Preserve every
-leading zero, including optional `(0)` and Italy's significant zero. Country
+leading zero, including optional `(0)` and Italy's significant zero. A screen
+reader may take the plus sign before the engine sees it (NVDA at the
+punctuation level "none" sends a space for it, at higher levels the word): a
+number after the word *plus* / *плус* (`plus_word_before()`; not after a
+number, `2 plus 385`) is international like one after the sign, and with
+nothing at all a number that begins with 385, 386, 387 or 381 and goes on as
+a national number of that country by first digit and length
+(`bare_international_ok()`; written together or with the code as the first
+group; not groups of three throughout, `385 912 345 678`) is one too:
+` 385 91 123 4567  `, `385911234567`. `385 kuna`, `385 911 234` and another
+country's number without its sign stay numbers. Country
 codes and regional exceptions, ambiguity limits and sources are documented in
 `docs/formant.md`, "Telephone numbers". Tests: `test_numbers.cpp` and the `[phone]`
 audio tests in `test_formant.cpp` / `test_concat.cpp`.
@@ -215,19 +225,37 @@ A listener's report of November 2026: a screen reader says a spreadsheet
 cell's contents and then its address, and "Marjan A17" was heard as "Marijana
 17" (the A was the conjunction *a*, unstressed and leaning on the number); the
 hours of a clock time ran into its minutes and the day of a date into the
-month. The number converter now leaves two marks in the text
+month. The number converter now leaves three marks in the text
 (`src/core/text_marks.hpp`; Unicode noncharacters, which no host's text
 contains, where a private use character can come from an icon font):
 
 - `MINOR_BREAK_MARK` (U+FDD0, written as a word of its own): a short pause
   before the next word. Where: between the hours, minutes and seconds of a
-  clock time (`12:30:45`, also `u 8.30`, `24:00`, Slovenian `ob 8.30`), between
-  the day, month and year of a numeric date (`10.11.2026.`, `10. 11. 2026.`,
-  `5.3.`, the right side of `15.–20. 3.`), before a cell's address that follows
-  other words (`Marjan A17`, `1250 C3`, `A1 B2`) and before a number that
-  follows an address (`A20 5` is not A25). Not at the head of a clause, not
-  after a preposition or conjunction (`u A1`, `od A1 do B5`, `v A1`;
-  `leans_on_next()`), not in a range or formula (`A1:B5`, `=A1+B2`).
+  clock time (`12:30:45`, also `u 8.30`, `24:00`, Slovenian `ob 8.30`) and
+  between the day, month and year of a numeric date (`10.11.2026.`,
+  `10. 11. 2026.`, `5.3.`, the right side of `15.–20. 3.`).
+- `ITEM_BREAK_MARK` (U+FDD2, written the same way): the pause between two
+  items a screen reader says in one breath, the **whole comma pause** at every
+  rate (`item_break_pause_ms()`; `Word::item_break`, `Phone::item_break`,
+  `Utterance::item_break` next to the short pause's flags). Where: before a
+  cell's address that follows other words (`Marjan A17`, `1250 C3`, `A1 B2`)
+  and before a number that follows an address (`A20 5` is not A25). Not at the
+  head of a clause, not after a preposition or conjunction (`u A1`,
+  `od A1 do B5`, `v A1`; `leans_on_next()`), not in a range or formula
+  (`A1:B5`, `=A1+B2`). It was the short pause until 2026-11-10: NVDA sends a
+  cell as `Marjan   A17  ` (two items of one sequence, two spaces after each,
+  joined by the driver), the engine paused for 54 ms at NVDA's rate 60, and
+  the listener heard no pause in Excel. And still none after that: the
+  driver's debug log showed that NVDA's Excel support says the address as two
+  words, `'Marijan  '` then `'A 3  '`. `spaced_code_begin()` takes that form
+  as an address too, but only as an item of its own, since written apart the
+  letters are usually a word (`U 5 sati`, `A 3 su došla`, `NA 5 mjesta`): one
+  space between one or two capitals and the number, and after the number the
+  end of the text, of the line, or two spaces (the end of a screen reader's
+  item); not after a word of three or more capitals (`DOLAZIM U 5`). To see
+  what NVDA sends, create `%TEMP%\laprdus_debug` and restart NVDA: the driver
+  logs every sequence to `%TEMP%\laprdus_debug.log`. Do that before believing
+  a replay of what NVDA "should" send.
 - `LETTER_CODE_MARK` (U+FDD1, right after the letters): one or two capital
   letters of the English alphabet glued to a number of up to seven digits
   (`A17`, `F5`, `S22`, `U21`, `AB12`, `H2O`, `A4-format`; `code_begin()`) are

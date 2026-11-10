@@ -10,6 +10,8 @@ using namespace laprdus;
 // own, and the mark after the letters of a designation
 static const std::string BREAK = std::string(" ") + MINOR_BREAK_UTF8 + " ";
 static const std::string CODE = LETTER_CODE_UTF8;
+// The longer pause between two items, a cell's contents and its address
+static const std::string ITEM = std::string(" ") + ITEM_BREAK_UTF8 + " ";
 
 // Expected group boundaries are independent of the parser; spell their digits
 // through the public digit-name API so the same matrix covers all four languages.
@@ -108,12 +110,65 @@ TEST_CASE("Telephone groups honor the number mode in every language", "[numbers]
             "+ tristo osamdeset pet, devedeset jedan, sto dvadeset tri, četiri tisuće petsto šezdeset sedam");
 }
 
+// A listener's report of November 2026: NVDA at the punctuation level "none"
+// takes the plus sign away before the synthesizer sees the text (and says
+// "plus" for it at the higher levels), so "+385 91 123 4567" had no pauses
+// and "+385911234567" was one long number.
+TEST_CASE("Telephone numbers whose plus sign a screen reader took", "[numbers][phone]") {
+    const std::pair<const char*, const char*> cases[] = {
+        {"385 91 123 4567", "385|91|123|4567"},
+        {"385911234567", "385|91|123|4567"},
+        {"385 91 1234567", "385|91|123|4567"},
+        {"385/91/123-4567", "385|91|123|4567"},
+        {"385 98 123 456", "385|98|123|456"},
+        {"385 1 2345 672", "385|1|234|5672"},
+        {"38512345672", "385|1|234|5672"},
+        {"385 21 123 456", "385|21|123|456"},
+        {"385 (0)91 1234567", "385|091|123|4567"},
+        {"38641453375", "386|41|453|375"},
+        {"386 41 453 375", "386|41|453|375"},
+        {"386 1 234 5678", "386|1|234|5678"},
+        {"387 33 123 456", "387|33|123|456"},
+        {"387 61 123 456", "387|61|123|456"},
+        {"381 11 123 4567", "381|11|123|4567"},
+        {"381 64 123 4567", "381|64|123|4567"},
+    };
+    CroatianNumbers n;
+    for (auto dialect : {CroatianNumbers::Dialect::Croatian, CroatianNumbers::Dialect::Serbian,
+                         CroatianNumbers::Dialect::Bosnian, CroatianNumbers::Dialect::Slovenian}) {
+        n.set_dialect(dialect);
+        for (bool by_digit : {false, true}) {
+            auto convert = [&](const std::string& text) {
+                return by_digit ? n.convert_digits_in_text(text) : n.convert_numbers_in_text(text);
+            };
+            for (auto c : cases) {
+                INFO(c.first << " mode=" << by_digit << " language=" << int(dialect));
+                const std::string expected = phone_words(n, c.second, by_digit);
+                REQUIRE(convert(c.first) == expected);
+                // What NVDA sends: a space where the sign was, two after the item
+                REQUIRE(convert(std::string(" ") + c.first + "  ") == " " + expected + "  ");
+                REQUIRE(convert(std::string("Telefon: ") + c.first + "!") == "Telefon: " + expected + "!");
+                REQUIRE(convert(std::string("Nazovi ") + c.first + " sutra") == "Nazovi " + expected + " sutra");
+                // The sign read out as a word, in either script
+                REQUIRE(convert(std::string("plus ") + c.first) == "plus " + expected);
+                REQUIRE(convert(std::string("Plus  ") + c.first) == "Plus  " + expected);
+                REQUIRE(convert(std::string(u8"плус ") + c.first) == u8"плус " + expected);
+            }
+            // After the word any country's number is one, as after the sign
+            REQUIRE(convert("plus 44 20 7946 0018") == "plus " + phone_words(n, "44|20|7946|0018", by_digit));
+            REQUIRE(convert("plus 12025550123") == "plus " + phone_words(n, "1|202|555|0123", by_digit));
+        }
+    }
+}
+
 TEST_CASE("Telephone recognition leaves other numeric formats alone", "[numbers][phone]") {
     CroatianNumbers n;
     REQUIRE(n.convert_numbers_in_text("+12") == "+dvanaest");
     REQUIRE(n.convert_numbers_in_text("+123456") == "+" + n.number_to_words("123456"));
     REQUIRE(n.convert_numbers_in_text("+1234567890123456") == "+" + n.number_to_words("1234567890123456"));
-    REQUIRE(n.convert_numbers_in_text("38641453375") == n.number_to_words("38641453375"));
+    // A long number that is no national number of the four countries stays a number
+    REQUIRE(n.convert_numbers_in_text("38561453375") == n.number_to_words("38561453375"));
+    REQUIRE(n.convert_numbers_in_text("49123123456") == n.number_to_words("49123123456"));
     REQUIRE(n.convert_numbers_in_text("+1234567,5").find(", ") == std::string::npos);
     REQUIRE(n.convert_numbers_in_text("+385911234567.5").find(", ") == std::string::npos);
     REQUIRE(n.convert_numbers_in_text("ID+385911234567").find(", ") == std::string::npos);
@@ -126,6 +181,15 @@ TEST_CASE("Telephone recognition leaves other numeric formats alone", "[numbers]
     REQUIRE(n.convert_digits_in_text("112") == "jedan jedan dva");
     REQUIRE(n.convert_digits_in_text("+ 1 2 3,5 6,7 8 9,8 7 6") ==
             "+ jedan dva tri, pet šest, sedam osam devet, osam sedam šest");
+    // Without the plus sign (see the next test) nothing else becomes a phone number
+    for (const char* text : {"385", "385 kuna", "Imam 385 911 kuna", "385 911 234", "385 912 345 678",
+                             "3859112345", "38591123456789", "12 385 91 123 4567", "2 plus 385 91 1234567",
+                             "3,385 91 123 4567", "44 20 7946 0018", "1 202 555 0123", "38 591 123 4567",
+                             "385 61 234 567", "386 81 234 567", "387 21 234 567", "381 41 234 567"}) {
+        INFO(text);
+        REQUIRE(n.convert_numbers_in_text(text).find(", ") == std::string::npos);
+        REQUIRE(n.convert_digits_in_text(text).find(", ") == std::string::npos);
+    }
     // Newlines terminate phone candidates; multiple numbers remain separate.
     REQUIRE(n.convert_digits_in_text("+385911234567\n+38641453375") ==
             phone_words(n, "+ 385|91|123|4567", true) + "\n" + phone_words(n, "+ 386|41|453|375", true));
@@ -364,20 +428,20 @@ TEST_CASE("Numeric dates inside a sentence, with leading zeros and in ranges", "
 
 TEST_CASE("A cell's address is set off from the cell's contents", "[numbers][breaks]") {
     CroatianNumbers n;
-    REQUIRE(n.convert_numbers_in_text("Marjan A17") == "Marjan" + BREAK + "A" + CODE + " sedamnaest");
-    REQUIRE(n.convert_numbers_in_text("Marjan   A17  ") == "Marjan" + BREAK + "A" + CODE + " sedamnaest  ");
-    REQUIRE(n.convert_numbers_in_text("Ukupno B2") == "Ukupno" + BREAK + "B" + CODE + " dva");
-    REQUIRE(n.convert_numbers_in_text("1250 C3") == "tisuću dvjesto pedeset" + BREAK + "C" + CODE + " tri");
-    REQUIRE(n.convert_numbers_in_text("Marjan AB12") == "Marjan" + BREAK + "AB" + CODE + " dvanaest");
-    REQUIRE(n.convert_numbers_in_text("\"Marjan\" A17") == "\"Marjan\"" + BREAK + "A" + CODE + " sedamnaest");
+    REQUIRE(n.convert_numbers_in_text("Marjan A17") == "Marjan" + ITEM + "A" + CODE + " sedamnaest");
+    REQUIRE(n.convert_numbers_in_text("Marjan   A17  ") == "Marjan" + ITEM + "A" + CODE + " sedamnaest  ");
+    REQUIRE(n.convert_numbers_in_text("Ukupno B2") == "Ukupno" + ITEM + "B" + CODE + " dva");
+    REQUIRE(n.convert_numbers_in_text("1250 C3") == "tisuću dvjesto pedeset" + ITEM + "C" + CODE + " tri");
+    REQUIRE(n.convert_numbers_in_text("Marjan AB12") == "Marjan" + ITEM + "AB" + CODE + " dvanaest");
+    REQUIRE(n.convert_numbers_in_text("\"Marjan\" A17") == "\"Marjan\"" + ITEM + "A" + CODE + " sedamnaest");
     // The address first: no pause before a word, one before a number (A20 with a 5 in it is not A25)
     REQUIRE(n.convert_numbers_in_text("A17 Marjan") == "A" + CODE + " sedamnaest Marjan");
-    REQUIRE(n.convert_numbers_in_text("A20 5") == "A" + CODE + " dvadeset" + BREAK + "pet");
-    REQUIRE(n.convert_numbers_in_text("A1 B2") == "A" + CODE + " jedan" + BREAK + "B" + CODE + " dva");
+    REQUIRE(n.convert_numbers_in_text("A20 5") == "A" + CODE + " dvadeset" + ITEM + "pet");
+    REQUIRE(n.convert_numbers_in_text("A1 B2") == "A" + CODE + " jedan" + ITEM + "B" + CODE + " dva");
     // No pause at the head of a clause, after a preposition or conjunction, in a range or a formula
     REQUIRE(n.convert_numbers_in_text("A17") == "A" + CODE + " sedamnaest");
     REQUIRE(n.convert_numbers_in_text("Marjan, A17") == "Marjan, A" + CODE + " sedamnaest");
-    REQUIRE(n.convert_numbers_in_text("10.11.2026. A17").find(BREAK + "A") == std::string::npos);
+    REQUIRE(n.convert_numbers_in_text("10.11.2026. A17").find(ITEM + "A") == std::string::npos);
     REQUIRE(n.convert_numbers_in_text("od A1 do B5") == "od A" + CODE + " jedan do B" + CODE + " pet");
     REQUIRE(n.convert_numbers_in_text("u A1 i B2") == "u A" + CODE + " jedan i B" + CODE + " dva");
     REQUIRE(n.convert_numbers_in_text("У A1") == "У A" + CODE + " jedan");
@@ -395,14 +459,37 @@ TEST_CASE("A cell's address is set off from the cell's contents", "[numbers][bre
         for (size_t at = words.find(CODE); at != std::string::npos; at = words.find(CODE, at + 1)) ++marks;
         REQUIRE(marks == (std::string(text) == "R2-D2" ? 1u : 0u));     // R2 is one; -D2 is not
     }
-    REQUIRE(n.convert_numbers_in_text("Gledam utrku F1 na HRT2") == "Gledam utrku" + BREAK + "F" + CODE + " jedan na HRT dva");
+    REQUIRE(n.convert_numbers_in_text("Gledam utrku F1 na HRT2") == "Gledam utrku" + ITEM + "F" + CODE + " jedan na HRT dva");
+
+    // NVDA in Excel says the address as two words, each item followed by two
+    // spaces and joined by the driver with a third (the driver's log,
+    // November 2026: 'Marijan  ' and 'A 3  '): the same address
+    REQUIRE(n.convert_numbers_in_text("Marijan   A 3  ") == "Marijan" + ITEM + "A" + CODE + " tri  ");
+    REQUIRE(n.convert_numbers_in_text("Ivan   A 4  ") == "Ivan" + ITEM + "A" + CODE + " četiri  ");
+    REQUIRE(n.convert_numbers_in_text("A 5  ") == "A" + CODE + " pet  ");
+    REQUIRE(n.convert_numbers_in_text("A 5") == "A" + CODE + " pet");
+    REQUIRE(n.convert_numbers_in_text("1250   C 3  ") == "tisuću dvjesto pedeset" + ITEM + "C" + CODE + " tri  ");
+    REQUIRE(n.convert_numbers_in_text("Marijan   AB 12  ") == "Marijan" + ITEM + "AB" + CODE + " dvanaest  ");
+    REQUIRE(n.convert_numbers_in_text("Marijan   A 3  odabrano  ") ==
+            "Marijan" + ITEM + "A" + CODE + " tri  odabrano  ");
+    REQUIRE(n.convert_numbers_in_text("Marijan A 3\nIvan A 4") ==
+            "Marijan" + ITEM + "A" + CODE + " tri\nIvan" + ITEM + "A" + CODE + " četiri");
+    REQUIRE(n.convert_digits_in_text("Marijan   A 17  ") == "Marijan" + ITEM + "A" + CODE + " jedan sedam  ");
+    // Written apart inside a sentence the letters are the words they spell
+    for (const char* text : {"U 5 sati dolazim", "A 3 su došla", "Dolazim u 5", "Idem na 5 dana", "NA 5 mjesta",
+                             "U 5.", "U 5, a ne u 6", "DOLAZIM U 5", "A  5", "A 05", "ABC 5", "a 5  ", "U 5 sati  "}) {
+        INFO(text);
+        REQUIRE(n.convert_numbers_in_text(text).find(CODE) == std::string::npos);
+        REQUIRE(n.convert_numbers_in_text(text).find(ITEM) == std::string::npos);
+        REQUIRE(n.convert_digits_in_text(text).find(CODE) == std::string::npos);
+    }
 
     // The digit mode: the same marks, and the digits set off from the letters
-    REQUIRE(n.convert_digits_in_text("Marjan A17") == "Marjan" + BREAK + "A" + CODE + " jedan sedam");
+    REQUIRE(n.convert_digits_in_text("Marjan A17") == "Marjan" + ITEM + "A" + CODE + " jedan sedam");
     REQUIRE(n.convert_digits_in_text("COVID19") == "COVID jedan devet");
     REQUIRE(n.convert_digits_in_text("u20:03") == "u dvadeset" + BREAK + "nula tri");
 
     n.set_dialect(CroatianNumbers::Dialect::Slovenian);
-    REQUIRE(n.convert_numbers_in_text("Marjan A2") == "Marjan" + BREAK + "A" + CODE + " dva");
+    REQUIRE(n.convert_numbers_in_text("Marjan A2") == "Marjan" + ITEM + "A" + CODE + " dva");
     REQUIRE(n.convert_numbers_in_text("v A1") == "v A" + CODE + " ena");
 }

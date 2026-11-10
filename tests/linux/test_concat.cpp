@@ -812,6 +812,9 @@ TEST_CASE("Recorded voices pause between telephone groups", "[concat][phone]") {
     REQUIRE(laprdus_set_comma_pause(engine.handle, 100) == LAPRDUS_OK);
     const auto with = speak(engine.handle, "00385911234567");
     REQUIRE(with.size() == without.size() + 3 * 2205);
+    // The plus sign taken by a screen reader: the same groups
+    REQUIRE(speak(engine.handle, " 385 91 123 4567  ") ==
+            speak(engine.handle, "tri osam pet, devet jedan, jedan dva tri, četiri pet šest sedam"));
 }
 
 // The short pauses of a clock time, a numeric date and a cell's address (a
@@ -825,11 +828,15 @@ TEST_CASE("Recorded voices pause inside a time and before a cell's address", "[c
         REQUIRE(laprdus_set_voice(engine.handle, voice, data_dir()) == LAPRDUS_OK);
         const auto cell = speak(engine.handle, "Marjan A17");
         REQUIRE(!cell.empty());
-        REQUIRE(cell == speak(engine.handle, "Marjan \xEF\xB7\x90 A\xEF\xB7\x91 sedamnaest"));
+        REQUIRE(cell == speak(engine.handle, "Marjan \xEF\xB7\x92 A\xEF\xB7\x91 sedamnaest"));
         REQUIRE(cell != speak(engine.handle, "Marjan A sedamnaest"));
-        struct Case { const char* text; int pauses; };
+        // NVDA in Excel: the address as two words, two spaces after every item
+        REQUIRE(speak(engine.handle, "Marjan   A 17  ") == cell);
+        // Samples of pause at a comma pause of 100 ms: half of it, 1102
+        // samples, inside a time or a date, the whole before a cell's address
+        struct Case { const char* text; size_t samples; };
         const Case cases[] = {
-            {"Marjan A17", 1}, {"12:30:45", 2}, {"10.11.2026.", 2}, {"Dobar dan svima", 0},
+            {"Marjan A17", 2205}, {"12:30:45", 2 * 1102}, {"10.11.2026.", 2 * 1102}, {"Dobar dan svima", 0},
         };
         for (const Case& c : cases) {
             INFO(c.text);
@@ -837,8 +844,7 @@ TEST_CASE("Recorded voices pause inside a time and before a cell's address", "[c
             const auto without = speak(engine.handle, c.text);
             REQUIRE(laprdus_set_comma_pause(engine.handle, 100) == LAPRDUS_OK);
             const auto with = speak(engine.handle, c.text);
-            // Half of the comma pause at the normal rate: 50 ms, 1102 samples
-            REQUIRE(with.size() == without.size() + static_cast<size_t>(c.pauses) * 1102);
+            REQUIRE(with.size() == without.size() + c.samples);
         }
         REQUIRE(speak(engine.handle, "10.11.2026.") == speak(engine.handle, "10. 11. 2026."));
     }

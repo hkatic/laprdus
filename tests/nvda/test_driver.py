@@ -28,6 +28,7 @@ What is covered:
 """
 import json
 import os
+import struct
 import sys
 import time
 
@@ -291,6 +292,43 @@ def test_delayed_description():
     synth.terminate()
 
 
+def _silences(data, min_ms):
+    """Lengths in ms of the silences of at least min_ms inside the audio."""
+    samples = struct.unpack("<%dh" % (len(data) // 2), data)
+    runs, start = [], None
+    for k, v in enumerate(samples):
+        if abs(v) < 40:
+            if start is None:
+                start = k
+        else:
+            if start is not None and start > 0 and (k - start) * 1000 // 22050 >= min_ms:
+                runs.append((k - start) * 1000 // 22050)
+            start = None
+    return runs
+
+
+def test_items_and_phone_numbers():
+    """What NVDA really sends (a listener's report of November 2026): every
+    item of a sequence ends with two spaces, an Excel cell is its contents and
+    its address as two items, and at the punctuation level "none" the plus
+    sign of a telephone number is a space."""
+    write_settings("sounds")
+    synth = new_synth()
+    cell = b"".join(run(synth, ["Marjan  ", "A17  ", IndexCommand(1)]))
+    check("a cell's address comes after the whole comma pause",
+          cell == spoken(synth, "Marjan A17") and len(_silences(cell, 100)) == 1)
+    # The driver's log in Excel: [0] Text: 'Marijan  '  [1] Text: 'A 3  '
+    excel = b"".join(run(synth, ["Marijan  ", "A 3  ", IndexCommand(3)]))
+    check("Excel's address, said as two words, is the same address",
+          excel == spoken(synth, "Marijan A3") and len(_silences(excel, 100)) == 1)
+    empty = b"".join(run(synth, ["A 5  ", IndexCommand(4)]))
+    check("the address of an empty cell is a letter and a number", empty == spoken(synth, "A5"))
+    for text in (" 385 91 123 4567  ", " 385911234567  ", "plus 385 91 1234567  "):
+        phone = b"".join(run(synth, [text, IndexCommand(2)]))
+        check("the groups of %r are set off by comma pauses" % text, len(_silences(phone, 100)) == 3)
+    synth.terminate()
+
+
 def test_settings_order():
     ids = [getattr(s, "id", s) for s in drv.SynthDriver.supportedSettings]
     check("the Language setting comes before the Voice setting",
@@ -306,5 +344,6 @@ if __name__ == "__main__":
     test_volume_boost()
     test_voice_quality()
     test_delayed_description()
+    test_items_and_phone_numbers()
     print("%d failed" % len(failures))
     sys.exit(1 if failures else 0)

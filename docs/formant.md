@@ -5512,6 +5512,40 @@ groups of three, the last of two to four digits (five digits 3+2, nine
 ordinary numbers, dates, decimals, identifiers and the comma grouping of
 screen-reader-spelled digits keep their existing paths.
 
+**The plus sign a screen reader takes (2026-11-10).** A listener's report
+through NVDA: `+385 91 123 4567` had no pauses and `+385911234567` was one
+long number, with the build that has the grouping above. NVDA's symbol table
+has `+` at the level "some" without "preserve", so at the punctuation level
+"none" the sign is replaced by a space before the synthesizer sees the text
+(` 385 91 123 4567  `), and at "some" and above it is the word (`plus 385
+...`); the same text reaches SAPI5 voices used through NVDA. Measured through
+the add-on's driver: three comma pauses with the sign, none without.
+`convert_phone_number()` therefore has two more ways to be international:
+
+- after the word *plus* (any case, Cyrillic *плус*; `plus_word_before()`), any
+  country, with the rules of the sign; not after a number, where it is a sum
+  (`2 plus 385 ...`);
+- with nothing at all, only for the country codes of the four languages, 385,
+  386, 387 and 381, and only when what follows is a national number of that
+  country by its first digit and length, the trunk zero left out
+  (`bare_international_ok()`: 385 1 + 7 digits, 2x-5x and 9x + 6 or 7; 386
+  1-7 + 7; 387 3x-5x + 6, 6x + 6 or 7; 381 1x-3x and 6x + 6 or 7), written
+  together or with the code as the first group. Not right after a number or a
+  decimal separator, and not when every group has three digits, which is one
+  number with its thousands (`385 912 345 678`).
+
+`385 kuna`, `385 911 234`, `3859112345` and a number of another country
+without its sign (`44 20 7946 0018`) stay numbers. The cost: an eleven- or
+twelve-digit cardinal that happens to be a valid number of one of the four
+countries (`38641453375`, until now *trideset osam milijardi ...*) is read as
+a telephone number. The ranges were written from the numbering plans cited
+above and are deliberately narrower than them (no 6x, 7x, 8x service numbers
+for 385); they were not checked line by line against libphonenumber's
+metadata again. Tests: `test_numbers.cpp` "Telephone numbers whose plus sign a
+screen reader took", the refusals in "Telephone recognition leaves other
+numeric formats alone", the `[phone]` audio tests, and
+`tests/nvda/test_driver.py` `test_items_and_phone_numbers()`.
+
 **Currency amounts (2026-11-09).** The shared number normalizer now recognizes
 monetary structure before the phone/identifier and grammatical fallback rules.
 A capital label (*Stanje 2.150,00*) and the account-number guard (*Račun
@@ -5737,6 +5771,63 @@ parts of a clause), `test_formant.cpp` "Clock times, dates and cell addresses
 have short pauses" (the samples, the comma pause, the melody, every language,
 both number modes, a singing preset), `test_concat.cpp` "Recorded voices
 pause inside a time and before a cell's address".
+
+**The pause before a cell's address is the whole comma pause (2026-11-10).**
+The listener heard no pause in Excel with the build above. The builds were the
+current ones; NVDA sends a cell as two strings of one sequence, each followed
+by two spaces (`speech.getPropertiesSpeech()` appends the name and
+`cellCoordsText` separately, `speech.speak()` adds `CHUNK_SEPARATOR`), the
+driver joins them with a third (`Marjan   A17  `), and the engine did write
+the pause: 54 ms at NVDA's rate 60 and the comma pause of 100, the length of a
+stop's closure (56 ms in *Marijana 17*), which is not heard as a pause between
+two items. The place before an address, and before a number after one, now
+has a mark of its own, `ITEM_BREAK_MARK` (U+FDD2, `text_marks.hpp`), carried
+as `Word::item_break`, `Phone::item_break` and `Utterance::item_break` next to
+the short pause's flags; `split_at_breaks()` splits at both, and the
+synthesizers put `item_break_pause_ms()` there, the user's comma pause as it
+is, at every rate (110 ms of silence measured in `Marjan   A17  `, 147 ms in
+`1250   C3  ` with the closure of the c). The melody is that of the short
+pause: the part before it is still a continuation with
+`MINOR_BREAK_MOVEMENT`, not a comma's clause end. Clock times and dates keep
+half the comma pause. Old and new audio of six sentences with times, dates,
+telephone numbers with their sign, sums and ordinals, Zvonko and Josip in the
+four languages (48 comparisons): identical samples.
+
+**The address as two words (2026-11-10).** The listener still heard no
+difference in Excel, with the telephone fix of the same build working. The
+driver's debug log (`%TEMP%\laprdus_debug` present when NVDA starts; the
+sequences go to `%TEMP%\laprdus_debug.log`) showed why: NVDA 2026.3 in Excel
+does not send `A3` but `A 3`,
+
+```
+speak() called with 3 items
+  [0] Text: 'Marijan  '
+  [1] Text: 'A 3  '
+  [2] IndexCommand(index=126)
+```
+
+so the letter was never glued to the number, no mark was written, and the A
+stayed the conjunction *a*. The replay above had been built from NVDA's source
+and from the glued form the first report named, not from a capture; the
+capture is the first thing to take next time. `spaced_code_begin()`
+(`croatian_numbers.cpp`) reads this form as the same address, with the same
+mark and pause, under narrower conditions than the glued form, because
+letters written apart from a number are usually a word (*U 5 sati*, *A 3 su
+došla*, *NA 5 mjesta*): exactly one space between one or two capital letters
+and a number of up to seven digits without a leading zero, the letters a word
+of their own, and after the number the end of the text, the end of a line or
+two spaces, which is how NVDA ends every item of a sequence; not after a word
+of three or more capitals (*DOLAZIM U 5*). `Marijan   A 3  ` gives the samples
+of `Marijan A3` (108 ms of silence through the driver at rate 60), and
+`A 5  `, the address of an empty cell, those of `A5`. Limits: a designation
+NVDA splits inside a sentence (*Samsung S 22 je nov*) is still read as the
+words, a whole utterance that is only *U 5* or *A 3* is read as an address,
+and a host that puts a single space after the item gets the address only at
+the end of the text. Tests: `test_numbers.cpp` "A cell's address is set off
+from the cell's contents" (the forms and thirteen that must stay words),
+`test_formant.cpp` and `test_concat.cpp` (the samples),
+`tests/nvda/test_driver.py` `test_items_and_phone_numbers()` (the logged
+sequence).
 
 Regression tests: `test_frontend.cpp` and `test_numbers.cpp`. Build the latter:
 

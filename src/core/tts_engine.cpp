@@ -583,20 +583,24 @@ AudioBuffer TTSEngine::synthesize_segments(const std::vector<TextSegment>& segme
         // 12:30, the parts of 10.11.2026., before the address of a cell: the
         // number converter's MINOR_BREAK_MARK) is half of the user's comma
         // pause and shrinks with the speech rate (minor_break_pause_ms());
-        // the melody goes on over it. The recorded voices stop at 4x.
+        // the melody goes on over it. The recorded voices stop at 4x. The
+        // pause between a cell's contents and its address (ITEM_BREAK_MARK)
+        // is the whole comma pause at every rate.
         const float rate = m_impl->formant
             ? m_impl->voice_params.effective_speed()
             : std::min(m_impl->voice_params.effective_speed(), CONCAT_SPEED_MAX);
         const uint32_t minor_pause = formant::minor_break_pause_ms(
             m_impl->inflection.get_pause_duration(Punctuation::COMMA), rate);
+        const uint32_t item_pause = formant::item_break_pause_ms(
+            m_impl->inflection.get_pause_duration(Punctuation::COMMA));
         AudioBuffer clause;
         if (m_impl->formant) {
             clause = m_impl->formant->synthesize_clause(
-                segment.text, segment.trailing_punct, m_impl->voice_params, sentence_initial, minor_pause);
+                segment.text, segment.trailing_punct, m_impl->voice_params, sentence_initial, minor_pause, item_pause);
         } else if (m_impl->synthesizer) {
             clause = m_impl->synthesizer->synthesize_clause(
                 segment.text, segment.trailing_punct, sentence_initial,
-                m_impl->voice_params.spelling_mode == SpellingMode::LetterSounds, minor_pause);
+                m_impl->voice_params.spelling_mode == SpellingMode::LetterSounds, minor_pause, item_pause);
         }
         sentence_initial = segment.trailing_punct != Punctuation::COMMA &&
                            segment.trailing_punct != Punctuation::SEMICOLON &&
