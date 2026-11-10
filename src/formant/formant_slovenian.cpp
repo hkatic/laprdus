@@ -2060,6 +2060,54 @@ uint8_t noun_a_kind(std::string_view word) {
 }
 
 
+namespace {
+
+// Samo je prišel. Samo se je smejal. Samo ga ni videl. Samo bo prišel. The
+// name Sámo (SP 2001: Sámo -a, oseb. i.) as the subject at the head of a
+// sentence, where the capital says nothing: a listener's rule of 2026-11-10,
+// that a sentence opening with Samo and such a verb names the man (On je
+// samo prišel is "only"). The cue is the perfect or the future of a man:
+// right after Samo the clitics with je, ni or bo among them, and within
+// three words a masculine participle in -l. Not bi, sem, si, which other
+// persons take (Samo bi rad vedel), no participle of another gender (Samo je
+// bilo prepozno) and no predicate without one (Samo je še čas, Samo je to
+// res?), which stay samó, as do Samo pridi sem and Samo Janez je prišel.
+// Not measured on SUK 1.1, which was not at hand: the particle reading of
+// such a sentence (Samo je prišel prepozno, "but he came too late") is given
+// up at the listener's word.
+bool samo_is_subject(const std::vector<std::u32string>& words, const std::vector<bool>& capitalized, size_t i) {
+    if (i != 0 || !capitalized[0]) return false;
+    static const WordSet clitics = {U"se", U"si", U"me", U"te", U"ga", U"jo", U"mi", U"ti", U"mu", U"ji",
+                                    U"nas", U"vas", U"jih", U"nam", U"vam", U"jim", U"ju", U"jima"};
+    static const WordSet auxiliaries = {U"je", U"ni", U"bo"};
+    // Words whose -l is [w] that are no participle: žal, cel dan, the nouns.
+    // A final [l] is none either (del, model, general), by the reading
+    // the word gets.
+    static const WordSet not_participles = {U"žal", U"cel", U"misel", U"posel", U"pepel", U"kotel", U"pekel",
+                                            U"kozel", U"osel", U"vozel"};
+    size_t k = 1;
+    bool auxiliary = false;
+    for (; k < words.size(); ++k) {
+        if (auxiliaries.count(words[k])) auxiliary = true;
+        else if (!clitics.count(words[k])) break;
+    }
+    if (!auxiliary) return false;
+    for (size_t end = std::min(words.size(), k + 3); k < end; ++k) {
+        const std::u32string& x = words[k];
+        if (capitalized[k]) return false;       // another subject: Samo je Janez prišel
+        if (x.size() < 3 || x.back() != U'l') continue;
+        const char32_t before = x[x.size() - 2];
+        if (before != U'a' && before != U'e' && before != U'i' && before != U'u' && before != U'r') continue;
+        if (not_participles.count(x) || (x != U"bil" && is_function_word(x))) continue;
+        WordPhones wp;
+        phonemize(x, std::vector<uint8_t>(x.size(), 0), nullptr, false, wp);
+        if (!wp.phones.empty() && wp.phones.back().ph == Ph::W) return true;
+    }
+    return false;
+}
+
+}  // namespace
+
 const char32_t* clause_reading(const std::vector<std::u32string>& words, const std::vector<bool>& capitalized,
                                const std::vector<bool>& acronym, size_t i, bool before_complement, bool question,
                                bool exclamation) {
@@ -2078,7 +2126,8 @@ const char32_t* clause_reading(const std::vector<std::u32string>& words, const s
                             prev == U"pustil" || prev == U"pustila" || prev == U"pustili" ||
                             prev == U"pustiti") &&
                            (next.empty() || next == U"doma" || next == U"tam");
-        return prev == U"eno" || (reflexive && prev != U"ne") || alone ? U"sámo" : U"samó";
+        if (prev == U"eno" || (reflexive && prev != U"ne") || alone) return U"sámo";
+        return samo_is_subject(words, capitalized, i) ? U"sámo" : U"samó";
     }
     if (w == U"vprašaj") return vprasaj_reading(words, i, question, exclamation);
     if (w == U"je") return je_reading(words, capitalized, i);

@@ -5310,6 +5310,38 @@ The pronoun gets a content-word accent; explicit written accents and user
 lexicon entries retain their precedence. Capitalized personal-name handling
 remains ahead of this rule. Other ambiguous contexts keep *samó*.
 
+The name *Sámo* (2026-11-10, a report that *Samo, pridi sem.* addresses a
+man and is stressed on the first syllable;
+[SP 2001](https://fran.si/iskanje?Query=Samo&View=1&FilteredDictionaryIds=134):
+*Sámo -a, °-ta m, oseb. i.*, *Sámov -a -o*) is in `SLOVENIAN_NAMES_INSIDE`
+from Sloleks, so it needed no new rule: an address (*Samo, pridi sem.*,
+*Samo, kje si?*, *Hvala, Samo.*, `VOCATIVE_MARK`) and a capitalized *Samo*
+inside a clause (*Dragi Samo*, *To je rekel Samo*) are the name, and the
+other cases have the accent of *sám* anyway (*Sama, Samu, Samom*). Tests now
+hold this.
+
+At the head of a sentence the capital says nothing. The listener's rule
+(2026-11-10): *Samo je prišel* names the man, *On je samo prišel* is "only".
+`samo_is_subject()` reads a capitalized *Samo* that opens the clause as the
+name when it is the subject of a man's perfect or future: right after it the
+clitics with *je*, *ni* or *bo* among them (*Samo se je smejal*, *Samo ga ni
+videl*, *Samo mi je povedal*, *Samo bo jutri prišel*), and within three words
+a masculine participle, a word in -l that the engine reads with [u̯] (so not
+*del*, *model*, *general*; not *žal*, *cel* and a few nouns; *Samo je cel dan
+spal* by *spal*). The *mi* or *ti* after the name is the clitic, where after
+"only" it is the pronoun (*samo mí*). Everything else stays *samó*: another
+gender (*Samo je bilo prepozno*, *Samo je prišla*), a predicate without a
+participle (*Samo je še čas*, *Samo je to res?*, *Samo je moj prijatelj*),
+*bi*, *sem*, *si*, which other persons take (*Samo bi rad vedel*), a capital
+before the participle (*Samo je Janez prišel*), a command (*Samo pridi sem*),
+a capitalized word after it (*Samo Janez je prišel*, so also *Samo Novak je
+prišel*), small letters and text in capitals. Limits: the rule gives up the
+particle in the same shape (*Samo je prišel prepozno*, "but he came too
+late") at the listener's word, and it was written on the Windows machine
+without SUK 1.1, Sloleks or GaMS at hand, so it is not yet measured on the
+corpus (29 names among 750 tokens there) and GaMS was not asked; the accent
+is SP's.
+
 SUK 1.1's five JOS files contain 750 tokens spelled samo: 676 particles,
 45 forms of sam and 29 names. The cues move 24 sam forms (tags Ppnzet,
 Ppnzeo, Ppnset, Ppnsei) to the first syllable, with no particle or name

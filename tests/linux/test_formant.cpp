@@ -964,6 +964,17 @@ TEST_CASE("Slovenian reads a word by the clause after the comma", "[formant][lan
         REQUIRE(speak(engine.handle, "Pero je na mizi.") != speak(engine.handle, "P\xC3\xAAro je na mizi."));
         REQUIRE(speak(engine.handle, "Veseli se, Pero!") == speak(engine.handle, "Ves\xC3\xAAli se, P\xC3\xAAro!"));
         REQUIRE(speak(engine.handle, "Veseli se, Pero.") != speak(engine.handle, "Ves\xC3\xAAli se, P\xC3\xAAro."));
+        // Samo, pridi sem. Hvala, Samo. The address is the name Sámo (SP 2001
+        // Sámo -a, oseb. i.; a listener's report of 2026-11-10); without the
+        // comma the head of the clause stays samó, "only"
+        REQUIRE(speak(engine.handle, "Samo, pridi sem.") == speak(engine.handle, "S\xC3\xA1mo, pridi sem."));
+        REQUIRE(speak(engine.handle, "Samo, kje si?") == speak(engine.handle, "S\xC3\xA1mo, kje si?"));
+        REQUIRE(speak(engine.handle, "Hvala, Samo.") == speak(engine.handle, "Hvala, S\xC3\xA1mo."));
+        REQUIRE(speak(engine.handle, "Samo pridi sem.") != speak(engine.handle, "S\xC3\xA1mo pridi sem."));
+        // Samo je prišel. The name as the subject of a man's perfect at the
+        // head of a sentence; On je samo prišel. is "only"
+        REQUIRE(speak(engine.handle, "Samo je pri\xC5\xA1" "el.") == speak(engine.handle, "S\xC3\xA1mo je pri\xC5\xA1" "el."));
+        REQUIRE(speak(engine.handle, "On je samo pri\xC5\xA1" "el.") != speak(engine.handle, "On je s\xC3\xA1mo pri\xC5\xA1" "el."));
         // Lahko by the question mark, which may be clauses away
         REQUIRE(speak(engine.handle, "Lahko delo opravi vsak.") == speak(engine.handle, "L\xC3\xA1hko delo opravi vsak."));
         REQUIRE(speak(engine.handle, "Lahko delo opravi vsak?") != speak(engine.handle, "L\xC3\xA1hko delo opravi vsak?"));

@@ -2707,4 +2707,50 @@ TEST_CASE("Slovenian samo distinguishes solitude from only", "[frontend][sloveni
         {U"čisto samo zate", U"čisto samó zate"},
     };
     for (auto c : cases) REQUIRE(phones_of(read(frontend, c.first)) == phones_of(read(frontend, c.second)));
+
+    // The name Sámo (SP 2001: Sámo -a, oseb. i.; a listener's report of
+    // 2026-11-10): an address, marked by the engine (Samo, pridi sem. Hvala,
+    // Samo.), a capitalized Samo inside a clause, and the subject of a man's
+    // perfect or future at the head of a sentence (Samo je prišel: the
+    // listener's rule); otherwise the head of a clause stays samó, "only",
+    // also before a capitalized word
+    std::u32string marked = U"Samo";
+    marked.push_back(slovenian::VOCATIVE_MARK);
+    REQUIRE(phones_of(frontend.process(marked, Punctuation::COMMA)) == "s'a:mO");
+    REQUIRE(phones_of(frontend.process(marked, Punctuation::PERIOD)) == "s'a:mO");
+    REQUIRE(phones_of(frontend.process(U"Samo", Punctuation::COMMA)) == "sam'ó:");
+    REQUIRE(slovenian::is_address(U"Samo"));
+    struct Case { const char32_t* text; const char* phones; };
+    const Case names[] = {
+        {U"Dragi Samo", "dr'a:gi s'a:mO"},
+        {U"To je rekel Samo", "t'ó: jE r'é:kəw s'a:mO"},
+        {U"moj prijatelj Samo je prišel", "m'ó:j prij'a:tEl s'a:mO jE priš'əw"},
+        {U"Samo pridi sem", "sam'ó: pr'i:di səm"},
+        {U"Samo Janez je prišel", "sam'ó: j'a:nEs jE priš'əw"},
+        {U"To je rekel samo enkrat", "t'ó: jE r'é:kəw sam'ó: 'E:ŋkrat"},
+        {U"Samo je prišel", "s'a:mO jE priš'əw"},
+        {U"On je samo prišel", "'On jE sam'ó: priš'əw"},
+        {U"samo je prišel", "sam'ó: jE priš'əw"},
+        {U"SAMO JE PRIŠEL", "sam'ó: jE priš'əw"},
+        {U"Samo se je smejal", "s'a:mO sE jE smEj'a:w"},
+        {U"Samo ga ni videl", "s'a:mO ga ni v'i:dEw"},
+        {U"Samo bo jutri prišel", "s'a:mO bO j'u:tri priš'əw"},
+        {U"Samo je bil tam", "s'a:mO jE b'i:w t'am"},
+        {U"Samo je cel dan spal", "s'a:mO jE c'é:w d'a:n sp'a:w"},
+        // the mi after the name is the clitic, after "only" the pronoun mí
+        {U"Samo mi je povedal", "s'a:mO mi jE pOv'é:daw"},
+        {U"samo mi je povedal", "sam'ó: m'i: jE pOv'é:daw"},
+        {U"Samo je bilo prepozno", "sam'ó: jE bil'ó: prEp'O:znO"},
+        {U"Samo je prišla", "sam'ó: jE prišl'a"},
+        {U"Samo je del problema", "sam'ó: jE d'é:l prObl'é:ma"},
+        {U"Samo je en model", "sam'ó: jE 'En mOd'é:l"},
+        {U"Samo je žal prepozno", "sam'ó: jE ž'aw prEp'O:znO"},
+        {U"Samo bi rad vedel", "sam'ó: bi r'at v'é:dEw"},
+        {U"Samo je Janez prišel", "sam'ó: jE j'a:nEs priš'əw"},
+        {U"Samo je še čas", "sam'ó: jE šE č'as"},
+    };
+    for (const Case& c : names) {
+        INFO(PhonemeMapper::utf32_to_utf8(c.text));
+        REQUIRE(phones_of(read(frontend, c.text)) == c.phones);
+    }
 }

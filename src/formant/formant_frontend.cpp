@@ -4237,6 +4237,9 @@ Utterance Frontend::process_slovenian(const std::u32string& marked_text, Punctua
         capitalized.push_back(word.capitalized && (!word.all_caps || word.w.size() == 1));
         acronym.push_back(word.letter_name || (word.all_caps && word.w.size() > 1));
     }
+    // A function word's spelling read as a content word: sámo, the name or
+    // "alone" (Samo mi je povedal: the mi after it is the clitic)
+    std::vector<bool> content_reading(words.size(), false);
     for (size_t i = 0; i < words.size(); ++i) {
         Word& word = words[i];
         word.explicit_stress = std::any_of(word.marks.begin(), word.marks.end(),
@@ -4280,7 +4283,10 @@ Utterance Frontend::process_slovenian(const std::u32string& marked_text, Punctua
                 override = &context_pron;
                 // The adjective láhko has the full accent of a content word,
                 // not the small one of the modal lahkó
-                if (slovenian::clause_reading_is_content(word.w, in_clause)) word.explicit_stress = true;
+                if (slovenian::clause_reading_is_content(word.w, in_clause)) {
+                    word.explicit_stress = true;
+                    content_reading[i] = true;
+                }
             } else if (slovenian::verb_noun_readings(word.w, readings)) {
                 switch (slovenian::context_reading(spellings, i, readings.participle, readings.noun_percent,
                                                    before_complement, exclamation)) {
@@ -4373,7 +4379,9 @@ Utterance Frontend::process_slovenian(const std::u32string& marked_text, Punctua
         if (enclitic && (word.w == U"ti" || word.w == U"mi")) {
             static const WordSet before_pronoun = {U"in", U"a", U"pa", U"ali", U"tudi", U"samo",
                                                    U"le", U"niti", U"ne", U"kot", U"kakor"};
-            if (i == 0 || i + 1 == count || before_pronoun.count(words[i - 1].w)) enclitic = false;
+            if (i == 0 || i + 1 == count || (before_pronoun.count(words[i - 1].w) && !content_reading[i - 1])) {
+                enclitic = false;
+            }
         }
         if ((proclitic && i + 1 < count) || (enclitic && i > 0)) {
             word.clitic = true;
