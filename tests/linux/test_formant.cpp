@@ -975,6 +975,18 @@ TEST_CASE("Slovenian reads a word by the clause after the comma", "[formant][lan
         // head of a sentence; On je samo prišel. is "only"
         REQUIRE(speak(engine.handle, "Samo je pri\xC5\xA1" "el.") == speak(engine.handle, "S\xC3\xA1mo je pri\xC5\xA1" "el."));
         REQUIRE(speak(engine.handle, "On je samo pri\xC5\xA1" "el.") != speak(engine.handle, "On je s\xC3\xA1mo pri\xC5\xA1" "el."));
+        // glasu: the genitive glasú, the dative and locative glásu (SSKJ²,
+        // SP 2001 glás -ú, dalje -u -- -u -om; a listener's report of
+        // 2026-11-10), and the same for the nouns SP declines so
+        REQUIRE(speak(engine.handle, "Nisem imel glasu.") == speak(engine.handle, "Nisem imel glas\xC3\xBA."));
+        REQUIRE(speak(engine.handle, "V glasu je hripavost.") == speak(engine.handle, "V gl\xC3\xA1su je hripavost."));
+        REQUIRE(speak(engine.handle, "V glasu je hripavost.") != speak(engine.handle, "V glas\xC3\xBA je hripavost."));
+        REQUIRE(speak(engine.handle, "Glasu ne morem preveriti.") == speak(engine.handle, "Glas\xC3\xBA ne morem preveriti."));
+        REQUIRE(speak(engine.handle, "V tvojem glasu je sli\xC5\xA1" "ati toplino.") ==
+                speak(engine.handle, "V tvojem gl\xC3\xA1su je sli\xC5\xA1" "ati toplino."));
+        REQUIRE(speak(engine.handle, "Barva glasu.") == speak(engine.handle, "Barva glas\xC3\xBA."));
+        REQUIRE(speak(engine.handle, "Pusti me pri miru.") == speak(engine.handle, "Pusti me pri m\xC3\xADru."));
+        REQUIRE(speak(engine.handle, "Brez strahu.") == speak(engine.handle, "Brez strah\xC3\xBA."));
         // Lahko by the question mark, which may be clauses away
         REQUIRE(speak(engine.handle, "Lahko delo opravi vsak.") == speak(engine.handle, "L\xC3\xA1hko delo opravi vsak."));
         REQUIRE(speak(engine.handle, "Lahko delo opravi vsak?") != speak(engine.handle, "L\xC3\xA1hko delo opravi vsak?"));

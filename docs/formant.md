@@ -4721,6 +4721,92 @@ SSKJ², SP and the Collocations Dictionary of Modern Slovene at CJVT (Kolokacije
 - *afna*: the noun *áfna* (SSKJ², SP, eSSKJ), also the name of @, as a hand
   entry, since the verb's *afná* has more occurrences in the corpus than the
   noun; the verb next to *se*.
+- *glasu* **is the genitive** *glasú* **and the dative and locative** *glásu*
+  (a listener's report of 2026-11-10: *Nisem imel glasu* and *Glasu ne morem
+  preveriti* on the last syllable, *V glasu je hripavost* and *V tvojem glasu je
+  slišati toplino* on the first). The dictionaries say the same:
+  [SSKJ²](https://fran.si/iskanje?View=1&Query=glas) *glás -ú tudi -a*, SP 2001
+  *glás -ú tudi glás -a m, prva oblika dalje -u -- -u -om* (dative -u, accusative
+  as the nominative, locative -u, instrumental -om, the stem stressed), Sloleks 3.1
+  *glasú* for the genitive and *glásu* for the dative and the locative. The lexicon
+  has one reading for a spelling, the commoner form's, and that was the genitive's
+  (13,764 against 8,714 in Gigafida), so every *v glasu* and *po glasu* was wrong.
+  `genitive_u_reading()`, called from `clause_reading()`, reads the case from the
+  clause (`case_before()`):
+
+  | The words before it | Reading | Examples |
+  |---|---|---|
+  | *v, na, o, ob, po, pri* (locative), *k, h, proti, kljub, nasproti, navkljub* (dative), right before it or before its adjectives in *-em* (up to six words; *čigar*, and an adverb or *in, ali* before an adjective) | *glásu* | *v glasu, po glasu, na dobrem glasu, v tvojem glasu, v zelo tihem glasu, v tihem in mirnem glasu, v čigar glasu, proti glasu* |
+  | an adjective in *-emu* | *glásu* | *svojemu notranjemu glasu* |
+  | what takes the dative (`governs_dative()`): *prisluhniti, prisluškovati, zaupati, verjeti, prepustiti se, pripadati, podoben, namenjen, posvečen, hvaležen, bližje*; for *glasu* also *slediti* | *glásu* | *Prisluhni glasu srca. Sledi glasu vesti. Glasu ne zaupam. Glasu je prisluhnil.* |
+  | *brez, do, iz, od, zaradi, okoli, okrog, razen, poleg, z/s, glede, namesto, mimo, blizu, sredi ...* (genitive), or an adjective in *-ega* | *glasú* | *brez glasu, iz glasu, do njegovega glasu, z mostu, s tekočega traku* |
+  | *in, ali, ter, oziroma, niti* after another noun: that noun's case | either | *v strahu in glasu* (stem), *zaradi strahu in glasu*, *šola diha in glasu* (ending), *ušesih in nosu* (stem, by the locative plural) |
+  | adjectives in *-em* opening the clause | *glásu* | *(stala na nasprotnem,) levem voznem pasu* |
+  | nothing of these | *glasú* | *Nisem imel glasu. Glasu ne morem preveriti. Barva glasu. Hitrost glasu. Zmanjkalo ji je glasu. Spomnim se glasu.* |
+
+  The locative never stands without a preposition and the dative rarely without
+  one of these words, so what has none is the genitive: of another noun, of a
+  negation, of a quantity, of its verb. The contexts are those of the
+  [Collocations Dictionary of Modern Slovene](https://viri.cjvt.si/kolokacije/slv/headword/57510)
+  for *glas*: *samostalnik + GLASU* (*barva, ton, zven, zvok, jakost, razpon glasu*),
+  *NE + glagol + GLASU* (*ne imeti, ne slišati, ne dati, ne povzdigniti*), *brez, do,
+  iz, od, zaradi, poleg, namesto, glede + GLASU* for the genitive; *v, na, po, pri, o,
+  ob + GLASU* for the locative; *h, proti + GLASU*, *glagol + GLASU* (*prisluhniti*
+  330, *slediti* 106, *zaupati* 38, *verjeti* 16) and *pridevnik + GLASU* (*podoben,
+  namenjen, posvečen, hvaležen*) for the dative. *sledi* is also the traces of
+  something (*sledi prahu*, *ni sledi strahu*: the genitive), so it counts only
+  before *glasu* and not after *ni, brez, nobene*; the nouns of these verbs take the
+  genitive (*podobnost glasu, prisluškovanje glasu*). An accent written in the text
+  and the user's entry win as everywhere; the rest of the paradigm (*glás, glása,
+  glásom, glasôva, glasôv, glasôvi, glasôve, glasôvih*) was right and is unchanged.
+
+  **The class.** *glas* is one of the masculine nouns of one syllable with the
+  genitive in a stressed *-ú*, and SP 2001 gives each of them the same "dalje -u --
+  -u -om". The lexicon read each by its commoner form, so *pri miru, v strahu, na
+  mostu, v medu, v pasu, na vratu* had the genitive's accent and *do gradu, kocka
+  ledu, iz nosu, s tekočega traku* the locative's. The table `GENITIVE_U` holds the
+  36 nouns for which Sloleks has both readings and SSKJ² or SP the genitive in *-ú*
+  (read on Fran, every entry): *glas, strah, mir, grad, pas, most, zid, led, rod,
+  nos, prah, trak, vrat, plod, plaz, sad, tat, dar, med, sram, sled, slap, stan,
+  pot* ("sweat"), *mah, jez, smrad, god, plot, hlad, lan, sat, tram, slad, lat,
+  glad*. The dative and locative of *most* and *rod* have the open o (SSKJ² *daj.,
+  mest. ed. môstu in móstu*, *rôdu tudi ródu*; SP *môstu*, *rôdu tudi ródu*). Left
+  out, with the stem everywhere as before: *rob, val, cvet, drog, drob* (Sloleks
+  lists a genitive in *-ú*, the dictionaries only *-a*), *žar* and *žleb* (SSKJ²
+  has *-ú* as a variant, SP not; the genitive in *-u* is 2 and 7 of their 6,716 and
+  907 forms in *-u* in Gigafida, so a form without a cue is no genitive), *sin*
+  (*sinú* is "stil." and 375 of 10,443) and *prastrah* (two accents). A
+  capitalized word inside a clause with nothing to tell its case is left to the
+  lexicon and the tables of names (*Povej to Miru*, the dative of *Miro*).
+
+  **Measured on SUK 1.1**, the case from the tag (genitive and the animate
+  accusative = the ending, dative and locative = the stem), every sentence through
+  the engine before and after: of the 305 forms of these nouns the one reading per
+  spelling had 200 right, the rule has 304; 104 readings change, every one to the
+  tagged case, and all 14 of *glasu* are right (11 before). Nothing else in the
+  48,594 sentences changes but one genitive of the place name Grad (*od Pirana do
+  Kočevja in Gradu*, now *gradú*, the only reading a genitive in *-u* has). The one
+  left: *z dotiki na vratu, pasu in ramenskem obroču* (the preposition is in the
+  clause before the comma, and no adjective opens this one). Other limits: a
+  dative without a preposition, an adjective or one of the listed words is read as
+  the genitive (*Gradu grozi propad*, *Glasu Zvonko nastavite hitrost*); *Ob tem glasu ni bilo
+  slišati* is the locative also where *ob tem* means "meanwhile"; a first-person
+  verb in *-em* opening the clause before the noun (*Vzamem medu*) looks like an
+  adjective. Croatian, Serbian and Bosnian are untouched (the code is in the
+  Slovenian module; 180 renderings of six voices hashed before and after).
+  GaMS (GaMS-9B-Instruct-Nemotron, IQ4_XS, local) was asked 14 questions and
+  decided nothing. Asked for the case of *glasu* it answered "imenovalnik" for
+  *Nisem imel glasu*, *V glasu je hripavost*, *V tvojem glasu je slišati toplino*
+  and *barva glasu*, and "dativ" for *Glasu ne morem preveriti*; only *Prisluhni
+  glasu srca* (dative) was right. Given the paradigm in the question it chose
+  *glasú* for *Nisem imel glasu* and *glásu* for *V glasu je hripavost*, as the
+  listener; asked for the stressed syllable alone it agreed on *Glasu ne morem
+  preveriti* (last), *pri miru* and *na gradu* (first) and disagreed with the
+  dictionaries on *V tvojem glasu* (last; against the listener too), *brez strahu*
+  and *do gradu* (first).
+  Tests: `test_frontend.cpp` "Slovenian glasu: the genitive on the ending, the
+  dative and locative on the stem", and the listener's four sentences as audio in
+  `test_formant.cpp` "Slovenian reads a word by the clause after the comma".
 
 Clitics (Toporišič: the monosyllabic prepositions and conjunctions, *ne*,
 *naj*, the forms of *biti* and the future auxiliary, *bi*, the short
@@ -5338,9 +5424,12 @@ a capitalized word after it (*Samo Janez je prišel*, so also *Samo Novak je
 prišel*), small letters and text in capitals. Limits: the rule gives up the
 particle in the same shape (*Samo je prišel prepozno*, "but he came too
 late") at the listener's word, and it was written on the Windows machine
-without SUK 1.1, Sloleks or GaMS at hand, so it is not yet measured on the
-corpus (29 names among 750 tokens there) and GaMS was not asked; the accent
-is SP's.
+without SUK 1.1, Sloleks or GaMS at hand, and GaMS was not asked; the accent
+is SP's. Measured the same day on the Mac: 53 sentences of SUK 1.1 open with
+*Samo*; the 49 particles all stay *samó*, so the rule has no false alarm
+there, and the 4 names all stand before a surname (*Samo Uhan*, *Samo
+Medved*), which it leaves as *samó* like *Samo Janez je prišel*. SUK has no
+sentence of the shape *Samo je prišel*.
 
 SUK 1.1's five JOS files contain 750 tokens spelled samo: 676 particles,
 45 forms of sam and 29 names. The cues move 24 sam forms (tags Ppnzet,

@@ -2754,3 +2754,120 @@ TEST_CASE("Slovenian samo distinguishes solitude from only", "[frontend][sloveni
         REQUIRE(phones_of(read(frontend, c.text)) == c.phones);
     }
 }
+
+TEST_CASE("Slovenian glasu: the genitive on the ending, the dative and locative on the stem",
+          "[frontend][slovenian]") {
+    Frontend frontend(VoiceLanguage::Slovenian);
+    struct Case { const char32_t* text; const char* phones; };
+    const Case cases[] = {
+        // A listener's report of 2026-11-10 (SSKJ² glás -ú tudi -a; SP 2001
+        // glás -ú tudi glás -a, "dalje -u -- -u -om"; Sloleks glasú, glásu)
+        {U"Nisem imel glasu", "n'i:sEm im'é:w glas'u:"},
+        {U"V glasu je hripavost", "u gl'a:su jE hr'i:pavOst"},
+        {U"Glasu ne morem preveriti", "glas'u: nE m'ó:rEm prEv'é:riti"},
+        {U"V tvojem glasu je slišati toplino", "u tv'O:jEm gl'a:su jE sl'i:šati tOpl'i:nO"},
+        // The locative has a preposition, with or without adjectives
+        {U"Spoznal sem ga po glasu", "spOzn'aw səm ga pO gl'a:su"},
+        {U"Bil je na dobrem glasu", "b'i:w jE na d'O:brEm gl'a:su"},
+        {U"O glasu", "O gl'a:su"},
+        {U"Pri glasu", "pri gl'a:su"},
+        {U"Ob glasu zvona", "Ob gl'a:su zv'ó:na"},
+        {U"Z očitkom v glasu", "z Oč'i:tkOm u gl'a:su"},
+        {U"Po njegovem hripavem glasu", "pO njEg'O:vEm hr'i:pavEm gl'a:su"},
+        {U"V zelo tihem glasu", "u zEl'ó: t'i:hEm gl'a:su"},
+        {U"V čigar glasu", "u č'i:gar gl'a:su"},
+        {U"V tihem in mirnem glasu", "u t'i:hEm in m'i:rnEm gl'a:su"},
+        {U"V njegovem ali njenem glasu", "u njEg'O:vEm ali nj'é:nEm gl'a:su"},
+        // The dative: a preposition, an adjective in -emu, what takes it
+        {U"Proti glasu", "prOti gl'a:su"},
+        {U"Kljub glasu", "klj'u:b gl'a:su"},
+        {U"Zaupam svojemu notranjemu glasu", "za'u:pam sv'O:jEmu n'ó:tranjEmu gl'a:su"},
+        {U"Prisluhni glasu srca", "prisl'u:hni gl'a:su sərc'a:"},
+        {U"Sledi glasu vesti", "slEd'i: gl'a:su vEst'i:"},
+        {U"Sledil je glasu", "slEd'i:w jE gl'a:su"},
+        {U"Verjel je glasu", "vErj'é:w jE gl'a:su"},
+        {U"Glasu ne zaupam", "gl'a:su nE za'u:pam"},
+        {U"Glasu je prisluhnil", "gl'a:su jE prisl'u:hniw"},
+        {U"Podoben glasu", "pOd'ó:bən gl'a:su"},
+        // The genitive: of another noun, of a negation, of a quantity, of its
+        // verb, after its prepositions and adjectives
+        {U"Barva glasu", "b'a:rva glas'u:"},
+        {U"Višina glasu", "viš'i:na glas'u:"},
+        {U"Hitrost glasu", "hitr'ó:st glas'u:"},
+        {U"Nastavitve glasu", "nastav'i:tvE glas'u:"},
+        {U"V nastavitvah glasu", "u nastav'i:tvah glas'u:"},
+        {U"Ostal je brez glasu", "Ost'aw jE brEz glas'u:"},
+        {U"Iz glasu sem razbral jezo", "iz glas'u: səm razbr'a:w j'é:zO"},
+        {U"Zaradi glasu", "zar'a:di glas'u:"},
+        {U"Do njegovega glasu", "dO njEg'O:vEga glas'u:"},
+        {U"Ni dala glasu od sebe", "ni d'a:la glas'u: Ot s'E:bE"},
+        {U"Glasu ni bilo slišati", "glas'u: ni bil'ó: sl'i:šati"},
+        {U"Zmanjkalo ji je glasu", "zm'a:ŋkalO ji jE glas'u:"},
+        {U"Spomnim se glasu napovedovalca", "sp'ó:mnim sE glas'u: napOvEdOv'a:wca"},
+        {U"Podobnost glasu", "pOd'ó:bnOst glas'u:"},
+        {U"Brez sledi glasu", "brE slEd'i: glas'u:"},
+        {U"Pri tem še glasu ni dal od sebe", "pri t'é:m šE glas'u: ni d'a:w Ot s'E:bE"},
+        {U"Potem glasu ni bilo več", "pOt'é:m glas'u: ni bil'ó: v'Eč"},
+        // A noun joined to another has its case
+        {U"V strahu in glasu", "u str'a:hu iŋ gl'a:su"},
+        {U"Šola diha in glasu", "š'ó:la d'i:ha iŋ glas'u:"},
+        {U"Zaradi strahu in glasu", "zar'a:di strah'u: iŋ glas'u:"},
+        // The rest of the paradigm is as it was
+        {U"glas glasa glasom", "gl'a:s gl'a:sa gl'a:sOm"},
+        {U"glasova glasov glasovi glasove glasovih", "glas'O:va glas'O:w glas'O:vi glas'O:vE glas'O:vih"},
+
+        // The other nouns Slovenski pravopis 2001 declines so (strah -ú,
+        // mir -ú, grad -ú, led -ú, med -ú, nos -ú, pas -ú, vrat -ú ...,
+        // "dalje -u -- -u -om"; most and rod with the open o in the dative
+        // and locative: SSKJ² môstu in móstu, rôdu tudi ródu)
+        {U"Pusti me pri miru", "p'u:sti mE pri m'i:ru"},
+        {U"Želimo si miru", "žEl'i:mO si mir'u:"},
+        {U"Javnega reda in miru", "j'a:wnEga r'é:da in mir'u:"},
+        {U"Živim v strahu", "živ'i:m u str'a:hu"},
+        {U"Brez strahu", "brE strah'u:"},
+        {U"Iz strahu pred kaznijo", "i strah'u: prEt k'a:znijO"},
+        {U"Bil sem na gradu", "b'i:w səm na gr'a:du"},
+        {U"Na Ljubljanskem gradu", "na ljublj'a:nskEm gr'a:du"},
+        {U"Šel sem do gradu", "š'əw səm dO grad'u:"},
+        {U"Obnova gradu", "Obn'O:va grad'u:"},
+        {U"Na mostu", "na m'O:stu"},
+        {U"Z mostu", "z mOst'u:"},
+        {U"Do mostu", "dO mOst'u:"},
+        {U"Po rodu je Hrvat", "pO r'O:du jE hərv'at"},
+        {U"Slovenskega rodu", "slOv'é:nskEga rOd'u:"},
+        {U"Na ledu", "na l'é:du"},
+        {U"Kocka ledu", "k'ó:cka lEd'u:"},
+        {U"V medu", "u m'é:du"},
+        {U"Žlica medu", "žl'i:ca mEd'u:"},
+        {U"Na nosu", "na n'ó:su"},
+        {U"Iz nosu", "iz nOs'u:"},
+        {U"V pasu", "u p'a:su"},
+        {U"Do pasu", "dO pas'u:"},
+        {U"Na vratu", "na wr'a:tu"},
+        {U"Okoli vratu", "Ok'ó:li wrat'u:"},
+        {U"Na tekočem traku", "na tEk'ó:čEm tr'a:ku"},
+        {U"S tekočega traku", "s tEk'ó:čEga trak'u:"},
+        {U"Mleko v prahu", "ml'é:kO u pr'a:hu"},
+        {U"Plast prahu", "pl'a:st prah'u:"},
+        {U"Sledi prahu", "slEd'i: prah'u:"},
+        {U"Ni sledi strahu", "ni slEd'i: strah'u:"},
+        {U"Bližje gradu", "bl'i:žjE gr'a:du"},
+        {U"Ušesih in nosu", "uš'é:sih in n'ó:su"},
+        {U"Levem voznem pasu", "l'é:vEm v'O:znEm p'a:su"},
+        // Names with a capital keep the reading of the tables of names
+        {U"Povej to Miru", "pOv'é:j t'ó: m'i:ru"},
+        {U"V Novem Sadu", "u n'O:vEm s'a:du"},
+        // Nouns whose genitive in -ú the dictionaries do not have keep the stem
+        {U"Do robu", "dO r'ó:bu"},
+        {U"Povej sinu", "pOv'é:j s'i:nu"},
+    };
+    for (const Case& c : cases) {
+        INFO(PhonemeMapper::utf32_to_utf8(c.text));
+        REQUIRE(phones_of(read(frontend, c.text)) == c.phones);
+    }
+    // An accent written in the text and the user's entry win
+    REQUIRE(phones_of(read(frontend, U"V glasú")) == "u glas'u:");
+    REQUIRE(phones_of(read(frontend, U"Barva glásu")) == "b'a:rva gl'a:su");
+    frontend.set_user_lexicon(UserLexicon::parse(R"({"entries":[{"word":"glásu","language":"sl"}]})"));
+    REQUIRE(phones_of(read(frontend, U"Barva glasu")) == "b'a:rva gl'a:su");
+}

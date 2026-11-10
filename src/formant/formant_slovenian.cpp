@@ -348,12 +348,14 @@ const char* const HAND_ENTRIES[] = {
     // ---- Where Sloleks's first reading is not the dictionaries' first or
     // the commoner word: otròk (SSKJ² nom. otròk, gen. pl. otrók), dní
     // (SSKJ² rod. mn. dní), gôzda (gòzd gôzda tudi gózd), glasú (glás -ú
-    // tudi -a), naglàs the accent (the adverb naglás "aloud" is commoner in
-    // the corpus), ôno ône (the personal pronoun, óno ône the
-    // demonstrative), dà (the particle). (Sobóta, here until 2026-10-30
-    // against the town Múrska Sóbota, is the table's: a name no longer
-    // wins over a common word there, and a capital reads the name from
-    // the tables of names, name_reading().) ----
+    // tudi -a: the genitive; genitive_u_reading() reads the dative and
+    // locative glásu by the clause and leaves to this entry only a
+    // capitalized Glasu with nothing to tell its case), naglàs the accent
+    // (the adverb naglás "aloud" is commoner in the corpus), ôno ône (the
+    // personal pronoun, óno ône the demonstrative), dà (the particle).
+    // (Sobóta, here until 2026-10-30 against the town Múrska Sóbota, is
+    // the table's: a name no longer wins over a common word there, and a
+    // capital reads the name from the tables of names, name_reading().) ----
     u8"otròk", u8"dní", u8"gôzda", u8"glasú", u8"naglàs",
     u8"ôno", u8"ône", u8"dà",
     // ---- Verbs: the first variant of SSKJ² where Sloleks has the second
@@ -2062,6 +2064,175 @@ uint8_t noun_a_kind(std::string_view word) {
 
 namespace {
 
+// glasu is two forms of glás read differently: the genitive glasú and the
+// dative and locative glásu (SSKJ² glás -ú tudi -a; Slovenski pravopis 2001
+// glás -ú tudi glás -a, "prva oblika dalje -u -- -u -om"; Sloleks 3.1 glasú
+// for the genitive, glásu for the other two). A listener's report of
+// 2026-11-10: Nisem imel glasu and Glasu ne morem preveriti on the last
+// syllable, V glasu je hripavost and V tvojem glasu je slišati toplino on the
+// first. The lexicon had one reading for the spelling, the genitive's.
+//
+// The same holds for the other masculine nouns of one syllable whose
+// genitive SP 2001 gives in -ú with "dalje -u -- -u -om" (strahú, v stráhu;
+// mirú, pri míru; gradú, na grádu; ledú, na lédu): the lexicon read each by
+// the commoner form, so pri miru, v strahu, na mostu, v medu had the
+// genitive's accent and do gradu, kocka ledu, iz nosu the locative's. The
+// table is Sloleks's nouns with both readings less those whose genitive in
+// -ú the dictionaries do not have (rób, vál, cvét, dróg, drób) or have as a
+// variant hardly ever written (žár, žléb: 2 and 7 genitives in -u in
+// Gigafida; sín, whose sinú is stylistic): they keep the stem everywhere.
+// The dative and locative of móst and ród have the open o (SSKJ² daj., mest.
+// ed. môstu in móstu, rôdu tudi ródu; SP môstu, rôdu tudi ródu).
+struct GenitiveU {
+    const char32_t* spelling;
+    const char32_t* genitive;
+    const char32_t* stem;           // the dative and the locative
+};
+
+const GenitiveU GENITIVE_U[] = {
+    {U"glasu", U"glasú", U"glásu"},     {U"strahu", U"strahú", U"stráhu"}, {U"miru", U"mirú", U"míru"},
+    {U"gradu", U"gradú", U"grádu"},     {U"pasu", U"pasú", U"pásu"},       {U"mostu", U"mostú", U"môstu"},
+    {U"zidu", U"zidú", U"zídu"},        {U"ledu", U"ledú", U"lédu"},       {U"rodu", U"rodú", U"rôdu"},
+    {U"nosu", U"nosú", U"nósu"},        {U"prahu", U"prahú", U"práhu"},    {U"traku", U"trakú", U"tráku"},
+    {U"vratu", U"vratú", U"vrátu"},     {U"plodu", U"plodú", U"plódu"},    {U"plazu", U"plazú", U"plázu"},
+    {U"sadu", U"sadú", U"sádu"},        {U"tatu", U"tatú", U"tátu"},       {U"daru", U"darú", U"dáru"},
+    {U"medu", U"medú", U"médu"},        {U"sramu", U"sramú", U"srámu"},    {U"sledu", U"sledú", U"slédu"},
+    {U"slapu", U"slapú", U"slápu"},     {U"stanu", U"stanú", U"stánu"},    {U"potu", U"potú", U"pótu"},
+    {U"mahu", U"mahú", U"máhu"},        {U"jezu", U"jezú", U"jézu"},       {U"smradu", U"smradú", U"smrádu"},
+    {U"godu", U"godú", U"gódu"},        {U"plotu", U"plotú", U"plótu"},    {U"hladu", U"hladú", U"hládu"},
+    {U"lanu", U"lanú", U"lánu"},        {U"satu", U"satú", U"sátu"},       {U"tramu", U"tramú", U"trámu"},
+    {U"sladu", U"sladú", U"sládu"},     {U"latu", U"latú", U"látu"},       {U"gladu", U"gladú", U"gládu"},
+};
+
+enum class CaseCue { None, Genitive, Stem };
+
+// The case the words before words[i] ask of it: a preposition, right before
+// it or before its adjectives (v glasu, v tvojem glasu, ob prvem glasu; brez
+// glasu, do njegovega glasu, z mostu), or an adjective that agrees and says
+// it alone (njegovega glasu, svojemu glasu). The locative and dative
+// prepositions have the stem, the genitive ones the ending.
+CaseCue case_before(const std::vector<std::u32string>& words, size_t i) {
+    static const WordSet locative_dative = {U"v", U"na", U"o", U"ob", U"po", U"pri", U"k", U"h",
+                                            U"proti", U"kljub", U"nasproti", U"navkljub"};
+    static const WordSet genitive = {
+        U"brez", U"do", U"iz", U"od", U"zaradi", U"okoli", U"okrog", U"krog", U"razen", U"poleg", U"z", U"s",
+        U"glede", U"namesto", U"mimo", U"blizu", U"sredi", U"izmed", U"iznad", U"izpod", U"izza", U"vzdolž",
+        U"znotraj", U"zunaj", U"prek", U"preko", U"zraven", U"vpričo", U"spričo", U"zavoljo", U"vrh", U"kraj",
+        U"konec", U"onkraj", U"izven",
+    };
+    // Between a preposition and its noun: v zelo tihem glasu, v tihem in
+    // mirnem glasu
+    static const WordSet inside = {U"zelo", U"tako", U"precej", U"bolj", U"še", U"že", U"tudi", U"sicer"};
+    static const WordSet joining = {U"in", U"ali", U"ter", U"oziroma"};
+    // In -em and no adjective
+    static const WordSet not_adjectives = {U"potem", U"medtem", U"zatem", U"predtem", U"povsem", U"predvsem",
+                                           U"sem", U"nisem", U"bom", U"vem", U"grem", U"smem", U"jem",
+                                           U"morem", U"hočem", U"nočem"};
+    size_t k = i;
+    bool adjectives_only = true;
+    for (int steps = 0; k > 0 && steps < 6; ++steps, --k) {
+        const std::u32string& before = words[k - 1];
+        if (locative_dative.count(before)) return CaseCue::Stem;
+        if (genitive.count(before) || word_ends_with(before, U"ega")) return CaseCue::Genitive;
+        if (word_ends_with(before, U"emu")) return CaseCue::Stem;
+        // An adverb or a conjunction only before an adjective passed
+        // already: Pri tem še glasu ni dal od sebe has no "še glasu" of the
+        // preposition, and v strahu in glasu is two nouns
+        if (k < i && joining.count(before)) continue;
+        if (before == U"čigar" || (k < i && inside.count(before))) {
+            adjectives_only = false;
+            continue;
+        }
+        if (!word_ends_with(before, U"em") || not_adjectives.count(before)) return CaseCue::None;
+    }
+    // (stala na nasprotnem,) levem voznem pasu: the adjectives of a locative
+    // open the clause, their preposition is before the comma
+    return k == 0 && i > 0 && adjectives_only ? CaseCue::Stem : CaseCue::None;
+}
+
+// What takes the dative: prisluhniti glasu, slediti glasu, zaupati, verjeti,
+// prepustiti se glasu, podoben, namenjen, posvečen, hvaležen glasu (the
+// Collocations Dictionary of Modern Slovene, glagol + GLASU and pridevnik +
+// GLASU), pripadati rodu, bližje gradu. Not their nouns, which take the
+// genitive (podobnost glasu, prisluškovanje glasu), and not sledi alone,
+// which is also the traces of something (sledi prahu, ni sledi strahu):
+// genitive_u_reading() has it for glasu.
+bool governs_dative(const std::u32string& w) {
+    static const char32_t* const STEMS[] = {
+        U"prisluhn", U"prisluškova", U"sledi", U"zaupa", U"verjam", U"verjel", U"verjem", U"verjeti",
+        U"prepusti", U"prepušča", U"prepuščen", U"pripada", U"podobn", U"podoben", U"namenj", U"posveč",
+        U"posveti", U"hvalež",
+    };
+    static const char32_t* const NOUN_ENDINGS[] = {U"nje", U"nja", U"nju", U"njem", U"ost", U"osti", U"ostjo",
+                                                   U"tev", U"tve", U"tvi", U"lnik", U"lnika", U"lec", U"lca"};
+    if (w == U"bližje" || w == U"bliže") return true;
+    if (w == U"sledi") return false;
+    for (const char32_t* ending : NOUN_ENDINGS) {
+        if (word_ends_with(w, ending)) return false;
+    }
+    for (const char32_t* stem : STEMS) {
+        if (starts_with(w, stem)) return true;
+    }
+    return false;
+}
+
+// glasú or glásu, and the like of the other nouns of GENITIVE_U. The
+// locative has a preposition and the dative one or an adjective in -emu or
+// a word that takes it; whatever has none of them is the genitive, of
+// another noun (barva glasu, ton glasu, kocka ledu), of a negation (Nisem
+// imel glasu, Glasu ne morem preveriti), of a quantity (veliko prahu) or of
+// its verb (spomnil sem se glasu, želimo si miru). A noun joined to another
+// by in, ali, ter has that one's case (v miru in strahu, zaradi napora in
+// strahu, reda in miru). In SUK 1.1 the lexicon's one reading was right for
+// 200 of the 305 forms of these nouns, this for 304; all 14 of glasu.
+const char32_t* genitive_u_reading(const std::vector<std::u32string>& words, const std::vector<bool>& capitalized,
+                                   size_t i) {
+    const GenitiveU* entry = nullptr;
+    for (const GenitiveU& e : GENITIVE_U) {
+        if (words[i] == e.spelling) {
+            entry = &e;
+            break;
+        }
+    }
+    if (!entry) return nullptr;
+    static const WordSet conjunctions = {U"in", U"ali", U"ter", U"oziroma", U"niti"};
+    static const WordSet clitics = {U"se", U"si", U"je", U"ne", U"ga", U"jo", U"mu", U"ji", U"jim", U"jih",
+                                    U"bi", U"sem", U"so", U"smo", U"ste", U"bo", U"bom", U"boš"};
+    CaseCue cue = case_before(words, i);
+    if (cue == CaseCue::None && i >= 2 && conjunctions.count(words[i - 1])) {
+        cue = case_before(words, i - 2);
+        // (po lasišču, obrazu,) ušesih in nosu: a locative plural before it
+        if (cue == CaseCue::None && (word_ends_with(words[i - 2], U"ih") || word_ends_with(words[i - 2], U"ah") ||
+                                     word_ends_with(words[i - 2], U"eh"))) {
+            cue = CaseCue::Stem;
+        }
+    }
+    if (cue == CaseCue::None) {
+        const size_t n = words.size();
+        // Sledi glasu srca: the verb (the Collocations Dictionary has slediti
+        // + glasu 106 times and no sled + glasu), unless the words before it
+        // make it the traces (ni sledi glasu, brez sledi glasu)
+        static const WordSet before_traces = {U"ni", U"brez", U"nobene", U"nobenih", U"nikakršne", U"o", U"po", U"na"};
+        const auto governs = [&](size_t k) {
+            if (words[k] == U"sledi") {
+                return words[i] == U"glasu" && (k == 0 || !before_traces.count(words[k - 1]));
+            }
+            return governs_dative(words[k]);
+        };
+        if ((i >= 1 && governs(i - 1)) || (i >= 2 && clitics.count(words[i - 1]) && governs(i - 2))) {
+            cue = CaseCue::Stem;        // Prisluhni glasu. Prepusti se glasu.
+        } else if (i == 0) {            // Glasu zaupam. Glasu ne verjamem. Glasu se je prepustil.
+            size_t k = 1;
+            while (k < n && k < 3 && clitics.count(words[k])) ++k;
+            if (k < n && governs(k)) cue = CaseCue::Stem;
+        }
+    }
+    // A capitalized word inside a clause with nothing to tell its case may be
+    // a name (Miru, the dative of Miro): as the lexicon has it
+    if (cue == CaseCue::None && capitalized[i] && i > 0) return nullptr;
+    return cue == CaseCue::Stem ? entry->stem : entry->genitive;
+}
+
 // Samo je prišel. Samo se je smejal. Samo ga ni videl. Samo bo prišel. The
 // name Sámo (SP 2001: Sámo -a, oseb. i.) as the subject at the head of a
 // sentence, where the capital says nothing: a listener's rule of 2026-11-10,
@@ -2072,9 +2243,10 @@ namespace {
 // persons take (Samo bi rad vedel), no participle of another gender (Samo je
 // bilo prepozno) and no predicate without one (Samo je še čas, Samo je to
 // res?), which stay samó, as do Samo pridi sem and Samo Janez je prišel.
-// Not measured on SUK 1.1, which was not at hand: the particle reading of
-// such a sentence (Samo je prišel prepozno, "but he came too late") is given
-// up at the listener's word.
+// SUK 1.1 has no such sentence: its 53 that open with Samo are 49 particles,
+// none of which the rule touches, and 4 names before a surname (Samo Uhan),
+// which stay samó. The particle reading of such a sentence (Samo je prišel
+// prepozno, "but he came too late") is given up at the listener's word.
 bool samo_is_subject(const std::vector<std::u32string>& words, const std::vector<bool>& capitalized, size_t i) {
     if (i != 0 || !capitalized[0]) return false;
     static const WordSet clitics = {U"se", U"si", U"me", U"te", U"ga", U"jo", U"mi", U"ti", U"mu", U"ji",
@@ -2131,6 +2303,10 @@ const char32_t* clause_reading(const std::vector<std::u32string>& words, const s
     }
     if (w == U"vprašaj") return vprasaj_reading(words, i, question, exclamation);
     if (w == U"je") return je_reading(words, capitalized, i);
+    if (!w.empty() && w.back() == U'u') {
+        // glasú the genitive, glásu the dative and locative
+        if (const char32_t* reading = genitive_u_reading(words, capitalized, i)) return reading;
+    }
     // Veseli se! Veseli se novega dneva! The imperative vesêli (SP 2001
     // veselíti -ím, vesêli -íte) at the head of a clause before se or si in
     // a sentence that ends in an exclamation mark, the cue a listener named
