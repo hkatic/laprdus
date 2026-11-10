@@ -3285,10 +3285,14 @@ size_t CroatianNumbers::convert_phone_number(const std::string& text, size_t i,
         append_group(country_end, subscriber);
         result += ", ";
     }
-    // A short comma pause after the fourth subscriber digit, also for the
-    // less common longer service numbers. Existing comma-pause settings apply.
+    // Short comma pauses inside the subscriber number, as it is written and
+    // said: three digits first, the rest after them (123 456, 123 4567), up
+    // to four digits whole, eight as 4+4, and longer service numbers in
+    // threes with the last group of two to four. Existing comma-pause
+    // settings apply.
     while (subscriber < digits.size()) {
-        const size_t stop = std::min(subscriber + 4, digits.size());
+        const size_t left = digits.size() - subscriber;
+        const size_t stop = subscriber + (left <= 4 ? left : left == 8 ? 4 : 3);
         append_group(subscriber, stop);
         subscriber = stop;
         if (subscriber < digits.size()) result += ", ";

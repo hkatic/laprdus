@@ -5355,8 +5355,11 @@ feminine ordinal phrases, so the explicit case matrices are necessary too.
 recognizes international `+` / `00` numbers, compact or separated by spaces,
 slashes or dashes, before the ordinary grammatical rules in both number modes.
 It emits comma pauses after the country code, after the area/network code,
-and after four subscriber digits: `+385911234567`, `+385 91/123-4567` →
-`+385 | 91 | 1234 | 567`; a six-digit subscriber number becomes `1234 | 56`.
+and after the third subscriber digit: `+385911234567`, `+385 91/123-4567` →
+`+385 | 91 | 123 | 4567`; a six-digit subscriber number becomes `123 | 456`
+(since 2026-11-10, a listener's report; until then after the fourth digit,
+`1234 | 567`, which is not how the numbers are written or said). A subscriber
+number of up to four digits is one group and one of eight is 4+4.
 These pauses use the existing comma-pause setting, for recorded and formant
 voices alike. Digit mode speaks every digit with its standalone name
 (Slovenian *ena, dve*, as sourced above); whole-number mode reads each group
@@ -5381,7 +5384,8 @@ Unlisted compact destination formats use 2+6, 2+7 or 3+7 by length; a compact
 nine-digit national number is ambiguous between 2+7 and 3+6 and defaults to
 2+7. Writing the area code separately resolves that ambiguity, including
 longer German area codes. Longer subscriber/service numbers continue in
-four-digit groups. Short codes such as `112` have no inserted group pause;
+groups of three, the last of two to four digits (five digits 3+2, nine
+3+3+3, ten 3+3+4). Short codes such as `112` have no inserted group pause;
 ordinary numbers, dates, decimals, identifiers and the comma grouping of
 screen-reader-spelled digits keep their existing paths.
 

@@ -34,38 +34,38 @@ static std::string phone_words(CroatianNumbers& n, std::string_view groups, bool
 
 TEST_CASE("Telephone groups honor the number mode in every language", "[numbers][phone]") {
     const std::pair<const char*, const char*> cases[] = {
-        {"+38641453375", "+ 386|41|4533|75"},
-        {"0038641453375", "00386|41|4533|75"},
-        {"00 386 41 453 375", "00386|41|4533|75"},
-        {"+386 41/453-375", "+ 386|41|4533|75"},
-        {"+\u00a0386 41 453375", "+ 386|41|4533|75"},
-        {"+ 386 / 41 - 453375", "+ 386|41|4533|75"},
-        {"+385911234567", "+ 385|91|1234|567"},
-        {"00385911234567", "00385|91|1234|567"},
-        {"+385 91 123 4567", "+ 385|91|1234|567"},
-        {"+385/91/1234/567", "+ 385|91|1234|567"},
-        {"+385-91-1234567", "+ 385|91|1234|567"},
-        {"+385\u00a091\u202f123\u20094567", "+ 385|91|1234|567"},
-        {"+385 91 0000001", "+ 385|91|0000|001"},
-        {"+385 1 2345672", "+ 385|1|2345|672"},
-        {"+38512345672", "+ 385|1|2345|672"},
-        {"+38612345678", "+ 386|1|2345|678"},
-        {"+38733123456", "+ 387|33|1234|56"},
-        {"+381111234567", "+ 381|11|1234|567"},
-        {"+381230123456", "+ 381|230|1234|56"},
-        {"+381 230 1234567", "+ 381|230|1234|567"},
-        {"+49123123456", "+ 49|12|3123|456"}, // ambiguous compact 9 digits: 2+7
-        {"+49 123 123456", "+ 49|123|1234|56"}, // written code takes precedence
-        {"+49 123 1234567", "+ 49|123|1234|567"},
-        {"+49 12345 123456", "+ 49|12345|1234|56"},
-        {"+12025550123", "+ 1|202|5550|123"},
-        {"0012025550123", "001|202|5550|123"},
-        {"+74951234567", "+ 7|495|1234|567"},
+        {"+38641453375", "+ 386|41|453|375"},
+        {"0038641453375", "00386|41|453|375"},
+        {"00 386 41 453 375", "00386|41|453|375"},
+        {"+386 41/453-375", "+ 386|41|453|375"},
+        {"+\u00a0386 41 453375", "+ 386|41|453|375"},
+        {"+ 386 / 41 - 453375", "+ 386|41|453|375"},
+        {"+385911234567", "+ 385|91|123|4567"},
+        {"00385911234567", "00385|91|123|4567"},
+        {"+385 91 123 4567", "+ 385|91|123|4567"},
+        {"+385/91/1234/567", "+ 385|91|123|4567"},
+        {"+385-91-1234567", "+ 385|91|123|4567"},
+        {"+385\u00a091\u202f123\u20094567", "+ 385|91|123|4567"},
+        {"+385 91 0000001", "+ 385|91|000|0001"},
+        {"+385 1 2345672", "+ 385|1|234|5672"},
+        {"+38512345672", "+ 385|1|234|5672"},
+        {"+38612345678", "+ 386|1|234|5678"},
+        {"+38733123456", "+ 387|33|123|456"},
+        {"+381111234567", "+ 381|11|123|4567"},
+        {"+381230123456", "+ 381|230|123|456"},
+        {"+381 230 1234567", "+ 381|230|123|4567"},
+        {"+49123123456", "+ 49|12|312|3456"}, // ambiguous compact 9 digits: 2+7
+        {"+49 123 123456", "+ 49|123|123|456"}, // written code takes precedence
+        {"+49 123 1234567", "+ 49|123|123|4567"},
+        {"+49 12345 123456", "+ 49|12345|123|456"},
+        {"+12025550123", "+ 1|202|555|0123"},
+        {"0012025550123", "001|202|555|0123"},
+        {"+74951234567", "+ 7|495|123|4567"},
         {"+442079460018", "+ 44|20|7946|0018"},
-        {"+393331234567", "+ 39|333|1234|567"},
+        {"+393331234567", "+ 39|333|123|4567"},
         {"+390212345678", "+ 39|02|1234|5678"},
-        {"+385 (0)91 1234567", "+ 385|091|1234|567"},
-        {"+385 (91) 123-4567", "+ 385|91|1234|567"},
+        {"+385 (0)91 1234567", "+ 385|091|123|4567"},
+        {"+385 (91) 123-4567", "+ 385|91|123|4567"},
         {"+3858001234", "+ 385|800|1234"},
         {"+80012345678", "+ 800|1234|5678"},
     };
@@ -89,17 +89,17 @@ TEST_CASE("Telephone groups honor the number mode in every language", "[numbers]
             }
             for (const char* phone : {"031123456", "031/123-456", "031 123 456", "(031) 123456"}) {
                 // Written domestic area codes are independent of the language.
-                REQUIRE(convert(phone) == phone_words(n, "031|1234|56", by_digit));
+                REQUIRE(convert(phone) == phone_words(n, "031|123|456", by_digit));
             }
         }
     }
     n.set_dialect(CroatianNumbers::Dialect::Slovenian);
     REQUIRE(n.convert_digits_in_text("+386 1 2222222") ==
-            "+ tri osem šest, ena, dve dve dve dve, dve dve dve");
-    REQUIRE(n.convert_digits_in_text("031123456") == "nič tri ena, ena dve tri štiri, pet šest");
+            "+ tri osem šest, ena, dve dve dve, dve dve dve dve");
+    REQUIRE(n.convert_digits_in_text("031123456") == "nič tri ena, ena dve tri, štiri pet šest");
     n.set_dialect(CroatianNumbers::Dialect::Croatian);
     REQUIRE(n.convert_numbers_in_text("+385 91 1234567") ==
-            "+ tristo osamdeset pet, devedeset jedan, tisuću dvjesto trideset četiri, petsto šezdeset sedam");
+            "+ tristo osamdeset pet, devedeset jedan, sto dvadeset tri, četiri tisuće petsto šezdeset sedam");
 }
 
 TEST_CASE("Telephone recognition leaves other numeric formats alone", "[numbers][phone]") {
@@ -122,7 +122,7 @@ TEST_CASE("Telephone recognition leaves other numeric formats alone", "[numbers]
             "+ jedan dva tri, pet šest, sedam osam devet, osam sedam šest");
     // Newlines terminate phone candidates; multiple numbers remain separate.
     REQUIRE(n.convert_digits_in_text("+385911234567\n+38641453375") ==
-            phone_words(n, "+ 385|91|1234|567", true) + "\n" + phone_words(n, "+ 386|41|4533|75", true));
+            phone_words(n, "+ 385|91|123|4567", true) + "\n" + phone_words(n, "+ 386|41|453|375", true));
 }
 
 TEST_CASE("Slovenian ordinal noun agreement", "[numbers]") {
@@ -247,7 +247,7 @@ TEST_CASE("Currency reading keeps the language and ordinary numeric meanings", "
     REQUIRE(n.convert_numbers_in_text("T-2") == "T-dva");
     REQUIRE(n.convert_numbers_in_text("1€2€") == "jedan euro dva eura");
     REQUIRE(n.convert_numbers_in_text("1991-2000").find("minus") == std::string::npos);
-    REQUIRE(n.convert_digits_in_text("091/123-4567") == phone_words(n, "091|1234|567", true));
+    REQUIRE(n.convert_digits_in_text("091/123-4567") == phone_words(n, "091|123|4567", true));
     REQUIRE(n.convert_numbers_in_text("(2.150,00)").find("minus") == std::string::npos);
     REQUIRE(n.convert_numbers_in_text("$2.00-3.00").find("minus") == std::string::npos);
     REQUIRE(n.convert_numbers_in_text("2.150,00\n3.150,00") ==

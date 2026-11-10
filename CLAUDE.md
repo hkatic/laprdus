@@ -182,8 +182,9 @@ $B/laprdus -D $B -v vlado -L hr "Vlado govori hrvatski: dvije tisuće."
 `CroatianNumbers::convert_phone_number()` runs before grammatical number rules
 in both reading modes. `+` / `00` international numbers and domestic leading-zero
 numbers accept compact digits, spaces, slashes, dashes and parenthesized codes.
-Country code, area/network code and the subscriber number after its fourth digit
-are separated by the user's comma pause (`+385 91 1234567` → `+385 | 91 | 1234 | 567`).
+Country code, area/network code and the subscriber number after its third digit
+are separated by the user's comma pause (`+385 91 1234567` → `+385 | 91 | 123 | 4567`,
+six digits `123 | 456`; up to four digits are one group, eight are 4+4).
 Digit mode uses standalone digit names (Slovenian *dve*); whole-number mode reads
 cardinal groups. Surrounding words never inflect phone groups. Preserve every
 leading zero, including optional `(0)` and Italy's significant zero. Country

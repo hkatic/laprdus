@@ -806,7 +806,7 @@ TEST_CASE("Recorded voices pause between telephone groups", "[concat][phone]") {
     const auto spoken = speak(engine.handle, "00385 91/123-4567");
     REQUIRE(!spoken.empty());
     REQUIRE(spoken == speak(engine.handle,
-            "nula nula tri osam pet, devet jedan, jedan dva tri četiri, pet šest sedam"));
+            "nula nula tri osam pet, devet jedan, jedan dva tri, četiri pet šest sedam"));
     REQUIRE(laprdus_set_comma_pause(engine.handle, 0) == LAPRDUS_OK);
     const auto without = speak(engine.handle, "00385911234567");
     REQUIRE(laprdus_set_comma_pause(engine.handle, 100) == LAPRDUS_OK);

@@ -4884,7 +4884,7 @@ TEST_CASE("Telephone grouping reaches the audio and honors comma pauses", "[form
     Engine engine;
     REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
     REQUIRE(laprdus_set_number_mode(engine.handle, LAPRDUS_NUMBER_MODE_DIGIT) == LAPRDUS_OK);
-    const char* words = "plus tri osam pet, devet jedan, jedan dva tri četiri, pet šest sedam";
+    const char* words = "plus tri osam pet, devet jedan, jedan dva tri, četiri pet šest sedam";
     const auto spoken = speak(engine.handle, "+385911234567");
     REQUIRE(!spoken.empty());
     REQUIRE(spoken == speak(engine.handle, words));
@@ -4897,7 +4897,7 @@ TEST_CASE("Telephone grouping reaches the audio and honors comma pauses", "[form
     REQUIRE(with.size() == without.size() + 3 * 2205);
     REQUIRE(laprdus_set_number_mode(engine.handle, LAPRDUS_NUMBER_MODE_WHOLE) == LAPRDUS_OK);
     REQUIRE(speak(engine.handle, "+385911234567") == speak(engine.handle,
-            "plus tristo osamdeset pet, devedeset jedan, tisuću dvjesto trideset četiri, petsto šezdeset sedam"));
+            "plus tristo osamdeset pet, devedeset jedan, sto dvadeset tri, četiri tisuće petsto šezdeset sedam"));
 }
 
 TEST_CASE("Punctuation selects intonation", "[formant][prosody]") {
