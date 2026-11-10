@@ -210,10 +210,13 @@ Points specific to Croatian/Serbian/Bosnian:
 
 ### Sibilants
 
-The sibilants deliberately do **not** follow natural speech. Matched to the
-recordings (the /s/ centred at 6.4 kHz, 5 dB below the vowels, with energy up
-to 11 kHz) they were tiring to listen to. They now follow the classic formant
-synthesizers, which ran at 10-11 kHz and had nothing above 5 kHz. Measured
+The sibilants deliberately do **not** follow natural speech in level. Matched
+to the recordings (the /s/ centred at 6.4 kHz, 5 dB below the vowels, with
+energy up to 11 kHz) they were tiring to listen to. Their levels follow the
+classic formant synthesizers, which ran at 10-11 kHz and had nothing above
+5 kHz; their place followed those synthesizers too until 10 November 2026,
+when the s squeezed under 5 kHz was heard as a slight š (the last row of the
+table; see "The hiss where the ear is sharpest" below). Measured
 with `tools/formant/sibilants.py` (level relative to the loudest vowel frame,
 spectral centroid of the friction):
 
@@ -226,6 +229,7 @@ spectral centroid of the friction):
 | Zvonko, November 2026 | -12 dB, 5.0 kHz | -13 dB, 3.6 kHz | -12 dB, 3.3 kHz | -10 dB, 3.9 kHz |
 | Zvonko, 7 November 2026 (synthesizer A's levels) | -15 dB, 4.4 kHz | -15 dB, 3.2 kHz | -13 dB, 3.1 kHz | -14 dB, 3.7 kHz |
 | Zvonko, the reference balance (the same day, under the 5.3 kHz ceiling) | -15 dB, 4.3 kHz | -17.5 dB, 3.2 kHz | -15.6 dB, 3.1 kHz | -14.4 dB, 3.7 kHz |
+| Zvonko, 10 November 2026 (the recorded place, the same levels) | -14.5 dB, 5.6 kHz | -17 dB, 3.5 kHz | -16.7 dB, 3.4 kHz | -15.1 dB, 4.2 kHz |
 
 Synthesizer A has no energy at all above 5.5 kHz; Zvonko's /s/ now has about
 25 dB less in 6.5-8 kHz than in its peak band. (The fourth row is the state
@@ -1448,7 +1452,9 @@ byte what they were; their consonants follow the tables):
   the vowel and 8-9 under its own release (synthesizer A: the closure 35 dB
   down, the release 5), d's release 11 dB over its bar.
 - *The top*: a 6th-order Butterworth ceiling at `VoiceQuality::ceiling_hz`
-  5300 Hz on the whole output (three sections, `SPEECH_CEILING_Q`), in place of
+  5300 Hz on the whole output (on the voiced path alone since 10 November
+  2026, when the friction got its own 8 kHz low-pass: "The hiss where the ear
+  is sharpest" below) (three sections, `SPEECH_CEILING_Q`), in place of
   the voice low-pass (6 kHz, second order) and the frication low-pass (6.6
   kHz, fourth order), which the presets keep: -0.2 dB at 4.45 kHz, -3 at 5.3,
   -15 at 6.3, -44 at 8 kHz. F7 and F8 stay in the cascade: their skirts are +6
@@ -1484,6 +1490,175 @@ Synthesizer A's levels" and "The singing presets keep their top" in
 `testmetrics.py` of the round (an FFT over the frames within 35 dB of the
 loudest; a zero-crossing-rate class for friction; the burst as the loudest
 6 ms within 10 ms after the gap, since a longer window reaches the vowel).
+
+### The hiss where the ear is sharpest (10 November 2026)
+
+**The reports.** After the rounds above users still heard annoying, harsh
+frequencies whatever they set, and a new fault: c, z and s sounded like a
+slight č, ž and š. The maintainer asked for the frequencies of every voice to
+be set for most devices, from phones to computers. Every round so far had
+lowered levels and matched one 11 kHz synthesizer; this one compares every
+voice with what is at hand on the development machine: the recorded Croatian
+speaker (Josip), synthesizer B (Croatian), and four commercial recorded
+Croatian voices through SAPI at 22050 Hz, D and E of the rounds above and two
+more, G and H.
+
+**Two measures were added.** `sibilants.py` prints where the friction lies
+(the frequencies under which 10, 50 and 90 % of its energy lie) and an "ear"
+level: every frame weighted by the inverse of the threshold in quiet
+(Terhardt 1979: 3.64 f^-0.8 - 6.5 exp(-0.6 (f - 3.3)^2) + 0.001 f^4 dB, f in
+kHz; the ear is 6.5 dB more sensitive around 3.3 kHz, and friction of one
+level is about 6 dB louder to it at 4 kHz than at 6.3 kHz) and by the 500 Hz
+high-pass that stands in for a phone's speaker, the loudest friction frame re
+the loudest vowel frame. `spectrum.py` prints the same weighting over running
+speech: per 12 ms frame the weighted energy in 2-6 kHz re the loud level of
+the file (the 90th percentile of the frame levels), as the median, the 90th
+and 99th percentile and the share of the frames above -10 dB.
+
+**What was found** (asa, aša, aca, ača, aća; level / ear level in dB re the
+loudest vowel frame; where 10, 50 and 90 % of the friction lie, kHz):
+
+| | s | š | c | č | ć |
+|---|---|---|---|---|---|
+| Zvonko before | -14.8 / -8.1; 3.8 4.5 5.0 | -17.5 / -8.4; 2.6 3.2 4.1 | -14.9 / -7.9; 3.8 4.3 5.0 | -15.6 / -6.7; 2.5 3.0 3.9 | -14.4 / -5.6; 2.9 3.7 4.3 |
+| Zvonko now | -14.5 / -11.0; 4.6 5.8 6.9 | -17.0 / -8.5; 2.6 3.3 4.8 | -14.7 / -11.1; 4.7 5.6 6.8 | -16.7 / -8.1; 2.6 3.3 4.5 | -15.1 / -7.5; 3.2 4.1 5.4 |
+| Stojan now | -13.8 / -10.5; 4.3 5.5 6.8 | -16.0 / -7.5; 2.3 2.9 4.2 | -15.7 / -11.2; 4.5 5.4 6.6 | -16.1 / -7.3; 2.3 2.9 4.3 | -15.0 / -6.7; 3.2 4.1 5.3 |
+| Mirsad now | -15.1 / -11.9; 4.7 5.8 7.1 | -17.2 / -9.1; 2.5 3.1 4.5 | -15.8 / -12.4; 4.8 5.7 6.8 | -16.7 / -8.1; 2.6 3.2 4.6 | -16.1 / -8.3; 3.4 4.3 5.6 |
+| Josip, the recording | -2.3 / +1.2; 4.4 5.2 8.2 | -7.3 / +2.1; 2.7 3.0 5.3 | -3.5 / +1.3; 4.5 6.2 8.4 | -1.7 / +5.3 | -0.1 / +9.0; 2.7 3.3 5.3 |
+| Josip now | -7.9 / -5.3 | -8.1 / +1.5 | -10.1 / -6.2 | -8.0 / -2.6 | -8.2 / +1.2 |
+| Vlado, the recording | -8.5 / -2.3; 1.1 2.9 4.3 | 0.0 / +8.6; 2.4 2.7 3.5 | -4.4 / +0.7 | 0.0 / +8.9 | 0.0 / +8.3 |
+| Vlado now | -8.5 / -2.3 | -5.4 / +1.4 | -5.3 / -0.2 | -6.5 / +0.3 | -8.1 / -1.0 |
+| synthesizer B | -11.0 / -8.6; 3.9 5.3 7.8 | -9.2 / -3.6; 1.7 3.5 5.3 | -11.6 / -9.3; 3.3 5.3 8.0 | -10.9 / -5.9 | -14.9 / -8.1; 2.9 3.5 5.0 |
+| voice D | -5.3 / -5.1; 5.8 7.4 9.7 | -4.2 / +3.7; 3.0 3.6 5.3 | -8.0 / -10.0; 7.2 8.9 10.3 | -7.9 / -2.9; 3.3 4.3 6.3 | -8.1 / -2.3; 3.7 4.3 6.3 |
+| voice G | -4.5 / -9.5; 8.1 9.4 10.4 | -2.9 / +3.7; 2.9 3.4 4.6 | -7.6 / -13.1 | -4.8 / +1.7; 3.0 3.7 4.9 | -3.2 / +2.1; 3.7 4.1 6.8 |
+| voice H | -0.5 / -2.8; 5.8 7.9 9.5 | -1.8 / +1.7; 3.1 4.8 5.4 | -2.7 / -5.8 | -1.4 / +1.4 | -5.6 / -0.9 |
+
+Three things stand out.
+
+- *The s of the formant voices was not an s.* Four fifths of its friction lay
+  between 3.8 and 5.0 kHz, 15 % of it under 4 kHz and nothing above 6, its
+  middle at 4.5 kHz (the recorded s: 2 % under 4 kHz, 40 % above 6): every
+  other s has its
+  middle at 5.2 kHz or above and reaches 7-10 kHz, and voice H's š has its
+  middle at 4.8. That is the slight š, ž and č of the report, the price of
+  matching synthesizer A's centroids (an 11 kHz voice) under a ceiling at
+  5.3 kHz. It is also why lowering the level never cured the hiss: the band
+  it was squeezed into is the ear's most sensitive one, so its ear level
+  (-8.1 dB) stood 6.7 dB above its level, where voice D's s has 0.2 dB and
+  voice G's is 5 dB under. In the friction frames of the paragraph the 4 kHz
+  third-octave band carried -4 dB of the friction (the commercial voices -12
+  to -18), which put that band 3.5-8.5 dB above three of the four commercial
+  voices in absolute terms although the friction as a whole was 4 dB and
+  more quieter than theirs.
+- *The recorded voices' hiss stands level with their vowels.* Josip's s, c,
+  č, ć and the release of his t are 0-3.5 dB under the loudest vowel frame
+  and 1-9 dB over it to the ear; Vlado's š, č, ć and t are as loud as his
+  vowels and 5-9 dB over them to the ear. The softest commercial voice (D)
+  has them 4-8 dB under and, but for š, 2-10 dB under to the ear.
+- *Vlado's s is a š in the recording.* His recordings hold nothing above
+  5 kHz (99 % of PHONEME_S.wav lies under 5.1 kHz; they were made at 11 kHz):
+  his s has its middle at 2.9 kHz and his š at 2.8, told apart by the s's
+  low end and its level. Nothing in the renderer can add what the recording
+  lacks; Đedo inherits it.
+
+The voiced sound was checked the same way (the voiced frames of the
+paragraph in third-octave bands re 0.3-3 kHz, against the range of voices D,
+E, G and H). The formant voices lie within 3 dB of the range from 250 Hz to
+6.3 kHz but for the 1.25 kHz band, 4 dB over its top (the second formant of a; a
+wider B2, 110 → 140 Hz, took 1 dB off and was not kept), and the bands at
+100-125 Hz, 4-14 dB over (the low shelf of "The reference balance", matched
+to synthesizer A at the maintainer's word; three of the four references are
+women's voices, with nothing there). Josip, Baba and Detence lie within 2 dB
+of the range (Josip 4 dB under it at 200 Hz); Vlado and Đedo have 3-4 dB
+more at 0.8-2 kHz and nothing above 4.5 kHz. Per sound (every clause of the paragraph rendered alone with
+`LAPRDUS_TRACE_SEGMENTS=1`, the ear's band re the loud level, the mean of the
+louder half of each sound's frames): Zvonko's ć -6, č -6, š -9, s -9, c -9,
+j -12, e -12, a -13, i -13 dB, everything else under -13. The vowels were
+left alone.
+
+**What changed.**
+
+- *The friction has its own top* (`klatt_synth.cpp`): the 6th-order ceiling
+  at 5.3 kHz is on the voiced path alone (the cascade's output: voicing,
+  breath, aspiration), and the friction of every voice, the singing presets
+  included, goes through the fourth-order low-pass `FRICATION_CUTOFF` at
+  8 kHz (6.6 kHz before, and under the ceiling for the speaking voices). The
+  vowels are sample for sample what they were.
+- *s, z, c and dz* (`formant_phonemes.cpp`): peaks 4500/1100 × 0.55,
+  5500/1500 × 1.0, 7000/2000 × 0.55 (c 4400, 5400, 6900 × 0.50), in rising
+  order so that the alternating signs of the bank leave no notch between
+  them (designed on an analytic copy of the bank, then measured on the
+  engine); af 0.44 → 0.38 and 0.40 → 0.34, which keeps the level where it
+  was (-14.5 dB) and takes 3 dB off its ear level. The s lies between 4.6
+  and 6.9 kHz with its middle at 5.8, 1 % of it under 4 kHz and 42 % above 6
+  (15 % and nothing before; the recorded s 2 % and 40 %).
+- *š, ž, č, dž, ć, đ and [ɕ ʑ]*: the same main peaks, 50-100 Hz wider, and a
+  third peak that reaches up instead of stopping at the ceiling (š 4700/1600
+  × 0.40, č 4650/1600 × 0.40, ć 5200/1900 × 0.50, [ɕ] 5400/1900 × 0.50, the
+  two palatal pairs 50-100 Hz higher): the recorded š and ć carry 15 and
+  27 % of their friction above 4.5 kHz, Zvonko's had 3 and 7 % and have 15
+  and 33 %. č and ć, the two loudest sounds of the voice in the ear's band,
+  are 1.5 and 2 dB down (af 0.48 → 0.40, 0.52 → 0.40).
+- *t, d, f, v, k* keep their tables; the new low-pass gives the t burst
+  (-23.0 dB, was -24.0) and f (-25.6, was -26.4) the little top their own
+  third peaks ask for.
+- *The recorded voices* (`audio_synthesizer.cpp`): the plain output goes
+  through the hiss limiter of boost mode with a mild hold, `RECORDED_HISS_DB`
+  -10 dB under the loudest nearby vowel (boost mode keeps its -22). The sweep
+  (0, -6, -8, -10, -12) was read on the table above: -10 puts Josip's s, c, č
+  and ć and the release of his t at -7 to -10 dB, voice D's levels, and
+  leaves his š alone; the voiced frames of the paragraph differ from the
+  unlimited ones by -19 dB at the 95th percentile (frames next to a loud
+  sibilant; the median -76 dB). The limiter now leaves a sample it does not
+  cut bit for bit as it was (`low + (wave - low)` is not the sample in
+  floating point).
+
+**Measured after it** (the paragraph; the ear's band re the loud level: the
+90th and 99th percentile in dB, the share of the frames above -10 dB):
+
+| | before | now |
+|---|---|---|
+| Zvonko | -10.5, -6.9, 7.6 % | -11.7, -8.1, 4.0 % |
+| Stojan | -11.2, -6.8, 7.5 % | -13.3, -8.4, 2.1 % |
+| Mirsad | -10.9, -7.1, 5.2 % | -11.9, -8.2, 3.0 % |
+| Josip | -6.9, -2.4, 20.2 % | -10.0, -5.3, 10.0 % |
+| Baba | -7.1, -1.8, 25.6 % | -9.0, -5.4, 14.0 % |
+| Detence | -7.3, -1.8, 27.0 % | -8.3, -5.3, 17.4 % |
+| Vlado | -7.0, +4.1, 23.7 % | -7.4, -4.0, 22.6 % |
+| Đedo | -7.7, +2.8, 15.6 % | -8.3, -3.9, 14.9 % |
+| synthesizer B | -7.2, -1.5, 20.4 % | |
+| voice D | -16.0, -4.4, 3.8 % | |
+| voice E | -10.2, +0.5, 9.8 % | |
+| voice G | -8.5, -3.5, 12.8 % | |
+| voice H | -13.0, -6.1, 3.6 % | |
+
+Per sound, Zvonko's s went from -9 to -14 dB and his c from -9 to -15, ć
+from -6 to -8, č from -6 to -7; the vowels are where they were. The shape of
+the friction frames (third-octave bands re their own 0.3-3 kHz, against the
+range of voices D, E, G and H) was 4, 4, 7 and 2 dB over the range at 2.5,
+3.15, 4 and 5 kHz and 12 and 41 dB under it at 6.3 and 8 kHz; it is 3, 2, 2
+and 2 dB over, 1 dB over at 6.3 kHz and inside the range at 8. In boost mode the s of asa is
+-18.1 dB (ear -16.8) for Zvonko and -16.3 (-14.4) for Josip. Vlado's and
+Đedo's share above -10 dB hardly moved: it is their vowels' 0.8-2.5 kHz, the
+voice itself.
+
+Tests: `test_formant.cpp` "s and c are not heard as š and č" (the middle of
+the friction between 5.0 and 6.5 kHz, under 5 % of it under 4 kHz, a top
+above 6 kHz; š and č between 2.6 and 3.9 kHz with a tail), "The speaking
+voices have the reference balance" (the ceiling measured on a sentence of
+sonorants), "The singing presets keep their top" (the vowels' top);
+`test_concat.cpp` "The hiss of the recorded voices is held under the vowels".
+`LAPRDUS_TEST_INFO=1` makes the test programs print every measured value
+behind a threshold. Constants for the listening pass: the sibilant tables and
+`af` values in `formant_phonemes.cpp`, `FRICATION_CUTOFF` in
+`klatt_synth.cpp`, and `RECORDED_HISS_DB` in `types.hpp` (0 turns the hold of
+the recorded voices off). To repeat:
+
+```bash
+export LAPRDUS_CLI=build/windows-x64-release/laprdus.exe LAPRDUS_DATA=build/windows-x64-release
+python tools/formant/sibilants.py zvonko_asa.wav zvonko_asha.wav josip_asa.wav reference_asa.wav
+python tools/formant/spectrum.py --voice zvonko --voice josip -i paragraph.txt   # the last line: the ear's band
+```
 
 ## 4. Text to sounds (`formant_frontend.cpp`)
 

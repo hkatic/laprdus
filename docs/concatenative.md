@@ -184,6 +184,21 @@ method of diphone synthesizers and of Praat's pitch manipulation:
   -0.6 to -0.9 dBTP, the vowels 0.1-0.5 dB quieter, Đedo's 1.2). An
   utterance that stays under the knee, at a lower volume for one, is what it
   was. In boost mode the boost's own limiter does the work instead.
+- Before the volume, the hissing consonants are held under the vowels
+  (`RECORDED_HISS_DB` in `types.hpp`, -10 dB, through `limit_hiss()` of
+  `volume_boost.hpp`; since 10 November 2026). In the recordings s, c, č, ć
+  and the release of t stand level with the vowels (Josip's s -2.3 dB re the
+  loudest vowel frame, his ć -0.1, Vlado's š, č and ć 0.0) and, weighted by
+  the ear's sensitivity, 1-9 dB over them, where the softest of four
+  commercial recorded Croatian voices has them 4-8 dB under. The hold puts
+  Josip's s, c, č and ć and Vlado's š, č and ć at -5 to -10 dB and leaves
+  Josip's š (-7.3 already), the vowels and every sample it does not cut as
+  they were; boost mode keeps its own, lower hold (-22 dB). 0 turns it off.
+  Vlado's s cannot be mended this way: his recordings hold nothing above
+  5 kHz, so his s has its middle at 2.9 kHz, next to his š at 2.8. The
+  measurements are in "The hiss where the ear is sharpest" in
+  `docs/formant.md`; the test is "The hiss of the recorded voices is held
+  under the vowels" in `test_concat.cpp`.
 
 Everything is deterministic: the same text and settings give the same
 samples (`tests/linux/test_concat.cpp`).

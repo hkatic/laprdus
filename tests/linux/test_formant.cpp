@@ -296,6 +296,63 @@ double vcv_friction_db(const std::vector<int16_t>& audio) {
     return median_of(levels);
 }
 
+// The spectrum of the friction of a vowel-consonant-vowel item: the mean
+// power per bin (129 bins of 86 Hz) of its 256-sample Hann frames, hop 64,
+// that are friction (zero-crossing rate above 0.22, within 40 dB of the
+// loudest frame).
+std::vector<double> friction_spectrum(const std::vector<int16_t>& audio) {
+    const size_t n = 256, hop = 64;
+    std::vector<double> spectrum(n / 2 + 1, 0.0);
+    double top = 0.0;
+    for (size_t s = 0; s + n <= audio.size(); s += hop) top = std::max(top, frame_energy(audio, s, n));
+    int frames = 0;
+    for (size_t s = 0; s + n <= audio.size(); s += hop) {
+        if (frame_energy(audio, s, n) < top * 1e-4) continue;
+        if (zero_crossing_rate(audio.data() + s, n) <= 0.22) continue;
+        for (size_t k = 0; k <= n / 2; ++k) {
+            double re = 0.0, im = 0.0;
+            for (size_t i = 0; i < n; ++i) {
+                const double w = 0.5 - 0.5 * std::cos(2.0 * 3.14159265358979 * double(i) / double(n - 1));
+                const double a = 2.0 * 3.14159265358979 * double(k) * double(i) / double(n);
+                re += audio[s + i] * w * std::cos(a);
+                im -= audio[s + i] * w * std::sin(a);
+            }
+            spectrum[k] += re * re + im * im;
+        }
+        ++frames;
+    }
+    for (double& v : spectrum) v /= std::max(frames, 1);
+    return spectrum;
+}
+
+// The share of a friction spectrum's energy above 2 kHz that lies between lo
+// and hi Hz, and the frequency under which half of that energy lies.
+double friction_share(const std::vector<double>& spectrum, double lo, double hi) {
+    double part = 0.0, total = 0.0;
+    for (size_t k = 0; k < spectrum.size(); ++k) {
+        const double f = double(k) * 22050.0 / 256.0;
+        if (f < 2000.0) continue;
+        total += spectrum[k];
+        if (f >= lo && f < hi) part += spectrum[k];
+    }
+    return total > 0.0 ? part / total : 0.0;
+}
+
+double friction_middle_hz(const std::vector<double>& spectrum) {
+    double total = 0.0;
+    for (size_t k = 0; k < spectrum.size(); ++k) {
+        if (double(k) * 22050.0 / 256.0 >= 2000.0) total += spectrum[k];
+    }
+    double sum = 0.0;
+    for (size_t k = 0; k < spectrum.size(); ++k) {
+        const double f = double(k) * 22050.0 / 256.0;
+        if (f < 2000.0) continue;
+        sum += spectrum[k];
+        if (sum >= total * 0.5) return f;
+    }
+    return 0.0;
+}
+
 // The quietest 12 ms of the middle third of an item (the h of "aha") against
 // the loudest frame, in dB.
 double vcv_h_db(const std::vector<int16_t>& audio) {
@@ -5251,7 +5308,11 @@ TEST_CASE("The speaking voices have the reference balance", "[formant][quality][
     // dB of the total there, -42 before). See "The reference balance" in
     // docs/formant.md; the Python of the same measures is testmetrics.py of
     // the round. Stojan and Mirsad share the tables and sit within 2 dB.
+    // The ceiling is the voiced path's (the friction reaches 8 kHz since the
+    // s was heard as a slight š), so the top is measured on a sentence of
+    // vowels, nasals, l and j.
     const char* text = "Pozivam Marka na mobitel. Uključi zvučnik!";
+    const char* sonorants = "Mama i njena mala Mila mole.";
     for (const char* voice : FORMANT_VOICES) {
         Engine engine;
         REQUIRE(laprdus_set_voice(engine.handle, voice, NO_DATA) == LAPRDUS_OK);
@@ -5259,7 +5320,8 @@ TEST_CASE("The speaking voices have the reference balance", "[formant][quality][
         const double mids = band_db(spectrum, 450.0, 1400.0);
         const double lows = band_db(spectrum, 80.0, 300.0) - mids;
         const double presence = band_db(spectrum, 2500.0, 5000.0) - mids;
-        const double top = band_db(spectrum, 6300.0, 11025.0) - band_db(spectrum, 0.0, 11025.0);
+        const std::vector<double> voiced = power_spectrum(speak(engine.handle, sonorants));
+        const double top = band_db(voiced, 6300.0, 11025.0) - band_db(voiced, 0.0, 11025.0);
         INFO(voice << ": lows " << lows << " presence " << presence << " top " << top);
         REQUIRE(lows > 2.0);        // measured 4.6 / 5.1 / 3.6
         REQUIRE(lows < 7.0);
@@ -5329,18 +5391,56 @@ TEST_CASE("f, h, t, p, k and the sibilants sit at the reference levels", "[forma
 
 TEST_CASE("The singing presets keep their top", "[formant][singing][balance]") {
     // The 5.3 kHz ceiling and the low shelf are the speaking voices' alone:
-    // a preset keeps the 6.6 kHz frication low-pass, so its s has a top
-    // the spoken s has not (the presets' vowels were checked byte by byte
-    // against the build before the round).
+    // a preset keeps the gentle 6 kHz low-pass on its voiced path, so its
+    // vowels have a top the spoken ones have not (the presets' vowels were
+    // checked byte by byte against the build before the round). The
+    // friction has the same 8 kHz low-pass for every voice.
     Engine engine;
     REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
-    const std::vector<double> spoken = power_spectrum(speak(engine.handle, "sasa"));
+    const std::vector<double> spoken = power_spectrum(speak(engine.handle, "mama"));
     REQUIRE(laprdus_set_voice(engine.handle, "dalmacija_klapa", NO_DATA) == LAPRDUS_OK);
-    const std::vector<double> sung = power_spectrum(speak(engine.handle, "sasa"));
+    const std::vector<double> sung = power_spectrum(speak(engine.handle, "mama"));
     const double spoken_top = band_db(spoken, 6300.0, 11025.0) - band_db(spoken, 0.0, 11025.0);
     const double sung_top = band_db(sung, 6300.0, 11025.0) - band_db(sung, 0.0, 11025.0);
     INFO("top above 6.3 kHz: spoken " << spoken_top << " sung " << sung_top);
-    REQUIRE(sung_top > spoken_top + 10.0);
+    REQUIRE(sung_top > spoken_top + 5.0);   // measured -80 against -89 dB of the total
+}
+
+TEST_CASE("s and c are not heard as š and č", "[formant][quality][balance]") {
+    // Matched to the centroids of a 10-11 kHz synthesizer under the 5.3 kHz
+    // ceiling, s, z and c had four fifths of their friction between 3.8 and
+    // 5.0 kHz (the middle at 4.5 kHz, 15 % under 4 kHz, nothing above 6),
+    // the band the ear is most sensitive in, and listeners heard a slight š,
+    // ž and č (November 2026). The friction of a recorded Croatian s has its
+    // middle at 5.2 kHz and reaches 8.2 (2 % under 4 kHz, 40 % above 6), a š
+    // 3.0 and 5.3. Measured now: s 5.8 kHz, 1 % of it under 4 kHz and 42 %
+    // above 6; š 3.3 kHz with 15 % above 4.5 kHz, as recorded.
+    for (const char* voice : FORMANT_VOICES) {
+        Engine engine;
+        REQUIRE(laprdus_set_voice(engine.handle, voice, NO_DATA) == LAPRDUS_OK);
+        for (const char* item : {"asa", "aca"}) {
+            const std::vector<double> friction = friction_spectrum(speak(engine.handle, item));
+            const double middle = friction_middle_hz(friction);
+            const double low = friction_share(friction, 2000.0, 4000.0);
+            const double high = friction_share(friction, 6000.0, 11025.0);
+            INFO(voice << " " << item << ": middle " << middle << " Hz, under 4 kHz " << low << ", above 6 kHz " << high);
+            REQUIRE(middle > 5000.0);
+            REQUIRE(middle < 6500.0);
+            REQUIRE(low < 0.05);
+            REQUIRE(high > 0.15);
+            REQUIRE(high < 0.60);
+        }
+        for (const char* item : {u8"aša", u8"ača"}) {
+            const std::vector<double> friction = friction_spectrum(speak(engine.handle, item));
+            const double middle = friction_middle_hz(friction);
+            INFO(voice << " " << item << ": middle " << middle << " Hz");
+            REQUIRE(middle > 2600.0);
+            REQUIRE(middle < 3900.0);
+            // most of it under 4 kHz, and a tail above it instead of a wall
+            REQUIRE(friction_share(friction, 2000.0, 4000.0) > 0.6);
+            REQUIRE(friction_share(friction, 4500.0, 11025.0) > 0.03);
+        }
+    }
 }
 
 TEST_CASE("A voiceless stop before a pause is released audibly", "[formant][stops]") {

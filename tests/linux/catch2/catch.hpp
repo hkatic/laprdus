@@ -18,6 +18,7 @@
 #include <vector>
 #include <functional>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 
 namespace Catch {
@@ -140,6 +141,12 @@ public:
     }
 
     std::ostringstream& captureStream() { return captureBuffer; }
+    // INFO: kept for the failure report, and printed at once on stderr when
+    // LAPRDUS_TEST_INFO is set (the measured values behind the thresholds).
+    void info(const std::string& text) {
+        captureBuffer << text;
+        if (std::getenv("LAPRDUS_TEST_INFO")) std::cerr << "  info: " << text << std::endl;
+    }
     void printCapture() {
         if (!captureBuffer.str().empty()) {
             std::cout << "  with: " << captureBuffer.str() << std::endl;
@@ -190,7 +197,11 @@ struct AutoReg {
 #define CHECK(expr) REQUIRE(expr)
 
 #define INFO(msg) \
-    do { Catch::TestRegistry::instance().captureStream() << msg; } while(0)
+    do { \
+        std::ostringstream catch_info_stream; \
+        catch_info_stream << msg; \
+        Catch::TestRegistry::instance().info(catch_info_stream.str()); \
+    } while(0)
 
 #define CAPTURE(var) INFO(#var << " := " << var)
 

@@ -306,17 +306,22 @@ Table::Table() {
     }
 
     // ---- Fricatives ----
-    // Sibilants are softer and lower than in natural speech on purpose: they
-    // follow the classic 10-11 kHz formant synthesizers, and since November
-    // 2026 they match synthesizer A's levels and centroids exactly (the
-    // maintainer's choice after listening on a phone at full volume): s
-    // -15 dB re the loudest vowel frame at 4.3 kHz, š -17.5 at 3.2, c -15 at
-    // 4.3, č -15.6 at 3.1, ć -14.4 at 3.7 (tools/formant/sibilants.py on asa,
-    // aša, aca, ača, aća; synthesizer A -14.4, -17.1, -14.7, -15.2), with
-    // broader peaks and nothing above the 5.3 kHz ceiling. Until then s was
-    // -12 dB at 5.0 kHz, š -13 at 3.6, č -12 at 3.3, ć -10 at 3.9. See
-    // "Sibilants", "Consonants on a phone" and "The reference balance" in
-    // docs/formant.md.
+    // Sibilants are softer than in natural speech on purpose: their levels
+    // are those of the classic 10-11 kHz formant synthesizers (s -14.5 dB re
+    // the loudest vowel frame, š -17, c -14.7, č -16.7, ć -15.1;
+    // tools/formant/sibilants.py on asa, aša, aca, ača, aća), 10 dB and more
+    // under recorded Croatian speech. Their place is the recorded one since
+    // 10 November 2026: matched to synthesizer A's centroids under the 5.3 kHz
+    // ceiling, s, z and c had four fifths of their energy between 3.8 and
+    // 5.0 kHz, where the ear is most sensitive, and were heard as a slight š,
+    // ž and č. The friction of s now lies between 4.6 and 6.9 kHz with its
+    // middle at 5.8 (a recorded Croatian speaker 4.4-8.2 and 5.2, synthesizer
+    // B 3.9-7.8 and 5.3), that of š between 2.6 and 4.8 kHz with its middle at
+    // 3.3 (recorded 2.7-5.3 and 3.0), and the palatals have the recorded tail
+    // above 4.5 kHz instead of a wall. Weighted by the ear's sensitivity the s
+    // is 3 dB softer than before at the same level. č and ć, the two loudest
+    // sounds of the voice in the ear's band, are 1.5 and 2 dB down. See
+    // "Sibilants" and "The hiss where the ear is sharpest" in docs/formant.md.
     obstruent(t[Ph::F], PhClass::Fricative, false, 290.0f, 1000.0f, 2250.0f,
               0.40f, 0.75f, 0.70f, 88.0f, 34.0f, 7);
     // f was 0.13 until the match to the reference balance: -21.5 dB re the vowel
@@ -332,9 +337,9 @@ Table::Table() {
     obstruent(t[Ph::Z], PhClass::Fricative, true, 270.0f, 1650.0f, 2650.0f,
               0.40f, 0.45f, 0.50f, 70.0f, 44.0f, 7);
     for (Ph ph : {Ph::S, Ph::Z}) {
-        t[ph].af = 0.44f;
-        set_noise(t[ph], 4450.0f, 900.0f, 1.0f, 5400.0f, 1200.0f, 0.40f,
-                  6800.0f, 1500.0f, 0.08f, 0.0f);
+        t[ph].af = 0.38f;
+        set_noise(t[ph], 4500.0f, 1100.0f, 0.55f, 5500.0f, 1500.0f, 1.0f,
+                  7000.0f, 2000.0f, 0.55f, 0.0f);
     }
 
     // BCS š/ž are "hard" (flat postalveolar), lower-pitched than English sh.
@@ -344,8 +349,8 @@ Table::Table() {
               0.40f, 0.35f, 0.40f, 72.0f, 50.0f, 7);
     for (Ph ph : {Ph::SH, Ph::ZH}) {
         t[ph].af = 0.31f;
-        set_noise(t[ph], 2550.0f, 550.0f, 0.75f, 3300.0f, 850.0f, 1.0f,
-                  4400.0f, 1100.0f, 0.30f, 0.0f);
+        set_noise(t[ph], 2550.0f, 600.0f, 0.75f, 3300.0f, 900.0f, 1.0f,
+                  4700.0f, 1600.0f, 0.40f, 0.0f);
     }
 
     // Alveolo-palatal [ɕ ʑ]: the friction of ć/đ, and š/ž before them.
@@ -355,8 +360,8 @@ Table::Table() {
               0.40f, 0.25f, 0.30f, 70.0f, 55.0f, 7);
     for (Ph ph : {Ph::SJ, Ph::ZJ}) {
         t[ph].af = 0.40f;
-        set_noise(t[ph], 3050.0f, 550.0f, 0.50f, 3800.0f, 850.0f, 1.0f,
-                  5000.0f, 1300.0f, 0.35f, 0.0f);
+        set_noise(t[ph], 3100.0f, 650.0f, 0.50f, 3900.0f, 950.0f, 1.0f,
+                  5400.0f, 1900.0f, 0.50f, 0.0f);
     }
 
     // Velar fricative: aspiration and friction shaped by the neighbouring
@@ -381,12 +386,12 @@ Table::Table() {
               0.30f, 0.45f, 0.50f, 110.0f, 44.0f, 8);
     obstruent(t[Ph::DZ], PhClass::Affricate, true, 230.0f, 1650.0f, 2650.0f,
               0.30f, 0.45f, 0.50f, 80.0f, 44.0f, 8);
-    // c is a little softer than s (synthesizer A's [ts] sits at 4.4 kHz,
-    // 16 dB down; a listening test found ours too sharp).
+    // c has the place of s, a touch lower (a listening test found an
+    // earlier, sharper c too sharp).
     for (Ph ph : {Ph::C, Ph::DZ}) {
-        t[ph].af = 0.40f;
-        set_noise(t[ph], 4350.0f, 900.0f, 1.0f, 5400.0f, 1200.0f, 0.35f,
-                  6500.0f, 1500.0f, 0.08f, 0.0f);
+        t[ph].af = 0.34f;
+        set_noise(t[ph], 4400.0f, 1100.0f, 0.55f, 5400.0f, 1500.0f, 1.0f,
+                  6900.0f, 2000.0f, 0.50f, 0.0f);
     }
 
     obstruent(t[Ph::CH], PhClass::Affricate, false, 250.0f, 1800.0f, 2400.0f,
@@ -397,9 +402,9 @@ Table::Table() {
     // [ɕ]: measured on recordings the affricates' centroids are lower than
     // the fricatives', and the listening test asked for it.
     for (Ph ph : {Ph::CH, Ph::DZH}) {
-        t[ph].af = 0.48f;
-        set_noise(t[ph], 2500.0f, 550.0f, 0.70f, 3250.0f, 850.0f, 1.0f,
-                  4350.0f, 1100.0f, 0.32f, 0.0f);
+        t[ph].af = 0.40f;
+        set_noise(t[ph], 2500.0f, 600.0f, 0.70f, 3250.0f, 900.0f, 1.0f,
+                  4650.0f, 1600.0f, 0.40f, 0.0f);
     }
 
     obstruent(t[Ph::TJ], PhClass::Affricate, false, 240.0f, 2150.0f, 2850.0f,
@@ -407,9 +412,9 @@ Table::Table() {
     obstruent(t[Ph::DJ], PhClass::Affricate, true, 220.0f, 2150.0f, 2850.0f,
               0.30f, 0.25f, 0.30f, 88.0f, 55.0f, 8);
     for (Ph ph : {Ph::TJ, Ph::DJ}) {
-        t[ph].af = 0.52f;
-        set_noise(t[ph], 2850.0f, 550.0f, 0.50f, 3600.0f, 850.0f, 1.0f,
-                  4800.0f, 1300.0f, 0.35f, 0.0f);
+        t[ph].af = 0.40f;
+        set_noise(t[ph], 2900.0f, 650.0f, 0.50f, 3700.0f, 950.0f, 1.0f,
+                  5200.0f, 1900.0f, 0.50f, 0.0f);
     }
 }
 

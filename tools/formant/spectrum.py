@@ -14,7 +14,9 @@ Reports (one per invocation):
   spectrum.py FILE...                       level statistics and the long-term
                                             1/3-octave spectrum of the speech
                                             frames, flat and through a 500 Hz
-                                            high-pass (a phone's speaker)
+                                            high-pass (a phone's speaker), and
+                                            how much of the speech sits in the
+                                            band the ear is sharpest in
   spectrum.py --clicks FILE...              short bursts above 7 kHz (clicks)
                                             and runs of digital silence with
                                             the samples next to them
@@ -286,6 +288,39 @@ def report_spectrum(label, x, rate):
     if voiced and fric:
         print(f"   friction frames: {len(fric) * 0.004:4.1f} s, median {np.median(fric) - np.median(voiced):5.1f} dB "
               f"re the voiced median, p90 {np.percentile(fric, 90) - np.percentile(voiced, 90):5.1f} dB re the voiced p90")
+    p50, p90, p99, share = ear_band(x, rate)
+    print(f"   the ear's band (2-6 kHz, ear-weighted, 500 Hz high-pass) re the loud level: "
+          f"median {p50:5.1f}  p90 {p90:5.1f}  p99 {p99:5.1f} dB, {share:4.1f} % of the frames above -10 dB")
+
+
+def ear_band(x, rate, win_ms=12.0, hop_ms=4.0):
+    """How much of the speech sits where the ear is sharpest: per 12 ms frame
+    the energy in 2-6 kHz, weighted by the inverse of the threshold in quiet
+    (Terhardt 1979, the dip of 6.5 dB around 3.3 kHz) and by a phone speaker's
+    500 Hz high-pass, re the loud level of the file (the 90th percentile of
+    the flat frame levels). Returns the median, the 90th and 99th percentile
+    in dB and the share of the speech frames above -10 dB, in percent. The
+    same weighting as the "ear" column of sibilants.py."""
+    win = int(rate * win_ms / 1000)
+    hop = int(rate * hop_ms / 1000)
+    freqs = np.fft.rfftfreq(win, 1 / rate)
+    khz = np.maximum(freqs, 20.0) / 1000.0
+    threshold = 3.64 * khz ** -0.8 - 6.5 * np.exp(-0.6 * (khz - 3.3) ** 2) + 1e-3 * khz ** 4
+    weight = 10 ** (-threshold / 10) / (1.0 + (500.0 / np.maximum(freqs, 1.0)) ** 8)
+    weight = weight * ((freqs >= 2000) & (freqs < 6000))
+    window = np.hanning(win)
+    hot, flat = [], []
+    for start in range(0, len(x) - win, hop):
+        spectrum = np.abs(np.fft.rfft(x[start:start + win] * window)) ** 2 / win
+        hot.append(10 * np.log10((spectrum * weight).sum() + 1e-12))
+        flat.append(10 * np.log10(spectrum.sum() + 1e-12))
+    if not flat:
+        return 0.0, 0.0, 0.0, 0.0
+    hot, flat = np.array(hot), np.array(flat)
+    active = flat > flat.max() - ACTIVE_DB
+    level = hot[active] - np.percentile(flat[active], 90)
+    return (np.percentile(level, 50), np.percentile(level, 90), np.percentile(level, 99),
+            100.0 * np.mean(level > -10.0))
 
 
 # -----------------------------------------------------------------------------

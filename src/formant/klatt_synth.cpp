@@ -57,26 +57,33 @@ constexpr int SUBFRAME = FRAME_SAMPLES / 2;
 
 constexpr uint32_t RNG_SEED = 0x2545F491u;
 
-// Frication noise is band-limited before it reaches the parallel bank. The
-// classic formant synthesizers ran at 10-11 kHz and so had nothing above
-// 5 kHz; their sibilants are soft for that reason. Two second-order sections
-// (fourth-order Butterworth) keep that character without the dull, telephone
-// quality of a hard 5 kHz limit.
-constexpr double FRICATION_CUTOFF = 6600.0;
+// Frication noise is band-limited before it reaches the parallel bank: two
+// second-order sections (fourth-order Butterworth). The cut-off was 6.6 kHz,
+// and for the speaking voices the 5.3 kHz ceiling below lay over the friction
+// too, after the classic formant synthesizers, which ran at 10-11 kHz and had
+// nothing above 5 kHz. That squeezed s, z and c into 3.8-5.0 kHz, the band
+// where the ear is most sensitive, and listeners heard them as a slight š,
+// ž and č (November 2026): the friction of a recorded Croatian s lies
+// between 4.4 and 8.2 kHz. The friction of every voice now reaches 8 kHz and
+// the ceiling is the voiced path's alone; see "The hiss where the ear is
+// sharpest" in docs/formant.md.
+constexpr double FRICATION_CUTOFF = 8000.0;
 constexpr double FRICATION_LP_Q[2] = {0.54119610, 1.30656296};
 
 // The voiced path (cascade output: voicing, breath, aspiration) gets a gentler
 // second-order roll-off. synthesizer A's vowels have nothing above 5.5 kHz; ours
 // carried source brightness and breath noise up to 11 kHz, a hiss the classic
 // voices never had. Since the match to the reference balance (November 2026)
-// this and FRICATION_CUTOFF serve the singing presets only: the speaking
-// voices run through the 6th-order ceiling below instead.
+// this serves the singing presets only: the speaking voices' voiced path
+// runs through the 6th-order ceiling below instead.
 constexpr double VOICE_CUTOFF = 6000.0;
 constexpr double VOICE_LP_Q = 0.65;
 
 // The speaking voices' ceiling (VoiceQuality::ceiling_hz): a 6th-order
-// Butterworth, three second-order sections with these Q values, on the whole
-// output, in place of the two low-passes above. At 5300 Hz it is -0.2 dB at
+// Butterworth, three second-order sections with these Q values, on the
+// voiced path (the cascade's output: voicing, breath, aspiration) in place
+// of the low-pass above; until the s was heard as a slight š it lay over the
+// friction too. At 5300 Hz it is -0.2 dB at
 // 4.45 kHz, -3 at 5.3, -15 at 6.3 and -44 at 8 kHz: synthesizer A's 11 kHz
 // sampling has nothing above 5.5 kHz, and the voices' 6.3 kHz band stood
 // 10 dB, their 8 kHz band 28 dB above synthesizer A's (November 2026).
@@ -542,7 +549,14 @@ void KlattSynth::render(const Frame* frames, size_t count, std::vector<float>& o
                 for (int i = CASCADE_VARIABLE - 1; i >= 0; --i) {
                     y = m_cascade[i].tick(y);
                 }
-                if (!m_ceiling_on) y = m_voice_lp.tick(y);
+                // The speaking voices' ceiling is the voiced path's alone
+                // (it was on the whole output until the s was heard as a
+                // slight š: see FRICATION_CUTOFF).
+                if (m_ceiling_on) {
+                    for (auto& section : m_ceiling) y = section.tick(y);
+                } else {
+                    y = m_voice_lp.tick(y);
+                }
 
                 // ---- Parallel frication branch ----
                 // The filters are heard to the end of their ringing: dropped
@@ -556,7 +570,7 @@ void KlattSynth::render(const Frame* frames, size_t count, std::vector<float>& o
                     double fmod = (av > 0.05 && !open_phase) ? 0.45 : 1.0;
                     src = n2 * af * fmod * FRICATION_GAIN;
                 }
-                if (!m_ceiling_on) src = m_fric_lp[1].tick(m_fric_lp[0].tick(src));
+                src = m_fric_lp[1].tick(m_fric_lp[0].tick(src));
                 double sign = 1.0;
                 for (int i = 0; i < PARALLEL_FORMANTS; ++i) {
                     double amp = lerp(prev.pa[i], next.pa[i], t);
@@ -571,9 +585,6 @@ void KlattSynth::render(const Frame* frames, size_t count, std::vector<float>& o
                 fric += lerp(prev.bypass, next.bypass, t) * src;
 
                 double sample = y + fric;
-                if (m_ceiling_on) {
-                    for (auto& section : m_ceiling) sample = section.tick(sample);
-                }
                 if (m_quality.reverb > 0.0f) {
                     sample += m_quality.reverb * m_reverb.tick(sample);
                 }

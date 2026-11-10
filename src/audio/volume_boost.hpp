@@ -121,8 +121,10 @@ struct Section {
 };
 
 // Hold the hiss band of `wave` under `hiss_db` re the loudest nearby vowel
-// while it dominates the sound (see VOLUME_BOOST_HISS_DB). The band is the
-// signal minus its low-passed part, so at unity gain the output is the input.
+// while it dominates the sound (see VOLUME_BOOST_HISS_DB, and
+// RECORDED_HISS_DB for the plain output of the recorded voices). The band is
+// the signal minus its low-passed part, and a sample whose gain is 1 is left
+// as it is.
 inline void limit_hiss(std::vector<float>& wave, float fs, float hiss_db) {
     const size_t n = wave.size();
     if (n == 0) return;
@@ -205,7 +207,10 @@ inline void limit_hiss(std::vector<float>& wave, float fs, float hiss_db) {
         while (!window.empty() && window.front() + hold < j) window.pop_front();
         const float t = window.empty() ? 1.0f : want[window.front()];
         g = t < g ? t : g + (t - g) * (1.0f - release);
-        wave[j] = low[j] + g * (wave[j] - low[j]);
+        // Untouched where nothing is cut: low + (wave - low) is not the
+        // sample bit for bit, and the plain output of the recorded voices
+        // goes through here too (RECORDED_HISS_DB).
+        if (g < 1.0f) wave[j] = low[j] + g * (wave[j] - low[j]);
     }
 }
 

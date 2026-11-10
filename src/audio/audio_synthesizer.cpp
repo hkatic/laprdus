@@ -153,6 +153,12 @@ AudioBuffer AudioSynthesizer::render_utterance(const formant::Utterance& utt) {
     // for bit what it was (every lower volume included).
     const bool boosted = m_voice_params.volume_boost;
     const float volume = m_voice_params.volume;
+    // The hissing consonants of the recordings stand level with the vowels
+    // (RECORDED_HISS_DB in types.hpp): the plain output holds them where a
+    // commercial recorded voice has them; boost mode has its own, lower hold.
+    if (!boosted && RECORDED_HISS_DB < 0.0f) {
+        boost_detail::limit_hiss(wave, static_cast<float>(fs), RECORDED_HISS_DB);
+    }
     if (boosted) boost_volume(wave, fs);
     for (float& x : wave) x *= volume;
     if (!boosted) boost_volume(wave, fs, 1.0f, LIMIT_KNEE, 0.0f, 0.0f, 0.0f, 0.0f);

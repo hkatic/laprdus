@@ -79,10 +79,10 @@ struct VoiceQuality {
     // the reference balance (November 2026): a low shelf of bass_db on the
     // voicing from bass_hz down (synthesizer A has 5-7 dB more in 0.1-0.25 kHz
     // than the bare pulse through the cascade gives; 0 = none), and a
-    // 6th-order ceiling at ceiling_hz on the whole output, since synthesizer A
-    // has nothing above 5.5 kHz (0 = the voice and frication low-passes
-    // VOICE_CUTOFF / FRICATION_CUTOFF instead, which the singing presets
-    // keep).
+    // 6th-order ceiling at ceiling_hz on the voiced path, since synthesizer A
+    // has nothing above 5.5 kHz (0 = the voice low-pass VOICE_CUTOFF instead,
+    // which the singing presets keep). The friction has its own low-pass,
+    // FRICATION_CUTOFF, for every voice.
     float bass_db = 7.0f;
     float bass_hz = 230.0f;
     float ceiling_hz = 5300.0f;

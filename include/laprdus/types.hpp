@@ -359,6 +359,15 @@ constexpr float VOLUME_BOOST_HISS_DB = -22.0f;
 constexpr float VOLUME_BOOST_HISS_HZ = 3000.0f;
 constexpr float VOLUME_BOOST_HISS_SPLIT_HZ = 2000.0f;
 constexpr float VOLUME_BOOST_HISS_MAX_CUT_DB = 24.0f;
+// The same limiter on the plain output of the recorded voices (Josip, Vlado
+// and the voices derived from them; audio_synthesizer.cpp), with a mild hold:
+// in the recordings s, c, č, ć and the release of t stand 0-3.5 dB under the
+// loudest vowel frame, and weighted by the ear's sensitivity 1-9 dB over it,
+// where the softest of four commercial recorded Croatian voices has them
+// 4-8 dB under and, weighted, 2-10 dB under (November 2026, "The hiss where
+// the ear is sharpest" in docs/formant.md). -10 puts Josip's s, c, č and ć
+// at -8 to -10 dB and leaves his š and every vowel alone. 0 turns it off.
+constexpr float RECORDED_HISS_DB = -10.0f;
 
 // Voice quality (VoiceParams::head_size, breathiness, roughness, brightness):
 // four settings of 0-100 after the voice-parameter model of a classic formant synthesizer

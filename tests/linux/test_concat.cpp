@@ -666,7 +666,8 @@ TEST_CASE("The volume boost makes the recorded voices louder without clipping", 
         REQUIRE(speak(engine.handle, "Pozivam Marka na mobitel.") == boosted);
         // Nothing over full scale between the samples (Josip's boosted speech
         // reached +1.4 dBFS there, November 2026), and the recorded s, whose
-        // hiss band is as loud as the vowel, comes down by about 18 dB.
+        // hiss band is as loud as the vowel in the recording, sits about 18 dB
+        // under it (the plain output holds it about 8 dB under).
         INFO("true peak " << 20.0 * std::log10(true_peak(boosted) / 32768.0) << " dBFS");
         REQUIRE(true_peak(boosted) < 32768.0 * std::pow(10.0, -0.2 / 20.0));
         REQUIRE(laprdus_set_volume_boost(engine.handle, 0) == LAPRDUS_OK);
@@ -675,12 +676,39 @@ TEST_CASE("The volume boost makes the recorded voices louder without clipping", 
         const std::vector<int16_t> s_boosted = speak(engine.handle, "asa");
         const auto hiss = hiss_pair_db(s_plain, s_boosted);
         INFO("hiss of asa re the vowel: plain " << hiss.first << " dB, boosted " << hiss.second << " dB");
-        REQUIRE(hiss.second < hiss.first - 10.0);
+        REQUIRE(hiss.second < hiss.first - 5.0);   // the plain s is held too, 10 dB higher
         // The volume scales the boosted output
         REQUIRE(laprdus_set_volume(engine.handle, 0.5f) == LAPRDUS_OK);
         std::vector<int16_t> half = speak(engine.handle, "Pozivam Marka na mobitel.");
         REQUIRE(rms(half) < rms(boosted) * 0.6);
         REQUIRE(laprdus_set_volume(engine.handle, 1.0f) == LAPRDUS_OK);
+    }
+}
+
+TEST_CASE("The hiss of the recorded voices is held under the vowels", "[concat][volume]") {
+    // In the recordings s, c, č and ć stand level with the vowels (Josip's s
+    // and ć -0.8 and -0.6 dB re the loudest frame, Vlado's š and č -4.8 and
+    // -2.3), and weighted by the ear's sensitivity above them, where the
+    // softest of four commercial recorded Croatian voices has them 4-8 dB
+    // under. The plain
+    // output holds the hiss RECORDED_HISS_DB under the nearby vowel (November
+    // 2026), and the result is the same every time.
+    const char* dir = data_dir();
+    if (!dir) return;
+    Engine engine;
+    struct Item { const char* voice; const char* text; };
+    const Item items[] = {
+        {"josip", "asa"}, {"josip", u8"aća"}, {"josip", "aca"}, {"baba", "asa"},
+        {"vlado", u8"aša"}, {"vlado", u8"ača"},
+    };
+    for (const Item& item : items) {
+        REQUIRE(laprdus_set_voice(engine.handle, item.voice, dir) == LAPRDUS_OK);
+        const std::vector<int16_t> audio = speak(engine.handle, item.text);
+        const double hiss = hiss_pair_db(audio, audio).first;
+        INFO(item.voice << " " << item.text << ": hiss re the loudest frame " << hiss << " dB");
+        REQUIRE(hiss < -6.0);                   // measured -8.6 to -10.7
+        REQUIRE(hiss > -16.0);                  // held, not removed
+        REQUIRE(speak(engine.handle, item.text) == audio);
     }
 }
 
