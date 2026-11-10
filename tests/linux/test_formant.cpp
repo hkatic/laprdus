@@ -46,6 +46,12 @@ struct Engine {
     ~Engine() { laprdus_destroy(handle); }
 };
 
+// The short pause the number converter writes where the colon of a clock
+// time and the periods of a numeric date stood, and before a cell's address
+// (core/text_marks.hpp, U+FDD0 as a word of its own): the words a number is
+// expected to be read as have it too
+#define BRK " \xEF\xB7\x90 "
+
 std::vector<int16_t> speak(LaprdusHandle engine, const char* text) {
     int16_t* samples = nullptr;
     LaprdusAudioFormat format;
@@ -1064,7 +1070,7 @@ TEST_CASE("Slovenian is spoken by every voice", "[formant][language]") {
         {"102 leti", "sto dve leti"},
         {"1.002 knjigi", "tiso\xC4\x8D dve knjigi"},
         {"ura je 2", "ura je dve"},
-        {"2:30", "dve trideset"},
+        {"2:30", "dve" BRK "trideset"},
         {"2,5", "dve celi pet"},
         {"2 milijardi", "dve milijardi"},
         {"2 milijona", "dva milijona"},
@@ -1140,9 +1146,9 @@ TEST_CASE("Slovenian is spoken by every voice", "[formant][language]") {
         {"7. oktober 2026", "sedmi oktober dva tiso\xC4\x8D" " \xC5\xA1" "estindvajset"},
         {"7. oktobra", "sedmega oktobra"},
         {"15. do 20. marca", "petnajstega do dvajsetega marca"},
-        {"7. 10.", "sedmega desetega."},
-        {"7.10.", "sedmega desetega."},
-        {"15.\xE2\x80\x93" "20. 3.", "petnajstega do dvajsetega tretjega."},
+        {"7. 10.", "sedmega" BRK "desetega."},
+        {"7.10.", "sedmega" BRK "desetega."},
+        {"15.\xE2\x80\x93" "20. 3.", "petnajstega do dvajsetega" BRK "tretjega."},
         {"3.\xE2\x80\x93" "4. mesto", "tretje do \xC4\x8D" "etrto mesto"},
         {"do 3. razreda", "do tretjega razreda"},
         {"k 1. \xC4\x8D" "lenu", "k prvemu \xC4\x8D" "lenu"},
@@ -1217,12 +1223,12 @@ TEST_CASE("Slovenian is spoken by every voice", "[formant][language]") {
         {"ob 5.00", "ob petih"},
         {"ob 17:00", "ob sedemnajstih"},
         {"ob 13", "ob trinajstih"},
-        {"ob 8.30", "ob osem trideset"},
-        {"ob 20.15", "ob dvajset petnajst"},
-        {"od 8.30 do 16.00", "od osem trideset do \xC5\xA1" "estnajst ni\xC4\x8D" " ni\xC4\x8D"},
-        {"8.30\xE2\x80\x93" "16.00", "osem trideset do \xC5\xA1" "estnajst ni\xC4\x8D" " ni\xC4\x8D"},
-        {"24:00", "\xC5\xA1" "tiriindvajset ni\xC4\x8D" " ni\xC4\x8D"},
-        {"Ura je 8.30", "Ura je osem trideset"},
+        {"ob 8.30", "ob osem" BRK "trideset"},
+        {"ob 20.15", "ob dvajset" BRK "petnajst"},
+        {"od 8.30 do 16.00", "od osem" BRK "trideset do \xC5\xA1" "estnajst" BRK "ni\xC4\x8D" " ni\xC4\x8D"},
+        {"8.30\xE2\x80\x93" "16.00", "osem" BRK "trideset do \xC5\xA1" "estnajst" BRK "ni\xC4\x8D" " ni\xC4\x8D"},
+        {"24:00", "\xC5\xA1" "tiriindvajset" BRK "ni\xC4\x8D" " ni\xC4\x8D"},
+        {"Ura je 8.30", "Ura je osem" BRK "trideset"},
         {"Ura je 5", "Ura je pet"},
         {"ob 5 urah", "ob petih urah"},
         {"3.14", "tri pika \xC5\xA1" "tirinajst"},
@@ -1364,9 +1370,9 @@ TEST_CASE("Croatian, Serbian and Bosnian numerals agree with their nouns", "[for
         {"1. stranica", "prva stranica"},
         {"7. listopad", "sedmi listopad"},
         {"7. listopada", "sedmog listopada"},
-        {"7. 10.", "sedmog desetog."},
-        {"7.10.2026.", "sedmog desetog dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "este."},
-        {"Danas je 7. 10. 2026.", "Danas je sedmi deseti dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "este."},
+        {"7. 10.", "sedmog" BRK "desetog."},
+        {"7.10.2026.", "sedmog" BRK "desetog" BRK "dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "este."},
+        {"Danas je 7. 10. 2026.", "Danas je sedmi" BRK "deseti" BRK "dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "este."},
         {"1990. godine", "tisu\xC4\x87" "u devetsto devedesete godine"},
         {"u 1990. godini", "u tisu\xC4\x87" "u devetsto devedesetoj godini"},
         {"1991.\xE2\x80\x93" "2000.", "tisu\xC4\x87" "u devetsto devedeset prve do dvije tisu\xC4\x87" "ite."},
@@ -1381,10 +1387,10 @@ TEST_CASE("Croatian, Serbian and Bosnian numerals agree with their nouns", "[for
         {"To je 1. liga", "To je prva liga"},
         {"po\xC4\x8D" "etak 2. svjetskog rata", "po\xC4\x8D" "etak drugog svjetskog rata"},
         {"1.", "jedan."},
-        {"u 8.30", "u osam trideset"},
-        {"od 8.30 do 16.00", "od osam trideset do \xC5\xA1" "esnaest nula nula"},
-        {"24:00", "dvadeset \xC4\x8D" "etiri nula nula"},
-        {"Sada je 8.30", "Sada je osam trideset"},
+        {"u 8.30", "u osam" BRK "trideset"},
+        {"od 8.30 do 16.00", "od osam" BRK "trideset do \xC5\xA1" "esnaest" BRK "nula nula"},
+        {"24:00", "dvadeset \xC4\x8D" "etiri" BRK "nula nula"},
+        {"Sada je 8.30", "Sada je osam" BRK "trideset"},
         {"2x", "dva puta"},
         {"1x", "jedanput"},
         {"2-godi\xC5\xA1" "nji", "dvogodi\xC5\xA1" "nji"},
@@ -1414,7 +1420,7 @@ TEST_CASE("Croatian, Serbian and Bosnian numerals agree with their nouns", "[for
         {"1. mesto", "prvo mesto"},
         {"u 21. veku", "u dvadeset prvom veku"},
         {"7. oktobra", "sedmog oktobra"},
-        {"7. 10. 2026.", "sedmog desetog dve hiljade dvadeset \xC5\xA1" "este."},
+        {"7. 10. 2026.", "sedmog" BRK "desetog" BRK "dve hiljade dvadeset \xC5\xA1" "este."},
         {"2 \xD0\xBA" "\xD1\x83" "\xD1\x9B" "\xD0\xB5", "dve ku\xC4\x87" "e"},
         {"\xD1\x83" " 1 \xD1\x81" "\xD0\xB0" "\xD1\x82" "\xD1\x83", "u jednom satu"},
         {"\xD0\xBD" "\xD0\xB0" " 1. \xD0\xBC" "\xD0\xB5" "\xD1\x81" "\xD1\x82" "\xD1\x83", "na prvom mestu"},
@@ -1432,7 +1438,7 @@ TEST_CASE("Croatian, Serbian and Bosnian numerals agree with their nouns", "[for
         {"5 \xC2\xB0" "C", "pet stepeni Celzijusa"},
         {"1.000", "hiljadu"},
         {"4-sobni", "\xC4\x8D" "etvorosobni"},
-        {"7. 10. 2026.", "sedmog desetog dvije hiljade dvadeset \xC5\xA1" "este."},
+        {"7. 10. 2026.", "sedmog" BRK "desetog" BRK "dvije hiljade dvadeset \xC5\xA1" "este."},
     };
     for (const auto& pair : bosnian) {
         INFO(pair.first);
@@ -4923,6 +4929,161 @@ TEST_CASE("Telephone grouping reaches the audio and honors comma pauses", "[form
             "plus tristo osamdeset pet, devedeset jedan, sto dvadeset tri, četiri tisuće petsto šezdeset sedam"));
 }
 
+// A listener's report of November 2026: a screen reader says a spreadsheet
+// cell's contents and then its address, and "Marjan A17" was heard as
+// "Marijana 17"; the hours of a clock time ran into the minutes, the day of a
+// date into the month. A short pause stands between them (the number
+// converter's MINOR_BREAK_MARK, rendered by formant::split_at_breaks()): half
+// of the comma pause, less at a fast rate (the whole of it at first and 65 %
+// next, which the listener found too long both times), and the letters of the
+// address are letters.
+TEST_CASE("Clock times, dates and cell addresses have short pauses", "[formant][text][breaks]") {
+    Engine engine;
+    REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    REQUIRE(laprdus_set_sentence_pause(engine.handle, 0) == LAPRDUS_OK);
+
+    // The longest silence inside the audio: its first and last sample
+    auto longest_gap = [](const std::vector<int16_t>& audio) {
+        const int floor = std::max(1, peak(audio) / 200);
+        size_t best_begin = 0, best_end = 0, begin = 0;
+        bool silent = false, started = false;
+        for (size_t i = 0; i < audio.size(); ++i) {
+            const bool quiet = std::abs(static_cast<int>(audio[i])) <= floor;
+            if (!quiet) started = true;
+            if (quiet && !silent) begin = i;
+            if (!quiet && silent && started && begin > 0 && i - begin > best_end - best_begin) {
+                best_begin = begin;
+                best_end = i;
+            }
+            silent = quiet;
+        }
+        return std::make_pair(best_begin, best_end);
+    };
+    auto gap_ms = [&](const std::vector<int16_t>& audio) {
+        const auto gap = longest_gap(audio);
+        return static_cast<double>(gap.second - gap.first) * 1000.0 / 22050.0;
+    };
+
+    SECTION("A cell's address after the cell's contents") {
+        const auto cell = speak(engine.handle, "Marjan A17");
+        REQUIRE(!cell.empty());
+        // The pause and the letter: the marks typed into the words give the same samples
+        REQUIRE(cell == speak(engine.handle, "Marjan" BRK "A\xEF\xB7\x91 sedamnaest"));
+        // NVDA ends every item with two spaces, and the driver joins them with a third
+        REQUIRE(cell == speak(engine.handle, "Marjan   A17  "));
+        // Before, the A was the conjunction a and leaned on the number
+        REQUIRE(cell != speak(engine.handle, "Marjan A sedamnaest"));
+        // The silence itself, told from the closure of a stop (56 ms in
+        // "Marijana 17") by a comma pause of 300 ms, of which it is half
+        INFO("silence in Marjan A17 " << gap_ms(cell) << " ms, in Marijana 17 "
+             << gap_ms(speak(engine.handle, "Marijana 17")) << " ms");
+        REQUIRE(laprdus_set_comma_pause(engine.handle, 300) == LAPRDUS_OK);
+        REQUIRE(gap_ms(speak(engine.handle, "Marjan A17")) >= 150.0);
+        REQUIRE(gap_ms(speak(engine.handle, "Marijana 17")) < 80.0);
+        // The same with a consonant letter and with a number as the contents
+        REQUIRE(gap_ms(speak(engine.handle, "Ukupno B2")) >= 150.0);
+        REQUIRE(laprdus_set_comma_pause(engine.handle, 100) == LAPRDUS_OK);
+        REQUIRE(speak(engine.handle, "1250 C3") ==
+                speak(engine.handle, "tisu\xC4\x87u dvjesto pedeset" BRK "C\xEF\xB7\x91 tri"));
+        // The address alone, after a comma or after a preposition has no pause of its own
+        REQUIRE(speak(engine.handle, "A17") == speak(engine.handle, "A\xEF\xB7\x91 sedamnaest"));
+        REQUIRE(speak(engine.handle, "u A17") == speak(engine.handle, "u A\xEF\xB7\x91 sedamnaest"));
+        // A designation at the head of a clause is not the preposition s
+        REQUIRE(speak(engine.handle, "S22 je nov") != speak(engine.handle, "S dvadeset dva je nov"));
+    }
+    SECTION("The pause is half the comma pause and shrinks with the rate") {
+        // 50 ms at the default 100, 150 ms at 300
+        auto samples = [](uint32_t comma_ms) { return static_cast<size_t>(22050u * (comma_ms / 2u) / 1000u); };
+        struct Case { const char* text; int pauses; };
+        const Case cases[] = {
+            {"Marjan A17", 1}, {"12:30", 1}, {"12:30:45", 2}, {"10.11.2026.", 2}, {"10. 11. 2026.", 2},
+            {"Sastanak je u 12:30 u uredu.", 1}, {"A1 B2 C3", 2}, {"Dobar dan svima", 0}, {"3.14", 0},
+        };
+        for (const Case& c : cases) {
+            INFO(c.text);
+            REQUIRE(laprdus_set_comma_pause(engine.handle, 0) == LAPRDUS_OK);
+            const auto without = speak(engine.handle, c.text);
+            REQUIRE(laprdus_set_comma_pause(engine.handle, 100) == LAPRDUS_OK);
+            const auto with = speak(engine.handle, c.text);
+            REQUIRE(with.size() == without.size() + static_cast<size_t>(c.pauses) * samples(100));
+            REQUIRE(laprdus_set_comma_pause(engine.handle, 300) == LAPRDUS_OK);
+            REQUIRE(speak(engine.handle, c.text).size() == without.size() + static_cast<size_t>(c.pauses) * samples(300));
+        }
+        REQUIRE(laprdus_set_comma_pause(engine.handle, 100) == LAPRDUS_OK);
+        // A date is the same written together and with spaces
+        REQUIRE(speak(engine.handle, "10.11.2026.") == speak(engine.handle, "10. 11. 2026."));
+        // A comma between the same words pauses for longer
+        REQUIRE(speak(engine.handle, "dvanaest, trideset").size() > speak(engine.handle, "12:30").size());
+        // Faster speech has a shorter pause, by the square root of the rate:
+        // 50 ms at 1x, 35 ms at 2x, 25 ms at 4x; slower speech keeps the 50
+        struct Rate { float speed; uint32_t pause_ms; };
+        for (const Rate& rate : {Rate{2.0f, 35}, Rate{4.0f, 25}, Rate{0.5f, 50}}) {
+            INFO("rate " << rate.speed);
+            REQUIRE(laprdus_set_speed(engine.handle, rate.speed) == LAPRDUS_OK);
+            REQUIRE(laprdus_set_comma_pause(engine.handle, 0) == LAPRDUS_OK);
+            const auto without = speak(engine.handle, "Marjan A17");
+            REQUIRE(laprdus_set_comma_pause(engine.handle, 100) == LAPRDUS_OK);
+            REQUIRE(speak(engine.handle, "Marjan A17").size() == without.size() + 22050u * rate.pause_ms / 1000u);
+            // while the comma pause itself is the user's at every rate
+            REQUIRE(speak(engine.handle, "Marjan, Ana").size() ==
+                    speak(engine.handle, "Marjan,").size() + speak(engine.handle, "Ana").size());
+        }
+        REQUIRE(laprdus_set_speed(engine.handle, 1.0f) == LAPRDUS_OK);
+    }
+    SECTION("The melody goes on over the pause") {
+        // The end of a sentence falls to the bottom of the voice; before the
+        // short pause the voice stays up, as before a comma, with less of a
+        // comma's movement (measured for Zvonko in "Imam novi stan": the
+        // sentence ends 6 semitones under the middle of the voice, the part
+        // before the pause 1 under it, the clause before a comma on it)
+        REQUIRE(laprdus_set_comma_pause(engine.handle, 300) == LAPRDUS_OK);
+        auto end_of_first_part = [&](const char* text) {
+            const auto audio = speak(engine.handle, text);
+            const auto gap = longest_gap(audio);
+            REQUIRE(gap.second - gap.first >= 3307);      // 150 ms, the short pause at a comma pause of 300
+            const double end = static_cast<double>(gap.first) / static_cast<double>(audio.size());
+            return pitch_hz(audio, std::max(0.0, end - 0.08), end);
+        };
+        const double statement = pitch_hz(speak(engine.handle, "Imam novi stan"), 0.88, 1.0);
+        const double minor = end_of_first_part("Imam novi stan" BRK "i auto");
+        const double comma = end_of_first_part("Imam novi stan, i auto");
+        INFO("pitch at the end of a sentence " << statement << " Hz, before the pause " << minor
+             << " Hz, before a comma " << comma << " Hz");
+        REQUIRE(statement > 50.0);
+        REQUIRE(minor > statement * 1.19);      // three semitones
+        REQUIRE(minor <= comma * 1.03);
+        REQUIRE(laprdus_set_comma_pause(engine.handle, 100) == LAPRDUS_OK);
+        // and the time is not the two words with a comma between them
+        REQUIRE(speak(engine.handle, "12:30") != speak(engine.handle, "dvanaest, trideset"));
+    }
+    SECTION("Every language and both number modes") {
+        REQUIRE(laprdus_set_number_mode(engine.handle, LAPRDUS_NUMBER_MODE_DIGIT) == LAPRDUS_OK);
+        REQUIRE(speak(engine.handle, "Marjan A17") == speak(engine.handle, "Marjan" BRK "A\xEF\xB7\x91 jedan sedam"));
+        REQUIRE(speak(engine.handle, "12:30") == speak(engine.handle, "dvanaest" BRK "trideset"));
+        REQUIRE(laprdus_set_number_mode(engine.handle, LAPRDUS_NUMBER_MODE_WHOLE) == LAPRDUS_OK);
+        REQUIRE(laprdus_set_comma_pause(engine.handle, 300) == LAPRDUS_OK);
+        for (const char* language : {"sr", "bs", "sl"}) {
+            INFO(language);
+            REQUIRE(laprdus_set_language(engine.handle, language) == LAPRDUS_OK);
+            REQUIRE(gap_ms(speak(engine.handle, "Marjan A17")) >= 150.0);
+            REQUIRE(gap_ms(speak(engine.handle, "12:30")) >= 150.0);
+            REQUIRE(speak(engine.handle, "10.11.2026.") == speak(engine.handle, "10. 11. 2026."));
+        }
+        REQUIRE(laprdus_set_comma_pause(engine.handle, 100) == LAPRDUS_OK);
+        REQUIRE(laprdus_set_language(engine.handle, "sl") == LAPRDUS_OK);
+        // v is a preposition in Slovenian, [u] before a word; in an address it is the letter
+        REQUIRE(speak(engine.handle, "Marjan V5") == speak(engine.handle, "Marjan" BRK "V\xEF\xB7\x91 pet"));
+        REQUIRE(speak(engine.handle, "V5 je prazna") != speak(engine.handle, "V pet je prazna"));
+        REQUIRE(speak(engine.handle, "12:21") == speak(engine.handle, "dvanajst" BRK "enaindvajset"));
+        REQUIRE(laprdus_set_language(engine.handle, "hr") == LAPRDUS_OK);
+    }
+    SECTION("A singing preset keeps to its song") {
+        REQUIRE(laprdus_set_voice(engine.handle, "dalmacija_klapa", NO_DATA) == LAPRDUS_OK);
+        REQUIRE(speak(engine.handle, "12:30") == speak(engine.handle, "dvanaest trideset"));
+        REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
+    }
+}
+
 TEST_CASE("Punctuation selects intonation", "[formant][prosody]") {
     Engine engine;
     REQUIRE(laprdus_set_voice(engine.handle, "zvonko", NO_DATA) == LAPRDUS_OK);
@@ -5004,12 +5165,12 @@ TEST_CASE("A mark glued to a word is read by name, not as a clause end", "[forma
         // A number glued to letters is set off from them, and the period
         // that joins a word to the letters before it is silent (a screen
         // reader's label "7.listopada.u20:03")
-        REQUIRE(same("u20:03", "u dvadeset nula tri"));
-        REQUIRE(same("7.listopada.u20:03", "sedmog listopada u dvadeset nula tri"));
+        REQUIRE(same("u20:03", "u dvadeset" BRK "nula tri"));
+        REQUIRE(same("7.listopada.u20:03", "sedmog listopada u dvadeset" BRK "nula tri"));
         REQUIRE(same("od20do30", "od dvadeset do trideset"));
         REQUIRE(same("5kg", "pet kg"));
         REQUIRE(same("COVID19", "COVID devetnaest"));
-        REQUIRE(same("20:03h", "dvadeset nula tri h"));
+        REQUIRE(same("20:03h", "dvadeset" BRK "nula tri h"));
         REQUIRE(same("3,14", "tri zarez \xC4\x8D" "etrnaest"));
         REQUIRE(same("0.05", "nula to\xC4\x8Dka nula pet"));
         // A period between groups of three digits is the thousands separator
@@ -5125,23 +5286,23 @@ TEST_CASE("A mark glued to a word is read by name, not as a clause end", "[forma
         REQUIRE(laprdus_set_number_mode(engine.handle, LAPRDUS_NUMBER_MODE_DIGIT) == LAPRDUS_OK);
         REQUIRE(same("3.14", "tri to\xC4\x8Dka jedan \xC4\x8D" "etiri"));
         REQUIRE(same("3,14", "tri zarez jedan \xC4\x8D" "etiri"));
-        REQUIRE(same("12:30", "dvanaest trideset"));
+        REQUIRE(same("12:30", "dvanaest" BRK "trideset"));
         REQUIRE(same("0 9 1,2 3 4,5 6 7 8", "0 9 1, 2 3 4, 5 6 7 8"));
-        REQUIRE(same("7.10.2026", "sedmog desetog dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "este"));
+        REQUIRE(same("7.10.2026", "sedmog" BRK "desetog" BRK "dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "este"));
         // The sections share one engine in this harness
         REQUIRE(laprdus_set_number_mode(engine.handle, LAPRDUS_NUMBER_MODE_WHOLE) == LAPRDUS_OK);
     }
     SECTION("Clock times and dates are read without the separators") {
         // A date is read as it is said since 2026-11-03: the day and the
         // month as genitive ordinals, the year as the ordinal of "godine"
-        REQUIRE(same("12:30", "dvanaest trideset"));
-        REQUIRE(same("9:05", "devet nula pet"));
-        REQUIRE(same("12:30:45", "dvanaest trideset \xC4\x8D" "etrdeset pet"));
-        REQUIRE(same("u 12:30 sati", "u dvanaest trideset sati"));
-        REQUIRE(same("7.10.2026.", "sedmog desetog dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "este."));
-        REQUIRE(same("7. 10. 2026.", "sedmog desetog dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "este."));
-        REQUIRE(same("07.10.26", "sedmog desetog dvadeset \xC5\xA1" "este"));
-        REQUIRE(same("31.12.1999", "trideset prvog dvanaestog tisu\xC4\x87u devetsto devedeset devete"));
+        REQUIRE(same("12:30", "dvanaest" BRK "trideset"));
+        REQUIRE(same("9:05", "devet" BRK "nula pet"));
+        REQUIRE(same("12:30:45", "dvanaest" BRK "trideset" BRK "\xC4\x8D" "etrdeset pet"));
+        REQUIRE(same("u 12:30 sati", "u dvanaest" BRK "trideset sati"));
+        REQUIRE(same("7.10.2026.", "sedmog" BRK "desetog" BRK "dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "este."));
+        REQUIRE(same("7. 10. 2026.", "sedmog" BRK "desetog" BRK "dvije tisu\xC4\x87" "e dvadeset \xC5\xA1" "este."));
+        REQUIRE(same("07.10.26", "sedmog" BRK "desetog" BRK "dvadeset \xC5\xA1" "este"));
+        REQUIRE(same("31.12.1999", "trideset prvog" BRK "dvanaestog" BRK "tisu\xC4\x87u devetsto devedeset devete"));
         // Not a time or a date: the marks are read
         REQUIRE(same("3:1", "tri dvoto\xC4\x8Dka jedan"));
         REQUIRE(same("25:00", "dvadeset pet dvoto\xC4\x8Dka nula nula"));
@@ -5169,7 +5330,7 @@ TEST_CASE("A mark glued to a word is read by name, not as a clause end", "[forma
         REQUIRE(same("datoteka.txt", "datoteka ta\xC4\x8Dka txt"));
         REQUIRE(same("3.14", "tri ta\xC4\x8Dka \xC4\x8D" "etrnaest"));
         REQUIRE(same("a:b", "a dvota\xC4\x8Dka b"));
-        REQUIRE(same("7.10.2026", "sedmog desetog dve hiljade dvadeset \xC5\xA1" "este"));
+        REQUIRE(same("7.10.2026", "sedmog" BRK "desetog" BRK "dve hiljade dvadeset \xC5\xA1" "este"));
         REQUIRE(same("2000. godine", "dve hiljadite godine"));
         REQUIRE(same("p.s.", "pe es."));
         REQUIRE(laprdus_set_voice(engine.handle, "mirsad", NO_DATA) == LAPRDUS_OK);

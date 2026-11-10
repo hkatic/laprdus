@@ -28,6 +28,7 @@ It has two kinds of voices:
 | `src/core/phoneme_mapper.cpp` | UTF-8 text → phoneme token conversion |
 | `src/core/croatian_numbers.cpp` | Number-to-words (supports up to centillions) |
 | `src/core/inflection.cpp` | Clause segmentation at punctuation, pause settings |
+| `src/core/text_marks.hpp` | Marks the number converter leaves for the front end: a short pause inside a clause, the letters of a designation such as A17 |
 | `src/core/voice_registry.cpp` | Voice definitions (Josip, Vlado, derived voices) |
 | `src/audio/audio_synthesizer.cpp` | Recorded voices: clause synthesis (front end → planner → renderer) |
 | `src/audio/unit_bank.cpp` | Recorded voices: analysis of the recordings (pitch marks, voicing, bursts) |
@@ -57,7 +58,7 @@ It has two kinds of voices:
 ### Processing Pipeline
 
 1. Text → `TTSEngine::preprocess_text()` → Number expansion, dictionaries
-2. → `InflectionProcessor::analyze_text()` → Segment into clauses by punctuation and at line breaks (a line break ends the clause with the newline pause, so the next line starts a sentence: a capital S or K there is the preposition; a colon or exclamation mark glued to the next character, as in `12:30`, is not a clause end: it stays in the text and is read by name by the front end's `SYMBOLS` table; a glued period stays only before a file extension or domain label of up to five letters or digits in one case, `datoteka.txt`, `www.index.hr`, and after a single letter, where it is an abbreviation dot, silent, with the letters read by name: `s.a.r.s.`, `U.S.A.`; every other glued period ends the clause, `Preslušano.Nestajuća`; the decimal point is written by the number converter as U+2024 so it survives, `3.14` tri točka četrnaest; a period between groups of three digits is the thousands separator in every language (`1.317` tisuću tristo sedamnaest, `1.000.000` milijun; since 2026-11-03, before that read by name), any other group after a period is a whole number (`3.14` tri točka četrnaest, `192.168.1.1` group by group), the decimal comma as *zarez* (but a comma between the single digits of a phone number spelled out by a screen reader, `+ 1 2 3,5 6,7 8 9,8 7 6`, as a comma pause), clock times `12:30` and dates `7.10.2026` / `7. 10. 2026.` without the separators, a number of up to four digits with a period before a lowercase word as the cardinal with the period silent: `7. listopada` sedam listopada, `1990. godine` (no ordinals: they would need the noun's case), and sets a number glued to letters off from them (`u20:03` u dvadeset nula tri, `5kg`), silencing the period that joins a word to those letters: `7.listopada.u20:03` sedam listopada u dvadeset nula tri; the front end expands no abbreviation, spells a vowelless one (`dr.` de er), and silences the colon of `https://`)
+2. → `InflectionProcessor::analyze_text()` → Segment into clauses by punctuation and at line breaks (a line break ends the clause with the newline pause, so the next line starts a sentence: a capital S or K there is the preposition; a colon or exclamation mark glued to the next character, as in `12:30`, is not a clause end: it stays in the text and is read by name by the front end's `SYMBOLS` table; a glued period stays only before a file extension or domain label of up to five letters or digits in one case, `datoteka.txt`, `www.index.hr`, and after a single letter, where it is an abbreviation dot, silent, with the letters read by name: `s.a.r.s.`, `U.S.A.`; every other glued period ends the clause, `Preslušano.Nestajuća`; the decimal point is written by the number converter as U+2024 so it survives, `3.14` tri točka četrnaest; a period between groups of three digits is the thousands separator in every language (`1.317` tisuću tristo sedamnaest, `1.000.000` milijun; since 2026-11-03, before that read by name), any other group after a period is a whole number (`3.14` tri točka četrnaest, `192.168.1.1` group by group), the decimal comma as *zarez* (but a comma between the single digits of a phone number spelled out by a screen reader, `+ 1 2 3,5 6,7 8 9,8 7 6`, as a comma pause), clock times `12:30` and dates `7.10.2026` / `7. 10. 2026.` without the separators and with a short pause between their parts (see "Short pauses inside a clause"), a number of up to four digits with a period before a lowercase word as the cardinal with the period silent: `7. listopada` sedam listopada, `1990. godine` (no ordinals: they would need the noun's case), and sets a number glued to letters off from them (`u20:03` u dvadeset nula tri, `5kg`), silencing the period that joins a word to those letters: `7.listopada.u20:03` sedam listopada u dvadeset nula tri; the front end expands no abbreviation, spells a vowelless one (`dr.` de er), and silences the colon of `https://`)
 3. → `formant::Frontend::process()` → phones with stress, words, clause kind (both kinds of voices); for Slovenian `Frontend::process_slovenian()` with the rules and lexicon of `formant_slovenian.cpp`
 4. → Recorded voices: `concat::plan_clause()` (durations, pitch contour) → `concat::render()` (TD-PSOLA)
    Formant voices: `ClauseBuilder` → `KlattSynth`
@@ -207,6 +208,71 @@ infer a negative value from parentheses without a currency marker or mistake
 an identifier/range hyphen for a minus. Sources, ambiguities and limits are in
 `docs/formant.md`, "Currency amounts"; `[currency]` tests cover normalization
 and both audio renderers.
+
+### Short pauses inside a clause: clock times, dates, cell addresses
+
+A listener's report of November 2026: a screen reader says a spreadsheet
+cell's contents and then its address, and "Marjan A17" was heard as "Marijana
+17" (the A was the conjunction *a*, unstressed and leaning on the number); the
+hours of a clock time ran into its minutes and the day of a date into the
+month. The number converter now leaves two marks in the text
+(`src/core/text_marks.hpp`; Unicode noncharacters, which no host's text
+contains, where a private use character can come from an icon font):
+
+- `MINOR_BREAK_MARK` (U+FDD0, written as a word of its own): a short pause
+  before the next word. Where: between the hours, minutes and seconds of a
+  clock time (`12:30:45`, also `u 8.30`, `24:00`, Slovenian `ob 8.30`), between
+  the day, month and year of a numeric date (`10.11.2026.`, `10. 11. 2026.`,
+  `5.3.`, the right side of `15.–20. 3.`), before a cell's address that follows
+  other words (`Marjan A17`, `1250 C3`, `A1 B2`) and before a number that
+  follows an address (`A20 5` is not A25). Not at the head of a clause, not
+  after a preposition or conjunction (`u A1`, `od A1 do B5`, `v A1`;
+  `leans_on_next()`), not in a range or formula (`A1:B5`, `=A1+B2`).
+- `LETTER_CODE_MARK` (U+FDD1, right after the letters): one or two capital
+  letters of the English alphabet glued to a number of up to seven digits
+  (`A17`, `F5`, `S22`, `U21`, `AB12`, `H2O`, `A4-format`; `code_begin()`) are
+  letters, not the words they spell: one letter by the spelling mode like any
+  lone letter (*bə* or *be*; a vowel is a stressed word of its own), two by
+  their names (*NA5* is *en a pet*). Not small letters (`u20:03` is the
+  preposition), not three letters (`TOP10`, `HRT1`), not after a hyphen or
+  slash (`R2-D2`, `PS/2`), not before a time or decimal (`U20:03`, `V1.5`).
+
+The tokenizer (`tokenize()`) turns them into `Word::break_before` /
+`Word::code`, `expand_words()` reads the letters, `finish_utterance()` puts
+`Phone::break_before` on the word's first phone. The front end still reads the
+clause whole, so every context rule sees all the words; the synthesizers then
+call `formant::split_at_breaks()` and render the parts one after another
+(`FormantSynthesizer::append_group()`, `AudioSynthesizer::synthesize_clause()`)
+with a silence of **half the user's comma pause** between them, shorter by
+the square root of the rate when speech is fast (`minor_break_pause_ms()`,
+`MINOR_BREAK_PAUSE_PERCENT` 50: 50 ms at the default 100, 35 ms at 2x, 29 ms
+at 3x; the whole comma pause at first and 65 % of it next, both of which the
+listener found too long; `TTSEngine::synthesize_segments()` passes it). A part before a pause is a
+continuation with under half of a comma's boundary movement
+(`Utterance::minor_break`, `MINOR_BREAK_MOVEMENT` 0.45, last syllable
+lengthened by `MINOR_BREAK_STRETCH` 1.15 instead of 1.30), a part after one
+does not start again (`Utterance::continued`: no high first accent, no
+wh-question peak), the last part keeps the clause's kind. A comma would have
+ended the clause ("u dvanaest, trideset u uredu"). Singing presets ignore the
+pauses. Both number modes; the digit mode now also sets a number off from the
+letters it is glued to (`A17` was "Ajedan sedam", `mp3` "mptri").
+
+Dates fixed in the same round (hr, sr, bs unless noted): the period after a
+date's year before a lowercase word is the ordinal's and ends no sentence
+(`10.11.2026. godine`, `od 1.12.2026. do 5.12.2026.`, `Rođen je 10.11.1985. u
+Zagrebu`; `date_period_end()`); a day and month with leading zeros are a date
+(`05.03.`, also Slovenian) and so are `Danas je 07.10.2026.` (nominative) and
+`u 08.30` (a time); a day and month written together before *do, i* are a
+date, as are two written apart before *do* and another date (`od 1.12. do
+5.12.`, `od 1. 12. do 5. 12.`, also Slovenian; `1. 2. i 3. mjesto` stays an
+enumeration); a hyphen after an ordinal's period stands for the dash
+(`10.-15.11.2026.`, `3.-4. mjesto`, `1991.-2000.`). A date written together
+and one written with spaces were already the same words; they are the same
+samples. Tests: `test_numbers.cpp` `[breaks]`, `test_frontend.cpp` `[breaks]`,
+`test_formant.cpp` "Clock times, dates and cell addresses have short pauses",
+`test_concat.cpp` "Recorded voices pause inside a time and before a cell's
+address"; details and measurements in `docs/formant.md`, "Short pauses inside
+a clause".
 
 ## C API
 

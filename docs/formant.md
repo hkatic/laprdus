@@ -53,7 +53,9 @@ phone number spelled out by a screen reader ("+ 1 2 3,5 6,7 8 9,8 7 6": at
 least six single digits separated by spaces or glued commas, at least two of
 them touching no comma), where it writes a comma and a space, so the groups
 are clauses with the comma pause. It reads clock times ("12:30") and dates
-("7.10.2026", "7. 10. 2026.") without the separators, and a number of up to
+("7.10.2026", "7. 10. 2026.") without the separators, with a short pause
+between their parts and before a spreadsheet cell's address since November
+2026 (see "Short pauses inside a clause"), and a number of up to
 four digits followed by a period before a lowercase word as the cardinal
 ("7. listopada" *sedam listopada*, "1990. godine") with the period silent;
 before an uppercase word the period ends the sentence as usual. Ordinals
@@ -5549,6 +5551,192 @@ A host must still supply those characters; symbols removed before synthesis
 cannot be reconstructed. Tests cover the supplied Croatian balances, all four
 languages, both number modes and renderers, and preservation of dates, times,
 IP addresses, ranges and the telephone grouping above.
+
+**Short pauses inside a clause: clock times, dates, cell addresses
+(2026-11-10).** A listener's report: a screen reader says a spreadsheet
+cell's contents and then its address, and with no pause between them
+"Marjan A17" sounds like "Marijana 17"; a clock time should have a little
+pause after each colon, so that the hours, minutes and seconds are told
+apart; dates should be read alike written together and with spaces.
+
+What the engine did. `A17` became *A sedamnaest*, and the front end took the
+A for the conjunction *a*: an unstressed proclitic leaning on the number
+(phones `m'arjan a sed'amnaest`), with no boundary before it. The same
+happened to every vowel letter (`I5`, `O2`, `U21` with the preposition *u*),
+and at the head of a clause `S22` and `K5` began with the prepositions *s*
+and *k*. A time was the plain words *dvanaest trideset*; *dvadeset tri
+pedeset devet* is 23:59 or 20 3 50 9. A date written together and one written
+with spaces were the same words already (the same samples: both forms go
+through `parse_date()`), so the difference the listener heard is not in the
+engine; what was wrong with dates is listed under "Dates" below.
+
+The marks. The number converter cannot make a pause or a letter itself, so it
+leaves two characters in the text (`src/core/text_marks.hpp`). They are
+Unicode noncharacters, set aside for a program's internal use, so no host's
+text has them; a private use character can come from an icon font in a
+button's label:
+
+- `MINOR_BREAK_MARK`, U+FDD0, written as a word of its own (`PART_BREAK`):
+  a short pause before the next word. `time_to_words()` writes it between the
+  hours, minutes and seconds (every path that reads a time: `12:30:45`,
+  `24:00`, `u 8.30`, `od 8.30 do 16.00`, Slovenian `ob 8.30`; *ob 17:00* is the
+  one word *ob sedemnajstih* and has none), `date_to_words()` and the dates of
+  `hr_number_at()` / `slovenian_number_at()` between the day, month and year
+  (`10.11.2026.`, `10. 11. 2026.`, `5.3.`, the right side of `15.–20. 3.`), and
+  `mark_cell_address()` before a cell's address.
+- `LETTER_CODE_MARK`, U+FDD1, right after the letters of a designation: they
+  are letters, not the words they spell.
+
+A designation (`code_begin()`) is one or two capital letters of the English
+alphabet glued to a number of up to seven digits without a leading zero, with
+the start of the text, a space or a sign of a formula before the letters
+(`A17`, `B2`, `AB120`, `F5`, `A4`, `S22`, `U21`, `PS5`, `H2O`, `A4-format`,
+`=A1+B2`, `A1:B5`). Left alone: small letters (`u20:03` is the preposition
+glued by a host, `5kg`), three letters (Excel's columns reach XFD, but in a
+text such a word is far more often a name with its own reading: `TOP10`,
+`WIN11`, `HRT1`), the continuation of a longer designation (`R2-D2`'s D2,
+`PS/2`), a time or a decimal after the letters (`U20:03`, `V1.5`). The
+address *stands alone* when the end of the text, a space, a period or a sign
+of a formula follows the digits; only then can it have the pause.
+
+The pause before an address (`follows_an_item()`): when a word or a number
+stands before it in the clause (`Marjan A17`, `1250 C3`, `A1 B2`, `"Marjan"
+A17`; NVDA ends every item with two spaces and the driver joins them with a
+third, so its text is `Marjan   A17  `). None at the head of the text or of a
+clause (`A17`, `Marjan, A17`, `10.11.2026. A17`), after a preposition or
+conjunction of the four languages (`leans_on_next()`: *u A1, od A1 do B5, A1 i
+B2, v A1*), in a range or formula. The address said first (`A17 Marjan`) has
+no pause after it, except before a number: `A20 5` is the cell A20 with a 5
+in it and not A25.
+
+The front end. `tokenize()` turns the marks into `Word::break_before` (the
+next word) and `Word::code` (the letters before the mark, two at most).
+`expand_words()` reads a designation's letters before every other rule: one
+letter follows the spelling mode like any lone letter (*bə* by sounds, *be*
+by names; q, x, y by name; w as *duplo ve* / *dvojni ve*), a vowel letter is
+its name, a full stressed word (`m'arjan 'a sed'amnaest`), two letters are
+spelled by their names (`NA5` *en a pet*, `AB12` *a be dvanaest*, where `NA`
+alone is the word *na*); `leaning_preposition()` never takes such a letter
+(S22, K5, Slovenian V5, Z3). The pause moves to the first word made of the
+token (a spelled designation, the *ena* of a Slovenian *enaindvajset*), and
+`finish_utterance()` sets `Phone::break_before` on that word's first phone,
+never on the first phone of the clause.
+
+The rendering. A comma at these places would end the clause: its own melody
+and, worse, its own context for the front end ("u dvanaest, trideset u
+uredu" asks which thirty is in the office). So the front end still reads the
+clause whole, and the synthesizers split the *utterance*:
+`formant::split_at_breaks()` returns the parts between the pauses, words and
+syllables counted from each part's start, and both renderers
+(`FormantSynthesizer::append_group()`, `AudioSynthesizer::synthesize_clause()`)
+render them one after another, so the sounds before a pause end as they do
+before any pause (a released final stop, a fading vowel) and the sounds after
+it start as at the head of a clause. Between the parts stands a silence of
+**half the user's comma pause**, shorter by the square root of the rate when
+speech is fast (`minor_break_pause_ms()`, `MINOR_BREAK_PAUSE_PERCENT` 50: 50
+ms at the default 100 and rate 1, 35 ms at 2x, 29 ms at 3x, 25 ms at 4x;
+`TTSEngine::synthesize_segments()` passes it). A clause pause is a length the
+user sets and keeps at every rate, but this pause stands inside a phrase, and
+at a screen reader's rate a fixed one was as long as a syllable; the square
+root is how the formant transitions and the segments' floors shrink, so the
+pause stays longer than a stop's closure at 3x and can still be heard. It
+was the whole comma pause in the first build and 65 % of it in the second,
+and the listener's answer both times was that the cases sounded better and
+the pauses were still too long. The parts' prosody:
+
+- a part before a pause is `ClauseKind::Continuation` with
+  `Utterance::minor_break`: `MINOR_BREAK_MOVEMENT` 0.45 of a comma's boundary
+  movement (a fall of 0.7 semitones after the last accent, a rise of 1.1 on
+  the last syllable; a comma 1.5 and 2.5) and the last syllable lengthened by
+  `MINOR_BREAK_STRETCH` 1.15 (a comma 1.30, the end of a sentence 1.40);
+- a part after a pause has `Utterance::continued`: its first accent moves
+  like one inside a clause (2.6 semitones, not the 3.4 of a clause after a
+  comma or the 4.5 of a sentence), without the raised sentence onset and
+  without the wh-question's peak on the first word;
+- the last part keeps the clause's kind, and a yes/no question's focus word
+  stays in the part it is in.
+
+Singing presets ignore the pauses: their rests are the song's. Measured for
+Zvonko at the default comma pause of 100 ms, the silence where the pause
+stands (the pause and the fade around it): in "Marjan A17" 62 ms at rate 1,
+44 ms at 2x and 39 ms at 3x (with the whole comma pause 112 ms at rate 1;
+with 65 % of it, unscaled, 77 ms at rate 1 and 74 ms at 2x);
+in "12:30", where the pause meets the closure of the next t, 98, 79 and 72
+ms. The longest silence of the old engine's reading, as in "Marijana 17", is
+the closure of a t, 56 ms at rate 1. "Imam novi stan" ends 6 semitones
+under the middle of the voice as a sentence (90 Hz), 1 under it before the
+short pause (117 Hz) and on it before a comma (121 Hz).
+
+A recognizer as the listener (faster-whisper "small", Croatian, the phrase in
+the carrier "U ćeliji piše ...", Zvonko at 1.0x; old engine → new engine):
+*Marjan A17* "Marjana 17" → "Marjan, a sedam naest"; *Ivana A2* "Ivan a
+dva" → "Ivana A2"; *Zagreb A4* "zagreba četili" → "Zagreb A4"; *Stjepan I5*
+"stjepani pet" → "stjepan, i ped"; *ukupno B12* "u kupnobu 12" → "ukupno, ba
+12"; *Vrijeme je 8:15:30 točno* "još sam 15-30 točno" → "je osam, pet naest,
+30 točno". The first is the listener's own report word for word. At 1.7x and
+for Josip the recognizer is too noisy to say anything either way.
+
+Dates (hr, sr and bs unless noted; found while the date paths were read for
+the pauses, each covered in `test_numbers.cpp`):
+
+- The period after a date's year is the ordinal's, as the orthography writes
+  it (*10. 11. 2026.*), and before a lowercase word it ends no sentence
+  (`date_period_end()`, the line `silent_dot_end()` draws for *7. listopada*):
+  `10.11.2026. godine`, `Rođen je 10.11.1985. u Zagrebu`, `od 1.12.2026. do
+  5.12.2026.` fell to the bottom of the voice and paused after the year.
+  Before a capital, a number or the end it is the sentence's as before.
+  Slovenian writes no period after the year and is left as it was.
+- Leading zeros: `05.03.` was *nula pet točka nula tri* (also in Slovenian,
+  *nič pet pika nič tri*), `Danas je 07.10.2026.` had the genitive of the
+  shared path instead of *sedmi deseti*, `u 08.30` was no time. A two-digit
+  number with a leading zero before a period now reaches the date and time
+  rules of `hr_number_at()`; in Slovenian only a date without a year does.
+  `007`, `05.03` without the final period and `05.000` are read as before.
+- A day and a month before a conjunction: `od 1.12. do 5.12.` was *od jedan
+  točka dvanaest. do petog dvanaestog*, because two ordinals before *do, i,
+  ili* are an enumeration (*1. 2. i 3. mjesto*, which stays one). Written
+  together they are a date, and written apart they are one when another date
+  follows the conjunction (`od 1. 12. do 5. 12.`, `7. 10. i 8. 10.`;
+  `parse_day_month()`, `date_at()`; also Slovenian).
+- A hyphen after an ordinal's period stands for the dash: `10.-15.11.2026.`
+  (*desetog do petnaestog jedanaestog ...*), `3.-4. mjesto`, `1991.-2000.`
+  were read with the period and the hyphen left in the text.
+
+The digit mode reads times and dates as the whole-number mode does and now
+also sets a number off from the letters it is glued to
+(`set_off_from_letters()`): `A17` was *Ajedan sedam*, `mp3` *mptri*, `T2`
+*Tdva*.
+
+Checked: the 3,300 numeric examples of the tests and of this documentation
+through the old and the new converter, whole-number mode: the words are the
+same in every language except the date fixes above (17 examples in hr, sr and
+bs each, 5 in Slovenian, all added for them), about 190 examples gained
+marks; in the digit mode the differences are the spaces after letters and
+the same dates. Old and new audio of 29 everyday sentences without a time, a
+date or a designation, ten voices, rates 1.0 and 2.0 and the digit mode (870
+comparisons): identical samples, except the digit-mode sentences with a digit
+glued to a letter or with a time. Through the installed Apple extension
+(`AVSpeechSynthesizer.write`, plain text and VoiceOver's markup): "Marjan
+A17" has its silence, "12:30:45" two pauses, and `10.11.2026.` and
+`10. 11. 2026.` are the same samples. The `say` command is no check for
+numbers: on a Mac whose system language is English its older speech path
+expands the digits into English words before the voice gets the text
+(`12:30` and `twelve thirty` are the same audio, and `10.11.2026.` is
+rewritten where `10. 11. 2026.` is not), which the engine cannot see.
+
+Limits. A cell's address is recognized by its shape alone, so a designation
+of the same shape in running text gets the pause as well (*Samsung S22,
+autocesta A1, tipka F5, format A4*): a short one inside the phrase, with the
+melody going on. Three-letter columns (from AAA, the 703rd) have no pause
+and no letter reading. A range written with a dash (`A1–B5`) and a
+designation after a hyphen or slash are read as before. A host that says the
+address first gets no pause between it and a word that follows (`A17 Marjan`).
+The pause has no setting of its own: it follows the comma pause and the rate. Tests: `test_numbers.cpp`
+`[breaks]` (three cases), `test_frontend.cpp` `[breaks]` (the letters; the
+parts of a clause), `test_formant.cpp` "Clock times, dates and cell addresses
+have short pauses" (the samples, the comma pause, the melody, every language,
+both number modes, a singing preset), `test_concat.cpp` "Recorded voices
+pause inside a time and before a cell's address".
 
 Regression tests: `test_frontend.cpp` and `test_numbers.cpp`. Build the latter:
 

@@ -3,6 +3,7 @@
 
 #include "formant_frontend.hpp"
 #include "../core/phoneme_mapper.hpp"
+#include "../core/text_marks.hpp"
 #include <algorithm>
 #include <cstring>
 #include <initializer_list>
@@ -147,6 +148,8 @@ struct Word {
     bool camel = false;             // part of a word with inner capitals ("ElevenLabs")
     bool camel_join = false;        // ... written together with the part before it
     bool english = false;           // read as an English word (see "English words")
+    bool code = false;              // the letters of a designation glued to a number ("A17", "AB12")
+    bool break_before = false;      // a short pause stands before the word (MINOR_BREAK_MARK)
     std::u32string spelled;         // the letters as written, before x, q, w, y are rewritten
     std::vector<int> origin;        // letter of `spelled` each letter of `w` comes from
 
@@ -412,12 +415,15 @@ std::vector<Word> tokenize(const std::u32string& text, VoiceLanguage language) {
     size_t upper_count = 0;
     bool after_abbreviation_dot = false;
     bool opening = false;
+    bool pending_break = false;
 
     auto flush = [&]() {
         if (!current.w.empty()) {
             current.all_caps = upper_count == current.w.size();
             current.after_opening = opening;
             opening = false;
+            current.break_before = pending_break;
+            pending_break = false;
             if (after_abbreviation_dot && current.w.size() == 1) current.spell = true;
             words.push_back(std::move(current));
         }
@@ -458,6 +464,19 @@ std::vector<Word> tokenize(const std::u32string& text, VoiceLanguage language) {
         // No real word is this long; splitting keeps one runaway token from
         // becoming a single enormous prosodic word.
         if (current.w.size() >= MAX_WORD_LETTERS) flush();
+
+        // The number converter's marks (text_marks.hpp): a short pause before
+        // the next word, and the letters of a designation such as A17
+        if (raw == MINOR_BREAK_MARK) {
+            flush();
+            pending_break = true;
+            continue;
+        }
+        if (raw == LETTER_CODE_MARK) {
+            current.code = !current.w.empty() && current.w.size() <= 2;
+            flush();
+            continue;
+        }
 
         if (is_base_letter(c)) {
             if (upper && camel_break(pos)) {
@@ -644,7 +663,7 @@ bool leaning_preposition(const std::vector<Word>& tokens, size_t t, VoiceLanguag
     const bool preposition = slovene
         ? (token.w == U"v" || token.w == U"s" || token.w == U"z" || token.w == U"k" || token.w == U"h")
         : (token.w == U"s" || token.w == U"k");
-    if (!preposition || token.before_hyphen || t + 1 >= tokens.size()) {
+    if (!preposition || token.before_hyphen || token.code || t + 1 >= tokens.size()) {   // S22, K5
         return false;
     }
     const Word& next = tokens[t + 1];
@@ -698,7 +717,17 @@ std::vector<Word> expand_words(std::vector<Word> tokens, VoiceLanguage language,
     for (size_t t = 0; t < tokens.size(); ++t) leaning[t] = leaning_preposition(tokens, t, language);
 
     std::vector<Word> words;
+    // The short pause before a token stands before the first word made of it
+    size_t made_from = 0;
+    bool pause_pending = false;
+    auto place_pause = [&]() {
+        if (pause_pending && words.size() > made_from) words[made_from].break_before = true;
+    };
     for (size_t t = 0; t < tokens.size(); ++t) {
+        place_pause();
+        made_from = words.size();
+        pause_pending = tokens[t].break_before;
+
         Word& token = tokens[t];
         bool marked = std::any_of(token.marks.begin(), token.marks.end(),
                                   [](uint8_t m) { return m != 0; });
@@ -742,6 +771,29 @@ std::vector<Word> expand_words(std::vector<Word> tokens, VoiceLanguage language,
                 }
                 continue;
             }
+            // The letters of a designation glued to a number (A17, S22, NA5:
+            // LETTER_CODE_MARK) are letters whatever word they are spelled
+            // like: one letter by the spelling mode, as any lone letter, two
+            // by their names, as an abbreviation. Without this the A of A17
+            // was the conjunction a and leaned on the number ("Marjan A17" was
+            // heard as "Marijana 17"), U21 began with the preposition u and
+            // S22, at the head of a clause, with the preposition s.
+            if (token.code && token.w != U"w") {
+                if (token.w.size() == 1 && letter_sounds && consonant_phone(token.w[0]) != Ph::SIL) {
+                    token.letter_sound = true;
+                    token.letter_name = true;
+                    words.push_back(std::move(token));
+                    continue;
+                }
+                const size_t start = words.size();
+                for (char32_t c : token.w) {
+                    size_t first = words.size();
+                    split_words(letter_name_in(c, language), words);
+                    for (size_t i = first; i < words.size(); ++i) words[i].letter_name = true;
+                }
+                if (words.size() > start) words[start].word_start = true;
+                continue;
+            }
             if (letter_sounds && !leaning[t] && lone_consonant_letter(token)) {
                 // A full word of its own, never a clitic (see letter_name)
                 token.letter_sound = true;
@@ -772,6 +824,7 @@ std::vector<Word> expand_words(std::vector<Word> tokens, VoiceLanguage language,
         }
         words.push_back(std::move(token));
     }
+    place_pause();
     return words;
 }
 
@@ -3086,6 +3139,8 @@ void finish_utterance(std::vector<Word>& words, Punctuation punct, const WordSet
             Phone phone = word.phones[pi];
             phone.word = static_cast<uint16_t>(group[wi]);
             phone.word_start = pi == 0 && !word.joined;
+            // A short pause before the word, when something was said before it
+            phone.break_before = pi == 0 && word.break_before && !word.joined && !utt.phones.empty();
             phone.prominence = word.prominence;
             phone.word_syllables =
                 static_cast<uint8_t>(std::min(group_syllables[group[wi]], 255));
@@ -3132,6 +3187,50 @@ void finish_utterance(std::vector<Word>& words, Punctuation punct, const WordSet
 }
 
 } // namespace
+
+std::vector<Utterance> split_at_breaks(const Utterance& utt) {
+    std::vector<Utterance> parts;
+    const size_t n = utt.phones.size();
+    size_t begin = 0;
+    for (size_t i = 1; i <= n; ++i) {
+        if (i < n && !utt.phones[i].break_before) continue;
+        if (begin == 0 && i == n) {
+            parts.push_back(utt);
+            break;
+        }
+        Utterance part;
+        part.kind = i == n ? utt.kind : ClauseKind::Continuation;
+        part.minor_break = i < n;
+        part.continued = begin > 0;
+        part.sentence_initial = utt.sentence_initial && begin == 0;
+        part.slovenian = utt.slovenian;
+
+        // Words and syllables are counted from the start of the part
+        const uint16_t first_word = utt.phones[begin].word;
+        int first_syllable = -1, last_syllable = -1;
+        for (size_t k = begin; k < i; ++k) {
+            const int syllable = utt.phones[k].syllable;
+            if (syllable < 0) continue;
+            if (first_syllable < 0 || syllable < first_syllable) first_syllable = syllable;
+            last_syllable = std::max(last_syllable, syllable);
+        }
+        part.phones.assign(utt.phones.begin() + static_cast<std::ptrdiff_t>(begin),
+                           utt.phones.begin() + static_cast<std::ptrdiff_t>(i));
+        for (Phone& phone : part.phones) {
+            phone.word = static_cast<uint16_t>(phone.word - first_word);
+            if (phone.syllable >= 0) phone.syllable = static_cast<int16_t>(phone.syllable - first_syllable);
+            phone.break_before = false;
+        }
+        part.syllable_count = first_syllable < 0 ? 0 : last_syllable - first_syllable + 1;
+        const int last_word = utt.phones[i - 1].word;
+        if (utt.focus_word >= static_cast<int>(first_word) && utt.focus_word <= last_word) {
+            part.focus_word = utt.focus_word - static_cast<int>(first_word);
+        }
+        parts.push_back(std::move(part));
+        begin = i;
+    }
+    return parts;
+}
 
 // =============================================================================
 // Frontend
@@ -4181,6 +4280,7 @@ Utterance Frontend::process_slovenian(const std::u32string& marked_text, Punctua
             Word first(ones);
             first.capitalized = word.capitalized;
             first.all_caps = word.all_caps;
+            first.break_before = word.break_before;     // 12:21, dvanajst | ena in dvajset
             Word conjunction(U"in");
             conjunction.joined = true;
             conjunction.clitic = true;

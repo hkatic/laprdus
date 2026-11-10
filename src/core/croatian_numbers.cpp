@@ -3,6 +3,7 @@
 // Ported from Python numbers.py
 
 #include "croatian_numbers.hpp"
+#include "text_marks.hpp"
 #include "../formant/formant_slovenian.hpp"
 #include <algorithm>
 #include <cctype>
@@ -720,6 +721,13 @@ bool is_lowercase_letter(char32_t c) {
     return false;
 }
 
+// The short pause between the parts of a clock time or a numeric date and
+// before the address of a spreadsheet cell (text_marks.hpp), as a word of its
+// own. Without it the hours ran into the minutes and the day into the month:
+// "dvadeset tri pedeset devet" is 23:59 or 20 3 50 9 (a listener's report of
+// November 2026).
+const std::string PART_BREAK = std::string(" ") + MINOR_BREAK_UTF8 + " ";
+
 // Value of a group of at most 4 digits
 int group_value(std::string_view group) {
     int value = 0;
@@ -777,6 +785,49 @@ size_t parse_date(const std::string& text, size_t i, std::vector<std::string_vie
     return pos;
 }
 
+// A day and a month without a year at pos: 7.10., 7. 10., 05.03. Fills the
+// ends of the day and of the month and the start of the month; false when
+// the numbers are no day and month or a year follows (the full date).
+bool parse_day_month(const std::string& text, size_t pos, size_t& d_end, size_t& m, size_t& m_end) {
+    const size_t length = text.size();
+    d_end = digits_end(text, pos);
+    if (d_end == pos || d_end - pos > 2 || d_end >= length || text[d_end] != '.') return false;
+    const int day = group_value(std::string_view(text.data() + pos, d_end - pos));
+    if (day < 1 || day > 31) return false;
+    m = d_end + 1;
+    if (m < length && text[m] == ' ') ++m;
+    m_end = digits_end(text, m);
+    if (m_end == m || m_end - m > 2 || m_end >= length || text[m_end] != '.') return false;
+    const int month = group_value(std::string_view(text.data() + m, m_end - m));
+    if (month < 1 || month > 12) return false;
+    size_t y = m_end + 1;
+    if (y < length && text[y] == ' ') ++y;
+    return !(y < length && is_digit(text[y]));
+}
+
+// A date, with or without a year, at pos
+bool date_at(const std::string& text, size_t pos) {
+    std::vector<std::string_view> groups;
+    size_t d_end = 0, m = 0, m_end = 0;
+    return pos < text.size() && is_digit(text[pos]) &&
+           (parse_date(text, pos, groups) != 0 || parse_day_month(text, pos, d_end, m, m_end));
+}
+
+// The period after the year of a date is the ordinal's, as the orthography
+// writes it (10. 11. 2026.), and before a lowercase word it ends no sentence:
+// "10.11.2026. godine", "od 1.12.2026. do 5.12.2026.", "Rođen je 10.11.1985.
+// u Zagrebu" fell to the bottom of the voice and paused after the year. The
+// same line as for "7. listopada" (silent_dot_end()). Returns the end of what
+// the date takes, the period included when it is silent.
+size_t date_period_end(const std::string& text, size_t end, std::string& words) {
+    if (end >= text.size() || text[end] != '.') return end;
+    size_t next = end + 1;
+    while (next < text.size() && (text[next] == ' ' || text[next] == '\t')) ++next;
+    if (!is_lowercase_letter(code_point_at(text, next))) return end;
+    if (next == end + 1) words += ' ';
+    return end + 1;
+}
+
 } // namespace
 
 // A number of up to four digits without a leading zero, standing at the
@@ -797,11 +848,12 @@ size_t CroatianNumbers::silent_dot_end(const std::string& text, size_t start, si
     return is_lowercase_letter(code_point_at(text, next)) ? end + 1 : 0;
 }
 
-// "12:30" -> dvanaest trideset, "9:05" -> devet nula pet
+// "12:30" -> dvanaest trideset, "9:05" -> devet nula pet, with a short pause
+// where the colon stood, so that the hours, minutes and seconds are told apart
 std::string CroatianNumbers::time_to_words(const std::vector<std::string_view>& groups) {
     std::string words;
     for (size_t k = 0; k < groups.size(); ++k) {
-        if (k > 0) words += ' ';
+        if (k > 0) words += PART_BREAK;
         std::string part = k == 0 ? number_to_words(groups[k]) : digit_group_to_words(groups[k]);
         if (slovenian()) feminine_two(part);    // the hour and the minute: dve trideset
         words += part;
@@ -816,10 +868,11 @@ std::string CroatianNumbers::time_to_words(const std::vector<std::string_view>& 
 // SAZU: "šestega julija dva tisoč deset").
 std::string CroatianNumbers::date_to_words(const std::vector<std::string_view>& groups) {
     if (slovenian()) {
-        return slovenian_ordinal(groups[0], "ega") + ' ' + slovenian_ordinal(groups[1], "ega") +
-               ' ' + number_to_words(groups[2]);
+        return slovenian_ordinal(groups[0], "ega") + PART_BREAK + slovenian_ordinal(groups[1], "ega") +
+               PART_BREAK + number_to_words(groups[2]);
     }
-    return hr_ordinal(groups[0], "og") + ' ' + hr_ordinal(groups[1], "og") + ' ' + hr_ordinal(groups[2], "e");
+    return hr_ordinal(groups[0], "og") + PART_BREAK + hr_ordinal(groups[1], "og") + PART_BREAK +
+           hr_ordinal(groups[2], "e");
 }
 
 // A time or date at position i, read without the separators; returns the
@@ -831,7 +884,9 @@ size_t CroatianNumbers::convert_time_or_date(const std::string& text, size_t i, 
         return end;
     }
     if (size_t end = parse_date(text, i, groups)) {
-        result += date_to_words(groups);
+        std::string words = date_to_words(groups);
+        if (!slovenian()) end = date_period_end(text, end, words);
+        result += words;
         return end;
     }
     return 0;
@@ -1850,7 +1905,46 @@ size_t CroatianNumbers::slovenian_number_at(const std::string& text, size_t i, s
             }
         }
     }
-    if (leading_zero) return 0;
+    // A date without a year: 7. 10., 7.10., 05.03. (sedmega desetega); not
+    // before a year (the shared path), not in an enumeration (1. 2. in 3.
+    // mesto), unless another date follows the conjunction (od 1. 12. do 5.
+    // 12., 7. 10. in 8. 10.) or the day and the month are written together
+    // (od 1.12. do 5.12.)
+    auto short_date = [&](size_t pos, std::string& words, size_t& stop) -> bool {
+        size_t d_end = 0, m = 0, m_end = 0;
+        if (!parse_day_month(text, pos, d_end, m, m_end)) return false;
+        const SlNext next = sl_next_word(text, m_end + 1);
+        static const std::unordered_set<std::string_view> joining = {"in", "ali", "do", "ter", "oziroma", "pa"};
+        if (next.lowercase && joining.count(next.word) && m != d_end + 1 &&
+            !date_at(text, sl_skip_spaces(text, next.end))) {
+            return false;
+        }
+        words = slovenian_ordinal(std::string_view(text.data() + pos, d_end - pos), "ega") + PART_BREAK +
+                slovenian_ordinal(std::string_view(text.data() + m, m_end - m), "ega");
+        // The final period is silent before a lowercase word, as the period
+        // of "7. oktobra" is; before anything else it ends the sentence
+        if (next.lowercase && next.begin > m_end + 1) {
+            stop = m_end + 1;
+        } else if (next.lowercase) {
+            stop = m_end + 1;
+            words += ' ';
+        } else {
+            stop = m_end;
+        }
+        return true;
+    };
+
+    // A leading zero is read digit by digit by the shared path (007, 01),
+    // except in a date without a year written with one: 05.03., 07. 10.
+    if (leading_zero) {
+        std::string words;
+        size_t stop = 0;
+        if (!in_range && end - i == 2 && short_date(i, words, stop)) {
+            result += words;
+            return stop;
+        }
+        return 0;
+    }
 
     // A range of two times: 8.30–16.00, 8:30–16:00
     if (!in_range) {
@@ -1889,7 +1983,7 @@ size_t CroatianNumbers::slovenian_number_at(const std::string& text, size_t i, s
         return 0;
     }
     if (digits == "24" && text.compare(end, 3, ":00") == 0 && (end + 3 >= length || (!is_digit(text[end + 3]) && text[end + 3] != ':'))) {
-        result += prev.word == "ob" ? u8"štiriindvajsetih" : u8"štiriindvajset nič nič";
+        result += prev.word == "ob" ? std::string(u8"štiriindvajsetih") : u8"štiriindvajset" + PART_BREAK + u8"nič nič";
         return end + 3;
     }
 
@@ -1931,40 +2025,6 @@ size_t CroatianNumbers::slovenian_number_at(const std::string& text, size_t i, s
             return after;
         }
     }
-
-    // A date without a year: 7. 10., 7.10. (sedmega desetega); not before a
-    // year (the shared path), not in an enumeration (1. 2. in 3. mesto)
-    auto short_date = [&](size_t pos, std::string& words, size_t& stop) -> bool {
-        const size_t d_end = digits_end(text, pos);
-        if (d_end == pos || d_end - pos > 2 || text[pos] == '0' || d_end >= length || text[d_end] != '.') return false;
-        const long day = sl_value(std::string_view(text.data() + pos, d_end - pos));
-        if (day < 1 || day > 31) return false;
-        size_t m = d_end + 1;
-        if (m < length && text[m] == ' ') ++m;
-        const size_t m_end = digits_end(text, m);
-        if (m_end == m || m_end - m > 2 || m_end >= length || text[m_end] != '.') return false;
-        const long month = sl_value(std::string_view(text.data() + m, m_end - m));
-        if (month < 1 || month > 12) return false;
-        size_t y = m_end + 1;
-        if (y < length && text[y] == ' ') ++y;
-        if (y < length && is_digit(text[y])) return false;           // a year follows: the full date
-        const SlNext next = sl_next_word(text, m_end + 1);
-        static const std::unordered_set<std::string_view> joining = {"in", "ali", "do", "ter", "oziroma", "pa"};
-        if (next.lowercase && joining.count(next.word)) return false;
-        words = slovenian_ordinal(std::string_view(text.data() + pos, d_end - pos), "ega") + ' ' +
-                slovenian_ordinal(std::string_view(text.data() + m, m_end - m), "ega");
-        // The final period is silent before a lowercase word, as the period
-        // of "7. oktobra" is; before anything else it ends the sentence
-        if (next.lowercase && next.begin > m_end + 1) {
-            stop = m_end + 1;
-        } else if (next.lowercase) {
-            stop = m_end + 1;
-            words += ' ';
-        } else {
-            stop = m_end;
-        }
-        return true;
-    };
 
     // A range: 1991–2000, 1991-2000, 2–3 dni, 15.–20. 3., 3.–4. mesto, 15. do
     // 20. marca, 8.30–16.00: "do" between the two, both read alike
@@ -2732,7 +2792,10 @@ size_t CroatianNumbers::hr_number_at(const std::string& text, size_t i, std::str
             }
         }
     }
-    if (leading_zero) return 0;
+    // A leading zero is read digit by digit by the shared path (007, 0,5,
+    // 01), except in a date or a time written with one: 07.10.2026., 05.03.,
+    // u 08.30
+    if (leading_zero && !(end - i == 2 && end < length && text[end] == '.')) return 0;
 
     // A range of two times: 8.30–16.00, 8:30–16:00
     if (!in_range) {
@@ -2765,8 +2828,10 @@ size_t CroatianNumbers::hr_number_at(const std::string& text, size_t i, std::str
     const bool nominative_date = prev == "je" && names_the_day.count(hr_latin(sl_prev_word(text, prev_raw.begin).word, nullptr)) != 0;
     if (size_t d_end = parse_date(text, i, groups)) {
         const char* day_month = nominative_date ? "i" : "og";
-        result += hr_ordinal(groups[0], day_month) + ' ' + hr_ordinal(groups[1], day_month) + ' ' +
-                  hr_ordinal(groups[2], "e");
+        std::string words = hr_ordinal(groups[0], day_month) + PART_BREAK + hr_ordinal(groups[1], day_month) +
+                            PART_BREAK + hr_ordinal(groups[2], "e");
+        d_end = date_period_end(text, d_end, words);
+        result += words;
         return d_end;
     }
 
@@ -2779,7 +2844,7 @@ size_t CroatianNumbers::hr_number_at(const std::string& text, size_t i, std::str
         return 0;
     }
     if (digits == "24" && text.compare(end, 3, ":00") == 0 && (end + 3 >= length || (!is_digit(text[end + 3]) && text[end + 3] != ':'))) {
-        result += u8"dvadeset četiri nula nula";
+        result += u8"dvadeset četiri" + PART_BREAK + "nula nula";
         return end + 3;
     }
 
@@ -2817,26 +2882,22 @@ size_t CroatianNumbers::hr_number_at(const std::string& text, size_t i, std::str
         }
     }
 
-    // A date without a year: 7. 10., 7.10. (sedmog desetog)
+    // A date without a year: 7. 10., 7.10., 05.03. (sedmog desetog). Two
+    // ordinals written apart before a conjunction are an enumeration (1. 2. i
+    // 3. mjesto), unless another date follows it (od 1. 12. do 5. 12., 7. 10.
+    // i 8. 10.); written together they are a date (od 1.12. do 5.12.)
     auto short_date = [&](size_t pos, std::string& words, size_t& stop) -> bool {
-        const size_t d_end = digits_end(text, pos);
-        if (d_end == pos || d_end - pos > 2 || text[pos] == '0' || d_end >= length || text[d_end] != '.') return false;
-        const long day = sl_value(std::string_view(text.data() + pos, d_end - pos));
-        if (day < 1 || day > 31) return false;
-        size_t m = d_end + 1;
-        if (m < length && text[m] == ' ') ++m;
-        const size_t m_end = digits_end(text, m);
-        if (m_end == m || m_end - m > 2 || m_end >= length || text[m_end] != '.') return false;
-        const long month = sl_value(std::string_view(text.data() + m, m_end - m));
-        if (month < 1 || month > 12) return false;
-        size_t y = m_end + 1;
-        if (y < length && text[y] == ' ') ++y;
-        if (y < length && is_digit(text[y])) return false;
+        size_t d_end = 0, m = 0, m_end = 0;
+        if (!parse_day_month(text, pos, d_end, m, m_end)) return false;
         const SlNext next = sl_next_word(text, m_end + 1);
         static const std::unordered_set<std::string_view> joining = {"i", "ili", "do", "te", "odnosno", "pa"};
-        if (next.lowercase && joining.count(hr_latin(next.word, nullptr))) return false;
+        const std::string next_word = hr_latin(next.word, nullptr);
+        if (next.lowercase && joining.count(next_word) && m != d_end + 1 &&
+            !date_at(text, sl_skip_spaces(text, next.end))) {
+            return false;
+        }
         const char* day_month = nominative_date && pos == i ? "i" : "og";      // Danas je sedmi deseti
-        words = hr_ordinal(std::string_view(text.data() + pos, d_end - pos), day_month) + ' ' +
+        words = hr_ordinal(std::string_view(text.data() + pos, d_end - pos), day_month) + PART_BREAK +
                 hr_ordinal(std::string_view(text.data() + m, m_end - m), day_month);
         if (next.lowercase && next.begin > m_end + 1) {
             stop = m_end + 1;
@@ -2866,7 +2927,9 @@ size_t CroatianNumbers::hr_number_at(const std::string& text, size_t i, std::str
             (sp == c || dotted)) {
             connector = "dash";
             c = sl_skip_spaces(text, sp + 3);
-        } else if (c < length && text[c] == '-' && !dotted) {
+        } else if (c < length && text[c] == '-') {
+            // 2-3 dana; after an ordinal's period the hyphen stands for the
+            // dash: 10.-15.11.2026., 3.-4. mjesto, 1991.-2000.
             connector = "hyphen";
             c += 1;
         } else if (dotted) {
@@ -2886,8 +2949,10 @@ size_t CroatianNumbers::hr_number_at(const std::string& text, size_t i, std::str
             size_t stop = 0;
             if (dotted) {
                 if (size_t d = parse_date(text, c, groups)) {
-                    result += hr_ordinal(digits, "og") + join + hr_ordinal(groups[0], "og") + ' ' +
-                              hr_ordinal(groups[1], "og") + ' ' + hr_ordinal(groups[2], "e");
+                    std::string date = hr_ordinal(groups[0], "og") + PART_BREAK + hr_ordinal(groups[1], "og") +
+                                       PART_BREAK + hr_ordinal(groups[2], "e");
+                    d = date_period_end(text, d, date);
+                    result += hr_ordinal(digits, "og") + join + date;
                     return d;
                 }
                 if (short_date(c, words, stop)) {
@@ -2954,7 +3019,7 @@ size_t CroatianNumbers::hr_number_at(const std::string& text, size_t i, std::str
     // by a period or a space, the decimal mark is the comma): one number.
     // Not after a digit, a plus, a bracket or a slash (+385 91 123 4567),
     // not after telefon or broj, not after a name inside a sentence.
-    if (end - i <= 3) {
+    if (end - i <= 3 && !leading_zero) {
         for (int pass = 0; pass < 2; ++pass) {
             const bool spaced = pass == 0;
             size_t pos = end;
@@ -3548,6 +3613,123 @@ size_t CroatianNumbers::convert_currency_number(const std::string& text, size_t 
     return end;
 }
 
+namespace {
+
+// The start of the spaces that end at pos: space, tab, no-break space, thin
+// and narrow no-break space
+size_t spaces_begin(const std::string& text, size_t pos) {
+    for (;;) {
+        if (pos > 0 && (text[pos - 1] == ' ' || text[pos - 1] == '\t')) { --pos; continue; }
+        if (pos >= 2 && text.compare(pos - 2, 2, "\xC2\xA0") == 0) { pos -= 2; continue; }
+        if (pos >= 3 && (text.compare(pos - 3, 3, "\xE2\x80\x89") == 0 ||
+                         text.compare(pos - 3, 3, "\xE2\x80\xAF") == 0)) { pos -= 3; continue; }
+        return pos;
+    }
+}
+
+// The signs a cell address may touch in a formula, a range or a list
+// (=A1+B2, A1:B5, (A17), "A17"). A hyphen, a period, a slash and an underscore
+// make a longer designation, which is left alone (R2-D2, A4-format, PS/2).
+bool is_formula_sign(char c) {
+    return std::strchr("()[]{}\"'=+*<>|^,;:!?", c) != nullptr && c != 0;
+}
+
+// A designation written like a spreadsheet cell's address: one or two
+// capital letters of the English alphabet glued to a number of up to seven
+// digits (A17, B2, AB120; F5, A4, S22, U21, PS5, H2O), not the continuation
+// of a longer one (R2-D2's D2, PS/2). `digits` is the first digit; returns
+// the first letter, npos when there is no such designation. `alone` says
+// whether it stands as a word of its own, as a cell's address does: A4-format
+// and I2C are designations but no addresses. A clock time or a decimal after
+// capital letters is neither (U20:03, V1.5). Three letters are left out:
+// Excel's columns reach XFD, but in a text such a word is far more often a
+// name with its own reading (TOP10, WIN11, HRT1).
+size_t code_begin(const std::string& text, size_t digits, bool& alone) {
+    alone = false;
+    size_t begin = digits;
+    while (begin > 0 && text[begin - 1] >= 'A' && text[begin - 1] <= 'Z') --begin;
+    if (begin == digits || digits - begin > 2) return std::string::npos;
+    if (begin > 0 && spaces_begin(text, begin) == begin) {
+        const char before = text[begin - 1];
+        if (before != '\n' && before != '\r' && !is_formula_sign(before)) return std::string::npos;
+    }
+    const size_t end = digits_end(text, digits);
+    if (text[digits] == '0' || end - digits > 7) return std::string::npos;
+    if (end + 1 < text.size() && (text[end] == '.' || text[end] == ',' || text[end] == ':') && is_digit(text[end + 1])) {
+        return std::string::npos;
+    }
+    alone = end >= text.size() || sl_skip_spaces(text, end) != end || text[end] == '\n' || text[end] == '\r' ||
+            text[end] == '.' || is_formula_sign(text[end]);
+    return begin;
+}
+
+// The words after which the designation belongs to the phrase and no pause
+// stands before it (u A1, od A1 do B5, A1 i B2, v A1): the prepositions and
+// conjunctions of the four languages
+bool leans_on_next(const std::string& word) {
+    static const std::unordered_set<std::string_view> words = {
+        "u", "na", "o", "po", "pri", "iz", "od", "do", "s", "sa", "k", "ka", "za", "uz", "kod", "bez", "kroz",
+        "pred", "nad", "pod", "oko", "prema", "preko", u8"između", "i", "ili", "a", "te", "pa", "ni", "niti",
+        "ali", "da", "kao", "nego",
+        "v", "z", "h", "ob", "in", "ter", "kot", "med", u8"čez", "skozi", "proti",     // Slovenian
+    };
+    return words.count(word) != 0;
+}
+
+// True when what stands before pos, with spaces between, is a word or a number
+// that does not lean on what follows: the place of a short pause before a
+// cell's address. Nothing before it, the end of a clause or a sign of a
+// formula needs none.
+bool follows_an_item(const std::string& text, size_t pos) {
+    const size_t before = spaces_begin(text, pos);
+    if (before == pos || before == 0) return false;
+    if (std::strchr("\n\r.,;:!?-/=+*<>|^([{", text[before - 1]) != nullptr) return false;
+    const SlPrev prev = sl_prev_word(text, before);
+    return !leans_on_next(sl_ascii_lower(hr_latin(prev.word, nullptr)));
+}
+
+void trim_spaces(std::string& result) {
+    while (!result.empty() && (result.back() == ' ' || result.back() == '\t')) result.pop_back();
+}
+
+// A designation at the number that starts at `digits` (see code_begin()):
+// its letters, already in the result, get the mark that makes them letters
+// (A is not the conjunction a, S not the preposition, NA not the word), and
+// one that stands alone, as a cell's address does, has a short pause before
+// it when the cell's contents or any other item came first: "Marjan A17" was
+// heard as "Marijana 17" (a listener's report of November 2026). The number
+// itself is read by the caller as before. A number right after an address
+// gets the pause too: "A20 5" is the cell A20 with a 5 in it, not A25.
+void mark_cell_address(const std::string& text, size_t digits, std::string& result) {
+    bool alone = false;
+    const size_t begin = code_begin(text, digits, alone);
+    if (begin == std::string::npos) {
+        // The contents after the address: A20 5
+        const size_t before = spaces_begin(text, digits);
+        if (before == digits || before == 0 || !is_digit(text[before - 1])) return;
+        size_t number = before;
+        while (number > 0 && is_digit(text[number - 1])) --number;
+        if (code_begin(text, number, alone) == std::string::npos || !alone) return;
+        trim_spaces(result);
+        result += PART_BREAK;
+        return;
+    }
+    const size_t letters = digits - begin;
+    if (result.size() < letters || result.compare(result.size() - letters, letters, text, begin, letters) != 0) {
+        return;
+    }
+    result.resize(result.size() - letters);
+    if (alone && follows_an_item(text, begin)) {
+        trim_spaces(result);
+        result += PART_BREAK;
+    }
+    result.append(text, begin, letters);
+    result += LETTER_CODE_UTF8;
+    result += ' ';
+}
+
+} // namespace
+
 std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
     std::string result;
     result.reserve(text.size() * 2);  // Estimate - numbers expand to words
@@ -3571,6 +3753,7 @@ std::string CroatianNumbers::convert_numbers_in_text(const std::string& text) {
         }
 
         if (i >= length) break;
+        mark_cell_address(text, i, result);
         if (size_t end = convert_currency_number(text, i, result, false)) {
             i = end;
             after_number = true;
@@ -3781,6 +3964,7 @@ std::string CroatianNumbers::convert_digits_in_text(const std::string& text) {
 
         if (i >= length) break;
 
+        mark_cell_address(text, i, result);
         if (size_t end = convert_currency_number(text, i, result, true)) {
             i = end;
             continue;
@@ -3791,6 +3975,16 @@ std::string CroatianNumbers::convert_digits_in_text(const std::string& text) {
         }
 
         read_digit_mode_minus(text, i, result);
+
+        // Digits glued to letters are set off from them as in the whole-number
+        // mode ("u20:03", "5kg", "COVID19"), or the first digit's name ran
+        // into the word before it ("Ajedan sedam" for A17)
+        {
+            size_t digits = digits_end(text, i);
+            bool compound = (digits < length && text[digits] == ':') ||
+                            is_separator_between_digits(text, digits);
+            set_off_from_letters(result, compound);
+        }
 
         // A time or a date is not a string of digits: read it as in the
         // whole-number mode

@@ -129,7 +129,8 @@ ClausePlan plan_clause(const formant::Utterance& utt, const UnitBank& bank,
     // ---------------------------------------------------------------------
     const int last_syl = utt.syllable_count - 1;
     const float final_stretch =
-        utt.kind == ClauseKind::Statement || utt.kind == ClauseKind::Exclamation ? 1.40f : 1.30f;
+        utt.minor_break ? formant::MINOR_BREAK_STRETCH
+        : utt.kind == ClauseKind::Statement || utt.kind == ClauseKind::Exclamation ? 1.40f : 1.30f;
     int last_nucleus = -1;
     for (int i = 0; i < n; ++i) {
         if (ph[static_cast<size_t>(i)].nucleus) last_nucleus = i;

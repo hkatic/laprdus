@@ -10,6 +10,7 @@
 #include "laprdus/types.hpp"
 #include "formant_phonemes.hpp"
 #include "formant_slovenian.hpp"
+#include <cmath>
 #include <memory>
 #include <string>
 #include <vector>
@@ -35,7 +36,44 @@ struct Utterance {
     bool isolated_sound = false;    // one letter's sound alone (Frontend::letter_sound)
     bool sentence_initial = true;   // false: the clause goes on a sentence (after a comma)
     bool slovenian = false;         // made by the Slovenian front end (process_slovenian)
+    bool minor_break = false;       // ends at a short pause inside the clause (split_at_breaks())
+    bool continued = false;         // goes on after such a pause
 };
+
+/**
+ * The parts of a clause between its short pauses (Phone::break_before, from
+ * MINOR_BREAK_MARK in the text: the colon of a clock time, the periods of a
+ * numeric date, the place before a spreadsheet cell's address). The front end
+ * reads the clause whole, so every word keeps its context; the synthesizers
+ * render the parts one after another with a silence between them. A part
+ * before a pause is a continuation that only suspends the melody
+ * (Utterance::minor_break), a part after one does not start the sentence
+ * again (Utterance::continued), and the last part keeps the clause's own kind.
+ * An utterance without a pause comes back as its only part.
+ */
+std::vector<Utterance> split_at_breaks(const Utterance& utt);
+
+// A part that ends at such a pause: the share of a comma's boundary movement
+// (a smaller fall after the last accent, a rise of about one semitone instead
+// of two and a half) and the lengthening of its last syllable (1.30 before a
+// comma, 1.40 at the end of a sentence).
+constexpr float MINOR_BREAK_MOVEMENT = 0.45f;
+constexpr float MINOR_BREAK_STRETCH = 1.15f;
+
+// The silence of such a pause: half of the user's comma pause at the normal
+// rate (50 ms at the default 100), and shorter by the square root of the rate
+// when speech is faster, as the formant transitions are: 35 ms at 2x, 29 ms
+// at 3x. A clause pause is a length the user sets and keeps at every rate,
+// but this one stands inside a phrase, and at a screen reader's rate a fixed
+// one was as long as a syllable. It was the whole comma pause at first and
+// 65 % of it next; the listener found the cases better and the pauses still
+// too long both times (November 2026).
+constexpr uint32_t MINOR_BREAK_PAUSE_PERCENT = 50;
+
+inline uint32_t minor_break_pause_ms(uint32_t comma_pause_ms, float speed) {
+    const float ms = static_cast<float>(comma_pause_ms) * static_cast<float>(MINOR_BREAK_PAUSE_PERCENT) / 100.0f;
+    return static_cast<uint32_t>(std::lround(speed > 1.0f ? ms / std::sqrt(speed) : ms));
+}
 
 /**
  * The letter a character stands for when text is spelled: lowercase Latin,

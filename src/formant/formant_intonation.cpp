@@ -113,9 +113,12 @@ Intonation::Intonation(const Utterance& utt, const std::vector<Syllable>& syls,
         // high, then keeps the voice on a level with movements of two to
         // three semitones. A clause that goes on a sentence after a
         // comma starts again, but lower than the sentence did.
+        // After a short pause inside the clause (12:30, 10.11.2026., a
+        // cell's address) nothing starts again: the first accent moves like
+        // one in the middle of the clause.
         float p = 1.4f;
         if (syl.prominence >= 2) {
-            p = ai == 0 ? (utt.sentence_initial ? 4.5f : 3.4f)
+            p = ai == 0 ? (utt.continued ? 2.6f : utt.sentence_initial ? 4.5f : 3.4f)
                         : 2.6f * std::max(0.8f, 1.0f - 0.04f * static_cast<float>(ai - 1));
         } else if (utt.slovenian && s > 0 &&
                    syls[static_cast<size_t>(s) - 1].word == syl.word &&
@@ -131,7 +134,7 @@ Intonation::Intonation(const Utterance& utt, const std::vector<Syllable>& syls,
             // above the high start as well.
             p = 2.4f + (ai == 0 && sentence_onset ? 1.3f : 0.0f);
         }
-        if (ai == 0 && kind == ClauseKind::WhQuestion) p = 5.5f;
+        if (ai == 0 && kind == ClauseKind::WhQuestion && !utt.continued) p = 5.5f;
         if (kind == ClauseKind::Exclamation) {
             // Emphatic: a high start and a strong last accent to
             // fall from.
@@ -208,12 +211,16 @@ Intonation::Intonation(const Utterance& utt, const std::vector<Syllable>& syls,
             // 2.4 to 3.2 semitones (Langston 2018). Until October 2026
             // the rise was 4 semitones from the level, which sounded like
             // a question at every comma.
-            if (!nuclear_is_last) fall_after_nucleus(1.5f);
+            // Before a short pause inside the clause the melody is only
+            // suspended: under half of a comma's movement, or the hours of
+            // "u dvanaest trideset" would end a phrase of their own.
+            const float strength = utt.minor_break ? MINOR_BREAK_MOVEMENT : 1.0f;
+            if (!nuclear_is_last) fall_after_nucleus(1.5f * strength);
             float start = nuclear_is_last
                 ? nuclear.t0 + 0.5f * (nuclear.t1 - nuclear.t0)
                 : (final_syl.t0 >= 0.0f ? final_syl.t0 - 20.0f : total - 120.0f);
             b.add(start, 0.0f);
-            b.add(total, 2.5f * range);
+            b.add(total, 2.5f * range * strength);
         } else if (question) {
             // Every question ends going up. Where the main movement
             // lies earlier (on the word before "li", on a question

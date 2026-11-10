@@ -397,7 +397,8 @@ private:
         const int n = static_cast<int>(m_ph.size());
         const int last_syl = m_utt.syllable_count - 1;
         const float final_stretch =
-            m_utt.kind == ClauseKind::Statement || m_utt.kind == ClauseKind::Exclamation
+            m_utt.minor_break ? MINOR_BREAK_STRETCH
+            : m_utt.kind == ClauseKind::Statement || m_utt.kind == ClauseKind::Exclamation
                 ? 1.40f : 1.30f;
 
         // Phones after the last nucleus form the final coda.
@@ -2157,11 +2158,13 @@ void FormantSynthesizer::rewind_song() {
 AudioBuffer FormantSynthesizer::synthesize_clause(const std::u32string& text,
                                                   Punctuation punct,
                                                   const VoiceParams& params,
-                                                  bool sentence_initial) {
+                                                  bool sentence_initial,
+                                                  uint32_t minor_pause_ms) {
     AudioBuffer audio;
     audio.sample_rate = SAMPLE_RATE;
     audio.bits_per_sample = BITS_PER_SAMPLE;
     audio.channels = NUM_CHANNELS;
+    m_minor_pause_ms = minor_pause_ms;
 
     // A clause without any punctuation can be arbitrarily long (a screen
     // reader may send a whole unpunctuated paragraph). It is spoken in breath
@@ -2212,7 +2215,21 @@ void FormantSynthesizer::append_group(const std::u32string& text, Punctuation pu
     Utterance utt = m_frontend.process(text, punct,
                                        params.spelling_mode == SpellingMode::LetterSounds);
     utt.sentence_initial = sentence_initial;
-    render_utterance(utt, params, audio, m_voice.singing != nullptr);
+    // A song has no place for a pause of the text: its rests are the song's
+    if (m_voice.singing != nullptr) {
+        render_utterance(utt, params, audio, true);
+        return;
+    }
+    // The short pauses inside the clause (a clock time, a numeric date, a
+    // cell's address): the parts are rendered one after another, so that the
+    // sounds before a pause end as they do before any pause, with a silence
+    // between them
+    const std::vector<Utterance> parts = split_at_breaks(utt);
+    for (size_t k = 0; k < parts.size(); ++k) {
+        const size_t before = audio.samples.size();
+        render_utterance(parts[k], params, audio, false);
+        if (k + 1 < parts.size() && audio.samples.size() > before) audio.append_silence(m_minor_pause_ms);
+    }
 }
 
 void FormantSynthesizer::render_utterance(const Utterance& utt, const VoiceParams& params,

@@ -2,8 +2,14 @@
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
 #include "core/croatian_numbers.hpp"
+#include "core/text_marks.hpp"
 #include <iostream>
 using namespace laprdus;
+
+// The converter's marks (text_marks.hpp): the short pause as a word of its
+// own, and the mark after the letters of a designation
+static const std::string BREAK = std::string(" ") + MINOR_BREAK_UTF8 + " ";
+static const std::string CODE = LETTER_CODE_UTF8;
 
 // Expected group boundaries are independent of the parser; spell their digits
 // through the public digit-name API so the same matrix covers all four languages.
@@ -114,8 +120,8 @@ TEST_CASE("Telephone recognition leaves other numeric formats alone", "[numbers]
     REQUIRE(n.convert_numbers_in_text("+385911234567kg").find(", ") == std::string::npos);
     REQUIRE(n.convert_numbers_in_text("+99912345678").find(", ") == std::string::npos);
     REQUIRE(n.convert_numbers_in_text("1 000 000") == "milijun");
-    REQUIRE(n.convert_numbers_in_text("12:30") == "dvanaest trideset");
-    REQUIRE(n.convert_numbers_in_text("7.10.2026") == "sedmog desetog dvije tisuće dvadeset šeste");
+    REQUIRE(n.convert_numbers_in_text("12:30") == "dvanaest" + BREAK + "trideset");
+    REQUIRE(n.convert_numbers_in_text("7.10.2026") == "sedmog" + BREAK + "desetog" + BREAK + "dvije tisuće dvadeset šeste");
     REQUIRE(n.convert_numbers_in_text("112") == "sto dvanaest");
     REQUIRE(n.convert_digits_in_text("112") == "jedan jedan dva");
     REQUIRE(n.convert_digits_in_text("+ 1 2 3,5 6,7 8 9,8 7 6") ==
@@ -241,8 +247,8 @@ TEST_CASE("Currency reading keeps the language and ordinary numeric meanings", "
     REQUIRE(n.convert_digits_in_text("€2,00") == "dve vejica nič nič evra");
     n.set_dialect(CroatianNumbers::Dialect::Croatian);
     REQUIRE(n.convert_numbers_in_text("3.14") == "tri\u2024četrnaest");
-    REQUIRE(n.convert_numbers_in_text("7.10.2026") == "sedmog desetog dvije tisuće dvadeset šeste");
-    REQUIRE(n.convert_numbers_in_text("12:30") == "dvanaest trideset");
+    REQUIRE(n.convert_numbers_in_text("7.10.2026") == "sedmog" + BREAK + "desetog" + BREAK + "dvije tisuće dvadeset šeste");
+    REQUIRE(n.convert_numbers_in_text("12:30") == "dvanaest" + BREAK + "trideset");
     REQUIRE(n.convert_numbers_in_text("192.168.1.1") == "sto devedeset dva\u2024sto šezdeset osam\u2024jedan\u2024jedan");
     REQUIRE(n.convert_numbers_in_text("T-2") == "T-dva");
     REQUIRE(n.convert_numbers_in_text("1€2€") == "jedan euro dva eura");
@@ -252,4 +258,151 @@ TEST_CASE("Currency reading keeps the language and ordinary numeric meanings", "
     REQUIRE(n.convert_numbers_in_text("$2.00-3.00").find("minus") == std::string::npos);
     REQUIRE(n.convert_numbers_in_text("2.150,00\n3.150,00") ==
             "dvije tisuće sto pedeset zarez nula nula\ntri tisuće sto pedeset zarez nula nula");
+}
+
+// A listener's report of November 2026: a screen reader says a cell's contents
+// and then its address, and "Marjan A17" was heard as "Marijana 17"; the hours
+// ran into the minutes and the day into the month. The converter leaves a
+// short pause (MINOR_BREAK_MARK) between them and marks the letters of the
+// address as letters (LETTER_CODE_MARK).
+TEST_CASE("Clock times and numeric dates have a short pause between their parts", "[numbers][breaks]") {
+    CroatianNumbers n;
+    REQUIRE(n.convert_numbers_in_text("12:30:45") == "dvanaest" + BREAK + "trideset" + BREAK + "četrdeset pet");
+    REQUIRE(n.convert_numbers_in_text("9:05") == "devet" + BREAK + "nula pet");
+    REQUIRE(n.convert_numbers_in_text("23:59") == "dvadeset tri" + BREAK + "pedeset devet");
+    REQUIRE(n.convert_numbers_in_text("24:00") == "dvadeset četiri" + BREAK + "nula nula");
+    REQUIRE(n.convert_numbers_in_text("Sastanak je u 12:30 u uredu.") ==
+            "Sastanak je u dvanaest" + BREAK + "trideset u uredu.");
+    REQUIRE(n.convert_numbers_in_text("u 8.30") == "u osam" + BREAK + "trideset");
+    REQUIRE(n.convert_numbers_in_text("od 8:30 do 16:00") ==
+            "od osam" + BREAK + "trideset do šesnaest" + BREAK + "nula nula");
+    // Written together or with spaces, a date is the same date
+    const std::string date = "desetog" + BREAK + "jedanaestog" + BREAK + "dvije tisuće dvadeset šeste.";
+    REQUIRE(n.convert_numbers_in_text("10.11.2026.") == date);
+    REQUIRE(n.convert_numbers_in_text("10. 11. 2026.") == date);
+    REQUIRE(n.convert_numbers_in_text("Danas je 10.11.2026.") ==
+            "Danas je deseti" + BREAK + "jedanaesti" + BREAK + "dvije tisuće dvadeset šeste.");
+    REQUIRE(n.convert_numbers_in_text("5.3.") == "petog" + BREAK + "trećeg.");
+    REQUIRE(n.convert_numbers_in_text("5. 3.") == "petog" + BREAK + "trećeg.");
+    // The digit mode reads a time and a date as the whole-number mode does
+    REQUIRE(n.convert_digits_in_text("12:30") == "dvanaest" + BREAK + "trideset");
+    REQUIRE(n.convert_digits_in_text("10.11.2026.") == date);
+    // What is no time and no date has no pause
+    REQUIRE(n.convert_numbers_in_text("3.14").find(MINOR_BREAK_UTF8) == std::string::npos);
+    REQUIRE(n.convert_numbers_in_text("192.168.1.1").find(MINOR_BREAK_UTF8) == std::string::npos);
+    REQUIRE(n.convert_numbers_in_text("7. listopada 2026.").find(MINOR_BREAK_UTF8) == std::string::npos);
+    REQUIRE(n.convert_numbers_in_text("1.000.000").find(MINOR_BREAK_UTF8) == std::string::npos);
+
+    n.set_dialect(CroatianNumbers::Dialect::Serbian);
+    REQUIRE(n.convert_numbers_in_text("10.11.2026.") ==
+            "desetog" + BREAK + "jedanaestog" + BREAK + "dve hiljade dvadeset šeste.");
+    n.set_dialect(CroatianNumbers::Dialect::Slovenian);
+    REQUIRE(n.convert_numbers_in_text("12:30") == "dvanajst" + BREAK + "trideset");
+    REQUIRE(n.convert_numbers_in_text("ob 17:00") == "ob sedemnajstih");
+    REQUIRE(n.convert_numbers_in_text("10.11.2026") ==
+            "desetega" + BREAK + "enajstega" + BREAK + "dva tisoč šestindvajset");
+    REQUIRE(n.convert_numbers_in_text("7. 10.") == "sedmega" + BREAK + "desetega.");
+}
+
+// Dates the converter misread until November 2026, found while the pauses
+// were added: the period after a year ended the sentence in the middle of
+// one, leading zeros and ranges of dates were read digit by digit or with the
+// period by name.
+TEST_CASE("Numeric dates inside a sentence, with leading zeros and in ranges", "[numbers][breaks]") {
+    CroatianNumbers n;
+    const std::string y2026 = "dvije tisuće dvadeset šeste";
+    // The period after the year is the ordinal's before a lowercase word
+    REQUIRE(n.convert_numbers_in_text("10.11.2026. godine") == "desetog" + BREAK + "jedanaestog" + BREAK + y2026 + " godine");
+    REQUIRE(n.convert_numbers_in_text("10. 11. 2026. godine") == "desetog" + BREAK + "jedanaestog" + BREAK + y2026 + " godine");
+    REQUIRE(n.convert_numbers_in_text("Rođen je 10.11.1985. u Zagrebu.") ==
+            "Rođen je desetog" + BREAK + "jedanaestog" + BREAK + "tisuću devetsto osamdeset pete u Zagrebu.");
+    // (glued to the word, as a screen reader glues the parts of a label: set off twice, like "7.listopada")
+    REQUIRE(n.convert_numbers_in_text("10.11.2026.godine") == "desetog" + BREAK + "jedanaestog" + BREAK + y2026 + "  godine");
+    REQUIRE(n.convert_numbers_in_text("od 1.12.2026. do 5.12.2026.") ==
+            "od prvog" + BREAK + "dvanaestog" + BREAK + y2026 + " do petog" + BREAK + "dvanaestog" + BREAK + y2026 + ".");
+    // ... and the sentence's before a capital, a number or the end
+    REQUIRE(n.convert_numbers_in_text("Došao je 10.11.2026. Zatim je otišao.") ==
+            "Došao je desetog" + BREAK + "jedanaestog" + BREAK + y2026 + ". Zatim je otišao.");
+    REQUIRE(n.convert_numbers_in_text("10.11.2026. 12:30") ==
+            "desetog" + BREAK + "jedanaestog" + BREAK + y2026 + ". dvanaest" + BREAK + "trideset");
+    // Leading zeros
+    REQUIRE(n.convert_numbers_in_text("05.03.") == "petog" + BREAK + "trećeg.");
+    REQUIRE(n.convert_numbers_in_text("05. 03.") == "petog" + BREAK + "trećeg.");
+    REQUIRE(n.convert_numbers_in_text("07.10.2026.") == "sedmog" + BREAK + "desetog" + BREAK + y2026 + ".");
+    REQUIRE(n.convert_numbers_in_text("Danas je 07.10.2026.") == "Danas je sedmi" + BREAK + "deseti" + BREAK + y2026 + ".");
+    REQUIRE(n.convert_numbers_in_text("u 08.30") == "u osam" + BREAK + "trideset");
+    REQUIRE(n.convert_numbers_in_text("007") == "nula nula sedam");
+    REQUIRE(n.convert_numbers_in_text("verzija 05.03") == "verzija nula pet\u2024nula tri");
+    REQUIRE(n.convert_numbers_in_text("05.000") == "nula pet\u2024nula nula nula");
+    // Ranges of dates; an enumeration of ordinals stays one
+    const std::string range = "od prvog" + BREAK + "dvanaestog do petog" + BREAK + "dvanaestog.";
+    REQUIRE(n.convert_numbers_in_text("od 1.12. do 5.12.") == range);
+    REQUIRE(n.convert_numbers_in_text("od 1. 12. do 5. 12.") == range);
+    REQUIRE(n.convert_numbers_in_text("od 01.12. do 05.12.") == range);
+    REQUIRE(n.convert_numbers_in_text("7. 10. i 8. 10.") == "sedmog" + BREAK + "desetog i osmog" + BREAK + "desetog.");
+    REQUIRE(n.convert_numbers_in_text("1. 2. i 3. mjesto") == "jedan. drugo i treće mjesto");
+    REQUIRE(n.convert_numbers_in_text("u 7. i 8. razredu") == "u sedmom i osmom razredu");
+    // A hyphen after an ordinal's period stands for the dash
+    REQUIRE(n.convert_numbers_in_text("10.-15.11.2026.") == n.convert_numbers_in_text("10.\u2013" "15.11.2026."));
+    REQUIRE(n.convert_numbers_in_text("10.-15.11.2026.") == "desetog do petnaestog" + BREAK + "jedanaestog" + BREAK + y2026 + ".");
+    REQUIRE(n.convert_numbers_in_text("3.-4. mjesto") == "treće do četvrto mjesto");
+    REQUIRE(n.convert_numbers_in_text("1991.-2000.") == n.convert_numbers_in_text("1991.\u2013" "2000."));
+    REQUIRE(n.convert_numbers_in_text("2-3 dana") == "dva do tri dana");
+    REQUIRE(n.convert_numbers_in_text("T-2") == "T-dva");
+
+    n.set_dialect(CroatianNumbers::Dialect::Slovenian);
+    REQUIRE(n.convert_numbers_in_text("05.03.") == "petega" + BREAK + "tretjega.");
+    REQUIRE(n.convert_numbers_in_text("od 1.12. do 5.12.") ==
+            "od prvega" + BREAK + "dvanajstega do petega" + BREAK + "dvanajstega.");
+    REQUIRE(n.convert_numbers_in_text("od 1. 12. do 5. 12.") ==
+            "od prvega" + BREAK + "dvanajstega do petega" + BREAK + "dvanajstega.");
+    REQUIRE(n.convert_numbers_in_text("1. 2. in 3. mesto") == "ena. drugo in tretje mesto");
+    // Slovenian writes no period after the year; one that is there ends the sentence
+    REQUIRE(n.convert_numbers_in_text("7. 10. 2026. leta") ==
+            "sedmega" + BREAK + "desetega" + BREAK + "dva tisoč šestindvajset. leta");
+}
+
+TEST_CASE("A cell's address is set off from the cell's contents", "[numbers][breaks]") {
+    CroatianNumbers n;
+    REQUIRE(n.convert_numbers_in_text("Marjan A17") == "Marjan" + BREAK + "A" + CODE + " sedamnaest");
+    REQUIRE(n.convert_numbers_in_text("Marjan   A17  ") == "Marjan" + BREAK + "A" + CODE + " sedamnaest  ");
+    REQUIRE(n.convert_numbers_in_text("Ukupno B2") == "Ukupno" + BREAK + "B" + CODE + " dva");
+    REQUIRE(n.convert_numbers_in_text("1250 C3") == "tisuću dvjesto pedeset" + BREAK + "C" + CODE + " tri");
+    REQUIRE(n.convert_numbers_in_text("Marjan AB12") == "Marjan" + BREAK + "AB" + CODE + " dvanaest");
+    REQUIRE(n.convert_numbers_in_text("\"Marjan\" A17") == "\"Marjan\"" + BREAK + "A" + CODE + " sedamnaest");
+    // The address first: no pause before a word, one before a number (A20 with a 5 in it is not A25)
+    REQUIRE(n.convert_numbers_in_text("A17 Marjan") == "A" + CODE + " sedamnaest Marjan");
+    REQUIRE(n.convert_numbers_in_text("A20 5") == "A" + CODE + " dvadeset" + BREAK + "pet");
+    REQUIRE(n.convert_numbers_in_text("A1 B2") == "A" + CODE + " jedan" + BREAK + "B" + CODE + " dva");
+    // No pause at the head of a clause, after a preposition or conjunction, in a range or a formula
+    REQUIRE(n.convert_numbers_in_text("A17") == "A" + CODE + " sedamnaest");
+    REQUIRE(n.convert_numbers_in_text("Marjan, A17") == "Marjan, A" + CODE + " sedamnaest");
+    REQUIRE(n.convert_numbers_in_text("10.11.2026. A17").find(BREAK + "A") == std::string::npos);
+    REQUIRE(n.convert_numbers_in_text("od A1 do B5") == "od A" + CODE + " jedan do B" + CODE + " pet");
+    REQUIRE(n.convert_numbers_in_text("u A1 i B2") == "u A" + CODE + " jedan i B" + CODE + " dva");
+    REQUIRE(n.convert_numbers_in_text("У A1") == "У A" + CODE + " jedan");
+    REQUIRE(n.convert_numbers_in_text("A1:B5") == "A" + CODE + " jedan:B" + CODE + " pet");
+    REQUIRE(n.convert_numbers_in_text("=A1+B2") == "=A" + CODE + " jedan+B" + CODE + " dva");
+    // A designation inside a longer one keeps its letters as letters but has no pause
+    REQUIRE(n.convert_numbers_in_text("papir A4-format") == "papir A" + CODE + " četiri-format");
+    REQUIRE(n.convert_numbers_in_text("voda H2O") == "voda H" + CODE + " dva O");
+    // Not designations: small letters, three letters, the second half of a longer
+    // name, a time or a decimal after the letters, a leading zero
+    for (const char* text : {"u20:03", "5kg", "TOP10", "HRT1", "R2-D2", "PS/2", "U20:03", "V1.5", "A01", "Marjan a17"}) {
+        INFO(text);
+        const std::string words = n.convert_numbers_in_text(text);
+        size_t marks = 0;
+        for (size_t at = words.find(CODE); at != std::string::npos; at = words.find(CODE, at + 1)) ++marks;
+        REQUIRE(marks == (std::string(text) == "R2-D2" ? 1u : 0u));     // R2 is one; -D2 is not
+    }
+    REQUIRE(n.convert_numbers_in_text("Gledam utrku F1 na HRT2") == "Gledam utrku" + BREAK + "F" + CODE + " jedan na HRT dva");
+
+    // The digit mode: the same marks, and the digits set off from the letters
+    REQUIRE(n.convert_digits_in_text("Marjan A17") == "Marjan" + BREAK + "A" + CODE + " jedan sedam");
+    REQUIRE(n.convert_digits_in_text("COVID19") == "COVID jedan devet");
+    REQUIRE(n.convert_digits_in_text("u20:03") == "u dvadeset" + BREAK + "nula tri");
+
+    n.set_dialect(CroatianNumbers::Dialect::Slovenian);
+    REQUIRE(n.convert_numbers_in_text("Marjan A2") == "Marjan" + BREAK + "A" + CODE + " dva");
+    REQUIRE(n.convert_numbers_in_text("v A1") == "v A" + CODE + " ena");
 }

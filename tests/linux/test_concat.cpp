@@ -814,6 +814,36 @@ TEST_CASE("Recorded voices pause between telephone groups", "[concat][phone]") {
     REQUIRE(with.size() == without.size() + 3 * 2205);
 }
 
+// The short pauses of a clock time, a numeric date and a cell's address (a
+// listener's report of November 2026; see test_formant.cpp): the recorded
+// voices render the parts of the clause one after another as well.
+TEST_CASE("Recorded voices pause inside a time and before a cell's address", "[concat][breaks]") {
+    if (!data_dir()) return;
+    Engine engine;
+    for (const char* voice : {"josip", "vlado", "detence"}) {
+        INFO(voice);
+        REQUIRE(laprdus_set_voice(engine.handle, voice, data_dir()) == LAPRDUS_OK);
+        const auto cell = speak(engine.handle, "Marjan A17");
+        REQUIRE(!cell.empty());
+        REQUIRE(cell == speak(engine.handle, "Marjan \xEF\xB7\x90 A\xEF\xB7\x91 sedamnaest"));
+        REQUIRE(cell != speak(engine.handle, "Marjan A sedamnaest"));
+        struct Case { const char* text; int pauses; };
+        const Case cases[] = {
+            {"Marjan A17", 1}, {"12:30:45", 2}, {"10.11.2026.", 2}, {"Dobar dan svima", 0},
+        };
+        for (const Case& c : cases) {
+            INFO(c.text);
+            REQUIRE(laprdus_set_comma_pause(engine.handle, 0) == LAPRDUS_OK);
+            const auto without = speak(engine.handle, c.text);
+            REQUIRE(laprdus_set_comma_pause(engine.handle, 100) == LAPRDUS_OK);
+            const auto with = speak(engine.handle, c.text);
+            // Half of the comma pause at the normal rate: 50 ms, 1102 samples
+            REQUIRE(with.size() == without.size() + static_cast<size_t>(c.pauses) * 1102);
+        }
+        REQUIRE(speak(engine.handle, "10.11.2026.") == speak(engine.handle, "10. 11. 2026."));
+    }
+}
+
 TEST_CASE("Recorded voices speak currency signs and localized amounts", "[concat][currency]") {
     if (!data_dir()) return;
     Engine engine;

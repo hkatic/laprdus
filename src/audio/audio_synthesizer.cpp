@@ -95,7 +95,8 @@ void AudioSynthesizer::ensure_bank() {
 // =============================================================================
 
 AudioBuffer AudioSynthesizer::synthesize_clause(const std::u32string& text, Punctuation punct,
-                                                bool sentence_initial, bool letter_sounds) {
+                                                bool sentence_initial, bool letter_sounds,
+                                                uint32_t minor_pause_ms) {
     AudioBuffer result;
     result.sample_rate = SAMPLE_RATE;
     result.bits_per_sample = BITS_PER_SAMPLE;
@@ -107,7 +108,19 @@ AudioBuffer AudioSynthesizer::synthesize_clause(const std::u32string& text, Punc
 
     formant::Utterance utt = m_frontend->process(text, punct, letter_sounds);
     utt.sentence_initial = sentence_initial;
-    return render_utterance(utt);
+    // The short pauses inside the clause (a clock time, a numeric date, a
+    // cell's address), as in the formant voices: the parts one after
+    // another with a silence between them
+    const std::vector<formant::Utterance> parts = formant::split_at_breaks(utt);
+    if (parts.size() <= 1) return render_utterance(utt);
+    for (size_t k = 0; k < parts.size(); ++k) {
+        const AudioBuffer part = render_utterance(parts[k]);
+        if (part.samples.empty()) continue;
+        result.sample_rate = part.sample_rate;
+        result.samples.insert(result.samples.end(), part.samples.begin(), part.samples.end());
+        if (k + 1 < parts.size()) result.append_silence(minor_pause_ms);
+    }
+    return result;
 }
 
 AudioBuffer AudioSynthesizer::synthesize_letter_sound(const std::u32string& letter) {

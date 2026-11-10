@@ -61,10 +61,16 @@ public:
      *        clause before it ended with a comma, semicolon or colon).
      * @param letter_sounds a lone letter is spoken by its sound, not its
      *        name (SpellingMode::LetterSounds; see formant::Frontend::process).
+     * @param minor_pause_ms Length of a short pause inside the clause (the
+     *        colon of a clock time, the periods of a numeric date, the place
+     *        before a cell's address: formant::split_at_breaks()); the engine
+     *        passes formant::minor_break_pause_ms(): half of the user's comma
+     *        pause, less at a fast rate.
      * @return The clause's sound; no pause is appended.
      */
     AudioBuffer synthesize_clause(const std::u32string& text, Punctuation punct,
-                                  bool sentence_initial = true, bool letter_sounds = false);
+                                  bool sentence_initial = true, bool letter_sounds = false,
+                                  uint32_t minor_pause_ms = 50);
 
     /**
      * The sound of one letter alone, for spelling by sounds (see

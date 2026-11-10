@@ -2871,3 +2871,139 @@ TEST_CASE("Slovenian glasu: the genitive on the ending, the dative and locative 
     frontend.set_user_lexicon(UserLexicon::parse(R"({"entries":[{"word":"glásu","language":"sl"}]})"));
     REQUIRE(phones_of(read(frontend, U"Barva glasu")) == "b'a:rva gl'a:su");
 }
+
+// A listener's report of November 2026: "Marjan A17", a cell's contents and
+// its address as a screen reader says them, was heard as "Marijana 17", and
+// the hours of a clock time ran into its minutes. The number converter leaves
+// two marks in the text (core/text_marks.hpp): U+FDD1 after the letters of a
+// designation, U+FDD0 where a short pause belongs.
+TEST_CASE("The letters of a designation are letters, whatever word they spell", "[frontend][breaks]") {
+    Frontend hr(VoiceLanguage::Croatian);
+    auto sounds = [&](const Frontend& frontend, const std::u32string& text) {
+        return phones_of(frontend.process(text, Punctuation::PERIOD, true));
+    };
+    auto names = [&](const Frontend& frontend, const std::u32string& text) {
+        return phones_of(frontend.process(text, Punctuation::PERIOD, false));
+    };
+    // Without the mark the A is the conjunction a and leans on the number
+    REQUIRE(sounds(hr, U"Marjan A sedamnaest") == "m'arjan a sed'amnaest");
+    REQUIRE(sounds(hr, U"Marjan A\uFDD1 sedamnaest") == "m'arjan 'a sed'amnaest");
+    // The vowels that are words of their own: a, i, o, u
+    REQUIRE(sounds(hr, U"Ćelija I\uFDD1 pet") == "ć'elija 'i p'e:t");
+    REQUIRE(sounds(hr, U"U\uFDD1 dvadeset jedan") == "'u dv'a:deset j'edan");
+    REQUIRE(sounds(hr, U"O\uFDD1 dva") == "'o dv'a:");
+    // s and k at the head of a clause are prepositions (the s voiced by the
+    // d after it); in a designation, letters
+    REQUIRE(sounds(hr, U"S dvadeset dva") == "z dv'a:deset dv'a:");
+    REQUIRE(sounds(hr, U"S\uFDD1 dvadeset dva") == "s'ə dv'a:deset dv'a:");
+    REQUIRE(sounds(hr, U"K\uFDD1 pet") == "k'ə p'e:t");
+    // One letter follows the spelling mode, like any lone letter; q, x and y are named in both
+    REQUIRE(sounds(hr, U"B\uFDD1 dva") == "b'ə dv'a:");
+    REQUIRE(names(hr, U"B\uFDD1 dva") == "b'e dv'a:");
+    REQUIRE(names(hr, U"S\uFDD1 dvadeset dva") == "'es dv'a:deset dv'a:");
+    REQUIRE(sounds(hr, U"X\uFDD1 pet") == "'iks p'e:t");
+    REQUIRE(sounds(hr, U"W\uFDD1 pet") == "d'uplo v'ə p'e:t");
+    // Two letters are spelled by their names, also where they are a word
+    REQUIRE(sounds(hr, U"NA pet") == "na p'e:t");
+    REQUIRE(sounds(hr, U"NA\uFDD1 pet") == "'en 'a p'e:t");
+    REQUIRE(sounds(hr, U"DO\uFDD1 pet") == "d'e 'o p'e:t");
+    REQUIRE(sounds(hr, U"AB\uFDD1 dvanaest") == "'a b'e dv'a:naest");
+    REQUIRE(sounds(hr, U"NJ\uFDD1 pet") == "'en j'e p'e:t");
+    // A longer word before the mark is left to its own reading
+    REQUIRE(sounds(hr, U"TOP\uFDD1 deset") == sounds(hr, U"TOP deset"));
+    // The marks are noncharacters. A private use character, which an icon
+    // font can put into a button's label, is no mark: it separates words as
+    // any unknown sign does
+    REQUIRE(sounds(hr, U"NA\uE011 pet") == sounds(hr, U"NA pet"));
+    REQUIRE(sounds(hr, U"dvanaest \uE010 trideset") == sounds(hr, U"dvanaest trideset"));
+    REQUIRE(split_at_breaks(hr.process(U"dvanaest \uE010 trideset", Punctuation::PERIOD, true)).size() == 1);
+
+    Frontend sr(VoiceLanguage::Serbian);
+    REQUIRE(sounds(sr, U"Marjan A\uFDD1 sedamnaest") == "m'arjan 'a sed'amnae:st");
+    // Slovenian: v, s, z, k and h are prepositions, and v before a word is [u]
+    Frontend sl(VoiceLanguage::Slovenian);
+    REQUIRE(sounds(sl, U"V pet") == "u p'é:t");
+    REQUIRE(sounds(sl, U"V\uFDD1 pet") == "v'ə p'é:t");
+    REQUIRE(names(sl, U"V\uFDD1 pet") == "v'é: p'é:t");
+    REQUIRE(sounds(sl, U"Marjan A\uFDD1 dva") == "m'a:rjan 'a: dv'a:");
+    REQUIRE(sounds(sl, U"Z\uFDD1 tri") == "z'ə tr'i:");
+}
+
+TEST_CASE("A short pause inside a clause splits it into parts", "[frontend][breaks]") {
+    Frontend hr(VoiceLanguage::Croatian);
+    auto breaks = [](const Utterance& utt) {
+        std::vector<int> words;
+        for (const auto& phone : utt.phones) {
+            if (phone.break_before) words.push_back(phone.word);
+        }
+        return words;
+    };
+
+    // The mark is no word: the phones are those of the text without it
+    const Utterance plain = hr.process(U"Sastanak je u dvanaest trideset u uredu", Punctuation::PERIOD, true);
+    Utterance marked = hr.process(U"Sastanak je u dvanaest \uFDD0 trideset u uredu", Punctuation::PERIOD, true);
+    REQUIRE(phones_of(marked) == phones_of(plain));
+    REQUIRE(breaks(plain).empty());
+    REQUIRE(breaks(marked) == std::vector<int>{4});
+    REQUIRE(split_at_breaks(plain).size() == 1);
+
+    // The parts: a continuation that only suspends the melody, then the rest
+    // with the clause's own kind; words and syllables counted from each start
+    marked.sentence_initial = true;
+    const std::vector<Utterance> parts = split_at_breaks(marked);
+    REQUIRE(parts.size() == 2);
+    REQUIRE(phones_of(parts[0]) == "s'astanak je u dv'a:naest");
+    REQUIRE(phones_of(parts[1]) == "tr'i:deset u 'uredu");
+    REQUIRE(parts[0].kind == ClauseKind::Continuation);
+    REQUIRE(parts[0].minor_break);
+    REQUIRE(!parts[0].continued);
+    REQUIRE(parts[0].sentence_initial);
+    REQUIRE(parts[1].kind == ClauseKind::Statement);
+    REQUIRE(!parts[1].minor_break);
+    REQUIRE(parts[1].continued);
+    REQUIRE(!parts[1].sentence_initial);
+    REQUIRE(parts[0].syllable_count + parts[1].syllable_count == marked.syllable_count);
+    for (const Utterance& part : parts) {
+        REQUIRE(part.phones.front().word == 0);
+        REQUIRE(part.phones.front().word_start);
+        int last = -1;
+        for (const auto& phone : part.phones) {
+            REQUIRE(!phone.break_before);
+            REQUIRE(phone.syllable >= 0);
+            REQUIRE(phone.syllable < part.syllable_count);
+            REQUIRE(phone.syllable >= last);
+            last = phone.syllable;
+        }
+    }
+
+    // Three parts of a date; a question keeps its kind and its rise in the last part
+    const Utterance date = hr.process(U"desetog \uFDD0 jedanaestog \uFDD0 dvije tisuće dvadeset šeste",
+                                      Punctuation::QUESTION, true);
+    const std::vector<Utterance> date_parts = split_at_breaks(date);
+    REQUIRE(date_parts.size() == 3);
+    REQUIRE(date_parts[0].kind == ClauseKind::Continuation);
+    REQUIRE(date_parts[1].kind == ClauseKind::Continuation);
+    REQUIRE(date_parts[1].continued);
+    REQUIRE(date_parts[2].kind == ClauseKind::YesNoQuestion);
+    // The word a question's peak sits on stays in its part: "Je li u dvanaest | trideset?"
+    const Utterance li = hr.process(U"Je li u dvanaest \uFDD0 trideset", Punctuation::QUESTION, true);
+    REQUIRE(li.focus_word == 0);
+    const std::vector<Utterance> li_parts = split_at_breaks(li);
+    REQUIRE(li_parts.size() == 2);
+    REQUIRE(li_parts[0].focus_word == 0);
+    REQUIRE(li_parts[1].focus_word == -1);
+
+    // A pause with nothing before it, or nothing after it, is none
+    REQUIRE(breaks(hr.process(U"\uFDD0 trideset", Punctuation::PERIOD, true)).empty());
+    REQUIRE(breaks(hr.process(U"dvanaest \uFDD0", Punctuation::PERIOD, true)).empty());
+    // The pause stands before the first word made of what follows it: a
+    // spelled designation, and the parts of a Slovenian compound numeral
+    const Utterance cell = hr.process(U"Marjan \uFDD0 AB\uFDD1 dvanaest", Punctuation::PERIOD, true);
+    REQUIRE(phones_of(cell) == "m'arjan 'a b'e dv'a:naest");
+    REQUIRE(breaks(cell) == std::vector<int>{1});
+    Frontend sl(VoiceLanguage::Slovenian);
+    const Utterance time = sl.process(U"dvanajst \uFDD0 enaindvajset", Punctuation::PERIOD, true);
+    REQUIRE(breaks(time) == std::vector<int>{1});
+    REQUIRE(split_at_breaks(time).size() == 2);
+    REQUIRE(split_at_breaks(time)[1].slovenian);
+}

@@ -579,14 +579,24 @@ AudioBuffer TTSEngine::synthesize_segments(const std::vector<TextSegment>& segme
         // The clause is synthesized by rule (formant voice) or from the
         // recordings (PSOLA); rate, pitch, volume and intonation are all
         // applied at the source by either.
+        // A short pause inside the clause (between the hours and minutes of
+        // 12:30, the parts of 10.11.2026., before the address of a cell: the
+        // number converter's MINOR_BREAK_MARK) is half of the user's comma
+        // pause and shrinks with the speech rate (minor_break_pause_ms());
+        // the melody goes on over it. The recorded voices stop at 4x.
+        const float rate = m_impl->formant
+            ? m_impl->voice_params.effective_speed()
+            : std::min(m_impl->voice_params.effective_speed(), CONCAT_SPEED_MAX);
+        const uint32_t minor_pause = formant::minor_break_pause_ms(
+            m_impl->inflection.get_pause_duration(Punctuation::COMMA), rate);
         AudioBuffer clause;
         if (m_impl->formant) {
             clause = m_impl->formant->synthesize_clause(
-                segment.text, segment.trailing_punct, m_impl->voice_params, sentence_initial);
+                segment.text, segment.trailing_punct, m_impl->voice_params, sentence_initial, minor_pause);
         } else if (m_impl->synthesizer) {
             clause = m_impl->synthesizer->synthesize_clause(
                 segment.text, segment.trailing_punct, sentence_initial,
-                m_impl->voice_params.spelling_mode == SpellingMode::LetterSounds);
+                m_impl->voice_params.spelling_mode == SpellingMode::LetterSounds, minor_pause);
         }
         sentence_initial = segment.trailing_punct != Punctuation::COMMA &&
                            segment.trailing_punct != Punctuation::SEMICOLON &&

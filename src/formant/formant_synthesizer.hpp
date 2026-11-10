@@ -130,10 +130,16 @@ public:
      * @param params Voice parameters (speed, pitch, user_pitch, volume, inflection).
      * @param sentence_initial false when the clause goes on a sentence (the
      *        clause before it ended with a comma, semicolon or colon).
+     * @param minor_pause_ms Length of a short pause inside the clause (the
+     *        colon of a clock time, the periods of a numeric date, the place
+     *        before a cell's address: formant::split_at_breaks()); the engine
+     *        passes formant::minor_break_pause_ms(): half of the user's comma
+     *        pause, less at a fast rate. A singing preset has none.
      * @return 16-bit mono audio at SAMPLE_RATE, without a trailing pause.
      */
     AudioBuffer synthesize_clause(const std::u32string& text, Punctuation punct,
-                                  const VoiceParams& params, bool sentence_initial = true);
+                                  const VoiceParams& params, bool sentence_initial = true,
+                                  uint32_t minor_pause_ms = 50);
 
     /**
      * The sound of one letter alone, for spelling by sounds (see
@@ -181,6 +187,7 @@ private:
     KlattSynth m_synth;
     std::vector<Note> m_melody;     // singing presets: the song
     size_t m_cursor = 0;            // next note to sing
+    uint32_t m_minor_pause_ms = 50;     // the short pause inside a clause (synthesize_clause)
 };
 
 } // namespace formant
