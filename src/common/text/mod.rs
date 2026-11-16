@@ -1,6 +1,10 @@
 //! Text on its way to the synthesizers: clauses, the marks the number
 //! converter leaves, and what a language's front end must provide.
 
+pub mod clauses;
+pub mod cyrillic;
+pub mod marks;
+
 use crate::prosody::Utterance;
 
 /// The punctuation that ended a clause; it selects the intonation.

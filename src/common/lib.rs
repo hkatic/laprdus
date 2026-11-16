@@ -5,6 +5,8 @@
 //!   folder there and one line to its list.
 
 pub mod audio;
+pub mod concatenative;
+pub mod dictionary;
 pub mod formant;
 pub mod languages;
 mod math;

@@ -1,17 +1,21 @@
-//! The formant synthesizer against the C++ engine, phone for phone.
+//! Both synthesizers against the C++ engine, phone for phone.
 //!
 //! `tools/golden/dump.cpp` writes, for every text of the golden corpus, the
 //! phones the C++ front end made of it and a hash of the audio the C++
-//! synthesizer rendered for them. This test renders the same phones and
-//! compares. The dump is a local file (`build/golden/frontend_full.tsv`); the
-//! test passes without it.
+//! synthesizers rendered for them. These tests render the same phones and
+//! compare. The dumps are local files (`build/golden/*_full.tsv`); the tests
+//! pass without them.
 
+use laprdus::concatenative::synthesizer::ConcatSynthesizer;
+use laprdus::concatenative::voice_data::VoiceData;
 use laprdus::formant::phones::{Accent, Ph, Phone};
 use laprdus::formant::synthesizer::FormantSynthesizer;
 use laprdus::languages::hr::formant::ZVONKO;
 use laprdus::params::VoiceParams;
 use laprdus::prosody::{ClauseKind, Utterance, split_at_breaks};
 use laprdus::silence;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 
 const PHONES: [Ph; Ph::COUNT] = {
     use Ph::*;
@@ -21,11 +25,16 @@ const PHONES: [Ph; Ph::COUNT] = {
     ]
 };
 
-fn fnv(samples: &[i16]) -> u64 {
-    samples
+fn golden() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("build/golden")
+}
+
+fn fnv(samples: &[i16]) -> String {
+    let hash = samples
         .iter()
         .flat_map(|sample| sample.to_le_bytes())
-        .fold(1469598103934665603, |h, byte| (h ^ u64::from(byte)).wrapping_mul(1099511628211))
+        .fold(1469598103934665603u64, |h, byte| (h ^ u64::from(byte)).wrapping_mul(1099511628211));
+    format!("{hash:016x}")
 }
 
 fn utterance(flags: &str, phones: &str) -> Utterance {
@@ -71,37 +80,90 @@ fn utterance(flags: &str, phones: &str) -> Utterance {
     }
 }
 
-#[test]
-fn formant_synthesizer_matches_the_cpp_engine() {
-    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
-    let Ok(dump) = std::fs::read_to_string(root.join("build/golden/frontend_full.tsv")) else { return };
-    let corpus = std::fs::read_to_string(root.join("build/golden/corpus.txt")).unwrap();
-    let texts: Vec<&str> = corpus.lines().collect();
-    let params = VoiceParams::default();
-    let mut synth = FormantSynthesizer::new(&ZVONKO);
+/// The parts of a clause between its short pauses, each rendered by `render`,
+/// with the pauses of the synthesizers' defaults between them.
+fn clause(utt: &Utterance, mut render: impl FnMut(&Utterance) -> Vec<i16>) -> Vec<i16> {
+    let parts = split_at_breaks(utt);
+    let mut audio = Vec::new();
+    for (k, part) in parts.iter().enumerate() {
+        let samples = render(part);
+        if !samples.is_empty() && k + 1 < parts.len() {
+            audio.extend(samples);
+            audio.extend(silence(if part.item_break { 100 } else { 50 }));
+        } else {
+            audio.extend(samples);
+        }
+    }
+    audio
+}
+
+/// Fails with the first differences between what `render` makes of the
+/// dumped phones of a language and the C++ audio in `expected`.
+fn compare(
+    dump: &str,
+    language: &str,
+    expected: impl Fn(&[&str]) -> Option<(String, String)>,
+    mut render: impl FnMut(&Utterance) -> Vec<i16>,
+) {
     let (mut compared, mut wrong) = (0, Vec::new());
     for line in dump.lines() {
         let fields: Vec<&str> = line.split('\t').collect();
-        let [language, _, index, flags, phones, count, hash] = fields[..] else { continue };
-        let text = texts[index.parse::<usize>().unwrap() - 1];
-        // The C++ side spoke longer texts in several breath groups.
-        if text.chars().count() >= 600 || text.split_whitespace().count() > 48 {
+        if fields[0] != language || fields[1] != "1" {
             continue;
         }
-        let parts = split_at_breaks(&utterance(flags, phones));
-        let mut audio = Vec::new();
-        for (k, part) in parts.iter().enumerate() {
-            let before = audio.len();
-            synth.render_utterance(part, &params, &mut audio, false);
-            if k + 1 < parts.len() && audio.len() > before {
-                audio.extend(silence(if part.item_break { 100 } else { 50 }));
-            }
-        }
+        let Some((count, hash)) = expected(&fields) else { continue };
+        let audio = clause(&utterance(fields[3], fields[4]), &mut render);
         compared += 1;
-        if audio.len() != count.parse::<usize>().unwrap() || format!("{:016x}", fnv(&audio)) != hash {
-            wrong.push(format!("{language} {index} {text:?}: {} samples, C++ {count}", audio.len()));
+        if audio.len().to_string() != count || fnv(&audio) != hash {
+            wrong.push(format!("{language} {}: {} samples, C++ {count}", fields[2], audio.len()));
         }
     }
-    eprintln!("{} of {compared} match", compared - wrong.len());
+    eprintln!("{language}: {} of {compared} match", compared - wrong.len());
     assert!(wrong.is_empty(), "{} differ, first:\n{}", wrong.len(), wrong[..wrong.len().min(15)].join("\n"));
+}
+
+#[test]
+fn formant_synthesizer_matches_the_cpp_engine() {
+    let Ok(dump) = std::fs::read_to_string(golden().join("frontend_full.tsv")) else { return };
+    let params = VoiceParams::default();
+    let mut synth = FormantSynthesizer::new(&ZVONKO);
+    for language in ["hr", "sr", "bs", "sl"] {
+        compare(
+            &dump,
+            language,
+            |fields| Some((fields.get(5)?.to_string(), fields.get(6)?.to_string())),
+            |utt| {
+                let mut audio = Vec::new();
+                synth.render_utterance(utt, &params, &mut audio, false);
+                audio
+            },
+        );
+    }
+}
+
+#[test]
+fn recorded_voices_match_the_cpp_engine() {
+    let (Ok(dump), Ok(recorded)) = (
+        std::fs::read_to_string(golden().join("frontend_full.tsv")),
+        std::fs::read_to_string(golden().join("recorded_full.tsv")),
+    ) else {
+        return;
+    };
+    let recorded: HashMap<(&str, &str), (&str, &str)> = recorded
+        .lines()
+        .filter_map(|line| {
+            let fields: Vec<&str> = line.split('\t').collect();
+            Some(((*fields.first()?, *fields.get(1)?), (*fields.get(2)?, *fields.get(3)?)))
+        })
+        .collect();
+    let voices = Path::new(env!("CARGO_MANIFEST_DIR")).join("data/voices");
+    for (language, file) in [("hr", "Josip.bin"), ("sr", "Vlado.bin")] {
+        let synth = ConcatSynthesizer::new(VoiceData::from_file(&voices.join(file), &[]).unwrap());
+        compare(
+            &dump,
+            language,
+            |fields| recorded.get(&(language, fields[2])).map(|(count, hash)| (count.to_string(), hash.to_string())),
+            |utt| synth.render_utterance(utt),
+        );
+    }
 }

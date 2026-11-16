@@ -8,4 +8,6 @@ cl /nologo /W3 /EHsc /std:c++17 /utf-8 /permissive- /O2 /Oi /GL /MD /DNDEBUG /Ii
   src\core\phoneme_mapper.cpp src\core\croatian_numbers.cpp src\formant\klatt_synth.cpp ^
   src\formant\formant_phonemes.cpp src\formant\formant_lexicon.cpp src\formant\formant_frontend.cpp ^
   src\formant\formant_slovenian.cpp src\formant\formant_intonation.cpp src\formant\formant_synthesizer.cpp ^
+  src\audio\phoneme_data.cpp src\audio\audio_synthesizer.cpp src\audio\unit_bank.cpp src\audio\psola.cpp ^
+  src\audio\concat_prosody.cpp ^
   /link /LTCG

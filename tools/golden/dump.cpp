@@ -3,11 +3,13 @@
 // exactly those phones, and the text of the number converter. Temporary: it
 // goes with the C++ sources once the Rust engine reproduces all of it.
 //
-//   dump <corpus.txt> <frontend.tsv> <numbers.tsv>
+//   dump <corpus.txt> <frontend.tsv> <numbers.tsv> [<recorded.tsv> <voice data dir>]
 //
 // corpus.txt has one text per line with \n, \t, \r and \\ escaped
 // (tools/golden/corpus.py --plain writes it from tests/golden/corpus.jsonl).
 
+#include "audio/audio_synthesizer.hpp"
+#include "audio/phoneme_data.hpp"
 #include "core/croatian_numbers.hpp"
 #include "core/phoneme_mapper.hpp"
 #include "formant/formant_frontend.hpp"
@@ -95,6 +97,25 @@ int main(int argc, char** argv) {
         }
     }
     std::fclose(out);
+
+    // The recorded voices: Josip for the Croatian phones, Vlado for the Serbian
+    if (argc >= 6) {
+        out = std::fopen(argv[4], "wb");
+        static const char* const FILES[] = {"Josip.bin", "Vlado.bin"};
+        for (int lang = 0; lang < 2; ++lang) {
+            PhonemeData data;
+            if (!data.load_from_file(std::string(argv[5]) + "/" + FILES[lang])) return 3;
+            AudioSynthesizer synth(data, static_cast<VoiceLanguage>(lang));
+            for (size_t i = 0; i < texts.size(); ++i) {
+                const AudioBuffer audio =
+                    synth.synthesize_clause(PhonemeMapper::utf8_to_utf32(texts[i]), Punctuation::PERIOD, true, true);
+                std::fprintf(out, "%s\t%zu\t%zu\t%016llx\n", LANGS[lang], i + 1, audio.samples.size(),
+                             static_cast<unsigned long long>(
+                                 fnv(audio.samples.data(), audio.samples.size() * sizeof(AudioSample))));
+            }
+        }
+        std::fclose(out);
+    }
 
     out = std::fopen(argv[3], "wb");
     for (int lang = 0; lang < 4; ++lang) {

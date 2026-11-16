@@ -34,3 +34,7 @@ workspace = true
 opt-level = 3
 lto = true
 codegen-units = 1
+
+[dependencies]
+regex = { version = "1.13.1", default-features = false, features = ["std", "perf"] }
+serde_json = "1.0.154"
