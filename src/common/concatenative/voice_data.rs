@@ -217,6 +217,11 @@ impl VoiceData {
 
 /// Sample rate and samples of a 16-bit PCM WAV file.
 fn read_wav(file: &[u8]) -> Option<(u32, Vec<i16>)> {
+    wav_audio(file).map(|(sample_rate, audio)| (sample_rate, samples_of(audio)))
+}
+
+/// Sample rate and the bytes of the audio of a WAV file.
+fn wav_audio(file: &[u8]) -> Option<(u32, &[u8])> {
     if file.get(0..4)? != b"RIFF" || file.get(8..12)? != b"WAVE" || file.get(12..16)? != b"fmt " {
         return None;
     }
@@ -227,10 +232,74 @@ fn read_wav(file: &[u8]) -> Option<(u32, Vec<i16>)> {
         let size = u32_at(file, at + 4)? as usize;
         let body = at + 8;
         if file.get(at..at + 4)? == b"data" {
-            return Some((sample_rate, samples_of(&file[body..file.len().min(body + size)])));
+            return Some((sample_rate, &file[body..file.len().min(body + size)]));
         }
         at = body + size;
     }
+}
+
+/// The long consonants are packed without what lies past this many bytes:
+/// the steady part is all the renderer needs of them.
+const TRUNCATED_BYTES: usize = 2000;
+const FLAG_TRUNCATED: u16 = 0x0004;
+
+fn fnv1a(text: &str) -> u32 {
+    text.bytes().fold(2_166_136_261, |hash, byte| (hash ^ u32::from(byte)).wrapping_mul(16_777_619))
+}
+
+fn crc32(data: &[u8]) -> u32 {
+    !data.iter().fold(u32::MAX, |crc, &byte| {
+        (0..8).fold(crc ^ u32::from(byte), |c, _| (c >> 1) ^ if c & 1 == 1 { 0xEDB8_8320 } else { 0 })
+    })
+}
+
+/// Packs a directory of recordings (`PHONEME_*.wav`, `-.wav`) into the
+/// content of a voice file, XOR-encrypted when a key is given. Returns the
+/// file and the names of the recordings that were missing or not WAV files.
+pub fn pack(dir: &Path, key: &[u8]) -> (Vec<u8>, Vec<String>) {
+    let (mut index, mut audio, mut missing) = (Vec::new(), Vec::new(), Vec::new());
+    let mut count = 0u32;
+    for sound in Sound::ALL {
+        let file = std::fs::read(dir.join(sound.file_name())).unwrap_or_default();
+        let Some((_, mut samples)) = wav_audio(&file) else {
+            missing.push(sound.file_name());
+            continue;
+        };
+        let truncated =
+            matches!(sound, Sound::L | Sound::M | Sound::N | Sound::S | Sound::V | Sound::Z | Sound::Sh | Sound::Zh);
+        if truncated {
+            samples = &samples[..samples.len().min(TRUNCATED_BYTES)];
+        }
+        let name = if sound == Sound::Silence { "SILENCE".to_owned() } else { format!("{sound:?}").to_uppercase() };
+        let size = samples.len() as u32;
+        // id, name hash, offset, packed size, size, duration, flags, reserved
+        for field in [sound as u32, fnv1a(&name), audio.len() as u32, size, size, size / 2] {
+            index.extend(field.to_le_bytes());
+        }
+        index.extend((if truncated { FLAG_TRUNCATED } else { 0 }).to_le_bytes());
+        index.extend([0; 6]);
+        audio.extend_from_slice(samples);
+        count += 1;
+    }
+    for (byte, key) in audio.iter_mut().zip(key.iter().cycle()) {
+        *byte ^= key;
+    }
+
+    let data_offset = (HEADER_SIZE + index.len()) as u32;
+    let mut file = Vec::with_capacity(data_offset as usize + audio.len());
+    file.extend(FILE_MAGIC.to_le_bytes());
+    file.extend(FILE_VERSION.to_le_bytes());
+    file.extend((if key.is_empty() { 0 } else { FLAG_ENCRYPTED }).to_le_bytes());
+    for field in [count, HEADER_SIZE as u32, data_offset, data_offset + audio.len() as u32, SAMPLE_RATE] {
+        file.extend(field.to_le_bytes());
+    }
+    file.extend(16u16.to_le_bytes()); // bits per sample
+    file.extend(1u16.to_le_bytes()); // channels
+    file.extend(crc32(&audio).to_le_bytes());
+    file.resize(HEADER_SIZE, 0); // initialisation vector (unused) and reserved
+    file.extend(index);
+    file.extend(audio);
+    (file, missing)
 }
 
 #[cfg(test)]
@@ -243,6 +312,29 @@ mod tests {
         assert_eq!(Sound::Ch.file_name(), "PHONEME_CH.wav");
         assert_eq!(Sound::Silence.file_name(), "-.wav");
         assert_eq!(Sound::ALL[33] as usize, 33);
+    }
+
+    /// The packed files of the build are those the C++ packer wrote.
+    #[test]
+    fn packs_the_recordings_as_the_voice_files_are() {
+        let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+        for (recordings, voice) in [("phonemes/Josip", "Josip.bin"), ("phonemes/Vlado", "Vlado.bin")] {
+            let Ok(expected) = std::fs::read(root.join("data/voices").join(voice)) else { continue };
+            if !root.join(recordings).is_dir() {
+                continue;
+            }
+            let (packed, missing) = pack(&root.join(recordings), &[]);
+            assert!(missing.is_empty(), "{missing:?}");
+            assert!(packed == expected, "{voice} differs");
+            let from_packed = VoiceData::from_packed(&packed, &[]).unwrap();
+            assert_eq!(
+                from_packed.sound(Sound::A),
+                VoiceData::from_directory(&root.join(recordings)).unwrap().sound(Sound::A)
+            );
+        }
+        let (encrypted, _) = pack(Path::new("nowhere"), b"key");
+        assert!(matches!(VoiceData::from_packed(&encrypted, &[]), Err(VoiceDataError::KeyRequired)));
+        assert!(VoiceData::from_packed(&encrypted, b"key").is_ok());
     }
 
     #[test]
