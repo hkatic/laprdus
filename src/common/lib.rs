@@ -6,6 +6,7 @@
 
 pub mod audio;
 pub mod concatenative;
+pub mod config;
 pub mod dictionary;
 pub mod formant;
 pub mod language;
@@ -14,6 +15,7 @@ mod math;
 pub mod params;
 pub mod prosody;
 pub mod text;
+pub mod voice;
 
 /// Sample rate of all audio the engine produces (Hz, 16-bit mono).
 pub const SAMPLE_RATE: u32 = 22050;

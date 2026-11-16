@@ -145,3 +145,18 @@ pub static BECARAC: FormantVoice = ZVONKO.preset("becarac", &STYLE_BECARAC);
 
 /// Every Croatian formant voice.
 pub static VOICES: [&FormantVoice; 5] = [&ZVONKO, &ORGULJAS, &DALMACIJA_KLAPA, &LIKA_VELEBIT, &BECARAC];
+
+/// The voices as hosts list them. An instrument preset is named after the
+/// player and the song, a voice singing as itself after the region of its
+/// song.
+pub mod voices {
+    use crate::language::Language;
+    use crate::voice::Voice;
+
+    /// The default voice.
+    pub static ZVONKO: Voice = Voice::formant(&super::ZVONKO, "Zvonko", Language::Croatian);
+    pub static ORGULJAS: Voice = ZVONKO.preset(&super::ORGULJAS, "Orguljaš - Vila Velebita");
+    pub static DALMACIJA_KLAPA: Voice = ZVONKO.preset(&super::DALMACIJA_KLAPA, "Dalmacija Klapa");
+    pub static LIKA_VELEBIT: Voice = ZVONKO.preset(&super::LIKA_VELEBIT, "Lika Velebit");
+    pub static BECARAC: Voice = ZVONKO.preset(&super::BECARAC, "Bećarac");
+}

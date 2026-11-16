@@ -105,3 +105,14 @@ pub static SARAJEVO_BEMBASA: FormantVoice = MIRSAD.preset("sarajevo_bembasa", &S
 
 /// Every Bosnian formant voice.
 pub static VOICES: [&FormantVoice; 4] = [&MIRSAD, &SEVDALIJA, &SAZLIJA, &SARAJEVO_BEMBASA];
+
+/// The voices as hosts list them.
+pub mod voices {
+    use crate::language::Language;
+    use crate::voice::Voice;
+
+    pub static MIRSAD: Voice = Voice::formant(&super::MIRSAD, "Mirsad", Language::Bosnian);
+    pub static SEVDALIJA: Voice = MIRSAD.preset(&super::SEVDALIJA, "Sevdalija - Kad ja pođoh na Bembašu");
+    pub static SAZLIJA: Voice = MIRSAD.preset(&super::SAZLIJA, "Sazlija - Kad ja pođoh na Bembašu");
+    pub static SARAJEVO_BEMBASA: Voice = MIRSAD.preset(&super::SARAJEVO_BEMBASA, "Sarajevo Bembaša");
+}

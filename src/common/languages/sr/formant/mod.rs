@@ -104,3 +104,14 @@ pub static SOLUNAC: FormantVoice = STOJAN.preset("solunac", &STYLE_PEVAC);
 
 /// Every Serbian formant voice.
 pub static VOICES: [&FormantVoice; 4] = [&STOJAN, &TRUBAC, &HARMONIKAS, &SOLUNAC];
+
+/// The voices as hosts list them.
+pub mod voices {
+    use crate::language::Language;
+    use crate::voice::Voice;
+
+    pub static STOJAN: Voice = Voice::formant(&super::STOJAN, "Stojan", Language::Serbian);
+    pub static TRUBAC: Voice = STOJAN.preset(&super::TRUBAC, "Trubač - Kreće se lađa francuska");
+    pub static HARMONIKAS: Voice = STOJAN.preset(&super::HARMONIKAS, "Harmonikaš - Kreće se lađa francuska");
+    pub static SOLUNAC: Voice = STOJAN.preset(&super::SOLUNAC, "Solunac");
+}
