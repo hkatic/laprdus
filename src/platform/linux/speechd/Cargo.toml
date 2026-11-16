@@ -1,0 +1,18 @@
+[package]
+name = "laprdus-speechd"
+description = "Speech Dispatcher output module of the Laprdus text-to-speech engine"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license-file.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "sd_laprdus"
+path = "src/main.rs"
+
+[dependencies]
+laprdus = { path = "../../../.." }
+
+[lints]
+workspace = true

@@ -8,6 +8,7 @@ pub mod audio;
 pub mod concatenative;
 pub mod config;
 pub mod dictionary;
+pub mod engine;
 pub mod formant;
 pub mod language;
 pub mod languages;

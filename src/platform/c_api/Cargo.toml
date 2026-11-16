@@ -1,0 +1,27 @@
+[package]
+name = "laprdus-capi"
+description = "C API of the Laprdus text-to-speech engine"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license-file.workspace = true
+repository.workspace = true
+
+[lib]
+name = "laprdus_capi"
+# cdylib/staticlib for hosts written in other languages (liblaprdus.so,
+# laprdus.dll); rlib for the Rust platform libraries that export the C API
+# next to their own interface (the SAPI5 driver).
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[dependencies]
+laprdus = { path = "../../.." }
+
+# The boundary to C cannot be written without unsafe code; it stays in this
+# crate, and the engine forbids it.
+[lints.rust]
+unsafe_code = "allow"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+missing_safety_doc = "allow"

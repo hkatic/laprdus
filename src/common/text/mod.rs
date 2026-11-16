@@ -3,6 +3,7 @@
 
 pub mod clauses;
 pub mod cyrillic;
+pub mod frontend;
 pub mod marks;
 pub mod numbers;
 pub mod table;
