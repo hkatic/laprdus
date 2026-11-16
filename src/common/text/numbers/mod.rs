@@ -2,12 +2,11 @@
 //! dates, clock times, telephone numbers, currency amounts, the addresses of
 //! spreadsheet cells and the agreement of a number with its noun.
 //!
-//! The language chooses the number words ([`cardinal`]) and the grammar: the
-//! Slovenian one is in `languages::sl::numerals`, the Croatian, Serbian and
-//! Bosnian one in `languages::hr::numerals`. What is written the same way in
-//! every language is here.
+//! The language gives the number words ([`cardinal::Numerals`]) and the
+//! grammar ([`Grammar`]), both from its folder under `crate::languages`.
+//! What is written the same way in every language is here.
 
-mod cardinal;
+pub(crate) mod cardinal;
 mod cells;
 mod currency;
 mod phone;
@@ -16,52 +15,106 @@ pub(crate) mod scan;
 mod tests;
 
 use crate::language::Language;
-use crate::languages::{hr, sl};
 use cardinal::Numerals;
 use scan::{Out, Text, Unit, is_letter_byte, is_word_byte, join_parts};
+
+/// What the number converter asks of a language: its number words and the
+/// grammar of a number in a sentence. `r` is the reader of the language, for
+/// the words of a number.
+pub(crate) trait Grammar: Sync {
+    /// The number words.
+    fn numerals(&self) -> &'static Numerals;
+
+    /// The nouns of the unit signs: %, €, $, °.
+    fn units(&self) -> &'static [Unit; 4];
+
+    /// The country code of a domestic telephone number.
+    fn home_country(&self) -> &'static str;
+
+    /// The decimal comma read by name, with the spaces around it.
+    fn decimal_comma(&self) -> &'static str;
+
+    /// The language's own constructs at the number at `i`: a minus, a date
+    /// in its case, a range, thousands with spaces, a number compounded with
+    /// a word, a unit's noun. Writes the words and returns the end of what
+    /// it read, or nothing to leave the number to the shared paths.
+    fn number_at(&self, r: &NumberReader, t: Text, i: usize, out: &mut Out) -> Option<usize>;
+
+    /// The last word of a number's words agrees with what the number in
+    /// [start, end) counts.
+    fn agree(&self, t: Text, start: usize, end: usize, words: &mut String);
+
+    /// The ordinal for the number in [start, end) before a lowercase word, in
+    /// the case the sentence asks for; empty to keep the cardinal. `after` is
+    /// the position after the number's period.
+    fn ordinal_before(&self, r: &NumberReader, t: Text, start: usize, end: usize, after: usize) -> String;
+
+    /// A date of day, month and year, read without the separators.
+    fn date_to_words(&self, r: &NumberReader, groups: &[&str; 3]) -> String;
+
+    /// The hours, minutes or seconds of a clock time, in the form the clock
+    /// asks for.
+    fn clock_part(&self, _part: &mut String) {}
+
+    /// Whether the period after a date's year before a lowercase word is the
+    /// ordinal's and ends no sentence.
+    fn date_takes_its_period(&self) -> bool {
+        false
+    }
+
+    /// Whether the shared path reads a period between groups of three digits
+    /// as the thousands separator. (A language may also read it so in
+    /// `number_at`.)
+    fn groups_thousands_by_period(&self) -> bool {
+        false
+    }
+
+    /// Whether a number with a decimal comma is read by `decimal` and not
+    /// with the comma's name.
+    fn names_decimals(&self) -> bool {
+        false
+    }
+
+    /// A whole amount of money with the noun of its currency; the amount
+    /// begins at `start`.
+    fn currency_amount(&self, r: &NumberReader, t: Text, start: usize, whole: &str, unit: &Unit) -> String;
+
+    /// A number with a decimal comma, in words.
+    fn decimal(&self, r: &NumberReader, whole: &str, fraction: &str) -> String;
+}
 
 /// Reads the numbers of a text in one language.
 #[derive(Clone, Copy)]
 pub struct NumberReader {
     language: Language,
+    grammar: &'static dyn Grammar,
     numerals: &'static Numerals,
 }
 
 impl NumberReader {
     pub fn new(language: Language) -> Self {
-        NumberReader { language, numerals: Numerals::of(language) }
+        let grammar = crate::languages::rules(language).numbers();
+        NumberReader { language, grammar, numerals: grammar.numerals() }
     }
 
     pub fn language(&self) -> Language {
         self.language
     }
 
-    fn slovenian(&self) -> bool {
-        self.language == Language::Slovenian
-    }
-
     /// The nouns of the unit signs in the language: %, €, $, °.
     fn units(&self) -> &'static [Unit; 4] {
-        if self.slovenian() { &sl::numerals::UNITS } else { &hr::numerals::dialect(self.language).units }
+        self.grammar.units()
     }
 
     /// The language's own constructs at the number at `i`.
     fn number_at(&self, t: Text, i: usize, out: &mut Out) -> Option<usize> {
-        if self.slovenian() {
-            sl::numerals::number_at(self, t, i, out, false)
-        } else {
-            hr::numerals::number_at(self, t, i, out, false)
-        }
+        self.grammar.number_at(self, t, i, out)
     }
 
     /// The last word of a number's words agrees with what the number in
     /// [start, end) counts.
     fn agree(&self, t: Text, start: usize, end: usize, words: &mut String) {
-        if self.slovenian() {
-            sl::numerals::agree(t, start, end, words);
-        } else {
-            hr::numerals::agree(self, t, start, end, words);
-        }
+        self.grammar.agree(t, start, end, words);
     }
 
     /// "12:30" -> dvanaest trideset, "9:05" -> devet nula pet, with a short
@@ -70,9 +123,7 @@ impl NumberReader {
     pub(crate) fn time_to_words(&self, groups: &[&str]) -> String {
         join_parts(groups.iter().enumerate().map(|(k, group)| {
             let mut part = if k == 0 { self.number_to_words(group) } else { self.digit_group_to_words(group) };
-            if self.slovenian() {
-                sl::numerals::feminine_two(&mut part); // the hour and the minute: dve trideset
-            }
+            self.grammar.clock_part(&mut part); // the hour and the minute: dve trideset
             part
         }))
     }
@@ -82,15 +133,7 @@ impl NumberReader {
     /// sedmega desetega dva tisoč šestindvajset (Jezikovna svetovalnica, ZRC
     /// SAZU: "šestega julija dva tisoč deset").
     pub(crate) fn date_to_words(&self, groups: &[&str; 3]) -> String {
-        if self.slovenian() {
-            join_parts([
-                sl::numerals::ordinal(self, groups[0], "ega"),
-                sl::numerals::ordinal(self, groups[1], "ega"),
-                self.number_to_words(groups[2]),
-            ])
-        } else {
-            hr::numerals::date_to_words(self, groups, "og")
-        }
+        self.grammar.date_to_words(self, groups)
     }
 
     /// A time or date at position `i`, read without the separators; the end
@@ -102,7 +145,7 @@ impl NumberReader {
         }
         let (mut end, groups) = t.parse_date(i)?;
         let mut words = self.date_to_words(&groups);
-        if !self.slovenian() {
+        if self.grammar.date_takes_its_period() {
             end = t.date_period_end(end, &mut words);
         }
         out.push_str(&words);
@@ -152,8 +195,7 @@ impl NumberReader {
     pub(crate) fn separator_words(&self, separator: u8) -> &'static str {
         match separator {
             b'.' => "\u{2024}",
-            _ if self.slovenian() => " vejica ",
-            _ => " zarez ",
+            _ => self.grammar.decimal_comma(),
         }
     }
 
@@ -217,7 +259,7 @@ impl NumberReader {
             // sedeminpetdeset; Slovenski pravopis 2001, § 253), so such a
             // number is read whole. A period before fewer digits (3.14) is the
             // decimal point, read by name, as below.
-            if self.slovenian() && t.at(i) != b'0' {
+            if self.grammar.groups_thousands_by_period() && t.at(i) != b'0' {
                 let first_end = t.digits_end(i);
                 let mut end = first_end;
                 while end + 3 < length && t.at(end) == b'.' && t.digits_end(end + 1) == end + 4 {
@@ -226,7 +268,7 @@ impl NumberReader {
                 if end > first_end && first_end - i <= 3 && !t.is_separator_between_digits(end) && t.at(end) != b':' {
                     let digits: String = t.str(i, end).chars().filter(char::is_ascii_digit).collect();
                     let mut words = self.number_to_words(&digits);
-                    sl::numerals::agree(t, i, end, &mut words);
+                    self.agree(t, i, end, &mut words);
                     out.push_str(&words);
                     i = end;
                     continue;
@@ -250,11 +292,7 @@ impl NumberReader {
             // ordinal is read in the case the noun and the preposition show
             // (sedmog listopada, prvo mjesto, na prvem mestu)
             if let Some(end) = silent_dot_end(t, num_start, i) {
-                let ordinal = if self.slovenian() {
-                    sl::numerals::ordinal_before(self, t, num_start, i, end)
-                } else {
-                    hr::numerals::ordinal_before(self, t, num_start, i, end)
-                };
+                let ordinal = self.grammar.ordinal_before(self, t, num_start, i, end);
                 out.push_str(&if ordinal.is_empty() { self.number_to_words(number) } else { ordinal });
                 if !matches!(t.at(end), b' ' | b'\t') {
                     out.push(b' '); // "7.listopada"
@@ -296,11 +334,11 @@ impl NumberReader {
                 let separator = t.at(i);
                 let group_end = t.digits_end(i + 1);
                 let group = t.str(i + 1, group_end);
-                if self.slovenian() && separator == b',' && separators == 1 && i > num_start {
+                if self.grammar.names_decimals() && separator == b',' && separators == 1 && i > num_start {
                     // tri cele štirinajst: the whole part was already written
                     let whole = t.str(num_start, i);
                     out.0.truncate(out.len().saturating_sub(self.number_to_words(whole).len()));
-                    out.push_str(&sl::numerals::decimal(self, whole, group));
+                    out.push_str(&self.grammar.decimal(self, whole, group));
                 } else {
                     out.push_str(self.separator_words(separator));
                     if separator == b'.' || separators >= 2 {

@@ -6,7 +6,7 @@ use super::notation::parse_lex_entry;
 use super::{UserLexicon, is_foreign_letter, is_letter_name, letter_name, spelling_letter};
 use crate::formant::phones::{Accent, Ph};
 use crate::language::Language;
-use crate::languages::bcms::Frontend;
+use crate::languages::Frontend;
 use crate::text::{Frontend as _, Punctuation};
 
 fn string(letters: &[char]) -> String {

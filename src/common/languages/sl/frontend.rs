@@ -45,7 +45,7 @@ impl LanguageWords for Slovenian {
     /// The list is the one Croatian, Serbian and Bosnian use: the C++ engine
     /// had one for all four languages.
     fn is_short_word(&self, w: &[char]) -> bool {
-        crate::languages::bcms::words::is_short_vc_word(w)
+        crate::text::frontend::tokenizer::is_short_vc_word(w)
     }
 }
 
@@ -98,7 +98,7 @@ pub fn process(marked_text: &[char], punct: Punctuation, letter_sounds: bool, us
     let tokens = tokenize(&cyrillic::to_latin(text), &Slovenian);
     // The syllables of the parts are counted as the C++ engine counted them
     // for every language, by the letter-to-sound rules of Croatian
-    let tokens = join_camel(tokens, crate::languages::bcms::phonemize::syllable_count, |spelled| {
+    let tokens = join_camel(tokens, crate::text::frontend::syllables::syllable_count, |spelled| {
         let mut probe = Word::new(spelled);
         rewrite_foreign(&mut probe);
         user_has(&probe.w) || builtin_lexicon().find_exact(&probe.w).is_some()

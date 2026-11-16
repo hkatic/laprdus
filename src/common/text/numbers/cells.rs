@@ -2,8 +2,7 @@
 //! AB12): their letters are marked as letters, and an address that follows a
 //! cell's contents is set off from them by a pause.
 
-use super::scan::{Out, Text, is_word_byte, item_break};
-use crate::languages::hr::numerals::latin_word;
+use super::scan::{Out, Text, is_word_byte, item_break, latin_word};
 use crate::text::marks::LETTER_CODE_MARK;
 
 /// The signs a cell address may touch in a formula, a range or a list
