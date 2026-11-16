@@ -91,3 +91,6 @@ dist/
 
 # Scratch settings written by tests/nvda/test_driver.py
 tests/nvda/_appdata/
+
+# Rust
+/target/
