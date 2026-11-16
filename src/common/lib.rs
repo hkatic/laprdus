@@ -8,6 +8,7 @@ pub mod audio;
 pub mod concatenative;
 pub mod dictionary;
 pub mod formant;
+pub mod language;
 pub mod languages;
 mod math;
 pub mod params;

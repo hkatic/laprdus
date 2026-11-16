@@ -1,0 +1,3 @@
+//! Slovenian.
+
+pub mod nouns;

@@ -4,6 +4,7 @@
 pub mod clauses;
 pub mod cyrillic;
 pub mod marks;
+pub mod table;
 
 use crate::prosody::Utterance;
 
