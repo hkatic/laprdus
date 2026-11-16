@@ -5,6 +5,7 @@
 //! names, and its voices (`formant`, `concatenative`). Adding a language is
 //! adding a folder here and one line to the list.
 
+pub mod bcms;
 pub mod bs;
 pub mod hr;
 pub mod sl;
