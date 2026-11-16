@@ -10,6 +10,7 @@
 pub mod letters;
 pub mod notation;
 pub mod sounds;
+pub mod syllables;
 pub mod tokenizer;
 pub mod user_lexicon;
 pub mod utterance;

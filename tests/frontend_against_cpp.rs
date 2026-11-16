@@ -7,7 +7,7 @@
 //! without it. `LAPRDUS_GOLDEN` names another folder.
 
 use laprdus::language::Language;
-use laprdus::languages::bcms::Frontend;
+use laprdus::languages::Frontend;
 use laprdus::prosody::Utterance;
 use laprdus::text::{Frontend as _, Punctuation};
 use std::fmt::Write as _;

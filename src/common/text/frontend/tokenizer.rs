@@ -10,6 +10,17 @@ use super::{LanguageWords, MAX_WORD_LETTERS, Word};
 use crate::formant::phones::Ph;
 use crate::text::marks::{ITEM_BREAK_MARK, LETTER_CODE_MARK, MINOR_BREAK_MARK};
 
+/// Two-letter words written vowel + consonant that are real words, so an
+/// all-caps "ON" or "IZ" is not spelled out like "IT" or "UK": the list the
+/// C++ engine had for every language, for a language without one of its own
+/// ([`LanguageWords::is_short_word`]).
+const SHORT_VC_WORDS: &[&str] =
+    &["on", "od", "uz", "iz", "ih", "im", "um", "ah", "oh", "eh", "uh", "al", "il", "ej", "aj", "oj", "uf", "as", "ar"];
+
+pub fn is_short_vc_word(w: &[char]) -> bool {
+    is_one_of(w, SHORT_VC_WORDS)
+}
+
 /// The words of a name ("duplo ve"), each as a word of its own.
 pub fn split_words(text: &str, out: &mut Vec<Word>) {
     out.extend(text.split(' ').filter(|word| !word.is_empty()).map(|word| Word::new(&chars(word))));

@@ -3,8 +3,6 @@
 
 use super::NumberReader;
 use super::scan::{Out, Text, is_word_byte};
-use crate::language::Language;
-use crate::languages::{hr, sl};
 
 /// A currency, by its place in the language's unit table.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -120,7 +118,6 @@ fn scan_amount(t: Text, i: usize) -> Amount {
 /// words so punctuation settings cannot silence the sign or currency.
 /// <https://unicode.org/reports/tr35/tr35-numbers.html#Number_Format_Patterns>
 pub(super) fn convert(r: &NumberReader, t: Text, i: usize, out: &mut Out, by_digit: bool) -> Option<usize> {
-    let slovenian = r.language() == Language::Slovenian;
     let mut currency = None;
     let mut start = i;
     let (mut negative, mut positive, mut bracket) = (false, false, false);
@@ -227,7 +224,7 @@ pub(super) fn convert(r: &NumberReader, t: Text, i: usize, out: &mut Out, by_dig
         && (!decimal
             || integer_groups < 2
             || !matches!(last_separator, b',' | b'.')
-            || sl::numerals::unit_at(t, end).is_some())
+            || t.unit_at(end, r.units(), "").is_some())
     {
         return None;
     }
@@ -239,11 +236,8 @@ pub(super) fn convert(r: &NumberReader, t: Text, i: usize, out: &mut Out, by_dig
     let unit = &r.units()[currency.map_or(0, |currency| currency as usize)];
     let counted = if currency.is_none() || decimal {
         String::new()
-    } else if slovenian {
-        let case = sl::numerals::unit_case(t, &t.prev_word(start));
-        sl::numerals::count(r, &whole, unit, "", case, false)
     } else {
-        hr::numerals::count(r, &whole, unit, "")
+        r.grammar.currency_amount(r, t, start, &whole, unit)
     };
     let mut words = if by_digit {
         let fraction =
@@ -251,10 +245,8 @@ pub(super) fn convert(r: &NumberReader, t: Text, i: usize, out: &mut Out, by_dig
         r.digit_names(&whole) + &fraction
     } else if !decimal {
         counted.clone()
-    } else if slovenian {
-        sl::numerals::decimal(r, &whole, last_group)
     } else {
-        hr::numerals::decimal(r, &whole, last_group)
+        r.grammar.decimal(r, &whole, last_group)
     };
     if currency.is_some() && (by_digit || decimal) {
         words.push(' ');

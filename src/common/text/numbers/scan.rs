@@ -216,6 +216,65 @@ pub(crate) fn lowercase_first(word: &str) -> (String, bool) {
     }
 }
 
+/// The Serbian Cyrillic letters, small and capital, in Latin script.
+const CYRILLIC: [(char, char, &str); 30] = [
+    ('а', 'А', "a"),
+    ('б', 'Б', "b"),
+    ('в', 'В', "v"),
+    ('г', 'Г', "g"),
+    ('д', 'Д', "d"),
+    ('ђ', 'Ђ', "đ"),
+    ('е', 'Е', "e"),
+    ('ж', 'Ж', "ž"),
+    ('з', 'З', "z"),
+    ('и', 'И', "i"),
+    ('ј', 'Ј', "j"),
+    ('к', 'К', "k"),
+    ('л', 'Л', "l"),
+    ('љ', 'Љ', "lj"),
+    ('м', 'М', "m"),
+    ('н', 'Н', "n"),
+    ('њ', 'Њ', "nj"),
+    ('о', 'О', "o"),
+    ('п', 'П', "p"),
+    ('р', 'Р', "r"),
+    ('с', 'С', "s"),
+    ('т', 'Т', "t"),
+    ('ћ', 'Ћ', "ć"),
+    ('у', 'У', "u"),
+    ('ф', 'Ф', "f"),
+    ('х', 'Х', "h"),
+    ('ц', 'Ц', "c"),
+    ('ч', 'Ч', "č"),
+    ('џ', 'Џ', "dž"),
+    ('ш', 'Ш', "š"),
+];
+
+/// A word of the text in small Latin letters: Serbian Cyrillic transliterated
+/// (the converter writes Latin words, which the front end of every language
+/// reads in either script), an initial capital lowered; and whether there
+/// was one.
+pub(crate) fn latin_word(word: &str) -> (String, bool) {
+    let mut out = String::with_capacity(word.len());
+    let mut capital = false;
+    for (k, c) in word.chars().enumerate() {
+        match CYRILLIC.iter().find(|&&(small, large, _)| c == small || c == large) {
+            Some(&(_, large, latin)) => {
+                capital |= k == 0 && c == large;
+                out += latin;
+            }
+            None => out.push(c),
+        }
+    }
+    let (out, lowered) = lowercase_first(&out);
+    (out, capital || lowered)
+}
+
+/// [`latin_word`] without the capital.
+pub(crate) fn latin(word: &str) -> String {
+    latin_word(word).0
+}
+
 /// A day and a month without a year: the ends of the day and of the month
 /// and the start of the month.
 pub(crate) struct DayMonth {

@@ -1,136 +1,76 @@
-//! Croatian, Serbian and Bosnian numerals in a sentence: the agreement of
-//! one and two with the noun, ordinals in the noun's case, dates, ranges and
-//! the nouns of the unit signs (prvo mjesto, na prvom mjestu, sedmog
-//! listopada, jedna kuća, dvije kuće, jedan euro, dva eura, pet stupnjeva
-//! Celzija, tisuću tristo sedamnaest).
-//!
-//! The three languages share the grammar; what each says in its own way is
-//! in its [`Dialect`].
+//! Croatian numerals in a sentence: the number words, the agreement of one
+//! and two with the noun, ordinals in the noun's case, dates, ranges and the
+//! nouns of the unit signs (prvo mjesto, na prvom mjestu, sedmog listopada,
+//! jedna kuća, dvije kuće, jedan euro, dva eura, pet stupnjeva Celzija,
+//! tisuću tristo sedamnaest).
 
-use crate::language::Language;
-use crate::text::numbers::NumberReader;
+use crate::text::numbers::cardinal::{Numerals, ScaleAgreement};
 use crate::text::numbers::scan::{
-    Link, Out, Text, Unit, UnitAt, is_letter_byte, is_word_byte, join_parts, last_digit, last_token, lowercase_first,
+    Link, Out, Text, Unit, UnitAt, is_letter_byte, is_word_byte, join_parts, last_digit, last_token, latin, latin_word,
     part_break, read_glued_minus, say, small_value, starts_clause, strip_zeros,
 };
+use crate::text::numbers::{Grammar, NumberReader};
 
-/// The words of one of the three languages.
-pub(crate) struct Dialect {
-    /// The nouns of %, €, $ and °.
-    pub(crate) units: [Unit; 4],
-    /// The scale of °C, in the genitive.
-    celsius: &'static str,
-    /// Two before a feminine noun.
-    two_feminine: &'static str,
-    /// Four in a compound: četverosobni, četvorosobni.
-    four_compound: &'static str,
-    /// minut is a masculine noun (s prvim minutom), not the feminine minuta.
-    masculine_minute: bool,
-}
-
-static CROATIAN: Dialect = Dialect {
-    units: [
-        Unit::counted("%", "posto", "posto", "posto", "posto"),
-        Unit::counted("€", "euro", "eura", "eura", "eura"),
-        Unit::counted("$", "dolar", "dolara", "dolara", "dolara"),
-        Unit::counted("°", "stupanj", "stupnja", "stupnjeva", "stupnja"),
+/// The Croatian number words: 1 takes the singular of a scale word (jedan
+/// milijun, tisuću), 2 to 4 its special plural (dva milijuna, dvije tisuće),
+/// 5 and above, 0 and 11 to 19 the genitive plural (pet tisuća, pet
+/// milijuna); one and two agree with the feminine scale words (dvije tisuće,
+/// dvadeset jedna tisuća, dvije milijarde). Croatian has tisuća, milijun,
+/// dvjesto.
+static NUMERALS: Numerals = Numerals {
+    digits: ["nula", "jedan", "dva", "tri", "četiri", "pet", "šest", "sedam", "osam", "devet"],
+    two_alone: "dva",
+    teens: [
+        "",
+        "jedanaest",
+        "dvanaest",
+        "trinaest",
+        "četrnaest",
+        "petnaest",
+        "šesnaest",
+        "sedamnaest",
+        "osamnaest",
+        "devetnaest",
     ],
-    celsius: " Celzija",
-    two_feminine: "dvije",
-    four_compound: "četvero",
-    masculine_minute: false,
+    tens: [
+        "",
+        "deset",
+        "dvadeset",
+        "trideset",
+        "četrdeset",
+        "pedeset",
+        "šezdeset",
+        "sedamdeset",
+        "osamdeset",
+        "devedeset",
+    ],
+    hundreds: ["", "sto", "dvjesto", "tristo", "četiristo", "petsto", "šesto", "sedamsto", "osamsto", "devetsto"],
+    // The accusative for 1000 itself, the nominative plural for 2-4, the
+    // genitive plural for 0 and 5-9
+    thousand: ["tisuću", "tisuće", "tisuće", "tisuća"],
+    million: ["lijun", "lijuna", "lijuna", "lijuna"],
+    milliard: ["lijarda", "lijarde", "lijarde", "lijardi"],
+    feminine_thousand: true,
+    ones_first: false,
+    scale_agreement: ScaleAgreement::OneAndTwo { one: "jedna", two: "dvije" },
 };
 
-static SERBIAN: Dialect = Dialect {
-    units: [
-        Unit::counted("%", "posto", "posto", "posto", "posto"),
-        Unit::counted("€", "evro", "evra", "evra", "evra"),
-        Unit::counted("$", "dolar", "dolara", "dolara", "dolara"),
-        Unit::counted("°", "stepen", "stepena", "stepeni", "stepena"),
-    ],
-    celsius: " Celzijusa",
-    two_feminine: "dve",
-    four_compound: "četvoro",
-    masculine_minute: true,
-};
-
-static BOSNIAN: Dialect = Dialect {
-    units: [
-        Unit::counted("%", "posto", "posto", "posto", "posto"),
-        Unit::counted("€", "euro", "eura", "eura", "eura"),
-        Unit::counted("$", "dolar", "dolara", "dolara", "dolara"),
-        Unit::counted("°", "stepen", "stepena", "stepeni", "stepena"),
-    ],
-    celsius: " Celzijusa",
-    two_feminine: "dvije",
-    four_compound: "četvoro",
-    masculine_minute: false,
-};
-
-pub(crate) fn dialect(language: Language) -> &'static Dialect {
-    match language {
-        Language::Croatian => &CROATIAN,
-        Language::Serbian => &SERBIAN,
-        _ => &BOSNIAN,
-    }
-}
-
-/// The Serbian Cyrillic letters, small and capital, in Latin script.
-const CYRILLIC: [(char, char, &str); 30] = [
-    ('а', 'А', "a"),
-    ('б', 'Б', "b"),
-    ('в', 'В', "v"),
-    ('г', 'Г', "g"),
-    ('д', 'Д', "d"),
-    ('ђ', 'Ђ', "đ"),
-    ('е', 'Е', "e"),
-    ('ж', 'Ж', "ž"),
-    ('з', 'З', "z"),
-    ('и', 'И', "i"),
-    ('ј', 'Ј', "j"),
-    ('к', 'К', "k"),
-    ('л', 'Л', "l"),
-    ('љ', 'Љ', "lj"),
-    ('м', 'М', "m"),
-    ('н', 'Н', "n"),
-    ('њ', 'Њ', "nj"),
-    ('о', 'О', "o"),
-    ('п', 'П', "p"),
-    ('р', 'Р', "r"),
-    ('с', 'С', "s"),
-    ('т', 'Т', "t"),
-    ('ћ', 'Ћ', "ć"),
-    ('у', 'У', "u"),
-    ('ф', 'Ф', "f"),
-    ('х', 'Х', "h"),
-    ('ц', 'Ц', "c"),
-    ('ч', 'Ч', "č"),
-    ('џ', 'Џ', "dž"),
-    ('ш', 'Ш', "š"),
+/// The nouns of %, €, $ and °.
+static UNITS: [Unit; 4] = [
+    Unit::counted("%", "posto", "posto", "posto", "posto"),
+    Unit::counted("€", "euro", "eura", "eura", "eura"),
+    Unit::counted("$", "dolar", "dolara", "dolara", "dolara"),
+    Unit::counted("°", "stupanj", "stupnja", "stupnjeva", "stupnja"),
 ];
 
-/// A word of the text in small Latin letters: Serbian Cyrillic transliterated
-/// (the converter writes Latin words, which the front end reads in either
-/// script), an initial capital lowered; and whether there was one.
-pub(crate) fn latin_word(word: &str) -> (String, bool) {
-    let mut out = String::with_capacity(word.len());
-    let mut capital = false;
-    for (k, c) in word.chars().enumerate() {
-        match CYRILLIC.iter().find(|&&(small, large, _)| c == small || c == large) {
-            Some(&(_, large, latin)) => {
-                capital |= k == 0 && c == large;
-                out += latin;
-            }
-            None => out.push(c),
-        }
-    }
-    let (out, lowered) = lowercase_first(&out);
-    (out, capital || lowered)
-}
+/// The scale of °C, in the genitive.
+const CELSIUS: &str = " Celzija";
 
-fn latin(word: &str) -> String {
-    latin_word(word).0
-}
+/// Two before a feminine noun.
+const TWO_FEMININE: &str = "dvije";
+
+/// Four in a compound: četverosobni.
+const FOUR_COMPOUND: &str = "četvero";
 
 // The prepositions by the case they govern
 #[rustfmt::skip]
@@ -300,7 +240,7 @@ fn feminine_ordinal_ending(word: &str, genitive: bool, instrumental: bool) -> &'
 
 /// The ending of an ordinal before the word `next`, after the word `prev`:
 /// "" keeps the cardinal.
-fn ordinal_ending(d: &Dialect, prev: &str, next: &str) -> &'static str {
+fn ordinal_ending(prev: &str, next: &str) -> &'static str {
     #[rustfmt::skip]
     const BEFORE_SUBJECT: &[&str] = &[
         "je", "su", "bio", "bila", "bilo", "bili", "bit", "biti", "nije", "nisu", "i", "ili", "pa", "te", "a",
@@ -320,7 +260,7 @@ fn ordinal_ending(d: &Dialect, prev: &str, next: &str) -> &'static str {
     let after_subject = prev.is_empty() || BEFORE_SUBJECT.contains(&prev);
     // godina alone can also be genitive plural (konac 80. godina).
     let years = next == "godina" && !after_subject;
-    if !years && !(d.masculine_minute && next.starts_with("minut")) {
+    if !years {
         let feminine = feminine_ordinal_ending(next, genitive, instrumental);
         if !feminine.is_empty() {
             return feminine;
@@ -357,22 +297,22 @@ fn ordinal_ending(d: &Dialect, prev: &str, next: &str) -> &'static str {
     }
 }
 
-/// A unit's sign at or after `pos` (spaces allowed), with the language's nouns.
-fn unit_at(d: &'static Dialect, t: Text, pos: usize) -> Option<UnitAt> {
-    t.unit_at(pos, &d.units, d.celsius)
+/// A unit's sign at or after `pos` (spaces allowed), with its noun.
+fn unit_at(t: Text, pos: usize) -> Option<UnitAt> {
+    t.unit_at(pos, &UNITS, CELSIUS)
 }
 
 /// The combining stem of a compound with a number (jednosobni, dvogodišnji,
-/// trogodišnja, četverosobni / četvorosobni, petodnevni, desetogodišnjica,
+/// trogodišnja, četverosobni, petodnevni, desetogodišnjica,
 /// dvadesetogodišnjak, stogodišnjica) from the cardinal's words.
-fn compound_stem(d: &Dialect, cardinal: &str) -> String {
+fn compound_stem(cardinal: &str) -> String {
     let token = last_token(cardinal);
     let last = &cardinal[token..];
     let stem = match last {
         "jedan" => "jedno".to_owned(),
         "dva" => "dvo".to_owned(),
         "tri" => "tro".to_owned(),
-        "četiri" => d.four_compound.to_owned(),
+        "četiri" => FOUR_COMPOUND.to_owned(),
         "sedam" => "sedmo".to_owned(),
         "osam" => "osmo".to_owned(),
         _ if last.ends_with("sto") || last.ends_with("sta") => last.to_owned(),
@@ -418,7 +358,7 @@ pub(crate) fn ordinal_before(r: &NumberReader, t: Text, start: usize, end: usize
     {
         return String::new();
     }
-    let ending = ordinal_ending(dialect(r.language()), &latin(&t.prev_word(start).word), &latin(next.word));
+    let ending = ordinal_ending(&latin(&t.prev_word(start).word), &latin(next.word));
     if ending.is_empty() { String::new() } else { ordinal(r, number, ending) }
 }
 
@@ -449,19 +389,19 @@ pub(crate) fn decimal(r: &NumberReader, whole: &str, fraction: &str) -> String {
 /// za jednu kunu; dvadeset jedna kuća, sto dvije kuće). Nothing counted keeps
 /// jedan, dva: alone, in a list, before a sign, after a label (stranica 2),
 /// glued to letters or a hyphen (T2, A-2), after a name (Pentium 2).
-pub(crate) fn agree(r: &NumberReader, t: Text, start: usize, end: usize, words: &mut String) {
+pub(crate) fn agree(t: Text, start: usize, end: usize, words: &mut String) {
     let token = last_token(words);
     let digit = match &words[token..] {
         "jedan" => 1,
         "dva" => 2,
         _ => return,
     };
-    if let Some(form) = agreeing_form(dialect(r.language()), t, start, end, digit) {
+    if let Some(form) = agreeing_form(t, start, end, digit) {
         say(words, token, form);
     }
 }
 
-fn agreeing_form(d: &Dialect, t: Text, start: usize, end: usize, digit: u8) -> Option<&'static str> {
+fn agreeing_form(t: Text, start: usize, end: usize, digit: u8) -> Option<&'static str> {
     if start > 0 && (is_letter_byte(t.at(start - 1)) || t.at(start - 1) == b'-') {
         return None;
     }
@@ -499,7 +439,7 @@ fn agreeing_form(d: &Dialect, t: Text, start: usize, end: usize, digit: u8) -> O
         return None; // jedan kg, dva h
     }
     if is_unit(next, FEMININE_UNITS) {
-        return Some(if digit == 1 { "jedna" } else { d.two_feminine }); // jedna min, dvije kn
+        return Some(if digit == 1 { "jedna" } else { TWO_FEMININE }); // jedna min, dvije kn
     }
     if next.len() < 3 || NOT_COUNTED.contains(&next) || ends(&["ti"]) {
         return None;
@@ -514,7 +454,7 @@ fn agreeing_form(d: &Dialect, t: Text, start: usize, end: usize, digit: u8) -> O
     if digit == 2 {
         // Feminine before -e and the feminine i-stems (dvije kuće, dvije
         // noći), dva otherwise (dva stola, dva sela, dva dana)
-        return (tail == b'e' || (tail == b'i' && feminine_i)).then_some(d.two_feminine);
+        return (tail == b'e' || (tail == b'i' && feminine_i)).then_some(TWO_FEMININE);
     }
     Some(match tail {
         b'a' if (genitive || instrumental) && !ends(&["ima"]) => "jednog", // do jednog sata, s jednog mjesta
@@ -577,7 +517,7 @@ fn dash_at(t: Text, pos: usize) -> bool {
     t.has(pos, "\u{2013}") || t.has(pos, "\u{2014}")
 }
 
-/// The Croatian, Serbian and Bosnian constructs at position `i` (a digit)
+/// The Croatian constructs at position `i` (a digit)
 /// that the shared loop does not know: a minus, a date in the case the
 /// sentence asks for, a time written with a period, a range, thousands with
 /// spaces or periods, a number compounded with a word (2-godišnji), a unit's
@@ -585,7 +525,6 @@ fn dash_at(t: Text, pos: usize) -> bool {
 /// or nothing to leave the number to the shared paths. `in_range`: the right
 /// side of a range, whose context the left side has already read.
 pub(crate) fn number_at(r: &NumberReader, t: Text, i: usize, out: &mut Out, in_range: bool) -> Option<usize> {
-    let d = dialect(r.language());
     let length = t.len();
     let end = t.digits_end(i);
     let digits = t.str(i, end);
@@ -733,7 +672,7 @@ pub(crate) fn number_at(r: &NumberReader, t: Text, i: usize, out: &mut Out, in_r
                     let noun = latin(noun_raw.word);
                     if noun_raw.lowercase && right_end - c <= 4 {
                         let after = right_end + 1;
-                        let ending = if is_month_genitive(&noun) { "og" } else { ordinal_ending(d, prev, &noun) };
+                        let ending = if is_month_genitive(&noun) { "og" } else { ordinal_ending(prev, &noun) };
                         let (left_words, right_words) = if ending.is_empty() {
                             (r.number_to_words(digits), r.number_to_words(right))
                         } else {
@@ -765,13 +704,13 @@ pub(crate) fn number_at(r: &NumberReader, t: Text, i: usize, out: &mut Out, in_r
                 return None;
             }
             let mut left_words = r.number_to_words(digits);
-            if let Some((unit, unit_end, scale)) = unit_at(d, t, right_end) {
+            if let Some((unit, unit_end, scale)) = unit_at(t, right_end) {
                 out.push_str(&(left_words + &join + &count(r, right, unit, scale)));
                 return Some(unit_end);
             }
             let mut right_words = r.number_to_words(right);
-            agree(r, t, i, right_end, &mut left_words);
-            agree(r, t, i, right_end, &mut right_words);
+            agree(t, i, right_end, &mut left_words);
+            agree(t, i, right_end, &mut right_words);
             out.push_str(&(left_words + &join + &right_words));
             return Some(right_end);
         }
@@ -845,15 +784,15 @@ pub(crate) fn number_at(r: &NumberReader, t: Text, i: usize, out: &mut Out, in_r
                     continue;
                 }
                 let words = decimal(r, &joined, t.str(pos + 1, fraction_end));
-                match unit_at(d, t, fraction_end) {
+                match unit_at(t, fraction_end) {
                     Some((unit, unit_end, scale)) => (format!("{words} {}{scale}", unit.genitive_singular), unit_end),
                     None => (words, fraction_end),
                 }
-            } else if let Some((unit, unit_end, scale)) = unit_at(d, t, pos) {
+            } else if let Some((unit, unit_end, scale)) = unit_at(t, pos) {
                 (count(r, &joined, unit, scale), unit_end)
             } else {
                 let mut words = r.number_to_words(&joined);
-                agree(r, t, i, pos, &mut words);
+                agree(t, i, pos, &mut words);
                 (words, pos)
             };
             out.push_str(&words);
@@ -879,7 +818,7 @@ pub(crate) fn number_at(r: &NumberReader, t: Text, i: usize, out: &mut Out, in_r
                 return Some(stop);
             }
             if word.len() >= 4 && !t.is_digit(stop) {
-                out.push_str(&compound_stem(d, &cardinal));
+                out.push_str(&compound_stem(&cardinal));
                 out.push_str(&word);
                 return Some(stop);
             }
@@ -896,7 +835,7 @@ pub(crate) fn number_at(r: &NumberReader, t: Text, i: usize, out: &mut Out, in_r
     if t.at(end) == b',' && t.is_separator_between_digits(end) {
         let fraction_end = t.digits_end(end + 1);
         if !t.is_separator_between_digits(fraction_end)
-            && let Some((unit, unit_end, scale)) = unit_at(d, t, fraction_end)
+            && let Some((unit, unit_end, scale)) = unit_at(t, fraction_end)
         {
             let words = decimal(r, digits, t.str(end + 1, fraction_end));
             out.push_str(&format!("{words} {}{scale}", unit.genitive_singular));
@@ -907,10 +846,60 @@ pub(crate) fn number_at(r: &NumberReader, t: Text, i: usize, out: &mut Out, in_r
     // A whole number with a unit's sign: 1 € jedan euro, 2 € dva eura, 5 °C
     // pet stupnjeva Celzija, 1 % jedan posto
     if !t.is_separator_between_digits(end)
-        && let Some((unit, unit_end, scale)) = unit_at(d, t, end)
+        && let Some((unit, unit_end, scale)) = unit_at(t, end)
     {
         out.push_str(&count(r, digits, unit, scale));
         return Some(unit_end);
     }
     None
+}
+
+/// How Croatian reads numbers, as the number converter asks.
+pub(crate) struct Numbers;
+
+impl Grammar for Numbers {
+    fn numerals(&self) -> &'static Numerals {
+        &NUMERALS
+    }
+
+    fn units(&self) -> &'static [Unit; 4] {
+        &UNITS
+    }
+
+    fn home_country(&self) -> &'static str {
+        "385"
+    }
+
+    fn decimal_comma(&self) -> &'static str {
+        " zarez "
+    }
+
+    fn number_at(&self, r: &NumberReader, t: Text, i: usize, out: &mut Out) -> Option<usize> {
+        number_at(r, t, i, out, false)
+    }
+
+    fn agree(&self, t: Text, start: usize, end: usize, words: &mut String) {
+        agree(t, start, end, words);
+    }
+
+    fn ordinal_before(&self, r: &NumberReader, t: Text, start: usize, end: usize, after: usize) -> String {
+        ordinal_before(r, t, start, end, after)
+    }
+
+    fn date_to_words(&self, r: &NumberReader, groups: &[&str; 3]) -> String {
+        date_to_words(r, groups, "og")
+    }
+
+    /// The period after a date's year is the ordinal's: 10.11.2026. godine.
+    fn date_takes_its_period(&self) -> bool {
+        true
+    }
+
+    fn currency_amount(&self, r: &NumberReader, _t: Text, _start: usize, whole: &str, unit: &Unit) -> String {
+        count(r, whole, unit, "")
+    }
+
+    fn decimal(&self, r: &NumberReader, whole: &str, fraction: &str) -> String {
+        decimal(r, whole, fraction)
+    }
 }

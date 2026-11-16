@@ -3,8 +3,7 @@
 use super::letters::chars;
 use super::notation::{LexEntry, for_each_form, parse_lex_entry};
 use crate::language::Language;
-use crate::languages::bcms::verbs::VerbRoot;
-use crate::languages::sl;
+use crate::languages::{self, sl};
 use std::sync::Arc;
 
 /// The user's accent lexicon.
@@ -74,7 +73,9 @@ pub(crate) struct WordEntry {
 
 #[derive(Clone, Debug)]
 pub(crate) struct VerbEntry {
-    pub root: VerbRoot,
+    /// The entry as written; each language that can use it reads it by its
+    /// own verb rules.
+    pub text: Vec<char>,
     pub languages: u8,
 }
 
@@ -163,14 +164,19 @@ impl UserLexicon {
                     lexicon.words.extend(forms);
                 }
             } else if !verb.is_empty() {
+                // A verb entry is good when a language it is for can use it;
+                // otherwise the first of them says what is wrong with it
                 let text = chars(&verb);
-                let whole = text.contains(&'=');
-                match VerbRoot::parse(&text, whole) {
-                    None if whole => report.reject(&verb, "expected st'e:m=classes (i a t u e n < p P)"),
-                    None => report.reject(&verb, "expected root:classes[:prefixes] with a long ije (i a t e)"),
-                    Some(_) if lexicon.verbs.len() >= Self::MAX_VERBS => report.reject(&verb, "too many verbs"),
-                    Some(root) => {
-                        lexicon.verbs.push(VerbEntry { root, languages });
+                let mut checks = Language::ALL
+                    .into_iter()
+                    .filter(|&language| languages == 0 || languages & language_bit(language) != 0)
+                    .map(|language| languages::rules(language).check_verb_entry(&text));
+                let first = checks.next().unwrap_or(Err("no language for the entry"));
+                match first.or_else(|why| if checks.any(|check| check.is_ok()) { Ok(()) } else { Err(why) }) {
+                    Err(why) => report.reject(&verb, why),
+                    Ok(()) if lexicon.verbs.len() >= Self::MAX_VERBS => report.reject(&verb, "too many verbs"),
+                    Ok(()) => {
+                        lexicon.verbs.push(VerbEntry { text, languages });
                         report.verbs += 1;
                     }
                 }

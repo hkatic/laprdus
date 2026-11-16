@@ -4,7 +4,6 @@
 
 use super::NumberReader;
 use super::scan::{Out, Text, is_word_byte};
-use crate::language::Language;
 
 /// ITU E.164: country codes are prefix-free, 1--3 digits; the international
 /// prefix is not part of the 15-digit limit. Code assignments and the regional
@@ -34,16 +33,6 @@ const COUNTRY_CODES: &[&str] = &[
 /// The length of the country code a number starts with, 0 for none.
 fn country_length(digits: &str) -> usize {
     (1..=3.min(digits.len().saturating_sub(1))).find(|&n| COUNTRY_CODES.contains(&&digits[..n])).unwrap_or(0)
-}
-
-/// The country code of a domestic number written in the language.
-fn home_country(language: Language) -> &'static str {
-    match language {
-        Language::Croatian => "385",
-        Language::Serbian => "381",
-        Language::Bosnian => "387",
-        Language::Slovenian => "386",
-    }
 }
 
 /// Known regional destination codes take precedence over length guesses for
@@ -253,7 +242,7 @@ pub(super) fn convert(r: &NumberReader, t: Text, i: usize, out: &mut Out, by_dig
         if !(8..=11).contains(&digits.len()) {
             return None;
         }
-        country = home_country(r.language());
+        country = r.grammar.home_country();
     }
 
     // Keep a written domestic/optional trunk zero with the area code. Never

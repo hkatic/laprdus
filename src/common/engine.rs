@@ -16,7 +16,7 @@ use crate::dictionary::pronunciation::{DictionaryEntry, PronunciationDictionary}
 use crate::dictionary::spelling::SpellingDictionary;
 use crate::formant::synthesizer::FormantSynthesizer;
 use crate::language::Language;
-use crate::languages::{self, sl};
+use crate::languages;
 use crate::params::{CONCAT_SPEED_MAX, NumberMode, PauseSettings, SpellingMode, VoiceParams, spelling_rate_factor};
 use crate::prosody::{item_break_pause_ms, minor_break_pause_ms};
 use crate::text::Punctuation;
@@ -424,9 +424,7 @@ impl Engine {
     /// may mark its clauses for that.
     fn segment(&self, text: &str) -> Vec<Clause> {
         let mut clauses = split_clauses(&text.chars().collect::<Vec<_>>());
-        if self.language == Language::Slovenian {
-            sl::marks::mark_clauses(&mut clauses);
-        }
+        self.frontend.mark_clauses(&mut clauses);
         clauses
     }
 

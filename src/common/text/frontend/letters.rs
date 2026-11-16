@@ -320,12 +320,7 @@ pub fn letter_name(letter: &[char], language: Language) -> Vec<char> {
 
 /// [`letter_name`] as the table has it.
 pub(crate) fn letter_name_in(letter: &[char], language: Language) -> &'static str {
-    use crate::languages::{bcms, sl};
-    match language {
-        Language::Slovenian => sl::words::letter_name(letter),
-        // Bosnian names the letters as Croatian does
-        _ => bcms::words::letter_name(letter, language == Language::Serbian),
-    }
+    crate::languages::rules(language).words().letter_name(letter)
 }
 
 /// True when the text, lowercased, is a letter's name in any of the languages.

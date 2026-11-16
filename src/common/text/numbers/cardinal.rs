@@ -1,149 +1,54 @@
 //! Cardinal numbers in words, up to centillions (10^303).
 //!
-//! Croatian, Serbian and Bosnian:
-//! - 1: singular (jedan, tisuću, milijun)
-//! - 2-4: special plural (dva, tisuće, milijuna)
-//! - 5+, 0, 11-19: genitive plural (pet, tisuća, milijuna)
-//! - one and two agree with feminine scale words (dvije tisuće, dve hiljade,
-//!   dvadeset jedna tisuća, dvije milijarde)
-//!
-//! Croatian has tisuća, milijun, dvjesto; Serbian hiljada, milion, dvesta;
-//! Bosnian hiljada, milion, dvjesto.
-//!
-//! Slovenian has its own system (Slovenski pravopis 2001, § 11 and § 536):
-//! nič, ena, dve, tri, štiri, pet, šest, sedem, osem, devet; enajst, dvajset;
-//! the ones before the tens as one word (enaindvajset, štiriinštirideset);
-//! dvesto, štiristo; the invariable tisoč (dva tisoč, pet tisoč, tristo en
-//! tisoč); milijon with the dual (dva milijona), nominative plural (trije
-//! milijoni, štirje milijoni) and genitive plural (pet milijonov,
-//! enaindvajset milijonov); milijarda, dve milijardi, tri milijarde, pet
-//! milijard.
+//! The words are the language's ([`Numerals`], from its folder); how they
+//! are put together is the same for all:
+//! - the groups of three digits, each with its scale word (thousand,
+//!   million, milliard ...)
+//! - the scale word in the form its count asks for: after 1, after 2,
+//!   after 3 and 4, and after the rest (5 and above, 0, 11-19)
+//! - the last word of a group agreeing with its scale word, by the
+//!   language's [`ScaleAgreement`]
+//! - the ones after the tens (dvadeset jedan) or before them as one word
+//!   (enaindvajset)
 
 use super::NumberReader;
 use super::scan::{last_digit, ones_alone, strip_zeros};
-use crate::language::Language;
 
 /// The number words of a language. The scale words are listed by what they
 /// count: one, two, three or four, and the rest (five and above, the teens,
 /// zero).
 pub(crate) struct Numerals {
     /// The word of a digit inside a longer number.
-    digits: [&'static str; 10],
+    pub(crate) digits: [&'static str; 10],
     /// The name of the digit 2 read by itself.
-    two_alone: &'static str,
-    /// Two before a feminine scale word: dvije tisuće, dve hiljade.
-    two_feminine: &'static str,
-    teens: [&'static str; 10],
-    tens: [&'static str; 10],
-    hundreds: [&'static str; 10],
-    thousand: [&'static str; 4],
+    pub(crate) two_alone: &'static str,
+    pub(crate) teens: [&'static str; 10],
+    pub(crate) tens: [&'static str; 10],
+    pub(crate) hundreds: [&'static str; 10],
+    pub(crate) thousand: [&'static str; 4],
     /// The endings of milijun, bilijun ... after "mi", "bi" ...
-    million: [&'static str; 4],
+    pub(crate) million: [&'static str; 4],
     /// The endings of milijarda, bilijarda ...
-    milliard: [&'static str; 4],
+    pub(crate) milliard: [&'static str; 4],
     /// tisuća and hiljada are feminine, tisoč masculine (en tisoč, dva tisoč).
-    feminine_thousand: bool,
+    pub(crate) feminine_thousand: bool,
     /// The ones stand before the tens, as one word: enaindvajset.
-    ones_first: bool,
+    pub(crate) ones_first: bool,
+    pub(crate) scale_agreement: ScaleAgreement,
 }
 
-const CROATIAN: Numerals = Numerals {
-    digits: ["nula", "jedan", "dva", "tri", "četiri", "pet", "šest", "sedam", "osam", "devet"],
-    two_alone: "dva",
-    two_feminine: "dvije",
-    teens: [
-        "",
-        "jedanaest",
-        "dvanaest",
-        "trinaest",
-        "četrnaest",
-        "petnaest",
-        "šesnaest",
-        "sedamnaest",
-        "osamnaest",
-        "devetnaest",
-    ],
-    tens: [
-        "",
-        "deset",
-        "dvadeset",
-        "trideset",
-        "četrdeset",
-        "pedeset",
-        "šezdeset",
-        "sedamdeset",
-        "osamdeset",
-        "devedeset",
-    ],
-    hundreds: ["", "sto", "dvjesto", "tristo", "četiristo", "petsto", "šesto", "sedamsto", "osamsto", "devetsto"],
-    // The accusative for 1000 itself, the nominative plural for 2-4, the
-    // genitive plural for 0 and 5-9
-    thousand: ["tisuću", "tisuće", "tisuće", "tisuća"],
-    million: ["lijun", "lijuna", "lijuna", "lijuna"],
-    milliard: ["lijarda", "lijarde", "lijarde", "lijardi"],
-    feminine_thousand: true,
-    ones_first: false,
-};
-
-const BOSNIAN: Numerals = Numerals {
-    thousand: ["hiljadu", "hiljade", "hiljade", "hiljada"],
-    million: ["lion", "liona", "liona", "liona"],
-    ..CROATIAN
-};
-
-const SERBIAN: Numerals = Numerals {
-    two_feminine: "dve",
-    hundreds: ["", "sto", "dvesta", "trista", "četiristo", "petsto", "šesto", "sedamsto", "osamsto", "devetsto"],
-    ..BOSNIAN
-};
-
-const SLOVENIAN: Numerals = Numerals {
-    // The word of a digit inside a longer number: dva tisoč, sto dva. The
-    // number 2 itself is dve. en/ena and dva/dve agree with a scale word, and
-    // the compounds have dva- (dvaindvajset)
-    digits: ["nič", "ena", "dva", "tri", "štiri", "pet", "šest", "sedem", "osem", "devet"],
-    // SP 2001, § 11 and SSKJ² give dve as the name of the number 2 (ena in
-    // ena je dve), also in a phone number (Jezikovna svetovalnica, "Uporaba
-    // dva in dve", 2014)
-    two_alone: "dve",
-    two_feminine: "dve",
-    teens: [
-        "",
-        "enajst",
-        "dvanajst",
-        "trinajst",
-        "štirinajst",
-        "petnajst",
-        "šestnajst",
-        "sedemnajst",
-        "osemnajst",
-        "devetnajst",
-    ],
-    tens: [
-        "",
-        "deset",
-        "dvajset",
-        "trideset",
-        "štirideset",
-        "petdeset",
-        "šestdeset",
-        "sedemdeset",
-        "osemdeset",
-        "devetdeset",
-    ],
-    hundreds: ["", "sto", "dvesto", "tristo", "štiristo", "petsto", "šeststo", "sedemsto", "osemsto", "devetsto"],
-    // tisoč does not change: tisoč, dva tisoč, pet tisoč
-    thousand: ["tisoč"; 4],
-    // en milijon, dva milijona (dual), trije/štirje milijoni, pet milijonov,
-    // and the genitive plural of every compound (enaindvajset milijonov)
-    million: ["lijon", "lijona", "lijoni", "lijonov"],
-    // ena milijarda, dve milijardi (dual), tri/štiri milijarde, pet milijard
-    milliard: ["lijarda", "lijardi", "lijarde", "lijard"],
-    feminine_thousand: false,
-    // The unit of a compound numeral: enaindvajset, dvaindvajset,
-    // triindvajset, štiriindvajset ... (Slovenski pravopis 2001, § 536)
-    ones_first: true,
-};
+/// How the last word of a group agrees with the scale word after it.
+pub(crate) enum ScaleAgreement {
+    /// One and two agree with a feminine scale word, except in the teens:
+    /// dvije tisuće, dve hiljade, dvadeset jedna tisuća, dvije milijarde.
+    OneAndTwo { one: &'static str, two: &'static str },
+    /// One to four agree with every scale word where they are a word of
+    /// their own, and a group whose ones are part of a compound takes the
+    /// genitive plural (enaindvajset milijonov). The forms of 1, 2, 3 and 4,
+    /// each before the thousand, before a word in -ilijon and before a word
+    /// in -ilijarda: en tisoč, dva milijona, trije milijoni, štiri milijarde.
+    UpToFour([[&'static str; 3]; 4]),
+}
 
 /// The scale words above the thousand: the prefix, and whether the word is
 /// one in -ilijarda (feminine) or in -ilijun.
@@ -173,15 +78,6 @@ fn index(digit: u8) -> Option<usize> {
 }
 
 impl Numerals {
-    pub(crate) fn of(language: Language) -> &'static Numerals {
-        match language {
-            Language::Croatian => &CROATIAN,
-            Language::Serbian => &SERBIAN,
-            Language::Bosnian => &BOSNIAN,
-            Language::Slovenian => &SLOVENIAN,
-        }
-    }
-
     fn word(table: &[&'static str; 10], digit: u8) -> &'static str {
         index(digit).map_or("", |digit| table[digit])
     }
@@ -262,7 +158,7 @@ impl NumberReader {
             return String::new();
         }
         let numerals = self.numerals;
-        let slovenian = self.language == Language::Slovenian;
+        let compounds = matches!(numerals.scale_agreement, ScaleAgreement::UpToFour(_));
         let number = strip_zeros(number);
         if number == "0" {
             return self.zero_word().to_owned();
@@ -285,7 +181,7 @@ impl NumberReader {
             let last = last_digit(group);
             // 11-19 have no "one" or "two" of their own: jedanaest tisuća
             let is_teen = group.as_bytes().iter().rev().nth(1) == Some(&b'1');
-            // In Slovenian the ones are a word of their own only after a zero
+            // Where the ones stand first they are a word of their own only after a zero
             // tens digit (sto en milijon, tisoč dva milijona); from 21 up they
             // are one word with the tens (enaindvajset), which takes the
             // genitive plural like every compound: enaindvajset milijonov.
@@ -301,30 +197,32 @@ impl NumberReader {
                 let mut words = numerals.group(group.as_bytes());
                 let counting = Numerals::word(&numerals.digits, last);
                 let feminine = groups_from_end > 0 && numerals.is_feminine_scale(groups_from_end - 1);
-                let agreeing = if slovenian {
+                let agreeing = match numerals.scale_agreement {
                     // One to four agree with the scale word: en milijon, dva
                     // milijona, trije milijoni, štirje milijoni; ena
                     // milijarda, dve milijardi, tri milijarde, štiri
                     // milijarde; en tisoč, dva tisoč, tri tisoč, štiri tisoč
-                    let plain = feminine || groups_from_end == 1;
-                    match last {
-                        _ if groups_from_end == 0 || !ones_alone => None,
-                        b'1' => Some(if feminine { "ena" } else { "en" }),
-                        b'2' => Some(if feminine { "dve" } else { "dva" }),
-                        b'3' => Some(if plain { "tri" } else { "trije" }),
-                        b'4' => Some(if plain { "štiri" } else { "štirje" }),
-                        _ => None,
+                    ScaleAgreement::UpToFour(forms) => {
+                        let scale = match groups_from_end {
+                            1 => 0,
+                            _ if feminine => 2,
+                            _ => 1,
+                        };
+                        match last {
+                            _ if groups_from_end == 0 || !ones_alone => None,
+                            b'1'..=b'4' => Some(forms[usize::from(last - b'1')][scale]),
+                            _ => None,
+                        }
                     }
-                } else {
                     // The numbers one and two agree with a feminine scale
                     // word: dvije tisuće, dve hiljade, dvadeset jedna tisuća,
                     // dvije milijarde
-                    match last {
+                    ScaleAgreement::OneAndTwo { one, two } => match last {
                         _ if !feminine || is_teen => None,
-                        b'1' => Some("jedna"),
-                        b'2' => Some(numerals.two_feminine),
+                        b'1' => Some(one),
+                        b'2' => Some(two),
                         _ => None,
-                    }
+                    },
                 };
                 if let Some(agreeing) = agreeing {
                     words.truncate(words.strip_suffix(counting).map_or(words.len(), str::len));
@@ -339,9 +237,10 @@ impl NumberReader {
                 // milijun", "dvadeset jedna milijarda". For thousands that is
                 // the nominative "tisuća", spelled like the genitive plural
                 // ('1' gives the accusative "tisuću" used for 1000 itself).
-                // Slovenian: enaindvajset milijonov, dvainštirideset milijard.
+                // Where the ones stand first: enaindvajset milijonov,
+                // dvainštirideset milijard.
                 let genitive_plural =
-                    is_teen || (!is_one && last == b'1' && groups_from_end == 1) || (slovenian && !ones_alone);
+                    is_teen || (!is_one && last == b'1' && groups_from_end == 1) || (compounds && !ones_alone);
                 let suffix = numerals.scale(groups_from_end - 1, if genitive_plural { b'0' } else { last });
                 if !suffix.is_empty() {
                     if !result.is_empty() {
