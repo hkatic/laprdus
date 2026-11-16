@@ -224,7 +224,7 @@ pub fn process(marked_text: &[char], punct: Punctuation, letter_sounds: bool, us
             if name.is_some() {
                 reading = name;
             } else if let Some(head) = head {
-                reading = Some(chars(head.pron));
+                reading = Some(head.pron);
             } else if let Some(in_clause) = in_clause {
                 reading = Some(chars(in_clause));
                 // The adjective láhko has the full accent of a content word,

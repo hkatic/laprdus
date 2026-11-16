@@ -123,7 +123,7 @@ impl UserLexicon {
                 if !marked.contains(&'|')
                     && let Err(why) = sl::lexicon::Lexicon::parse(&marked)
                 {
-                    report.reject(&word, &why);
+                    report.reject(&word, why);
                 } else if lexicon.slovenian.add(&marked) {
                     report.words += 1;
                 } else {

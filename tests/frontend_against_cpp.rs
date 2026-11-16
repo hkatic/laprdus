@@ -14,7 +14,7 @@ use std::fmt::Write as _;
 use std::path::PathBuf;
 
 /// The languages whose front end is ported.
-const LANGUAGES: [&str; 3] = ["hr", "sr", "bs"];
+const LANGUAGES: [&str; 4] = ["hr", "sr", "bs", "sl"];
 
 /// Fields 4 and 5 of a line of the reference: the clause, then every phone.
 fn describe(utt: &Utterance) -> (String, String) {
