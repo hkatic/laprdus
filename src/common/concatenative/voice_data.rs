@@ -318,7 +318,7 @@ mod tests {
     #[test]
     fn packs_the_recordings_as_the_voice_files_are() {
         let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-        for (recordings, voice) in [("phonemes/Josip", "Josip.bin"), ("phonemes/Vlado", "Vlado.bin")] {
+        for (recordings, voice) in [("data/hr/Josip", "Josip.bin"), ("data/sr/Vlado", "Vlado.bin")] {
             let Ok(expected) = std::fs::read(root.join("data/voices").join(voice)) else { continue };
             if !root.join(recordings).is_dir() {
                 continue;

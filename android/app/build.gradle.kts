@@ -6,6 +6,9 @@ plugins {
     alias(libs.plugins.baselineprofile)
 }
 
+// liblaprdus.so of every ABI, built from the Rust sources by cargo-ndk.
+val nativeLibraryDir = layout.buildDirectory.dir("rustJniLibs")
+
 android {
     namespace = "com.hrvojekatic.laprdus"
     compileSdk = 37
@@ -59,12 +62,8 @@ android {
         }
     }
 
-    externalNativeBuild {
-        cmake {
-            path = file("src/main/cpp/CMakeLists.txt")
-            version = "4.1.2"
-        }
-    }
+    // The native library is built by Cargo (buildNativeLibrary below).
+    sourceSets["main"].jniLibs.directories.add(nativeLibraryDir.get().asFile.path)
 }
 
 // The baseline profile (app start, Settings, the voice list) lives in
@@ -167,78 +166,52 @@ val cleanOldAssets = tasks.register<Delete>("cleanOldAssets") {
     )
 }
 
-// Generate voice data using SCons if not already present
-val generateVoiceData = tasks.register<Exec>("generateVoiceData") {
-    description = "Generate voice data files using SCons phoneme packer"
-    workingDir = file("../../")
+// The repository root: the Cargo workspace and the data folder.
+val repositoryDir = file("../..")
 
-    // Determine the correct SCons command based on OS. The phoneme packer is a
-    // host tool, so it has to be built for the host platform.
-    val osName = System.getProperty("os.name").lowercase()
-    when {
-        osName.contains("windows") ->
-            commandLine("cmd", "/c", "scons", "--platform=windows", "--arch=x64", "--build-config=release", "voice-data")
-        osName.contains("mac") || osName.contains("darwin") ->
-            commandLine("scons", "--platform=macos", "--build-config=release", "voice-data")
-        else ->
-            commandLine("scons", "--platform=linux", "--arch=x64", "--build-config=release", "voice-data")
-    }
-
-    // Only run if voice data files don't exist
-    val josipBin = file("../../data/voices/Josip.bin")
-    val vladoBin = file("../../data/voices/Vlado.bin")
-
-    onlyIf {
-        !josipBin.exists() || !vladoBin.exists()
-    }
-
-    // Don't fail the build if SCons isn't available - just warn
-    isIgnoreExitValue = true
-
-    doLast {
-        if (executionResult.get().exitValue != 0) {
-            logger.warn("WARNING: Failed to generate voice data with SCons.")
-            logger.warn("Voice data files may be missing. Install SCons with: pip install scons")
-        }
-    }
+fun Exec.cargo(vararg arguments: String) {
+    workingDir = repositoryDir
+    val cargo = if (System.getProperty("os.name").lowercase().contains("windows")) "cargo.exe" else "cargo"
+    commandLine(cargo, *arguments)
 }
 
-// Verify voice data exists before copying
-val verifyVoiceData = tasks.register("verifyVoiceData") {
-    description = "Verify that voice data files exist"
-    dependsOn(generateVoiceData)
+// Packs the recordings (data/<language>/<Voice>/*.wav) into data/voices and
+// stages the dictionaries in data/dictionary.
+val generateVoiceData = tasks.register<Exec>("generateVoiceData") {
+    description = "Pack the recorded voices and stage the dictionaries (cargo xtask data)"
+    cargo("run", "--quiet", "--release", "-p", "xtask", "--", "data")
+    inputs.dir(File(repositoryDir, "data/hr"))
+    inputs.dir(File(repositoryDir, "data/sr"))
+    inputs.dir(File(repositoryDir, "data/sl"))
+    outputs.dir(File(repositoryDir, "data/voices"))
+    outputs.dir(File(repositoryDir, "data/dictionary"))
+}
 
-    doLast {
-        val josipBin = file("../../data/voices/Josip.bin")
-        val vladoBin = file("../../data/voices/Vlado.bin")
-
-        if (!josipBin.exists() || !vladoBin.exists()) {
-            throw GradleException(
-                """
-                |
-                |ERROR: Voice data files not found in data/voices/
-                |
-                |The Android build requires voice data files (Josip.bin, Vlado.bin).
-                |
-                |To generate them, run one of these commands from the project root:
-                |
-                |  Windows:  scons --platform=windows --arch=x64 --build-config=release voice-data
-                |  Linux:    scons --platform=linux --arch=x64 --build-config=release voice-data
-                |  macOS:    scons --platform=macos --build-config=release voice-data
-                |
-                |Or use the master build script:
-                |  ./scripts/build-all.sh android
-                |
-                """.trimMargin()
-            )
-        }
-        logger.lifecycle("Voice data files verified: Josip.bin, Vlado.bin")
-    }
+// Needs the Rust toolchain with the four Android targets and cargo-ndk:
+//   rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android i686-linux-android
+//   cargo install cargo-ndk
+// The library is optimized in debug builds of the app too: an unoptimized
+// synthesizer is too slow for a screen reader, and Rust keeps its bounds
+// checks in release builds.
+val buildNativeLibrary = tasks.register<Exec>("buildNativeLibrary") {
+    description = "Build liblaprdus.so for every ABI (cargo ndk)"
+    val ndk = androidComponents.sdkComponents.ndkDirectory
+    environment("ANDROID_NDK_HOME", ndk.get().asFile.path)
+    environment("ANDROID_NDK_ROOT", ndk.get().asFile.path)
+    cargo(
+        "ndk", "-t", "arm64-v8a", "-t", "armeabi-v7a", "-t", "x86_64", "-t", "x86",
+        "--platform", "24", "-o", nativeLibraryDir.get().asFile.path,
+        "build", "--release", "-p", "laprdus-android"
+    )
+    inputs.dir(File(repositoryDir, "src/common"))
+    inputs.dir(File(repositoryDir, "src/platform/android/src"))
+    inputs.files(File(repositoryDir, "Cargo.toml"), File(repositoryDir, "Cargo.lock"))
+    outputs.dir(nativeLibraryDir)
 }
 
 val copyVoiceData = tasks.register<Copy>("copyVoiceData") {
     description = "Copy voice data files to assets/voices subdirectory"
-    dependsOn(cleanOldAssets, verifyVoiceData)
+    dependsOn(cleanOldAssets, generateVoiceData)
     from("../../data/voices") {
         include("*.bin")
     }
@@ -247,7 +220,7 @@ val copyVoiceData = tasks.register<Copy>("copyVoiceData") {
 
 val copyDictionaries = tasks.register<Copy>("copyDictionaries") {
     description = "Copy dictionary files to assets/dictionaries subdirectory"
-    dependsOn(cleanOldAssets)
+    dependsOn(cleanOldAssets, generateVoiceData)
     from("../../data/dictionary") {
         include("*.json")
     }
@@ -256,5 +229,5 @@ val copyDictionaries = tasks.register<Copy>("copyDictionaries") {
 
 // Ensure voice data and dictionaries are copied before assets are merged
 tasks.named("preBuild") {
-    dependsOn(copyVoiceData, copyDictionaries)
+    dependsOn(copyVoiceData, copyDictionaries, buildNativeLibrary)
 }

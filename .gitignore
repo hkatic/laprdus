@@ -94,3 +94,6 @@ tests/nvda/_appdata/
 
 # Rust
 /target/
+
+# Staged by `cargo xtask data` from data/<language>/ for the installers
+data/dictionary/
