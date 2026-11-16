@@ -160,10 +160,10 @@ os.makedirs(synthDriverDir, exist_ok=True)
 os.makedirs(voicesDir, exist_ok=True)
 os.makedirs(dictsDir, exist_ok=True)
 
-# Copy DLLs from build directory (automatically built by main SConstruct)
+# Copy the DLLs staged by `cargo xtask windows`
 dllFiles = [
-    ("../build/windows-x64-release/laprd64.dll", "laprd64.dll"),
-    ("../build/windows-x86-release/laprd32.dll", "laprd32.dll"),
+    ("../dist/windows-x64/laprd64.dll", "laprd64.dll"),
+    ("../dist/windows-x86/laprd32.dll", "laprd32.dll"),
 ]
 for srcFile, destFile in dllFiles:
     srcPath = Path(srcFile)
@@ -175,14 +175,13 @@ for srcFile, destFile in dllFiles:
         # Check if DLL already exists in addon directory
         existingDll = synthDriverDir / destFile
         if not existingDll.exists():
-            print(f"Warning: {srcFile} not found. Build SAPI5 DLLs first with:")
-            print(f"  scons --platform=windows --arch=x64 --build-config=release sapi5")
-            print(f"  scons --platform=windows --arch=x86 --build-config=release sapi5")
+            print(f"Warning: {srcFile} not found. Build the Windows programs first with:")
+            print(f"  cargo xtask windows")
 
 # Copy GUI executables from build directory
 guiFiles = [
-    ("../build/windows-x64-release/laprdgui.exe", "laprdgui64.exe"),
-    ("../build/windows-x86-release/laprdgui.exe", "laprdgui32.exe"),
+    ("../dist/windows-x64/laprdgui.exe", "laprdgui64.exe"),
+    ("../dist/windows-x86/laprdgui.exe", "laprdgui32.exe"),
 ]
 for srcFile, destFile in guiFiles:
     srcPath = Path(srcFile)
@@ -194,9 +193,8 @@ for srcFile, destFile in guiFiles:
         # Check if GUI already exists in addon directory
         existingGui = synthDriverDir / destFile
         if not existingGui.exists():
-            print(f"Warning: {srcFile} not found. Build config GUI first with:")
-            print(f"  scons --platform=windows --arch=x64 --build-config=release config")
-            print(f"  scons --platform=windows --arch=x86 --build-config=release config")
+            print(f"Warning: {srcFile} not found. Build the Windows programs first with:")
+            print(f"  cargo xtask windows")
 
 # Copy voice data files to voices subdirectory
 voiceFiles = ["Josip.bin", "Vlado.bin"]
@@ -207,8 +205,8 @@ for voiceFile in voiceFiles:
         voiceCopy = env.Command(str(destPath), str(srcPath), Copy("$TARGET", "$SOURCE"))
         env.Depends(addon, voiceCopy)
     else:
-        print(f"Warning: {srcPath} not found. Build voice data first with:")
-        print(f"  scons --platform=windows --arch=x64 --build-config=release voice-data")
+        print(f"Warning: {srcPath} not found. Pack the voice data first with:")
+        print(f"  cargo xtask data")
 
 # Copy dictionary files to dictionaries subdirectory
 dictFiles = [

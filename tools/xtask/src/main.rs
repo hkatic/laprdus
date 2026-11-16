@@ -11,6 +11,12 @@
 //!   each other language that has emoji names of its own.
 //!
 //! Both folders are build products and are not checked in.
+//!
+//! `windows` builds the Windows programs for x64 and x86 and stages them
+//! under the names the installer and the NVDA add-on take them by:
+//! `dist/windows-x64/` with `laprd64.dll` (the SAPI5 driver, which also
+//! exports the C API), `laprdus.exe` and `laprdgui.exe`, and
+//! `dist/windows-x86/` with `laprd32.dll` and the same two programs.
 
 use laprdus::concatenative::voice_data::pack;
 use laprdus::language::Language;
@@ -87,6 +93,36 @@ fn data(key: &[u8]) -> Outcome {
     Ok(())
 }
 
+/// Packages built for Windows, with the file Cargo writes and its staged name
+/// (`{bits}` is 64 or 32).
+const WINDOWS: [(&str, &str, &str); 3] = [
+    ("laprdus-sapi5", "laprdus_sapi5.dll", "laprd{bits}.dll"),
+    ("laprdus-cli", "laprdus.exe", "laprdus.exe"),
+    ("laprdus-configurator", "laprdgui.exe", "laprdgui.exe"),
+];
+
+fn windows() -> Outcome {
+    let root = root();
+    for (triple, folder, bits) in
+        [("x86_64-pc-windows-msvc", "windows-x64", "64"), ("i686-pc-windows-msvc", "windows-x86", "32")]
+    {
+        let mut cargo = std::process::Command::new(env::var("CARGO").unwrap_or_else(|_| "cargo".into()));
+        cargo.current_dir(&root).args(["build", "--release", "--target", triple]);
+        cargo.args(WINDOWS.iter().flat_map(|(package, ..)| ["-p", package]));
+        if !cargo.status()?.success() {
+            return Err(format!("the build for {triple} failed").into());
+        }
+        let staged = root.join("dist").join(folder);
+        fs::create_dir_all(&staged)?;
+        for (_, built, name) in WINDOWS {
+            let name = name.replace("{bits}", bits);
+            fs::copy(root.join("target").join(triple).join("release").join(built), staged.join(&name))?;
+            println!("dist/{folder}/{name}");
+        }
+    }
+    Ok(())
+}
+
 fn main() -> Outcome {
     let arguments: Vec<String> = env::args().skip(1).collect();
     let key = match arguments.iter().position(|argument| argument == "--key") {
@@ -95,6 +131,7 @@ fn main() -> Outcome {
     };
     match arguments.first().map(String::as_str) {
         Some("data" | "voice-data") => data(&key),
+        Some("windows") => windows(),
         _ => {
             eprintln!(
                 "usage: cargo xtask data [--key HEX]\n\n  data   pack the recordings and stage the dictionaries (data/voices, data/dictionary)"

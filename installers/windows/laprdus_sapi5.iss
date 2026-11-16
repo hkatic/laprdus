@@ -91,28 +91,25 @@ slovenian.LaprdusRequiresWindows7=Laprdus zahteva Windows 7 ali novejši.
 ; DLLs - both architectures in same directory
 ; ============================================================================
 ; 32-bit DLL - always installed (for 32-bit apps like NVDA)
-Source: "..\..\build\windows-x86-release\laprd32.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\dist\windows-x86\laprd32.dll"; DestDir: "{app}"; Flags: ignoreversion
 ; 64-bit DLL - only on 64-bit Windows
-Source: "..\..\build\windows-x64-release\laprd64.dll"; DestDir: "{app}"; Flags: ignoreversion; Check: Is64BitInstallMode
+Source: "..\..\dist\windows-x64\laprd64.dll"; DestDir: "{app}"; Flags: ignoreversion; Check: Is64BitInstallMode
 
 ; ============================================================================
-; CLI executable
-; - 64-bit: statically linked (no extra DLL needed)
-; - 32-bit: dynamically linked (requires laprdus.dll to avoid Defender false positive)
+; CLI executable (self-contained in both architectures)
 ; ============================================================================
-; 64-bit CLI - statically linked
-Source: "..\..\build\windows-x64-release\laprdus.exe"; DestDir: "{app}"; Flags: ignoreversion; Check: Is64BitInstallMode
-; 32-bit CLI - dynamically linked (needs laprdus.dll)
-Source: "..\..\build\windows-x86-release\laprdus.exe"; DestDir: "{app}"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "..\..\build\windows-x86-release\laprdus.dll"; DestDir: "{app}"; Flags: ignoreversion; Check: not Is64BitInstallMode
+; 64-bit CLI
+Source: "..\..\dist\windows-x64\laprdus.exe"; DestDir: "{app}"; Flags: ignoreversion; Check: Is64BitInstallMode
+; 32-bit CLI
+Source: "..\..\dist\windows-x86\laprdus.exe"; DestDir: "{app}"; Flags: ignoreversion; Check: not Is64BitInstallMode
 
 ; ============================================================================
 ; Configuration GUI
 ; ============================================================================
 ; 64-bit config GUI
-Source: "..\..\build\windows-x64-release\laprdgui.exe"; DestDir: "{app}"; Flags: ignoreversion; Check: Is64BitInstallMode
+Source: "..\..\dist\windows-x64\laprdgui.exe"; DestDir: "{app}"; Flags: ignoreversion; Check: Is64BitInstallMode
 ; 32-bit config GUI
-Source: "..\..\build\windows-x86-release\laprdgui.exe"; DestDir: "{app}"; Flags: ignoreversion; Check: not Is64BitInstallMode
+Source: "..\..\dist\windows-x86\laprdgui.exe"; DestDir: "{app}"; Flags: ignoreversion; Check: not Is64BitInstallMode
 
 ; ============================================================================
 ; Voice data - in separate voices subdirectory
