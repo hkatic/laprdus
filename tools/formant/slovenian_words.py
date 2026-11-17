@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Generate src/formant/formant_slovenian.inc, the Slovenian pronunciation
-lexicon of the formant voices, from the Sloleks morphological lexicon.
+"""Generate the tables of the Slovenian front end,
+src/common/languages/sl/tables/*.txt: the pronunciation lexicon and the word
+lists its rules of context read, from the Sloleks morphological lexicon.
 
 Source: Sloleks 3.1 (Čibej, Gantar, Dobrovoljc, Krek, Holozan, Erjavec,
 Romih, Arhar Holdt, Krsnik, Robnik-Šikonja; CJVT, University of Ljubljana;
@@ -15,20 +16,27 @@ Krsnik 2017). The IPA comes from an automatic grapheme-to-phoneme system
 and is used here only for what the accented form does not show: which e is
 a schwa and which l is [w].
 
-Usage (the table in the repository is made with these values):
+Usage (the tables in the repository are made with these values):
     python3 tools/formant/slovenian_words.py extract SLOLEKS_DIR forms.tsv 0
     python3 tools/formant/slovenian_words.py generate forms.tsv \\
-        src/formant/formant_slovenian.inc --manual-min 0 --auto-min 100 --form-min 1
+        --manual-min 0 --auto-min 100 --form-min 1 [--names-report FILE]
 
 `extract` streams the XML once into a TSV of word forms (13 GB of XML,
 about four minutes; the last argument is the lowest lemma frequency kept);
-`generate` writes the table, reading HAND_ENTRIES from
-src/formant/formant_slovenian.cpp of this repository so that every form is
-checked as the engine will look it up. Entries are in the notation of
-slovenian::Lexicon (formant_slovenian.hpp): the accented letters of the
-dictionaries, ə for the schwa written e, w for an l pronounced [w]; a stem
-covers its forms whose ending the rules of unstressed endings read
-correctly. The tables are front-coded (see generate()).
+`generate` writes the twelve tables into src/common/languages/sl/tables (or
+into the folder named after forms.tsv), reading HAND_ENTRIES from
+src/common/languages/sl/lexicon.rs of this repository so that every form is
+checked as the engine will look it up (lexicon_reading() of
+sl/phonemize.rs, Lexicon::find_exact() and find_stem() of sl/lexicon.rs:
+the Reader below does the same; change them together), and the lists
+slovenian_places.tsv, slovenian_persons.tsv, slovenian_given_names.tsv,
+slovenian_final_w.tsv, slovenian_commands.tsv and slovenian_food.tsv next
+to this script. Entries are in the notation of the Slovenian lexicon (the
+header of sl/lexicon.rs): the accented letters of the dictionaries, ə for
+the schwa written e, w for an l pronounced [w]; a stem covers its forms
+whose ending the rules of unstressed endings read correctly. The formats of
+the files are those of tools/formant/slovenian_tables.py, which writes
+them.
 """
 import glob
 import os
@@ -37,6 +45,9 @@ import sys
 import unicodedata
 import xml.etree.ElementTree as ET
 from collections import defaultdict
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import slovenian_tables
 
 # ---------------------------------------------------------------------------
 # extract
@@ -457,8 +468,7 @@ def compress(lemma_forms):
 # Duha" are bogá, duhá, not the names Bógo and Dúh)
 COMMON_CAPITALIZED = {'bog', 'duh', 'gospod', 'oče', 'sin', 'mati', 'devica', 'stvarnik'}
 
-MAX_ENDING = 5      # Lexicon::MAX_ENDING
-BLOCK = 16          # entries per front-coded block (formant_slovenian.cpp)
+MAX_ENDING = 5      # Lexicon::MAX_ENDING (sl/lexicon.rs)
 
 # Readings the dictionaries give otherwise than Sloleks (SSKJ² and
 # Slovenski pravopis 2001 on Fran.si), per lemma: a spelling's notation for
@@ -571,7 +581,7 @@ def norm(note):
 def loses_final_w(got, note):
     """A form whose transcription ends in [w] while the lookup gives a notation
     l after a stress on the last vowel of a word of two or more syllables,
-    which finish_word() reads as [l], as in the loanwords (hotél, kanál): the
+    which finish_word() of sl/phonemize.rs reads as [l], as in the loanwords (hotél, kanál): the
     stem of the participle's other forms, sledíl* of sledíla, reads sledil so.
     The form must be listed, with its w. norm() would hide the difference."""
     if not note.endswith('w') or not got.endswith('l') or len(got) < 2:
@@ -587,14 +597,16 @@ def loses_final_w(got, note):
     return stressed and nuclei >= 2
 
 
-def hand_entries(cpp_path):
-    """The hand-written entries of formant_slovenian.cpp (HAND_ENTRIES), as
-    Lexicon::add reads them: (exact, stems), spelling -> notation."""
-    src = open(cpp_path, encoding='utf-8').read()
-    body = src[src.index('const char* const HAND_ENTRIES[] = {'):]
-    body = re.sub(r'//[^\n]*', '', body[:body.index('\n};')])
+def hand_entries(source_path):
+    """The hand-written entries of sl/lexicon.rs (HAND_ENTRIES), as
+    Lexicon::add() reads them: (exact, stems), spelling -> notation."""
+    src = open(source_path, encoding='utf-8').read()
+    body = src[src.index('const HAND_ENTRIES: &[&str] = &['):]
+    body = re.sub(r'//[^\n]*', '', body[:body.index('\n];')])
+    if '\\' in body:
+        sys.exit('HAND_ENTRIES: an escape in a string; this script reads the strings as they are written')
     exact, stems = {}, {}
-    for entry in re.findall(r'u8"([^"]*)"', body):
+    for entry in re.findall(r'"([^"]*)"', body):
         entry = unicodedata.normalize('NFC', entry)
         if '|' in entry:
             parts = entry.split('|')
@@ -618,7 +630,7 @@ def hand_entries(cpp_path):
 # Petroviča, Petrovićem, Petrovićeva. The front end stresses them on the
 # syllable before the suffix (Pétrović, Stojánović, Milóšević: the first
 # syllable when there are three), whatever stem of the lexicon they begin
-# with: formant_slovenian.cpp, vic_surname(), mirrors this.
+# with: vic_surname() of sl/phonemize.rs mirrors this.
 VIC_SUFFIXES = ('ović', 'ovič', 'ovic', 'ević', 'evič', 'evic')
 VIC_ENDINGS = sorted(('', 'a', 'u', 'em', 'om', 'i', 'e', 'ev', 'ih', 'ema', 'ama', 'eva', 'evo',
                       'evi', 'eve', 'evega', 'evemu', 'evem', 'evih', 'evim', 'evimi'),
@@ -790,7 +802,8 @@ def read_places(paths):
 # The endings of the declension of nouns and adjectives and of the
 # possessive adjectives of names:
 # a capitalized word inside a clause takes a stem of the lexicon only with
-# one of them (formant_slovenian.cpp, name_base(), the same list)
+# one of them (NAME_ENDINGS and declension_ending() of sl/phonemize.rs, the
+# same list)
 NAME_ENDINGS = {'evimi', 'ovimi', 'inimi', 'evega', 'ovega', 'inega', 'evemu', 'ovemu', 'inemu',
                 'evem', 'ovem', 'inem', 'evih', 'ovih', 'inih', 'evim', 'ovim', 'inim',
                 'eva', 'evo', 'evi', 'eve', 'ova', 'ovo', 'ovi', 'ove', 'ina', 'ino', 'ini', 'ine',
@@ -803,7 +816,7 @@ LONG_CLOSE = {'a': 'á', 'e': 'é', 'i': 'í', 'o': 'ó', 'u': 'ú'}
 
 
 def l_suffix(stem_note, ending):
-    """stress_derived_l_suffix() of formant_slovenian.cpp: a stem ending in
+    """stress_derived_l_suffix() of sl/phonemize.rs: a stem ending in
     a vowel before -lc, -lk, -ln, -ls, -lt (bralec, napajalnik) carries the
     stress on that vowel, long (and close), wherever its own was; before
     -lišč on the i (gledalíšče). Returns the stem's notation and the
@@ -834,10 +847,17 @@ def declension_ending(ending):
 
 
 class Reader:
-    """Lexicon::find_exact and find_stem of formant_slovenian.cpp: the hand
-    entries, then the table; for stems the longest one the word starts
-    with, the hand's first at each length, followed by an ending of up to
-    five letters read by the rules of unstressed endings."""
+    """The built-in lexicon as lexicon_reading() of sl/phonemize.rs looks a
+    word up, through Lexicon::find_exact() and find_stem() of sl/lexicon.rs:
+    the hand entries, then the table; for stems the longest one the word
+    starts with, the hand's first at each length, followed by an ending of
+    up to five letters read by the rules of unstressed endings. Simpler
+    than the engine in three places, each of which only lists a form whole
+    that the engine would have read anyway: a word in -ović takes no stem
+    here whatever its letters (the engine: only a capitalized word or one
+    with ć or đ), a stem that ends in a schwa is not restressed before -lc,
+    -lnik (l_suffix() below), and a compound numeral is not read from its
+    parts (split_compound_numeral())."""
     def __init__(self, hand_exact, hand_stems, exact, stems):
         self.hand_exact = hand_exact
         self.hand_stems = hand_stems
@@ -1061,9 +1081,9 @@ def build(forms_path, manual_min, auto_min, form_min):
 
 def definite_adjectives(forms_path, min_frequency=10):
     """The masculine definite adjectives in -i (msd P..meid: zaprti, odprti,
-    najboljši) for the table SLOVENIAN_DEFINITE_ADJECTIVES, which tells a noun
+    najboljši) for the table definite_adjectives.txt, which tells a noun
     after them from a verb or a pronoun of the same spelling (zaprti meni). Only
-    those is_adjective_ending() in formant_slovenian.cpp misses (-ni, -ski, -ški,
+    those is_adjective_ending() in sl/readings.rs misses (-ni, -ski, -ški,
     -čki, -nji, -oči, -eči), and not where another lemma's verb form is as
     frequent: pravi, the present of praviti (pravi meni), or an infinitive."""
     adjective = defaultdict(int)
@@ -1090,15 +1110,16 @@ def definite_adjectives(forms_path, min_frequency=10):
 
 
 def noun_gender_tables(forms_path):
-    """Two tables for the agreement of the numerals (croatian_numbers.cpp),
-    which reads a noun's gender and case off its ending and needs help where
-    the ending is shared. SLOVENIAN_NEUTER_O: the neuter nouns' nominative
+    """Two tables for the agreement of the numerals (sl/numerals.rs, through
+    sl/nouns.rs), which reads a noun's gender and case off its ending and
+    needs help where the ending is shared. neuter_o.txt: the neuter nouns'
+    nominative
     and accusative singular in -o (mesto, leto, nadstropje is -e), so that
     "3. nagrado" is the feminine accusative tretjo nagrado (a listener's
     report of 2026-11-03) and "3. mesto" stays tretje mesto; a spelling that
     is a feminine accusative or instrumental more often (kola, of kolo) is
     left out. The feminine -o is 3.6 times the commoner in Gigafida, so it is
-    the default and the neuter the table. SLOVENIAN_NOUN_A: the words in -a
+    the default and the neuter the table. noun_a.txt: the words in -a
     after 1 that are not a feminine nominative (ena miza): 1 a masculine
     noun's animate accusative or a masculine or neuter noun's genitive
     singular (otroka, brata, leta: videl sem enega otroka, the listener's
@@ -1162,7 +1183,7 @@ def noun_gender_tables(forms_path):
 def command_imperatives(forms_path, lemmas, reader):
     """The imperatives of the verbs software commands the user with
     (slovenian_commands.tsv) whose accent is not the one the lexicon gives
-    their spelling, for the table SLOVENIAN_HEAD_IMPERATIVES: the second
+    their spelling, for the table head_imperatives.txt: the second
     person singular and plural (JOS Gg?vde, Gg?vdm) of Sloleks, the first
     accentuation, without CORRECTIONS (posodôbi, the dictionaries', where
     the present is posodobí at a listener's wish). A verb of this class
@@ -1206,8 +1227,8 @@ def command_imperatives(forms_path, lemmas, reader):
 
 def food_forms(forms_path, lemmas):
     """Every Sloleks form of the food nouns of slovenian_food.tsv with its
-    cases, for the table SLOVENIAN_FOOD that je_reading() in
-    formant_slovenian.cpp reads: a food noun after je makes it jé "eats"
+    cases, for the table food.txt that je_reading() in sl/clause.rs
+    reads: a food noun after je makes it jé "eats"
     (jésti jém, SSKJ²), not the auxiliary je "is". The cases are a bitmask, 1
     nominative, 2 accusative, 4 genitive, over the singular, dual and plural
     and over every lemma spelled so: a form that is the accusative alone
@@ -1242,7 +1263,7 @@ def food_forms(forms_path, lemmas):
 
 def final_l_forms(truth, names, marked):
     """The spellings read with a final [l] although the rule of finish_word()
-    would say [w], for the table SLOVENIAN_FINAL_L: a word of one syllable, or
+    (sl/phonemize.rs) would say [w], for the table final_l.txt: a word of one syllable, or
     without the stress on its last syllable, or with a schwa before the l, looks
     like a participle. Sloleks's transcription says [l], which it also says of
     words the dictionaries mark [-u̯] (mísel, tôpel, vesél): those lemmas, from
@@ -1289,9 +1310,11 @@ def read_word_list(path):
     return sorted(names, key=lambda k: [ord(c) for c in k])
 
 
-def generate(forms_path, out_path, manual_min=50, auto_min=2000, form_min=3, cpp_path=None,
+def generate(forms_path, out_dir, manual_min=50, auto_min=2000, form_min=3, hand_path=None,
              places_path=None, names_report=None, given_names_path=None, final_w_path=None,
              commands_path=None, food_path=None):
+    """Writes the tables into out_dir. hand_path: the source with HAND_ENTRIES
+    (sl/lexicon.rs)."""
     lemma_count, truth, stems, verb_noun, names = build(forms_path, manual_min, auto_min, form_min)
 
     # Every form must read as it should. The stem of one word catches the
@@ -1300,12 +1323,12 @@ def generate(forms_path, out_path, manual_min=50, auto_min=2000, form_min=3, cpp
     # hand-written stem the words derived from it: where the lookup gives a
     # wrong reading or none, the form is listed. A hand-written whole form
     # is the hand's decision and stays.
-    hand_exact, hand_stems = hand_entries(cpp_path) if cpp_path else ({}, {})
+    hand_exact, hand_stems = hand_entries(hand_path) if hand_path else ({}, {})
     exact = {}
     reader = Reader(hand_exact, hand_stems, exact, stems)
     for orth, note in truth.items():
         # a word with ć or đ takes a stem only with an ending of the
-        # declension, as a name does (formant_slovenian.cpp, has_name_letter())
+        # declension, as a name does (has_name_letter() of sl/phonemize.rs)
         got, hand = reader.read(orth, name='ć' in orth or 'đ' in orth)
         if got is None or norm(got) != norm(note) or (not hand and loses_final_w(got, note)):
             if not (hand and orth in hand_exact):
@@ -1401,167 +1424,89 @@ def generate(forms_path, out_path, manual_min=50, auto_min=2000, form_min=3, cpp
                         where, orth, table[orth], got, pw, common_w.get(orth, 0),
                         '\tSP' if orth in places else ''))
 
-    def front_coded(table):
-        """Blocks of BLOCK entries in key order: the first entry whole, each
-        later one as a byte 1 + n (an octal escape) for the n leading bytes
-        it shares with the entry before, then the bytes that differ. The
-        entries hold no byte below 0x61, so the next byte of 1 to 64 ends
-        an entry."""
-        keys = sorted(table, key=lambda k: [ord(c) for c in k])
-        blocks = []
-        for b in range(0, len(keys), BLOCK):
-            parts = []
-            prev = ''
-            for i, key in enumerate(keys[b:b + BLOCK]):
-                note = unicodedata.normalize('NFC', table[key])
-                data = note.encode('utf-8')
-                assert all(c >= 0x61 for c in data), note
-                if i == 0:
-                    parts.append(note)
-                else:
-                    shared = 0      # whole characters, so the rest stays UTF-8
-                    while shared < min(len(note), len(prev)) and note[shared] == prev[shared]:
-                        shared += 1
-                    count = len(note[:shared].encode('utf-8'))
-                    assert count < 64
-                    parts.append('\\%03o' % (count + 1) + note[shared:])
-                prev = note
-            blocks.append(''.join(parts))
-        return keys, blocks
-
-    form_keys, form_blocks = front_coded(exact)
-    stem_keys, stem_blocks = front_coded(stems)
-    any_keys, any_blocks = front_coded(names_any)
-    mid_keys, mid_blocks = front_coded(names_mid)
     commands = command_imperatives(forms_path, read_word_list(commands_path), reader) if commands_path else {}
     print('command imperatives', len(commands), file=sys.stderr)
-    command_keys, command_blocks = front_coded(commands)
-    with open(out_path, 'w', encoding='utf-8') as out:
-        out.write('// -*- coding: utf-8 -*-\n')
-        out.write('// formant_slovenian.inc - Slovenian pronunciation lexicon of the formant\n')
-        out.write('// voices. Generated by tools/formant/slovenian_words.py from Sloleks 3.1\n')
-        out.write('// (CJVT, University of Ljubljana; CLARIN.SI, http://hdl.handle.net/11356/2080;\n')
-        out.write('// CC BY-SA 4.0): the word forms of %d lemmas, in the notation of\n' % lemma_count)
-        out.write('// slovenian::Lexicon (formant_slovenian.hpp). Do not edit: edit the tool\n')
-        out.write('// and run it. Both tables are sorted by the spelling the entry is for (its\n')
-        out.write('// letters without the marks, ə as e, w as l), as the binary search in\n')
-        out.write('// formant_slovenian.cpp compares them, and front-coded in blocks of %d:\n' % BLOCK)
-        out.write('// an entry after the first of its block begins with a byte 1 + n for the\n')
-        out.write('// n leading bytes it shares with the entry before. Stems have no \'*\'.\n')
-        out.write('// clang-format off\n')
-        out.write('const size_t SLOVENIAN_BLOCK = %d;\n' % BLOCK)
-        out.write('const size_t SLOVENIAN_FORM_COUNT = %d;\n' % len(form_keys))
-        out.write('const char* const SLOVENIAN_FORMS[] = {\n')
-        for block in form_blocks:
-            out.write('    u8"%s",\n' % block)
-        out.write('};\n')
-        out.write('const size_t SLOVENIAN_STEM_COUNT = %d;\n' % len(stem_keys))
-        out.write('const char* const SLOVENIAN_STEMS[] = {\n')
-        for block in stem_blocks:
-            out.write('    u8"%s",\n' % block)
-        out.write('};\n')
-        out.write('// Names (persons, places, regions) read so only when written with a\n')
-        out.write('// capital: anywhere, and only inside a clause (not at its head)\n')
-        for name, keys, blocks in (('NAMES', any_keys, any_blocks),
-                                   ('NAMES_INSIDE', mid_keys, mid_blocks),
-                                   ('HEAD_IMPERATIVES', command_keys, command_blocks)):
-            if name == 'HEAD_IMPERATIVES':
-                out.write('// The imperatives of the verbs of commands (slovenian_commands.tsv),\n')
-                out.write('// read at the head of a clause where their spelling is the present\n')
-                out.write('// elsewhere (nadgrádi, namésti, posodôbi; nadgradí, namestí, posodobí)\n')
-            out.write('const size_t SLOVENIAN_%s_COUNT = %d;\n' % (name, len(keys)))
-            out.write('const char* const SLOVENIAN_%s[] = {\n' % name)
-            for block in blocks:
-                out.write('    u8"%s",\n' % block)
-            if not blocks:
-                out.write('    u8"",\n')
-            out.write('};\n')
-        marked = set(read_word_list(final_w_path))
-        final_l = final_l_forms(truth, names, marked)
-        print('final [l] forms', len(final_l), file=sys.stderr)
-        out.write('// Spellings whose final l is [l] though they look like a participle:\n')
-        out.write('// the transcriptions of Sloleks, without the words SSKJ² and SP mark [-u̯]\n')
-        out.write('const char* const SLOVENIAN_FINAL_L[] = {\n')
-        for start in range(0, len(final_l), 8):
-            out.write('    %s,\n' % ', '.join('u8"%s"' % n for n in final_l[start:start + 8]))
-        if not final_l:
-            out.write('    u8"",\n')
-        out.write('};\n')
-        given = read_word_list(given_names_path)
-        out.write('// Given names, lowercase, in code point order (slovenian_given_names.tsv)\n')
-        out.write('const char* const SLOVENIAN_GIVEN_NAMES[] = {\n')
-        for start in range(0, len(given), 8):
-            out.write('    %s,\n' % ', '.join('u8"%s"' % n for n in given[start:start + 8]))
-        out.write('};\n')
-        adjectives = definite_adjectives(forms_path)
-        print('definite adjectives', len(adjectives), file=sys.stderr)
-        out.write('// Masculine definite adjectives in -i, of frequency 10 or more, in code\n')
-        out.write('// point order, without those known by their ending (is_adjective_ending())\n')
-        out.write('const char* const SLOVENIAN_DEFINITE_ADJECTIVES[] = {\n')
-        for start in range(0, len(adjectives), 8):
-            out.write('    %s,\n' % ', '.join('u8"%s"' % n for n in adjectives[start:start + 8]))
-        out.write('};\n')
-        neuter_o, noun_a = noun_gender_tables(forms_path)
-        print('neuter nouns in -o', len(neuter_o), 'nouns in -a after 1', len(noun_a), file=sys.stderr)
-        out.write('// Neuter nouns in -o, nominative and accusative singular (mesto, not the\n')
-        out.write('// feminine accusative nagrado), in code point order; for the numerals\n')
-        out.write('const char* const SLOVENIAN_NEUTER_O[] = {\n')
-        for start in range(0, len(neuter_o), 8):
-            out.write('    %s,\n' % ', '.join('u8"%s"' % n for n in neuter_o[start:start + 8]))
-        if not neuter_o:
-            out.write('    u8"",\n')
-        out.write('};\n')
-        out.write('// Words in -a after the number 1 that are not a feminine nominative: 1 a\n')
-        out.write('// masculine noun\'s animate accusative or a masculine or neuter noun\'s\n')
-        out.write('// genitive singular (otroka: enega otroka), 2 a masculine noun\'s\n')
-        out.write('// nominative (kolega: en kolega); in code point order\n')
-        out.write('const NounA SLOVENIAN_NOUN_A[] = {\n')
-        for start in range(0, len(noun_a), 6):
-            out.write('    %s,\n' % ', '.join('{u8"%s", %d}' % kv for kv in noun_a[start:start + 6]))
-        if not noun_a:
-            out.write('    {u8"", 0},\n')
-        out.write('};\n')
-        food = food_forms(forms_path, read_word_list(food_path)) if food_path else []
-        print('food forms', len(food), file=sys.stderr)
-        out.write('// Food nouns (slovenian_food.tsv): every form of Sloleks with its cases,\n')
-        out.write('// 1 nominative, 2 accusative, 4 genitive (singular and plural), in code point order\n')
-        out.write('const FoodForm SLOVENIAN_FOOD[] = {\n')
-        for start in range(0, len(food), 6):
-            out.write('    %s,\n' % ', '.join('{u8"%s", %d}' % kv for kv in food[start:start + 6]))
-        if not food:
-            out.write('    {u8"", 0},\n')
-        out.write('};\n')
-        out.write('// Spellings read as a verb\'s form or as another word: the verb\'s\n')
-        out.write('// reading, the other, whether the verb\'s is the l-participle, and the\n')
-        out.write('// share in percent of a genitive plural in -l (-1: the other reading is none)\n')
-        out.write('const VerbNoun SLOVENIAN_VERB_NOUN[] = {\n')
-        for key in sorted(verb_noun, key=lambda k: [ord(c) for c in k]):
-            verb, nominal, participle, percent = verb_noun[key]
-            if participle and key.endswith('l'):
-                # The participle's final l is [w] and the other word's [l],
-                # unless the dictionaries mark [-u\u032f] for that word too
-                # (vesél, zrél, tôpel): notation w and notation \u0142
-                if verb.endswith('l'):
-                    verb = verb[:-1] + 'w'
-                lemma = names['note_lemma'].get((key, nominal), key)
-                if nominal.endswith('l') and lemma not in marked and key not in marked:
-                    nominal = nominal[:-1] + '\u0142'
-            out.write('    {u8"%s", u8"%s", %s, %d},\n' % (unicodedata.normalize('NFC', verb),
-                                                          unicodedata.normalize('NFC', nominal),
-                                                          'true' if participle else 'false', percent))
-        out.write('};\n')
-        out.write('// clang-format on\n')
+    marked = set(read_word_list(final_w_path))
+    final_l = final_l_forms(truth, names, marked)
+    print('final [l] forms', len(final_l), file=sys.stderr)
+    given = read_word_list(given_names_path)
+    adjectives = definite_adjectives(forms_path)
+    print('definite adjectives', len(adjectives), file=sys.stderr)
+    neuter_o, noun_a = noun_gender_tables(forms_path)
+    print('neuter nouns in -o', len(neuter_o), 'nouns in -a after 1', len(noun_a), file=sys.stderr)
+    food = food_forms(forms_path, read_word_list(food_path)) if food_path else []
+    print('food forms', len(food), file=sys.stderr)
+    verb_noun_rows = []
+    for key, (verb, nominal, participle, percent) in verb_noun.items():
+        if participle and key.endswith('l'):
+            # The participle's final l is [w] and the other word's [l],
+            # unless the dictionaries mark [-u\u032f] for that word too
+            # (vesél, zrél, tôpel): notation w and notation \u0142
+            if verb.endswith('l'):
+                verb = verb[:-1] + 'w'
+            lemma = names['note_lemma'].get((key, nominal), key)
+            if nominal.endswith('l') and lemma not in marked and key not in marked:
+                nominal = nominal[:-1] + '\u0142'
+        verb_noun_rows.append((key, slovenian_tables.verb_noun_value(verb, nominal, participle, percent)))
+
+    # The word forms of lemma_count lemmas of Sloleks 3.1 (CJVT, University
+    # of Ljubljana; CLARIN.SI, http://hdl.handle.net/11356/2080; CC BY-SA
+    # 4.0). The files hold entries only, in the formats slovenian_tables.py
+    # describes: the lexicon's tables are sorted by the spelling the entry is
+    # for (its letters without the marks, ə as e, w as l), as the search of
+    # sl/lexicon.rs compares them, and front-coded in blocks; the stems have
+    # no '*'.
+    print('lemmas', lemma_count, file=sys.stderr)
+    front = slovenian_tables.write_front_coded
+    lines = slovenian_tables.write_sorted_lines
+    front(out_dir, 'forms.txt', exact.values())
+    front(out_dir, 'stems.txt', stems.values())
+    # Names (persons, places, regions) read so only when written with a
+    # capital: anywhere, and only inside a clause (not at its head)
+    front(out_dir, 'names.txt', names_any.values())
+    front(out_dir, 'names_inside.txt', names_mid.values())
+    # The imperatives of the verbs of commands (slovenian_commands.tsv),
+    # read at the head of a clause where their spelling is the present
+    # elsewhere (nadgrádi, namésti, posodôbi; nadgradí, namestí, posodobí)
+    front(out_dir, 'head_imperatives.txt', commands.values())
+    # Spellings whose final l is [l] though they look like a participle:
+    # the transcriptions of Sloleks, without the words SSKJ² and SP mark [-u̯]
+    lines(out_dir, 'final_l.txt', final_l)
+    # Given names, lowercase (slovenian_given_names.tsv)
+    lines(out_dir, 'given_names.txt', given)
+    # Masculine definite adjectives in -i, of frequency 10 or more, without
+    # those known by their ending (is_adjective_ending())
+    lines(out_dir, 'definite_adjectives.txt', adjectives)
+    # Neuter nouns in -o, nominative and accusative singular (mesto, not the
+    # feminine accusative nagrado); for the numerals
+    lines(out_dir, 'neuter_o.txt', neuter_o)
+    # Words in -a after the number 1 that are not a feminine nominative: 1 a
+    # masculine noun's animate accusative or a masculine or neuter noun's
+    # genitive singular (otroka: enega otroka), 2 a masculine noun's
+    # nominative (kolega: en kolega)
+    lines(out_dir, 'noun_a.txt', noun_a)
+    # Food nouns (slovenian_food.tsv): every form of Sloleks with its cases,
+    # 1 nominative, 2 accusative, 4 genitive (singular and plural)
+    lines(out_dir, 'food.txt', food)
+    # Spellings read as a verb's form or as another word: the verb's
+    # reading, the other, whether the verb's is the l-participle, and the
+    # share in percent of a genitive plural in -l
+    lines(out_dir, 'verb_noun.txt', verb_noun_rows)
 
 
 def main(argv):
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     if len(argv) >= 4 and argv[1] == 'extract':
         extract(argv[2], argv[3], int(argv[4]) if len(argv) > 4 else 200)
-    elif len(argv) >= 4 and argv[1] == 'generate':
+    elif len(argv) >= 3 and argv[1] == 'generate':
         manual_min = 50
         auto_min = 2000
         form_min = 3
         names_report = None
-        args = argv[4:]
+        out_dir = slovenian_tables.TABLES
+        args = argv[3:]
+        if args and not args[0].startswith('--'):
+            out_dir = args[0]; args = args[1:]
         while args:
             if args[0] == '--manual-min':
                 manual_min = int(args[1]); args = args[2:]
@@ -1573,9 +1518,8 @@ def main(argv):
                 names_report = args[1]; args = args[2:]
             else:
                 print('unknown option', args[0], file=sys.stderr); return 2
-        root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        generate(argv[2], argv[3], manual_min, auto_min, form_min,
-                 os.path.join(root, 'src', 'formant', 'formant_slovenian.cpp'),
+        generate(argv[2], out_dir, manual_min, auto_min, form_min,
+                 os.path.join(root, 'src', 'common', 'languages', 'sl', 'lexicon.rs'),
                  [os.path.join(root, 'tools', 'formant', 'slovenian_places.tsv'),
                   os.path.join(root, 'tools', 'formant', 'slovenian_persons.tsv')], names_report,
                  os.path.join(root, 'tools', 'formant', 'slovenian_given_names.tsv'),
