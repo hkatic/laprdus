@@ -28,6 +28,21 @@ pub const IN_EXCLAMATION_MARK: char = '\u{E002}';
 /// whatever ends the sentence). Pero je na mizi. stays the pen.
 pub const VOCATIVE_MARK: char = '\u{E003}';
 
+/// The mark of a clause next to a clause that is the word prosim alone, set
+/// off by commas: a request, so a verb at its head is the imperative
+/// whatever verb it is (Izgovori, prosim, pravilno. Prosim, izgovori
+/// pravilno; a listener's report of 2026-11-17 had it without the commas,
+/// Izgovori prosim pravilno!, which the front end sees itself).
+pub const REQUEST_MARK: char = '\u{E004}';
+
+/// Whether a clause is the word prosim and nothing else.
+fn is_please(text: &[char]) -> bool {
+    let letters: Vec<char> = text.iter().copied().filter(|c| !('\u{E000}'..='\u{E00F}').contains(c)).collect();
+    let mut words = letters.split(|&c| c == ' ' || c == '\t').filter(|word| !word.is_empty());
+    let (Some(word), None) = (words.next(), words.next()) else { return false };
+    word.len() == 6 && word.iter().zip("prosim".chars()).all(|(&c, p)| c.to_ascii_lowercase() == p)
+}
+
 /// Whether a clause begins with da, naj, kdaj, kako ...
 pub fn opens_complement_clause(text: &[char]) -> bool {
     const OPENERS: &[&str] = &["da", "naj", "kdaj", "kako", "kje", "zakaj", "ali", "kaj", "kdo", "koliko", "kam", "če"];
@@ -62,7 +77,8 @@ pub fn is_address(text: &[char]) -> bool {
 /// (Meni, da je prav. Ni obvestil, da pride.), lahko by the question mark at
 /// the end of the sentence (Lahko delo opravi vsak, ki hoče?), the imperative
 /// vesêli se by its exclamation mark (Veseli se, dragi prijatelj!), an
-/// address by the comma next to it (Pero, kje si? Hvala, Pero.).
+/// address by the comma next to it (Pero, kje si? Hvala, Pero.), a request
+/// by the prosim next to it (Izgovori, prosim, pravilno.).
 pub fn mark_clauses(clauses: &mut [crate::text::clauses::Clause]) {
     use crate::text::Punctuation::{Comma, Exclamation, Question, Semicolon};
     let (mut in_question, mut in_exclamation) = (false, false);
@@ -79,7 +95,11 @@ pub fn mark_clauses(clauses: &mut [crate::text::clauses::Clause]) {
         // An address: one capitalized word before a comma or after one.
         let address = is_address(&clauses[i].text)
             && ((punct == Comma && i + 1 < clauses.len()) || (i > 0 && clauses[i - 1].punct == Comma));
+        // Next to "prosim" between commas
+        let request = (punct == Comma && clauses.get(i + 1).is_some_and(|next| is_please(&next.text)))
+            || (i > 0 && clauses[i - 1].punct == Comma && is_please(&clauses[i - 1].text));
         let marks = [
+            (request, REQUEST_MARK),
             (continues && in_question, IN_QUESTION_MARK),
             (continues && in_exclamation, IN_EXCLAMATION_MARK),
             (complement, BEFORE_COMPLEMENT_MARK),

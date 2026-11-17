@@ -22,6 +22,12 @@ static NAMES_INSIDE: &str = include_str!("tables/names_inside.txt");
 /// (nadgrádi, namésti, posodôbi; nadgradí, namestí, posodobí).
 static HEAD_IMPERATIVES: &str = include_str!("tables/head_imperatives.txt");
 
+/// The second person imperatives of every verb of Sloleks (hand-accented)
+/// where the lexicon reads the spelling otherwise, mostly as the present
+/// (izgovôri and izgovorí, sprôsti and sprostí, vêži and véži): read where
+/// the clause says it asks for something, see [`imperative_reading`].
+static IMPERATIVES: &str = include_str!("tables/imperatives.txt");
+
 /// Given names, lowercase (`slovenian_given_names.tsv`).
 static GIVEN_NAMES: &str = include_str!("tables/given_names.txt");
 
@@ -64,6 +70,9 @@ pub struct Clause<'a> {
     /// ([`super::marks::IN_EXCLAMATION_MARK`]): Gori na podstrešju! is the
     /// fire, not the adverb gôri of Gori na podstrešju je krama.
     pub exclamation: bool,
+    /// The clause stands next to prosim between commas
+    /// ([`super::marks::REQUEST_MARK`]): Izgovori, prosim, pravilno.
+    pub request: bool,
 }
 
 impl<'a> Clause<'a> {
@@ -219,6 +228,18 @@ pub fn head_reading(w: &[char]) -> Option<HeadReading> {
     find_in_table(HEAD_IMPERATIVES, w).map(|pron| HeadReading { pron, speech: false })
 }
 
+/// The imperative of a verb at the head of a clause that asks for something,
+/// with prosim before the verb, after it or next to the clause (Izgovori
+/// prosim pravilno! Prosim izgovori to. Poveži, prosim, napravo.): SP 2001
+/// govoríti -ím, govôri -íte, and every verb in -íti -ím so. Without such a
+/// word only the verbs of [`head_reading`] are commands: at the head of a
+/// sentence of SUK 1.1 the class as a whole is the present 68 times and the
+/// imperative 10. `None` for a spelling the lexicon reads as the imperative
+/// already.
+pub fn imperative_reading(w: &[char]) -> Option<Vec<char>> {
+    find_in_table(IMPERATIVES, w)
+}
+
 /// A spelling read one way as a verb's form and another way as a noun, an
 /// adjective or an adverb (veselí "looks forward" and veséli "cheerful",
 /// letí "flies" and léti "two years", vôzil "drove" and vozíl "of
@@ -257,7 +278,7 @@ pub fn verb_noun_readings(w: &[char]) -> Option<VerbNounReadings> {
 // this one, and a determiner or a copula before it says little.
 
 /// The prepositions that decide a reading after them.
-pub(super) fn is_preposition(w: &[char]) -> bool {
+pub fn is_preposition(w: &[char]) -> bool {
     const PREPOSITIONS: &[&str] = &[
         "v", "na", "z", "s", "k", "h", "o", "pri", "po", "od", "do", "iz", "za", "pred", "nad", "pod", "med", "brez",
         "ob", "proti", "skozi", "čez", "zaradi", "okoli", "okrog", "blizu", "glede", "poleg", "razen", "sredi", "mimo",
@@ -607,6 +628,37 @@ pub fn context_reading(clause: &Clause, i: usize, participle: bool, noun_percent
     let after_auxiliary = i >= 2 && !clause.is(i - 2, "si") && clause.one_of(i - 2, BITI);
     if !participle && !is_one_of(prev, &["ti", "te"]) && is_one_of(prev, OBJECT_CLITICS) && !after_auxiliary {
         return VerbOrNoun::Verb;
+    }
+    // On to pogosto izgovori. Kdo odgovori? Naj odgovori. A verb's third
+    // person in -i that a noun's plural is spelled like (izgovorí and
+    // izgôvori, odgovorí and odgôvori, pogovorí and pogôvori; a listener's
+    // report of 2026-11-17): the noun is the commoner word, and the verb has
+    // a subject in the singular before it in the clause, an adverb of how
+    // or how often right before it, or naj; never with a plural verb of
+    // being in the clause, which the nouns have (To so samo izgovori). SUK
+    // 1.1: 2,963 to 2,986 of 3,201 tokens of the verb/noun spellings. Not after an adjective that agrees with the noun (v prvi vrsti, pod
+    // enakimi pogoji), and not poceni, the adverb before another verb (Kdor
+    // poceni kupi)
+    let after_adjective = prev.len() > 3 && ends_with_any(prev, &["i", "imi", "ih"]) && !eq(prev, "naj");
+    if !participle && ends_with(w, "i") && !after_adjective && !eq(w, "poceni") {
+        const SUBJECTS: &[&str] = &["on", "ona", "ono", "kdo", "kdor", "nekdo", "vsakdo", "nihče", "marsikdo"];
+        const PLURAL: &[&str] = &["so", "niso", "bodo", "sta", "nista", "bosta", "bili", "bile"];
+        #[rustfmt::skip] // rows of words
+        const HOW: &[&str] = &[
+            "pogosto", "redko", "vedno", "nikoli", "včasih", "običajno", "navadno", "hitro", "počasi", "takoj", "spet",
+            "znova", "ponovno", "pravilno", "napačno", "jasno", "glasno", "tiho", "razločno", "rad", "rada", "raje",
+            "denimo", "kmalu", "nato", "končno", "nazadnje", "lahko", "komaj", "najprej", "naj",
+        ];
+        let plural = words.iter().any(|x| is_one_of(x, PLURAL));
+        if !plural && (is_one_of(prev, HOW) || words[..i].iter().any(|x| is_one_of(x, SUBJECTS))) {
+            return VerbOrNoun::Verb;
+        }
+        // Einhard trdi, da ...: a verb of saying or thinking before its
+        // clause; a noun stands there as well (nimam več moči, da bi ...)
+        const SAYING: &[&str] = &["trdi", "zatrdi", "potrdi", "sodi", "dvomi", "pravi", "sporoči", "izjavi"];
+        if clause.before_complement && last && is_one_of(w, SAYING) {
+            return VerbOrNoun::Verb;
+        }
     }
     // je vozil, sem pojasnila, so sporočili: the auxiliary right before
     // a participle that agrees with it (not -lo: to je besedilo, pravilo)

@@ -4,7 +4,8 @@
 use std::sync::Arc;
 
 use super::marks::{
-    BEFORE_COMPLEMENT_MARK, IN_EXCLAMATION_MARK, IN_QUESTION_MARK, VOCATIVE_MARK, is_address, opens_complement_clause,
+    BEFORE_COMPLEMENT_MARK, IN_EXCLAMATION_MARK, IN_QUESTION_MARK, REQUEST_MARK, VOCATIVE_MARK, is_address,
+    opens_complement_clause,
 };
 use crate::formant::phones::{Accent, Ph};
 use crate::language::Language;
@@ -1190,6 +1191,138 @@ fn slovenian_glasu_the_genitive_on_the_ending_the_dative_and_locative_on_the_ste
     assert_eq!(phones(&frontend, "Barva glásu"), "b'a:rva gl'a:su");
     frontend.set_user_lexicon(user(r#"{"entries":[{"word":"glásu","language":"sl"}]}"#));
     assert_eq!(phones(&frontend, "Barva glasu"), "b'a:rva gl'a:su");
+}
+
+/// A listener's report of 2026-11-17: meja, vasi, izgovori, sprosti, petega
+#[test]
+fn slovenian_listeners_report_of_2026_11_17_meja_vasi_izgovori_sprosti() {
+    let frontend = slovenian();
+    check(
+        &frontend,
+        &[
+            // mêja the nominative, mejá the genitive plural (SSKJ² mêja -e, rod.
+            // mn. mêj in mejá): the listener's two sentences, then the cues
+            ("Levo od tebe je meja", "l'é:vO O t'E:bE jE m'E:ja"),
+            ("Igre brez meja", "'i:grE brEz mEj'a:"),
+            ("Državna meja je zaprta", "dərž'a:wna m'E:ja jE zap'ərta"),
+            ("Meja poteka po reki", "m'E:ja pOt'é:ka pO r'é:ki"),
+            ("Zunaj naših meja", "z'u:naj n'a:ših mEj'a:"),
+            ("Do skrajnih meja", "dO skr'a:jnih mEj'a:"),
+            ("Varovanje meja", "varOv'a:njE mEj'a:"),
+            ("Veliko meja", "vEl'i:kO mEj'a:"),
+            ("Domišljija ne pozna meja", "dOmišlj'i:ja nE pOzn'a: mEj'a:"),
+            ("Tu ni meja", "t'u ni mEj'a:"),
+            ("To ni meja", "t'ó: ni m'E:ja"),
+            // The other nouns SSKJ² and SP 2001 give the plural -é -á of
+            ("Seznam ima pet želja", "sEzn'am im'a: p'é:t žElj'a:"),
+            ("Moja želja je mir", "m'O:ja ž'E:lja jE m'i:r"),
+            ("Iz gora", "iz gOr'a:"),
+            ("Gora je visoka", "g'O:ra jE vis'O:ka"),
+            ("Brez solza", "brE sOwz'a:"),
+            ("Moja sestra pride", "m'O:ja s'E:stra pr'i:dE"),
+            // vasí the genitive and the plural, vási the dative and the
+            // locative (SSKJ² vás -í; SP 2001 vás -í ž -i -- -i -jó)
+            ("On je iz vasi", "'On jE iz vas'i:"),
+            ("V tej vasi je veliko hiš", "u t'E:j v'a:si jE vEl'i:kO h'i:š"),
+            ("Živim na vasi", "živ'i:m na v'a:si"),
+            ("V sosednji vasi", "u sOs'é:dnji v'a:si"),
+            ("Na robu vasi", "na r'ó:bu vas'i:"),
+            ("Sredi vasi", "sr'é:di vas'i:"),
+            ("V bližini vasi", "u bliž'i:ni vas'i:"),
+            ("Prebivalci vasi", "prEbiv'a:wci vas'i:"),
+            ("Vasi so majhne", "vas'i: sO m'a:jhnE"),
+            ("Iz te vasi", "is tE vas'i:"),
+            ("V tri vasi", "u tr'i: vas'i:"),
+            // The same for the other feminine nouns declined so
+            ("Na drugi strani", "na dr'u:gi str'a:ni"),
+            ("Z druge strani", "z dr'u:gE stran'i:"),
+            ("Po očetovi strani", "pO Oč'é:tOvi str'a:ni"),
+            ("Strani knjige", "stran'i: knj'i:gE"),
+            ("Na poti domov", "na p'ó:ti dOm'O:w"),
+            ("Dolge poti", "d'O:wgE pOt'i:"),
+            ("Del poti", "d'é:l pOt'i:"),
+            ("Na državni in lokalni ravni", "na dərž'a:wni in lOk'a:lni r'a:wni"),
+            ("Do ravni", "dO rawn'i:"),
+            ("V noči", "u n'O:či"),
+            ("Sredi noči", "sr'é:di nOč'i:"),
+            ("Na klopi", "na kl'ó:pi"),
+            ("Brez pomoči", "brEs pOmOč'i:"),
+            ("Pri pomoči", "pri pOm'O:či"),
+            ("V luči", "u l'u:či"),
+            ("Brez luči", "brEz luč'i:"),
+            ("V stvari", "u stv'a:ri"),
+            ("Vpliva na stvari", "upl'i:va na stvar'i:"),
+            ("Te stvari", "t'é: stvar'i:"),
+            ("V smeri", "u sm'é:ri"),
+            ("Brez smeri", "brE smEr'i:"),
+            // izgovorí the present, izgôvori the noun's plural (SP 2001
+            // izgovoríti -ím; izgôvor)
+            ("On to pogosto izgovori", "'On t'ó: pOg'ó:stO izgOvOr'i:"),
+            ("Kdo to izgovori", "gd'ó: t'ó: izgOvOr'i:"),
+            ("Naj odgovori", "naj OdgOvOr'i:"),
+            ("To so samo izgovori", "t'ó: sO sam'ó: izg'O:vOri"),
+            ("Njegovi izgovori so prazni", "njEg'O:vi izg'O:vOri sO pr'a:zni"),
+            ("Odgovori so bili taki", "Odg'O:vOri sO bil'i: t'a:ki"),
+            ("Izgovori odgovornih", "izg'O:vOri OdgOv'ó:rnih"),
+            ("Govori se o tem", "gOvOr'i: sE O t'é:m"),
+            ("Ona govori razločno", "'O:na gOvOr'i: razl'ó:čnO"),
+            ("Glasba me sprosti", "gl'a:zba mE sprOst'i:"),
+            ("Sodišče ga oprosti", "sOd'i:ščE ga OprOst'i:"),
+            // A request with prosim: any verb at the head is the imperative
+            ("Prosim izgovori to besedo", "pr'ó:sim izgOv'O:ri t'ó: bEs'é:dO"),
+            ("Poveži prosim napravo", "pOv'é:ži pr'ó:sim napr'a:vO"),
+            // pogovoriti se, dogovoriti se at the head, unless a plural verb
+            // follows the se
+            ("Pogovori se z njim", "pOgOv'O:ri sE z nj'i:m"),
+            ("Dogovori se z njo", "dOgOv'O:ri sE z nj'ó:"),
+            ("Pogovori se bodo nadaljevali", "pOg'O:vOri sE bOdO nadaljEv'a:li"),
+            ("Pogovori se nadaljujejo", "pOg'O:vOri sE nadalj'u:jEjO"),
+            // vás the village (SSKJ² vás -í), vas the pronoun, a clitic, and
+            // vàs the full pronoun after a preposition, which leans on it (v
+            // vas was read "vé vas")
+            ("Ta vas je lepa", "t'a: v'a:s jE l'é:pa"),
+            ("Naša vas leži ob reki", "n'a:ša v'a:s lEž'i: Ob r'é:ki"),
+            ("Grem v vas", "gr'é:m u v'a:s"),
+            ("Vas je majhna", "v'a:s jE m'a:jhna"),
+            ("Zaupam v vas", "za'u:pam u v'as"),
+            ("Hvala za vas", "hv'a:la za v'as"),
+            ("Pridi k nam", "pr'i:di k n'am"),
+            ("V nas je upanje", "u n'as jE 'u:panjE"),
+            ("Lepo vas prosim", "l'é:pO vas pr'ó:sim"),
+            ("Ana vas čaka", "'a:na vaš č'a:ka"),
+            ("Vas je strah", "v'as jE str'a:h"),
+            ("To vas ne briga", "t'ó: vas nE br'i:ga"),
+            // The rarer nouns declined like vas
+            ("V zveri", "u zv'é:ri"),
+            ("Brez zveri", "brE zvEr'i:"),
+            ("Po brvi", "pO b'ərvi"),
+            ("Brez masti", "brEz mast'i:"),
+            // pêtega, the ordinal (SSKJ², SP 2001 pêti -a -o), not the
+            // participle pét -a -o of péti "to sing"
+            ("Do petega leta", "dO p'E:tEga l'é:ta"),
+            ("K petemu", "k p'E:tEmu"),
+        ],
+    );
+    // The imperatives (SP 2001 govôri -íte, sprôsti -íte, oprôsti -íte)
+    let exclaimed = |text: &str| says(&frontend, text, Punctuation::Exclamation);
+    assert_eq!(exclaimed("Izgovori prosim pravilno"), "izgOv'O:ri pr'ó:sim prav'i:lnO");
+    assert_eq!(exclaimed("Govori razločno"), "gOv'O:ri razl'ó:čnO");
+    assert_eq!(exclaimed("Sprosti prostor na telefonu"), "spr'O:sti pr'O:stOr na tElEf'ó:nu");
+    assert_eq!(exclaimed("Oprosti"), "Opr'O:sti");
+    // Outside the list of commands a verb at the head of a clause is the
+    // present; with prosim after it or before it the imperative (SP 2001
+    // razložíti -ím, razlôži -íte), also when commas set prosim off, which the
+    // engine's mark says
+    check(
+        &frontend,
+        &[
+            ("Razloži to", "razlOž'i: t'ó:"),
+            ("Razloži prosim to", "razl'O:ži pr'ó:sim t'ó:"),
+            ("Prosim razloži to", "pr'ó:sim razl'O:ži t'ó:"),
+        ],
+    );
+    assert_eq!(says(&frontend, "Položi", Punctuation::Comma), "pOlOž'i:");
+    assert_eq!(says(&frontend, &format!("Položi{REQUEST_MARK}"), Punctuation::Comma), "pOl'O:ži");
 }
 
 // A listener's report of November 2026: "Marjan A17", a cell's contents and

@@ -23,7 +23,7 @@ Usage (the tables in the repository are made with these values):
 
 `extract` streams the XML once into a TSV of word forms (13 GB of XML,
 about four minutes; the last argument is the lowest lemma frequency kept);
-`generate` writes the twelve tables into src/common/languages/sl/tables (or
+`generate` writes the thirteen tables into src/common/languages/sl/tables (or
 into the folder named after forms.tsv), reading HAND_ENTRIES from
 src/common/languages/sl/lexicon.rs of this repository so that every form is
 checked as the engine will look it up (lexicon_reading() of
@@ -516,6 +516,16 @@ CORRECTIONS = {
     'osemnajsti': {'*': 'ósəmnajst'},
 }
 
+# Lemmas whose forms are the reading of their spellings whatever the corpus
+# counts of Sloleks say. peti: the ordinal pêti -a -o (SSKJ², SP 2001) shares
+# petega, petemu, petima with the participle pét -a -o of péti "to sing" (SP:
+# péti -a -o, ~a maša), and Sloleks counts petega 8,496 times for the
+# participle and 2,682 times for the ordinal, which cannot be (petega maja,
+# do petega leta): the lexicon read pétega, pétemu, pétima next to pêti,
+# pêtem, pêtih. A listener's report of 2026-11-17: do petega enajstega with
+# both e open.
+PREFERRED = {('peti', 'numeral')}
+
 PLAIN_OF = {'á': 'a', 'à': 'a', 'é': 'e', 'ê': 'e', 'è': 'e', 'í': 'i', 'ì': 'i',
             'ó': 'o', 'ô': 'o', 'ò': 'o', 'ú': 'u', 'ù': 'u', 'ŕ': 'r'}
 
@@ -990,13 +1000,14 @@ def build(forms_path, manual_min, auto_min, form_min):
             for (note, word_class), (ff, graded, proper, manual) in readings.items():
                 # The rare forms (the dual, the rarer cases) are left to the
                 # stems and the rules
-                if ff < form_min and orth != lemma.lower():
+                preferred = (lemma, cat) in PREFERRED
+                if ff < form_min and orth != lemma.lower() and not preferred:
                     continue
                 if graded and ff < 20:
                     continue
                 note = correct(lemma, orth, mark_fleeting_e(orth, note, orths, cat))
                 w = (proper_weight if proper else weight)[orth].setdefault(note, [0, 0])
-                w[0] += ff
+                w[0] += ff + (10 ** 9 if preferred else 0)
                 if entry['freq'] >= w[1]:
                     note_lemma[(orth, note)] = lemma.lower()
                 w[1] = max(w[1], entry['freq'])
@@ -1181,6 +1192,10 @@ def noun_gender_tables(forms_path):
 
 
 def command_imperatives(forms_path, lemmas, reader):
+    return imperatives(forms_path, set(lemmas), reader)
+
+
+def imperatives(forms_path, wanted, reader):
     """The imperatives of the verbs software commands the user with
     (slovenian_commands.tsv) whose accent is not the one the lexicon gives
     their spelling, for the table head_imperatives.txt: the second
@@ -1193,16 +1208,20 @@ def command_imperatives(forms_path, lemmas, reader):
     head of a clause, where it is a command (Nadgradi, Namesti, Dovolite);
     the first person plural is left out (Prosimo, počakajte is the present
     prósimo). spelling -> notation."""
-    wanted = set(lemmas)
     # A spelling CORRECTIONS give a reading at a listener's word keeps it,
     # except the one command he named: posodobi alone is posodôbi, but
-    # Posodobite as a command is posodobíte (his answers of 2026-11-03)
-    corrected = {orth for lemma in wanted for orth in CORRECTIONS.get(lemma, {}) if orth != 'posodobi'}
+    # Posodobite as a command is posodobíte (his answers of 2026-11-03).
+    # `wanted`: the lemmas, or None for every verb (the table
+    # imperatives.txt, which the front end reads only where a sentence
+    # says it commands: before or after prosim, see imperative_reading()
+    # of sl/readings.rs)
+    corrected = {orth for lemma in (CORRECTIONS if wanted is None else wanted)
+                 for orth in CORRECTIONS.get(lemma, {}) if orth != 'posodobi'}
     out = {}
     with open(forms_path, encoding='utf-8') as f:
         for line in f:
             parts = line.rstrip('\n').split('\t')
-            if len(parts) < 10 or parts[0] not in wanted or parts[1] != 'verb':
+            if len(parts) < 10 or (wanted is not None and parts[0] not in wanted) or parts[1] != 'verb':
                 continue
             lemma, _cat, status, _freq, _feats, msd, orth, _ff, accs, ipas = parts[:10]
             if status != 'MANUAL' or not msd.startswith('Gg') or msd[3:5] != 'vd' or msd[5:6] not in 'em':
@@ -1426,6 +1445,8 @@ def generate(forms_path, out_dir, manual_min=50, auto_min=2000, form_min=3, hand
 
     commands = command_imperatives(forms_path, read_word_list(commands_path), reader) if commands_path else {}
     print('command imperatives', len(commands), file=sys.stderr)
+    every_imperative = imperatives(forms_path, None, reader)
+    print('imperatives', len(every_imperative), file=sys.stderr)
     marked = set(read_word_list(final_w_path))
     final_l = final_l_forms(truth, names, marked)
     print('final [l] forms', len(final_l), file=sys.stderr)
@@ -1469,6 +1490,9 @@ def generate(forms_path, out_dir, manual_min=50, auto_min=2000, form_min=3, hand
     # read at the head of a clause where their spelling is the present
     # elsewhere (nadgrádi, namésti, posodôbi; nadgradí, namestí, posodobí)
     front(out_dir, 'head_imperatives.txt', commands.values())
+    # The imperatives of every verb where the lexicon reads the spelling
+    # otherwise, for a clause that says it commands (Izgovori, prosim)
+    front(out_dir, 'imperatives.txt', every_imperative.values())
     # Spellings whose final l is [l] though they look like a participle:
     # the transcriptions of Sloleks, without the words SSKJ² and SP mark [-u̯]
     lines(out_dir, 'final_l.txt', final_l)

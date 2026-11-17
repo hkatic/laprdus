@@ -4,13 +4,13 @@
 //! dynamic, with long and short stressed vowels and no tones.
 
 use super::lexicon::{Lexicon, builtin_lexicon};
-use super::marks::{BEFORE_COMPLEMENT_MARK, IN_EXCLAMATION_MARK, IN_QUESTION_MARK, VOCATIVE_MARK};
+use super::marks::{BEFORE_COMPLEMENT_MARK, IN_EXCLAMATION_MARK, IN_QUESTION_MARK, REQUEST_MARK, VOCATIVE_MARK};
 use super::phonemize::{Capital, assimilate, phonemize};
 use super::readings::{self, Clause, VerbOrNoun};
 use super::words;
 use crate::formant::phones::{Accent, Ph, Phone};
 use crate::prosody::Utterance;
-use crate::text::frontend::letters::{MARK_STRESS, chars, eq, is_one_of, vowel_phone};
+use crate::text::frontend::letters::{MARK_STRESS, chars, ends_with, eq, is_one_of, vowel_phone};
 use crate::text::frontend::tokenizer::{expand_words, join_camel, phonemize_letter_sound, rewrite_foreign, tokenize};
 use crate::text::frontend::utterance::{self, ensure_accent, finish_utterance};
 use crate::text::frontend::{LanguageWords, Word};
@@ -40,6 +40,14 @@ impl LanguageWords for Slovenian {
     /// k bratu, h godu).
     fn is_consonant_preposition(&self, w: &[char]) -> bool {
         is_one_of(w, &["v", "s", "z", "k", "h"])
+    }
+
+    /// Zaupam v vas. Pridi k nam. V nas je upanje. The pronouns nas, vas,
+    /// nam, vam after a preposition are the full forms (SP 2001 vàs, nàs),
+    /// spelled like the clitics; the preposition was read as a letter's name
+    /// before them (v vas was "vé vas").
+    fn is_pronoun_after_preposition(&self, w: &[char]) -> bool {
+        is_one_of(w, &["nas", "vas", "nam", "vam"])
     }
 
     /// The list is the one Croatian, Serbian and Bosnian use: the C++ engine
@@ -84,8 +92,10 @@ pub fn process(marked_text: &[char], punct: Punctuation, letter_sounds: bool, us
     let mut question = punct == Punctuation::Question;
     let mut exclamation = punct == Punctuation::Exclamation;
     let mut vocative = false;
+    let mut request = false;
     while let [rest @ .., last] = text {
         match *last {
+            REQUEST_MARK => request = true,
             BEFORE_COMPLEMENT_MARK => before_complement = true,
             IN_QUESTION_MARK => question = true,
             IN_EXCLAMATION_MARK => exclamation = true,
@@ -182,6 +192,7 @@ pub fn process(marked_text: &[char], punct: Punctuation, letter_sounds: bool, us
         before_complement,
         question,
         exclamation,
+        request,
     };
     // A function word's spelling read as a content word: sámo, the name or
     // "alone" (Samo mi je povedal: the mi after it is the clitic)
@@ -219,12 +230,50 @@ pub fn process(marked_text: &[char], punct: Punctuation, letter_sounds: bool, us
                 });
             // Govori, da bo prišel: the verb of saying before its clause
             // of da is the present
-            let head = head
-                .filter(|head| (i == 0 || i == head_words) && !(head.speech && before_complement && i + 1 == count));
+            let command_head = i == 0 || i == head_words;
+            let next_is = |list: &[&str]| spellings.get(i + 1).is_some_and(|next| is_one_of(next, list));
+            // Not before a plural auxiliary or a genitive plural, where the
+            // spelling is a noun's plural (Odgovori so bili taki. Deli so
+            // razstavljeni. Izgovori odgovornih ne opravičujejo.), and a
+            // verb of saying not before se, the impersonal present (Govori
+            // se o tem, da ...; SUK 1.1: 4 of 4), unless the sentence
+            // exclaims
+            let head = head.filter(|head| {
+                command_head
+                    && !(head.speech && before_complement && i + 1 == count)
+                    && !next_is(&["so", "niso", "bodo"])
+                    && !spellings.get(i + 1).is_some_and(|next| next.len() > 4 && ends_with(next, "ih"))
+                    && !(head.speech && next_is(&["se"]) && !exclamation)
+            });
+            // A request: prosim before the verb (a head word already), after
+            // it, or alone between commas next to the clause. Any verb is the
+            // imperative there (Izgovori prosim pravilno!)
+            let asked =
+                command_head && (request || next_is(&["prosim"]) || spellings[..i].iter().any(|x| eq(x, "prosim")));
+            // Pogovori se z njim. Dogovori se z njo! pogovoriti se and
+            // dogovoriti se at the head of a clause, where the spelling is
+            // also the plural of pogovor, dogovor: the command, unless a
+            // plural verb follows the se, which is then the noun's (Pogovori
+            // se bodo nadaljevali. Pogovori se še niso začeli. Pogovori se
+            // nadaljujejo.). Only these: of the other verb/noun spellings
+            // before se the head of a sentence of SUK 1.1 is the present or
+            // another word (Zgodi se, Poleti se sprostim, Govori se o tem)
+            let plural_verb = |x: &Vec<char>| {
+                is_one_of(x, &["so", "niso", "bodo", "bi", "ne"])
+                    || (x.len() > 5 && (ends_with(x, "jo") || ends_with(x, "do")))
+            };
+            let reflexive = command_head
+                && next_is(&["se"])
+                && is_one_of(&word.w, &["pogovori", "dogovori"])
+                && !spellings.iter().skip(i + 2).take(2).any(plural_verb);
+            let commanded =
+                if (asked || reflexive) && head.is_none() { readings::imperative_reading(&word.w) } else { None };
             if name.is_some() {
                 reading = name;
             } else if let Some(head) = head {
                 reading = Some(head.pron);
+            } else if commanded.is_some() {
+                reading = commanded;
             } else if let Some(in_clause) = in_clause {
                 reading = Some(chars(in_clause));
                 // The adjective láhko has the full accent of a content word,
@@ -317,6 +366,12 @@ pub fn process(marked_text: &[char], punct: Punctuation, letter_sounds: bool, us
     }
 
     // ---- Clitics ----
+    // v vas, k nam, za vas: the full pronoun after a preposition
+    let after_preposition: Vec<bool> = (0..count)
+        .map(|k| {
+            k > 0 && readings::is_preposition(&words[k - 1].w) && is_one_of(&words[k].w, &["nas", "vas", "nam", "vam"])
+        })
+        .collect();
     for i in 0..count {
         // ti and mi are the dative clitics (Dam ti, Reci mi) or the pronouns
         // tí, mí: those at the head or the end of a clause, or after a
@@ -329,7 +384,8 @@ pub fn process(marked_text: &[char], punct: Punctuation, letter_sounds: bool, us
             continue;
         }
         let proclitic = words::is_proclitic(&word.w);
-        let enclitic = words::is_enclitic(&word.w) && !pronoun;
+        let after_preposition = after_preposition[i];
+        let enclitic = words::is_enclitic(&word.w) && !pronoun && !after_preposition;
         if (proclitic && i + 1 < count) || (enclitic && i > 0) {
             word.clitic = true;
         } else if proclitic || enclitic || words::is_function_word(&word.w) {

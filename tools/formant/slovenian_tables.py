@@ -8,7 +8,7 @@ The files are UTF-8 text with LF line ends and nothing but entries (no
 comments, no empty lines), embedded with include_str! and searched in place:
 
 Front-coded tables (forms.txt, stems.txt, names.txt, names_inside.txt,
-head_imperatives.txt; read by find_in_table() of sl/lexicon.rs): entries in
+head_imperatives.txt, imperatives.txt; read by find_in_table() of sl/lexicon.rs): entries in
 the notation of the Slovenian lexicon, sorted by the spelling they are for
 (the letters without the marks, ə as e, w and ł as l: compare_key() of
 sl/lexicon.rs reads the spelling off the notation while it searches). One
@@ -53,7 +53,8 @@ SHARED_BASE = 0x21          # the byte of an entry that shares nothing with the 
 FIRST_ENTRY_BYTE = 0x61     # every byte of an entry is this or more
 MAX_SHARED = 63
 
-FRONT_CODED = ('forms.txt', 'stems.txt', 'names.txt', 'names_inside.txt', 'head_imperatives.txt')
+FRONT_CODED = ('forms.txt', 'stems.txt', 'names.txt', 'names_inside.txt', 'head_imperatives.txt',
+               'imperatives.txt')
 SORTED_LINES = ('final_l.txt', 'given_names.txt', 'definite_adjectives.txt', 'food.txt',
                 'verb_noun.txt', 'neuter_o.txt', 'noun_a.txt')
 

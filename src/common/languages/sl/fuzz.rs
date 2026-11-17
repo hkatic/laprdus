@@ -59,7 +59,7 @@ const WORDS: &[&str] = &[
 const BETWEEN: &[&str] = &[
     " ", " ", " ", "  ", "\t", "-", "–", ".", ":", "!", "?", ",", ";", "'", "\"", "(", ")", "„", "“", "»", "«", "/",
     "@", "%", "€", "°", "+", "=", "&", "\u{2024}", "\u{FDD0}", " \u{FDD0} ", "\u{FDD1}", " \u{FDD2} ", "\u{E000}",
-    "\u{E001}", "\u{E002}", "\u{E003}", "\u{E010}", "\u{0}", "\u{A0}", "\u{AD}", "\u{200B}", "\u{300}", "\u{301}",
+    "\u{E001}", "\u{E002}", "\u{E003}", "\u{E004}", "\u{E010}", "\u{0}", "\u{A0}", "\u{AD}", "\u{200B}", "\u{300}", "\u{301}",
     "\u{FFFD}", "",
 ];
 
@@ -186,6 +186,7 @@ fn word_functions_take_any_letters() {
             before_complement: round % 2 == 0,
             question: round % 3 == 0,
             exclamation: round % 5 == 0,
+            request: round % 7 == 0,
         };
         for i in 0..clause_words.len() + 2 {
             if let Some(reading) = readings::clause_reading(&clause, i) {

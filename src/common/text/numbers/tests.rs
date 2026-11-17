@@ -480,6 +480,34 @@ fn numeric_dates_inside_a_sentence_with_leading_zeros_and_in_ranges() {
     assert_eq!(numbers(Slovenian, "od 1.12. do 5.12."), range);
     assert_eq!(numbers(Slovenian, "od 1. 12. do 5. 12."), range);
     assert_eq!(numbers(Slovenian, "1. 2. in 3. mesto"), "ena. drugo in tretje mesto");
+    // Danes je 16. 4. 2026 names the day, the nominative; Danes smo 16. 4.
+    // 2026 and a date something happens on, the genitive (a listener's report
+    // of 2026-11-17), written together or apart
+    let named = parts(&["Danes je šestnajsti", "četrti", "dva tisoč šestindvajset."]);
+    assert_eq!(numbers(Slovenian, "Danes je 16.4.2026."), named);
+    assert_eq!(numbers(Slovenian, "Danes je 16. 4. 2026."), named);
+    assert_eq!(numbers(Slovenian, "Danes je 16.4."), parts(&["Danes je šestnajsti", "četrti."]));
+    assert_eq!(numbers(Slovenian, "Danes je 05.03."), parts(&["Danes je peti", "tretji."]));
+    assert_eq!(numbers(Slovenian, "Jutri bo 17. 4."), parts(&["Jutri bo sedemnajsti", "četrti."]));
+    assert_eq!(numbers(Slovenian, "Včeraj je bil 15.4."), parts(&["Včeraj je bil petnajsti", "četrti."]));
+    assert_eq!(
+        numbers(Slovenian, "Danes smo 16.4.2026."),
+        parts(&["Danes smo šestnajstega", "četrtega", "dva tisoč šestindvajset."])
+    );
+    assert_eq!(
+        numbers(Slovenian, "Rodil se je 16.4.2026."),
+        parts(&["Rodil se je šestnajstega", "četrtega", "dva tisoč šestindvajset."])
+    );
+    assert_eq!(
+        numbers(Slovenian, "od 2.11.2026 do 5.11.2026."),
+        parts(&[
+            "od drugega",
+            "enajstega",
+            "dva tisoč šestindvajset do petega",
+            "enajstega",
+            "dva tisoč šestindvajset."
+        ])
+    );
     // Slovenian writes no period after the year; one that is there ends the sentence
     assert_eq!(
         numbers(Slovenian, "7. 10. 2026. leta"),

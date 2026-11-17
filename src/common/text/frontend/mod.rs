@@ -36,6 +36,12 @@ pub trait LanguageWords {
     fn is_enclitic(&self, w: &[char]) -> bool;
     /// A preposition of one consonant, which leans on the next word (s, k).
     fn is_consonant_preposition(&self, w: &[char]) -> bool;
+    /// An enclitic's spelling that is also the full pronoun a preposition
+    /// takes (Slovenian v vas, k nam): a consonant preposition leans on it
+    /// as on any word. No language but Slovenian says so.
+    fn is_pronoun_after_preposition(&self, _w: &[char]) -> bool {
+        false
+    }
     /// A real word of two letters, vowel and consonant, which in capitals is
     /// not an abbreviation (ON, IZ).
     fn is_short_word(&self, w: &[char]) -> bool;

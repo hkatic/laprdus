@@ -433,6 +433,32 @@ fn slovenian_reads_a_word_by_the_clause_after_the_comma() {
         ("Barva glasu.", "Barva glasú.", true),
         ("Pusti me pri miru.", "Pusti me pri míru.", true),
         ("Brez strahu.", "Brez strahú.", true),
+        // A listener's report of 2026-11-17: mêja and mejá, vasí and vási, the
+        // imperative and the present of izgovoriti, govoriti, sprostiti, the
+        // day a sentence names, pêtega
+        ("Levo od tebe je meja.", "Levo od tebe je mêja.", true),
+        ("Levo od tebe je meja.", "Levo od tebe je mejá.", false),
+        ("Igre brez meja.", "Igre brez mejá.", true),
+        ("On je iz vasi.", "On je iz vasí.", true),
+        ("V tej vasi je veliko hiš.", "V tej vási je veliko hiš.", true),
+        ("V tej vasi je veliko hiš.", "V tej vasí je veliko hiš.", false),
+        ("Na drugi strani.", "Na drugi stráni.", true),
+        ("Z druge strani.", "Z druge straní.", true),
+        ("Izgovori prosim pravilno!", "Izgovôri prosim pravilno!", true),
+        ("On to pogosto izgovori.", "On to pogosto izgovorí.", true),
+        ("On to pogosto izgovori.", "On to pogosto izgôvori.", false),
+        ("Govori razločno!", "Govôri razločno!", true),
+        ("Ona govori razločno.", "Ona govorí razločno.", true),
+        ("Sprosti prostor na telefonu!", "Sprôsti prostor na telefonu!", true),
+        ("Glasba me sprosti.", "Glasba me sprostí.", true),
+        ("Ta vas je lepa.", "Ta vás je lepa.", true),
+        ("Grem v vas.", "Grem v vás.", true),
+        ("Zaupam v vas.", "Zaupam v vás.", false),
+        ("Pogovori se z njim.", "Pogovôri se z njim.", true),
+        // prosim between commas is a clause of its own
+        ("Položi, prosim, telefon.", "Polôži, prosim, telefon.", true),
+        ("Prosim, položi telefon.", "Prosim, polôži telefon.", true),
+        ("Položi telefon.", "Polôži telefon.", false),
         // Lahko by the question mark, which may be clauses away
         ("Lahko delo opravi vsak.", "Láhko delo opravi vsak.", true),
         ("Lahko delo opravi vsak?", "Láhko delo opravi vsak?", false),
@@ -600,6 +626,12 @@ fn slovenian_is_spoken_by_every_voice() {
         ("15. do 20. marca", "petnajstega do dvajsetega marca"),
         ("7. 10.", "sedmega \u{FDD0} desetega."),
         ("7.10.", "sedmega \u{FDD0} desetega."),
+        // The day a sentence names is in the nominative (a listener's report
+        // of 2026-11-17); petega has the open e of pêti
+        ("Danes je 16.4.2026.", "Danes je šestnajsti \u{FDD0} četrti \u{FDD0} dva tisoč šestindvajset."),
+        ("Danes je 16. 4.", "Danes je šestnajsti \u{FDD0} četrti."),
+        ("Danes smo 16.4.", "Danes smo šestnajstega \u{FDD0} četrtega."),
+        ("do 5.11.", "do pêtega \u{FDD0} enajstega."),
         ("15.–20. 3.", "petnajstega do dvajsetega \u{FDD0} tretjega."),
         ("3.–4. mesto", "tretje do četrto mesto"),
         ("do 3. razreda", "do tretjega razreda"),

@@ -246,7 +246,8 @@ fn leaning_preposition(tokens: &[Word], t: usize, language: &dyn LanguageWords) 
         return false;
     };
     // s ne malo truda
-    if next.w.len() == 1 || language.is_enclitic(&next.w) || (language.is_proclitic(&next.w) && !eq(&next.w, "ne")) {
+    let enclitic = language.is_enclitic(&next.w) && !language.is_pronoun_after_preposition(&next.w);
+    if next.w.len() == 1 || enclitic || (language.is_proclitic(&next.w) && !eq(&next.w, "ne")) {
         return false;
     }
     if !token.all_caps || t == 0 || token.after_opening {

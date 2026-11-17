@@ -4834,6 +4834,184 @@ SSKJ², SP and the Collocations Dictionary of Modern Slovene at CJVT (Kolokacije
   Tests: `src/common/languages/sl/tests.rs` "Slovenian glasu: the genitive on the ending, the
   dative and locative on the stem", and the listener's four sentences as audio in
   `tests/formant.rs` "Slovenian reads a word by the clause after the comma".
+- *meja* **is the nominative** *mêja* **and the genitive plural** *mejá*, *vasi*
+  **the genitive** *vasí* **and the dative and locative** *vási* (a listener's
+  report of 2026-11-17: *Levo od tebe je meja* on the first syllable, *igre brez
+  meja* on the last; *On je iz vasi* on the last, *V tej vasi je veliko hiš* on the
+  first). His own rule of thumb, "the second syllable only where the word ends the
+  sentence", does not hold for his examples (*Levo od tebe je meja.* ends in
+  *meja*); the examples are the cases of the dictionaries, so the rules go by
+  case: [SSKJ²](https://fran.si/iskanje?View=1&Query=meja) *mêja -e, rod. mn. mêj in
+  mejá*, SP 2001 *mêja -e tudi mêja -é ž, druga oblika dalje ... -é -á -áma*;
+  [SSKJ²](https://fran.si/iskanje?View=1&Query=vas) *vás -í ž*, SP 2001 *vás -í ž
+  -i -- -i -jó; -í -í -éma -í -éh -éma; -í -í -ém -í -éh -mí* (dative and locative
+  *vási*, every other form in *-i* *vasí*). The lexicon had one reading for a
+  spelling, the commoner form's: *mejá* (33,323 genitive plurals against 28,247
+  nominatives in the corpus behind Sloleks) and *vasí*.
+
+  **The genitive plural in -á** (`GENITIVE_PLURAL_A`, `genitive_plural_a_reading()`
+  in `sl/clause.rs`). No preposition takes the nominative, so the spelling is the
+  genitive plural after one, right before the noun or before its adjectives in
+  *-ih* (*brez meja*, *do skrajnih meja*, *onkraj naših meja*), after such an
+  adjective alone (*odprtih meja*; `is_plural_adjective()`, not a pronoun, *ki jih
+  meja loči*, nor a locative plural noun, *v teh krajih meja poteka*) and after a
+  quantity (*veliko meja*, *pet želja*). Of *meja* and *želja*, which name no
+  person, also after a noun of an action (*spreminjanje meja*, *izpolnitev
+  želja*; `is_verbal_noun()`) and a verb that has none (*Domišljija ne pozna meja*,
+  *nima meja*, *Tu ni meja*; *To ni meja* names it). Everything else is the
+  nominative. The class is Sloleks's feminine nouns whose genitive plural and
+  nominative singular share a spelling and differ in accent, checked on Fran:
+  *meja, želja* (SSKJ² *rod. mn. žêlj in željá*), *žena* (*žên in žená*), *steza*
+  (*stèz tudi stezá*), and *gora, sestra, solza, zemlja*, whose plural *-é -á
+  -àm* SP 2001 gives. Not *voda*: the spelling is also the genitive of the
+  masculine *vòd*, and Sloleks's count of the genitive plural (12,961) is that
+  word's. For the seven others the nominative is what the lexicon had, so only a
+  cue changes them. SUK 1.1: 116 → 140 of 149 tokens of the eight nouns, *meja*
+  19 → 36 of 38 (29 tokens moved, 26 to the reading of their tag, 2 genitive
+  plurals of *meja* after a noun away from it). What is left is the genitive plural after another noun (*seznam
+  želja*, *dan žena*, *prijatelji gora*, *varstvo žena*), which looks like a
+  subject after an object.
+
+  **The feminine nouns in -i** (`GENITIVE_I`, `genitive_i_reading()`,
+  `feminine_case_before()`). 37 nouns of Sloleks (hand-accented, lemma frequency
+  10,000 or more) whose genitive singular is on the ending and whose dative and
+  locative singular on the stem, the same spelling: *strani, poti, pomoči, stvari,
+  moči, ravni, rasti, oblasti, noči, smeri, vasi, luči, lasti, krvi, skrbi, snovi,
+  klopi, jedi, soli, časti, vesti, kleti, plati, vezi, cevi, kosti, sledi, plasti,
+  dlani, strasti, laži, peči, pesti, zvrsti, vrvi, osi, zmesi*. Every form of
+  theirs in *-i* but those two is on the ending in Sloleks (the plural, the dual).
+  This is the case the section on what is left named as unsolved (*straní*,
+  *stráni*; *póti*, *potí*). Left out: *obrti* (Sloleks's first genitive is
+  *obŕti*), *prsti* (also the fingers, *pŕsti*), *reči, pasti, smeti, kadi, kapi,
+  premoči* (other words of the same spelling) and *gospe*.
+
+  | Before the noun | Reading |
+  |---|---|
+  | *v, na, o, ob, po, pri, k, h, proti, kljub, nasproti* right before it (*v vasi*, *na strani*, *po poti*) | stem |
+  | the same before words in *-i* that agree with it (*v tej vasi*, *po očetovi strani*, *na državni, regionalni in lokalni ravni*, *na približno enaki ravni*), unless one has the shape of a noun (*v bližini vasi*, *v dobi rasti*, *na strani osi*) | stem |
+  | an adjective in the dative alone (*sosednji vasi*; only the shapes of adjectives: *veji oblasti*, *sledovi krvi*, *videti krvi* are not) | stem |
+  | a word that takes the dative (*bližje pomoči*, *namenjen predvsem pomoči*; `governs_dative()`) | stem |
+  | *in, ali, ter* after a locative (*o specifikacijah in moči*) | stem |
+  | *na stvari*; *v, na kosti* (the accusative plural: *vpliva na stvari*, *strah v kosti*; SUK 5 of 5) | ending |
+  | an adjective in *-e*, another preposition, a numeral (*iz te vasi*, *v te vasi*, *z druge strani*, *v tri vasi*) | ending |
+  | nothing of these (*prebivalci vasi*, *sredi vasi*, *vasi so majhne*, *del poti*) | ending |
+
+  A spelling that is also a verb's form (*moči, rasti, peči, poti, noči, lasti,
+  vesti, pomoči*; `VERB_NOUN`) is the verb where `context_reading()` says so;
+  otherwise the rule decides, and the form on the ending is the verb's reading
+  too for most of them (*potí se*, *nočí*, *lastí si*, *častí*). *peči*, whose
+  infinitive is *pêči*, becomes the ending's form only by a cue.
+
+  **Measured on SUK 1.1** with `tools/formant/slovenian_suk.py` (new: it reads the
+  sentences of given spellings through `examples/slovenian_stress.rs` and scores
+  the phones by lemma and tag; the earlier rounds measured with scripts that were
+  never checked in), the reading of each tagged form from Sloleks: of 1,761 tokens
+  of the 37 nouns and of the eight left out (which keep the lexicon's reading and
+  stay in the count) the one reading per spelling had 1,334 right, the rule has
+  1,727; *strani* 266 → 351 of 352, *vasi* 22 → 38 of 38, *poti* 78 → 136 of
+  136. 416 tokens moved: 402 to the reading of their tag, 9 away from it, 5 of
+  the nouns left out. What is left: the accusative plural after *na* (*pritiska
+  na oblasti*, *naslonil se je na dlani*, *polagajo cvetje na peči*), which only
+  the verb shows; a dative with no cue (*nagajala oblasti*); adjectives the
+  shapes miss (*na oni strani*, *po dobro preživeti noči*). Every token that
+  moved away from its tag was read; they are these.
+
+- **The imperative and the present of** *izgovoriti, govoriti, sprostiti* (the
+  same report: *Izgovori prosim pravilno!* on the third syllable, *On to pogosto
+  izgovori* on the last; *Govori razločno!* on the second, *Ona govori razločno*
+  on the last; *Sprosti prostor na telefonu!* on the first, *Glasba me sprosti* on
+  the last). SP 2001: *govoríti -ím, govôri -íte*; *izgovoríti*, "drugo gl.
+  govoriti"; *sprostíti -ím, sprôsti -íte*; *oprostíti -ím, oprôsti -íte*
+  (*Oprosti, nisem mislil tako*). *govori* was right already (`HEAD_READINGS`).
+  *izgovori* was the noun's *izgôvori* in both sentences (the stem of *izgôvor*;
+  in SUK the three tokens of the spelling are all the noun), *sprosti* the present
+  in both. Four changes:
+  - `tools/formant/slovenian_commands.tsv` has *izgovoriti, sprostiti, oprostiti*,
+    so their imperatives are in `HEAD_IMPERATIVES` and read at the head of a
+    clause.
+  - **A request**: with *prosim* before the verb, after it, or alone between
+    commas next to its clause (`REQUEST_MARK`, U+E004, set by `mark_clauses()`),
+    a verb at the head of the clause is the imperative whatever verb it is:
+    *Razloži prosim to*, *Prosim, položi telefon*, *Položi, prosim, telefon*
+    (*razlôži, polôži*; alone *Razloži to* stays the present, as the class is at
+    the head of a sentence of SUK, 68 to 10). The readings are the new generated
+    table `tables/imperatives.txt` (`IMPERATIVES`, `imperative_reading()`): every
+    hand-accented second person imperative of Sloleks that the lexicon reads
+    otherwise, 4,187 forms. An exclamation mark alone is not taken for a command
+    (*Gori!*, *Drži!* are presents); SUK has one sentence in `!` that opens with
+    a spelling of the table, and it is no verb, so nothing could be measured.
+  - A head reading is not taken before a plural auxiliary or a genitive plural,
+    where the spelling is the noun's plural (*Odgovori so bili taki*, *Izgovori
+    odgovornih ne opravičujejo*: both misread as commands before), and a verb of
+    saying not before *se* (*Govori se o tem, da ...*, the impersonal present;
+    SUK 4 of 4) unless the sentence exclaims.
+  - `context_reading()`: a third person in *-i* that a noun's plural is spelled
+    like is the verb with a subject in the singular before it in the clause
+    (*on, ona, ono, kdo, kdor, nekdo, vsakdo, nihče*), an adverb of how or how
+    often right before it (*pogosto, vedno, hitro, pravilno, razločno, denimo,
+    lahko ...*) or *naj*; never with a plural verb of being in the clause (*To
+    so samo izgovori*) or after an adjective (*v prvi vrsti*, *pod enakimi
+    pogoji*). A verb of saying (*trdi, potrdi, sodi, dvomi, pravi* ...) is the
+    verb last in a clause before its clause of *da* (*Einhard trdi, da ...* was
+    the adjective *tŕdi*; a noun stands there as well, *nimam več moči, da bi*,
+    so only those verbs).
+  SUK 1.1, the 510 verb/noun spellings that are no noun of the table above:
+  2,963 → 2,986 of 3,201 right; 25 tokens moved, 24 to the tagged reading (19
+  of them *trdi, da*) and one away, *Izgovori.* alone in its sentence, a noun
+  there and a command at the listener's word. *Prosto*, which the report names
+  without a sentence, is unchanged: SSKJ² and SP 2001 give the adverb as *prôsto
+  tudi prostó*, the adjective's form first, which is what the lexicon reads.
+
+- *vas* **the village and** *vas* **the pronoun**, found while the report was
+  checked. The noun *vás* ([SSKJ²](https://fran.si/iskanje?View=1&Query=vas) *vás
+  -í ž*) was never read for a word written small: the spelling is in the list of
+  clitics. `vas_is_village()` (`sl/clause.rs`) reads it after a word that agrees
+  with a feminine noun (*ta vas, naša vas, sosednja vas, v našo vas*; a list, and
+  the shapes of adjectives no noun before the pronoun has: *Srednja vas,
+  zanimiva vas, v Šegovo vas, v deveto vas*), after *skozi*, after *v* with a verb
+  of going before it (*Grem v vas*; *Zaupam v vas* is the pronoun) and at the
+  head of a clause before what a village does or is (*Vas leži ob reki*, *Vas je
+  majhna*; *Vas je strah*, *Vas je mama klicala* are the pronoun). A noun before
+  it says nothing (*Ana vas čaka*, *občina vas obvešča*), nor an adverb in *-o*
+  (*lepo vas prosim*). SUK 1.1: 20 of the 28 tokens of the noun (none before)
+  and none of the 139 of the pronoun; what is left is the village as an object
+  or after *na* (*zapusti vas*, *na vas*), which the pronoun is as well.
+  **The pronoun after a preposition** (*Zaupam v vas*, *Pridi k nam*, *V nas je
+  upanje*, *za vas*) is the full form *vàs, nàs, nàm, vàm* (SP 2001), spelled
+  like the clitic, and a preposition of one consonant leans on it. The shared
+  tokenizer takes a consonant before a clitic for a letter (*S je slovo*), so
+  *v vas* had been read *vé vas*, the letter's name, since Slovenian was added:
+  `LanguageWords::is_pronoun_after_preposition()`, which only Slovenian answers
+  (the other three languages give the same audio as before), and the pronoun
+  keeps a function word's accent after any preposition. *Pogovori se z njim*,
+  *Dogovori se z njo* at the head of a clause are the commands *pogovôri,
+  dogovôri*, unless a plural verb follows the *se* (*Pogovori se bodo
+  nadaljevali*, *Pogovori se nadaljujejo*: the nouns); not the other verb/noun
+  spellings before *se*, which at the head of a sentence of SUK are the present
+  or another word (*Zgodi se*, *Poleti se sprostim*). And `GENITIVE_I` has 13
+  rarer nouns of the same declension, 50 in all (*zveri, gredi, brvi, masti,
+  polti, slasti, vzmeti, gosi, čeri, osti, rži, nravi, uši*; not those spelled
+  like another word: *kadi, kali, poči, draži, tesni, gazi*); SUK has too few of
+  them to measure, the declension is Sloleks's.
+
+- **GaMS** (GaMS-9B-Instruct-Nemotron, IQ4_XS, llama.cpp b12004 on this machine)
+  was asked to write sixteen sentences of this report with the accents of SSKJ,
+  after five examples. It agreed with the listener on *Izgovôri prosim*, *Govôri
+  razločno*, *Sprôsti prostor*, *V tej vási* and *na drugi stráni*; it wrote
+  *méja* with the close e (the dictionaries' *mêja*), rewrote *brez meja* as
+  *brez méj* and *iz vasi* as *iz váse*, stressed *On to pogosto izgovóri* on the
+  third syllable and *z druge stráni* on the first (the listener's and SP's last),
+  wrote *pétega* (the listener's and the dictionaries' *pêtega*) and left the
+  presents *govori* and *sprosti* without a mark. It decided nothing.
+  Croatian, Serbian and Bosnian are untouched: the code is in the Slovenian
+  folder, and of the 80,267 renderings of `tools/golden/golden.py check`, old
+  build against new, 14 differ, all Slovenian (*petega* in ten texts, *strani*
+  in two Croatian phrases of the corpus read as Slovenian); those four texts
+  are the `INTENDED` differences of `tests/frontend_against_cpp.rs`.
+  Tests: `src/common/languages/sl/tests.rs`
+  `slovenian_listeners_report_of_2026_11_17_meja_vasi_izgovori_sprosti`, the
+  Slovenian date rows of `src/common/text/numbers/tests.rs`, and the listener's
+  sentences as audio in `tests/formant.rs` (`READINGS`, `NUMERALS`).
 
 Clitics (Toporišič: the monosyllabic prepositions and conjunctions, *ne*,
 *naj*, the forms of *biti* and the future auxiliary, *bi*, the short
@@ -5060,9 +5238,17 @@ milijardi, tri milijarde, pet milijard*), a decimal comma as *cela* agreeing
 with the whole part (*tri cele štirinajst, ena cela pet, nič celih pet*: SSKJ),
 a period between groups of three digits as the thousands separator (*132.457*
 is *sto dvaintrideset tisoč štiristo sedeminpetdeset*: § 253; *3.14* stays
-*tri pika štirinajst*), and a numeric date in the genitive, which does not
-depend on the sentence (*7. 10. 2026* is *sedmega desetega dva tisoč
-šestindvajset*, *7. oktobra* *sedmega oktobra*; Jezikovna svetovalnica).
+*tri pika štirinajst*), and a numeric date in the genitive (*7. 10. 2026* is
+*sedmega desetega dva tisoč šestindvajset*, *7. oktobra* *sedmega oktobra*;
+Jezikovna svetovalnica), except where the sentence names the day, which is
+the nominative: *Danes je 16. 4. 2026* is *danes je šestnajsti četrti dva tisoč
+šestindvajset* (a listener's report of 2026-11-17, who added that *Danes smo
+16. 4. 2026* is right in the genitive). As in the other three languages only
+after the words that name a day and the verb "is" (`names_the_day()` in
+`sl/numerals.rs`: *danes, jutri, včeraj, pojutrišnjem, predvčerajšnjim, datum,
+to, dan* before *je* or *bo*, and *je bil*), with a year or without, written
+together or apart; *Rodil se je 16. 4.* says when and stays the genitive, and
+the year is the same cardinal either way.
 The numbers 1 to 4 agree with what they count, in gender, number and case
 (`agree()` in `src/common/languages/sl/numerals.rs`). A listener's report of November 2026:
 a 2 was always *dve* (*2 koša*, *2 načina*, the operator *T2*), and asked about
@@ -5167,7 +5353,8 @@ byte for byte what it was.
   (*7. 10.*, *7.10.*) is *sedmega desetega* (`short_date` in the hook; not
   before a year, not in an enumeration *1. 2. in 3. mesto*, not after another
   *N.*), and the final period stays a clause end unless a lowercase word
-  follows.
+  follows. After *danes je* and the like it is the nominative, *šestnajsti
+  četrti* (see above).
 - **5 and above in the oblique cases** (`agree()`, the `is_five_plus()`
   branch): *v petih urah, s petimi prsti, pred petimi leti, pred
   enaindvajsetimi leti, po petih letih, v dvanajstih urah, k petim osebam, do
@@ -5361,7 +5548,7 @@ python3 tools/formant/slovenian_words.py generate forms.tsv \
 
 (the first step streams 13 GB of XML in about four minutes; the 275 MB zip
 is `Sloleks.3.1.zip` at the handle above; `generate` takes a minute and
-writes the twelve tables into `src/common/languages/sl/tables/`, reading
+writes the thirteen tables into `src/common/languages/sl/tables/`, reading
 `HAND_ENTRIES` of `src/common/languages/sl/lexicon.rs` and the two SP files of
 names in `tools/formant/`; `--names-report` lists every entry of the
 tables of names with the lexicon's reading and the frequencies of the name
@@ -5399,7 +5586,8 @@ forms cost 0.2 %).
 | forms of hand-accented names, two accents, ć/đ, graded forms (2026-10-30) | 99.40 % | 99.84 % |
 
 What is left is almost all homographs no local cue separates: the cases of
-one noun (*straní* the genitive, *stráni* the locative; *póti*, *potí*), an
+one noun (*straní* the genitive, *stráni* the locative; *póti*, *potí*: read
+by the words before them since 2026-11-17, see *vasi* under Stress), an
 adjective's neuter and its adverb (*têžko*, *težkó*), and rare words outside
 the table. On a hundred hand-accented words of middling frequency drawn at
 random from Sloleks (with *karambol*, *zobobol*, *leteti*, *veseliti*), the
@@ -5412,6 +5600,30 @@ reference for accents: it learned from text, which carries none. The helper `pho
 (`src/common/languages/sl/tests.rs`) writes out the phones a
 Slovenian text gets; a Whisper run on twenty everyday sentences (section 7)
 is the rough intelligibility check used when the language was added.
+
+**A rule measured by lemma and tag** (2026-11-17). `tools/formant/slovenian_suk.py`
+does what the rounds before did with scripts that were not kept: `read SUK_DIR
+FORMS OUT.tsv [EXE]` runs every sentence of SUK that has one of the spellings
+through `examples/slovenian_stress.rs` (`cargo build --release --example
+slovenian_stress`; the example prints the phones of a sentence as the engine
+prepares it, numbers and clause marks included) and writes a row per token
+with its lemma, tag and phones; `score ROWS EXPECTED` counts the tokens read
+as the expected phones of their lemma and tag; `moved OLD NEW` lists every
+token two runs read differently. A sentence with a number or a symbol is left
+out (its words cannot be counted off), about a quarter of them. The old side
+is the same example built from the commit before the change.
+
+The ordinal *pêti* (the same report: *do petega enajstega* with both e open).
+SSKJ² and SP 2001 have *pêti -a -o* and, apart, the participle *pét -a -o* of
+*péti* "to sing" (SP: *péti -a -o, ~a maša*). Sloleks counts *petega* 8,496 times
+for the participle and 2,682 times for the ordinal, which cannot be (*petega
+maja*, *do petega leta*), so the lexicon read *pétega, pétemu, pétima* next to
+*pêti, pêtem, pêtih*. `PREFERRED` of `slovenian_words.py` names the lemmas whose
+forms win their spellings whatever the counts say; it has the ordinal *peti*.
+The regenerated `forms.txt` differs in those three entries and nothing else
+(the unchanged generator gave all twelve tables byte for byte from a fresh
+Sloleks 3.1, checked first). The forms of the other ordinals up to *deseti*,
+*stoti* and *tisoči* were read off the table: no other outlier.
 
 **Listener follow-up, 2026-11-09: samo and numeral agreement.**
 [SP 2001 / SSKJ² on Fran, sam](https://fran.si/iskanje?Query=sam&View=2)

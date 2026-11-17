@@ -967,7 +967,9 @@ pub(crate) fn ordinal_before(r: &NumberReader, t: Text, start: usize, end: usize
 /// mesto), unless another date follows the conjunction (od 1. 12. do 5.
 /// 12., 7. 10. in 8. 10.) or the day and the month are written together
 /// (od 1.12. do 5.12.). The words and the end of what they take.
-fn short_date(r: &NumberReader, t: Text, pos: usize) -> Option<(String, usize)> {
+/// `ending`: "ega" for the date something happens on, "i" for the day a
+/// sentence names (`names_the_day()`).
+fn short_date(r: &NumberReader, t: Text, pos: usize, ending: &str) -> Option<(String, usize)> {
     let date = t.parse_day_month(pos)?;
     let next = t.next_word(date.month_end + 1);
     if next.lowercase
@@ -977,8 +979,10 @@ fn short_date(r: &NumberReader, t: Text, pos: usize) -> Option<(String, usize)> 
     {
         return None;
     }
-    let mut words =
-        join_parts([ordinal(r, t.str(pos, date.day_end), "ega"), ordinal(r, t.str(date.month, date.month_end), "ega")]);
+    let mut words = join_parts([
+        ordinal(r, t.str(pos, date.day_end), ending),
+        ordinal(r, t.str(date.month, date.month_end), ending),
+    ]);
     // The final period is silent before a lowercase word, as the period
     // of "7. oktobra" is; before anything else it ends the sentence
     if !next.lowercase {
@@ -988,6 +992,23 @@ fn short_date(r: &NumberReader, t: Text, pos: usize) -> Option<(String, usize)> 
         words.push(' ');
     }
     Some((words, date.month_end + 1))
+}
+
+/// Danes je 16. 4. 2026 names the day: the nominative, šestnajsti četrti (a
+/// listener's report of 2026-11-17, who also said that Danes smo 16. 4. 2026
+/// is right in the genitive, šestnajstega četrtega; SP 2001 has both
+/// patterns in its entries, pêti: "~ega januarja <5.>" for the date of an
+/// event). As in Croatian, only after the words that name a day and the verb
+/// "is": Rodil se je 16. 4. says when, the genitive.
+fn names_the_day(t: Text, prev: &Prev) -> bool {
+    const DAYS: &[&str] = &["danes", "jutri", "včeraj", "pojutrišnjem", "predvčerajšnjim", "datum", "to", "dan"];
+    let before = t.prev_word(prev.begin);
+    match prev.word.as_str() {
+        "je" | "bo" => DAYS.contains(&before.word.as_str()),
+        // Včeraj je bil 15. 4.
+        "bil" => before.word == "je" && DAYS.contains(&t.prev_word(before.begin).word.as_str()),
+        _ => false,
+    }
 }
 
 /// Whether an en dash or an em dash stands at `pos`.
@@ -1021,7 +1042,8 @@ pub(crate) fn number_at(r: &NumberReader, t: Text, i: usize, out: &mut Out, in_r
     // A leading zero is read digit by digit by the shared path (007, 01),
     // except in a date without a year written with one: 05.03., 07. 10.
     if leading_zero {
-        let (words, stop) = short_date(r, t, i).filter(|_| !in_range && end - i == 2)?;
+        let ending = if !in_range && names_the_day(t, &prev) { "i" } else { "ega" };
+        let (words, stop) = short_date(r, t, i, ending).filter(|_| !in_range && end - i == 2)?;
         out.push_str(&words);
         return Some(stop);
     }
@@ -1042,9 +1064,19 @@ pub(crate) fn number_at(r: &NumberReader, t: Text, i: usize, out: &mut Out, in_r
         }
     }
 
-    // A full date is read by the shared path
-    if t.parse_date(i).is_some() {
-        return None;
+    // A full date is read by the shared path, in the genitive; the day a
+    // sentence names here, in the nominative, its year the same cardinal
+    let nominative_date = !in_range && names_the_day(t, &prev);
+    if let Some((date_end, groups)) = t.parse_date(i) {
+        if !nominative_date {
+            return None;
+        }
+        out.push_str(&join_parts([
+            ordinal(r, groups[0], "i"),
+            ordinal(r, groups[1], "i"),
+            r.number_to_words(groups[2]),
+        ]));
+        return Some(date_end);
     }
 
     // A clock time with a colon: ob 17:00 is ob sedemnajstih; 24:00 is a
@@ -1144,7 +1176,7 @@ pub(crate) fn number_at(r: &NumberReader, t: Text, i: usize, out: &mut Out, in_r
                 out.push_str(&(ordinal(r, digits, "ega") + &join + &r.date_to_words(&groups)));
                 return Some(date_end);
             }
-            if let Some((words, stop)) = short_date(r, t, c) {
+            if let Some((words, stop)) = short_date(r, t, c, "ega") {
                 out.push_str(&(ordinal(r, digits, "ega") + &join + &words));
                 return Some(stop);
             }
@@ -1224,7 +1256,7 @@ pub(crate) fn number_at(r: &NumberReader, t: Text, i: usize, out: &mut Out, in_r
     let in_list = prev.word.is_empty() && prev.ahead >= 2 && t.at(prev.ahead - 1) == b'.' && t.is_digit(prev.ahead - 2);
     if !in_range
         && !in_list
-        && let Some((words, stop)) = short_date(r, t, i)
+        && let Some((words, stop)) = short_date(r, t, i, if nominative_date { "i" } else { "ega" })
     {
         out.push_str(&words);
         return Some(stop);

@@ -16,6 +16,15 @@ use std::path::PathBuf;
 /// The languages whose front end is ported.
 const LANGUAGES: [&str; 4] = ["hr", "sr", "bs", "sl"];
 
+/// Texts a language reads otherwise than the C++ engine did, on purpose,
+/// since the port (language, text). Slovenian, a listener's report of
+/// 2026-11-17: petega has the open e of the ordinal pêti (the C++ lexicon
+/// had the participle's pétega), and strani is read by its case, straní
+/// where no preposition or adjective says the locative (the C++ engine read
+/// stráni everywhere; the two texts are Croatian phrases of the corpus).
+const INTENDED: &[(&str, &str)] =
+    &[("sl", "petega"), ("sl", "dvanajstega do petega"), ("sl", "Na lijevoj strani"), ("sl", "Strani jezik")];
+
 /// Fields 4 and 5 of a line of the reference: the clause, then every phone.
 fn describe(utt: &Utterance) -> (String, String) {
     let clause = format!(
@@ -83,6 +92,10 @@ fn phones_match_the_cpp_front_end() {
             };
             let text = index.parse::<usize>().ok().and_then(|index| texts.get(index.checked_sub(1)?));
             let text = text.unwrap_or_else(|| panic!("no text {index} in the corpus"));
+            let written: String = text.iter().collect();
+            if INTENDED.contains(&(code, written.as_str())) {
+                continue;
+            }
             let got = describe(&frontend.process(text, Punctuation::Period, sounds == "1"));
             total += 1;
             if got == (clause.to_string(), phones.to_string()) {

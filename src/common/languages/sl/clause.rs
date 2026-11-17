@@ -4,8 +4,8 @@
 
 use super::phonemize::{Capital, phonemize};
 use super::readings::{
-    Clause, FOOD_ACCUSATIVE, FOOD_GENITIVE, FOOD_NOMINATIVE, food_cases, is_adjective_ending, is_definite_adjective,
-    is_given_name, is_number_word, is_preposition,
+    Clause, FOOD_ACCUSATIVE, FOOD_GENITIVE, FOOD_NOMINATIVE, VerbOrNoun, context_reading, food_cases,
+    is_adjective_ending, is_definite_adjective, is_given_name, is_number_word, is_preposition, verb_noun_readings,
 };
 use super::words::{is_enclitic, is_function_word, is_proclitic, is_question_word};
 use crate::formant::phones::Ph;
@@ -1108,6 +1108,441 @@ fn genitive_u_reading(clause: &Clause, i: usize) -> Option<&'static str> {
     Some(if cue == CaseCue::Stem { stem } else { genitive })
 }
 
+// ---- mêja and mejá, vasí and vási ----
+//
+// A listener's report of 2026-11-17: Levo od tebe je meja on the first
+// syllable, igre brez meja on the last; On je iz vasi on the last syllable, V
+// tej vasi je veliko hiš on the first. Two more nouns of one spelling and two
+// cases, as glasu above, and the lexicon had the commoner form's reading for
+// each: mejá and vasí everywhere.
+
+/// Feminine nouns in -a whose genitive plural is spelled like the nominative
+/// singular and stressed on the ending: SSKJ² mêja -e, rod. mn. mêj in mejá;
+/// žêlja, rod. mn. žêlj in željá; žêna, rod. mn. žên in žená; stezà, rod. mn.
+/// stèz tudi stezá; SP 2001 gives the plural -é -á -àm of gôra, sêstra,
+/// sôlza, zêmlja too. Not vôda, whose spelling is also the genitive of the
+/// masculine vòd. The spelling, the genitive plural, and the nominative
+/// where the lexicon has the genitive plural for the spelling (mejá, the
+/// commoner form in the corpus behind Sloleks, 33,323 against 28,247).
+const GENITIVE_PLURAL_A: &[(&str, &str, Option<&str>)] = &[
+    ("meja", "mejá", Some("mêja")),
+    ("želja", "željá", None),
+    ("žena", "žená", None),
+    ("gora", "gorá", None),
+    ("sestra", "sestrá", None),
+    ("solza", "solzá", None),
+    ("zemlja", "zemljá", None),
+    ("steza", "stezá", None),
+];
+
+/// An adjective or a determiner in the genitive plural: državnih, naših,
+/// odprtih, teh. Not a pronoun (ki jih meja loči) and not a noun in the
+/// locative plural (v teh krajih meja poteka, v zadnjih letih).
+fn is_plural_adjective(w: &[char]) -> bool {
+    const DETERMINERS: &[&str] = &[
+        "teh",
+        "tistih",
+        "vseh",
+        "naših",
+        "vaših",
+        "mojih",
+        "tvojih",
+        "svojih",
+        "njegovih",
+        "njenih",
+        "njihovih",
+        "starih",
+        "novih",
+        "dobrih",
+        "mladih",
+        "obeh",
+        "drugih",
+        "mnogih",
+        "številnih",
+        "nekaterih",
+        "svojih",
+    ];
+    const NOUNS: &[&str] = &["letih", "mestih", "delih", "časih", "krajih", "primerih", "poljih", "dneh", "ljudeh"];
+    #[rustfmt::skip] // rows of endings
+    const ENDINGS: &[&str] = &[
+        "nih", "skih", "ških", "čkih", "ovih", "evih", "ših", "čih", "tih", "lih", "kih", "gih", "šnjih", "dnjih",
+        "anjih",
+    ];
+    is_one_of(w, DETERMINERS)
+        || (w.len() > 4 && ends_with_any(w, ENDINGS) && !is_one_of(w, NOUNS) && !ends_with(w, "stvih"))
+}
+
+/// A noun of an action, which takes the genitive of what it is about:
+/// spreminjanje meja, odprtje meja, preseganju meja, izpolnitev želja.
+fn is_verbal_noun(w: &[char]) -> bool {
+    #[rustfmt::skip] // rows of endings
+    const ENDINGS: &[&str] = &[
+        "anje", "enje", "anja", "enja", "anju", "enju", "anjem", "enjem", "rtje", "rtja", "rtju", "itev", "itve",
+        "itvi", "itvijo",
+    ];
+    const NOT: &[&str] = &["mnenje", "mnenja", "mnenju", "mnenjem", "vprašanje", "vprašanja", "vprašanju", "življenje"];
+    w.len() > 5 && ends_with_any(w, ENDINGS) && !is_one_of(w, NOT)
+}
+
+/// A word that counts or measures, with the genitive plural after it: veliko
+/// meja, več meja, pet meja, koliko meja.
+fn is_quantity(w: &[char]) -> bool {
+    const QUANTITIES: &[&str] = &[
+        "veliko", "več", "največ", "mnogo", "malo", "manj", "najmanj", "nekaj", "koliko", "toliko", "dovolj", "preveč",
+        "premalo", "nešteto", "premnogo", "sto", "tisoč", "par",
+    ];
+    is_one_of(w, QUANTITIES)
+        || (w.len() >= 3
+            && ends_with_any(w, &["pet", "šest", "sedem", "osem", "devet", "deset", "najst", "sto"])
+            && is_number_word(w))
+}
+
+/// mêja the nominative or mejá the genitive plural, and the like of the
+/// other nouns of `GENITIVE_PLURAL_A`. No preposition takes the nominative,
+/// so after one, right before the noun or before its adjectives in -ih, the
+/// spelling is the genitive plural (brez meja, do skrajnih meja, onkraj naših
+/// meja, iz gora, brez solza); so it is after an adjective in -ih alone
+/// (odprtih meja) and after a quantity (veliko meja, pet želja). Of meja and
+/// želja, which name no person, also after a noun of an action (spreminjanje
+/// meja, izpolnitev želja) and a verb that has none (Domišljija ne pozna
+/// meja, nima meja, Tu ni meja; but To ni meja names it); sestra, žena after
+/// those are mostly the subject (Danes ne pride sestra). Whatever has none
+/// of them is the nominative.
+fn genitive_plural_a_reading(clause: &Clause, i: usize) -> Option<&'static str> {
+    const HAS_NONE: &[&str] = &["nima", "nimajo", "nimamo", "nimate", "nimaš", "nimam", "nimata"];
+    const KNOWS: &[&str] = &["pozna", "poznajo", "poznamo", "poznam", "poznaš", "priznava", "priznavajo", "vidi"];
+    const NAMING: &[&str] = &["to", "ta", "tista", "tole", "ona"];
+    let w = clause.word(i)?;
+    let &(_, genitive, nominative) = GENITIVE_PLURAL_A.iter().find(|&&(spelling, ..)| eq(w, spelling))?;
+    let words = clause.words;
+    let thing = is_one_of(w, &["meja", "želja"]);
+    // Back over the adjectives of a genitive plural
+    let mut k = i;
+    while k > 0 && i - k < 4 && is_plural_adjective(&words[k - 1]) {
+        k -= 1;
+    }
+    let before = clause.before(k);
+    let plural = k < i
+        || before.is_some_and(|before| {
+            is_preposition(before)
+                || is_one_of(before, &["onkraj", "izven", "zraven", "vrh", "konec", "kraj", "spričo", "vpričo"])
+                || is_quantity(before)
+                || (thing
+                    && (is_verbal_noun(before)
+                        || is_one_of(before, HAS_NONE)
+                        || (eq(before, "ni") && eq(w, "meja") && !(0..k - 1).any(|a| clause.one_of(a, NAMING)))
+                        || (k >= 2 && clause.is(k - 2, "ne") && is_one_of(before, KNOWS))))
+        });
+    if plural { Some(genitive) } else { nominative }
+}
+
+/// Feminine nouns whose genitive singular and plural forms in -i are
+/// stressed on the ending and whose dative and locative singular on the stem
+/// (SSKJ² vás -í; SP 2001 vás -í ž -i -- -i -jó; -í -í -éma ...: the dative
+/// and the locative vási, every other form in -i vasí). The spelling, the
+/// form on the ending, the form on the stem.
+#[rustfmt::skip] // one noun per row
+const GENITIVE_I: &[(&str, &str, &str)] = &[
+    ("cevi", "ceví", "cévi"),
+    ("dlani", "dlaní", "dláni"),
+    ("jedi", "jedí", "jédi"),
+    ("kleti", "kletí", "kléti"),
+    ("klopi", "klopí", "klópi"),
+    ("kosti", "kostí", "kôsti"),
+    ("krvi", "krví", "kŕvi"),
+    ("lasti", "lastí", "lásti"),
+    ("laži", "laží", "láži"),
+    ("luči", "lučí", "lúči"),
+    ("moči", "močí", "môči"),
+    ("noči", "nočí", "nôči"),
+    ("oblasti", "oblastí", "oblásti"),
+    ("osi", "osí", "ôsi"),
+    ("pesti", "pestí", "pêsti"),
+    ("peči", "pečí", "pêči"),
+    ("plasti", "plastí", "plásti"),
+    ("plati", "platí", "pláti"),
+    ("pomoči", "pomočí", "pomôči"),
+    ("poti", "potí", "póti"),
+    ("rasti", "rastí", "rásti"),
+    ("ravni", "ravní", "rávni"),
+    ("skrbi", "skrbí", "skŕbi"),
+    ("sledi", "sledí", "slédi"),
+    ("smeri", "smerí", "sméri"),
+    ("snovi", "snoví", "snôvi"),
+    ("soli", "solí", "sôli"),
+    ("strani", "straní", "stráni"),
+    ("strasti", "strastí", "strásti"),
+    ("stvari", "stvarí", "stvári"),
+    ("vasi", "vasí", "vási"),
+    ("vesti", "vestí", "vésti"),
+    ("vezi", "vezí", "vézi"),
+    ("vrvi", "vrví", "vŕvi"),
+    ("zmesi", "zmesí", "zmési"),
+    ("zvrsti", "zvrstí", "zvŕsti"),
+    ("časti", "častí", "části"),
+    // Rarer nouns of the same declension (Sloleks, hand-accented), without
+    // those spelled like another word (kadi, kali, poči, draži, tesni, gazi)
+    ("zveri", "zverí", "zvéri"),
+    ("gredi", "gredí", "grédi"),
+    ("brvi", "brví", "bŕvi"),
+    ("masti", "mastí", "másti"),
+    ("polti", "poltí", "pôlti"),
+    ("slasti", "slastí", "slásti"),
+    ("vzmeti", "vzmetí", "vzméti"),
+    ("gosi", "gosí", "gósi"),
+    ("čeri", "čerí", "čéri"),
+    ("osti", "ostí", "ôsti"),
+    ("rži", "rží", "ŕži"),
+    ("nravi", "nraví", "nrávi"),
+    ("uši", "uší", "úši"),
+];
+
+/// What the words before position `at` say of the case of a noun of
+/// `GENITIVE_I` standing there: `Some(true)` the dative or the locative
+/// singular (the stem), `Some(false)` another case (the ending), `None`
+/// nothing. `noun`: the noun, for the few that a preposition says less of.
+fn feminine_case_before(clause: &Clause, at: usize, noun: &[char]) -> Option<bool> {
+    const LOCATIVE_DATIVE: &[&str] = &["v", "na", "o", "ob", "po", "pri", "k", "h", "proti", "kljub", "nasproti"];
+    // Two nouns met in the plural more than in the singular: na stvari and
+    // v, na kosti are the accusative plural (vpliva na stvari, pogled na
+    // stvari, strah v kosti; SUK 1.1: 5 of 5), while v stvari, pri stvari
+    // stay the singular
+    let plural = |before: &[char]| {
+        (eq(noun, "stvari") && eq(before, "na")) || (eq(noun, "kosti") && is_one_of(before, &["v", "na"]))
+    };
+    // The dative and locative singular of the feminine determiners and of
+    // the commonest adjectives whose shape says nothing
+    const DETERMINERS: &[&str] = &[
+        "tej", "tisti", "vsej", "eni", "neki", "moji", "tvoji", "svoji", "njeni", "naši", "vaši", "njihovi", "njegovi",
+        "isti", "sami", "vsaki", "kateri", "nobeni", "drugi", "prvi", "taki", "takšni", "kakšni", "kakršni", "pravi",
+        "novi", "stari", "mali", "veliki", "dolgi", "kratki", "levi", "desni", "lepi", "dobri", "slabi", "visoki",
+        "nizki", "hudi", "polni", "celi", "moški", "javni", "tuji",
+    ];
+    // Between the adjectives of one noun: na državni, regionalni in lokalni
+    // ravni; v kakršni koli obliki
+    const JOINING: &[&str] =
+        &["in", "ali", "ter", "oziroma", "koli", "zelo", "bolj", "najbolj", "tako", "približno", "precej", "povsem"];
+    const NJI: &[&str] = &["sosednji", "zadnji", "spodnji", "zgornji", "srednji", "prednji", "notranji", "zunanji"];
+    let words = clause.words;
+    // An adjective in the feminine dative or locative singular. Nouns end in
+    // -i too (v bližini vasi, veji oblasti, dobi rasti, na strani osi,
+    // sposobnosti krvi, sledovi krvi), and so do infinitives (videti krvi):
+    // only the shapes of adjectives
+    let adjective = |x: &[char]| {
+        is_one_of(x, DETERMINERS)
+            || is_one_of(x, NJI)
+            || (x.len() > 5 && ends_with_any(x, &["šnji", "anji", "ednji"]))
+            || ((is_adjective_ending(x) || is_definite_adjective(x) || ends_with_any(x, &["šji", "žji", "čji", "jši"]))
+                && !ends_with_any(x, &["ini", "osti", "ovi", "ti", "ci", "iji", "itvi", "atvi", "nji"])
+                && !GENITIVE_I.iter().any(|&(spelling, ..)| eq(x, spelling)))
+    };
+    // Between a preposition and the noun any word in -i agrees with it (po
+    // očetovi strani, na enaki ravni, ob čisti vesti, na oni plati), unless
+    // it has the shape of a noun, which the noun after it would be the
+    // genitive of (v bližini vasi, v dobi rasti, v obliki pomoči)
+    const NOUNS: &[&str] = &[
+        "dobi",
+        "obliki",
+        "usodi",
+        "veji",
+        "podobi",
+        "hiši",
+        "zgodbi",
+        "meri",
+        "zvezi",
+        "zadevi",
+        "državi",
+        "vladi",
+        "družbi",
+        "službi",
+        "osnovi",
+        "podlagi",
+        "luči",
+        "smeri",
+        "sredi",
+        "okolici",
+        "koristi",
+        "škodi",
+        "uri",
+        "rabi",
+        "uporabi",
+        "izgubi",
+        "obnovi",
+        "pripravi",
+        "izbiri",
+        "višini",
+        "ceni",
+        "sestavi",
+        "naravi",
+        "glavi",
+        "roki",
+        "nogi",
+        "vodi",
+        "zemlji",
+        "želji",
+        "volji",
+        "vrsti",
+        "skupini",
+        "polovici",
+        "tretjini",
+        "večini",
+        "prepovedi",
+        "bolezni",
+        "ljubezni",
+        "misli",
+        "smrti",
+        "jeseni",
+        "pomladi",
+    ];
+    let loose = |x: &[char]| {
+        x.len() > 3
+            && (ends_with(x, "i") || eq(x, "tej"))
+            && !is_preposition(x)
+            && !is_one_of(x, NOUNS)
+            && !ends_with_any(x, &["ini", "osti", "ci", "iji", "tvi", "nci", "lci"])
+            && !GENITIVE_I.iter().any(|&(spelling, ..)| eq(x, spelling))
+    };
+    let mut k = at;
+    for _ in 0..4 {
+        let Some(before) = k.checked_sub(1).map(|b| &words[b][..]) else { break };
+        if k < at && is_one_of(before, LOCATIVE_DATIVE) {
+            return Some(true);
+        }
+        if !loose(before) && !(k < at && is_one_of(before, JOINING)) {
+            break;
+        }
+        k -= 1;
+    }
+    let mut k = at;
+    let mut agreeing = false;
+    for _ in 0..6 {
+        let Some(before) = k.checked_sub(1).map(|b| &words[b][..]) else { break };
+        if is_one_of(before, LOCATIVE_DATIVE) {
+            return Some(!(k == at && plural(before)));
+        }
+        if adjective(before) {
+            agreeing = true;
+        } else if !(agreeing && is_one_of(before, JOINING)) {
+            break;
+        }
+        k -= 1;
+    }
+    let before = clause.before(k);
+    let other_case = before.is_some_and(|before| is_preposition(before) || is_number_word(before));
+    if agreeing && !other_case {
+        // sosednji vasi (je pomagal): the dative by its adjective alone
+        return Some(true);
+    }
+    // An adjective in -e is the genitive singular or a plural (te vasi,
+    // sosednje vasi), whatever preposition stands before it
+    (other_case || before.is_some_and(|before| before.len() > 2 && ends_with(before, "e"))).then_some(false)
+}
+
+/// vasí or vási, and the like of the other nouns of `GENITIVE_I`. The
+/// locative has a preposition (v vasi, na vasi, po vasi, pri vasi), right
+/// before the noun or before its adjectives, which end in -i or -ej there
+/// (v tej vasi, v sosednji vasi, na državni in lokalni ravni); the dative
+/// has k, proti, such an adjective alone (sosednji vasi) or a word that
+/// takes it (bližje pomoči, namenjen pomoči). An adjective in -e says
+/// another case whatever the preposition (v te vasi the accusative plural,
+/// iz te vasi the genitive), as does a numeral (v tri vasi). A noun joined
+/// to another by in, ali, ter has that one's case (o specifikacijah in
+/// moči). Whatever has none of them is on the ending: the genitive (iz vasi,
+/// sredi vasi, prebivalci vasi), the nominative and the accusative plural
+/// (vasi so majhne). `None` where nothing is said and `must_say`.
+fn genitive_i_reading(clause: &Clause, i: usize, must_say: bool) -> Option<&'static str> {
+    const CONJUNCTIONS: &[&str] = &["in", "ali", "ter", "oziroma"];
+    const ADVERBS: &[&str] = &["predvsem", "tudi", "zlasti", "le", "samo", "še", "že"];
+    let w = clause.word(i)?;
+    let &(_, ending, stem) = GENITIVE_I.iter().find(|&&(spelling, ..)| eq(w, spelling))?;
+    let words = clause.words;
+    let mut cue = feminine_case_before(clause, i, w);
+    if cue.is_none() && i >= 2 && is_one_of(&words[i - 1], CONJUNCTIONS) {
+        // o specifikacijah in moči, po učinkovitosti in moči: the case of
+        // the noun before the conjunction
+        cue = if ends_with_any(&words[i - 2], &["ih", "ah", "eh"]) {
+            Some(true)
+        } else {
+            // (only by a preposition: ne pomeni priznanja ali časti)
+            let preposition =
+                words[i.saturating_sub(6)..i - 2].iter().any(|x| is_one_of(x, &["v", "na", "o", "ob", "po", "pri"]));
+            feminine_case_before(clause, i - 2, w).filter(|&dative| dative && preposition)
+        };
+    }
+    if cue.is_none() {
+        let governs = |k: usize| clause.word(k).is_some_and(governs_dative);
+        if (i >= 1 && governs(i - 1)) || (i >= 2 && is_one_of(&words[i - 1], ADVERBS) && governs(i - 2)) {
+            cue = Some(true);
+        }
+    }
+    match cue {
+        Some(true) => Some(stem),
+        Some(false) => Some(ending),
+        None => (!must_say).then_some(ending),
+    }
+}
+
+/// vas the village, vás (SSKJ² vás -í ž; SP 2001 vás -í), not the pronoun
+/// vas, which is the commoner word and a clitic: after a word that agrees
+/// with a feminine noun (ta vas, naša vas, sosednja vas, majhna vas, v našo
+/// vas), after v with a verb of going before it (Grem v vas; Zaupam v vas is
+/// the pronoun), and at the head of a clause before what a village does or
+/// is (Vas leži ob reki. Vas je majhna.; Vas je strah, Vas je mama klicala
+/// are the pronoun). A noun before it says nothing (Ana vas čaka, občina vas
+/// obvešča), nor does an adverb in -o (lepo vas prosim, celo vas). SUK 1.1:
+/// 20 of the 28 tokens of the noun (none before), and none of the 139 of the
+/// pronoun; what is left is the village as an object or after na (zapusti
+/// vas, na vas), which the pronoun is as well.
+fn vas_is_village(clause: &Clause, i: usize) -> bool {
+    #[rustfmt::skip] // rows of words
+    const AGREEING: &[&str] = &[
+        "ta", "tista", "naša", "vaša", "moja", "tvoja", "svoja", "njegova", "njena", "njihova", "sosednja", "rojstna",
+        "domača", "vsa", "cela", "celotna", "majhna", "mala", "velika", "lepa", "stara", "nova", "mirna", "vsaka",
+        "nobena", "ena", "neka", "ista", "druga", "prva", "zadnja", "naslednja", "bližnja", "mlada", "prazna",
+        "to", "tisto", "našo", "vašo", "mojo", "tvojo", "svojo", "njegovo", "njeno", "njihovo", "sosednjo",
+        "rojstno", "domačo", "vso", "celotno", "majhno", "malo", "vsako", "nobeno", "eno", "neko", "isto", "drugo",
+        "bližnjo",
+    ];
+    const GOING: &[&str] = &[
+        "grem", "greš", "gre", "gremo", "greste", "gredo", "šel", "šla", "šli", "šle", "iti", "pojdi", "pojdite",
+        "prišel", "prišla", "prišli", "pridem", "pride", "pridejo", "priti", "vrnil", "vrnila", "vrnili", "peljal",
+        "peljala", "peljali", "pelje", "zavil", "zavila", "odšel", "odšla", "odšli", "prispel", "prispela", "prispeli",
+        "pot", "cesta",
+    ];
+    const DOES: &[&str] = &["leži", "stoji", "šteje", "spada", "slovi", "nosi", "obsega", "meji", "sodi"];
+    let words = clause.words;
+    let Some(prev) = clause.before(i) else {
+        // Vas leži ob reki. Vas je majhna.
+        if clause.one_of(1, DOES) {
+            return true;
+        }
+        let participle = |x: &Vec<char>| x.len() > 3 && ends_with_any(x, &["la", "lo", "li", "le"]);
+        return clause.is(1, "je")
+            && clause
+                .word(2)
+                .is_some_and(|x| x.len() > 3 && ends_with_any(x, &["na", "ka", "ska", "ška", "pa", "ta"]))
+            && !words.iter().any(participle);
+    };
+    // to vas ne briga, to vas zanima: the pronoun after the subject to
+    if eq(prev, "to") {
+        return i >= 2 && is_preposition(&words[i - 2]);
+    }
+    // The shapes of adjectives no noun before the pronoun has: Srednja vas,
+    // Gorenja vas, zanimiva vas, vzhodna vas, v Šegovo vas, v deveto vas
+    #[rustfmt::skip] // rows of endings
+    const SHAPES: &[&str] = &[
+        "ska", "ška", "sko", "ško", "nja", "njo", "ova", "eva", "ovo", "evo", "iva", "ivo", "dna", "dno", "eta",
+        "eto",
+    ];
+    if is_one_of(prev, AGREEING)
+        || (prev.len() > 4 && ends_with_any(prev, SHAPES) && !eq(prev, "gotovo"))
+        || eq(prev, "skozi")
+    {
+        return true;
+    }
+    eq(prev, "v") && i >= 2 && words[..i - 1].iter().rev().take(3).any(|x| is_one_of(x, GOING))
+}
+
 /// Samo je prišel. Samo se je smejal. Samo ga ni videl. Samo bo prišel. The
 /// name Sámo (SP 2001: Sámo -a, oseb. i.) as the subject at the head of a
 /// sentence, where the capital says nothing: a listener's rule of 2026-11-10,
@@ -1200,6 +1635,9 @@ pub fn clause_reading(clause: &Clause, i: usize) -> Option<&'static str> {
     if eq(w, "vprašaj") {
         return Some(vprasaj_reading(clause, i));
     }
+    if eq(w, "vas") {
+        return vas_is_village(clause, i).then_some("vás");
+    }
     if eq(w, "je") {
         return je_reading(clause, i);
     }
@@ -1208,6 +1646,25 @@ pub fn clause_reading(clause: &Clause, i: usize) -> Option<&'static str> {
         && let Some(reading) = genitive_u_reading(clause, i)
     {
         return Some(reading);
+    }
+    if w.last() == Some(&'a')
+        && let Some(reading) = genitive_plural_a_reading(clause, i)
+    {
+        return Some(reading);
+    }
+    if w.last() == Some(&'i')
+        && let Some(reading) = genitive_i_reading(clause, i, false)
+    {
+        // A spelling that is also a verb's form (moči, rasti, poti se, noči,
+        // lasti si): the verb where the words around it say so. The form on
+        // the ending is the verb's reading too for most (potí, nočí, lastí,
+        // častí, vestí); pêči, the infinitive, is the stem's, so only a cue
+        // makes it the noun's ending
+        let Some(readings) = verb_noun_readings(w) else { return Some(reading) };
+        return match context_reading(clause, i, readings.participle, readings.noun_percent) {
+            VerbOrNoun::Verb => None,
+            _ => genitive_i_reading(clause, i, eq(w, "peči")),
+        };
     }
     // Veseli se! Veseli se novega dneva! The imperative vesêli (SP 2001
     // veselíti -ím, vesêli -íte) at the head of a clause before se or si in
@@ -1266,6 +1723,7 @@ pub fn clause_reading_is_content(w: &[char], reading: &str) -> bool {
         "sámo" => eq(w, "samo"),
         "jé" => eq(w, "je"), // "eats", a verb with an accent of its own
         "láhko" => eq(w, "lahko"),
+        "vás" => eq(w, "vas"), // the village, a noun
         _ => false,
     }
 }
