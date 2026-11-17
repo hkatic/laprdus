@@ -55,12 +55,15 @@ ShowLanguageDialog=no
 LanguageDetectionMethod=uilanguage
 
 ; Setup takes the language of Windows's display language. English comes
-; first because any other display language gets the first entry; Croatian comes
-; before Serbian because a display language with no exact match gets the first
-; entry of its primary language (hr, sr and bs share 0x1A), so Bosnian gets Croatian.
+; first because any other display language gets the first entry. A display
+; language whose LanguageID one of the files has gets that file (Croatian,
+; Bosnian in Latin, Serbian in Latin); one without an exact match gets the
+; first entry of its primary language (hr, sr and bs share 0x1A), so Croatian
+; comes first of the three: Bosnian and Serbian in Cyrillic get Croatian.
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "croatian"; MessagesFile: "Croatian.isl"
+Name: "bosnian"; MessagesFile: "Bosnian.isl"
 Name: "serbian"; MessagesFile: "Serbian.isl"
 Name: "slovenian"; MessagesFile: "compiler:Languages\Slovenian.isl"
 
