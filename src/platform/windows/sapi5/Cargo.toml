@@ -21,6 +21,9 @@ windows = { version = "0.62.2", features = ["Win32_Media_Speech", "Win32_Media_A
 windows-core = "0.62.2"
 windows-registry = "0.6.1"
 
+[build-dependencies]
+embed-resource = "3.0.12"
+
 # COM and the Win32 calls around it cannot be written without unsafe code; it
 # stays in this crate.
 [lints.rust]

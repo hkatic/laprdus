@@ -10,6 +10,9 @@
 //! The library also exports the C API (`laprdus_*`): the NVDA add-on loads it
 //! for that.
 #![cfg(windows)]
+// The linker would have the COM entry points exported PRIVATE, which only
+// keeps them out of an import library nobody uses.
+#![allow(linker_messages)]
 
 // Linked for its exported functions.
 use laprdus_capi as _;

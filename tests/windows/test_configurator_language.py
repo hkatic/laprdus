@@ -478,7 +478,7 @@ if __name__ == "__main__":
         shots = args[i + 1]
         del args[i:i + 2]
         os.makedirs(shots, exist_ok=True)
-    exe = os.path.abspath(args[0] if args else os.path.join(ROOT, "target", "release", "laprdgui.exe"))
+    exe = os.path.abspath(args[0] if args else os.path.join(ROOT, "dist", "windows-x64", "laprdgui.exe"))
     user32.SetProcessDpiAwarenessContext(ctypes.c_void_p(-4))
     test_dialogs(exe, test_tables(exe), shots)
     print("%d failed" % len(failures))
