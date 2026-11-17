@@ -10,7 +10,7 @@ build/
 *.exe
 *.apk
 
-# SCons configuration
+# SCons configuration (the NVDA add-on is built with SCons)
 .sconf_temp/
 config.log
 
@@ -86,7 +86,8 @@ __pycache__/
 xcuserdata/
 DerivedData/
 
-# Distribution packages (macOS release script, scons macos-dist)
+# Staged programs and release tarballs (cargo xtask windows, cargo xtask
+# dist, the macOS release script)
 dist/
 
 # Scratch settings written by tests/nvda/test_driver.py

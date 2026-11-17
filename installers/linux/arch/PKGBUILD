@@ -7,63 +7,40 @@ pkgdesc="Croatian/Serbian/Bosnian/Slovenian Text-to-Speech Engine"
 arch=('x86_64' 'aarch64')
 url="https://hrvojekatic.com/laprdus"
 license=('GPL3')
-depends=('glibc' 'gcc-libs' 'libpulse' 'speech-dispatcher' 'glib2')
-makedepends=('scons' 'gcc' 'alsa-lib')
+# The programs are Rust and link only the C library, libgcc and, for the
+# CLI's playback, ALSA (which PulseAudio and PipeWire serve too). The Speech
+# Dispatcher module talks to the server through its standard streams and
+# links none of its libraries.
+depends=('glibc' 'gcc-libs' 'alsa-lib' 'speech-dispatcher')
+makedepends=('cargo' 'pkgconf')
 source=("$pkgname-$pkgver.tar.xz"
         'laprdus.install')
 sha256sums=('SKIP'
             'SKIP')
 install=laprdus.install
 
+prepare() {
+    cd "$pkgname-$pkgver"
+    export RUSTUP_TOOLCHAIN=stable
+    cargo fetch --locked
+}
+
 build() {
     cd "$pkgname-$pkgver"
-    scons --platform=linux --build-config=release linux-all
+    export RUSTUP_TOOLCHAIN=stable
+    # The voice data and dictionaries (data/voices, data/dictionary), then
+    # the CLI, the Speech Dispatcher module and the C API library.
+    cargo --frozen xtask build --frozen
 }
 
 package() {
     cd "$pkgname-$pkgver"
+    export RUSTUP_TOOLCHAIN=stable
 
-    # Install library
-    install -Dm755 build/linux-x64-release/liblaprdus.so \
-        "$pkgdir/usr/lib/liblaprdus.so.2.0.0"
-    ln -s liblaprdus.so.2.0.0 "$pkgdir/usr/lib/liblaprdus.so.2"
-    ln -s liblaprdus.so.1 "$pkgdir/usr/lib/liblaprdus.so"
-
-    # Install CLI
-    install -Dm755 build/linux-x64-release/laprdus \
-        "$pkgdir/usr/bin/laprdus"
-
-    # Install voice data
-    install -Dm644 build/linux-x64-release/Josip.bin \
-        "$pkgdir/usr/share/laprdus/Josip.bin"
-    install -Dm644 build/linux-x64-release/Vlado.bin \
-        "$pkgdir/usr/share/laprdus/Vlado.bin"
-
-    # Install dictionaries
-    install -Dm644 data/dictionary/internal.json \
-        "$pkgdir/usr/share/laprdus/internal.json"
-    install -Dm644 data/dictionary/spelling.json \
-        "$pkgdir/usr/share/laprdus/spelling.json"
-    install -Dm644 data/dictionary/emoji.json \
-        "$pkgdir/usr/share/laprdus/emoji.json"
-    install -Dm644 data/dictionary/emoji_sl.json \
-        "$pkgdir/usr/share/laprdus/emoji_sl.json"
-
-    # Install Speech Dispatcher module
-    install -Dm755 build/linux-x64-release/sd_laprdus \
-        "$pkgdir/usr/lib/speech-dispatcher-modules/sd_laprdus"
-
-    # Install module configuration
-    install -Dm644 src/platform/linux/speechd/laprdus.conf \
-        "$pkgdir/etc/speech-dispatcher/modules/laprdus.conf"
-
-    # Install headers for development
-    install -Dm644 include/laprdus/laprdus_api.h \
-        "$pkgdir/usr/include/laprdus/laprdus_api.h"
-    install -Dm644 include/laprdus/types.hpp \
-        "$pkgdir/usr/include/laprdus/types.hpp"
-    install -Dm644 include/laprdus/laprdus.hpp \
-        "$pkgdir/usr/include/laprdus/laprdus.hpp"
+    # The library (liblaprdus.so.2.0.0 and its links), the CLI, the header,
+    # the voice data and dictionaries, the Speech Dispatcher module and its
+    # configuration. Everything is built already; this only copies.
+    cargo --frozen xtask install --frozen --destdir "$pkgdir" --prefix /usr
 
     # Install documentation
     install -Dm644 readme.md "$pkgdir/usr/share/doc/$pkgname/readme.md"

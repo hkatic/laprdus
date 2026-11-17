@@ -14,18 +14,25 @@ Build .deb packages for Debian-based Linux distributions (Debian, Ubuntu, Linux 
 
 Install build dependencies:
 ```bash
-sudo apt install -y build-essential debhelper devscripts scons \
-    libpulse-dev libasound2-dev libspeechd-dev libglib2.0-dev
+sudo apt install -y build-essential debhelper devscripts cargo rustc pkg-config libasound2-dev
+```
+
+The engine needs Rust 1.85 or newer. Where the distribution's `cargo` is older, install Rust with rustup (https://rustup.rs) and pass `-d` to `dpkg-buildpackage`, as below, so the `cargo`/`rustc` build dependencies are not checked. Cargo downloads the crates of `Cargo.lock` during the build, so the build needs network access.
+
+```bash
+rustc --version   # 1.85 or newer
 ```
 
 ## Build Steps
 
-The debian directory lives under `installers/linux/deb/debian/` but `dpkg-buildpackage` expects it at the project root alongside `SConstruct`. Use a symlink:
+The debian directory lives under `installers/linux/deb/debian/` but `dpkg-buildpackage` expects it at the project root alongside `Cargo.toml`. Use a symlink:
 
 ```bash
 cd /home/hrvojekatic/.repo/hkatic/laprdus
 ln -sfn installers/linux/deb/debian debian && dpkg-buildpackage -us -uc -b -rfakeroot -d; rm -f debian
 ```
+
+`debian/rules` builds with `cargo xtask build` (packs the voice data, builds the CLI, the Speech Dispatcher module and the C API library) and installs with `cargo xtask install --destdir debian/laprdus --prefix /usr --libdir /usr/lib/<multiarch>`; the header is then moved to `laprdus-dev`.
 
 **WSL note:** The build automatically detects WSL and handles NTFS permission issues (777 on all files) by copying package trees to `/tmp` for correct `dpkg-deb` packaging.
 
@@ -37,12 +44,12 @@ The build creates packages in the parent directory (`..`):
 
 ## Key Design Decisions
 
-- **Single package**: CLI, library, Speech Dispatcher module, voice data, and all 3 dictionaries (internal.json, spelling.json, emoji.json) are in ONE `laprdus` package
+- **Single package**: CLI, library, Speech Dispatcher module, voice data, and the dictionaries (internal.json, spelling.json, emoji.json, emoji_sl.json) are in ONE `laprdus` package
 - **Multiarch library path**: Library installs to `/usr/lib/$(DEB_HOST_MULTIARCH)/` for proper Debian multiarch support
 - **ldconfig**: Handled automatically by debhelper triggers when library is in multiarch path
 - **speechd.conf**: Auto-configured in `postinst` with BEGIN/END markers, cleaned up in `postrm`. Detects SD 0.12+ autodetection mode (no uncommented AddModule lines) and only adds LanguageDefaultModule entries to avoid disabling autodetection for other modules (the other installed modules)
 - **Speech Dispatcher restart**: Uses `try-restart` for both system and user services, iterates logged-in users via `loginctl list-users`. On removal, also uses `killall speech-dispatcher` as fallback to ensure SD is fully stopped (socket activation restarts it clean)
-- **speech-dispatcher dependency**: Declared in `Depends:` field
+- **speech-dispatcher dependency**: Declared in `Depends:` field; the library dependencies (`libc6`, `libgcc-s1`, `libasound2` for the CLI's playback) come from `${shlibs:Depends}`
 
 ## Package Contents
 
@@ -54,7 +61,7 @@ The build creates packages in the parent directory (`..`):
 - `/etc/speech-dispatcher/modules/laprdus.conf` - Module config
 
 ### laprdus-dev
-- `/usr/include/laprdus/` - C API headers
+- `/usr/include/laprdus/laprdus_api.h` - C API header
 
 ## Copy to ~/Downloads
 

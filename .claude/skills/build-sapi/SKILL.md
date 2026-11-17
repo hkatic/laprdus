@@ -12,15 +12,17 @@ Build the Windows SAPI5 text-to-speech driver with both 32-bit and 64-bit DLLs, 
 
 Execute these commands in sequence:
 
-### 1. Build x64 SAPI5 DLL
+### 1. Pack the voice data and stage the dictionaries
 ```bash
-scons --platform=windows --arch=x64 --build-config=release sapi5
+cargo xtask data
 ```
 
-### 2. Build x86 SAPI5 DLL
+### 2. Build the SAPI5 DLLs, the CLI and the Configurator for x64 and x86
 ```bash
-scons --platform=windows --arch=x86 --build-config=release sapi5
+cargo xtask windows
 ```
+
+Needs Rust with the MSVC build tools and both targets (`rustup target add x86_64-pc-windows-msvc i686-pc-windows-msvc`).
 
 ### 3. Build InnoSetup Installer
 ```bash
@@ -29,14 +31,13 @@ scons --platform=windows --arch=x86 --build-config=release sapi5
 
 ## Expected Output
 
-- DLLs:
-  - `build/windows-x64-release/laprd64.dll`
-  - `build/windows-x86-release/laprd32.dll`
+- `dist/windows-x64/`: `laprd64.dll`, `laprdus.exe`, `laprdgui.exe`
+- `dist/windows-x86/`: `laprd32.dll`, `laprdus.exe`, `laprdgui.exe`
 - Installer: `installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe`
 
 ## Voice Data
 
-The build automatically generates voice data (`data/voices/Josip.bin`, `data/voices/Vlado.bin`) if not present.
+Step 1 packs the voice data (`data/voices/Josip.bin`, `data/voices/Vlado.bin`) and stages the dictionaries (`data/dictionary/`); the installer takes both from there.
 
 ## Verification
 

@@ -5,10 +5,10 @@
 # Prepares and packages the macOS release for distribution outside the Mac
 # App Store (Developer ID):
 #
-#   1. voice data (scons voice-data)
+#   1. voice data (cargo xtask data)
 #   2. the command-line tools: a universal (Apple Silicon + Intel) laprdus CLI
 #      and liblaprdus.dylib, signed with the Developer ID and the hardened
-#      runtime, packed by `scons macos-dist` as
+#      runtime, packed by `cargo xtask dist --universal` as
 #      laprdus-<version>-macos-universal.tar.xz
 #   3. the Laprdus app with its LaprdusVoices speech extension: xcodebuild
 #      archive (Release, universal), export with the "developer-id" method
@@ -21,7 +21,8 @@
 #
 # Requirements:
 #   - Xcode with the command line tools (xcodebuild, codesign, notarytool,
-#     stapler, hdiutil), SCons
+#     stapler, hdiutil), Rust (rustup) with both Mac targets:
+#       rustup target add aarch64-apple-darwin x86_64-apple-darwin
 #   - the team's Apple Developer Program membership signed in to Xcode
 #     (Xcode > Settings > Accounts): Xcode then signs the app with a
 #     cloud-managed Developer ID certificate. A local "Developer ID
@@ -64,7 +65,7 @@ set -euo pipefail
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_ROOT"
 
-XCODE_PROJECT="Lapplerdus/Laprdus/Laprdus.xcodeproj"
+XCODE_PROJECT="src/platform/apple/Laprdus/Laprdus.xcodeproj"
 SCHEME="Laprdus"
 WORK_DIR="$PROJECT_ROOT/build/macos-release"
 OUTPUT_DIR="$PROJECT_ROOT/dist/macos"
@@ -104,22 +105,18 @@ done
 # Prerequisites
 # -----------------------------------------------------------------------------
 [[ "$(uname -s)" == "Darwin" ]] || die "This script runs on macOS only."
-for tool in xcodebuild scons codesign hdiutil ditto lipo; do
-    command -v "$tool" >/dev/null 2>&1 || die "$tool not found. Install Xcode and SCons (pip install scons)."
+for tool in xcodebuild cargo codesign hdiutil ditto lipo; do
+    command -v "$tool" >/dev/null 2>&1 || die "$tool not found. Install Xcode and Rust (https://rustup.rs)."
 done
 xcrun --find notarytool >/dev/null 2>&1 || die "notarytool not found: Xcode 13 or newer is required."
 xcrun --find stapler    >/dev/null 2>&1 || die "stapler not found in the Xcode command line tools."
 
 # -----------------------------------------------------------------------------
 # Versions and team, read from the two build systems so they cannot drift
+# (the engine's version is the Cargo workspace's)
 # -----------------------------------------------------------------------------
-ENGINE_VERSION="$(python3 - << 'PY'
-import re
-s = open('SConstruct', encoding='utf-8').read()
-v = {k: re.search(rf'^VERSION_{k} = (\d+)', s, re.M).group(1) for k in ('MAJOR', 'MINOR', 'PATCH')}
-print(f"{v['MAJOR']}.{v['MINOR']}.{v['PATCH']}")
-PY
-)"
+ENGINE_VERSION="$(awk -F'"' '/^\[workspace\.package\]/ { found = 1 } found && /^version *=/ { print $2; exit }' Cargo.toml)"
+[[ -n "$ENGINE_VERSION" ]] || die "Could not read the version from [workspace.package] in Cargo.toml."
 
 log_info "Reading the Xcode project's build settings..."
 BUILD_SETTINGS="$(xcodebuild -showBuildSettings -project "$XCODE_PROJECT" -scheme "$SCHEME" \
@@ -134,7 +131,7 @@ HARDENED="$(setting ENABLE_HARDENED_RUNTIME)"
 [[ -n "$APP_VERSION" && -n "$TEAM_ID" ]] || die "Could not read MARKETING_VERSION / DEVELOPMENT_TEAM from $XCODE_PROJECT."
 [[ "$HARDENED" == "YES" ]] || die "ENABLE_HARDENED_RUNTIME is not YES in the Release configuration; notarization would reject the app."
 if [[ "$APP_VERSION" != "$ENGINE_VERSION" ]]; then
-    log_warning "The app's MARKETING_VERSION ($APP_VERSION) differs from the SConstruct version ($ENGINE_VERSION)."
+    log_warning "The app's MARKETING_VERSION ($APP_VERSION) differs from the Cargo workspace version ($ENGINE_VERSION)."
 fi
 
 echo "=============================================="
@@ -229,7 +226,7 @@ notarize() {
 # Step 1: voice data
 # -----------------------------------------------------------------------------
 log_info "Step 1: Generating voice data..."
-scons --platform=macos --build-config=release voice-data >/dev/null
+cargo xtask data >/dev/null
 [[ -f data/voices/Josip.bin && -f data/voices/Vlado.bin ]] || die "Voice data was not generated."
 log_success "Voice data ready"
 
@@ -241,11 +238,12 @@ if (( BUILD_CLI )); then
     # Without a local certificate the binaries get an ad hoc signature ("-"):
     # the linker signs only the arm64 slice by itself, and a fat binary with
     # an unsigned slice fails codesign --verify.
-    scons --platform=macos --arch=universal --build-config=release \
-          --codesign-identity="${IDENTITY:--}" macos-dist
-    CLI_BUILD="build/macos-universal-release"
+    # xtask builds both architectures, joins them with lipo, stages the
+    # tree and signs the staged program and library before packing them.
+    cargo xtask dist --universal --codesign-identity "${IDENTITY:--}"
     CLI_DIST="dist/macos-universal"
-    for f in "$CLI_BUILD/laprdus" "$CLI_BUILD/liblaprdus.dylib"; do
+    CLI_STAGE="$CLI_DIST/laprdus-$ENGINE_VERSION-macos-universal"
+    for f in "$CLI_STAGE/bin/laprdus" "$CLI_STAGE/lib/liblaprdus.dylib"; do
         archs="$(lipo -archs "$f")"
         [[ "$archs" == *arm64* && "$archs" == *x86_64* ]] || die "$f is not universal ($archs)."
         codesign --verify --strict --verbose=1 "$f" 2>&1 | sed 's/^/    /'
@@ -259,7 +257,7 @@ if (( BUILD_CLI )); then
         # Apple, so Gatekeeper accepts them online if a download quarantines
         # them (tar itself does not).
         CLI_ZIP="$WORK_DIR/laprdus-cli.zip"
-        ditto -c -k --keepParent "$CLI_DIST/laprdus-$ENGINE_VERSION-macos-universal" "$CLI_ZIP"
+        ditto -c -k --keepParent "$CLI_STAGE" "$CLI_ZIP"
         notarize "$CLI_ZIP" "the command-line tools"
     fi
     log_success "Command-line tools: $OUTPUT_DIR/$CLI_TARBALL_NAME"

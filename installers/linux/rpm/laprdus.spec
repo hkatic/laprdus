@@ -9,12 +9,11 @@ License:        GPL-3.0-or-later
 URL:            https://hrvojekatic.com/laprdus
 Source0:        %{name}-%{version}.tar.xz
 
-BuildRequires:  gcc-c++
-BuildRequires:  scons
-BuildRequires:  pulseaudio-libs-devel
+BuildRequires:  cargo
+BuildRequires:  rust >= 1.85
+BuildRequires:  gcc
+BuildRequires:  pkgconfig
 BuildRequires:  alsa-lib-devel
-BuildRequires:  speech-dispatcher-devel
-BuildRequires:  glib2-devel
 
 Requires:       speech-dispatcher
 
@@ -47,48 +46,17 @@ text-to-speech into their applications.
 %autosetup
 
 %build
-scons --platform=linux --build-config=release linux-all
+# The voice data and dictionaries, then the CLI, the Speech Dispatcher module
+# and the C API library.
+cargo --locked xtask build --locked
 
 %install
-# Install library with versioned naming
-install -D -m 755 build/linux-x64-release/liblaprdus.so \
-    %{buildroot}%{_libdir}/liblaprdus.so.%{version}
-ln -s liblaprdus.so.%{version} %{buildroot}%{_libdir}/liblaprdus.so.1
-ln -s liblaprdus.so.1 %{buildroot}%{_libdir}/liblaprdus.so
-
-# Install CLI
-install -D -m 755 build/linux-x64-release/laprdus \
-    %{buildroot}%{_bindir}/laprdus
-
-# Install voice data
-install -D -m 644 build/linux-x64-release/Josip.bin \
-    %{buildroot}%{_datadir}/laprdus/Josip.bin
-install -D -m 644 build/linux-x64-release/Vlado.bin \
-    %{buildroot}%{_datadir}/laprdus/Vlado.bin
-
-# Install dictionaries
-install -D -m 644 data/dictionary/internal.json \
-    %{buildroot}%{_datadir}/laprdus/internal.json
-install -D -m 644 data/dictionary/spelling.json \
-    %{buildroot}%{_datadir}/laprdus/spelling.json
-install -D -m 644 data/dictionary/emoji.json \
-    %{buildroot}%{_datadir}/laprdus/emoji.json
-install -D -m 644 data/dictionary/emoji_sl.json \
-    %{buildroot}%{_datadir}/laprdus/emoji_sl.json
-
-# Install Speech Dispatcher module and config
-install -D -m 755 build/linux-x64-release/sd_laprdus \
-    %{buildroot}%{_libdir}/speech-dispatcher-modules/sd_laprdus
-install -D -m 644 src/platform/linux/speechd/laprdus.conf \
-    %{buildroot}%{_sysconfdir}/speech-dispatcher/modules/laprdus.conf
-
-# Install development files
-install -D -m 644 include/laprdus/laprdus_api.h \
-    %{buildroot}%{_includedir}/laprdus/laprdus_api.h
-install -D -m 644 include/laprdus/types.hpp \
-    %{buildroot}%{_includedir}/laprdus/types.hpp
-install -D -m 644 include/laprdus/laprdus.hpp \
-    %{buildroot}%{_includedir}/laprdus/laprdus.hpp
+# The library (liblaprdus.so.%{version} and its links), the CLI, the header,
+# the voice data and dictionaries, the Speech Dispatcher module (it needs no
+# Speech Dispatcher headers to build) and its configuration.
+cargo --locked xtask install --locked --destdir %{buildroot} \
+    --prefix %{_prefix} --libdir %{_libdir} \
+    --moduledir %{_libdir}/speech-dispatcher-modules
 
 %ldconfig_scriptlets
 
@@ -191,7 +159,7 @@ fi
 %files
 %license LICENSE
 %doc readme.md
-%{_libdir}/liblaprdus.so.1*
+%{_libdir}/liblaprdus.so.2*
 %{_bindir}/laprdus
 %{_datadir}/laprdus/
 %{_libdir}/speech-dispatcher-modules/sd_laprdus
@@ -208,6 +176,7 @@ fi
 - Every voice speaks Croatian, Serbian and Bosnian: the language is chosen apart from the voice (CLI -L; Speech Dispatcher SET LANGUAGE keeps the voice)
 - Voice ids are plain ASCII (djedo for Đedo); the old ids djed, klapa, pjevac, pevac and solist are still accepted
 - Library SONAME bumped to liblaprdus.so.2
+- Built with Cargo: the engine and the programs are written in Rust
 
 * Sun Feb 08 2026 Hrvoje Katic <hrvoje.katic@gmail.com> - 1.0.0-1
 - Merge speechd module into main package for single-package installation

@@ -1,0 +1,65 @@
+LaprdusTTS - Croatian/Serbian/Bosnian/Slovenian Text-to-Speech Engine
+======================================================================
+
+This package contains LaprdusTTS, a text-to-speech engine for Croatian,
+Serbian, Bosnian and Slovenian. Every voice speaks every language.
+
+Installation
+------------
+
+1. Extract the archive:
+   tar xf laprdus-VERSION-linux-x86_64.tar.xz
+
+2. Install to /usr/local (requires root):
+   cd laprdus-VERSION-linux-x86_64
+   sudo ./install.sh
+
+3. Or install to a custom location:
+   ./install.sh $HOME/.local
+
+Usage
+-----
+
+Command-line:
+  laprdus "Dobar dan!"
+  laprdus -v vlado -L sr -r 1.5 "Zdravo svete!"
+  laprdus -v zvonko -L bs "Dobar dan, kako ste?"
+  laprdus -L sl "Dober dan, kako ste?"
+  laprdus -i document.txt -o speech.wav
+  laprdus -l                      (list the voices)
+
+Speech Dispatcher (for Orca):
+  Speech Dispatcher is configured automatically during installation.
+  Just restart Speech Dispatcher after installing:
+    systemctl --user restart speech-dispatcher
+
+Voices
+------
+
+Every voice speaks Croatian, Serbian, Bosnian and Slovenian; choose the
+language with -L hr|sr|bs|sl (without -L a voice speaks its native language, named
+here). Zvonko is the default voice.
+
+  zvonko   - Zvonko, Croatian male adult (formant synthesis, default)
+  stojan   - Stojan, Serbian male adult (formant synthesis)
+  mirsad   - Mirsad, Bosnian male adult (formant synthesis)
+  josip    - Josip, Croatian male adult (recorded)
+  vlado    - Vlado, Serbian male adult (recorded)
+  detence  - Detence, Croatian child
+  baba     - Baba, Croatian female senior
+  djedo    - Đedo, Serbian male senior
+  orguljas, dalmacija_klapa, lika_velebit, becarac, trubac, harmonikas,
+  solunac, sevdalija, sazlija, sarajevo_bembasa
+           - ten singing voices of the formant voices
+
+Uninstallation
+--------------
+
+After installation, run:
+  sudo /usr/local/share/laprdus/uninstall.sh
+
+Or if you still have the extracted tarball directory:
+  cd laprdus-VERSION-linux-x86_64
+  sudo ./uninstall.sh
+
+For more information, see the documentation in share/doc/laprdus/

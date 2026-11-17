@@ -17,6 +17,11 @@
 //! `dist/windows-x64/` with `laprd64.dll` (the SAPI5 driver, which also
 //! exports the C API), `laprdus.exe` and `laprdgui.exe`, and
 //! `dist/windows-x86/` with `laprd32.dll` and the same two programs.
+//!
+//! `build`, `install` and `dist` (Linux and macOS) are described in
+//! `install.rs`.
+
+mod install;
 
 use laprdus::concatenative::voice_data::pack;
 use laprdus::language::Language;
@@ -123,19 +128,90 @@ fn windows() -> Outcome {
     Ok(())
 }
 
+const USAGE: &str = "usage: cargo xtask <step> [options]
+
+  data      pack the recordings and stage the dictionaries (data/voices,
+            data/dictionary)
+              --key HEX          key the voice files are packed with
+                                 (or LAPRDUS_PHONEME_KEY)
+  windows   build the SAPI5 driver, the CLI and the configurator for x64 and
+            x86 into dist/windows-x64 and dist/windows-x86
+  build     Linux, macOS: build what install copies (the CLI, the C API
+            library, on Linux the Speech Dispatcher module; runs data first)
+  install   Linux, macOS: build and install the CLI, the C API library and
+            its header, the voice data and dictionaries, and on Linux the
+            Speech Dispatcher module with its configuration (runs data first)
+              --destdir DIR      staging root (a package's directory)
+              --prefix DIR       default /usr/local
+              --libdir DIR       the library's directory, default PREFIX/lib
+              --moduledir DIR    Speech Dispatcher's modules, default
+                                 PREFIX/lib/speech-dispatcher-modules
+  dist      Linux, macOS: the release tarball with its install script, in
+            dist/<os>-<arch>/
+  build, install and dist also take
+              --universal        macOS: Apple Silicon and Intel in one binary
+              --codesign-identity ID
+                                 macOS: sign the CLI and the library
+                                 (or LAPRDUS_CODESIGN_IDENTITY; - is ad hoc)
+              --locked, --offline, --frozen
+                                 handed on to Cargo
+              --key HEX          as for data
+";
+
+/// The value after an option, when the option is there.
+fn value<'a>(arguments: &'a [String], option: &str) -> Result<Option<&'a str>, Box<dyn Error>> {
+    match arguments.iter().position(|argument| argument == option) {
+        Some(at) => Ok(Some(arguments.get(at + 1).ok_or_else(|| format!("{option} needs a value"))?)),
+        None => Ok(None),
+    }
+}
+
 fn main() -> Outcome {
     let arguments: Vec<String> = env::args().skip(1).collect();
-    let key = match arguments.iter().position(|argument| argument == "--key") {
-        Some(at) => key_bytes(arguments.get(at + 1).ok_or("--key needs a value")?)?,
+    let key = match value(&arguments, "--key")? {
+        Some(key) => key_bytes(key)?,
         None => key_bytes(&env::var("LAPRDUS_PHONEME_KEY").unwrap_or_default())?,
+    };
+    let folder = |option| value(&arguments, option).map(|folder| folder.map(PathBuf::from));
+    let has = |flag: &str| arguments.iter().any(|argument| argument == flag);
+    let options = || -> Result<install::Options, Box<dyn Error>> {
+        Ok(install::Options {
+            destdir: folder("--destdir")?,
+            prefix: folder("--prefix")?,
+            libdir: folder("--libdir")?,
+            moduledir: folder("--moduledir")?,
+            universal: has("--universal"),
+            identity: match value(&arguments, "--codesign-identity")? {
+                Some(identity) => Some(identity.to_owned()),
+                None => env::var("LAPRDUS_CODESIGN_IDENTITY").ok().filter(|identity| !identity.is_empty()),
+            },
+            cargo_flags: ["--locked", "--offline", "--frozen"]
+                .into_iter()
+                .filter(|flag| has(flag))
+                .map(String::from)
+                .collect(),
+        })
     };
     match arguments.first().map(String::as_str) {
         Some("data" | "voice-data") => data(&key),
         Some("windows") => windows(),
+        Some("build") => {
+            let options = options()?;
+            data(&key)?;
+            install::build_only(&root(), &options)
+        }
+        Some("install") => {
+            let options = options()?;
+            data(&key)?;
+            install::install(&root(), &options)
+        }
+        Some("dist") => {
+            let options = options()?;
+            data(&key)?;
+            install::dist(&root(), &options)
+        }
         _ => {
-            eprintln!(
-                "usage: cargo xtask data [--key HEX]\n\n  data   pack the recordings and stage the dictionaries (data/voices, data/dictionary)"
-            );
+            eprint!("{USAGE}");
             std::process::exit(2);
         }
     }

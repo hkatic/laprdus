@@ -14,11 +14,10 @@ Build .rpm packages for RPM-based Linux distributions (Fedora, RHEL, CentOS, ope
 
 Install build dependencies:
 ```bash
-sudo dnf install -y rpm-build rpmdevtools gcc-c++ \
-    pulseaudio-libs-devel alsa-lib-devel speech-dispatcher-devel glib2-devel
+sudo dnf install -y rpm-build rpmdevtools cargo rust gcc pkgconf-pkg-config alsa-lib-devel
 ```
 
-SCons (if not packaged): `python3 -m pip install --user scons`
+The engine needs Rust 1.85 or newer. Cargo downloads the crates of `Cargo.lock` during the build, so the build needs network access (it does not work in `mock` without vendoring).
 
 ## Build Steps
 
@@ -31,9 +30,10 @@ rpmdev-setuptree
 ```bash
 cd /home/hrvojekatic/.repo/hkatic/laprdus
 tar --transform='s,^\.,laprdus-2.0.0,' -cJf ~/rpmbuild/SOURCES/laprdus-2.0.0.tar.xz \
-    --exclude='.git' --exclude='build' --exclude='*.pyc' --exclude='__pycache__' \
-    --exclude='android/.gradle' --exclude='android/app/build' \
-    --exclude='nvda-addon/*.nvda-addon' --exclude='.sconsign*' .
+    --exclude='./.git' --exclude='./target' --exclude='./dist' --exclude='./build' \
+    --exclude='*.pyc' --exclude='__pycache__' \
+    --exclude='./src/platform/android/.gradle' --exclude='./src/platform/android/app/build' \
+    --exclude='./nvda-addon' .
 ```
 
 **IMPORTANT:** Use `-cJf` (xz) — the spec file `Source0` expects `.tar.xz`. Using `-czf` (gzip) creates a `.tar.gz` which rpmbuild will not find.
@@ -44,7 +44,9 @@ cp installers/linux/rpm/laprdus.spec ~/rpmbuild/SPECS/
 rpmbuild -ba ~/rpmbuild/SPECS/laprdus.spec
 ```
 
-**Note:** If SCons was installed via pip (not dnf), rpmbuild may fail on `BuildRequires: scons`. Use `rpmbuild -ba --nodeps` as a workaround.
+The spec builds with `cargo xtask build` (packs the voice data, builds the CLI, the Speech Dispatcher module and the C API library) and installs with `cargo xtask install --destdir %{buildroot} --prefix %{_prefix} --libdir %{_libdir} --moduledir %{_libdir}/speech-dispatcher-modules`.
+
+**Note:** If Rust was installed with rustup (not dnf), rpmbuild fails on `BuildRequires: cargo`. Use `rpmbuild -ba --nodeps` as a workaround.
 
 ## Expected Output (single package + devel)
 
@@ -54,11 +56,12 @@ rpmbuild -ba ~/rpmbuild/SPECS/laprdus.spec
 
 ## Key Design Decisions
 
-- **Single package**: CLI, library, Speech Dispatcher module, voice data, and all 3 dictionaries (internal.json, spelling.json, emoji.json) are in ONE package
-- **SONAME**: Library has `-Wl,-soname,liblaprdus.so.1` so RPM auto-dependency resolves correctly
-- **Versioned library**: `liblaprdus.so.2.0.0` → `liblaprdus.so.1` → `liblaprdus.so` (unversioned in -devel only)
+- **Single package**: CLI, library, Speech Dispatcher module, voice data, and the dictionaries (internal.json, spelling.json, emoji.json, emoji_sl.json) are in ONE package
+- **SONAME**: Library has the soname `liblaprdus.so.2` (set by `cargo xtask build`) so RPM auto-dependency resolves correctly
+- **Versioned library**: `liblaprdus.so.2.0.0` ← `liblaprdus.so.2` ← `liblaprdus.so` (unversioned in -devel only)
 - **speechd.conf**: Auto-configured in `%post` with BEGIN/END markers, cleaned up in `%preun`. Detects SD 0.12+ autodetection mode (no uncommented AddModule lines) and only adds LanguageDefaultModule entries to avoid disabling autodetection for other modules
 - **Speech Dispatcher restart**: Uses `try-restart` for both system and user services, iterates logged-in users via `loginctl list-users`. On removal, also uses `killall speech-dispatcher` as fallback to ensure SD is fully stopped (socket activation restarts it clean)
+- **Speech Dispatcher module**: Included (`%{_libdir}/speech-dispatcher-modules/sd_laprdus`); it is a Rust program that needs no Speech Dispatcher headers to build
 - **Spec must have Unix line endings (LF)** — CRLF causes `$'\r': command not found`
 
 ## Copy to ~/Downloads
