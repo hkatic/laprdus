@@ -4,11 +4,13 @@
 english_words.py - The English table of the formant voices' front end.
 
 English words in Croatian, Serbian or Bosnian text are read with the letters'
-own sounds but stressed where English stresses them (see "English words" in
-src/formant/formant_frontend.cpp and in docs/formant.md). The front end finds
-the stress of most of them by its English rules; this script writes
-src/formant/formant_english.inc, the table of the frequent words for which
-those rules, or the rules for native words, give another syllable.
+own sounds but stressed where English stresses them (see
+src/common/languages/hr/english.rs, the same in sr and bs, and "English
+words" in docs/formant.md). The front end finds the stress of most of them
+by its English rules; this script writes
+src/common/languages/{hr,sr,bs}/tables/english.txt (one table, the same file
+in the three folders), the frequent words for which those rules, or the
+rules for native words, give another syllable.
 
 How the table is made:
 
@@ -24,14 +26,15 @@ How the table is made:
    spelling, which gives the letter of the primary stress (cro'atian,
    e'leven, comp'uter). The voices read every vowel letter as a syllable,
    so that letter is all the front end needs.
-3. tools/formant/english_stress.cpp, built against the front end with an
-   empty table, tells for each word where the voices stress it without the
+3. examples/english_stress.rs, built with the engine while the tables are
+   empty, tells for each word where the voices stress it without the
    table. A word goes into the table when that is another syllable, or
    when the syllable is right but carries the rising accent of a native
    word (only English words have the plain accent of the table off the
    first syllable), unless the front end already finds it through a
    shorter word of the table and an ending that keeps the stress
-   (english_word() in formant_frontend.cpp, mirrored by lookup() below).
+   (english_word() in english.rs of hr, sr and bs, mirrored by lookup()
+   below: change the four together).
 4. Every spelling that reaches a word of the table through a Croatian
    case ending (manager: managera, manageru, managerom) is checked with
    the Hunspell dictionaries, and those that are native words (reforma,
@@ -40,11 +43,13 @@ How the table is made:
 
 Words spelled like a place or personal name of the native tables, also
 without the j of -ija/-ije/-iju (Sofia, Emilia), are left out. The script
-ends by building the helper again with the new table and checking every
+ends by running the helper again with the new table and checking every
 word, takes out the words a native lexicon entry overrides, and reports
 anything the front end still reads otherwise than expected.
 
-Requirements: a C++17 compiler (c++), and
+Requirements: cargo (the helper is built and run with
+"cargo run --release --example english_stress", again after every change of
+the tables, which are compiled into the library), and
 
     pip install wordfreq spylls
 
@@ -54,7 +59,7 @@ https://github.com/LibreOffice/dictionaries (hr_HR/, sr/, bs_BA/) in one
 directory.
 
 Usage:
-    tools/formant/english_words.py CMUDICT HUNSPELL_DIR [--words 30000]
+    python tools/formant/english_words.py CMUDICT HUNSPELL_DIR [--words 30000] [--cache FILE]
 """
 
 import argparse
@@ -63,17 +68,15 @@ import os
 import re
 import subprocess
 import sys
-import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-OUTPUT = os.path.join(ROOT, 'src', 'formant', 'formant_english.inc')
+# The same table for each of the three languages (each has its own copy of
+# the rules, english.rs, and embeds its own file)
+OUTPUTS = [os.path.join(ROOT, 'src', 'common', 'languages', lang, 'tables', 'english.txt')
+           for lang in ('hr', 'sr', 'bs')]
 EXTRA = os.path.join(ROOT, 'tools', 'formant', 'english_extra.tsv')
-HELPER = os.path.join(ROOT, 'tools', 'formant', 'english_stress.cpp')
-HELPER_SOURCES = [
-    'src/formant/formant_lexicon.cpp',
-    'src/formant/formant_phonemes.cpp',
-    'src/core/phoneme_mapper.cpp',
-]
+# examples/english_stress.rs of the root crate
+HELPER = ['cargo', 'run', '--quiet', '--release', '--example', 'english_stress']
 
 # ---------------------------------------------------------------------------
 # Stress letter from the pronouncing dictionary
@@ -269,7 +272,9 @@ def initialism(word, pron):
 
 
 # ---------------------------------------------------------------------------
-# The front end's lookup (english_word() in formant_frontend.cpp)
+# The front end's lookup: english_word() / english_word_at() in
+# src/common/languages/{hr,sr,bs}/english.rs. The table leaves out every word
+# those find through another one, so the two must agree: change both together.
 # ---------------------------------------------------------------------------
 
 # (ending, letter put back, also a native ending)
@@ -284,7 +289,7 @@ ENDINGS = [
 ]
 CASES = ['ovima', 'ovom', 'ovoj', 'ovih', 'ovim', 'ova', 'ove', 'ovi', 'ovu',
          'ima', 'om', 'em', 'a', 'u', 'e', 'i']
-CONSONANTS = set('bcdfghjklmnpqrstvwxyz')     # is_consonant_letter() has y
+CONSONANTS = set('bcdfghjklmnpqrstvwxyz')     # is_consonant_letter() (text/frontend/letters.rs) has y
 
 
 def lookup(table, s, english_shape, depth=0):
@@ -400,9 +405,17 @@ def native_names():
     return names, without_j
 
 
-def write_table(entries, path):
-    """entries: {word: stress letter, or None for a native word}. Lines of
-    up to ~96 characters."""
+def write_table(entries, paths=None):
+    """entries: {word: stress letter, or None for a native word}. Writes the
+    table, the same one for each of the three languages: the words in
+    alphabetical order with ' before the stressed vowel (a word without a
+    mark is a native word that is one of these with a case ending: reforma),
+    separated by spaces, in lines of up to 92 characters. english_entry() of
+    english.rs searches the lines by their first word and then the words of
+    one line, so the file holds nothing else: no comments, no empty lines.
+    (The notice of the Carnegie Mellon University Pronouncing Dictionary,
+    which the words come from, is in the header of english.rs.)"""
+    paths = OUTPUTS if paths is None else paths
     marked = [w if i is None else w[:i] + "'" + w[i:] for w, i in sorted(entries.items())]
     lines, line = [], []
     for m in marked:
@@ -412,52 +425,19 @@ def write_table(entries, path):
         line.append(m)
     if line:
         lines.append(line)
-    with open(path, 'w', encoding='utf-8') as f:
-        f.write('// -*- coding: utf-8 -*-\n')
-        f.write('// formant_english.inc - Generated by tools/formant/english_words.py; do not\n')
-        f.write('// edit by hand (add a row to tools/formant/english_extra.tsv instead).\n')
-        f.write('//\n')
-        f.write('// English words whose stress the front end does not find by its rules,\n')
-        f.write("// with ' before the stressed vowel, in alphabetical order, from the\n")
-        f.write('// Carnegie Mellon University Pronouncing Dictionary. A word without a mark\n')
-        f.write('// is a native word that is one of these with a case ending (reforma).\n')
-        f.write('//\n')
-        f.write('//\n')
-        f.write('//   Copyright (C) 1993-2015 Carnegie Mellon University. All rights reserved.\n')
-        f.write('//   Redistribution and use in source and binary forms, with or without\n')
-        f.write('//   modification, are permitted provided that the following conditions are\n')
-        f.write('//   met: 1. Redistributions of source code must retain the above copyright\n')
-        f.write('//   notice, this list of conditions and the following disclaimer. The\n')
-        f.write('//   contents of this file are deemed to be source code. 2. Redistributions\n')
-        f.write('//   in binary form must reproduce the above copyright notice, this list of\n')
-        f.write('//   conditions and the following disclaimer in the documentation and/or\n')
-        f.write('//   other materials provided with the distribution. THIS SOFTWARE IS\n')
-        f.write('//   PROVIDED BY CARNEGIE MELLON UNIVERSITY "AS IS" AND ANY EXPRESSED OR\n')
-        f.write('//   IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED\n')
-        f.write('//   WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE\n')
-        f.write('//   DISCLAIMED. IN NO EVENT SHALL CARNEGIE MELLON UNIVERSITY NOR ITS\n')
-        f.write('//   EMPLOYEES BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,\n')
-        f.write('//   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,\n')
-        f.write('//   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR\n')
-        f.write('//   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF\n')
-        f.write('//   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING\n')
-        f.write('//   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS\n')
-        f.write('//   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n')
-        f.write('\n')
-        f.write('const char* const ENGLISH[] = {\n')
-        for line in lines:
-            f.write('    "' + ' '.join(line) + '",\n')
-        if not lines:
-            f.write('    "",\n')
-        f.write('};\n')
+    text = ''.join(' '.join(line) + '\n' for line in lines)
+    for path in paths:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w', encoding='utf-8', newline='\n') as f:
+            f.write(text)
 
 
-def run_helper(words, workdir):
-    exe = os.path.join(workdir, 'english_stress')
-    cmd = ['c++', '-O2', '-std=c++17', '-I', 'include', '-I', 'src', HELPER] + HELPER_SOURCES + ['-o', exe]
-    subprocess.run(cmd, cwd=ROOT, check=True)
-    out = subprocess.run([exe], input='\n'.join(words) + '\n', capture_output=True,
-                         text=True, check=True).stdout
+def run_helper(words):
+    """What the front ends do with the words, with the tables as they are
+    on disk now: the tables are compiled into the library (include_str!), so
+    cargo builds the helper again whenever write_table() has changed them."""
+    out = subprocess.run(HELPER, cwd=ROOT, input='\n'.join(words) + '\n', stdout=subprocess.PIPE,
+                         encoding='utf-8', check=True).stdout
     result = {}
     for line in out.splitlines():
         word, shape, letters, *langs = line.split('\t')
@@ -513,99 +493,102 @@ def main():
     stress.update(extra)
     print(f'{len(stress)} English words ({len(native)} native ones left out)', file=sys.stderr)
 
-    backup = open(OUTPUT, encoding='utf-8').read() if os.path.exists(OUTPUT) else None
-    with tempfile.TemporaryDirectory() as workdir:
-        try:
-            write_table({}, OUTPUT)
-            plain = run_helper(sorted(stress), workdir)
-        except Exception:
-            if backup is not None:
-                with open(OUTPUT, 'w', encoding='utf-8') as f:
-                    f.write(backup)
-            raise
+    # The words' stress without the table: the helper built with empty
+    # tables. The tables on disk are put back if that fails.
+    backup = [open(path, encoding='utf-8', newline='').read() if os.path.exists(path) else None
+              for path in OUTPUTS]
+    try:
+        write_table({})
+        plain = run_helper(sorted(stress))
+    except BaseException:
+        for path, text in zip(OUTPUTS, backup):
+            if text is not None:
+                with open(path, 'w', encoding='utf-8', newline='') as f:
+                    f.write(text)
+        raise
 
-        def wanted(w):
-            info = plain.get(w)
-            if not info or len(info['letters']) < 2:
-                return None
-            return target_nucleus(info['letters'], stress[w])
+    def wanted(w):
+        info = plain.get(w)
+        if not info or len(info['letters']) < 2:
+            return None
+        return target_nucleus(info['letters'], stress[w])
 
-        def right(w, table):
-            """Does the front end with this table stress w as English does?"""
-            info, target = plain[w], wanted(w)
-            letter = lookup(table, w, info['shape'])
-            if letter is not None:
-                return target_nucleus(info['letters'], letter) == target
-            for nucleus, accent in info['langs']:
-                if nucleus != target or (target > 0 and accent != 'N'):
-                    return False
-            return True
+    def right(w, table):
+        """Does the front end with this table stress w as English does?"""
+        info, target = plain[w], wanted(w)
+        letter = lookup(table, w, info['shape'])
+        if letter is not None:
+            return target_nucleus(info['letters'], letter) == target
+        for nucleus, accent in info['langs']:
+            if nucleus != target or (target > 0 and accent != 'N'):
+                return False
+        return True
 
-        candidates = sorted((w for w in stress if wanted(w) is not None),
-                            key=lambda w: (len(w), w))
-        table = {}
-        for w in candidates:
-            if not right(w, table):
-                table[w] = stress[w]
-        while True:
-            wrong = [w for w in candidates if not right(w, table)]
-            if not wrong:
-                break
-            for w in wrong:
-                table[w] = stress[w]
-        english = len(table)
+    candidates = sorted((w for w in stress if wanted(w) is not None),
+                        key=lambda w: (len(w), w))
+    table = {}
+    for w in candidates:
+        if not right(w, table):
+            table[w] = stress[w]
+    while True:
+        wrong = [w for w in candidates if not right(w, table)]
+        if not wrong:
+            break
+        for w in wrong:
+            table[w] = stress[w]
+    english = len(table)
 
-        # The native words a word of the table would take for itself with a
-        # case ending (reforma, republici, nadala: reform, republic, Nadal)
-        # go in without a mark.
-        forms = set()
-        for w in table:
-            forms |= case_forms(w)
-        forms -= set(stress)
-        forms -= set(table)
-        stops = native_filter(sorted(forms), args.hunspell_dir, args.cache)
-        # The native names spelled without their j: a word of the table
-        # without a mark also keeps the English rules away (Emilia)
-        stops |= {w for w in without_j if w not in table and w not in stress}
-        for w in stops:
-            table[w] = None
-        write_table(table, OUTPUT)
+    # The native words a word of the table would take for itself with a
+    # case ending (reforma, republici, nadala: reform, republic, Nadal)
+    # go in without a mark.
+    forms = set()
+    for w in table:
+        forms |= case_forms(w)
+    forms -= set(stress)
+    forms -= set(table)
+    stops = native_filter(sorted(forms), args.hunspell_dir, args.cache)
+    # The native names spelled without their j: a word of the table
+    # without a mark also keeps the English rules away (Emilia)
+    stops |= {w for w in without_j if w not in table and w not in stress}
+    for w in stops:
+        table[w] = None
+    write_table(table)
 
-        # Check the table as the front end reads it. An entry of the native
-        # lexicon comes before the table (the name Antonia): such words go
-        # out of it, and the check runs again.
-        left = []
-        while True:
-            final = run_helper(candidates, workdir)
-            bad = [w for w in candidates if w in table and any(
-                nucleus != wanted(w) or (wanted(w) > 0 and accent != 'N')
-                for nucleus, accent in final[w]['langs'])]
-            wrong = [w for w in candidates if w not in table and w not in left and any(
-                nucleus != wanted(w) or (wanted(w) > 0 and accent != 'N')
-                for nucleus, accent in final[w]['langs'])]
-            if wrong:
-                print(f'{len(wrong)} words stressed otherwise than the script expected: ' +
-                      ' '.join(wrong[:50]), file=sys.stderr)
-            if not bad:
-                break
-            for w in bad:
-                table.pop(w)
-            left += bad
-            english -= len(bad)
-            write_table(table, OUTPUT)
-        if left:
-            print(f'{len(left)} words left to the native lexicon: ' + ' '.join(left[:50]),
-                  file=sys.stderr)
-        # The native words must stay native.
-        check = run_helper(sorted(stops), workdir)
-        english_read = [w for w in stops if any(
-            nucleus is not None and nucleus > 0 and accent == 'N'
-            for nucleus, accent in check[w]['langs'])]
-        print(f'{english} English words and {len(stops)} native ones in '
-              f'{os.path.relpath(OUTPUT, ROOT)}', file=sys.stderr)
-        if english_read:
-            print('native words read as English: ' + ' '.join(english_read[:50]),
-                  file=sys.stderr)
+    # Check the table as the front end reads it. An entry of the native
+    # lexicon comes before the table (the name Antonia): such words go
+    # out of it, and the check runs again.
+    left = []
+    while True:
+        final = run_helper(candidates)
+        bad = [w for w in candidates if w in table and any(
+            nucleus != wanted(w) or (wanted(w) > 0 and accent != 'N')
+            for nucleus, accent in final[w]['langs'])]
+        wrong = [w for w in candidates if w not in table and w not in left and any(
+            nucleus != wanted(w) or (wanted(w) > 0 and accent != 'N')
+            for nucleus, accent in final[w]['langs'])]
+        if wrong:
+            print(f'{len(wrong)} words stressed otherwise than the script expected: ' +
+                  ' '.join(wrong[:50]), file=sys.stderr)
+        if not bad:
+            break
+        for w in bad:
+            table.pop(w)
+        left += bad
+        english -= len(bad)
+        write_table(table)
+    if left:
+        print(f'{len(left)} words left to the native lexicon: ' + ' '.join(left[:50]),
+              file=sys.stderr)
+    # The native words must stay native.
+    check = run_helper(sorted(stops))
+    english_read = [w for w in stops if any(
+        nucleus is not None and nucleus > 0 and accent == 'N'
+        for nucleus, accent in check[w]['langs'])]
+    print(f'{english} English words and {len(stops)} native ones in '
+          'src/common/languages/{hr,sr,bs}/tables/english.txt', file=sys.stderr)
+    if english_read:
+        print('native words read as English: ' + ' '.join(english_read[:50]),
+              file=sys.stderr)
 
 
 if __name__ == '__main__':

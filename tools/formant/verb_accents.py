@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-verb_accents.py - Entries for the VERBS table of src/formant/formant_lexicon.cpp.
+verb_accents.py - Entries for the VERBS table of the Croatian, Serbian and
+Bosnian lexicons (src/common/languages/{hr,sr,bs}/lexicon/verbs.rs).
 
 For each infinitive given, looks the verb up in Hrvatski jezicni portal
 (hjp.znanje.hr) and prints its stem with the accent of the infinitive, the

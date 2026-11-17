@@ -5,7 +5,7 @@ analyze.py - Acoustic measurements for tuning the formant voices.
 
 Prints, for every 10 ms of a recording: level relative to the loudest frame,
 spectral centroid, energy per frequency band (dB relative to the frame total)
-and LPC formant estimates. The values in src/formant/formant_phonemes.cpp were
+and LPC formant estimates. The values in src/common/formant/phones.rs were
 set by comparing such tables for the formant voices against recordings of
 Croatian speech (see docs/formant.md).
 
