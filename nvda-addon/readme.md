@@ -76,7 +76,7 @@ In short: modern synthesizers offer quality at the cost of resources; Laprdus of
 
 Laprdus is available on the following platforms:
 
-- **Windows 7 to Windows 11** - through the Microsoft SAPI5 standard, so you can use Laprdus in any program that supports Windows speech, including screen readers such as Narrator, NVDA and JAWS
+- **Windows 10 and Windows 11** - through the Microsoft SAPI5 standard, so you can use Laprdus in any program that supports Windows speech, including screen readers such as Narrator, NVDA and JAWS
 - **Direct integration with the NVDA screen reader** - also available as a separate add-on for NVDA, the free Windows screen reader
 - **Linux** - through Speech Dispatcher for the Orca screen reader, and as a command-line program
 - **Android** - as a built-in speech synthesizer for Android devices
