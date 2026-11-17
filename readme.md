@@ -262,14 +262,15 @@ For detailed dictionary documentation, see the [User Guide (Croatian language on
 
 | Requirement | Purpose |
 |-------------|---------|
-| C++17 compiler | MSVC 2019+ (Windows), GCC 9+ (Linux) |
-| SCons | Build system (`pip install scons`) |
-| Python 3.9+ | NVDA addon build |
+| Rust 1.85+ (rustup) | The engine and every program; Cargo is the build system |
+| MSVC build tools | Windows: linker for the `x86_64-pc-windows-msvc` and `i686-pc-windows-msvc` targets |
+| SCons, Python 3.9+ | NVDA addon build only (`pip install scons`) |
 | InnoSetup 6+ | Windows installer |
-| Android SDK/NDK | Android build |
-| libpulse-dev, libasound2-dev | Linux audio |
-| libspeechd-dev, libglib2.0-dev | Linux Speech Dispatcher |
-| Xcode 26+ (on macOS) | Apple build (iOS, iPadOS, macOS, visionOS) |
+| Android SDK/NDK, cargo-ndk | Android build |
+| libasound2-dev, pkg-config | Linux audio (ALSA; the CLI plays through it) |
+| Xcode 26+ (on macOS) | Apple build (iOS, iPadOS, macOS) |
+
+`cargo xtask <step>` runs the build steps Cargo does not do by itself: `data`, `windows`, `build`, `install`, `dist` (`cargo xtask` without a step lists them).
 
 ### Voice Data Generation
 
@@ -277,29 +278,33 @@ Laprdus voices are stored as packed binary files (`.bin`) containing pre-recorde
 
 **Source structure:**
 ```
-phonemes/
-├── Josip/          # Croatian voice phonemes (WAV files)
-│   ├── A.wav
-│   ├── B.wav
-│   └── ...
-└── Vlado/          # Serbian voice phonemes (WAV files)
-    ├── A.wav
-    ├── B.wav
-    └── ...
+data/
+├── hr/
+│   ├── Josip/          # Croatian voice phonemes (WAV files)
+│   │   ├── A.wav
+│   │   └── ...
+│   ├── dictionary.json # Pronunciation dictionary
+│   ├── spelling.json
+│   └── emoji.json
+├── sr/
+│   └── Vlado/          # Serbian voice phonemes (WAV files)
+└── sl/
+    └── emoji.json      # Slovenian emoji names
 ```
 
 **Generate voice data:**
 ```bash
-scons --platform=windows --arch=x64 --build-config=release voice-data
+cargo xtask data
 ```
 
 **Output:**
 - `data/voices/Josip.bin` - Packed Croatian voice data
 - `data/voices/Vlado.bin` - Packed Serbian voice data
+- `data/dictionary/` - `internal.json`, `spelling.json`, `emoji.json`, `emoji_sl.json`
 
-The build system uses the `phoneme_packer` tool to combine individual WAV files into optimized binary packages. All platform builds (SAPI5, NVDA, Linux, Android) automatically source voice data from `data/voices/`.
+All platform builds (SAPI5, NVDA, Linux, Android, Apple) source voice data from `data/voices/` and the dictionaries from `data/dictionary/`. Both folders are generated and not checked in.
 
-**Note:** Voice data generation runs automatically when building platform targets. Manual generation is only needed when modifying phoneme recordings.
+**Note:** `cargo xtask build`, `install` and `dist` and the Android Gradle build run this step themselves.
 
 ### Quick Build (Recommended)
 
@@ -330,35 +335,28 @@ scripts\build-all.cmd voice-data    # Generate voice data only
 
 ### Manual Build Commands
 
-#### Windows SAPI5
+#### Windows SAPI5, CLI and Configurator
 
 ```bash
-# Build DLLs for both architectures
-scons --platform=windows --arch=x64 --build-config=release sapi5
-scons --platform=windows --arch=x86 --build-config=release sapi5
+# Voice data and dictionaries
+cargo xtask data
+
+# SAPI5 DLLs, laprdus.exe and laprdgui.exe for both architectures
+rustup target add x86_64-pc-windows-msvc i686-pc-windows-msvc
+cargo xtask windows
 
 # Build installer (requires InnoSetup)
 iscc installers/windows/laprdus_sapi5.iss
 ```
 
-Output: `installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe`
-
-#### Windows CLI
-
-```bash
-scons --platform=windows --arch=x64 --build-config=release cli
-```
-
-Output: `build/windows-x64-release/laprdus.exe`
+Output: `dist/windows-x64/` (`laprd64.dll`, `laprdus.exe`, `laprdgui.exe`), `dist/windows-x86/` (`laprd32.dll`, `laprdus.exe`, `laprdgui.exe`), `installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe`
 
 #### NVDA Addon
 
 ```bash
 # Build prerequisites first
-scons --platform=windows --arch=x64 --build-config=release sapi5
-scons --platform=windows --arch=x86 --build-config=release sapi5
-scons --platform=windows --arch=x64 --build-config=release config
-scons --platform=windows --arch=x86 --build-config=release config
+cargo xtask data
+cargo xtask windows
 
 # Build addon (automatically copies DLLs, voice data, dictionaries)
 cd nvda-addon && scons
@@ -372,34 +370,44 @@ Output: `nvda-addon/laprdus-*.nvda-addon`
 
 ```bash
 # Install dependencies (Debian/Ubuntu)
-sudo apt install libpulse-dev libasound2-dev libspeechd-dev libglib2.0-dev
+sudo apt install pkg-config libasound2-dev
 
-# Build all Linux components
-scons --platform=linux --build-config=release linux-all
+# Voice data, CLI, Speech Dispatcher module and the C API library
+cargo xtask build
 
-# Or build individual targets
-scons --platform=linux --build-config=release cli      # CLI only
-scons --platform=linux --build-config=release speechd  # Speech Dispatcher module
+# Install (default prefix /usr/local; --destdir stages for a package)
+sudo cargo xtask install --prefix /usr
+
+# Release tarball with install.sh
+cargo xtask dist
 ```
 
 Output:
-- `build/linux-x64-release/liblaprdus.so`
-- `build/linux-x64-release/laprdus`
-- `build/linux-x64-release/sd_laprdus`
+- `target/release/laprdus`
+- `target/release/sd_laprdus`
+- `target/release/liblaprdus_capi.so` (installed as `liblaprdus.so.2.0.0` with the links `liblaprdus.so.2` and `liblaprdus.so`)
+- `dist/linux-<arch>/laprdus-<version>-linux-<arch>.tar.xz`
+
+#### macOS (CLI and C API library)
+
+```bash
+cargo xtask build                 # host architecture
+cargo xtask dist --universal      # Apple Silicon + Intel tarball in dist/macos-universal/
+```
 
 #### Android
 
 ```bash
-cd android
+cd src/platform/android
 ./gradlew assembleDebug    # Debug build
 ./gradlew assembleRelease  # Release build
 ```
 
-Output: `android/app/build/outputs/apk/*/app-*.apk`
+Output: `src/platform/android/app/build/outputs/apk/*/app-*.apk`
 
 #### Apple (iOS / iPadOS / macOS / visionOS)
 
-The Apple port lives in `Lapplerdus/Laprdus/Laprdus.xcodeproj` and contains three targets:
+The Apple port lives in `src/platform/apple/Laprdus/Laprdus.xcodeproj` and contains three targets:
 
 | Target | Purpose |
 |--------|---------|
@@ -414,16 +422,21 @@ The Apple port lives in `Lapplerdus/Laprdus/Laprdus.xcodeproj` and contains thre
 3. **Voice data**. The packed voice files (`data/voices/*.bin`) are generated, not checked in. On a fresh checkout, generate them once from the repository root:
 
    ```bash
-   pip install scons
-   scons --platform=linux --arch=x64 --build-config=release voice-data
+   cargo xtask data
    # or: ./scripts/build-all.sh voice-data
    ```
 
-   The `linux` platform configuration compiles fine on macOS with clang; it is only used to build the `phoneme_packer` tool that packs the voices. The Xcode project references `data/voices/Josip.bin`, `data/voices/Vlado.bin` and the dictionaries in `data/dictionary/` directly, so this step must happen before the first build.
+   The Xcode project references `data/voices/Josip.bin`, `data/voices/Vlado.bin` and the dictionaries in `data/dictionary/` directly, so this step must happen before the first build.
+4. **Rust** (rustup) with the targets of the platforms you build: the engine is a Rust static library that a build phase of the Xcode project compiles (`src/platform/apple/build-rust-engine.sh`):
+
+   ```bash
+   rustup target add aarch64-apple-darwin x86_64-apple-darwin \
+       aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios
+   ```
 
 ##### Code signing setup (first time only)
 
-1. Open `Lapplerdus/Laprdus/Laprdus.xcodeproj` in Xcode.
+1. Open `src/platform/apple/Laprdus/Laprdus.xcodeproj` in Xcode.
 2. Select the project in the navigator, then for **each** of the `Laprdus` and `LaprdusVoices` targets, open **Signing & Capabilities** and pick your team under **Team**. Signing is automatic.
 3. If Xcode reports that the bundle identifier is already in use (it is registered to the original author), change the bundle identifiers to your own reverse-DNS prefix. Keep the pattern: the extension identifier must be prefixed by the app identifier (e.g. `com.example.Laprdus` and `com.example.Laprdus.voices`).
 4. The app and the extension share settings and user dictionaries through the app group `group.com.hrvojekatic.laprdus`. If you changed the bundle identifiers, also change the app group identifier in both targets' Signing & Capabilities and in `Shared/AppGroup.swift` so they match. The app still works without a valid app group — it falls back to local storage — but then the extension cannot see settings and dictionaries saved by the app.
@@ -435,7 +448,7 @@ The Apple port lives in `Lapplerdus/Laprdus/Laprdus.xcodeproj` and contains thre
 3. Or from the command line:
 
    ```bash
-   cd Lapplerdus/Laprdus
+   cd src/platform/apple/Laprdus
    xcodebuild -scheme Laprdus -destination 'platform=macOS' build -allowProvisioningUpdates
    ```
 
@@ -461,7 +474,7 @@ The Apple port lives in `Lapplerdus/Laprdus/Laprdus.xcodeproj` and contains thre
 Command-line build for a connected device:
 
 ```bash
-cd Lapplerdus/Laprdus
+cd src/platform/apple/Laprdus
 xcodebuild -scheme Laprdus -destination 'generic/platform=iOS' build -allowProvisioningUpdates
 ```
 
@@ -480,7 +493,7 @@ xcodebuild -scheme Laprdus -destination 'generic/platform=iOS' build -allowProvi
 - **Unit tests**: Product > Test in Xcode, or:
 
   ```bash
-  cd Lapplerdus/Laprdus
+  cd src/platform/apple/Laprdus
   xcodebuild test -scheme Laprdus -destination 'platform=macOS'
   ```
 
@@ -501,22 +514,28 @@ xcodebuild -scheme Laprdus -destination 'generic/platform=iOS' build -allowProvi
 
 | Platform | Output |
 |----------|--------|
-| Windows SAPI5 x64 | `build/windows-x64-release/laprd64.dll` |
-| Windows SAPI5 x86 | `build/windows-x86-release/laprd32.dll` |
+| Windows SAPI5 x64 | `dist/windows-x64/laprd64.dll` |
+| Windows SAPI5 x86 | `dist/windows-x86/laprd32.dll` |
 | Windows Installer | `installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe` |
-| Windows CLI | `build/windows-x64-release/laprdus.exe` |
+| Windows CLI | `dist/windows-x64/laprdus.exe`, `dist/windows-x86/laprdus.exe` |
 | NVDA Addon | `nvda-addon/laprdus-*.nvda-addon` |
-| Linux Library | `build/linux-x64-release/liblaprdus.so` |
-| Linux CLI | `build/linux-x64-release/laprdus` |
-| Linux Speech Dispatcher | `build/linux-x64-release/sd_laprdus` |
-| Android APK | `android/app/build/outputs/apk/*/app-*.apk` |
+| Linux Library | `target/release/liblaprdus_capi.so` |
+| Linux CLI | `target/release/laprdus` |
+| Linux Speech Dispatcher | `target/release/sd_laprdus` |
+| Linux / macOS tarball | `dist/<os>-<arch>/laprdus-<version>-<os>-<arch>.tar.xz` |
+| Android APK | `src/platform/android/app/build/outputs/apk/*/app-*.apk` |
 | Apple app + extension | Xcode DerivedData (`Laprdus.app` with embedded `LaprdusVoices.appex`); use Product > Archive for distributable builds |
 
 ### Clean Build
 
 ```bash
-scons -c                                    # Clean all
-scons -c --platform=windows --arch=x64      # Clean specific config
+cargo clean                                 # Everything Cargo built (target/)
+```
+
+The staged files in `dist/`, `data/voices/` and `data/dictionary/` are rebuilt by `cargo xtask`; delete them by hand for a from-scratch build.
+
+```bash
+rm -rf dist data/voices data/dictionary
 ```
 
 ## Documentation

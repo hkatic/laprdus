@@ -2,11 +2,12 @@
 #
 # LaprdusTTS command-line tools for macOS: installation script
 #
-# Installs the laprdus CLI, liblaprdus.dylib, the C/C++ headers, the voice
-# data and the dictionaries from this tarball under a prefix (default
-# /usr/local). The CLI finds the library through @rpath (../lib relative to
-# the executable) and the voice data in <prefix>/share/laprdus, so nothing
-# else has to be configured.
+# Installs the laprdus CLI, liblaprdus.dylib, the C header, the voice data
+# and the dictionaries from this tarball under a prefix (default /usr/local).
+# The CLI has the engine built in and finds the voice data in
+# ../share/laprdus relative to itself, so nothing else has to be configured.
+# liblaprdus.dylib is the C API for other programs; its install name is
+# @rpath/liblaprdus.dylib.
 #
 # Usage:
 #   sudo ./install.sh              # /usr/local
@@ -45,8 +46,4 @@ xattr -dr com.apple.quarantine "${PREFIX}/bin/laprdus" "${PREFIX}/lib/liblaprdus
 echo ""
 echo "Installed. Try:"
 echo "  ${PREFIX}/bin/laprdus \"Dobar dan!\""
-if [[ "${PREFIX}" != "/usr/local" && "${PREFIX}" != "/usr" ]]; then
-    echo "The CLI looks for its voice data in /usr/share/laprdus and /usr/local/share/laprdus;"
-    echo "with this prefix pass it explicitly: laprdus -D ${PREFIX}/share/laprdus \"Dobar dan!\""
-fi
 echo "To remove: sudo ${PREFIX}/share/laprdus/uninstall.sh"

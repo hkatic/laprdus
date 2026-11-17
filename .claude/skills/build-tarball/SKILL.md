@@ -2,7 +2,6 @@
 name: build-tarball
 description: Build generic Linux tarball with install script for LaprdusTTS (source and binary)
 allowed-tools: Bash, Read
-argument-hint: "[version]"
 ---
 
 # Build Generic Linux Tarball
@@ -12,15 +11,18 @@ Build a portable tarball package that works on any Linux distribution. Includes 
 ## Build Steps
 
 ```bash
-cd installers/linux/tarball && ./build-tarball.sh 2.0.0 && cd ../../..
+cargo xtask dist
 ```
 
-**Arguments:**
-- `$ARGUMENTS[0]` or default: Version number (e.g., "2.0.0")
+This packs the voice data, builds the CLI, the Speech Dispatcher module and the C API library, stages the tree in `dist/linux-x86_64/laprdus-2.0.0-linux-x86_64/` together with `install.sh`, `uninstall.sh` and `README` of `installers/linux/tarball/`, and packs it. The version is the Cargo workspace's; the architecture is the host's (`x86_64`, `aarch64`).
+
+`installers/linux/tarball/build-tarball.sh` runs the same step and copies the tarball into the directory it was started from.
+
+Build dependencies: Rust 1.85 or newer, a C linker, `pkg-config` and the ALSA development files (`libasound2-dev`, `alsa-lib-devel`, `alsa-lib`).
 
 ## Expected Output
 
-- `installers/linux/tarball/laprdus-2.0.0-linux-x86_64.tar.xz`
+- `dist/linux-x86_64/laprdus-2.0.0-linux-x86_64.tar.xz`
 
 ## Tarball Contents
 
@@ -38,10 +40,11 @@ laprdus-2.0.0-linux-x86_64/
 │   ├── Vlado.bin
 │   ├── internal.json        # Pronunciation dictionary
 │   ├── spelling.json        # Spelling dictionary
-│   └── emoji.json           # Emoji dictionary
+│   ├── emoji.json           # Emoji dictionary
+│   └── emoji_sl.json        # Slovenian emoji names
 ├── etc/speech-dispatcher/modules/
 │   └── laprdus.conf         # Module config
-├── include/laprdus/         # Headers
+├── include/laprdus/         # C API header (laprdus_api.h)
 ├── share/doc/laprdus/       # Documentation
 ├── install.sh               # Installation script
 ├── uninstall.sh             # Convenience removal script
@@ -57,13 +60,14 @@ laprdus-2.0.0-linux-x86_64/
 - **Multiarch library paths**: Install script detects Debian/Ubuntu multiarch via `dpkg-architecture -qDEB_HOST_MULTIARCH`, Fedora `/usr/lib64/`, or falls back to `<prefix>/lib`
 - **speechd.conf**: Auto-configured with BEGIN/END markers. Detects SD 0.12+ autodetection mode (no uncommented AddModule lines) and only adds LanguageDefaultModule entries to avoid disabling autodetection for other modules
 - **Speech Dispatcher restart**: Uses `try-restart` for both system and user services, iterates logged-in users via `loginctl list-users`. On removal, also uses `killall speech-dispatcher` as fallback to ensure SD is fully stopped (socket activation restarts it clean)
-- **Data dir auto-detection**: Both CLI and speechd module check `/usr/share/laprdus` and `/usr/local/share/laprdus`
+- **Data dir auto-detection**: The CLI checks `../share/laprdus` relative to itself, then `/usr/share/laprdus` and `/usr/local/share/laprdus`; the speechd module checks the last two
+- **Runtime dependencies**: glibc, libgcc and, for the CLI's playback, ALSA (`libasound.so.2`)
 - **Library symlinks**: Use `cp -Pv` (preserve symlinks) when copying library files
 
 ## Copy to ~/Downloads
 
 ```bash
-cp installers/linux/tarball/laprdus-2.0.0-linux-x86_64.tar.xz ~/Downloads/
+cp dist/linux-x86_64/laprdus-2.0.0-linux-x86_64.tar.xz ~/Downloads/
 ```
 
 ## Installation

@@ -11,8 +11,11 @@ Build the NVDA screen reader synthesizer addon for LaprdusTTS.
 ## Prerequisites
 
 The NVDA addon requires the following to be built first:
+- Voice data and dictionaries (`data/voices/`, `data/dictionary/`)
 - SAPI5 DLLs (both x64 and x86)
 - Config GUI executables (both x64 and x86)
+
+They are built by Cargo (Rust with the MSVC build tools and both targets: `rustup target add x86_64-pc-windows-msvc i686-pc-windows-msvc`). The add-on itself is built by its own SCons template (`pip install scons`).
 
 The build process will automatically copy them.
 
@@ -20,27 +23,19 @@ The build process will automatically copy them.
 
 Execute these commands in sequence:
 
-### 1. Build x64 SAPI5 DLL
+### 1. Pack the voice data and stage the dictionaries
 ```bash
-scons --platform=windows --arch=x64 --build-config=release sapi5
+cargo xtask data
 ```
 
-### 2. Build x86 SAPI5 DLL
+### 2. Build the DLLs and the Config GUI for x64 and x86
 ```bash
-scons --platform=windows --arch=x86 --build-config=release sapi5
+cargo xtask windows
 ```
 
-### 3. Build x64 Config GUI
-```bash
-scons --platform=windows --arch=x64 --build-config=release config
-```
+This stages `dist/windows-x64/` (`laprd64.dll`, `laprdus.exe`, `laprdgui.exe`) and `dist/windows-x86/` (`laprd32.dll`, `laprdus.exe`, `laprdgui.exe`).
 
-### 4. Build x86 Config GUI
-```bash
-scons --platform=windows --arch=x86 --build-config=release config
-```
-
-### 5. Build NVDA Addon
+### 3. Build NVDA Addon
 ```bash
 cd nvda-addon && scons && cd ..
 ```
@@ -52,8 +47,8 @@ cd nvda-addon && scons && cd ..
 ## Automatic Resource Copying
 
 The NVDA addon SCons build automatically:
-- Copies DLLs (`laprd64.dll`, `laprd32.dll`) from build directories
-- Copies GUI executables (`laprdgui.exe` as `laprdgui64.exe` and `laprdgui32.exe`) for the Laprdus Configurator
+- Copies DLLs (`laprd64.dll`, `laprd32.dll`) from `dist/windows-x64/` and `dist/windows-x86/`
+- Copies GUI executables (`laprdgui.exe` of `dist/windows-x64/` and `dist/windows-x86/` as `laprdgui64.exe` and `laprdgui32.exe`) for the Laprdus Configurator
 - Copies voice data from `data/voices/` to `addon/synthDrivers/laprdus/voices/`
 - Copies dictionaries from `data/dictionary/` to `addon/synthDrivers/laprdus/dictionaries/`
 
