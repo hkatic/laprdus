@@ -167,7 +167,7 @@ val cleanOldAssets = tasks.register<Delete>("cleanOldAssets") {
 }
 
 // The repository root: the Cargo workspace and the data folder.
-val repositoryDir = file("../..")
+val repositoryDir = file("../../../..")
 
 fun Exec.cargo(vararg arguments: String) {
     workingDir = repositoryDir
@@ -204,7 +204,7 @@ val buildNativeLibrary = tasks.register<Exec>("buildNativeLibrary") {
         "build", "--release", "-p", "laprdus-android"
     )
     inputs.dir(File(repositoryDir, "src/common"))
-    inputs.dir(File(repositoryDir, "src/platform/android/src"))
+    inputs.dir(File(repositoryDir, "src/platform/android/native/src"))
     inputs.files(File(repositoryDir, "Cargo.toml"), File(repositoryDir, "Cargo.lock"))
     outputs.dir(nativeLibraryDir)
 }
@@ -212,7 +212,7 @@ val buildNativeLibrary = tasks.register<Exec>("buildNativeLibrary") {
 val copyVoiceData = tasks.register<Copy>("copyVoiceData") {
     description = "Copy voice data files to assets/voices subdirectory"
     dependsOn(cleanOldAssets, generateVoiceData)
-    from("../../data/voices") {
+    from("../../../../data/voices") {
         include("*.bin")
     }
     into("src/main/assets/voices")
@@ -221,7 +221,7 @@ val copyVoiceData = tasks.register<Copy>("copyVoiceData") {
 val copyDictionaries = tasks.register<Copy>("copyDictionaries") {
     description = "Copy dictionary files to assets/dictionaries subdirectory"
     dependsOn(cleanOldAssets, generateVoiceData)
-    from("../../data/dictionary") {
+    from("../../../../data/dictionary") {
         include("*.json")
     }
     into("src/main/assets/dictionaries")

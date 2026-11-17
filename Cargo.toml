@@ -1,5 +1,5 @@
 [workspace]
-members = [".", "src/platform/c_api", "src/platform/cli", "src/platform/linux/speechd", "src/platform/android", "src/platform/windows/sapi5", "src/platform/windows/configurator", "tools/xtask"]
+members = [".", "src/platform/c_api", "src/platform/cli", "src/platform/linux/speechd", "src/platform/android/native", "src/platform/windows/sapi5", "src/platform/windows/configurator", "tools/xtask"]
 resolver = "3"
 
 [workspace.package]

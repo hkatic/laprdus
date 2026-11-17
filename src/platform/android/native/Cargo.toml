@@ -13,7 +13,7 @@ name = "laprdus"
 crate-type = ["cdylib"]
 
 [dependencies]
-engine = { package = "laprdus", path = "../../.." }
+engine = { package = "laprdus", path = "../../../.." }
 jni = "0.21"
 
 # Exported names need `#[unsafe(no_mangle)]`; there is no other unsafe code.
