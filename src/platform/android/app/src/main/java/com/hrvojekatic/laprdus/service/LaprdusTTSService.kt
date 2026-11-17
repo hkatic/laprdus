@@ -71,6 +71,12 @@ class LaprdusTTSService : TextToSpeechService() {
 
     companion object {
         private const val TAG = "LaprdusTTSService"
+        /**
+         * Length of the pieces of audio handed to the framework: 90 ms is
+         * 3968 bytes, under the 4096 the service has always written at once
+         * (and under SynthesisCallback.getMaxBufferSize()).
+         */
+        private const val AUDIO_CHUNK_MS = 90
         private const val FALLBACK_VOICE = EngineRuntime.DEFAULT_FALLBACK_VOICE
         private const val STARTUP_READ_TIMEOUT_MS = 2_000L
         private const val SETTINGS_RETRY_DELAY_MS = 5_000L
@@ -772,7 +778,19 @@ class LaprdusTTSService : TextToSpeechService() {
             val useSpelledMode = isSingleGrapheme(text)
             var spokenLanguage = ""
             var synthesisNanos = 0L
-            val samples = engine.exclusive {
+            var firstAudioNanos = 0L
+            var started = false
+            var startFailed = false
+            var interrupted = false
+            var audioBytes = 0L
+            var sampleRate = 22050
+            // The audio goes to the framework clause by clause, as soon as
+            // each clause is rendered, so a long text starts speaking after
+            // its first clause; and when the framework refuses it (the
+            // request was stopped: the user touched the screen), the engine
+            // stops there. It used to render the whole text first, and the
+            // next request waited for that.
+            val outcome = engine.exclusive {
                 // The configured voice always speaks (the request's voice
                 // name, if any, only names a language; see onLoadVoice). A
                 // voice that failed to load is not retried on every request.
@@ -811,61 +829,46 @@ class LaprdusTTSService : TextToSpeechService() {
                 // Apply volume - use Laprdus settings if force is enabled, reset to 1.0 if not
                 engine.volume = if (settings.forceVolume) settings.volume else 1.0f
 
-                // Synthesize - use spelled mode for single characters (TalkBack accessibility)
+                // The sink below runs inside the engine and must not call it
+                sampleRate = engine.sampleRate
                 val synthesisStart = SpeechRequestLog.now()
-                (if (useSpelledMode) {
-                    logDebug { "Using spelled synthesis for single character: '$text'" }
-                    engine.synthesizeSpelled(text)
-                } else {
-                    engine.synthesize(text)
-                }).also { synthesisNanos = SpeechRequestLog.now() - synthesisStart }
+                if (useSpelledMode) logDebug { "Using spelled synthesis for single character: '$text'" }
+                // Spelled mode for single characters (TalkBack accessibility)
+                engine.synthesizeStreaming(text, useSpelledMode, AUDIO_CHUNK_MS) { audio ->
+                    if (!started) {
+                        synthesisNanos = SpeechRequestLog.now() - synthesisStart
+                        val result = callback.start(sampleRate, AudioFormat.ENCODING_PCM_16BIT, 1)
+                        if (result != TextToSpeech.SUCCESS) {
+                            // A stop that came before the first sound
+                            logDebug { "Callback start refused: $result" }
+                            startFailed = true
+                            return@synthesizeStreaming false
+                        }
+                        started = true
+                        firstAudioNanos = SpeechRequestLog.now() - receivedAt
+                    }
+                    val writeResult = callback.audioAvailable(audio, 0, audio.size)
+                    if (writeResult != TextToSpeech.SUCCESS) {
+                        logDebug { "audioAvailable returned: $writeResult" }
+                        interrupted = true
+                        return@synthesizeStreaming false
+                    }
+                    audioBytes += audio.size
+                    true
+                }
             }
 
-            if (samples == null || samples.isEmpty()) {
+            if (startFailed) {
+                callback.error()
+                return
+            }
+            if (!started && outcome != LaprdusTTS.StreamResult.STOPPED) {
                 Log.e(TAG, "Synthesis returned no samples")
                 callback.error()
                 return
             }
 
-            logDebug { "Synthesized ${samples.size} samples (spelled=$useSpelledMode)" }
-
-            // Start audio output
-            val result = callback.start(
-                engine.sampleRate,
-                AudioFormat.ENCODING_PCM_16BIT,
-                1 // mono
-            )
-
-            if (result != TextToSpeech.SUCCESS) {
-                Log.e(TAG, "Callback start failed: $result")
-                callback.error()
-                return
-            }
-
-            // Convert shorts to bytes (little-endian)
-            val bytes = ByteArray(samples.size * 2)
-            for (i in samples.indices) {
-                val sample = samples[i].toInt()
-                bytes[i * 2] = (sample and 0xFF).toByte()
-                bytes[i * 2 + 1] = (sample shr 8 and 0xFF).toByte()
-            }
-
-            // Write audio in chunks
-            val chunkSize = 4096
-            var offset = 0
-            var firstAudioNanos = 0L
-            var interrupted = false
-            while (offset < bytes.size) {
-                val count = minOf(chunkSize, bytes.size - offset)
-                if (offset == 0) firstAudioNanos = SpeechRequestLog.now() - receivedAt
-                val writeResult = callback.audioAvailable(bytes, offset, count)
-                if (writeResult != TextToSpeech.SUCCESS) {
-                    Log.w(TAG, "audioAvailable returned: $writeResult")
-                    interrupted = true
-                    break
-                }
-                offset += count
-            }
+            logDebug { "Synthesized ${audioBytes / 2} samples (spelled=$useSpelledMode, $outcome)" }
             SpeechRequestLog.record(
                 SpeechRequestLog.Entry(
                     text = text,
@@ -874,8 +877,8 @@ class LaprdusTTSService : TextToSpeechService() {
                     receivedAtNanos = receivedAt,
                     synthesisNanos = synthesisNanos,
                     firstAudioNanos = firstAudioNanos,
-                    interrupted = interrupted,
-                    audioMillis = samples.size * 1000L / engine.sampleRate,
+                    interrupted = interrupted || outcome == LaprdusTTS.StreamResult.STOPPED,
+                    audioMillis = audioBytes / 2 * 1000L / sampleRate,
                 )
             )
 

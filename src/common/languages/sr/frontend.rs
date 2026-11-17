@@ -23,7 +23,7 @@ use std::sync::Arc;
 /// Converts one clause of text into phones.
 pub struct Frontend {
     /// The built-in lexicon.
-    pub(super) lexicon: &'static Lexicon,
+    pub(super) lexicon: &'static std::sync::LazyLock<Lexicon>,
     pub(super) user_exact: Entries,
     pub(super) user_stems: Entries,
     user_verbs: Vec<VerbRoot>,

@@ -27,8 +27,10 @@ use crate::voice::{self, Synthesis, Voice};
 use crate::{SAMPLE_RATE, silence};
 use std::collections::HashMap;
 use std::fmt;
+use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 /// Why the engine could not do what was asked.
 #[derive(Debug)]
@@ -41,6 +43,9 @@ pub enum Error {
     VoiceData(PathBuf, VoiceDataError),
     /// Nothing could be synthesized.
     Synthesis(String),
+    /// The synthesis was stopped: by a [`CancelHandle`], or by the callback
+    /// of a streaming synthesis.
+    Cancelled,
 }
 
 impl fmt::Display for Error {
@@ -50,11 +55,38 @@ impl fmt::Display for Error {
             Self::VoiceNotFound(id) => write!(f, "Voice not found: {id}"),
             Self::VoiceData(path, error) => write!(f, "Failed to load phoneme data: {} ({error})", path.display()),
             Self::Synthesis(message) => f.write_str(message),
+            Self::Cancelled => f.write_str("Synthesis cancelled"),
         }
     }
 }
 
 impl std::error::Error for Error {}
+
+/// Stops a synthesis from another thread: a screen reader's "stop speaking"
+/// arrives while the engine is busy with the text it should stop. A handle
+/// belongs to one engine ([`Engine::cancel_handle`]) and can be cloned and
+/// sent anywhere. [`cancel`](Self::cancel) makes the synthesis under way
+/// return [`Error::Cancelled`] at its next check: between clauses, breath
+/// groups, spelled characters and about every second of rendered sound.
+/// Every synthesis call starts with the request cleared, so a stop that comes
+/// before a call begins is the host's to remember.
+#[derive(Clone, Debug, Default)]
+pub struct CancelHandle(Arc<AtomicBool>);
+
+impl CancelHandle {
+    /// Asks the synthesis under way to stop.
+    pub fn cancel(&self) {
+        self.0.store(true, Ordering::Relaxed);
+    }
+
+    pub fn is_cancelled(&self) -> bool {
+        self.0.load(Ordering::Relaxed)
+    }
+
+    fn clear(&self) {
+        self.0.store(false, Ordering::Relaxed);
+    }
+}
 
 /// The synthesizer of the voice in use.
 enum Backend {
@@ -65,7 +97,7 @@ enum Backend {
 
 /// Receives the audio of a streaming synthesis, clause by clause.
 struct Sink<'a> {
-    callback: &'a mut dyn FnMut(&[i16]),
+    callback: &'a mut dyn FnMut(&[i16]) -> ControlFlow<()>,
     /// Samples per chunk; 0 hands every clause over whole.
     chunk: usize,
 }
@@ -106,6 +138,9 @@ pub struct Engine {
     /// The user's accent entries, kept across voice and language changes.
     user_lexicon: Option<Arc<UserLexicon>>,
     user_lexicon_report: String,
+
+    /// Stops the synthesis under way; the synthesizers hold clones.
+    cancel: CancelHandle,
 }
 
 impl Default for Engine {
@@ -137,7 +172,13 @@ impl Engine {
             user_emoji: EmojiDictionary::default(),
             user_lexicon: None,
             user_lexicon_report: String::new(),
+            cancel: CancelHandle::default(),
         }
+    }
+
+    /// The handle that stops this engine's synthesis from another thread.
+    pub fn cancel_handle(&self) -> CancelHandle {
+        self.cancel.clone()
     }
 
     /// The engine's version.
@@ -188,7 +229,9 @@ impl Engine {
         match voice.synthesis {
             Synthesis::Formant(speaker) => {
                 if self.voice != Some(voice) || !self.is_formant() {
-                    self.backend = Backend::Formant(Box::new(FormantSynthesizer::new(speaker)));
+                    let mut synthesizer = FormantSynthesizer::new(speaker);
+                    synthesizer.set_cancel_handle(self.cancel.clone());
+                    self.backend = Backend::Formant(Box::new(synthesizer));
                 }
             }
             Synthesis::Concatenative { data_file, .. } => {
@@ -223,7 +266,8 @@ impl Engine {
     }
 
     fn use_recordings(&mut self, data: VoiceData) {
-        let mut synthesizer = ConcatSynthesizer::new(data);
+        let mut synthesizer = ConcatSynthesizer::deferred(data);
+        synthesizer.set_cancel_handle(self.cancel.clone());
         synthesizer.set_voice_params(&self.params);
         self.backend = Backend::Recorded(Box::new(synthesizer));
     }
@@ -344,24 +388,30 @@ impl Engine {
 
     /// Synthesizes text.
     pub fn synthesize(&mut self, text: &str) -> Result<Vec<i16>, Error> {
+        self.cancel.clear();
         self.speak_text(text, None)
     }
 
     /// Synthesizes text and hands the audio over clause by clause, in chunks
-    /// of `chunk_ms` (0: every clause whole).
+    /// of `chunk_ms` (0: every clause whole), as soon as each clause is
+    /// rendered: the first sound of a long text does not wait for the rest.
+    /// A callback that returns `Break` stops the synthesis, which then
+    /// returns [`Error::Cancelled`], as it does when the engine's
+    /// [`CancelHandle`] is used.
     pub fn synthesize_streaming(
         &mut self,
         text: &str,
         chunk_ms: u32,
-        mut callback: impl FnMut(&[i16]),
+        mut callback: impl FnMut(&[i16]) -> ControlFlow<()>,
     ) -> Result<(), Error> {
+        self.cancel.clear();
         let chunk = (SAMPLE_RATE * chunk_ms / 1000) as usize;
         if let Some((words, letter)) = split_capital_announcement(text) {
             // Short: synthesized whole, then handed over in chunks.
             self.begin_utterance()?;
             let audio = self.synthesize_capital(&words, &letter)?;
-            audio.chunks(if chunk > 0 { chunk } else { audio.len().max(1) }).for_each(callback);
-            return Ok(());
+            let handed = audio.chunks(if chunk > 0 { chunk } else { audio.len().max(1) }).try_for_each(callback);
+            return if handed.is_break() { Err(Error::Cancelled) } else { Ok(()) };
         }
         self.speak_text(text, Some(Sink { callback: &mut callback, chunk })).map(drop)
     }
@@ -387,15 +437,15 @@ impl Engine {
             return self.synthesize_capital(&words, &letter);
         }
         let clauses = self.segment(&self.preprocess(text));
-        Ok(self.synthesize_clauses(&clauses, sink))
+        self.synthesize_clauses(&clauses, sink)
     }
 
     /// A capital letter as a screen reader announces it: the words as text,
     /// then the letter spelled, so the spelling mode, spelling speed and the
     /// user's spelling entries apply.
     fn synthesize_capital(&mut self, words: &str, letter: &str) -> Result<Vec<i16>, Error> {
-        let mut audio = self.synthesize(words)?;
-        audio.extend(self.synthesize_spelled(letter, true)?.0);
+        let mut audio = self.speak_text(words, None)?;
+        audio.extend(self.spell(letter, true)?.0);
         Ok(audio)
     }
 
@@ -428,7 +478,7 @@ impl Engine {
         clauses
     }
 
-    fn synthesize_clauses(&mut self, clauses: &[Clause], mut sink: Option<Sink<'_>>) -> Vec<i16> {
+    fn synthesize_clauses(&mut self, clauses: &[Clause], mut sink: Option<Sink<'_>>) -> Result<Vec<i16>, Error> {
         let mut result = Vec::new();
         // A short pause inside a clause (between the hours and minutes of
         // 12:30, the parts of 10.11.2026.) is half of the user's comma pause
@@ -445,6 +495,9 @@ impl Engine {
         // starts lower than one that opens a sentence.
         let mut sentence_initial = true;
         for clause in clauses.iter().filter(|clause| !clause.text.is_empty()) {
+            if self.cancel.is_cancelled() {
+                return Err(Error::Cancelled);
+            }
             let mut audio = match &mut self.backend {
                 Backend::Formant(synthesizer) => synthesizer.synthesize_clause(
                     &self.frontend,
@@ -468,18 +521,25 @@ impl Engine {
             };
             sentence_initial =
                 !matches!(clause.punct, Punctuation::Comma | Punctuation::Semicolon | Punctuation::Colon);
+            // A clause cut short by a stop is not handed over.
+            if self.cancel.is_cancelled() {
+                return Err(Error::Cancelled);
+            }
             if audio.is_empty() {
                 continue;
             }
             audio.extend(silence(self.clause_pauses.after(clause.punct)));
             match &mut sink {
                 Some(sink) => {
-                    audio.chunks(if sink.chunk > 0 { sink.chunk } else { audio.len() }).for_each(&mut *sink.callback)
+                    let chunk = if sink.chunk > 0 { sink.chunk } else { audio.len() };
+                    if audio.chunks(chunk).try_for_each(&mut *sink.callback).is_break() {
+                        return Err(Error::Cancelled);
+                    }
                 }
                 None => result.append(&mut audio),
             }
         }
-        result
+        Ok(result)
     }
 
     // -------------------------------------------------------------------------
@@ -494,6 +554,11 @@ impl Engine {
     /// unless `final_pause` is false: then that last pause is left out and
     /// its length (ms) returned, for a host that times the gap itself.
     pub fn synthesize_spelled(&mut self, text: &str, final_pause: bool) -> Result<(Vec<i16>, u32), Error> {
+        self.cancel.clear();
+        self.spell(text, final_pause)
+    }
+
+    fn spell(&mut self, text: &str, final_pause: bool) -> Result<(Vec<i16>, u32), Error> {
         self.begin_utterance()?;
         let pause_samples = (SAMPLE_RATE * self.params.pause_settings.spelling_pause_ms / 1000) as usize;
         let extra_pause_factor = 1.0 / f64::from(spelling_rate_factor(self.params.spelling_speed)) - 1.0;
@@ -504,7 +569,11 @@ impl Engine {
         let mut buffer = [0; 4];
         while let Some(character) = characters.next() {
             // A character that cannot be synthesized is skipped.
-            let Ok(samples) = self.spell_character(character.encode_utf8(&mut buffer)) else { continue };
+            let samples = match self.spell_character(character.encode_utf8(&mut buffer)) {
+                Ok(samples) if !self.cancel.is_cancelled() => samples,
+                Ok(_) | Err(Error::Cancelled) => return Err(Error::Cancelled),
+                Err(_) => continue,
+            };
             let pause = pause_samples + (samples.len() as f64 * extra_pause_factor).round() as usize;
             audio.extend(samples);
             let last = characters.peek().is_none();
@@ -561,7 +630,7 @@ impl Engine {
         } else {
             user.unwrap_or_else(|| letter_name(&letter, self.language).into_iter().collect())
         };
-        self.synthesize(&text)
+        self.speak_text(&text, None)
     }
 
     // -------------------------------------------------------------------------

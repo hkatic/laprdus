@@ -24,12 +24,19 @@ What is covered:
   file without them leaves the voice as it is;
 - NVDA's delayed character descriptions: the break after a spelled
   character is played as silence and the description follows;
-- the Language setting comes before the Voice setting.
+- the Language setting comes before the Voice setting;
+- cancel(): an item the speech thread has already taken is dropped wherever
+  the thread has got to with it (before its synthesis, in the middle of it,
+  after it, before a break), nothing of it is played or reported, and the
+  next utterance is spoken whole; a long text is played clause by clause;
+- a setting NVDA changes while the speech thread synthesizes waits for the
+  item to end.
 """
 import json
 import os
 import struct
 import sys
+import threading
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -329,6 +336,106 @@ def test_items_and_phone_numbers():
     synth.terminate()
 
 
+def test_cancel():
+    """A screen reader's "stop speaking" (the Ctrl key). A tester's report:
+    Laprdus finished the old utterance before it spoke the new one. cancel()
+    emptied the queue and stopped the player, but an item the speech thread
+    had already taken was still being synthesized, the player had nothing to
+    stop, and the whole item was played afterwards."""
+    write_settings("sounds")
+    synth = new_synth()
+    text = "Prva rečenica. Druga rečenica. Treća rečenica."
+    whole = spoken(synth, text)
+    after = spoken(synth, "Novi tekst.")
+    indexes = S.synthIndexReached.calls
+
+    def next_is_whole(name):
+        out = run(synth, ["Novi tekst.", IndexCommand(9)])
+        check("%s: the next utterance is spoken whole" % name,
+              b"".join(out) == after and [c["index"] for c in indexes][-1:] == [9])
+
+    # A long text is played clause by clause, the same samples
+    del indexes[:]
+    out = run(synth, [text, IndexCommand(1)])
+    check("a text is played clause by clause", len(out) == 3 and b"".join(out) == whole)
+    check("its index is reported once", [c["index"] for c in indexes] == [1])
+
+    # cancel() arrives when the thread has taken the item and is about to
+    # synthesize it: the old bug's window
+    engine = synth._engine
+    real_streaming = engine.synthesize_streaming
+
+    def cancelled_before(text, on_audio):
+        engine.synthesize_streaming = real_streaming
+        synth.cancel()
+        return real_streaming(text, on_audio)
+
+    engine.synthesize_streaming = cancelled_before
+    del indexes[:]
+    out = run(synth, [text, IndexCommand(2)])
+    check("cancel before the synthesis: nothing is played or reported", out == [] and not indexes)
+    next_is_whole("cancel before the synthesis")
+
+    # ... and while the first clause is being played: the rest is neither
+    # rendered nor played
+    def cancel_on_feed(_data):
+        S.HOOKS["feed"] = None
+        synth.cancel()
+
+    S.HOOKS["feed"] = cancel_on_feed
+    del indexes[:]
+    out = run(synth, [text, IndexCommand(3)])
+    check("cancel during playback: only the clause being played was fed",
+          len(out) == 1 and whole.startswith(out[0]))
+    check("cancel stops the player", len(S.STOPS) > 0)
+    next_is_whole("cancel during playback")
+
+    # A spelled character whose synthesis has just finished
+    real_spelled = engine.synthesize_spelled
+
+    def cancelled_after(text, final_pause=True):
+        engine.synthesize_spelled = real_spelled
+        result = real_spelled(text, final_pause=final_pause)
+        synth.cancel()
+        return result
+
+    engine.synthesize_spelled = cancelled_after
+    del indexes[:]
+    out = run(synth, [CharacterModeCommand(True), "b", CharacterModeCommand(False), IndexCommand(4)])
+    check("cancel after a character's synthesis: nothing is played or reported", out == [] and not indexes)
+    out = run(synth, ["Novi tekst.", IndexCommand(9)])
+    check("a cancelled character owes no pause to the next utterance", b"".join(out) == after)
+
+    # A break the thread has taken but not yet played
+    real_check = synth._checkConfigChanged
+
+    def cancelled_at_start():
+        synth._checkConfigChanged = real_check
+        synth.cancel()
+
+    synth._checkConfigChanged = cancelled_at_start
+    out = run(synth, [BreakCommand(1000), "Biokovo", IndexCommand(5)])
+    check("cancel before a break: neither the silence nor the text is played", out == [])
+    next_is_whole("cancel before a break")
+
+    # A setting NVDA changes while the thread is inside the engine waits
+    # for the item to end: the item keeps its voice, the next one has the
+    # new one
+    def change_voice(_data):
+        S.HOOKS["feed"] = None
+        changer = threading.Thread(target=synth._set_voice, args=("stojan",))
+        changer.start()
+        changer.join()
+
+    S.HOOKS["feed"] = change_voice
+    out = run(synth, [text, IndexCommand(6)])
+    check("a voice change during a synthesis leaves the item whole", b"".join(out) == whole)
+    check("the voice is changed when the item is done", engine.get_current_voice() == "stojan")
+    out = run(synth, ["Novi tekst.", IndexCommand(7)])
+    check("the next utterance has the new voice", b"".join(out) == spoken(synth, "Novi tekst.") != after)
+    synth.terminate()
+
+
 def test_settings_order():
     ids = [getattr(s, "id", s) for s in drv.SynthDriver.supportedSettings]
     check("the Language setting comes before the Voice setting",
@@ -345,5 +452,6 @@ if __name__ == "__main__":
     test_voice_quality()
     test_delayed_description()
     test_items_and_phone_numbers()
+    test_cancel()
     print("%d failed" % len(failures))
     sys.exit(1 if failures else 0)

@@ -22,11 +22,15 @@
 mod support;
 
 use laprdus::config::UserSettings;
+use laprdus::engine::Error;
 use laprdus::language::Language;
 use laprdus::params::{NumberMode, SpellingMode, VoiceParams};
 use laprdus::text::frontend::UserLexicon;
 use laprdus::voice::{self, VOICES, Voice};
+use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use support::*;
 
 // =============================================================================
@@ -5278,7 +5282,12 @@ fn a_capital_letter_announced_by_a_screen_reader_is_spelled() {
     // The streaming API gives the same samples
     speaker.set_spelling_mode(SpellingMode::LetterSounds);
     let mut streamed = Vec::new();
-    speaker.synthesize_streaming("veliko N", 46, |chunk| streamed.extend_from_slice(chunk)).expect("streamed audio");
+    speaker
+        .synthesize_streaming("veliko N", 46, |chunk| {
+            streamed.extend_from_slice(chunk);
+            std::ops::ControlFlow::Continue(())
+        })
+        .expect("streamed audio");
     assert!(streamed == speaker.say("veliko N"));
 }
 
@@ -5343,6 +5352,67 @@ fn a_lone_letter_in_running_text_follows_the_spelling_mode() {
 }
 
 /// Streaming API works with formant voices
+/// A stop reaches a synthesis under way: by the callback of a streaming
+/// synthesis, and by the engine's cancel handle from another thread, which is
+/// how a screen reader's "stop speaking" arrives. The synthesis after it is
+/// whole.
+#[test]
+fn a_synthesis_under_way_can_be_stopped_and_the_next_one_is_whole() {
+    let mut speaker = Speaker::new("zvonko");
+    let text = "Prva rečenica. Druga rečenica. Treća rečenica.";
+    let whole = speaker.say(text);
+    assert!(!whole.is_empty());
+
+    // The callback stops it after the first clause
+    let mut heard = Vec::new();
+    let stopped = speaker.synthesize_streaming(text, 0, |chunk| {
+        heard.extend_from_slice(chunk);
+        ControlFlow::Break(())
+    });
+    assert!(matches!(stopped, Err(Error::Cancelled)));
+    assert!(!heard.is_empty() && heard.len() < whole.len());
+    assert!(whole.starts_with(&heard));
+
+    // The handle stops it: nothing after the clause that was being handed over
+    let cancel = speaker.cancel_handle();
+    let mut clauses = 0;
+    let stopped = speaker.synthesize_streaming(text, 0, |_| {
+        clauses += 1;
+        cancel.cancel();
+        ControlFlow::Continue(())
+    });
+    assert!(matches!(stopped, Err(Error::Cancelled)));
+    assert_eq!(clauses, 1);
+
+    // A stop that came before a synthesis began stops nothing
+    cancel.cancel();
+    assert!(speaker.say(text) == whole);
+    cancel.cancel();
+    let spelled = speaker.synthesize_spelled("abc", true).expect("spelled audio").0;
+    assert!(!spelled.is_empty());
+
+    // From another thread, in the middle of a long text and of a spelled one
+    let long = "Ovo je jedna duga rečenica bez kraja i konca koja se ponavlja ".repeat(300);
+    for spell in [false, true] {
+        let finished = Arc::new(AtomicBool::new(false));
+        let stopper = {
+            let (cancel, finished) = (cancel.clone(), finished.clone());
+            std::thread::spawn(move || {
+                while !finished.load(Ordering::Relaxed) {
+                    cancel.cancel();
+                    std::thread::sleep(std::time::Duration::from_millis(1));
+                }
+            })
+        };
+        let stopped =
+            if spell { speaker.synthesize_spelled(&long, true).map(drop) } else { speaker.synthesize(&long).map(drop) };
+        finished.store(true, Ordering::Relaxed);
+        stopper.join().expect("the stopping thread");
+        assert!(matches!(stopped, Err(Error::Cancelled)), "spelled: {spell}");
+    }
+    assert!(speaker.say(text) == whole);
+}
+
 #[test]
 fn streaming_works_with_formant_voices() {
     let mut stojan = Speaker::new("stojan");
@@ -5359,6 +5429,7 @@ fn streaming_works_with_formant_voices() {
             .synthesize_streaming(text, chunk_ms, |chunk| {
                 longest = longest.max(chunk.len());
                 streamed.extend_from_slice(chunk);
+                ControlFlow::Continue(())
             })
             .expect("streamed audio");
         assert!(streamed == whole, "chunks of {chunk_ms} ms");

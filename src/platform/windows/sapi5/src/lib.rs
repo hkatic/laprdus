@@ -22,12 +22,13 @@ use laprdus_capi as _;
 use laprdus_win7 as _;
 
 use laprdus::config::{UserConfig, UserSettings};
-use laprdus::engine::Engine;
+use laprdus::engine::{Engine, Error};
 use laprdus::language::Language;
 use laprdus::params::VoiceParams;
 use laprdus::voice;
 use laprdus::{SAMPLE_RATE, silence};
 use std::ffi::c_void;
+use std::ops::ControlFlow;
 use std::path::PathBuf;
 use std::sync::{Mutex, PoisonError};
 use std::time::SystemTime;
@@ -247,22 +248,43 @@ impl Voice {
         });
     }
 
-    /// The audio of the runs; `None` when none of them could be spoken.
-    fn synthesize(&mut self, runs: &[Run], site: &ISpTTSEngineSite) -> Option<Vec<i16>> {
+    /// Speaks the runs to the site, each clause as soon as it is rendered,
+    /// so the first sound of a long text does not wait for the rest, and
+    /// stops when SAPI asks (`SPVES_ABORT`): the synthesis under way is cut
+    /// short, where it used to finish the whole text before `Speak` returned
+    /// and the next utterance could start. An error when none of the runs
+    /// could be spoken, or when the site refused the audio.
+    fn speak(&mut self, runs: &[Run], site: &ISpTTSEngineSite) -> Result<()> {
         let spelling_pause = self.engine.params().pause_settings.spelling_pause_ms;
         let text_runs = runs.iter().filter(|run| matches!(run, Run::Text { .. })).count();
-        let mut audio = Vec::new();
         let (mut succeeded, mut failed) = (false, false);
         // True while the audio so far ends in a pause (or there is none yet).
         let mut separated = true;
         let mut previous_spelled = false;
+        // Why the site took no more audio, when it refused some.
+        let mut refused = None;
+        let mut write = |samples: &[i16]| {
+            for chunk in samples.chunks(CHUNK_SAMPLES) {
+                if should_stop(site) {
+                    return ControlFlow::Break(());
+                }
+                // SAFETY: the pointer and the byte count describe `chunk`.
+                if let Err(error) = unsafe { site.Write(chunk.as_ptr().cast(), size_of_val(chunk) as u32) } {
+                    refused = Some(error);
+                    return ControlFlow::Break(());
+                }
+            }
+            ControlFlow::Continue(())
+        };
         for run in runs {
             if should_stop(site) {
                 break;
             }
             let (text, spell) = match run {
                 Run::Silence(ms) => {
-                    audio.extend(silence(*ms));
+                    if write(&silence(*ms).collect::<Vec<_>>()).is_break() {
+                        break;
+                    }
                     separated = true;
                     continue;
                 }
@@ -272,28 +294,40 @@ impl Voice {
             // ordinary text, so an utterance that is one character is
             // spelled too.
             let spell = spell || (text_runs == 1 && text.chars().count() == 1);
-            let spoken = if spell {
-                self.engine.synthesize_spelled(text, true).map(|(audio, _)| audio)
-            } else {
-                self.engine.synthesize(text)
-            };
-            // One run that cannot be spoken must not silence the others.
-            let Ok(spoken) = spoken else {
-                failed = true;
-                continue;
-            };
-            succeeded = true;
             // Spelled characters are kept apart by the spelling pause; so is
-            // the spoken text next to them.
-            if !separated && spell != previous_spelled {
-                audio.extend(silence(spelling_pause));
+            // the spoken text next to them. The pause goes out with the
+            // run's first sound: a run that cannot be spoken gets none.
+            let mut pause_owed = !separated && spell != previous_spelled;
+            let mut speak = |audio: &[i16]| {
+                if std::mem::take(&mut pause_owed) {
+                    write(&silence(spelling_pause).collect::<Vec<_>>())?;
+                }
+                write(audio)
+            };
+            let spoken = if spell {
+                self.engine.synthesize_spelled(text, true).map(|(audio, _)| speak(&audio).is_break())
+            } else {
+                self.engine.synthesize_streaming(text, 0, &mut speak).map(|()| false)
+            };
+            match spoken {
+                // SAPI asked to stop, or the site refused the audio.
+                Ok(true) | Err(Error::Cancelled) => break,
+                Ok(false) => succeeded = true,
+                // One run that cannot be spoken must not silence the others.
+                Err(_) => {
+                    failed = true;
+                    continue;
+                }
             }
-            audio.extend(spoken);
             // The engine ends every spelled run with the spelling pause.
             separated = spell;
             previous_spelled = spell;
         }
-        (succeeded || !failed).then_some(audio)
+        match refused {
+            Some(error) => Err(error),
+            None if succeeded || !failed => Ok(()),
+            None => Err(E_FAIL.into()),
+        }
     }
 }
 
@@ -353,15 +387,7 @@ impl ISpTTSEngine_Impl for Driver_Impl {
             voice.apply_request(site, fragments.as_ref());
             runs_of(fragments)
         };
-        let audio = voice.synthesize(&runs, site).ok_or(E_FAIL)?;
-        for chunk in audio.chunks(CHUNK_SAMPLES) {
-            if should_stop(site) {
-                break;
-            }
-            // SAFETY: the pointer and the byte count describe `chunk`.
-            unsafe { site.Write(chunk.as_ptr().cast(), size_of_val(chunk) as u32)? };
-        }
-        Ok(())
+        voice.speak(&runs, site)
     }
 
     fn GetOutputFormat(

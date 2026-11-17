@@ -19,6 +19,7 @@ import pathlib
 import struct
 import sys
 import tempfile
+import time
 from ctypes import POINTER, Structure, byref, c_int, c_int16, c_long, c_ulong, c_ulonglong, c_ushort, c_void_p, c_wchar_p
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -314,6 +315,24 @@ def main():
         stopped = Site(abort_after=8192)
         speak(engine, stopped, (SPVA_SPEAK, text, 0))
         check("an abort stops the writing", 0 < len(stopped.audio) < len(audio), f"{len(stopped.audio)} of {len(audio)}")
+
+        # A long text is written clause by clause, and an abort ends the
+        # synthesis there: Speak used to render the whole text before the
+        # first write, so the next utterance waited for the rest of the old one
+        long_text = "Ovo je jedna rečenica dugog teksta. " * 300
+        whole = Site()
+        started = time.perf_counter()
+        speak(engine, whole, (SPVA_SPEAK, long_text, 0))
+        whole_seconds = time.perf_counter() - started
+        check("a long text is the same audio as before",
+              bytes(whole.audio) == reference.render("hr", long_text.strip()))
+        stopped = Site(abort_after=8192)
+        started = time.perf_counter()
+        speak(engine, stopped, (SPVA_SPEAK, long_text, 0))
+        stopped_seconds = time.perf_counter() - started
+        check("an abort ends the synthesis of a long text",
+              0 < len(stopped.audio) < len(whole.audio) // 100 and stopped_seconds < whole_seconds / 10,
+              f"{len(stopped.audio)} of {len(whole.audio)} bytes, {stopped_seconds:.3f} of {whole_seconds:.3f} s")
         check("empty text is no audio and no error", speak(engine, Site(), (SPVA_SPEAK, "  \r\n", 0)) == b"")
 
         for language, sample in (("sr", "Имам 2000 динара."), ("bs", "Imam 2000 maraka."), ("sl", "Imam 2 uri časa.")):

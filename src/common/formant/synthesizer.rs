@@ -10,6 +10,7 @@ use super::singing::Note;
 use super::voice::FormantVoice;
 use crate::audio::boost::{Boost, boost_volume};
 use crate::audio::brightness::tilt_brightness;
+use crate::engine::CancelHandle;
 use crate::params::{SpellingMode, VoiceParams};
 use crate::prosody::{Utterance, split_at_breaks};
 use crate::text::{Frontend, Punctuation, breath_groups};
@@ -30,7 +31,13 @@ pub struct FormantSynthesizer {
     melody: Vec<Note>,
     /// ... and the next note to sing.
     cursor: usize,
+    /// The engine's request to stop: what is rendered so far is returned.
+    cancel: CancelHandle,
 }
+
+/// Frames rendered between two looks at the request to stop: about a second
+/// of sound.
+const FRAMES_PER_CANCEL_CHECK: usize = 512;
 
 impl FormantSynthesizer {
     pub fn new(voice: &FormantVoice) -> Self {
@@ -39,7 +46,13 @@ impl FormantSynthesizer {
             synth: KlattSynth::new(&voice.quality(&VoiceParams::default())),
             melody: voice.singing.map_or_else(Vec::new, |style| style.song.notes()),
             cursor: 0,
+            cancel: CancelHandle::default(),
         }
+    }
+
+    /// The handle whose `cancel()` cuts a synthesis short: the engine's.
+    pub fn set_cancel_handle(&mut self, cancel: CancelHandle) {
+        self.cancel = cancel;
     }
 
     pub fn voice(&self) -> &FormantVoice {
@@ -79,6 +92,9 @@ impl FormantSynthesizer {
     ) -> Vec<i16> {
         let mut audio = Vec::new();
         for (group, punct, first) in breath_groups(text, punct) {
+            if self.cancel.is_cancelled() {
+                break;
+            }
             let mut utt = frontend.process(group, punct, params.spelling_mode == SpellingMode::LetterSounds);
             utt.sentence_initial = sentence_initial && first;
             // A song has no place for a pause of the text: its rests are the song's.
@@ -91,6 +107,9 @@ impl FormantSynthesizer {
             // before any pause, with a silence between them.
             let parts = split_at_breaks(&utt);
             for (k, part) in parts.iter().enumerate() {
+                if self.cancel.is_cancelled() {
+                    break;
+                }
                 let before = audio.len();
                 self.render_utterance(part, params, &mut audio, false);
                 if k + 1 < parts.len() && audio.len() > before {
@@ -134,7 +153,14 @@ impl FormantSynthesizer {
         let mut pcm = Vec::new();
         self.synth.set_quality(&voice.quality(params));
         self.synth.reset();
-        self.synth.render(&frames, &mut pcm);
+        // In slices, which the synthesizer's state carries across: the same
+        // samples as in one call, with a look at the request to stop between.
+        for slice in frames.chunks(FRAMES_PER_CANCEL_CHECK) {
+            if self.cancel.is_cancelled() {
+                return;
+            }
+            self.synth.render(slice, &mut pcm);
+        }
 
         // Brightness reaches the whole output, the frication and the bursts
         // too (the source emphasis shapes the voicing alone). 50 leaves it out.

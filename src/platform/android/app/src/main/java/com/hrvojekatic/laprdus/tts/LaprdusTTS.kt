@@ -110,7 +110,8 @@ class LaprdusTTS private constructor() {
     private external fun nativeSetBrightness(handle: Long, value: Int)
     private external fun nativeGetNominalWpm(voiceId: String): Float
     private external fun nativeGetSampleRate(handle: Long): Int
-    private external fun nativeCancel()
+    private external fun nativeCancel(handle: Long)
+    private external fun nativeSynthesizeStreaming(handle: Long, text: String, chunkMs: Int, spelled: Boolean, sink: AudioSink): Int
     private external fun nativeGetVoiceCount(): Int
     private external fun nativeGetVoiceInfo(index: Int): VoiceInfo?
     private external fun nativeSetVoice(handle: Long, voiceId: String, assetManager: AssetManager): String?
@@ -351,10 +352,40 @@ class LaprdusTTS private constructor() {
         get() = if (isInitialized()) nativeGetSampleRate(handle) else 22050
 
     /**
-     * Cancel any ongoing synthesis operation
+     * Stops the synthesis this engine is busy with, from any thread and
+     * without waiting for it: [synthesize] and [synthesizeSpelled] then
+     * return null and [synthesizeStreaming] [StreamResult.STOPPED]. A call
+     * made while nothing is being synthesized stops nothing.
      */
     fun cancel() {
-        nativeCancel()
+        nativeCancel(handle)
+    }
+
+    /**
+     * Receives the audio of [synthesizeStreaming]: 16-bit little-endian mono
+     * PCM at [sampleRate]. Returns false to stop the synthesis. Called on the
+     * synthesizing thread with the engine held: it must not call this engine.
+     */
+    fun interface AudioSink {
+        fun onAudio(audio: ByteArray): Boolean
+    }
+
+    enum class StreamResult { DONE, STOPPED, FAILED }
+
+    /**
+     * Synthesizes [text] ([spelled]: character by character) and hands the
+     * audio to [sink] clause by clause, in pieces of at most [chunkMs], as
+     * soon as each clause is rendered: the first sound of a long text does
+     * not wait for the rest, and a stop ([cancel], or the sink returning
+     * false) ends the work there.
+     */
+    fun synthesizeStreaming(text: String, spelled: Boolean, chunkMs: Int, sink: AudioSink): StreamResult {
+        if (if (spelled) text.isEmpty() else text.isBlank()) return StreamResult.DONE
+        return when (nativeSynthesizeStreaming(handle, text, chunkMs, spelled, sink)) {
+            0 -> StreamResult.DONE
+            1 -> StreamResult.STOPPED
+            else -> StreamResult.FAILED
+        }
     }
 
     /**

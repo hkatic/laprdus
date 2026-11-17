@@ -125,6 +125,18 @@ impl Section {
         self.y = [y, self.y[0]];
         y
     }
+
+    /// Called while the input is exact silence: once the section has rung
+    /// down to nothing (500 dB under full scale, far below what a sample can
+    /// hold), it is cleared. Left alone it does not arrive at zero: it stalls
+    /// at the smallest numbers a double can hold, on which arithmetic is many
+    /// times slower, for as long as the silence lasts.
+    fn settle(&mut self) {
+        const NOTHING: f64 = 1e-25;
+        if self.x.iter().chain(&self.y).all(|v| v.abs() < NOTHING) {
+            (self.x, self.y) = ([0.0; 2], [0.0; 2]);
+        }
+    }
 }
 
 /// For every `j`, the index of the extreme of `values` over `j - back ..=
@@ -173,6 +185,9 @@ pub fn limit_hiss(wave: &mut [f32], fs: f32, hiss_db: f32) {
     let (mut ph, mut pl) = (0f64, 0f64);
     for i in 0..n {
         let x = f64::from(wave[i]);
+        if x == 0.0 {
+            split.iter_mut().chain([&mut det_lp, &mut det_hp]).for_each(Section::settle);
+        }
         let once = split[0].tick(x);
         low[i] = split[1].tick(once) as f32;
         let h = det_hp.tick(x);
@@ -211,13 +226,22 @@ pub fn limit_hiss(wave: &mut [f32], fs: f32, hiss_db: f32) {
     // The gain the hiss band wants, sample by sample.
     let target = pow10f(hiss_db / 10.0); // in power
     let floor_gain = pow10f(-VOLUME_BOOST_HISS_MAX_CUT_DB / 20.0);
+    // A band 3 dB and more under the gate has no share: known from the
+    // ratio, without its logarithm (most samples of a vowel).
+    let surely_under_gate = 0.5 * pow10f(HISS_GATE_LOW_DB / 10.0);
+    let mut cut = false;
     let want: Vec<f32> = (0..n)
         .map(|i| {
             let vowel = average[vowel[i]];
             if !(hi_pow[i] > 0.0) || !(vowel > 0.0) {
                 return 1.0;
             }
-            let dominance_db = 10.0 * (hi_pow[i] / (low_pow[i] + 1e-20)).log10();
+            let dominance = hi_pow[i] / (low_pow[i] + 1e-20);
+            if dominance < surely_under_gate {
+                return 1.0;
+            }
+            cut = true;
+            let dominance_db = 10.0 * dominance.log10();
             let share = ((dominance_db - HISS_GATE_LOW_DB) / (HISS_GATE_HIGH_DB - HISS_GATE_LOW_DB)).clamp(0.0, 1.0);
             if share <= 0.0 {
                 return 1.0;
@@ -226,6 +250,11 @@ pub fn limit_hiss(wave: &mut [f32], fs: f32, hiss_db: f32) {
             1.0 - share * (1.0 - floor_gain.max(level))
         })
         .collect();
+    // No hiss anywhere: the gain below would be 1 throughout and no sample
+    // would be touched.
+    if !cut || want.iter().all(|&gain| gain == 1.0) {
+        return;
+    }
 
     // Down before the hiss arrives and held a little after it, then released.
     let ahead = (HISS_LOOKAHEAD_SECONDS * fs) as usize;
@@ -331,15 +360,46 @@ pub fn boost_volume(wave: &mut [f32], sample_rate: u32, boost: &Boost) {
 
     // The gain each sample wants on its own: 1 below the ceiling, less above,
     // with the peak between this sample and the next counted too.
-    for x in wave.iter_mut() {
-        *x *= gain;
+    if gain != 1.0 {
+        for x in wave.iter_mut() {
+            *x *= gain;
+        }
     }
-    let want: Vec<f32> = (0..n)
-        .map(|i| {
+    // The peak between two samples is a weighted sum of eight samples around
+    // them, and the weights of no row add up to more than 1.7146 in
+    // magnitude: where none of the eight reaches the ceiling divided by
+    // that, the peak cannot reach the ceiling, and the sample wants 1
+    // without the sum being formed. Most of speech lies under it.
+    const WEIGHTS_BOUND: f32 = 1.72;
+    let quiet = ceiling / WEIGHTS_BOUND;
+    let mut want = vec![1f32; n];
+    let mut limited = false;
+    // The taps of sample i are the samples i - 3 ..= i + 4: the last loud
+    // one seen up to i + 4 is among them when it is not more than 3 back.
+    let mut last_loud: Option<usize> = None;
+    let mut seen = 0;
+    for (i, want) in want.iter_mut().enumerate() {
+        while seen < n && seen <= i + 4 {
+            if wave[seen].abs() > quiet {
+                last_loud = Some(seen);
+            }
+            seen += 1;
+        }
+        if last_loud.is_some_and(|loud| loud + 3 >= i) {
             let a = inter_sample_peak(wave, i);
-            if a > ceiling { ceiling / a } else { 1.0 }
-        })
-        .collect();
+            if a > ceiling {
+                *want = ceiling / a;
+                limited = true;
+            }
+        }
+    }
+    // Nothing reaches the ceiling: the limiter's gain would stay 1 from the
+    // first sample to the last and every sample would be multiplied by it,
+    // which leaves it as it is. (The soft clipper works on its own.)
+    let clip = knee > 0.0 && knee < 1.0;
+    if !limited && !clip {
+        return;
+    }
 
     // The envelope: the sliding minimum of `want` over the next `lookahead`
     // and the last `hold` samples.
@@ -360,7 +420,6 @@ pub fn boost_volume(wave: &mut [f32], sample_rate: u32, boost: &Boost) {
     }
 
     // The attack (a box average over the lookahead) and the release.
-    let clip = knee > 0.0 && knee < 1.0;
     let mut sum = 0f64;
     let mut g = 1f32;
     for j in 0..n {

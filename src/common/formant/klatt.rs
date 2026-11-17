@@ -56,6 +56,10 @@ const WHISPER_B1_HZ: f64 = 150.0;
 const TENSE_OQ: f64 = 0.30; // 0.40 and 4 dB until November 2026 (inaudible)
 const TENSE_TILT_DB: f64 = 8.0;
 const FRICATION_GAIN: f64 = 3.0;
+/// The frication filters count as rung out when nothing in them is above
+/// this: 500 dB under the speech, and what they would still add to a sample
+/// is far below the last bit of anything that reaches the output.
+const FRICATION_RUNG_OUT: f64 = 1e-25;
 
 /// Coefficients are refreshed twice per frame.
 const SUBFRAME: usize = FRAME_SAMPLES / 2;
@@ -240,6 +244,32 @@ fn pole(freq: f64, bw: f64) -> (f64, f64) {
     ((-PI * bw.max(20.0) * T).exp(), 2.0 * PI * freq.clamp(50.0, MAX_FREQ) * T)
 }
 
+/// What a filter's coefficients were last computed from. The coefficients
+/// are set twice per frame, with an `exp`, a `cos` and more each time, and
+/// through a steady sound (a held vowel's upper formants, the noise peaks, the
+/// nasal zero) they are set to what they already are: the same input gives the
+/// same coefficients, so the work is left out. `NAN` matches nothing.
+#[derive(Clone, Copy, Debug)]
+struct SetFrom {
+    freq: f64,
+    bw: f64,
+    bandpass: bool,
+}
+
+impl SetFrom {
+    const NOTHING: Self = Self { freq: f64::NAN, bw: f64::NAN, bandpass: false };
+
+    /// True when the coefficients are already those of these values; else
+    /// remembers the values, for which the caller now computes them.
+    fn already(&mut self, freq: f64, bw: f64, bandpass: bool) -> bool {
+        if self.freq == freq && self.bw == bw && self.bandpass == bandpass {
+            return true;
+        }
+        *self = Self { freq, bw, bandpass };
+        false
+    }
+}
+
 /// Two-pole resonator.
 #[derive(Clone, Copy, Debug)]
 struct Resonator {
@@ -248,18 +278,23 @@ struct Resonator {
     c: f64,
     y1: f64,
     y2: f64,
+    from: SetFrom,
 }
 
 impl Default for Resonator {
     fn default() -> Self {
-        Self { a: 1.0, b: 0.0, c: 0.0, y1: 0.0, y2: 0.0 }
+        Self { a: 1.0, b: 0.0, c: 0.0, y1: 0.0, y2: 0.0, from: SetFrom::NOTHING }
     }
 }
 
 impl Resonator {
     /// Unity gain at DC.
     fn set(&mut self, freq: impl Into<f64>, bw: impl Into<f64>) {
-        let (r, theta) = pole(freq.into(), bw.into());
+        let (freq, bw) = (freq.into(), bw.into());
+        if self.from.already(freq, bw, false) {
+            return;
+        }
+        let (r, theta) = pole(freq, bw);
         self.c = -r * r;
         self.b = 2.0 * r * theta.cos();
         self.a = 1.0 - self.b - self.c;
@@ -267,6 +302,9 @@ impl Resonator {
 
     /// Unity gain at the resonance peak.
     fn set_bandpass(&mut self, freq: f64, bw: f64) {
+        if self.from.already(freq, bw, true) {
+            return;
+        }
         let (r, theta) = pole(freq, bw);
         self.c = -r * r;
         self.b = 2.0 * r * theta.cos();
@@ -282,6 +320,10 @@ impl Resonator {
 
     fn clear(&mut self) {
         (self.y1, self.y2) = (0.0, 0.0);
+    }
+
+    fn rung_out(&self) -> bool {
+        self.y1.abs() < FRICATION_RUNG_OUT && self.y2.abs() < FRICATION_RUNG_OUT
     }
 }
 
@@ -299,16 +341,20 @@ struct NoisePeak {
     x2: f64,
     y1: f64,
     y2: f64,
+    from: SetFrom,
 }
 
 impl Default for NoisePeak {
     fn default() -> Self {
-        Self { a: 1.0, z: 0.0, b: 0.0, c: 0.0, x1: 0.0, x2: 0.0, y1: 0.0, y2: 0.0 }
+        Self { a: 1.0, z: 0.0, b: 0.0, c: 0.0, x1: 0.0, x2: 0.0, y1: 0.0, y2: 0.0, from: SetFrom::NOTHING }
     }
 }
 
 impl NoisePeak {
     fn set(&mut self, freq: f64, bw: f64) {
+        if self.from.already(freq, bw, true) {
+            return;
+        }
         let (r, theta) = pole(freq, bw);
         self.c = -r * r;
         self.b = 2.0 * r * theta.cos();
@@ -335,6 +381,10 @@ impl NoisePeak {
     fn clear(&mut self) {
         (self.x1, self.x2, self.y1, self.y2) = (0.0, 0.0, 0.0, 0.0);
     }
+
+    fn rung_out(&self) -> bool {
+        [self.x1, self.x2, self.y1, self.y2].iter().all(|v| v.abs() < FRICATION_RUNG_OUT)
+    }
 }
 
 /// Two-zero antiresonator (the nasal zero).
@@ -345,16 +395,20 @@ struct AntiResonator {
     c: f64,
     x1: f64,
     x2: f64,
+    from: SetFrom,
 }
 
 impl Default for AntiResonator {
     fn default() -> Self {
-        Self { a: 1.0, b: 0.0, c: 0.0, x1: 0.0, x2: 0.0 }
+        Self { a: 1.0, b: 0.0, c: 0.0, x1: 0.0, x2: 0.0, from: SetFrom::NOTHING }
     }
 }
 
 impl AntiResonator {
     fn set(&mut self, freq: f64, bw: f64) {
+        if self.from.already(freq, bw, false) {
+            return;
+        }
         let (r, theta) = pole(freq, bw);
         let rc = -r * r;
         let rb = 2.0 * r * theta.cos();
@@ -428,6 +482,10 @@ impl Biquad {
     fn clear(&mut self) {
         (self.x1, self.x2, self.y1, self.y2) = (0.0, 0.0, 0.0, 0.0);
     }
+
+    fn rung_out(&self) -> bool {
+        [self.x1, self.x2, self.y1, self.y2].iter().all(|v| v.abs() < FRICATION_RUNG_OUT)
+    }
 }
 
 /// Second-order low-pass (`b2 == b0`, summed before the multiplication).
@@ -482,8 +540,13 @@ impl Default for Reverb {
 }
 
 impl Reverb {
+    /// In place: every utterance of every voice starts with this, and six
+    /// delay lines were allocated anew each time.
     fn clear(&mut self) {
-        *self = Self::default();
+        self.comb.iter_mut().chain(&mut self.allpass).for_each(|line| line.fill(0.0));
+        self.comb_pos = [0; 4];
+        self.allpass_pos = [0; 2];
+        self.comb_state = [0.0; 4];
     }
 
     fn tick(&mut self, x: f64) -> f64 {
@@ -582,8 +645,15 @@ pub struct KlattSynth {
     period_odd: bool,
     tilt_state: f64,
     tilt_coef: f64,
+    /// The tilt `tilt_coef` was computed for (`NAN`: none yet).
+    tilt_for: f64,
     bright_x1: f64,
     time: f64,
+    /// The chorus copies' pitch ratios, up and down (`VoiceQuality::chorus_cents`).
+    chorus_up: f64,
+    chorus_down: f64,
+    /// True when the source reads the chorus and sub-octave oscillators.
+    extra_oscillators: bool,
 
     // Output conditioning.
     dc_x1: f64,
@@ -624,8 +694,12 @@ impl KlattSynth {
             period_odd: false,
             tilt_state: 0.0,
             tilt_coef: 0.0,
+            tilt_for: f64::NAN,
             bright_x1: 0.0,
             time: 0.0,
+            chorus_up: 1.0,
+            chorus_down: 1.0,
+            extra_oscillators: true,
             dc_x1: 0.0,
             dc_y1: 0.0,
             rng: 0,
@@ -639,6 +713,14 @@ impl KlattSynth {
     pub fn set_quality(&mut self, quality: &VoiceQuality) {
         self.quality = *quality;
         let q = &self.quality;
+        // Once here, not once per sample: the values do not change within an
+        // utterance, and a `powf` per sample was a tenth of the rendering.
+        self.chorus_up = pow2(f64::from(q.chorus_cents) / 1200.0);
+        self.chorus_down = 1.0 / self.chorus_up;
+        // The plain glottal source without chorus or sub-octave (every
+        // speaking voice) reads none of the three extra oscillators, whose
+        // phases `reset` zeroes before every utterance.
+        self.extra_oscillators = q.source != SourceKind::Glottal || q.chorus > 0.0 || q.sub_octave > 0.0;
         for (resonator, (&f, &b)) in self.upper.iter_mut().zip(q.upper_f.iter().zip(&q.upper_b)) {
             resonator.set(f, b);
         }
@@ -690,6 +772,27 @@ impl KlattSynth {
         self.rng = RNG_SEED;
     }
 
+    /// True when the frication branch holds nothing any more, after clearing
+    /// the little that was left in it. Without noise its filters are fed
+    /// exact zeros and ring down, as they should; but a filter that rings
+    /// down does not arrive at zero: its state stalls at the smallest numbers
+    /// a double can hold (1e-310 and less), and arithmetic on those is many
+    /// times slower than on ordinary numbers. The low-passes got there a few
+    /// milliseconds after every hissing consonant and fed the peaks behind
+    /// them such numbers until the next one: three fifths of the time a
+    /// paragraph took to render went into filtering silence (November 2026).
+    fn frication_rung_out(&mut self) -> bool {
+        let rung_out = self.fric_lp.iter().all(|lp| lp.0.rung_out())
+            && self.parallel.iter().all(Resonator::rung_out)
+            && self.noise_bank.iter().all(NoisePeak::rung_out);
+        if rung_out {
+            self.fric_lp.iter_mut().for_each(LowPass::clear);
+            self.parallel.iter_mut().for_each(Resonator::clear);
+            self.noise_bank.iter_mut().for_each(NoisePeak::clear);
+        }
+        rung_out
+    }
+
     /// Sum of four uniform values: cheap, close enough to Gaussian.
     fn noise(&mut self) -> f64 {
         let mut sum = 0.0;
@@ -703,13 +806,14 @@ impl KlattSynth {
     fn update_coefficients(&mut self, fr: &Frame) {
         let q = self.quality;
         for (i, resonator) in self.cascade.iter_mut().enumerate() {
-            resonator.set(fr.f[i], fr.b[i]);
-        }
-        // An open glottis couples the trachea to the tract: F1's bandwidth
-        // widens in a breathy voice and a whisper, which also keeps the noise
-        // from ringing in a narrow F1.
-        if q.whisper > 0.0 {
-            self.cascade[0].set(fr.f[0], f64::from(fr.b[0]) + f64::from(q.whisper) * WHISPER_B1_HZ);
+            // An open glottis couples the trachea to the tract: F1's bandwidth
+            // widens in a breathy voice and a whisper, which also keeps the
+            // noise from ringing in a narrow F1.
+            if i == 0 && q.whisper > 0.0 {
+                resonator.set(fr.f[0], f64::from(fr.b[0]) + f64::from(q.whisper) * WHISPER_B1_HZ);
+            } else {
+                resonator.set(fr.f[i], fr.b[i]);
+            }
         }
 
         let zero =
@@ -732,6 +836,10 @@ impl KlattSynth {
             tilt -= f64::from(q.tension) * TENSE_TILT_DB;
         }
         let tilt = tilt.clamp(0.0, 40.0);
+        if tilt == self.tilt_for {
+            return;
+        }
+        self.tilt_for = tilt;
         self.tilt_coef = if tilt < 0.05 {
             0.0
         } else {
@@ -748,8 +856,7 @@ impl KlattSynth {
         let q = self.quality;
         let dt = f0 * T;
         let oq = self.period_oq;
-        let up = pow2(f64::from(q.chorus_cents) / 1200.0);
-        let down = 1.0 / up;
+        let (up, down) = (self.chorus_up, self.chorus_down);
         let (chorus, sub_octave) = (f64::from(q.chorus), f64::from(q.sub_octave));
 
         let g = match q.source {
@@ -804,9 +911,11 @@ impl KlattSynth {
 
         let open_phase = self.phase < oq;
 
-        advance(&mut self.phase_up, dt * up);
-        advance(&mut self.phase_down, dt * down);
-        advance(&mut self.phase_sub, dt * 0.5);
+        if self.extra_oscillators {
+            advance(&mut self.phase_up, dt * up);
+            advance(&mut self.phase_down, dt * down);
+            advance(&mut self.phase_sub, dt * 0.5);
+        }
         self.phase += dt;
         if self.phase >= 1.0 {
             self.phase -= 1.0;
@@ -857,6 +966,9 @@ impl KlattSynth {
                 mid.nasal = mid_of(prev.nasal, next.nasal);
                 mid.tilt = mid_of(prev.tilt, next.tilt);
                 self.update_coefficients(&mid);
+                // No frication, and none left in its filters: the branch is
+                // silent until noise comes again.
+                let mut frication_idle = self.frication_rung_out();
 
                 for s in 0..SUBFRAME {
                     let t = (half * SUBFRAME + s + 1) as f64 / FRAME_SAMPLES as f64;
@@ -867,13 +979,15 @@ impl KlattSynth {
                     let af = lerp(prev.af, next.af, t);
 
                     // Slow pitch drift so sustained voicing never sounds machine-flat.
+                    // (Roughness 0 has no drift: 1 plus nothing is 1.)
                     let tt = self.time * T;
-                    let flutter = 1.0
-                        + f64::from(q.flutter)
+                    let flutter = if q.flutter == 0.0 {
+                        1.0
+                    } else {
+                        1.0 + f64::from(q.flutter)
                             * 0.012
-                            * ((2.0 * PI * 12.7 * tt).sin()
-                                + (2.0 * PI * 7.1 * tt).sin()
-                                + (2.0 * PI * 4.7 * tt).sin());
+                            * ((2.0 * PI * 12.7 * tt).sin() + (2.0 * PI * 7.1 * tt).sin() + (2.0 * PI * 4.7 * tt).sin())
+                    };
                     self.time += 1.0;
 
                     // ---- Voice source ----
@@ -935,20 +1049,24 @@ impl KlattSynth {
                         // Voiced fricatives: noise is pulsed by the glottal cycle.
                         let fmod = if av > 0.05 && !open_phase { 0.45 } else { 1.0 };
                         src = n2 * af * fmod * FRICATION_GAIN;
+                        frication_idle = false;
                     }
-                    let [first, second] = &mut self.fric_lp;
-                    let src = second.tick(first.tick(src));
                     let mut fric = 0.0;
-                    let mut sign = 1.0;
-                    for (i, resonator) in self.parallel.iter_mut().enumerate() {
-                        fric += sign * lerp(prev.pa[i], next.pa[i], t) * resonator.tick(src);
-                        sign = -sign;
+                    // Idle: zeros in, zeros held, zero out.
+                    if !frication_idle {
+                        let [first, second] = &mut self.fric_lp;
+                        let src = second.tick(first.tick(src));
+                        let mut sign = 1.0;
+                        for (i, resonator) in self.parallel.iter_mut().enumerate() {
+                            fric += sign * lerp(prev.pa[i], next.pa[i], t) * resonator.tick(src);
+                            sign = -sign;
+                        }
+                        for (i, peak) in self.noise_bank.iter_mut().enumerate() {
+                            fric += sign * lerp(prev.np_a[i], next.np_a[i], t) * peak.tick(src);
+                            sign = -sign;
+                        }
+                        fric += lerp(prev.bypass, next.bypass, t) * src;
                     }
-                    for (i, peak) in self.noise_bank.iter_mut().enumerate() {
-                        fric += sign * lerp(prev.np_a[i], next.np_a[i], t) * peak.tick(src);
-                        sign = -sign;
-                    }
-                    fric += lerp(prev.bypass, next.bypass, t) * src;
 
                     let mut sample = y + fric;
                     if q.reverb > 0.0 {

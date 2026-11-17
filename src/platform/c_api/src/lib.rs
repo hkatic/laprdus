@@ -4,10 +4,11 @@
 //! function's error value, so nothing the engine does can take a host (a
 //! screen reader) down with it. Pointers given to these functions must be
 //! null or valid as the header says; a handle must not be used from two
-//! threads at once.
+//! threads at once, except by `laprdus_cancel`, which is there to be called
+//! from another thread while the handle's thread synthesizes.
 
 use laprdus::config::UserConfig;
-use laprdus::engine::{Engine, Error};
+use laprdus::engine::{CancelHandle, Engine, Error};
 use laprdus::language::Language;
 use laprdus::params::{
     ACCELERATION_DEFAULT, INFLECTION_LEVEL_DEFAULT, NumberMode, SPELLING_SPEED_DEFAULT, SPELLING_SPEED_MAX,
@@ -17,7 +18,8 @@ use laprdus::text::frontend::UserLexicon;
 use laprdus::voice::{self, VOICES, Voice};
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::ffi::{CStr, CString, c_char, c_int};
+use std::ffi::{CStr, CString, c_char, c_int, c_void};
+use std::ops::ControlFlow;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::PathBuf;
 use std::sync::{LazyLock, Mutex, PoisonError};
@@ -92,6 +94,21 @@ pub struct LaprdusStream {
 
 pub type LaprdusHandle = *mut LaprdusEngine;
 pub type LaprdusStreamHandle = *mut LaprdusStream;
+
+/// Receives the audio of `laprdus_synthesize_streaming`; a non-zero result
+/// stops the synthesis.
+pub type LaprdusAudioCallback =
+    Option<unsafe extern "system" fn(samples: *const i16, count: usize, user_data: *mut c_void) -> c_int>;
+
+/// The cancel handles of the engines alive, by the address of their handle.
+/// `laprdus_cancel` is called while another thread is inside a synthesis with
+/// the engine borrowed, so it must not touch the engine itself: it finds the
+/// engine's cancel handle here.
+static CANCEL_HANDLES: LazyLock<Mutex<HashMap<usize, CancelHandle>>> = LazyLock::new(Mutex::default);
+
+fn cancel_handles() -> std::sync::MutexGuard<'static, HashMap<usize, CancelHandle>> {
+    CANCEL_HANDLES.lock().unwrap_or_else(PoisonError::into_inner)
+}
 
 // -----------------------------------------------------------------------------
 // The boundary: pointers in, pointers out
@@ -207,6 +224,13 @@ impl LaprdusEngine {
         code
     }
 
+    /// The code of a synthesis that did not finish, with its message.
+    fn failed(&mut self, error: &Error) -> LaprdusError {
+        let code =
+            if matches!(error, Error::Cancelled) { LAPRDUS_ERROR_CANCELLED } else { LAPRDUS_ERROR_SYNTHESIS_FAILED };
+        self.fail(code, error.to_string())
+    }
+
     /// `LAPRDUS_OK` when `done`, else the error with its message.
     fn check(&mut self, done: bool, code: LaprdusError, message: &str) -> LaprdusError {
         if done { LAPRDUS_OK } else { self.fail(code, message) }
@@ -226,7 +250,7 @@ impl LaprdusEngine {
         out_format: *mut LaprdusAudioFormat,
     ) -> i32 {
         match audio {
-            Err(error) => self.fail(LAPRDUS_ERROR_SYNTHESIS_FAILED, error.to_string()),
+            Err(error) => self.failed(&error),
             Ok(audio) if audio.len() > i32::MAX as usize => {
                 self.fail(LAPRDUS_ERROR_OUT_OF_MEMORY, "Audio data too large")
             }
@@ -330,11 +354,16 @@ macro_rules! get {
 
 api! {
     fn laprdus_create() -> LaprdusHandle = std::ptr::null_mut() => {
-        Box::into_raw(Box::new(LaprdusEngine { engine: Engine::new(), last_error: String::new() }))
+        let engine = Engine::new();
+        let cancel = engine.cancel_handle();
+        let handle = Box::into_raw(Box::new(LaprdusEngine { engine, last_error: String::new() }));
+        cancel_handles().insert(handle as usize, cancel);
+        handle
     }
 
     fn laprdus_destroy(handle: LaprdusHandle) = () => {
         if !handle.is_null() {
+            cancel_handles().remove(&(handle as usize));
             drop(Box::from_raw(handle));
         }
     }
@@ -508,7 +537,7 @@ api! {
             }
             let Some(text) = string(text) else { return h.fail(LAPRDUS_ERROR_INVALID_PARAMETER, "Text is NULL") };
             match h.engine.synthesize(&text) {
-                Err(error) => h.fail(LAPRDUS_ERROR_SYNTHESIS_FAILED, error.to_string()),
+                Err(error) => h.failed(&error),
                 Ok(audio) => {
                     write(out_format, format());
                     // Without a buffer, or with one too small, the size needed.
@@ -526,8 +555,31 @@ api! {
     }
 
     fn laprdus_cancel(handle: LaprdusHandle) = () => {
-        // Synthesis is synchronous: there is nothing to cancel.
-        let _ = handle;
+        // Called from another thread than the one that synthesizes: the
+        // engine itself is not touched.
+        if let Some(cancel) = cancel_handles().get(&(handle as usize)) {
+            cancel.cancel();
+        }
+    }
+
+    fn laprdus_synthesize_streaming(handle: LaprdusHandle, text: *const c_char, chunk_ms: u32, callback: LaprdusAudioCallback, user_data: *mut c_void) -> i32
+    = LAPRDUS_ERROR_SYNTHESIS_FAILED => {
+        with!(handle, LAPRDUS_ERROR_INVALID_HANDLE, |h| {
+            if !h.engine.is_initialized() {
+                return h.fail(LAPRDUS_ERROR_NOT_INITIALIZED, "Engine not initialized");
+            }
+            let Some(text) = string(text) else { return h.fail(LAPRDUS_ERROR_INVALID_PARAMETER, "Text is NULL") };
+            let Some(callback) = callback else { return h.fail(LAPRDUS_ERROR_INVALID_PARAMETER, "Callback is NULL") };
+            let mut total = 0usize;
+            let done = h.engine.synthesize_streaming(&text, chunk_ms, |chunk| {
+                total += chunk.len();
+                if callback(chunk.as_ptr(), chunk.len(), user_data) == 0 { ControlFlow::Continue(()) } else { ControlFlow::Break(()) }
+            });
+            match done {
+                Ok(()) => total.min(i32::MAX as usize) as i32,
+                Err(error) => h.failed(&error),
+            }
+        })
     }
 
     fn laprdus_stream_begin(handle: LaprdusHandle, text: *const c_char) -> LaprdusStreamHandle = std::ptr::null_mut() => {

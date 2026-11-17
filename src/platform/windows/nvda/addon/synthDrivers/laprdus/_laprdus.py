@@ -116,6 +116,15 @@ LaprdusError = ctypes.c_int
 # Library Loading
 # =============================================================================
 
+# The callback of laprdus_synthesize_streaming: samples, their number, user
+# data; non-zero stops the synthesis. The library's functions are stdcall
+# (LAPRDUS_CALL), hence WINFUNCTYPE.
+LaprdusAudioCallback = ctypes.WINFUNCTYPE(
+    ctypes.c_int, ctypes.POINTER(ctypes.c_int16), ctypes.c_size_t, ctypes.c_void_p)
+
+LAPRDUS_ERROR_CANCELLED = -7
+
+
 def _load_library():
     """Load the LaprdusTTS DLL."""
     global _lib
@@ -233,6 +242,15 @@ def _configure_functions(lib):
 
     lib.laprdus_cancel.argtypes = [LaprdusHandle]
     lib.laprdus_cancel.restype = None
+
+    lib.laprdus_synthesize_streaming.argtypes = [
+        LaprdusHandle,
+        ctypes.c_char_p,
+        ctypes.c_uint32,
+        LaprdusAudioCallback,
+        ctypes.c_void_p,
+    ]
+    lib.laprdus_synthesize_streaming.restype = ctypes.c_int32
 
     # Utility functions
     lib.laprdus_get_error_message.argtypes = [LaprdusHandle]
@@ -840,8 +858,47 @@ class LaprdusEngine(object):
             # Free the C-allocated buffer
             self._lib.laprdus_free_buffer(samples_ptr)
 
+    def synthesize_streaming(self, text, on_audio):
+        """
+        Synthesize text and hand the audio over clause by clause, as soon as
+        each clause is rendered: the first sound of a long text does not wait
+        for the rest, and a stop does not wait for it either.
+
+        Args:
+            text: Text to synthesize (str or bytes)
+            on_audio: called with the samples of each clause as bytes
+                (16-bit mono at the default sample rate); a true result
+                stops the synthesis
+
+        Returns:
+            True when the whole text was handed over, False when on_audio or
+            cancel() stopped it, None on failure
+        """
+        if not self._initialized:
+            return None
+        text_bytes = text if isinstance(text, bytes) else text.encode("utf-8")
+        failure = []
+
+        def callback(samples, count, _user_data):
+            try:
+                return 1 if on_audio(ctypes.string_at(samples, count * 2)) else 0
+            except Exception as e:  # an exception must not cross the library
+                failure.append(e)
+                return 1
+
+        # Kept in a local for the length of the call: the library must not
+        # call a collected callback
+        c_callback = LaprdusAudioCallback(callback)
+        result = self._lib.laprdus_synthesize_streaming(self._handle, text_bytes, 0, c_callback, None)
+        if failure:
+            raise failure[0]
+        if result == LAPRDUS_ERROR_CANCELLED:
+            return False
+        return True if result >= 0 else None
+
     def cancel(self):
-        """Cancel any ongoing synthesis."""
+        """Stop the synthesis under way. The one call that may come from
+        another thread than the one that synthesizes."""
         self._lib.laprdus_cancel(self._handle)
 
     def set_voice(self, voice_id, data_directory=None):

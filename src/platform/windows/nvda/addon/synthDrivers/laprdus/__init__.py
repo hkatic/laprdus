@@ -436,9 +436,21 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         # its audio ended: see _feedPendingPause
         self._pendingPauseMs = 0
         self._pendingPauseAt = 0.0
-        self._cancelCount = 0  # Bumped by cancel(); playback that it cut owes no pause
+        # Bumped by cancel(). Every queued item carries the count of the
+        # moment it was queued; the speech thread drops an item whose count
+        # is no longer the current one, wherever it has got to with it. (An
+        # item the thread had already taken off the queue used to be played
+        # to its end when cancel() came while it was still being
+        # synthesized: there was nothing in the player to stop yet.)
+        self._cancelCount = 0
         self._speakLock = threading.Lock()  # Protects _isSpeaking state
         self._playerLock = threading.Lock()  # Protects _player and _syncPlayer access
+        # The engine is not thread safe: the speech thread holds this lock
+        # while it works on an item, and a setting NVDA changes meanwhile on
+        # its own thread waits in _pendingEngineCalls (see _onEngine)
+        self._engineLock = threading.Lock()
+        self._pendingLock = threading.Lock()
+        self._pendingEngineCalls = []
 
         # Voice settings (NVDA scale 0-100)
         self._rate = 50
@@ -531,9 +543,66 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                 # Poison pill - exit thread
                 break
 
-            text, index, useSpelledSynthesis, isSpellingItem, breakMs, lang, prosody = item
-            self._synthesizeAndPlay(text, index, useSpelledSynthesis, isSpellingItem, breakMs, lang,
-                                    prosody)
+            while True:
+                with self._engineLock:
+                    self._runPendingEngineCalls()
+                    if item is not None:
+                        (text, index, useSpelledSynthesis, isSpellingItem, breakMs, lang, prosody,
+                         generation) = item
+                        item = None
+                        self._synthesizeAndPlay(text, index, useSpelledSynthesis, isSpellingItem,
+                                                breakMs, lang, prosody, generation)
+                        self._runPendingEngineCalls()
+                # A call queued while the lock was being released
+                with self._pendingLock:
+                    if not self._pendingEngineCalls:
+                        break
+
+    def _onEngine(self, call):
+        """Run call(), which changes the engine, without racing a synthesis.
+
+        NVDA changes settings on its own thread (the settings ring while
+        speech goes on, the voice combo), and the engine must not be changed
+        while the speech thread synthesizes with it: a voice change in the
+        middle of a synthesis replaced the voice under it. When the speech
+        thread is busy the call waits and the thread makes it when its item
+        is done, before the next one; otherwise it is made at once.
+        """
+        if self._engineLock.acquire(False):
+            try:
+                self._runPendingEngineCalls()
+                call()
+                # A call that asked for another one meanwhile
+                self._runPendingEngineCalls()
+            finally:
+                self._engineLock.release()
+            return
+        with self._pendingLock:
+            self._pendingEngineCalls.append(call)
+        # The speech thread may have finished in between
+        if self._engineLock.acquire(False):
+            try:
+                self._runPendingEngineCalls()
+            finally:
+                self._engineLock.release()
+
+    def _runPendingEngineCalls(self):
+        """Make the engine calls that waited for a synthesis to end. Called
+        with _engineLock held."""
+        while True:
+            with self._pendingLock:
+                if not self._pendingEngineCalls:
+                    return
+                call = self._pendingEngineCalls.pop(0)
+            try:
+                call()
+            except Exception as e:
+                log.error("LaprdusTTS: a deferred setting failed: %s" % str(e))
+
+    def _stale(self, generation):
+        """True for an item queued before the last cancel() (or when the
+        driver is closing): nothing more of it may be played or reported."""
+        return generation != self._cancelCount or self._shouldStop.is_set()
 
     def _queueItem(self, text, index, spelled=False, isSpelling=False, breakMs=0, lang=None,
                    prosody=None):
@@ -544,7 +613,8 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         `prosody` holds the changes the PitchCommand, RateCommand and
         VolumeCommand in force for this text ask for ({"pitch": (offset,
         multiplier), ...}), or None for the sliders as they are."""
-        self._speakQueue.put((text, index, spelled, isSpelling, breakMs, lang, prosody))
+        self._speakQueue.put((text, index, spelled, isSpelling, breakMs, lang, prosody,
+                              self._cancelCount))
 
     def _applyLanguage(self, lang):
         """Make the engine speak `lang` ("hr", "sr", "bs" or "sl"; None for the
@@ -610,13 +680,40 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             _debug_log("pending spelling pause: %d ms of %d" % (remaining, ms))
             self._feedSilence(player, remaining)
 
+    def _finishItem(self, isSpellingItem, generation):
+        """The end of an item: unblock speakCharacter(), and report that
+        speech is done when nothing else is queued. An item that cancel()
+        cut off reports nothing."""
+        if isSpellingItem:
+            self._spellingDone.set()
+        if self._stale(generation):
+            return
+        # Immediate synthDoneSpeaking (like other synthesizers)
+        # Say All is driven by synthIndexReached, not synthDoneSpeaking
+        with self._speakLock:
+            if self._speakQueue.empty():
+                self._isSpeaking = False
+                do_notify_done = True
+            else:
+                do_notify_done = False
+        if do_notify_done:
+            synthDriverHandler.synthDoneSpeaking.notify(synth=self)
+
     def _synthesizeAndPlay(self, text, index, useSpelledSynthesis=False, isSpellingItem=False,
-                           breakMs=0, lang=None, prosody=None):
+                           breakMs=0, lang=None, prosody=None, generation=None):
         """Synthesize and play audio in the background thread.
 
         IMPORTANT for Say All: The synthIndexReached notification must be sent
         BEFORE audio playback completes so NVDA can prepare the next segment.
         This allows continuous reading without gaps.
+
+        Text is synthesized clause by clause and each clause is played as
+        soon as it is rendered, so a long item starts speaking after its
+        first clause. `generation` is the cancel count of the moment the item
+        was queued: after a cancel() the item is stale, and it is dropped at
+        the next look (before the synthesis, between clauses, before
+        anything is played or reported); the engine is told to stop
+        rendering it too.
 
         A spelled character is played without the silence the engine would
         put after it; that silence is owed to the next item
@@ -633,7 +730,9 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         commands ask for this text (a capital letter is spelled with the
         pitch raised by the capital pitch change), applied here the same way.
         """
-        if self._shouldStop.is_set():
+        if generation is None:
+            generation = self._cancelCount
+        if self._stale(generation):
             if isSpellingItem:
                 self._spellingDone.set()
             return
@@ -644,6 +743,11 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         except Exception as e:
             _debug_log("_synthesizeAndPlay: config check error: %s" % str(e))
             log.warning("LaprdusTTS: could not reload the changed settings: %s" % str(e))
+
+        if self._stale(generation):
+            if isSpellingItem:
+                self._spellingDone.set()
+            return
 
         self._isSpeaking = True
 
@@ -661,32 +765,32 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         # Handle empty/whitespace-only text (e.g., orphaned trailing IndexCommand)
         # Just report the index and done - no synthesis needed
         if not text or not text.strip():
-            if index is not None:
+            if index is not None and not self._stale(generation):
                 _debug_log("synthIndexReached for empty text, index=%s" % index)
                 synthDriverHandler.synthIndexReached.notify(synth=self, index=index)
-            if isSpellingItem:
-                self._spellingDone.set()
-            with self._speakLock:
-                if self._speakQueue.empty():
-                    self._isSpeaking = False
-                    do_notify_done = True
-                else:
-                    do_notify_done = False
-            if do_notify_done:
-                synthDriverHandler.synthDoneSpeaking.notify(synth=self)
+            self._finishItem(isSpellingItem, generation)
             return
 
         # Check if text is a single character - always use spelled synthesis for single chars
         stripped_text = text.strip()
         is_single_char = len(stripped_text) == 1
 
+        # CRITICAL for Say All: the index is reported BEFORE the audio is
+        # played, so NVDA can prepare the next segment while this one plays;
+        # once, and never for an item that was cancelled
+        reported = []
+
+        def reportIndex():
+            if index is not None and not reported and not self._stale(generation):
+                reported.append(True)
+                _debug_log("synthIndexReached notified BEFORE playback, index=%s" % index)
+                synthDriverHandler.synthIndexReached.notify(synth=self, index=index)
+
         try:
 
             log.debug("LaprdusTTS: Synthesizing text='%s' spelled=%s single_char=%s" % (
                 text[:50], useSpelledSynthesis, is_single_char))
 
-            cancelCount = self._cancelCount
-            owedPauseMs = 0
             # The language of this text: the LangChangeCommand's or the setting's
             self._applyLanguage(lang)
             # Its pitch, rate and volume: the sliders, changed as NVDA's
@@ -697,76 +801,57 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                 # For single characters, use the stripped text
                 synth_text = stripped_text if is_single_char else text
                 result = self._engine.synthesize_spelled(synth_text, final_pause=False)
-                if result is not None:
+                if result is None:
+                    log.debug("LaprdusTTS: Synthesis returned None for: %s" % text[:50])
+                elif not self._stale(generation):
                     samples, sample_rate, bits_per_sample, channels, owedPauseMs = result
-                    result = (samples, sample_rate, bits_per_sample, channels)
+                    # Use actual sample rate from synthesis - rate control is handled by
+                    # the engine via set_speed() (durations), not by playback sample rate
+                    player = self._getPlayer(sample_rate, bits_per_sample, channels)
+                    reportIndex()
+                    # Play audio (outside the player lock so cancel() can
+                    # interrupt), after the pause still owed from the last
+                    # spelled character
+                    self._feedPendingPause(player)
+                    if not self._stale(generation):
+                        player.feed(samples)
+                        player.idle()
+                        # The silence after a spelled character is owed to the
+                        # next item, unless cancel() cut this one off
+                        if owedPauseMs > 0 and not self._stale(generation):
+                            self._pendingPauseMs = owedPauseMs
+                            self._pendingPauseAt = time.monotonic()
             else:
-                result = self._engine.synthesize(text)
+                player = self._getPlayer(SAMPLE_RATE, BITS_PER_SAMPLE, CHANNELS)
+                started = []
 
-            if result is None:
-                log.debug("LaprdusTTS: Synthesis returned None for: %s" % text[:50])
-                # Still notify index reached if we have one
-                if index is not None:
-                    synthDriverHandler.synthIndexReached.notify(synth=self, index=index)
-                if isSpellingItem:
-                    self._spellingDone.set()
-                # Immediate synthDoneSpeaking (like other synthesizers)
-                with self._speakLock:
-                    if self._speakQueue.empty():
-                        self._isSpeaking = False
-                        do_notify_done = True
-                    else:
-                        do_notify_done = False
-                if do_notify_done:
-                    synthDriverHandler.synthDoneSpeaking.notify(synth=self)
-                return
+                def onAudio(data):
+                    """One clause from the engine; true stops the synthesis."""
+                    if self._stale(generation):
+                        return True
+                    if not started:
+                        started.append(True)
+                        reportIndex()
+                        self._feedPendingPause(player)
+                        if self._stale(generation):
+                            return True
+                    player.feed(data)
+                    return self._stale(generation)
 
-            samples, sample_rate, bits_per_sample, channels = result
+                done = self._engine.synthesize_streaming(text, onAudio)
+                if done is None:
+                    log.debug("LaprdusTTS: Synthesis returned None for: %s" % text[:50])
+                if started and not self._stale(generation):
+                    player.idle()
 
-            if self._shouldStop.is_set():
-                if isSpellingItem:
-                    self._spellingDone.set()
-                return
-
-            # Use actual sample rate from synthesis - rate control is handled by
-            # the engine via set_speed() (durations), not by playback sample rate
-            player = self._getPlayer(sample_rate, bits_per_sample, channels)
-
-            # CRITICAL for Say All: Notify index BEFORE starting audio playback
-            # This allows NVDA to prepare the next segment while current audio plays
-            if index is not None:
-                _debug_log("synthIndexReached notified BEFORE playback, index=%s" % index)
-                synthDriverHandler.synthIndexReached.notify(synth=self, index=index)
-
-            # Play audio (outside lock so cancel() can interrupt), after the
-            # pause still owed from the last spelled character
-            if player:
-                self._feedPendingPause(player)
-                player.feed(samples)
-                player.idle()
-                # The silence after a spelled character is owed to the next
-                # item, unless cancel() cut this one off
-                if owedPauseMs > 0 and cancelCount == self._cancelCount:
-                    self._pendingPauseMs = owedPauseMs
-                    self._pendingPauseAt = time.monotonic()
+            # Nothing was played (no audio, or the synthesis failed): the
+            # index is still reported
+            reportIndex()
 
         except Exception as e:
             log.error("LaprdusTTS: Synthesis error: %s" % str(e))
         finally:
-            # Signal spelling completion if this was a spelling item
-            if isSpellingItem:
-                self._spellingDone.set()
-
-            # Immediate synthDoneSpeaking (like other synthesizers)
-            # Say All is driven by synthIndexReached, not synthDoneSpeaking
-            with self._speakLock:
-                if self._speakQueue.empty():
-                    self._isSpeaking = False
-                    do_notify_done = True
-                else:
-                    do_notify_done = False
-            if do_notify_done:
-                synthDriverHandler.synthDoneSpeaking.notify(synth=self)
+            self._finishItem(isSpellingItem, generation)
 
     def speak(self, speechSequence):
         """
@@ -981,8 +1066,11 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         """Clean up resources."""
         log.debug("LaprdusTTS: Terminating...")
 
-        # Stop speech thread
+        # Stop speech thread, and the synthesis it may be in the middle of
         self._shouldStop.set()
+        self._cancelCount += 1
+        if self._engine:
+            self._engine.cancel()
         self._speakQueue.put(None)  # Poison pill
 
         if self._speakThread:
@@ -1303,18 +1391,11 @@ class SynthDriver(synthDriverHandler.SynthDriver):
 
         changed = False
 
-        # Check settings.json
-        settings_path = os.path.join(
-            os.environ.get('APPDATA', ''),
-            'Laprdus',
-            'settings.json'
-        )
-        if os.path.exists(settings_path):
-            mtime = os.path.getmtime(settings_path)
-            if mtime != self._settingsMtime:
-                changed = True
-
-        # Check user dictionary files
+        # Check user dictionary files. The times seen now are remembered
+        # whether or not the reload below reads the files: with the user
+        # dictionaries switched off, or without a settings.json, nothing
+        # recorded them, and every item spoken reloaded everything.
+        seen = {}
         for filename, attr in [
             ("user.json", "_userDictMtime"),
             ("spelling.json", "_userSpellingMtime"),
@@ -1325,8 +1406,20 @@ class SynthDriver(synthDriverHandler.SynthDriver):
                 path = _laprdus.get_user_dictionary_path(filename)
                 if path and os.path.exists(path):
                     mtime = os.path.getmtime(path)
+                    seen[attr] = mtime
                     if mtime != getattr(self, attr):
                         changed = True
+
+        # Check settings.json
+        settings_path = os.path.join(
+            os.environ.get('APPDATA', ''),
+            'Laprdus',
+            'settings.json'
+        )
+        if os.path.exists(settings_path):
+            mtime = os.path.getmtime(settings_path)
+            if mtime != self._settingsMtime:
+                changed = True
 
         if changed:
             _debug_log("_checkConfigChanged: config files changed, reloading")
@@ -1339,6 +1432,8 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             self._loadSharedSettings()
             # Re-apply NVDA settings that aren't forced
             self._applySettings()
+            for attr, mtime in seen.items():
+                setattr(self, attr, mtime)
 
     # =========================================================================
     # isSpeaking property - NVDA queries this to check if synth is busy
@@ -1359,7 +1454,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
 
     def _set_rate(self, value):
         self._rate = value
-        self._applyRate()
+        self._onEngine(self._applyRate)
 
     # =========================================================================
     # Rate Boost property
@@ -1373,7 +1468,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             return
         # Toggle boost and re-apply rate to use new range
         self._rateBoost = enable
-        self._applyRate()
+        self._onEngine(self._applyRate)
 
     # =========================================================================
     # Pitch property
@@ -1384,7 +1479,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
 
     def _set_pitch(self, value):
         self._pitch = value
-        self._applyPitch()
+        self._onEngine(self._applyPitch)
 
     # =========================================================================
     # Inflection property
@@ -1395,7 +1490,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
 
     def _set_inflection(self, value):
         self._inflection = value
-        self._applyInflection()
+        self._onEngine(self._applyInflection)
 
     # =========================================================================
     # Volume property
@@ -1407,7 +1502,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
     def _set_volume(self, value):
         self._volume = value
         # With force volume on, the Laprdus volume stays whatever the slider says
-        self._applyVolume()
+        self._onEngine(self._applyVolume)
 
     # =========================================================================
     # Voice quality properties (NVDA's own settings, see _createCustomSettings)
@@ -1418,32 +1513,28 @@ class SynthDriver(synthDriverHandler.SynthDriver):
 
     def _set_headSize(self, value):
         self._headSize = _clampQuality(value)
-        if self._engine:
-            self._engine.set_head_size(self._headSize)
+        self._onEngine(self._applyVoiceQuality)
 
     def _get_breathiness(self):
         return self._breathiness
 
     def _set_breathiness(self, value):
         self._breathiness = _clampQuality(value)
-        if self._engine:
-            self._engine.set_breathiness(self._breathiness)
+        self._onEngine(self._applyVoiceQuality)
 
     def _get_roughness(self):
         return self._roughness
 
     def _set_roughness(self, value):
         self._roughness = _clampQuality(value)
-        if self._engine:
-            self._engine.set_roughness(self._roughness)
+        self._onEngine(self._applyVoiceQuality)
 
     def _get_brightness(self):
         return self._brightness
 
     def _set_brightness(self, value):
         self._brightness = _clampQuality(value)
-        if self._engine:
-            self._engine.set_brightness(self._brightness)
+        self._onEngine(self._applyVoiceQuality)
 
     # =========================================================================
     # Voice property
@@ -1464,27 +1555,28 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             value = DEFAULT_VOICE
         if value != self._voice:
             self._voice = value
-            if self._engine:
-                # Set the new voice - this may reload phoneme data
-                self._engine.set_voice(value)
-                # The engine keeps the language across voice changes, but be
-                # explicit: the new voice speaks the chosen language too
-                self._engineLanguage = None
-                self._applyLanguage(self._language)
-                # Apply the voice's character pitch (base_pitch)
-                # set_pitch(1.0) → effective_pitch = voice_base_pitch * 1.0
-                # This makes derived voices (Detence, Baba, Đedo) sound correct
-                self._engine.set_pitch(1.0)
-                # Reload internal dictionaries (in case they were cleared)
-                self._engine.load_dictionary()
-                self._engine.load_spelling_dictionary()
-                self._engine.load_emoji_dictionary()
-                # Re-append user dictionaries on top
-                self._loadUserDictionaries()
-                # Reapply user pitch preference (formant-preserving)
-                self._applyPitch()
-                self._applyInflection()
-                self._applyVoiceQuality()
+            self._onEngine(self._loadVoice)
+
+    def _loadVoice(self):
+        """Make the engine speak with the Voice setting. The dictionaries
+        and the user's accent lexicon stay loaded across a change of voice
+        (they were read again on every one)."""
+        if not self._engine:
+            return
+        # Set the new voice - this may reload phoneme data
+        self._engine.set_voice(self._voice)
+        # The engine keeps the language across voice changes, but be
+        # explicit: the new voice speaks the chosen language too
+        self._engineLanguage = None
+        self._applyLanguage(self._language)
+        # Apply the voice's character pitch (base_pitch)
+        # set_pitch(1.0) → effective_pitch = voice_base_pitch * 1.0
+        # This makes derived voices (Detence, Baba, Đedo) sound correct
+        self._engine.set_pitch(1.0)
+        # Reapply user pitch preference (formant-preserving)
+        self._applyPitch()
+        self._applyInflection()
+        self._applyVoiceQuality()
 
     @property
     def availableVoices(self):
@@ -1544,7 +1636,7 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         # NVDA calls loadSettings after __init__, so the engine exists by
         # then; stay safe should the order ever change
         if getattr(self, "_engine", None):
-            self._applyLanguage(lang)
+            self._onEngine(lambda: self._applyLanguage(None))
 
     def _get_availableLanguages(self):
         """The languages every voice speaks, keyed by NVDA language code,

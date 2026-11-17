@@ -1,8 +1,9 @@
 //! Clause synthesis with a recorded voice.
 //!
-//! The recordings are analysed when the synthesizer is created (pitch marks,
-//! voicing, sounding part) and again whenever the voice character pitch or
-//! the head size changes, because those warp the spectrum of the recordings.
+//! The recordings are analysed (pitch marks, voicing, sounding part) before
+//! the first synthesis, and again before the first one after the voice
+//! character pitch or the head size has changed, because those warp the
+//! spectrum of the recordings.
 
 use super::prosody::plan_clause;
 use super::psola::render;
@@ -10,6 +11,7 @@ use super::unit_bank::UnitBank;
 use super::voice_data::VoiceData;
 use crate::audio::boost::{Boost, boost_volume, limit_hiss};
 use crate::audio::brightness::tilt_brightness;
+use crate::engine::CancelHandle;
 use crate::params::{RECORDED_HISS_DB, VoiceParams, head_size_factor};
 use crate::prosody::{Utterance, split_at_breaks};
 use crate::text::{Frontend, Punctuation};
@@ -42,17 +44,54 @@ pub struct ConcatSynthesizer {
     data: VoiceData,
     params: VoiceParams,
     bank: Option<UnitBank>,
-    /// Warp the bank was built with (0: not built).
+    /// Warp the bank is, or will be, built with (0: none chosen yet).
     bank_warp: f32,
+    /// False while the bank for `bank_warp` is still to be built.
+    analysed: bool,
     natural_f0: f32,
+    /// The engine's request to stop: what is rendered so far is returned.
+    cancel: CancelHandle,
 }
 
 impl ConcatSynthesizer {
     /// Creates the synthesizer and analyses the recordings.
     pub fn new(data: VoiceData) -> Self {
-        let mut synth = Self { data, params: VoiceParams::default(), bank: None, bank_warp: 0.0, natural_f0: 0.0 };
+        let mut synth = Self {
+            data,
+            params: VoiceParams::default(),
+            bank: None,
+            bank_warp: 0.0,
+            analysed: false,
+            natural_f0: 0.0,
+            cancel: CancelHandle::default(),
+        };
         synth.ensure_bank();
         synth
+    }
+
+    /// As [`new`](Self::new), with the analysis left to the first synthesis.
+    /// The engine sets a voice's parameters after it has made the
+    /// synthesizer: a derived voice (a child, a grandfather) was analysed at
+    /// the plain voice's warp, then at the one before it, then at its own,
+    /// each time for a fifth of a second and more, where only the last
+    /// analysis is used.
+    pub fn deferred(data: VoiceData) -> Self {
+        let mut synth = Self {
+            data,
+            params: VoiceParams::default(),
+            bank: None,
+            bank_warp: 0.0,
+            analysed: false,
+            natural_f0: 0.0,
+            cancel: CancelHandle::default(),
+        };
+        synth.choose_warp();
+        synth
+    }
+
+    /// The handle whose `cancel()` cuts a synthesis short: the engine's.
+    pub fn set_cancel_handle(&mut self, cancel: CancelHandle) {
+        self.cancel = cancel;
     }
 
     pub fn data(&self) -> &VoiceData {
@@ -66,7 +105,7 @@ impl ConcatSynthesizer {
     pub fn set_voice_params(&mut self, params: &VoiceParams) {
         self.params = *params;
         self.params.clamp();
-        self.ensure_bank();
+        self.choose_warp();
     }
 
     /// Pitch of the voice as recorded (Hz), 0 if no recordings are loaded.
@@ -75,15 +114,30 @@ impl ConcatSynthesizer {
     }
 
     /// The head size setting lengthens or shortens the vocal tract on top of
-    /// the character pitch's warp; the bank is rebuilt only when the warp
-    /// moves (a settings change, not every clause).
-    fn ensure_bank(&mut self) {
+    /// the character pitch's warp; a new warp is taken only when it has moved
+    /// (a settings change, not every clause), and the bank of the old one is
+    /// then dropped. The warp is chosen at every change of the parameters, as
+    /// it was when every change also analysed the recordings, so the warp a
+    /// bank is built with does not depend on when it is built.
+    fn choose_warp(&mut self) {
         let warp = formant_warp_for_pitch(self.params.pitch) * head_size_factor(self.params.head_size);
         if self.bank_warp > 0.0 && (warp - self.bank_warp).abs() < 1e-3 {
             return;
         }
-        self.bank = UnitBank::build(&self.data, warp);
         self.bank_warp = warp;
+        self.bank = None;
+        self.analysed = false;
+    }
+
+    /// Analyses the recordings for the warp chosen, unless that is done.
+    fn ensure_bank(&mut self) {
+        self.choose_warp();
+        if self.analysed {
+            return;
+        }
+        let warp = self.bank_warp;
+        self.bank = UnitBank::build(&self.data, warp);
+        self.analysed = true;
         // The bank's pitch is that of the warped recordings; the voice's own
         // is the unwarped one, and the character pitch is applied by the
         // planner.
@@ -117,6 +171,9 @@ impl ConcatSynthesizer {
         let parts = split_at_breaks(&utt);
         let mut audio = Vec::new();
         for (k, part) in parts.iter().enumerate() {
+            if self.cancel.is_cancelled() {
+                break;
+            }
             let samples = self.render_utterance(part);
             if samples.is_empty() {
                 continue;
@@ -149,7 +206,15 @@ impl ConcatSynthesizer {
             return Vec::new();
         }
 
+        // A clause of a recorded voice has no length limit: a look at the
+        // request to stop before each of the passes over it.
+        if self.cancel.is_cancelled() {
+            return Vec::new();
+        }
         let mut wave = render(&plan.segments, &plan.contour, fs, plan.total_samples);
+        if self.cancel.is_cancelled() {
+            return Vec::new();
+        }
 
         // Cut the tail back to the clause plus whatever the last window left.
         let end = plan.total_samples.ceil() as usize;

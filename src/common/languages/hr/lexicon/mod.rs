@@ -82,8 +82,11 @@ impl Lexicon {
         lexicon
     }
 
-    /// The built-in lexicon, built when the language is first spoken.
-    pub fn builtin() -> &'static Lexicon {
+    /// The built-in lexicon, built when the language is first spoken: the
+    /// first time a front end reads it, not when the front end is made (an
+    /// engine starts with a Croatian front end whatever it goes on to speak,
+    /// and built these tables for a host that never spoke Croatian).
+    pub fn builtin() -> &'static LazyLock<Lexicon> {
         static LEXICON: LazyLock<Lexicon> = LazyLock::new(Lexicon::build);
         &LEXICON
     }

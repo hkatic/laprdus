@@ -33,7 +33,7 @@ object SpeechRequestLog {
         val spelled: Boolean,
         /** [SystemClock.elapsedRealtimeNanos] when the request arrived. */
         val receivedAtNanos: Long,
-        /** Time the engine spent synthesizing, in nanoseconds. */
+        /** Time the engine took to render the first clause, in nanoseconds. */
         val synthesisNanos: Long,
         /** From arrival to the first audio handed to the framework, in nanoseconds. */
         val firstAudioNanos: Long,

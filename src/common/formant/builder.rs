@@ -294,7 +294,9 @@ impl<'a> ClauseBuilder<'a> {
         self.compute_formants();
         self.build_tracks();
         self.build_pitch();
-        if std::env::var_os("LAPRDUS_TRACE_SEGMENTS").is_some() {
+        // Asked once, not for every clause spoken.
+        static TRACE: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+        if *TRACE.get_or_init(|| std::env::var_os("LAPRDUS_TRACE_SEGMENTS").is_some()) {
             self.trace_segments();
         }
         self.frames

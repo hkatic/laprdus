@@ -13,7 +13,7 @@
 
 use laprdus::voice::VOICES;
 use laprdus_capi::*;
-use std::ffi::{CStr, CString, c_char, c_int};
+use std::ffi::{CStr, CString, c_char, c_int, c_void};
 use std::path::{Path, PathBuf};
 use std::ptr::{null, null_mut};
 
@@ -836,6 +836,102 @@ fn a_capital_letter_announcement_streams_the_same_samples() {
     let streamed = read_stream(&engine, "veliko N");
     assert!(!streamed.is_empty());
     assert!(streamed == engine.speak("veliko N"));
+}
+
+/// What a callback of `laprdus_synthesize_streaming` is given, and when it
+/// asks to stop.
+struct Heard {
+    audio: Vec<i16>,
+    calls: usize,
+    stop_after: usize,
+}
+
+unsafe extern "system" fn hear(samples: *const i16, count: usize, user_data: *mut c_void) -> c_int {
+    // SAFETY: `user_data` is the `Heard` the test passed, and the samples are
+    // valid during the call.
+    let heard = unsafe { &mut *user_data.cast::<Heard>() };
+    heard.audio.extend_from_slice(unsafe { std::slice::from_raw_parts(samples, count) });
+    heard.calls += 1;
+    c_int::from(heard.calls >= heard.stop_after)
+}
+
+/// The callback synthesis hands over the same audio clause by clause, and
+/// stops when the callback or laprdus_cancel says so
+#[test]
+fn the_callback_synthesis_streams_and_can_be_stopped() {
+    let engine = Engine::formant("zvonko");
+    let text = "Prva rečenica. Druga rečenica. Treća rečenica.";
+    let whole = engine.speak(text);
+    assert!(!whole.is_empty());
+    let stream = |heard: &mut Heard, text: &str, chunk_ms: u32| {
+        // SAFETY: a live handle, a C string, and a callback with its data,
+        // which outlives the call.
+        unsafe {
+            laprdus_synthesize_streaming(
+                engine.0,
+                c(text).as_ptr(),
+                chunk_ms,
+                Some(hear),
+                std::ptr::from_mut(heard).cast(),
+            )
+        }
+    };
+
+    for chunk_ms in [0, 46] {
+        let mut heard = Heard { audio: Vec::new(), calls: 0, stop_after: usize::MAX };
+        assert_eq!(stream(&mut heard, text, chunk_ms), whole.len() as i32);
+        assert!(heard.audio == whole, "chunks of {chunk_ms} ms");
+        assert!(heard.calls >= 3);
+    }
+
+    // The callback stops it after the first clause
+    let mut heard = Heard { audio: Vec::new(), calls: 0, stop_after: 1 };
+    assert_eq!(stream(&mut heard, text, 0), LAPRDUS_ERROR_CANCELLED);
+    assert_eq!(heard.calls, 1);
+    assert!(whole.starts_with(&heard.audio) && heard.audio.len() < whole.len());
+
+    // No callback, no handle
+    // SAFETY: a NULL callback and a NULL handle are refused.
+    unsafe {
+        let text = c(text);
+        assert_eq!(
+            laprdus_synthesize_streaming(engine.0, text.as_ptr(), 0, None, null_mut()),
+            LAPRDUS_ERROR_INVALID_PARAMETER
+        );
+        assert_eq!(
+            laprdus_synthesize_streaming(null_mut(), text.as_ptr(), 0, Some(hear), null_mut()),
+            LAPRDUS_ERROR_INVALID_HANDLE
+        );
+        laprdus_cancel(null_mut());
+    }
+
+    // laprdus_cancel from another thread, in the middle of a long text
+    let long = "Ovo je jedna duga rečenica bez kraja i konca koja se ponavlja ".repeat(300);
+    let finished = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let stopper = {
+        let (handle, finished) = (engine.0 as usize, finished.clone());
+        std::thread::spawn(move || {
+            while !finished.load(std::sync::atomic::Ordering::Relaxed) {
+                // SAFETY: the handle is alive until the thread is joined;
+                // laprdus_cancel may be called from another thread.
+                unsafe { laprdus_cancel(handle as LaprdusHandle) };
+                std::thread::sleep(std::time::Duration::from_millis(1));
+            }
+        })
+    };
+    let mut samples = null_mut();
+    let mut format = LaprdusAudioFormat { sample_rate: 0, bits_per_sample: 0, channels: 0 };
+    // SAFETY: a live handle, a C string and two valid out pointers.
+    let count = unsafe { laprdus_synthesize(engine.0, c(&long).as_ptr(), &mut samples, &mut format) };
+    finished.store(true, std::sync::atomic::Ordering::Relaxed);
+    stopper.join().expect("the stopping thread");
+    assert_eq!(count, LAPRDUS_ERROR_CANCELLED);
+    assert!(samples.is_null());
+
+    // A stop before a synthesis stops nothing, and the next one is whole
+    // SAFETY: a live handle.
+    unsafe { laprdus_cancel(engine.0) };
+    assert!(engine.speak(text) == whole);
 }
 
 /// Streaming gives the same audio as one buffer

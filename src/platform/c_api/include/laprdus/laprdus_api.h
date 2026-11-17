@@ -532,10 +532,48 @@ LAPRDUS_API int32_t LAPRDUS_CALL laprdus_synthesize_to_buffer(
 LAPRDUS_API void LAPRDUS_CALL laprdus_free_buffer(int16_t* buffer);
 
 /**
- * Cancel any ongoing synthesis operation.
+ * Stop the synthesis the handle is busy with. This is the one function that
+ * may be called from another thread while the handle's own thread is inside
+ * a synthesis call: that call then returns LAPRDUS_ERROR_CANCELLED at its
+ * next check (between clauses, spelled characters and about every second of
+ * rendered sound). Every synthesis call starts with the request cleared, so
+ * a call made before the synthesis begins stops nothing; the caller has to
+ * remember such a stop itself.
  * @param handle Engine handle.
  */
 LAPRDUS_API void LAPRDUS_CALL laprdus_cancel(LaprdusHandle handle);
+
+/**
+ * Receives the audio of laprdus_synthesize_streaming().
+ * @param samples 16-bit mono samples at the default format's rate; valid
+ *                during the call only.
+ * @param count Number of samples.
+ * @param user_data The pointer given to laprdus_synthesize_streaming().
+ * @return 0 to go on, non-zero to stop the synthesis.
+ */
+typedef int (LAPRDUS_CALL *LaprdusAudioCallback)(const int16_t* samples, size_t count, void* user_data);
+
+/**
+ * Synthesize text and hand the audio over clause by clause, as soon as each
+ * clause is rendered, so the first sound of a long text does not wait for
+ * the rest. The callback is called on the calling thread.
+ * @param handle Engine handle.
+ * @param text UTF-8 encoded text to synthesize.
+ * @param chunk_ms Length of the pieces handed over, in milliseconds; 0 hands
+ *                 every clause over whole.
+ * @param callback Receives the audio; a non-zero result stops the synthesis.
+ * @param user_data Passed to the callback.
+ * @return Number of samples handed over on success, LAPRDUS_ERROR_CANCELLED
+ *         when the callback or laprdus_cancel() stopped it, another negative
+ *         error code on failure.
+ */
+LAPRDUS_API int32_t LAPRDUS_CALL laprdus_synthesize_streaming(
+    LaprdusHandle handle,
+    const char* text,
+    uint32_t chunk_ms,
+    LaprdusAudioCallback callback,
+    void* user_data
+);
 
 // =============================================================================
 // Streaming Synthesis

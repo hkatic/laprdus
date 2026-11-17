@@ -12,6 +12,15 @@
 }
 
 # Keep VoiceInfo data class - returned from native code via JNI
+# The sink of LaprdusTTS.synthesizeStreaming: the native library calls
+# onAudio by name on whatever implements it (a lambda's class too)
+-keep interface com.hrvojekatic.laprdus.tts.LaprdusTTS$AudioSink {
+    *;
+}
+-keepclassmembers class * implements com.hrvojekatic.laprdus.tts.LaprdusTTS$AudioSink {
+    boolean onAudio(byte[]);
+}
+
 -keep class com.hrvojekatic.laprdus.tts.VoiceInfo {
     <init>(...);
     *;

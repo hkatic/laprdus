@@ -180,6 +180,59 @@ fn ncc_at(x: &[f32], centre: i32, lag: i32) -> f32 {
     if den > 1e-12 { (num / den) as f32 } else { 0.0 }
 }
 
+/// [`ncc_at`] for every lag of `lag_min ..= lag_max`, written to `corr[lag]`:
+/// the same sums in the same order, so the same values, without their cost.
+/// The pitch search is nearly all of the time a voice takes to load (300 lags
+/// of 331 samples for every 5 ms of every recording), and each sum is a chain
+/// of additions that waits for the one before it: four lags are summed side
+/// by side, the energy of the fixed stretch is summed once and not once per
+/// lag, and the samples are read without a bounds check each.
+fn ncc_over_lags(x: &[f32], centre: i32, lag_min: i32, lag_max: i32, corr: &mut [f32]) {
+    const LENGTH: usize = CORR_LENGTH as usize;
+    let start = centre - CORR_LENGTH / 2;
+    // Near the ends of the recording the stretches reach past it.
+    if start < 0 || lag_min < 0 || (start + CORR_LENGTH + lag_max) as usize > x.len() {
+        for lag in lag_min..=lag_max {
+            corr[lag as usize] = ncc_at(x, centre, lag);
+        }
+        return;
+    }
+    let start = start as usize;
+    let fixed = &x[start..start + LENGTH];
+    let e1 = fixed.iter().fold(0f64, |e, &v| e + f64::from(v) * f64::from(v));
+    let finish = |num: f64, e2: f64| {
+        let den = (e1 * e2).sqrt();
+        if den > 1e-12 { (num / den) as f32 } else { 0.0 }
+    };
+    let lags: Vec<usize> = (lag_min..=lag_max).map(|lag| lag as usize).collect();
+    let mut groups = lags.chunks_exact(4);
+    for group in &mut groups {
+        let moved: [&[f32]; 4] = std::array::from_fn(|j| &x[start + group[j]..start + group[j] + LENGTH]);
+        let (mut num, mut e2) = ([0f64; 4], [0f64; 4]);
+        for a in 0..LENGTH {
+            let xa = f64::from(fixed[a]);
+            for j in 0..4 {
+                let xb = f64::from(moved[j][a]);
+                num[j] += xa * xb;
+                e2[j] += xb * xb;
+            }
+        }
+        for j in 0..4 {
+            corr[group[j]] = finish(num[j], e2[j]);
+        }
+    }
+    for &lag in groups.remainder() {
+        let moved = &x[start + lag..start + lag + LENGTH];
+        let (mut num, mut e2) = (0f64, 0f64);
+        for (&xa, &xb) in fixed.iter().zip(moved) {
+            let (xa, xb) = (f64::from(xa), f64::from(xb));
+            num += xa * xb;
+            e2 += xb * xb;
+        }
+        corr[lag] = finish(num, e2);
+    }
+}
+
 /// The pitch search range (periods in samples).
 fn lag_range(fs: f32) -> (i32, i32) {
     (((fs / F0_MAX).floor() as i32).max(2), (fs / F0_MIN).ceil() as i32)
@@ -215,9 +268,9 @@ fn pitch_track(x: &[f32], fs: f32, f0_prior: f32) -> Vec<Frame> {
         }
         let mut corr = vec![-1f32; lag_max as usize + 1];
         let mut best = 0usize;
+        ncc_over_lags(x, f.centre, lag_min, lag_max, &mut corr);
         for lag in lag_min..=lag_max {
             let lag = lag as usize;
-            corr[lag] = ncc_at(x, f.centre, lag as i32);
             if best == 0 || corr[lag] > corr[best] {
                 best = lag;
             }
@@ -289,12 +342,16 @@ fn period_at(frames: &[Frame], pos: i32, fallback: i32) -> i32 {
 /// Analyses one recording. `formant_warp` scales its whole spectrum (1.0 = as
 /// recorded); `f0_prior` is the expected pitch of the voice (Hz), 0 if unknown.
 pub fn analyse_unit(samples: &[i16], sample_rate: u32, formant_warp: f32, f0_prior: f32) -> Unit {
-    let mut unit = Unit::default();
-    let fs = sample_rate as f32;
     if samples.is_empty() {
-        return unit;
+        return Unit::default();
     }
+    analyse_prepared(prepare_unit(samples, formant_warp), sample_rate, f0_prior)
+}
 
+/// A recording as the analysis reads it: float, without its DC, warped, its
+/// ends faded. It does not depend on the pitch expected, so the vowels, which
+/// are analysed twice (without a prior, then with it), are prepared once.
+fn prepare_unit(samples: &[i16], formant_warp: f32) -> Vec<f32> {
     // Float, DC removed.
     let mean = (samples.iter().fold(0f64, |sum, &s| sum + f64::from(s)) / samples.len() as f64) as f32;
     let mut x: Vec<f32> = samples.iter().map(|&s| (f32::from(s) - mean) / 32768.0).collect();
@@ -312,6 +369,14 @@ pub fn analyse_unit(samples: &[i16], sample_rate: u32, formant_warp: f32, f0_pri
         x[i as usize] *= w;
         x[(n - 1 - i) as usize] *= w;
     }
+    x
+}
+
+/// Analyses a recording [prepared](prepare_unit) for it.
+fn analyse_prepared(x: Vec<f32>, sample_rate: u32, f0_prior: f32) -> Unit {
+    let mut unit = Unit::default();
+    let fs = sample_rate as f32;
+    let n = x.len() as i32;
 
     // Blocks of 2 ms every millisecond.
     const BLOCK: i32 = 44;
@@ -505,17 +570,28 @@ impl UnitBank {
         const VOWELS: [Sound; 5] = [Sound::A, Sound::E, Sound::I, Sound::O, Sound::U];
         let fs = if data.sample_rate() > 0 { data.sample_rate() } else { SAMPLE_RATE };
 
+        let analyse = |prepared: Option<Vec<f32>>, prior| {
+            prepared.map_or_else(Unit::default, |prepared| analyse_prepared(prepared, fs, prior))
+        };
+        let prepare = |sound| {
+            let samples = data.sound(sound);
+            (!samples.is_empty()).then(|| prepare_unit(samples, formant_warp))
+        };
+
         // Pass 1: the vowels, without a prior, give the voice's pitch.
+        let mut vowels = VOWELS.map(|vowel| (vowel, prepare(vowel)));
         let prior = median(
-            VOWELS
-                .iter()
-                .map(|&vowel| analyse_unit(data.sound(vowel), fs, formant_warp, 0.0).f0)
-                .filter(|&f0| f0 > 0.0)
-                .collect(),
+            vowels.iter().map(|(_, prepared)| analyse(prepared.clone(), 0.0).f0).filter(|&f0| f0 > 0.0).collect(),
         );
 
         // Pass 2: every recording, with the prior.
-        let units = Sound::ALL.map(|sound| analyse_unit(data.sound(sound), fs, formant_warp, prior));
+        let units = Sound::ALL.map(|sound| {
+            let prepared = match vowels.iter_mut().find(|(vowel, _)| *vowel == sound) {
+                Some((_, prepared)) => prepared.take(),
+                None => prepare(sound),
+            };
+            analyse(prepared, prior)
+        });
         let vowel_f0 = VOWELS.iter().map(|&vowel| units[vowel as usize].f0).filter(|&f0| f0 > 0.0).collect();
         let base_f0 = match median(vowel_f0) {
             f0 if f0 > 0.0 => f0,

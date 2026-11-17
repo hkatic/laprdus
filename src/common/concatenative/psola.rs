@@ -7,6 +7,7 @@
 
 use super::unit_bank::{EDGE_FADE, UNVOICED_HOP, Unit};
 use std::f32::consts::PI;
+use std::sync::OnceLock;
 
 /// Span of the period crossfade at a join between two voiced recordings.
 const JOIN_MS: f32 = 14.0;
@@ -146,6 +147,21 @@ fn fitting_mark(u: &Unit, k: usize) -> usize {
         .unwrap_or(k)
 }
 
+/// One half of a Hann window of `length` samples (1 to `MAX_HALF_WINDOW`):
+/// the weight of the sample `j` away from the centre, before it (`rising`)
+/// or from it on. Every output sample lies under two windows, and each
+/// weight was a cosine computed for it: a fifth of a recorded voice's time. A
+/// half is computed once, the first time a period of its length is placed,
+/// by the expression the renderer used, so the weights are the same.
+fn window_half(length: i32, rising: bool) -> &'static [f32] {
+    const LENGTHS: usize = MAX_HALF_WINDOW as usize + 1;
+    static HALVES: [[OnceLock<Box<[f32]>>; 2]; LENGTHS] = [const { [const { OnceLock::new() }; 2] }; LENGTHS];
+    HALVES[length as usize][usize::from(rising)].get_or_init(|| {
+        let scale = PI / length as f32;
+        (0..length).map(|j| 0.5 * (1.0 + (scale * (if rising { -j } else { j }) as f32).cos())).collect()
+    })
+}
+
 /// One Hann-windowed period of a recording, centred on its mark `k`, added at
 /// the output sample `centre`. Each half of the window is shortened where it
 /// would reach past the recording, or before the output sample `earliest`, so
@@ -160,12 +176,11 @@ fn add_window(out: &mut [f32], u: &Unit, k: usize, centre: i32, gain: f32, rever
     let (before, after) = if reversed { (n - 1 - mark, mark) } else { (mark, n - 1 - mark) };
     let left = half.min(before + 1).min(centre - earliest + 1).max(1);
     let right = half.min(after + 1).max(1);
-    let left_scale = PI / left as f32;
-    let right_scale = PI / right as f32;
+    let (rising, falling) = (window_half(left, true), window_half(right, false));
     for i in -left + 1..right {
         let Some(o) = usize::try_from(centre + i).ok().filter(|&o| o < out.len()) else { continue };
         let s = mark + if reversed { -i } else { i };
-        let w = 0.5 * (1.0 + ((if i < 0 { left_scale } else { right_scale }) * i as f32).cos());
+        let w = if i < 0 { rising[(-i) as usize] } else { falling[i as usize] };
         out[o] += gain * w * u.samples[s as usize];
     }
 }

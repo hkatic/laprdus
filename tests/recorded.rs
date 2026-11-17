@@ -16,7 +16,11 @@
 #[macro_use]
 mod support;
 
+use laprdus::engine::Error;
 use laprdus::params::{NumberMode, SpellingMode};
+use std::ops::ControlFlow;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use support::*;
 
 const RECORDED_VOICES: [&str; 5] = ["josip", "vlado", "detence", "baba", "djedo"];
@@ -257,6 +261,67 @@ fn a_question_ends_higher_than_a_statement() {
     assert!(close_to(flat_statement, flat_question, 0.05));
 }
 
+/// A stop reaches a synthesis under way: by the callback of a streaming
+/// synthesis, and by the engine's cancel handle from another thread, which is
+/// how a screen reader's "stop speaking" arrives. The synthesis after it is
+/// whole.
+#[test]
+fn a_synthesis_under_way_can_be_stopped_and_the_next_one_is_whole() {
+    let mut speaker = Speaker::new("josip");
+    let text = "Prva rečenica. Druga rečenica. Treća rečenica.";
+    let whole = speaker.say(text);
+    assert!(!whole.is_empty());
+
+    // The callback stops it after the first clause
+    let mut heard = Vec::new();
+    let stopped = speaker.synthesize_streaming(text, 0, |chunk| {
+        heard.extend_from_slice(chunk);
+        ControlFlow::Break(())
+    });
+    assert!(matches!(stopped, Err(Error::Cancelled)));
+    assert!(!heard.is_empty() && heard.len() < whole.len());
+    assert!(whole.starts_with(&heard));
+
+    // The handle stops it: nothing after the clause that was being handed over
+    let cancel = speaker.cancel_handle();
+    let mut clauses = 0;
+    let stopped = speaker.synthesize_streaming(text, 0, |_| {
+        clauses += 1;
+        cancel.cancel();
+        ControlFlow::Continue(())
+    });
+    assert!(matches!(stopped, Err(Error::Cancelled)));
+    assert_eq!(clauses, 1);
+
+    // A stop that came before a synthesis began stops nothing
+    cancel.cancel();
+    assert!(speaker.say(text) == whole);
+    cancel.cancel();
+    let spelled = speaker.synthesize_spelled("abc", true).expect("spelled audio").0;
+    assert!(!spelled.is_empty());
+
+    // From another thread, in the middle of a long text and of a spelled one
+    let long = "Ovo je jedna duga rečenica bez kraja i konca koja se ponavlja ".repeat(300);
+    for spell in [false, true] {
+        let finished = Arc::new(AtomicBool::new(false));
+        let stopper = {
+            let (cancel, finished) = (cancel.clone(), finished.clone());
+            std::thread::spawn(move || {
+                while !finished.load(Ordering::Relaxed) {
+                    cancel.cancel();
+                    std::thread::sleep(std::time::Duration::from_millis(1));
+                }
+            })
+        };
+        let stopped =
+            if spell { speaker.synthesize_spelled(&long, true).map(drop) } else { speaker.synthesize(&long).map(drop) };
+        finished.store(true, Ordering::Relaxed);
+        stopper.join().expect("the stopping thread");
+        assert!(matches!(stopped, Err(Error::Cancelled)), "spelled: {spell}");
+    }
+    assert!(speaker.say(text) == whole);
+}
+
 /// Streaming gives the same audio as one buffer. (The stream handles of the
 /// C API are tested with the C API.)
 #[test]
@@ -275,6 +340,7 @@ fn streaming_gives_the_same_audio_as_one_buffer() {
                 assert!(!chunk.is_empty());
                 streamed.extend_from_slice(chunk);
                 chunks += 1;
+                ControlFlow::Continue(())
             })
             .expect("streaming synthesis");
         assert!(chunks > 1, "chunks of {chunk_ms} ms");

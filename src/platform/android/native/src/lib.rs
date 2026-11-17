@@ -10,7 +10,7 @@
 
 #![allow(non_snake_case)]
 
-use engine::engine::Engine;
+use engine::engine::{CancelHandle, Engine, Error};
 use engine::language::Language;
 use engine::params::{NumberMode, PauseSettings, SpellingMode, VoiceParams};
 use engine::text::frontend::UserLexicon;
@@ -19,13 +19,35 @@ use jni::JNIEnv;
 use jni::objects::{JByteArray, JObject, JString, JValue};
 use jni::sys::{jboolean, jfloat, jint, jlong, jobject, jshortArray, jstring};
 use std::collections::HashMap;
+use std::ops::ControlFlow;
 use std::panic::{AssertUnwindSafe, catch_unwind};
-use std::sync::atomic::{AtomicI64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
 use std::sync::{Arc, LazyLock, Mutex, PoisonError};
 
 const TAG: &str = "LaprdusTTS";
 
-type Shared = Arc<Mutex<Engine>>;
+/// An engine and what must be reachable while a synthesis holds it: the
+/// handle that stops that synthesis (`nativeCancel` comes from another thread
+/// in the middle of one) and whether the engine has a voice (asked on the
+/// main thread, which must not wait for a synthesis to end).
+struct Slot {
+    engine: Mutex<Engine>,
+    cancel: Mutex<CancelHandle>,
+    initialized: AtomicBool,
+}
+
+impl Default for Slot {
+    fn default() -> Self {
+        let engine = Engine::new();
+        Self {
+            cancel: Mutex::new(engine.cancel_handle()),
+            engine: Mutex::new(engine),
+            initialized: AtomicBool::new(false),
+        }
+    }
+}
+
+type Shared = Arc<Slot>;
 
 static ENGINES: LazyLock<Mutex<HashMap<jlong, Shared>>> = LazyLock::new(Mutex::default);
 static NEXT_HANDLE: AtomicI64 = AtomicI64::new(1);
@@ -37,8 +59,15 @@ fn engine_of(handle: jlong) -> Option<Shared> {
 /// Runs `call` on the engine behind a handle; `failure` for an unknown
 /// handle or a panic.
 fn with<T>(handle: jlong, failure: T, call: impl FnOnce(&mut Engine) -> T) -> T {
-    let Some(engine) = engine_of(handle) else { return failure };
-    let result = catch_unwind(AssertUnwindSafe(|| call(&mut engine.lock().unwrap_or_else(PoisonError::into_inner))));
+    let Some(slot) = engine_of(handle) else { return failure };
+    let result = catch_unwind(AssertUnwindSafe(|| {
+        let mut engine = slot.engine.lock().unwrap_or_else(PoisonError::into_inner);
+        let value = call(&mut engine);
+        // The call may have loaded a voice or put a new engine in place.
+        slot.initialized.store(engine.is_initialized(), Ordering::Relaxed);
+        *slot.cancel.lock().unwrap_or_else(PoisonError::into_inner) = engine.cancel_handle();
+        value
+    }));
     result.unwrap_or(failure)
 }
 
@@ -174,7 +203,9 @@ pub extern "system" fn Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeIsIniti
     _this: JObject,
     handle: jlong,
 ) -> jboolean {
-    jboolean::from(with(handle, false, |engine| engine.is_initialized()))
+    // Without the engine's lock: a synthesis may hold it for as long as the
+    // text plays.
+    jboolean::from(engine_of(handle).is_some_and(|slot| slot.initialized.load(Ordering::Relaxed)))
 }
 
 #[unsafe(no_mangle)]
@@ -190,10 +221,16 @@ pub extern "system" fn Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSynthes
         if !engine.is_initialized() {
             return Err(("java/lang/IllegalStateException", "Engine not initialized".to_owned()));
         }
-        engine.synthesize(&text).map_err(|error| ("java/lang/RuntimeException", error.to_string()))
+        match engine.synthesize(&text) {
+            // Stopped by nativeCancel: no audio, and no error either.
+            Err(Error::Cancelled) => Ok(None),
+            Err(error) => Err(("java/lang/RuntimeException", error.to_string())),
+            Ok(audio) => Ok(Some(audio)),
+        }
     });
     match audio {
-        Ok(audio) => java_samples(&mut env, &audio),
+        Ok(Some(audio)) => java_samples(&mut env, &audio),
+        Ok(None) => std::ptr::null_mut(),
         Err((class, message)) => {
             log_error(&mut env, &message);
             let _ = env.throw_new(class, message);
@@ -345,9 +382,77 @@ pub extern "system" fn Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeGetSamp
     with(handle, 0, |engine| engine.sample_rate() as jint)
 }
 
-/// Synthesis is synchronous: there is nothing to cancel.
+/// Stops the synthesis the engine is busy with (`onStop` of the TTS service
+/// comes on another thread while `onSynthesizeText` is inside the engine). It
+/// does not wait for the engine: the next request used to wait until the
+/// stopped text had been synthesized to its end.
 #[unsafe(no_mangle)]
-pub extern "system" fn Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeCancel(_env: JNIEnv, _this: JObject) {}
+pub extern "system" fn Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeCancel(
+    _env: JNIEnv,
+    _this: JObject,
+    handle: jlong,
+) {
+    if let Some(slot) = engine_of(handle) {
+        slot.cancel.lock().unwrap_or_else(PoisonError::into_inner).cancel();
+    }
+}
+
+/// Synthesizes text (spelled when `spelled`) and hands the audio to
+/// `sink.onAudio(byte[])` clause by clause, in pieces of `chunk_ms`, as
+/// 16-bit little-endian PCM, as soon as each clause is rendered. The sink
+/// returns false to stop. Returns 0 when the whole text was handed over, 1
+/// when the sink or `nativeCancel` stopped it, -1 when nothing could be
+/// synthesized or the engine has no voice. The sink is called with the engine
+/// held: it must not call the engine.
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeSynthesizeStreaming(
+    mut env: JNIEnv,
+    _this: JObject,
+    handle: jlong,
+    text_in: JString,
+    chunk_ms: jint,
+    spelled: jboolean,
+    sink: JObject,
+) -> jint {
+    const DONE: jint = 0;
+    const STOPPED: jint = 1;
+    const FAILED: jint = -1;
+    let text = text(&mut env, &text_in);
+    let chunk_ms = chunk_ms.max(0) as u32;
+    let mut hand_over = |chunk: &[i16]| {
+        let bytes: Vec<u8> = chunk.iter().flat_map(|sample| sample.to_le_bytes()).collect();
+        let go_on = env.byte_array_from_slice(&bytes).and_then(|array| {
+            let go_on = env.call_method(&sink, "onAudio", "([B)Z", &[JValue::Object(&array)])?.z();
+            // One native call hands over many pieces: their references must
+            // not pile up until it returns.
+            env.delete_local_ref(array)?;
+            go_on
+        });
+        // A failed call (an exception of the sink is left pending for the
+        // caller) stops the synthesis as a false result does.
+        if go_on.unwrap_or(false) { ControlFlow::Continue(()) } else { ControlFlow::Break(()) }
+    };
+    with(handle, FAILED, |engine| {
+        if !engine.is_initialized() {
+            return FAILED;
+        }
+        let done = if spelled != 0 {
+            engine.synthesize_spelled(&text, true).and_then(|(audio, _)| {
+                let chunk = (engine::SAMPLE_RATE * chunk_ms / 1000) as usize;
+                let handed =
+                    audio.chunks(if chunk > 0 { chunk } else { audio.len().max(1) }).try_for_each(&mut hand_over);
+                if handed.is_break() { Err(Error::Cancelled) } else { Ok(()) }
+            })
+        } else {
+            engine.synthesize_streaming(&text, chunk_ms, &mut hand_over)
+        };
+        match done {
+            Ok(()) => DONE,
+            Err(Error::Cancelled) => STOPPED,
+            Err(_) => FAILED,
+        }
+    })
+}
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_com_hrvojekatic_laprdus_tts_LaprdusTTS_nativeGetVoiceCount(

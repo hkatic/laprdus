@@ -10,10 +10,13 @@
 //! language and keeps the voice. SSIP rate and pitch are relative (0 is
 //! normal), so they scale the rate and pitch of the user's `settings.json`.
 
-use laprdus::engine::Engine;
+use laprdus::engine::{CancelHandle, Engine, Error};
 use laprdus::language::Language;
 use laprdus::voice::{self, DEFAULT_VOICE_ID, VOICES, Voice};
+use std::cell::RefCell;
+use std::collections::VecDeque;
 use std::io::{BufRead, Write};
+use std::ops::ControlFlow;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::sync::mpsc::{Receiver, channel};
@@ -131,6 +134,9 @@ struct Module {
     /// The lines the server sends, read by a thread of their own so that a
     /// `STOP` can be seen while audio is going out.
     lines: Receiver<String>,
+    /// Lines that came while a message was being spoken and are not its
+    /// stop: carried out when it is done.
+    deferred: RefCell<VecDeque<String>>,
     data_dir: PathBuf,
     // What the server asked for (-100..100 each) ...
     rate: i32,
@@ -160,9 +166,7 @@ impl Module {
     }
 
     fn send_bytes(&self, bytes: &[u8]) {
-        let mut out = std::io::stdout().lock();
-        // A server that has gone is noticed when its input ends.
-        let _ = out.write_all(bytes).and_then(|()| out.flush());
+        write_out(bytes);
     }
 
     fn log(&self, message: impl FnOnce() -> String) {
@@ -174,6 +178,9 @@ impl Module {
     /// The next line from the server; without `block`, only one that has
     /// already come.
     fn read_line(&self, block: bool) -> Option<String> {
+        if let Some(line) = self.deferred.borrow_mut().pop_front() {
+            return Some(line);
+        }
         if block { self.lines.recv().ok() } else { self.lines.try_recv().ok() }
     }
 
@@ -336,41 +343,64 @@ impl Module {
         self.send(if stopped { "703 STOP" } else { "702 END" });
     }
 
-    /// Synthesizes the text and sends its audio; false when nothing was
-    /// spoken to the end.
+    /// Synthesizes the text and sends its audio, each clause as soon as it is
+    /// rendered; false when nothing was spoken to the end. A `STOP` ends the
+    /// synthesis where it is: the thread that reads the server's lines asks
+    /// the engine to stop (see `lines_of_stdin`), and the lines are looked at
+    /// before every piece of audio. (The whole text used to be synthesized
+    /// before the first look, so the `703` that lets the server go on to the
+    /// next message waited for that.)
     fn speak_text(&mut self, text: &str, message_type: MessageType) -> bool {
         if text.is_empty() {
             return false;
         }
         // Characters and keys are spelled, and everything in spelling mode.
         let spelled = self.spelling_mode || matches!(message_type, MessageType::Char | MessageType::Key);
-        let audio = if spelled {
-            self.engine.synthesize_spelled(text, true).map(|(audio, _)| audio)
-        } else {
-            self.engine.synthesize(text)
+        let sample_rate = self.engine.sample_rate();
+        let cancel = self.engine.cancel_handle();
+        let lines = &self.lines;
+        // The lines that came meanwhile, and whether one of them is a stop.
+        let mut came = Vec::new();
+        let mut stop = false;
+        let mut began = false;
+        let mut send_audio = |audio: &[i16]| {
+            for chunk in audio.chunks(MAX_CHUNK_BYTES / size_of::<i16>()) {
+                while let Ok(line) = lines.try_recv() {
+                    stop |= is_stop(&line);
+                    came.push(line);
+                }
+                if stop || cancel.is_cancelled() {
+                    return ControlFlow::Break(());
+                }
+                if !std::mem::replace(&mut began, true) {
+                    write_out(b"701 BEGIN\n");
+                }
+                write_out(&audio_message(chunk, sample_rate));
+            }
+            ControlFlow::Continue(())
         };
-        let audio = match audio {
-            Ok(audio) if !audio.is_empty() => audio,
-            Ok(_) => return false,
+        let spoken = if spelled {
+            self.engine.synthesize_spelled(text, true).map(|(audio, _)| send_audio(&audio).is_continue())
+        } else {
+            self.engine.synthesize_streaming(text, 0, &mut send_audio).map(|()| true)
+        };
+        // The stop is carried out now (it sets `stop_requested`); anything
+        // else waits until this message has been answered.
+        for line in came {
+            if is_stop(&line) {
+                self.command(&line);
+            } else {
+                self.deferred.borrow_mut().push_back(line);
+            }
+        }
+        match spoken {
+            Ok(to_the_end) => to_the_end && began && !self.stop_requested,
+            Err(Error::Cancelled) => false,
             Err(error) => {
                 eprintln!("[laprdus ERROR] Synthesis failed: {error}");
-                return false;
+                false
             }
-        };
-        self.send("701 BEGIN");
-
-        // A stop may have come while the text was being synthesized, and may
-        // come between any two chunks.
-        let _ = self.process(false);
-        let sample_rate = self.engine.sample_rate();
-        for chunk in audio.chunks(MAX_CHUNK_BYTES / size_of::<i16>()) {
-            if self.stop_requested || self.should_stop || self.quit {
-                break;
-            }
-            self.send_bytes(&audio_message(chunk, sample_rate));
-            let _ = self.process(false);
         }
-        !self.stop_requested
     }
 
     /// Carries out the server's commands: with `block` until it says `QUIT`
@@ -378,7 +408,18 @@ impl Module {
     fn process(&mut self, block: bool) -> Result<(), BrokenPipe> {
         while !self.quit {
             let Some(line) = self.read_line(block) else { return if block { Err(BrokenPipe) } else { Ok(()) } };
-            match line.as_str() {
+            self.command(&line);
+            if !block {
+                break;
+            }
+        }
+        Ok(())
+    }
+
+    /// Carries out one command of the server.
+    fn command(&mut self, line: &str) {
+        {
+            match line {
                 "SPEAK\n" => self.speak_command(MessageType::Text),
                 "SOUND_ICON\n" => self.speak_command(MessageType::SoundIcon),
                 "CHAR\n" => self.speak_command(MessageType::Char),
@@ -416,23 +457,43 @@ impl Module {
                 line if line.starts_with("DEBUG") => self.debug_command(line),
                 _ => self.send("300 ERR UNKNOWN COMMAND"),
             }
-            if !block {
-                break;
-            }
         }
-        Ok(())
     }
 }
 
-/// The lines of standard input, each with its line feed, as they come.
-fn lines_of_stdin() -> Receiver<String> {
+/// True for the commands that end the message being spoken.
+fn is_stop(line: &str) -> bool {
+    matches!(line, "STOP\n" | "PAUSE\n" | "QUIT\n")
+}
+
+fn write_out(bytes: &[u8]) {
+    let mut out = std::io::stdout().lock();
+    // A server that has gone is noticed when its input ends.
+    let _ = out.write_all(bytes).and_then(|()| out.flush());
+}
+
+/// The lines of standard input, each with its line feed, as they come. A
+/// stop is also told to the engine at once through `cancel`: the main thread
+/// may be in the middle of a long clause and would see the line only after
+/// it. (A line of a message's text that reads `STOP` does no harm: the text
+/// is read before its synthesis begins, and every synthesis begins with the
+/// request cleared.)
+fn lines_of_stdin(cancel: CancelHandle) -> Receiver<String> {
     let (sender, receiver) = channel();
     std::thread::spawn(move || {
         let mut input = std::io::stdin().lock();
         loop {
             let mut line = Vec::new();
             match input.read_until(b'\n', &mut line) {
-                Ok(n) if n > 0 && sender.send(String::from_utf8_lossy(&line).into_owned()).is_ok() => {}
+                Ok(n) if n > 0 => {
+                    let line = String::from_utf8_lossy(&line).into_owned();
+                    if is_stop(&line) {
+                        cancel.cancel();
+                    }
+                    if sender.send(line).is_err() {
+                        break;
+                    }
+                }
                 _ => break,
             }
         }
@@ -443,7 +504,8 @@ fn lines_of_stdin() -> Receiver<String> {
 fn main() -> ExitCode {
     // The configuration file Speech Dispatcher names holds only the voice
     // table the server itself reads.
-    let lines = lines_of_stdin();
+    let engine = Engine::new();
+    let lines = lines_of_stdin(engine.cancel_handle());
     if lines.recv().ok().as_deref() != Some("INIT\n") {
         eprintln!("ERROR: Server did not start with INIT");
         return ExitCode::from(3);
@@ -455,8 +517,9 @@ fn main() -> ExitCode {
         .find(|dir| dir.join("Josip.bin").is_file())
         .unwrap_or(Path::new(DATA_DIRECTORIES[0]));
     let mut module = Module {
-        engine: Engine::new(),
+        engine,
         lines,
+        deferred: RefCell::default(),
         data_dir: data_dir.to_owned(),
         rate: 0,
         pitch: 0,
