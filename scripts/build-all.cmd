@@ -144,6 +144,24 @@ if not exist "%PROJECT_ROOT%\dist\windows-x86\laprd32.dll" (
     exit /b 1
 )
 
+REM The same programs for Windows 7 SP1, 8 and 8.1, staged in
+REM dist\windows-legacy-x64 and dist\windows-legacy-x86; the installer and the
+REM NVDA add-on carry both builds. Needs the nightly toolchain named in
+REM src\platform\windows\legacy\toolchain.txt, with the component rust-src
+cargo xtask windows-legacy
+if %errorlevel% neq 0 (
+    echo [ERROR] Failed to build the Windows programs for Windows 7, 8 and 8.1
+    exit /b 1
+)
+if not exist "%PROJECT_ROOT%\dist\windows-legacy-x64\laprd64.dll" (
+    echo [ERROR] the legacy laprd64.dll not found
+    exit /b 1
+)
+if not exist "%PROJECT_ROOT%\dist\windows-legacy-x86\laprd32.dll" (
+    echo [ERROR] the legacy laprd32.dll not found
+    exit /b 1
+)
+
 echo [SUCCESS] SAPI5 DLLs built successfully
 exit /b 0
 
@@ -187,7 +205,7 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-cd /d "%PROJECT_ROOT%\nvda-addon"
+cd /d "%PROJECT_ROOT%\src\platform\windows\nvda"
 call scons
 if %errorlevel% neq 0 (
     echo [ERROR] Failed to build NVDA Addon

@@ -160,46 +160,37 @@ os.makedirs(synthDriverDir, exist_ok=True)
 os.makedirs(voicesDir, exist_ok=True)
 os.makedirs(dictsDir, exist_ok=True)
 
-# Copy the DLLs staged by `cargo xtask windows`
-dllFiles = [
-    ("../dist/windows-x64/laprd64.dll", "laprd64.dll"),
-    ("../dist/windows-x86/laprd32.dll", "laprd32.dll"),
-]
-for srcFile, destFile in dllFiles:
-    srcPath = Path(srcFile)
-    if srcPath.exists():
-        destPath = synthDriverDir / destFile
-        dllCopy = env.Command(str(destPath), str(srcPath), Copy("$TARGET", "$SOURCE"))
-        env.Depends(addon, dllCopy)
-    else:
-        # Check if DLL already exists in addon directory
-        existingDll = synthDriverDir / destFile
-        if not existingDll.exists():
-            print(f"Warning: {srcFile} not found. Build the Windows programs first with:")
-            print(f"  cargo xtask windows")
+# The repository's root: this folder is src/platform/windows/nvda.
+repoRoot = Path("../../../..")
 
-# Copy GUI executables from build directory
-guiFiles = [
-    ("../dist/windows-x64/laprdgui.exe", "laprdgui64.exe"),
-    ("../dist/windows-x86/laprdgui.exe", "laprdgui32.exe"),
+# The programs staged by `cargo xtask windows` (Windows 10 and later) and by
+# `cargo xtask windows-legacy` (Windows 7 SP1, 8 and 8.1). Only a 32-bit NVDA
+# runs on those older systems (NVDA 2023.3 on 7 and 8, NVDA 2025.3 on 8.1), so
+# the legacy build is carried for 32 bits alone; the driver and the menu pick
+# it there by the version of Windows.
+programFiles = [
+    ("dist/windows-x64/laprd64.dll", "laprd64.dll", "cargo xtask windows"),
+    ("dist/windows-x86/laprd32.dll", "laprd32.dll", "cargo xtask windows"),
+    ("dist/windows-legacy-x86/laprd32.dll", "laprd32_legacy.dll", "cargo xtask windows-legacy"),
+    ("dist/windows-x64/laprdgui.exe", "laprdgui64.exe", "cargo xtask windows"),
+    ("dist/windows-x86/laprdgui.exe", "laprdgui32.exe", "cargo xtask windows"),
+    ("dist/windows-legacy-x86/laprdgui.exe", "laprdgui32_legacy.exe", "cargo xtask windows-legacy"),
 ]
-for srcFile, destFile in guiFiles:
-    srcPath = Path(srcFile)
+for srcFile, destFile, step in programFiles:
+    srcPath = repoRoot / srcFile
     if srcPath.exists():
         destPath = synthDriverDir / destFile
-        guiCopy = env.Command(str(destPath), str(srcPath), Copy("$TARGET", "$SOURCE"))
-        env.Depends(addon, guiCopy)
-    else:
-        # Check if GUI already exists in addon directory
-        existingGui = synthDriverDir / destFile
-        if not existingGui.exists():
-            print(f"Warning: {srcFile} not found. Build the Windows programs first with:")
-            print(f"  cargo xtask windows")
+        programCopy = env.Command(str(destPath), str(srcPath), Copy("$TARGET", "$SOURCE"))
+        env.Depends(addon, programCopy)
+    elif not (synthDriverDir / destFile).exists():
+        # Not staged, and no earlier copy in the add-on's folder either
+        print(f"Warning: {srcFile} not found. Build the Windows programs first with:")
+        print(f"  {step}")
 
 # Copy voice data files to voices subdirectory
 voiceFiles = ["Josip.bin", "Vlado.bin"]
 for voiceFile in voiceFiles:
-    srcPath = Path("../data/voices") / voiceFile
+    srcPath = repoRoot / "data/voices" / voiceFile
     if srcPath.exists():
         destPath = voicesDir / voiceFile
         voiceCopy = env.Command(str(destPath), str(srcPath), Copy("$TARGET", "$SOURCE"))
@@ -216,7 +207,7 @@ dictFiles = [
     ("emoji_sl.json", "emoji_sl.json"),
 ]
 for srcFile, destFile in dictFiles:
-    srcPath = Path("../data/dictionary") / srcFile
+    srcPath = repoRoot / "data/dictionary" / srcFile
     if srcPath.exists():
         destPath = dictsDir / destFile
         dictCopy = env.Command(str(destPath), str(srcPath), Copy("$TARGET", "$SOURCE"))

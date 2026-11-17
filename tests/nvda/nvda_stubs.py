@@ -1,6 +1,6 @@
 """Stand-ins for the NVDA modules the Laprdus synthesizer driver imports.
 
-They let the driver in nvda-addon/addon/synthDrivers/laprdus run under a
+They let the driver in src/platform/windows/nvda/addon/synthDrivers/laprdus run under a
 plain Python without NVDA: the speech commands follow NVDA's
 source/speech/commands.py, the audio player records what the driver feeds
 it, and the notifications record their calls. Import this module before the

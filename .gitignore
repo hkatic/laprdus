@@ -48,10 +48,10 @@ installers/linux/tarball/*.tar.xz
 /build-tarball*/
 
 # NVDA addon build artifacts
-nvda-addon/*.nvda-addon
-nvda-addon/addon/synthDrivers/laprdus/*.dll
-nvda-addon/addon/synthDrivers/laprdus/voices/
-nvda-addon/addon/synthDrivers/laprdus/dictionaries/
+src/platform/windows/nvda/*.nvda-addon
+src/platform/windows/nvda/addon/synthDrivers/laprdus/*.dll
+src/platform/windows/nvda/addon/synthDrivers/laprdus/voices/
+src/platform/windows/nvda/addon/synthDrivers/laprdus/dictionaries/
 
 # Android generated assets (copied at build time)
 src/platform/android/app/src/main/assets/voices/

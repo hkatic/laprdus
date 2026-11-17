@@ -11,6 +11,11 @@
 //! for the crate keeps it that way, and that module alone lifts it.
 #![cfg_attr(all(windows, not(test)), windows_subsystem = "windows")]
 
+// The build for Windows 7, 8 and 8.1 answers the loader's request for
+// combase.dll with ole32.dll: see src/platform/windows/legacy.
+#[cfg(target_vendor = "win7")]
+use laprdus_win7 as _;
+
 #[cfg(windows)]
 mod dark_mode;
 #[cfg(windows)]

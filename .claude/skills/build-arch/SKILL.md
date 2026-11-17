@@ -26,7 +26,7 @@ The PKGBUILD takes the sources from `laprdus-2.0.0.tar.xz` next to it (top folde
 ```bash
 tar --transform='s,^\.,laprdus-2.0.0,' -cJf installers/linux/arch/laprdus-2.0.0.tar.xz \
     --exclude='./.git' --exclude='./target' --exclude='./dist' --exclude='./build' \
-    --exclude='./installers/linux/arch' --exclude='./nvda-addon' \
+    --exclude='./installers/linux/arch' --exclude='./src/platform/windows/nvda' \
     --exclude='./src/platform/android/app/build' --exclude='./src/platform/android/.gradle' \
     --exclude='__pycache__' .
 cd installers/linux/arch && makepkg -sf && cd ../../..

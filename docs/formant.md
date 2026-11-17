@@ -4710,7 +4710,7 @@ SSKJ², SP and the Collocations Dictionary of Modern Slovene at CJVT (Kolokacije
   and « the level *none*, spoken at every punctuation level, while every other
   quotation mark, and these two in NVDA's English table, have *most*. The add-on
   therefore ships a mandatory speech symbol dictionary,
-  `nvda-addon/addon/locale/sl/symbols-laprdus.dic` (`symbolDictionaries` in
+  `src/platform/windows/nvda/addon/locale/sl/symbols-laprdus.dic` (`symbolDictionaries` in
   `buildVars.py`, NVDA 2024.1 and later; earlier versions ignore the manifest key),
   with » and « at *most*, named *dvojni začetni narekovaj* and *dvojni zaključni
   narekovaj*, NVDA's own names without their stray English *double*. *SDS meni, da je prav* keeps the verb: an acronym before it, last in

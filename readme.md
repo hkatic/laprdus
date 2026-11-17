@@ -22,7 +22,7 @@ In short: modern synthesizers offer quality at the cost of resources; Laprdus of
 
 ## Supported Platforms
 
-- **Windows 10 and 11** - via Microsoft SAPI5 standard, works with Narrator, NVDA, JAWS, and other SAPI5-compatible applications
+- **Windows 7 SP1, 8, 8.1, 10 and 11** - via Microsoft SAPI5 standard, works with Narrator, NVDA, JAWS, and other SAPI5-compatible applications
 - **[NVDA](https://github.com/nvaccess/nvda) Screen Reader** - dedicated addon for the free and open-source NVDA screen reader
 - **Linux** - via Speech Dispatcher for Orca screen reader, plus command-line interface
 - **Android** - built-in TTS engine for Android devices
@@ -344,6 +344,7 @@ cargo xtask data
 # SAPI5 DLLs, laprdus.exe and laprdgui.exe for both architectures
 rustup target add x86_64-pc-windows-msvc i686-pc-windows-msvc
 cargo xtask windows
+cargo xtask windows-legacy   # the same for Windows 7 SP1, 8 and 8.1 (dist/windows-legacy-*)
 
 # Build installer (requires InnoSetup)
 iscc installers/windows/laprdus_sapi5.iss
@@ -357,12 +358,13 @@ Output: `dist/windows-x64/` (`laprd64.dll`, `laprdus.exe`, `laprdgui.exe`), `dis
 # Build prerequisites first
 cargo xtask data
 cargo xtask windows
+cargo xtask windows-legacy   # the same for Windows 7 SP1, 8 and 8.1 (dist/windows-legacy-*)
 
 # Build addon (automatically copies DLLs, voice data, dictionaries)
-cd nvda-addon && scons
+cd src/platform/windows/nvda && scons
 ```
 
-Output: `nvda-addon/laprdus-*.nvda-addon`
+Output: `src/platform/windows/nvda/laprdus-*.nvda-addon`
 
 **Important:** Always use SCons to build the NVDA addon. Never manually create the archive or edit generated files like `manifest.ini`.
 
@@ -518,7 +520,7 @@ xcodebuild -scheme Laprdus -destination 'generic/platform=iOS' build -allowProvi
 | Windows SAPI5 x86 | `dist/windows-x86/laprd32.dll` |
 | Windows Installer | `installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe` |
 | Windows CLI | `dist/windows-x64/laprdus.exe`, `dist/windows-x86/laprdus.exe` |
-| NVDA Addon | `nvda-addon/laprdus-*.nvda-addon` |
+| NVDA Addon | `src/platform/windows/nvda/laprdus-*.nvda-addon` |
 | Linux Library | `target/release/liblaprdus_capi.so` |
 | Linux CLI | `target/release/laprdus` |
 | Linux Speech Dispatcher | `target/release/sd_laprdus` |

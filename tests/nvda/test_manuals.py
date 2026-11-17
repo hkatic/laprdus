@@ -2,8 +2,8 @@
 
     python tests/nvda/test_manuals.py [hr en sr sl]
 
-The Croatian manual (nvda-addon/addon/doc/hr/readme.md) is the source; the
-English one (nvda-addon/readme.md, the add-on's base language) and the Serbian
+The Croatian manual (src/platform/windows/nvda/addon/doc/hr/readme.md) is the source; the
+English one (src/platform/windows/nvda/readme.md, the add-on's base language) and the Serbian
 and Slovenian ones are its translations. What is covered, for each of them:
 - the HTML is clean: every internal link has its heading, no raw code fence,
   no raw table, no list run into a paragraph, and one <h1> (a shell comment
@@ -24,7 +24,7 @@ import markdown
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
-ADDON = os.path.join(ROOT, "nvda-addon")
+ADDON = os.path.join(ROOT, "src", "platform", "windows", "nvda")
 sys.path.insert(0, ADDON)
 import buildVars  # noqa: E402
 

@@ -37,11 +37,11 @@ LaprdusTTS/
 │       ├── c_api/          # Public C API (crate laprdus-capi)
 │       │   └── include/laprdus/laprdus_api.h   # C API declarations
 │       ├── cli/            # Command-line program (Windows, Linux, macOS)
-│       ├── windows/        # sapi5/ (SAPI5 driver), configurator/ (config GUI)
+│       ├── windows/        # sapi5/ (SAPI5 driver), configurator/ (config GUI), legacy/ (the build for Windows 7, 8, 8.1), nvda/ (NVDA add-on)
 │       ├── linux/          # speechd/ (Speech Dispatcher module)
 │       ├── android/        # Android app (Kotlin, Gradle); native/ is the JNI crate
 │       └── apple/          # Xcode project (app + speech extension)
-├── nvda-addon/             # NVDA screen reader addon
+├── src/platform/windows/nvda/             # NVDA screen reader addon
 ├── installers/             # Platform installers
 │   └── linux/              # deb, rpm, PKGBUILD, tarball
 │   └── windows/            # InnoSetup
@@ -654,7 +654,9 @@ per clause, so a change is heard with the next utterance. Tests: the voice quali
 ### 4.2 Windows SAPI5 (`src/platform/windows/sapi5/`)
 
 COM-based Speech API 5 driver (crate `laprdus-sapi5`, the `windows` crate
-for COM; Windows 10 or later, which the Rust toolchain needs).
+for COM). The ordinary build needs Windows 10 or later, as Rust's Windows
+targets do; Windows 7 SP1, 8 and 8.1 get a build of their own
+(`cargo xtask windows-legacy`, `src/platform/windows/legacy/README.md`).
 
 **Files:**
 - `src/lib.rs` - ISpTTSEngine implementation, the class factory, `DllRegisterServer` (registers the COM class; the voice tokens are the installer's)
@@ -682,7 +684,7 @@ the language. The installer removes the per-voice tokens of earlier
 versions on install, upgrade and repair and re-registers the three language
 tokens.
 
-### 4.3 NVDA Addon (`nvda-addon/`)
+### 4.3 NVDA Addon (`src/platform/windows/nvda/`)
 
 Python-based synthesizer driver for NVDA screen reader.
 
@@ -775,7 +777,7 @@ itself. The NVDA add-on keeps its own SCons build (the NVDA add-on template),
 the Android app its Gradle build, the Apple app its Xcode project.
 
 **Platforms:**
-- Windows - the MSVC build tools as the linker (targets `x86_64-pc-windows-msvc`, `i686-pc-windows-msvc`); Windows 10 or later
+- Windows - the MSVC build tools as the linker (targets `x86_64-pc-windows-msvc`, `i686-pc-windows-msvc`): Windows 10 or later. Windows 7 SP1, 8 and 8.1: the targets `x86_64-win7-windows-msvc` and `i686-win7-windows-msvc`, built by `cargo xtask windows-legacy` with the nightly toolchain named in `src/platform/windows/legacy/toolchain.txt` (see the README there)
 - Linux - the host target; `pkg-config` and `libasound2-dev` for the CLI's audio
 - macOS - `aarch64-apple-darwin`, `x86_64-apple-darwin` (library and CLI; the app is built by Xcode, whose script phase `src/platform/apple/build-rust-engine.sh` builds the engine as `liblaprdus_capi.a`). Not yet run on a Mac since the engine moved to Rust
 - Android - the four Android targets through cargo-ndk and the NDK
@@ -796,6 +798,7 @@ the Android app its Gradle build, the Apple app its Xcode project.
 |------|-------------|
 | `cargo xtask data` | Pack the recordings into `data/voices/*.bin` and stage the dictionaries in `data/dictionary/` (`--key HEX` or `LAPRDUS_PHONEME_KEY` packs the voice files with a key) |
 | `cargo xtask windows` | SAPI5 DLLs, `laprdus.exe` and `laprdgui.exe` (the configuration GUI) for x64 and x86, staged in `dist/windows-x64/` and `dist/windows-x86/` |
+| `cargo xtask windows-legacy` | The same programs for Windows 7 SP1, 8 and 8.1 (nightly toolchain, `-Zbuild-std`), staged in `dist/windows-legacy-x64/` and `dist/windows-legacy-x86/`; see `src/platform/windows/legacy/README.md` |
 | `cargo xtask build` | Linux, macOS: the CLI, the C API library and on Linux the Speech Dispatcher module (runs `data` first) |
 | `cargo xtask install` | Linux, macOS: build and install (`--destdir`, `--prefix`, `--libdir`, `--moduledir`) |
 | `cargo xtask dist` | Linux, macOS: the release tarball (CLI, library, header, voice data, dictionaries, install script) in `dist/<os>-<arch>/` |
@@ -820,9 +823,10 @@ cargo xtask data
 # SAPI5 DLLs, CLI and Configurator, both architectures, into dist/windows-x64 and dist/windows-x86
 rustup target add x86_64-pc-windows-msvc i686-pc-windows-msvc
 cargo xtask windows
+cargo xtask windows-legacy   # the same for Windows 7 SP1, 8 and 8.1 (dist/windows-legacy-*)
 
 # NVDA add-on (the installer carries it and offers to install it on its last page)
-(cd nvda-addon && scons)
+(cd src/platform/windows/nvda && scons)
 
 # Installer (requires InnoSetup); it starts in the display language of Windows, without a language dialog
 iscc installers/windows/laprdus_sapi5.iss
@@ -955,7 +959,7 @@ laprdus -o output.wav "Test"
 ### 7.3 Translation Workflow
 
 **NVDA Addon:**
-1. Edit `.po` files in `nvda-addon/addon/locale/<lang>/LC_MESSAGES/`
+1. Edit `.po` files in `src/platform/windows/nvda/addon/locale/<lang>/LC_MESSAGES/`
 2. SCons compiles to `.mo` automatically
 
 **Supported Languages:**

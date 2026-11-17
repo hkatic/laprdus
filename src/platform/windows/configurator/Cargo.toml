@@ -29,6 +29,11 @@ windows = { version = "0.62.2", features = [
     "Win32_UI_WindowsAndMessaging",
 ] }
 
+# The build for Windows 7, 8 and 8.1 (cargo xtask windows-legacy) only:
+# Windows 7 has no combase.dll, and this crate has ole32.dll answer for it.
+[target.'cfg(target_vendor = "win7")'.dependencies]
+laprdus-win7 = { path = "../legacy/compat" }
+
 # Compiles laprdus_config.rc: the dialog templates, the string tables and the
 # manifest.
 [target.'cfg(windows)'.build-dependencies]

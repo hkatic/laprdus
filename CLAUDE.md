@@ -18,11 +18,11 @@ The engine and every program are written in Rust (migrated from C++ in November 
 
 ### Build System
 - **Cargo** workspace at the repository root (Rust 1.85 or newer, edition 2024). The root crate `laprdus` is the engine (`[lib] path = "src/common/lib.rs"`); every program is a member crate under `src/platform/`
-- **`cargo xtask <step>`** (`tools/xtask`) runs the build steps Cargo does not do by itself: `data`, `windows`, `build`, `install`, `dist` (`cargo xtask` alone lists them)
-- Platforms: Windows 10 and later (Rust does not support Windows 7 and 8, which the C++ engine ran on), Linux, macOS, Android, Apple
+- **`cargo xtask <step>`** (`tools/xtask`) runs the build steps Cargo does not do by itself: `data`, `windows`, `windows-legacy`, `build`, `install`, `dist` (`cargo xtask` alone lists them)
+- Platforms: Windows 7 SP1 and later (Windows 10 and later with Rust's ordinary Windows targets; Windows 7 SP1, 8 and 8.1, which those targets no longer run on, with a second build of the same programs: see "Windows 7 SP1, 8 and 8.1 (the legacy build)" below), Linux, macOS, Android, Apple
 - Architectures: x64, x86, ARM64, ARM (the Rust targets are listed under "Packages and targets" below)
-- Build: `cargo xtask data`, then `cargo xtask windows` (Windows) or `cargo xtask build` (Linux, macOS)
-- The NVDA add-on keeps its own SCons build (`nvda-addon/sconstruct`); nothing else uses SCons
+- Build: `cargo xtask data`, then `cargo xtask windows` and `cargo xtask windows-legacy` (Windows) or `cargo xtask build` (Linux, macOS)
+- The NVDA add-on keeps its own SCons build (`src/platform/windows/nvda/sconstruct`); nothing else uses SCons
 
 ### Workspace layout
 
@@ -30,7 +30,7 @@ The engine and every program are written in Rust (migrated from C++ in November 
 |------|---------|
 | `src/common/` | The engine (crate `laprdus`): everything that is the same for every language and platform |
 | `src/common/languages/<code>/` | One folder per language (`hr`, `sr`, `bs`, `sl`), complete and independent: front end, stress, lexicon, numerals, words, the generated data files in `tables/`, and its voices (`formant/`, `concatenative/`) |
-| `src/platform/` | One crate or project per platform: `c_api`, `cli`, `windows/sapi5`, `windows/configurator`, `linux/speechd`, `android/`, `apple/` |
+| `src/platform/` | One crate or project per platform: `c_api`, `cli`, `windows/sapi5`, `windows/configurator`, `windows/legacy`, `windows/nvda`, `linux/speechd`, `android/`, `apple/` |
 | `data/<code>/` | Checked-in data of a language: the recordings (`data/hr/Josip/*.wav`, `data/sr/Vlado/*.wav`), `data/hr/dictionary.json`, `spelling.json`, `emoji.json`, `data/sl/emoji.json`. `cargo xtask data` makes `data/voices/*.bin` and `data/dictionary/*.json` from them; both folders are build products and are not checked in |
 | `tools/xtask/` | The build steps (`src/main.rs`: `data`, `windows`; `src/install.rs`: `build`, `install`, `dist`) |
 | `tools/formant/` | Table generators and measurement scripts (Python) |
@@ -41,7 +41,7 @@ Rules of the layout:
 
 - **A language is complete in its folder, and the folders do not use one another.** Croatian, Serbian and Bosnian are three full copies by the owner's decision: **a fix to rules they share is made three times**, in `languages/hr/`, `languages/sr/` and `languages/bs/` (the generated `tables/english.txt`, `places.txt` and `persons.txt` are written into the three folders by their generators). Slovenian has rules of its own.
 - **Adding a language**: a folder `src/common/languages/<code>/` that implements `Rules` (`src/common/languages/mod.rs`: front end, words, numbers), its `mod` line and one match arm in `rules()` there, and a variant of `Language` (`src/common/language.rs`, with its codes, LCID and names); its data, if it has any, in `data/<code>/`. `languages/mod.rs` is the only door the rest of the engine uses.
-- **`unsafe` is forbidden in the engine**: `unsafe_code = "forbid"` is a workspace lint (`Cargo.toml`), inherited by the engine, the CLI, the Speech Dispatcher module and xtask. It lives only in the platform boundary crates: the C API (`src/platform/c_api`), the JNI exports of `src/platform/android/native` (`#[unsafe(no_mangle)]` and nothing else), the COM code of `src/platform/windows/sapi5`, and the one module `src/win32.rs` of the Configurator (the rest of that crate denies it).
+- **`unsafe` is forbidden in the engine**: `unsafe_code = "forbid"` is a workspace lint (`Cargo.toml`), inherited by the engine, the CLI, the Speech Dispatcher module and xtask. It lives only in the platform boundary crates: the C API (`src/platform/c_api`), the JNI exports of `src/platform/android/native` (`#[unsafe(no_mangle)]` and nothing else), the COM code of `src/platform/windows/sapi5`, the one module `src/win32.rs` of the Configurator (the rest of that crate denies it), and the delay-load hook of `src/platform/windows/legacy/compat`.
 - **Exported C API functions catch panics**: every `laprdus_*` function checks its pointers, catches a panic and returns its error value (`src/platform/c_api/src/lib.rs`), so nothing the engine does can take a screen reader down. The JNI functions and the SAPI5 driver's entry points do the same.
 - Formatting is `rustfmt` with `rustfmt.toml` (`max_width = 120`); `clippy::all` warns in every crate.
 
@@ -89,7 +89,8 @@ Rules of the layout:
 | `src/platform/linux/speechd/` | Speech Dispatcher module (sd_laprdus) |
 | `src/platform/android/` | The Android app (Gradle project); `native/` is the JNI crate (`laprdus-android`, liblaprdus.so) |
 | `src/platform/apple/` | The Apple app and speech extension (Xcode project in `Laprdus/`), `build-rust-engine.sh`; not yet built on a Mac since the migration |
-| `nvda-addon/` | NVDA Python synthesizer driver |
+| `src/platform/windows/legacy/` | The build for Windows 7 SP1, 8 and 8.1: `README.md`, `toolchain.txt` (the pinned nightly) and `compat/` (crate `laprdus-win7`, the hook that answers `combase.dll` with `ole32.dll`) |
+| `src/platform/windows/nvda/` | NVDA add-on: the Python synthesizer driver and its SCons build (it was `nvda-addon/` at the root until November 2026) |
 
 ### Processing Pipeline
 
@@ -398,7 +399,7 @@ Two separate pitch parameters serve different purposes:
 ## Dependencies
 
 - **Rust 1.85 or newer** (rustup), edition 2024; Cargo is the build system
-- Windows: the MSVC build tools (the linker of the `x86_64-pc-windows-msvc` and `i686-pc-windows-msvc` targets; `rustup target add` both). No ATL: COM is written with the `windows` crate
+- Windows: the MSVC build tools (the linker of the `x86_64-pc-windows-msvc` and `i686-pc-windows-msvc` targets; `rustup target add` both). No ATL: COM is written with the `windows` crate. The build for Windows 7 SP1, 8 and 8.1 also needs the nightly toolchain named in `src/platform/windows/legacy/toolchain.txt` with the standard library's sources (`rustup toolchain install nightly-2026-10-30 --component rust-src`); nothing else uses a nightly
 - Crates (`Cargo.lock` pins them): the engine uses `regex` and `serde_json`; the CLI `rodio` for playback (WASAPI, CoreAudio, ALSA); the SAPI5 driver `windows`, `windows-core` and `windows-registry`; the Configurator `windows`; both Windows crates `embed-resource` in their build scripts, which compiles `laprdus_sapi5.rc` and `laprdus_config.rc`; the Android JNI crate `jni`
 - Linux: `pkg-config` and the ALSA development files (`libasound2-dev`) for the CLI's playback; the Speech Dispatcher module needs no Speech Dispatcher headers
 - Android: the Android SDK and NDK, `cargo-ndk` and the four Android Rust targets
@@ -447,6 +448,7 @@ Everything is built by Cargo. `cargo xtask <step>` (an alias in `.cargo/config.t
 |------|--------------|
 | `cargo xtask data` | Packs the recordings `data/<language>/<Voice>/*.wav` into `data/voices/<Voice>.bin` and stages the dictionaries in `data/dictionary/`: `internal.json` (from `data/hr/dictionary.json`), `spelling.json`, `emoji.json`, and `emoji_sl.json` (from `data/sl/emoji.json`). `--key HEX` or `LAPRDUS_PHONEME_KEY`: the key the voice files are packed with |
 | `cargo xtask windows` | Builds the SAPI5 driver, the CLI and the Configurator for x64 and x86 and stages them in `dist/windows-x64/` (`laprd64.dll`, `laprdus.exe`, `laprdgui.exe`) and `dist/windows-x86/` (`laprd32.dll`, `laprdus.exe`, `laprdgui.exe`), where the installer and the NVDA add-on take them from |
+| `cargo xtask windows-legacy` | Builds the same three programs for Windows 7 SP1, 8 and 8.1 (targets `x86_64-win7-windows-msvc`, `i686-win7-windows-msvc`, the pinned nightly, `-Zbuild-std`) and stages them under the same names in `dist/windows-legacy-x64/` and `dist/windows-legacy-x86/`, where the installer and the NVDA add-on take them from |
 | `cargo xtask build` | Linux, macOS: runs `data`, then builds the CLI, the C API library and, on Linux, the Speech Dispatcher module |
 | `cargo xtask install` | Linux, macOS: builds and installs them with the C API header, the voice data and the dictionaries: `--destdir DIR` (a package's staging root), `--prefix DIR` (default `/usr/local`), `--libdir DIR`, `--moduledir DIR` |
 | `cargo xtask dist` | Linux, macOS: the release tarball with its install script, in `dist/<os>-<arch>/` |
@@ -483,7 +485,7 @@ The scripts kept their command names; they call `cargo xtask` now.
 #### What the Build System Does Automatically
 
 - `cargo xtask build`, `install` and `dist` and the Android Gradle build run `cargo xtask data` themselves.
-- `cargo xtask windows` does not: run `cargo xtask data` before building the installer or the NVDA add-on (the master script does).
+- `cargo xtask windows` and `cargo xtask windows-legacy` do not: run `cargo xtask data` before building the installer or the NVDA add-on (the master script does).
 - The voice files are packed by the engine's own `pack()` (`src/common/concatenative/voice_data.rs`); there is no separate packing tool to build.
 
 The SAPI5 installer, NVDA addon, and Android builds all source voice data from `data/voices/` and the dictionaries from `data/dictionary/`.
@@ -518,6 +520,7 @@ All builds run from the project root directory.
 ```bash
 cargo xtask data       # voice data and dictionaries
 cargo xtask windows    # x64 and x86, release
+cargo xtask windows-legacy   # the same for Windows 7 SP1, 8 and 8.1 (dist/windows-legacy-*)
 ```
 
 Output: `dist/windows-x64/laprd64.dll`, `dist/windows-x86/laprd32.dll`, and `laprdus.exe` and `laprdgui.exe` in both folders.
@@ -530,15 +533,36 @@ cargo build --release -p laprdus-configurator   # target/release/laprdgui.exe
 cargo build -p laprdus-sapi5                    # debug build in target/debug/ (too slow for a screen reader)
 ```
 
+#### Windows 7 SP1, 8 and 8.1 (the legacy build)
+
+Rust's Windows targets need Windows 10 since Rust 1.78, and some users are on older systems. The Windows programs are therefore built a second time, from the same crates, for Windows 7 SP1, 8 and 8.1 (`src/platform/windows/legacy/README.md` has the whole story):
+
+```bash
+rustup toolchain install nightly-2026-10-30 --component rust-src   # once; the name is in src/platform/windows/legacy/toolchain.txt
+cargo xtask windows-legacy
+python tests/windows/test_legacy_imports.py
+```
+
+Output: `dist/windows-legacy-x64/` (`laprd64.dll`, `laprdus.exe`, `laprdgui.exe`) and `dist/windows-legacy-x86/` (`laprd32.dll` and the same two programs).
+
+- **Targets** `x86_64-win7-windows-msvc` and `i686-win7-windows-msvc` (tier 3: no standard library is shipped, so it is built from its sources with `-Zbuild-std` by the nightly `toolchain.txt` names, run through rustup; `LAPRDUS_LEGACY_TOOLCHAIN` overrides it). The workspace keeps the stable compiler: there is no `rust-toolchain.toml`, and nothing but this step uses the nightly.
+- **Flags** (`LEGACY_RUSTFLAGS` in `tools/xtask/src/main.rs`): the C runtime linked statically (`+crt-static`; those systems do not come with it) and `combase.dll` delay-loaded (`/DELAYLOAD:combase.dll`, `delayimp.lib`). The `windows` crate takes `CoTaskMemAlloc`, `CoTaskMemFree` and `CoCreateFreeThreadedMarshaler` from `combase.dll`, which Windows 7 does not have; the crate `laprdus-win7` (`src/platform/windows/legacy/compat`) defines the delay-load helper's hook `__pfnDliNotifyHook2`, which answers the request for `combase.dll` with `ole32.dll`, where all three have always been.
+- **The code is the same in both builds.** The SAPI5 driver and the Configurator link `laprdus-win7` under `cfg(target_vendor = "win7")` (one `use laprdus_win7 as _;` each) and differ in nothing else; do not add Windows-version branches to them. The ordinary build does not contain the crate, and its import table is what it was.
+- **Who gets which build:** the installer carries both and installs by the Windows version (`IsLegacyWindows` in its `[Code]`: major version below 10), under the same file names; `MinVersion=6.1sp1`. The NVDA add-on carries the 32-bit legacy driver and Configurator as `laprd32_legacy.dll` and `laprdgui32_legacy.exe` and loads them in a 32-bit NVDA on Windows below 10 (`_is_legacy_windows()` in `_laprdus.py`, the same check in the global plugin); there is no 64-bit NVDA for those systems. A legacy program also runs on Windows 10 and 11.
+- **NVDA on old Windows:** NVDA 2023.3.4 is the last for Windows 7 SP1 and 8 (Python 3.7, 32-bit), NVDA 2025.3.3 the last for Windows 8.1 and for 32 bits (Python 3.11), NVDA 2026.1 and later are 64-bit on Windows 10 and later (Python 3.13). The add-on's files must therefore stay Python 3.7 (`python tests/nvda/test_python37.py`); its manifest (`minimumNVDAVersion` 2019.3) admits all of them, and NVDA 2023.3 ignores the manifest's `symbolDictionaries` section (the Slovenian symbol dictionary is simply not loaded there).
+- **Checked without a Windows 7 machine:** `tests/windows/test_legacy_imports.py` reads the import tables of the six staged files (nothing from a DLL Windows 7 lacks; `combase.dll` only delay-loaded, and only for functions of Windows 7's `ole32.dll`) and calls the driver's hook. The other Windows tests take a legacy file as an argument (`python tests/windows/test_sapi5_driver.py dist/windows-legacy-x64/laprd64.dll`), and the legacy driver gives the same audio as the ordinary one.
+- **Not verified (November 2026):** nothing has been run on Windows 7, 8 or 8.1 themselves: installing, SAPI5 hosts, NVDA 2023.3.4 and 2025.3.3, the Configurator, the CLI's playback (`cpal` 0.16). The targets are tier 3, so a newer nightly may break the build: change `toolchain.txt` only to a nightly that builds, and rerun the tests.
+
 #### SAPI5 Installer (InnoSetup)
 
 ```bash
 # First the voice data and both architectures of the Windows programs
 cargo xtask data
 cargo xtask windows
+cargo xtask windows-legacy   # the same for Windows 7 SP1, 8 and 8.1 (dist/windows-legacy-*)
 
 # The NVDA add-on, which the installer carries
-(cd nvda-addon && scons)
+(cd src/platform/windows/nvda && scons)
 
 # Then build installer
 iscc installers/windows/laprdus_sapi5.iss
@@ -546,7 +570,7 @@ iscc installers/windows/laprdus_sapi5.iss
 
 Output: `installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe`
 
-The installer is in English, Croatian, Bosnian, Serbian and Slovenian (Slovenian: Inno Setup's own `Languages\Slovenian.isl`, with the Laprdus messages as `slovenian.*` in the script's `[CustomMessages]`; the others carry theirs in `Croatian.isl` / `Bosnian.isl` / `Serbian.isl`; `Bosnian.isl`, 0x141A, bs-Latn-BA, was made from `Croatian.isl`, and the two are changed together). A new message goes into all five; `python tests/windows/test_installer_languages.py` checks that every language has every Laprdus message and every message the script uses, and that our `.isl` files have the standard messages of the installed Inno Setup. Setup shows no language dialog (`ShowLanguageDialog=no`): it takes the display language of Windows, with an exact match on `LanguageID`, then the first entry of the same primary language (hr, sr and bs share 0x1A, so `Serbian.isl` has 0x241A, sr-Latn-RS, and Serbian and Bosnian in Cyrillic get Croatian), then the first entry, English; `/LANG=croatian` and the like force one. The installer carries the NVDA add-on (`nvda-addon/laprdus-<version>.nvda-addon`, so build the add-on before the installer; it is installed into the install directory): where NVDA is installed (the `.nvda-addon` file type is registered), the last page has a checkbox, on by default, "Install the Laprdus add-on for NVDA" (`[Run]`, `postinstall shellexec runasoriginaluser skipifsilent`), which opens the add-on with NVDA, and NVDA asks whether to install it, as when the file is opened by hand. The add-on can still be installed on its own.
+The installer is in English, Croatian, Bosnian, Serbian and Slovenian (Slovenian: Inno Setup's own `Languages\Slovenian.isl`, with the Laprdus messages as `slovenian.*` in the script's `[CustomMessages]`; the others carry theirs in `Croatian.isl` / `Bosnian.isl` / `Serbian.isl`; `Bosnian.isl`, 0x141A, bs-Latn-BA, was made from `Croatian.isl`, and the two are changed together). A new message goes into all five; `python tests/windows/test_installer_languages.py` checks that every language has every Laprdus message and every message the script uses, and that our `.isl` files have the standard messages of the installed Inno Setup. Setup shows no language dialog (`ShowLanguageDialog=no`): it takes the display language of Windows, with an exact match on `LanguageID`, then the first entry of the same primary language (hr, sr and bs share 0x1A, so `Serbian.isl` has 0x241A, sr-Latn-RS, and Serbian and Bosnian in Cyrillic get Croatian), then the first entry, English; `/LANG=croatian` and the like force one. The installer carries both builds of the programs, `dist/windows-x64|x86` for Windows 10 and later and `dist/windows-legacy-x64|x86` for Windows 7 SP1, 8 and 8.1, and installs the one for the Windows it runs on (`Check: IsModernWindows` / `IsLegacyWindows`, `MinVersion=6.1sp1`; an installer made by Inno Setup 6.3 or later runs on Windows 7 SP1 and later), so build both before it. The installer carries the NVDA add-on (`src/platform/windows/nvda/laprdus-<version>.nvda-addon`, so build the add-on before the installer; it is installed into the install directory): where NVDA is installed (the `.nvda-addon` file type is registered), the last page has a checkbox, on by default, "Install the Laprdus add-on for NVDA" (`[Run]`, `postinstall shellexec runasoriginaluser skipifsilent`), which opens the add-on with NVDA, and NVDA asks whether to install it, as when the file is opened by hand. The add-on can still be installed on its own.
 
 #### Laprdus Configurator languages
 
@@ -558,6 +582,7 @@ There is one command-line program, `laprdus` (`src/platform/cli`, crate `laprdus
 
 ```bash
 cargo xtask windows                    # both architectures, staged in dist/
+cargo xtask windows-legacy   # the same for Windows 7 SP1, 8 and 8.1 (dist/windows-legacy-*)
 cargo build --release -p laprdus-cli   # the host architecture only
 ```
 
@@ -628,7 +653,7 @@ echo "Text" | laprdus.exe -o output.wav
 
 1. **ALWAYS use SCons to build the NVDA addon:**
    ```bash
-   cd nvda-addon
+   cd src/platform/windows/nvda
    scons
    ```
 
@@ -639,22 +664,23 @@ echo "Text" | laprdus.exe -o output.wav
    - NEVER manually edit `addon/doc/en/readme.html` - it is AUTO-GENERATED from `readme.md`
 
 3. **To modify addon metadata** (name, version, description, etc.):
-   - Edit `nvda-addon/buildVars.py` - this is the ONLY place to change addon info
+   - Edit `src/platform/windows/nvda/buildVars.py` - this is the ONLY place to change addon info
    - SCons reads buildVars.py and generates manifest.ini automatically
 
 4. **To modify addon documentation**:
-   - The manual exists in four languages, and SCons converts each to HTML automatically: `nvda-addon/addon/doc/hr/readme.md` (Croatian, the source), `nvda-addon/readme.md` (English, the base language, copied to `addon/doc/en/` by the build), `nvda-addon/addon/doc/sr/readme.md` and `nvda-addon/addon/doc/sl/readme.md`. NVDA opens the one of its language, else English. Change them together, then run `python tests/nvda/test_manuals.py`
+   - The manual exists in four languages, and SCons converts each to HTML automatically: `src/platform/windows/nvda/addon/doc/hr/readme.md` (Croatian, the source), `src/platform/windows/nvda/readme.md` (English, the base language, copied to `addon/doc/en/` by the build), `src/platform/windows/nvda/addon/doc/sr/readme.md` and `src/platform/windows/nvda/addon/doc/sl/readme.md`. NVDA opens the one of its language, else English. Change them together, then run `python tests/nvda/test_manuals.py`
    - It is rendered by Python-Markdown with the extensions in `buildVars.markdownExtensions` (tables, fenced code, heading anchors that keep diacritics), not GitHub's renderer: nested list items take 4 spaces, a list or table needs a blank line before it, and a code block inside a list is indented, not fenced
 
 5. **To add/modify translations**:
-   - Edit `.po` files in `nvda-addon/addon/locale/*/LC_MESSAGES/`
+   - Edit `.po` files in `src/platform/windows/nvda/addon/locale/*/LC_MESSAGES/`
    - SCons compiles .po to .mo files automatically
 
-Output: `nvda-addon/laprdus-*.nvda-addon`
+Output: `src/platform/windows/nvda/laprdus-*.nvda-addon`
 
 **Automatic Resource Handling**: The NVDA addon SCons build automatically:
 - Copies DLLs from `dist/windows-x64/` and `dist/windows-x86/` (staged by `cargo xtask windows`)
 - Copies GUI executables (`laprdgui.exe` as `laprdgui64.exe` and `laprdgui32.exe`) for the Laprdus Configurator
+- Copies the 32-bit driver and Configurator for Windows 7 SP1, 8 and 8.1 from `dist/windows-legacy-x86/` (staged by `cargo xtask windows-legacy`) as `laprd32_legacy.dll` and `laprdgui32_legacy.exe`
 - Copies voice data from `data/voices/` to `addon/synthDrivers/laprdus/voices/`
 - Copies dictionaries from `data/dictionary/` to `addon/synthDrivers/laprdus/dictionaries/`
 
@@ -677,15 +703,16 @@ cargo xtask data
 
 # 2. Build both SAPI5 DLLs, the CLI and the config GUI for both architectures (dist/windows-x64, dist/windows-x86)
 cargo xtask windows
+cargo xtask windows-legacy   # the same for Windows 7 SP1, 8 and 8.1 (dist/windows-legacy-*)
 
 # 3. Build NVDA addon (automatically copies DLLs, GUI executables, voice data, and dictionaries)
-cd nvda-addon && scons
+cd src/platform/windows/nvda && scons
 ```
 
 **Localization**: The addon is in English (its base language), Croatian (hr), Serbian (sr, Latin, ekavian) and Slovenian (sl), by NVDA's language through `addonHandler.initTranslation()`. The manifest's description and changelog are translated only while the msgids match `buildVars.py` to the letter: change them together. Translation files are in:
-- `nvda-addon/addon/locale/hr/LC_MESSAGES/nvda.po`
-- `nvda-addon/addon/locale/sr/LC_MESSAGES/nvda.po`
-- `nvda-addon/addon/locale/sl/LC_MESSAGES/nvda.po`
+- `src/platform/windows/nvda/addon/locale/hr/LC_MESSAGES/nvda.po`
+- `src/platform/windows/nvda/addon/locale/sr/LC_MESSAGES/nvda.po`
+- `src/platform/windows/nvda/addon/locale/sl/LC_MESSAGES/nvda.po`
 
 The SCons build automatically compiles .po files to .mo files using either `msgfmt` (if available) or Python's `polib` library as a fallback. Install polib with: `pip install polib`
 
@@ -705,6 +732,7 @@ rm -rf dist data/voices data/dictionary    # The staged files and the generated 
 | `laprdus-cli` | `laprdus` (command-line program) |
 | `laprdus-sapi5` | `laprdus_sapi5.dll`, staged as `laprd64.dll` / `laprd32.dll` |
 | `laprdus-configurator` | `laprdgui.exe` |
+| `laprdus-win7` | The delay-load hook of the build for Windows 7 SP1, 8 and 8.1 (`src/platform/windows/legacy/compat`); linked by the two crates above only for the `*-win7-windows-msvc` targets |
 | `laprdus-speechd` | `sd_laprdus` |
 | `laprdus-android` | `liblaprdus.so` for the Android app (built by Gradle with cargo-ndk) |
 | `xtask` | The build steps (`cargo xtask`) |
@@ -712,6 +740,7 @@ rm -rf dist data/voices data/dictionary    # The staged files and the generated 
 | Platform | Rust targets |
 |----------|--------------|
 | Windows | `x86_64-pc-windows-msvc`, `i686-pc-windows-msvc` (`cargo xtask windows` builds both) |
+| Windows 7 SP1, 8, 8.1 | `x86_64-win7-windows-msvc`, `i686-win7-windows-msvc` (`cargo xtask windows-legacy` builds both, with the pinned nightly) |
 | Linux | the host's target |
 | macOS | the host's target; `--universal` builds `aarch64-apple-darwin` and `x86_64-apple-darwin` |
 | Android | `aarch64-linux-android`, `armv7-linux-androideabi`, `x86_64-linux-android`, `i686-linux-android` |
@@ -1019,9 +1048,10 @@ cargo xtask data
 
 # 2. Build Windows SAPI5 DLLs, CLI and Configurator (both architectures)
 cargo xtask windows
+cargo xtask windows-legacy   # the same for Windows 7 SP1, 8 and 8.1 (dist/windows-legacy-*)
 
 # 3. Build the NVDA add-on (the installer carries it), then the SAPI5 installer (requires InnoSetup 6+)
-(cd nvda-addon && scons)
+(cd src/platform/windows/nvda && scons)
 iscc installers/windows/laprdus_sapi5.iss
 
 # 4. Build Linux (C API library, CLI, Speech Dispatcher module); on Linux or in WSL
@@ -1034,9 +1064,7 @@ cd src/platform/android
 cd ../../..
 
 # 6. Build NVDA Addon (optional)
-cd nvda-addon
-scons
-cd ..
+(cd src/platform/windows/nvda && scons)
 ```
 
 ### Output Locations
@@ -1046,6 +1074,7 @@ cd ..
 | Windows SAPI5 x64 | `dist/windows-x64/laprd64.dll` |
 | Windows SAPI5 x86 | `dist/windows-x86/laprd32.dll` |
 | Windows CLI and Configurator | `dist/windows-x64/laprdus.exe`, `laprdgui.exe`; the same in `dist/windows-x86/` |
+| Windows 7 SP1, 8, 8.1 | `dist/windows-legacy-x64/` and `dist/windows-legacy-x86/`: the same file names |
 | Windows Installer | `installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe` |
 | Linux Library | `target/release/liblaprdus_capi.so` (installed as `liblaprdus.so`) |
 | Linux CLI | `target/release/laprdus` |
@@ -1054,7 +1083,7 @@ cd ..
 | Voice Data | `data/voices/Josip.bin`, `Vlado.bin` |
 | Android APK (debug) | `src/platform/android/app/build/outputs/apk/debug/app-debug.apk` |
 | Android APK (release) | `src/platform/android/app/build/outputs/apk/release/app-release-unsigned.apk` (the project has no signing config) |
-| NVDA Addon | `nvda-addon/laprdus-*.nvda-addon` |
+| NVDA Addon | `src/platform/windows/nvda/laprdus-*.nvda-addon` |
 
 ### Dictionary Updates
 
@@ -1082,7 +1111,7 @@ Rebuild all platforms after changes to:
 - **The engine** (`src/common/`, the languages in `src/common/languages/` and their generated `tables/` included)
 - **C API** (`src/platform/c_api/`)
 - **SAPI5 driver** (`src/platform/windows/sapi5/`) and **Configurator** (`src/platform/windows/configurator/`)
-- **NVDA addon** (`nvda-addon/addon/synthDrivers/laprdus/`)
+- **NVDA addon** (`src/platform/windows/nvda/addon/synthDrivers/laprdus/`)
 - **Dictionaries** (`data/hr/*.json`, `data/sl/emoji.json`)
 - **Voice data** (`data/hr/Josip/`, `data/sr/Vlado/`)
 - **Build configuration** (`Cargo.toml`, `Cargo.lock`, `.cargo/config.toml`, `tools/xtask/`, `build.gradle.kts`)
@@ -1114,22 +1143,25 @@ cargo xtask data
 
 # 2. Build SAPI5 DLLs, CLI and Configurator (both architectures)
 cargo xtask windows
+cargo xtask windows-legacy   # the same for Windows 7 SP1, 8 and 8.1 (dist/windows-legacy-*)
 
 # 3. Run the tests (release: the suites render a lot of audio)
 cargo test --release --workspace
 
 # 4. Build the NVDA add-on (the installer carries it), then the SAPI5 installer
-(cd nvda-addon && scons)
+(cd src/platform/windows/nvda && scons)
 "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" installers/windows/laprdus_sapi5.iss
 
 # 5. Build NVDA Addon (automatically copies DLLs, voice data, and dictionaries)
-cd nvda-addon && scons && cd ..
+(cd src/platform/windows/nvda && scons)
 
 # 6. The Python tests of the Windows programs and the NVDA driver
 python tests/nvda/test_driver.py
 python tests/nvda/test_manuals.py
 python tests/windows/test_configurator_language.py
 python tests/windows/test_sapi5_driver.py
+python tests/windows/test_legacy_imports.py
+python tests/nvda/test_python37.py
 
 # 7. Build Linux (C API library, CLI, Speech Dispatcher module); on Linux or in WSL
 cargo xtask build
@@ -1142,7 +1174,7 @@ cd src/platform/android && export JAVA_HOME="/c/Program Files/Android/Android St
 
 **ALWAYS use SCons to build the NVDA addon:**
 ```bash
-cd nvda-addon && scons && cd ..
+(cd src/platform/windows/nvda && scons)
 ```
 
 **NEVER do ANY of the following - these will corrupt the addon:**
@@ -1152,9 +1184,9 @@ cd nvda-addon && scons && cd ..
 - NEVER manually edit `addon/doc/en/readme.html` - it is AUTO-GENERATED from `readme.md`
 
 **To make changes:**
-- Addon metadata (name, version, description): Edit `nvda-addon/buildVars.py`
-- Documentation: Edit the manuals listed above (`nvda-addon/readme.md` is the English one)
-- Translations: Edit `.po` files in `nvda-addon/addon/locale/*/LC_MESSAGES/`
+- Addon metadata (name, version, description): Edit `src/platform/windows/nvda/buildVars.py`
+- Documentation: Edit the manuals listed above (`src/platform/windows/nvda/readme.md` is the English one)
+- Translations: Edit `.po` files in `src/platform/windows/nvda/addon/locale/*/LC_MESSAGES/`
 
 SCons handles all file generation automatically. Manual edits to generated files will be overwritten or cause corruption.
 
@@ -1166,6 +1198,7 @@ SCons handles all file generation automatically. Manual edits to generated files
 - **NVDA Addon**: The NVDA SCons build automatically copies:
   - DLLs from `dist/windows-x64/laprd64.dll` and `dist/windows-x86/laprd32.dll`
   - GUI executables from `dist/windows-x64/laprdgui.exe` (as `laprdgui64.exe`) and `dist/windows-x86/laprdgui.exe` (as `laprdgui32.exe`)
+  - The 32-bit legacy driver and Configurator from `dist/windows-legacy-x86/` (as `laprd32_legacy.dll` and `laprdgui32_legacy.exe`)
   - Voice data from `data/voices/`
   - Dictionaries from `data/dictionary/`
 - **SAPI5 Installer**: InnoSetup sources the programs from `dist/windows-x64/` and `dist/windows-x86/`, voice data from `data/voices/` and dictionaries from `data/dictionary/`
@@ -1184,7 +1217,7 @@ After rebuilding, launch installers for user testing:
 start "" "installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe"
 
 # Launch NVDA addon installer
-start "" "nvda-addon/laprdus-2.0.0.nvda-addon"
+start "" "src/platform/windows/nvda/laprdus-2.0.0.nvda-addon"
 ```
 
 ### Android Device Testing
@@ -1303,7 +1336,7 @@ What is where:
 - The recorded voices need the packed recordings: `data/voices/Josip.bin` and `Vlado.bin` from `cargo xtask data`, or the directory `LAPRDUS_DATA` names; without them those tests fail and say so. The bundled dictionaries are read from `data/dictionary`.
 - `LAPRDUS_TEST_INFO=1` (with `-- --nocapture`) prints the measured values behind the thresholds.
 - **Against the C++ engine.** `tests/dsp_against_cpp.rs`, `tests/frontend_against_cpp.rs` and `tests/numbers_against_cpp.rs` compare the synthesizers, the front end and the number converter with dumps the last C++ engine wrote. The dumps are local files in `build/golden` (`LAPRDUS_GOLDEN` names another folder for the front end and the numbers), too large for the repository, and the program that wrote them went with the C++ sources; **the three tests pass without the dumps**, having checked nothing. `tools/golden/golden.py check <library> <data dir> <dictionary dir> [set ...]` renders the corpus `tests/golden/corpus.jsonl` through the C API (the library is `laprdus-capi`'s, e.g. `target/release/laprdus_capi.dll`) and compares it with the hashes in `tests/golden/*.tsv`, recorded from the C++ engine on Windows x64 before the port. One intended difference: a spelled `]` is now named (the C++ spelling dictionary parser could not read that entry and left it silent).
-- Python tests: `python tests/nvda/test_driver.py`, `python tests/nvda/test_manuals.py`, `python tests/windows/test_configurator_language.py`, `python tests/windows/test_sapi5_driver.py` (the last needs `cargo xtask windows` and `comtypes`).
+- Python tests: `python tests/nvda/test_driver.py`, `python tests/nvda/test_manuals.py`, `python tests/windows/test_configurator_language.py`, `python tests/windows/test_sapi5_driver.py` (the last needs `cargo xtask windows` and `comtypes`), `python tests/windows/test_legacy_imports.py` (needs `cargo xtask windows-legacy`), `python tests/nvda/test_python37.py`.
 
 #### Testing Checklist for Linux
 
@@ -1357,7 +1390,7 @@ tar --transform='s,^\.,laprdus-2.0.0,' -cJf ~/rpmbuild/SOURCES/laprdus-2.0.0.tar
     --exclude='./.git' --exclude='./target' --exclude='./dist' --exclude='./build' \
     --exclude='*.pyc' --exclude='__pycache__' \
     --exclude='./src/platform/android/.gradle' --exclude='./src/platform/android/app/build' \
-    --exclude='./nvda-addon' .
+    --exclude='./src/platform/windows/nvda' .
 
 # Copy spec and build (--nodeps when Rust comes from rustup, not dnf)
 cp installers/linux/rpm/laprdus.spec ~/rpmbuild/SPECS/
@@ -1396,6 +1429,7 @@ spd-say -o laprdus "Zdravo" # Via Speech Dispatcher
 
 Before marking a task complete, verify:
 - [ ] `cargo xtask windows` builds the SAPI5 x64 and x86 DLLs, the CLI and the Configurator without errors
+- [ ] `cargo xtask windows-legacy` builds the same for Windows 7 SP1, 8 and 8.1, and `python tests/windows/test_legacy_imports.py` passes
 - [ ] `cargo test --release --workspace` passes
 - [ ] SAPI5 installer builds successfully
 - [ ] NVDA addon builds successfully

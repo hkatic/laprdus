@@ -18,6 +18,11 @@
 //! exports the C API), `laprdus.exe` and `laprdgui.exe`, and
 //! `dist/windows-x86/` with `laprd32.dll` and the same two programs.
 //!
+//! `windows-legacy` builds the same three for Windows 7 SP1, 8 and 8.1, which
+//! the targets above no longer run on, into `dist/windows-legacy-x64/` and
+//! `dist/windows-legacy-x86/` under the same names: see
+//! `src/platform/windows/legacy/README.md`.
+//!
 //! `build`, `install` and `dist` (Linux and macOS) are described in
 //! `install.rs`.
 
@@ -117,13 +122,70 @@ fn windows() -> Outcome {
         if !cargo.status()?.success() {
             return Err(format!("the build for {triple} failed").into());
         }
-        let staged = root.join("dist").join(folder);
-        fs::create_dir_all(&staged)?;
-        for (_, built, name) in WINDOWS {
-            let name = name.replace("{bits}", bits);
-            fs::copy(root.join("target").join(triple).join("release").join(built), staged.join(&name))?;
-            println!("dist/{folder}/{name}");
+        stage_windows(&root, triple, folder, bits)?;
+    }
+    Ok(())
+}
+
+/// Copies what Cargo built for `triple` into `dist/<folder>/` under the
+/// staged names.
+fn stage_windows(root: &Path, triple: &str, folder: &str, bits: &str) -> Outcome {
+    let staged = root.join("dist").join(folder);
+    fs::create_dir_all(&staged)?;
+    for (_, built, name) in WINDOWS {
+        let name = name.replace("{bits}", bits);
+        fs::copy(root.join("target").join(triple).join("release").join(built), staged.join(&name))?;
+        println!("dist/{folder}/{name}");
+    }
+    Ok(())
+}
+
+/// The folder of the build for Windows 7, 8 and 8.1.
+const LEGACY: &str = "src/platform/windows/legacy";
+
+/// The compiler flags of the build for Windows 7, 8 and 8.1: the C runtime
+/// linked statically, since those systems do not come with it, and
+/// `combase.dll`, which Windows 7 does not have, loaded at the first call
+/// instead of by the loader (`laprdus-win7` answers that with `ole32.dll`).
+/// A program that takes nothing from `combase.dll` gets a linker warning for
+/// the option and is otherwise unchanged.
+const LEGACY_RUSTFLAGS: &str =
+    "-Ctarget-feature=+crt-static -Clink-arg=/DELAYLOAD:combase.dll -Clink-arg=delayimp.lib -Clink-arg=/IGNORE:4199";
+
+/// The Windows programs for Windows 7 SP1, 8 and 8.1.
+///
+/// Rust's `*-pc-windows-msvc` targets need Windows 10; the `*-win7-windows-msvc`
+/// targets do not, but Rust ships no standard library for them, so it is
+/// built here from its sources (`-Zbuild-std`), which only a nightly compiler
+/// does. The nightly is the one `toolchain.txt` names, run through rustup;
+/// the rest of the workspace keeps the stable compiler.
+fn windows_legacy() -> Outcome {
+    let root = root();
+    let pinned = fs::read_to_string(root.join(LEGACY).join("toolchain.txt"))?;
+    let toolchain = env::var("LAPRDUS_LEGACY_TOOLCHAIN").unwrap_or(pinned);
+    let toolchain = toolchain.trim();
+    for (triple, folder, bits) in [
+        ("x86_64-win7-windows-msvc", "windows-legacy-x64", "64"),
+        ("i686-win7-windows-msvc", "windows-legacy-x86", "32"),
+    ] {
+        let mut cargo = std::process::Command::new("rustup");
+        cargo.current_dir(&root).args(["run", toolchain, "cargo", "build", "--release", "-Zbuild-std"]);
+        cargo.args(["--target", triple]);
+        cargo.args(WINDOWS.iter().flat_map(|(package, ..)| ["-p", package]));
+        // This program runs under the stable toolchain, whose Cargo set these
+        // for its children; they would override the toolchain asked for.
+        for variable in ["CARGO", "RUSTC", "RUSTDOC", "RUSTUP_TOOLCHAIN", "RUSTC_WRAPPER", "RUSTC_WORKSPACE_WRAPPER"] {
+            cargo.env_remove(variable);
         }
+        cargo.env("RUSTFLAGS", LEGACY_RUSTFLAGS);
+        let status = cargo.status().map_err(|error| format!("rustup could not be run: {error}"))?;
+        if !status.success() {
+            return Err(format!(
+                "the build for {triple} failed; it needs the toolchain {toolchain} with the standard library's                  sources: rustup toolchain install {toolchain} --component rust-src"
+            )
+            .into());
+        }
+        stage_windows(&root, triple, folder, bits)?;
     }
     Ok(())
 }
@@ -136,6 +198,10 @@ const USAGE: &str = "usage: cargo xtask <step> [options]
                                  (or LAPRDUS_PHONEME_KEY)
   windows   build the SAPI5 driver, the CLI and the configurator for x64 and
             x86 into dist/windows-x64 and dist/windows-x86
+  windows-legacy
+            the same for Windows 7 SP1, 8 and 8.1, into dist/windows-legacy-x64
+            and dist/windows-legacy-x86 (needs the nightly toolchain named in
+            src/platform/windows/legacy/toolchain.txt, with rust-src)
   build     Linux, macOS: build what install copies (the CLI, the C API
             library, on Linux the Speech Dispatcher module; runs data first)
   install   Linux, macOS: build and install the CLI, the C API library and
@@ -195,6 +261,7 @@ fn main() -> Outcome {
     match arguments.first().map(String::as_str) {
         Some("data" | "voice-data") => data(&key),
         Some("windows") => windows(),
+        Some("windows-legacy") => windows_legacy(),
         Some("build") => {
             let options = options()?;
             data(&key)?;

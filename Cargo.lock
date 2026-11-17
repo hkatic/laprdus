@@ -315,6 +315,7 @@ version = "2.0.0"
 dependencies = [
  "embed-resource",
  "laprdus",
+ "laprdus-win7",
  "windows 0.62.2",
 ]
 
@@ -325,6 +326,7 @@ dependencies = [
  "embed-resource",
  "laprdus",
  "laprdus-capi",
+ "laprdus-win7",
  "windows 0.62.2",
  "windows-core 0.62.2",
  "windows-registry",
@@ -336,6 +338,10 @@ version = "2.0.0"
 dependencies = [
  "laprdus",
 ]
+
+[[package]]
+name = "laprdus-win7"
+version = "2.0.0"
 
 [[package]]
 name = "libc"

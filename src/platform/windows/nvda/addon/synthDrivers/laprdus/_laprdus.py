@@ -16,8 +16,30 @@ _addon_dir = os.path.dirname(os.path.abspath(__file__))
 _voices_dir = os.path.join(_addon_dir, "voices")
 _dicts_dir = os.path.join(_addon_dir, "dictionaries")
 
-# DLL path detection
-_dll_name = "laprd64.dll" if _is_64bit else "laprd32.dll"
+
+def _is_legacy_windows():
+    """Windows 7, 8 or 8.1: the systems the ordinary build of the engine,
+    which needs Windows 10, does not load on."""
+    try:
+        version = sys.getwindowsversion()
+        # platform_version is the system's real version; the plain fields
+        # say 6.2 on anything newer to a program without a manifest for it.
+        major = getattr(version, "platform_version", (version.major,))[0]
+        return major < 10
+    except Exception:
+        return False
+
+
+# DLL path detection. Only a 32-bit NVDA runs on Windows 7, 8 and 8.1 (NVDA
+# 2023.3 and 2025.3 are the last for them), and there it loads the build made
+# for those systems (cargo xtask windows-legacy); an add-on built without it
+# falls back to the ordinary one.
+if _is_64bit:
+    _dll_name = "laprd64.dll"
+elif _is_legacy_windows() and os.path.exists(os.path.join(_addon_dir, "laprd32_legacy.dll")):
+    _dll_name = "laprd32_legacy.dll"
+else:
+    _dll_name = "laprd32.dll"
 _dll_path = os.path.join(_addon_dir, _dll_name)
 _phonemes_path = os.path.join(_voices_dir, "Josip.bin")  # Recorded voice data (the formant voices need none)
 

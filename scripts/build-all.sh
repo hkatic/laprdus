@@ -100,9 +100,18 @@ build_sapi5_dlls() {
     #   rustup target add x86_64-pc-windows-msvc i686-pc-windows-msvc
     cargo xtask windows
 
+    # The same programs for Windows 7 SP1, 8 and 8.1, staged in
+    # dist/windows-legacy-x64 and dist/windows-legacy-x86; the installer and
+    # the NVDA add-on carry both builds. Needs the nightly toolchain named in
+    # src/platform/windows/legacy/toolchain.txt:
+    #   rustup toolchain install <name> --component rust-src
+    cargo xtask windows-legacy
+
     # Verify DLLs
     if [[ -f "$PROJECT_ROOT/dist/windows-x64/laprd64.dll" ]] && \
-       [[ -f "$PROJECT_ROOT/dist/windows-x86/laprd32.dll" ]]; then
+       [[ -f "$PROJECT_ROOT/dist/windows-x86/laprd32.dll" ]] && \
+       [[ -f "$PROJECT_ROOT/dist/windows-legacy-x64/laprd64.dll" ]] && \
+       [[ -f "$PROJECT_ROOT/dist/windows-legacy-x86/laprd32.dll" ]]; then
         log_success "SAPI5 DLLs built successfully"
     else
         log_error "Failed to build SAPI5 DLLs"
@@ -144,12 +153,12 @@ build_nvda_addon() {
         exit 1
     fi
 
-    cd "$PROJECT_ROOT/nvda-addon"
+    cd "$PROJECT_ROOT/src/platform/windows/nvda"
     scons
     cd "$PROJECT_ROOT"
 
     # Find the built addon
-    ADDON_FILE=$(ls "$PROJECT_ROOT/nvda-addon/laprdus-"*.nvda-addon 2>/dev/null | head -1)
+    ADDON_FILE=$(ls "$PROJECT_ROOT/src/platform/windows/nvda/laprdus-"*.nvda-addon 2>/dev/null | head -1)
     if [[ -f "$ADDON_FILE" ]]; then
         log_success "NVDA Addon built: $(basename "$ADDON_FILE")"
     else

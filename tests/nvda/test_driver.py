@@ -1,6 +1,6 @@
 """Tests of the NVDA synthesizer driver without NVDA.
 
-The driver (nvda-addon/addon/synthDrivers/laprdus) runs against stubbed NVDA
+The driver (src/platform/windows/nvda/addon/synthDrivers/laprdus) runs against stubbed NVDA
 modules (nvda_stubs.py) and the DLL of the built add-on, so these tests need
 the add-on's DLLs in place (scons --platform=windows ... sapi5 for both
 architectures, or scripts\\build-all.cmd nvda). They feed the driver the
@@ -41,7 +41,7 @@ os.makedirs(os.path.join(APPDATA, "Laprdus"), exist_ok=True)
 sys.path.insert(0, HERE)
 import nvda_stubs as S  # noqa: E402  (installs the stub modules)
 
-sys.path.insert(0, os.path.join(ROOT, "nvda-addon", "addon", "synthDrivers"))
+sys.path.insert(0, os.path.join(ROOT, "src", "platform", "windows", "nvda", "addon", "synthDrivers"))
 import laprdus as drv  # noqa: E402
 from speech.commands import (  # noqa: E402
     BreakCommand,

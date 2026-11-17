@@ -31,18 +31,19 @@ cargo xtask data
 ### 2. Build the DLLs and the Config GUI for x64 and x86
 ```bash
 cargo xtask windows
+cargo xtask windows-legacy   # the same for Windows 7 SP1, 8 and 8.1 (dist/windows-legacy-*)
 ```
 
-This stages `dist/windows-x64/` (`laprd64.dll`, `laprdus.exe`, `laprdgui.exe`) and `dist/windows-x86/` (`laprd32.dll`, `laprdus.exe`, `laprdgui.exe`).
+This stages `dist/windows-x64/` (`laprd64.dll`, `laprdus.exe`, `laprdgui.exe`) and `dist/windows-x86/` (`laprd32.dll`, `laprdus.exe`, `laprdgui.exe`), and the same files for Windows 7 SP1, 8 and 8.1 in `dist/windows-legacy-x64/` and `dist/windows-legacy-x86/`; the add-on carries the 32-bit legacy driver and Configurator as `laprd32_legacy.dll` and `laprdgui32_legacy.exe`. The legacy step needs the nightly toolchain named in `src/platform/windows/legacy/toolchain.txt` with `rust-src`.
 
 ### 3. Build NVDA Addon
 ```bash
-cd nvda-addon && scons && cd ..
+(cd src/platform/windows/nvda && scons)
 ```
 
 ## Expected Output
 
-- Addon package: `nvda-addon/laprdus-2.0.0.nvda-addon`
+- Addon package: `src/platform/windows/nvda/laprdus-2.0.0.nvda-addon`
 
 ## Automatic Resource Copying
 
@@ -62,13 +63,13 @@ The addon includes a globalPlugin that adds a "Laprdus" submenu to NVDA's Tools 
 
 After building, verify the addon package exists:
 ```bash
-ls -la nvda-addon/laprdus-*.nvda-addon
+ls -la src/platform/windows/nvda/laprdus-*.nvda-addon
 ```
 
 ## Launch Addon Installer for Testing
 
 ```bash
-start "" "nvda-addon/laprdus-2.0.0.nvda-addon"
+start "" "src/platform/windows/nvda/laprdus-2.0.0.nvda-addon"
 ```
 
 ## CRITICAL Build Rules

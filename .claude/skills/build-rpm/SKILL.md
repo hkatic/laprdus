@@ -33,7 +33,7 @@ tar --transform='s,^\.,laprdus-2.0.0,' -cJf ~/rpmbuild/SOURCES/laprdus-2.0.0.tar
     --exclude='./.git' --exclude='./target' --exclude='./dist' --exclude='./build' \
     --exclude='*.pyc' --exclude='__pycache__' \
     --exclude='./src/platform/android/.gradle' --exclude='./src/platform/android/app/build' \
-    --exclude='./nvda-addon' .
+    --exclude='./src/platform/windows/nvda' .
 ```
 
 **IMPORTANT:** Use `-cJf` (xz) — the spec file `Source0` expects `.tar.xz`. Using `-czf` (gzip) creates a `.tar.gz` which rpmbuild will not find.

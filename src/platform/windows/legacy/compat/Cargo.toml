@@ -1,0 +1,19 @@
+[package]
+name = "laprdus-win7"
+description = "What the Windows 7, 8 and 8.1 build of the Laprdus Windows programs needs in place of functions newer Windows has"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license-file.workspace = true
+repository.workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+# A hook the linker's delay-load helper calls, and LoadLibraryA: neither can
+# be written without unsafe code.
+[lints.rust]
+unsafe_code = "allow"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }

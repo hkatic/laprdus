@@ -107,11 +107,20 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         addon_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         synth_path = os.path.join(addon_path, "synthDrivers", "laprdus")
 
-        # Select appropriate executable
+        # Select appropriate executable. On Windows 7, 8 and 8.1 (a 32-bit
+        # NVDA there) it is the build made for those systems, when the
+        # add-on carries it.
         if is64bit:
             exe_name = "laprdgui64.exe"
         else:
             exe_name = "laprdgui32.exe"
+            try:
+                version = sys.getwindowsversion()
+                major = getattr(version, "platform_version", (version.major,))[0]
+            except Exception:
+                major = 10
+            if major < 10 and os.path.exists(os.path.join(synth_path, "laprdgui32_legacy.exe")):
+                exe_name = "laprdgui32_legacy.exe"
 
         exe_path = os.path.join(synth_path, exe_name)
 

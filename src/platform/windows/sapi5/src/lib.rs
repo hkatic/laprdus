@@ -16,6 +16,10 @@
 
 // Linked for its exported functions.
 use laprdus_capi as _;
+// The build for Windows 7, 8 and 8.1 answers the loader's request for
+// combase.dll with ole32.dll: see src/platform/windows/legacy.
+#[cfg(target_vendor = "win7")]
+use laprdus_win7 as _;
 
 use laprdus::config::{UserConfig, UserSettings};
 use laprdus::engine::Engine;
