@@ -1,0 +1,941 @@
+bal	báw	báł	l8
+bedi	bedí	bédi	
+belil	béliw	belíł	l12
+beračijo	beráčijo	beračíjo	
+bere	bêre	bére	
+beri	bêri	béri	
+bero	beró	béro	
+besedil	besédiw	besedíł	l98
+besedila	besédila	besedíla	l
+besedili	besédili	besedíli	l
+besedilo	besédilo	besedílo	l
+besni	besní	bêsni	
+besnim	besním	bêsnim	
+bistri	bistrí	bístri	
+bistrim	bistrím	bístrim	
+blagoslovi	blagosloví	blagoslôvi	
+blažil	blažíw	blažíł	l7
+blebeta	blebetá	blebéta	
+blede	blêde	bléde	
+bledi	bledí	blédi	
+bobni	bobní	bóbni	
+bodel	bôdəw	bôdəw	l
+bodri	bodrí	bódri	
+bodril	bodríw	bodríł	l22
+bogate	bogaté	bogáte	
+bogati	bogatí	bogáti	
+bogatim	bogatím	bogátim	
+boje	bojé	bóje	
+boji	bojí	bôji	
+boli	bolí	bóli	
+bori	borí	bôri	
+brbota	brbotá	brbôta	
+brede	brêde	bréde	
+bremeni	bremení	breméni	
+brenkal	brénkaw	brenkáł	l18
+brenkala	brénkala	brenkála	l
+bresti	brêsti	brésti	
+brisala	brísala	brisála	l
+brsti	brstí	bŕsti	
+brusil	brúsiw	brusíł	l11
+brzi	brzí	bŕzi	
+buči	bučí	búči	
+cedil	cedíw	cedíł	l14
+cepeta	cepetá	cepéta	
+cmoka	cmoká	cmôka	
+cokla	coklá	cókla	
+cveti	cvetí	cvéti	
+dani	daní	dáni	
+danim	daním	dánim	
+debeli	debelí	debéli	
+debelim	debelím	debélim	
+deli	delí	déli	
+dihal	díhaw	diháł	l58
+dihala	díhala	dihála	l
+dihali	díhali	diháli	l
+dihalo	díhalo	dihálo	l
+divja	divjá	dívja	
+dobe	dobé	dôbe	
+dobi	dobí	dôbi	
+doda	dodá	dóda	
+dogovori	dogovorí	dogôvori	
+doleti	doletí	doléti	
+določil	dolóčiw	določíł	l31
+doni	doní	dóni	
+donosi	donósi	donôsi	
+dopolnil	dopôlniw	dopolníł	l13
+dopusti	dopustí	dopústi	
+draži	dráži	draží	
+dražil	drážiw	dražíł	l38
+dreka	dreká	drêka	
+drgeta	drgetá	drgéta	
+drobnim	drobním	drôbnim	
+drži	drží	dŕži	
+duha	dúha	duhá	
+duši	duší	dúši	
+dvigal	dvígaw	dvigáł	l21
+dvigala	dvígala	dvigála	l
+dvigali	dvígali	dvigáli	l
+dvigalo	dvígalo	dvigálo	l
+frfota	frfotá	frfôta	
+gasi	gasí	gási	
+gasil	gasíw	gasíł	l13
+gibal	gíbaw	gibáł	l26
+gibala	gíbala	gibála	l
+gibali	gíbali	gibáli	l
+gibalo	gíbalo	gibálo	l
+gladil	gládiw	gladíł	l5
+gladila	gládila	gladíla	l
+glasi	glasí	glási	
+glasil	glasíw	glasíł	l22
+gnil	gníw	gníw	l
+gnojil	gnojíw	gnojíł	l94
+goli	golí	góli	
+goljufa	goljufá	goljúfa	
+goni	góni	gôni	
+gonil	gôniw	goníł	l67
+gori	gorí	gôri	
+gosti	gostí	gôsti	
+gostil	gostíw	gostíł	l10
+gostim	gostím	góstim	
+govori	govorí	gôvori	
+govoril	govóriw	govoríł	l1
+grdi	grdí	gŕdi	
+gredo	gredò	grêdo	
+grel	gréw	gréł	l4
+grmi	grmí	gŕmi	
+grozi	grozí	grôzi	
+hiti	hití	híti	
+hladil	hladíw	hladíł	l6
+hlapi	hlapí	hlápi	
+hlačam	hlačám	hláčam	
+hotel	hôtew	hotéł	l
+hrabri	hrabrí	hrábri	
+hranil	hrániw	hraníł	l53
+hranila	hránila	hraníla	l
+hranili	hránili	hraníli	l
+hranilo	hránilo	hranílo	l
+hromi	hromí	hrômi	
+hrumi	hrumí	hrúmi	
+igra	igrá	ígra	
+igram	igrám	ígram	
+ihti	ihtí	íhti	
+iskri	iskrí	ískri	
+izbori	izborí	izbôri	
+izdaj	izdàj	izdáj	
+izgovori	izgovorí	izgôvori	
+izgube	izgubé	izgúbe	
+izgubi	izgubí	izgúbi	
+izkopa	izkopá	izkópa	
+izleti	izletí	izléti	
+izločala	izlóčala	izločála	l
+izločil	izlóčiw	izločíł	l3
+izpusti	izpustí	izpústi	
+izrazita	izrázita	izrazíta	
+izrazite	izrázite	izrazíte	
+izraziti	izráziti	izrazíti	
+izročil	izróčiw	izročíł	l4
+izstreli	izstrelí	izstréli	
+iztekle	iztêkle	iztékle	l
+izteklo	iztêklo	iztéklo	l
+izvozi	izvózi	izvôzi	
+jasni	jasní	jásni	
+jezi	jezí	jézi	
+jezika	jeziká	jezíka	
+ječi	ječí	jéči	
+kadi	kadí	kádi	
+kadijo	kadíjo	kádijo	
+kadil	kadíw	kadíł	l6
+kali	kalí	káli	
+kalil	kalíw	kalíł	l10
+kamenja	kamenjá	kámenja	
+kanila	kánila	kaníla	l
+kanile	kánile	kaníle	l
+kanilo	kánilo	kanílo	l
+kaplja	kapljá	káplja	
+karate	kárate	karaté	
+kasni	kasní	kásni	
+keglja	kegljá	kéglja	
+kesa	kesá	kèsa	
+kipi	kipí	kípi	
+kisli	kislí	kísli	
+kislim	kislím	kíslim	
+klepeta	klepetá	klepéta	
+klepetal	klepetàw	klepetáł	l9
+klobasa	klobasá	klobása	
+klobasam	klobasám	klobásam	
+klofuta	klofutá	klofúta	
+koklja	kokljá	kóklja	
+kolovrati	kolovráti	kolôvrati	
+kopal	kópaw	kopáł	l2
+kopni	kopní	kôpni	
+kopnim	kopním	kôpnim	
+kosil	kósiw	kosíł	l51
+kosila	kósila	kosíla	l
+kosili	kósili	kosíli	l
+kosilo	kósilo	kosílo	l
+koti	kotí	kóti	
+košati	košatí	košáti	
+krepil	krepíw	krepíł	l20
+kril	kríw	kríł	l82
+krivi	kriví	krívi	
+krivil	krivíw	krivíł	l33
+krivim	krivím	krívim	
+krmil	kŕmiw	krmíł	l92
+krmila	kŕmila	krmíla	l
+krmili	kŕmili	krmíli	l
+krmilo	kŕmilo	krmílo	l
+krohota	krohotá	krohôta	
+kroji	krojí	krôji	
+kroma	króma	krôma	
+kroti	krotí	króti	
+krpati	kŕpati	krpáti	
+krvavi	krvaví	krvávi	
+krvavim	krvavím	krvávim	
+kukal	kúkaw	kukáł	l6
+kukala	kúkala	kukála	l
+kukalo	kúkalo	kukálo	l
+kuril	kúriw	kuríł	l16
+lasti	lastí	lásti	
+lažem	lážem	lažém	
+ledeni	ledení	ledéni	
+legel	légəw	lêgəł	l32
+leni	lení	léni	
+lepil	lépiw	lepíł	l68
+lepila	lépila	lepíla	l
+lepili	lépili	lepíli	l
+lepilo	lépilo	lepílo	l
+lepoti	lepotí	lepôti	
+lesenim	lesením	lesénim	
+lesketa	lesketá	leskéta	
+lesti	lésti	lestí	
+letal	létaw	letáł	l97
+letala	létala	letála	l
+letali	létali	letáli	l
+letalo	létalo	letálo	l
+leti	letí	léti	
+levi	leví	lévi	
+levim	levím	lévim	
+likala	líkala	likála	l
+ličil	líčiw	ličíł	l93
+ličila	líčila	ličíla	l
+ličili	líčili	ličíli	l
+lokal	lókaw	lokáł	l
+lokala	lókala	lokála	l
+lokale	lókale	lokále	l
+lokali	lókali	lokáli	l
+lomi	lómi	lômi	
+lomil	lômiw	lomíł	l32
+lopne	lôpne	lópne	
+love	lové	lôve	
+lovi	loví	lôvi	
+ločil	lóčiw	ločíł	l60
+loščila	lóščila	loščíla	l
+mahal	máhaw	maháł	l5
+mahala	máhala	mahála	l
+mahalo	máhalo	mahálo	l
+mamila	mámila	mamíla	l
+mamili	mámili	mamíli	l
+mamilo	mámilo	mamílo	l
+maral	máraw	maráł	l
+marala	márala	marála	l
+maši	maší	máši	
+mašil	mašíw	mašíł	l71
+medel	mêdəw	mêdəl	l
+medli	medlí	mêdli	
+medlim	medlím	mêdlim	
+megli	meglí	mègli	
+mehčal	mehčàw	mehčáł	l23
+meji	mejí	mêji	
+meril	mériw	meríł	l60
+merila	mérila	meríla	l
+merili	mérili	meríli	l
+merilo	mérilo	merílo	l
+mesarijo	mesárijo	mesaríjo	
+mesijo	mésijo	mesíjo	
+mesti	mêsti	mésti	
+metal	mêtaw	metáł	l
+mete	mête	méte	
+metel	mêtəw	mêtəł	l70
+meče	méče	mêče	
+mečem	méčem	mêčem	
+mečka	mečká	mêčka	
+mešal	méšaw	mešáł	l2
+miril	miríw	miríł	l11
+mojstri	mojstrí	mójstri	
+mokri	mokrí	môkri	
+mokrim	mokrím	môkrim	
+mora	móra	môra	
+morala	mórala	morála	l
+morale	mórale	morále	l
+morali	mórali	moráli	l
+moralo	móralo	morálo	l
+moram	móram	môram	
+more	móre	môre	
+mori	morí	môri	
+moči	móči	močí	
+mrtvi	mrtví	mŕtvi	
+mrtvim	mrtvím	mŕtvim	
+nabijalo	nabíjalo	nabijálo	l
+nadomestil	nadomestíw	nadomestíł	l26
+naglasi	naglasí	naglási	
+nagniti	nágniti	nagníti	
+nagovori	nagovorí	nagôvori	
+nagradi	nagradí	nagrádi	
+najem	najém	najèm	
+nakloni	naklóni	naklôni	
+naleti	naletí	naléti	
+nanosi	nanósi	nanôsi	
+napenjala	napénjala	napenjála	l
+napenjalo	napénjalo	napenjálo	l
+napoji	napojí	napôji	
+napoti	napotí	napóti	
+napotil	napótiw	napotíł	l2
+naravna	naravná	narávna	
+naročil	naróčiw	naročíł	l38
+nasadi	nasadí	nasádi	
+naslanjala	naslánjala	naslanjála	l
+naslanjalo	naslánjalo	naslanjálo	l
+nasloni	naslóni	naslôni	
+naslovi	nasloví	naslôvi	
+navali	navalí	naváli	
+navijal	navíjaw	navijáł	l1
+navijala	navíjala	navijála	l
+navijalo	navíjalo	navijálo	l
+naznanil	naznániw	naznaníł	l1
+načel	načéw	načêł	l71
+načela	načéla	načêla	l
+načeli	načéli	načêli	l
+načelo	načélo	načêlo	l
+netila	nétila	netíla	l
+nihal	níhaw	niháł	l14
+nihala	níhala	nihála	l
+nihali	níhali	niháli	l
+nihalo	níhalo	nihálo	l
+nori	norí	nôri	
+norim	norím	nôrim	
+nosil	nôsiw	nosíł	l1
+nočem	nóčem	nočém	
+noči	nočí	nôči	
+obešal	obéšaw	obešáł	l5
+obešala	obéšala	obešála	l
+obešalo	obéšalo	obešálo	l
+oblati	obláti	óblati	
+oblačil	obláčiw	oblačíł	l98
+oblačila	obláčila	oblačíla	l
+oblačili	obláčili	oblačíli	l
+oblačilo	obláčilo	oblačílo	l
+oblega	obléga	óblega	
+obnemogle	obnemôgle	obnemógle	l
+obnemogli	obnemôgli	obnemógli	l
+obnovi	obnoví	obnôvi	
+oboli	obolí	óboli	
+obori	oborí	obóri	
+obrede	obrêde	obréde	
+obresti	obrêsti	obrésti	
+obstoja	obstója	obstôja	
+obstoji	obstojí	obstôji	
+obuval	obúvaw	obuváł	l72
+obuvala	obúvala	obuvála	l
+obuvali	obúvali	obuváli	l
+obuvalo	obúvalo	obuválo	l
+obvestil	obvéstiw	obvestíł	l30
+obvozi	obvózi	obvôzi	
+oddaj	oddàj	oddáj	
+odevala	odévala	odevála	l
+odgovori	odgovorí	odgôvori	
+odkloni	odklóni	odklôni	
+odklopi	odklópi	odklôpi	
+odleti	odletí	odléti	
+odlomi	odlómi	odlômi	
+odmikala	odmíkala	odmikála	l
+odpirala	odpírala	odpirála	l
+odpiralo	odpíralo	odpirálo	l
+odprem	odprèm	odprém	
+odpremo	odprêmo	odprémo	
+odpusti	odpustí	odpústi	
+odre	odrè	ódre	
+odredi	odredí	odrédi	
+odstreli	odstrelí	odstréli	
+odvajal	odvájaw	odvajáł	l31
+odvajala	odvájala	odvajála	l
+odvajali	odvájali	odvajáli	l
+odvajalo	odvájalo	odvajálo	l
+odvrti	odvrtí	odvŕti	
+oglasi	oglasí	oglási	
+ogledal	oglédaw	ogledáł	l6
+ogledala	oglédala	ogledála	l
+ogledali	oglédali	ogledáli	l
+ogledalo	oglédalo	ogledálo	l
+ogovori	ogovorí	ogôvori	
+ogradi	ogradí	ográdi	
+ogreval	ogrévaw	ogreváł	l6
+ogrevala	ogrévala	ogrevála	l
+ogrevali	ogrévali	ogreváli	l
+ogrevalo	ogrévalo	ogreválo	l
+ogrinjal	ogrínjaw	ogrinjáł	l60
+ogrinjala	ogrínjala	ogrinjála	l
+ogrinjali	ogrínjali	ogrinjáli	l
+ogrinjalo	ogrínjalo	ogrinjálo	l
+okoliša	okolíša	okóliša	
+okoliši	okolíši	okóliši	
+okrasi	okrasí	okrási	
+okrasti	okrásti	ókrasti	
+okrogli	okroglí	okrógli	
+omamil	omámiw	omamíł	l25
+omamila	omámila	omamíla	l
+omeji	omejí	omêji	
+omete	omête	ométe	
+onesnaževal	onesnaževàw	onesnaževáł	l46
+opel	opéw	ópəł	l
+opere	opêre	ópere	
+operete	opêrete	operéte	
+operi	opéri	óperi	
+opija	opíja	ópija	
+opozoril	opozóriw	opozoríł	l4
+opravil	opráviw	opravíł	l12
+opravila	oprávila	opravíla	l
+opravili	oprávili	opravíli	l
+opravilo	oprávilo	opravílo	l
+opravičil	opravíčiw	opravičíł	l5
+opravičila	opravíčila	opravičíla	l
+opravičili	opravíčili	opravičíli	l
+opravičilo	opravíčilo	opravičílo	l
+oprem	oprèm	oprém	
+opremo	oprêmo	oprémo	
+oprijemala	oprijémala	oprijemála	l
+oral	oráw	oráł	l
+oskrbi	oskrbí	oskŕbi	
+ostri	ostrí	óstri	
+ostrim	ostrím	óstrim	
+ozemlji	ozemljí	ozémlji	
+očita	očíta	ôčita	
+packa	packá	pácka	
+padal	pádaw	padáł	l14
+padala	pádala	padála	l
+padali	pádali	padáli	l
+padalo	pádalo	padálo	l
+papajo	pápajo	papájo	
+pasem	pásem	pásəm	
+pasti	pásti	pastí	
+pekel	pékəw	pèkəl	l
+pekla	pêkla	pèkla	l
+pekle	pêkle	pèkle	l
+pekli	pêkli	pèkli	l
+penil	péniw	peníł	l22
+penila	pénila	peníla	l
+penilo	pénilo	penílo	l
+pestri	pestrí	péstri	
+peti	péti	pêti	
+peči	pêči	pečí	
+pihal	píhaw	piháł	l5
+pihala	píhala	pihála	l
+pihali	píhali	piháli	l
+pihalo	píhalo	pihálo	l
+pil	píw	píł	l10
+pisal	písaw	pisáł	l1
+piskala	pískala	piskála	l
+piskalo	pískalo	piskálo	l
+plakata	plákata	plakáta	
+plakate	plákate	plakáte	
+plakati	plákati	plakáti	
+plameni	plamení	plaméni	
+planete	plánete	planéte	
+plašila	plášila	plašíla	l
+plašilo	plášilo	plašílo	l
+plemeni	plemení	pleméni	
+plesni	plesní	plésni	
+plesnijo	plesníjo	plésnijo	
+plesnim	plesním	plésnim	
+plete	plête	pléte	
+plezal	plézaw	plezáł	l2
+plezala	plézala	plezála	l
+plezalo	plézalo	plezálo	l
+plodi	plodí	plódi	
+pobudi	pobudí	pobúdi	
+poceni	pocení	pocéni	
+poda	podá	pôda	
+podi	podí	pôdi	
+podlega	podléga	pôdlega	
+podleže	podléže	pôdleže	
+podoji	podojí	podôji	
+podredi	podredí	pòdrédi	
+pogoji	pogojí	pogóji	
+pogosti	pogostí	pogósti	
+pogostim	pogostím	pogóstim	
+pogovori	pogovorí	pogôvori	
+pogrebe	pogrêbe	pogrébe	
+pogubi	pogubí	pogúbi	
+pojasnil	pojásniw	pojasníł	l2
+pojasnila	pojásnila	pojasníla	l
+pojasnili	pojásnili	pojasníli	l
+pojasnilo	pojásnilo	pojasnílo	l
+pojem	pôjem	pójəm	
+pojenja	pojénja	pojênja	
+pokala	pókala	pokála	l
+pokale	pókale	pokále	l
+pokali	pókali	pokáli	l
+pokloni	poklóni	poklôni	
+poklopi	poklópi	poklôpi	
+pokopa	pokopá	pokópa	
+pokori	pokorí	pokóri	
+pokrival	pokrívaw	pokriváł	l17
+pokrivala	pokrívala	pokrivála	l
+pokrivali	pokrívali	pokriváli	l
+pokrivalo	pokrívalo	pokriválo	l
+polegle	polégle	polêgle	l
+polegli	polégli	polêgli	l
+poleni	polení	poléni	
+poleti	poletí	poléti	
+polnil	pôlniw	polníł	l22
+polomi	polómi	polômi	
+polomijo	polómijo	polomíjo	
+pomagal	pomágaw	pomagáł	l1
+pomagala	pomágala	pomagála	l
+pomagali	pomágali	pomagáli	l
+pomagalo	pomágalo	pomagálo	l
+pomete	pomête	pométe	
+pomikal	pomíkaw	pomikáł	l18
+pomikala	pomíkala	pomikála	l
+pomikalo	pomíkalo	pomikálo	l
+pomiril	pomíriw	pomiríł	l1
+pomirjeval	pomirjevàw	pomirjeváł	l65
+pomladi	pomladí	pomládi	
+pomoli	pomóli	pomôli	
+pomori	pomorí	pomôri	
+pomoči	pomóči	pomočí	
+ponori	ponorí	ponôri	
+ponosi	ponósi	ponôsi	
+ponovi	ponoví	ponôvi	
+pooblastil	pooblástiw	pooblastíł	l85
+popa	pópa	pôpa	
+popravil	popráviw	popravíł	l9
+popravila	poprávila	popravíla	l
+popravili	poprávili	popravíli	l
+popravilo	poprávilo	popravílo	l
+popusti	popustí	popústi	
+poračuna	poračúna	pòračúna	
+porekel	porékəw	porêkəł	l8
+porodi	porodí	poródi	
+poročil	poróčiw	poročíł	l47
+posladka	posladká	posládka	
+postelje	postélje	póstelje	
+posti	postí	pôsti	
+postroji	postrojí	postrôji	
+posvaril	posváriw	posvaríł	l1
+potekle	potêkle	potékle	l
+potekli	potêkli	potékli	l
+poteče	potêče	potéče	
+poti	potí	póti	
+potopi	potopí	potópi	
+potrdil	potŕdiw	potrdíł	l2
+povabil	povábiw	povabíł	l1
+povesti	povêsti	povésti	
+pozlati	pozlatí	pozláti	
+pozna	pozná	pôzna	
+počasni	počasní	počásni	
+počel	počéw	počêł	l1
+počela	počéla	počêla	l
+počelo	počélo	počêlo	l
+počenja	počénja	póčenja	
+poči	póči	počí	
+pošle	póšle	pošlè	
+poživil	požíviw	poživíł	l72
+prasketa	prasketá	praskéta	
+pravil	práviw	pravíł	l97
+pravila	právila	pravíla	l
+pravili	právili	pravíli	l
+pravilo	právilo	pravílo	l
+prebavil	prebáviw	prebavíł	l49
+prebavila	prebávila	prebavíla	l
+prebavili	prebávili	prebavíli	l
+predaj	predàj	predáj	
+predal	predáw	predáł	l
+predani	predaní	predáni	
+predel	predéw	predéł	l
+predeli	predelí	predéli	
+preglasi	preglasí	preglási	
+pregovori	pregovorí	pregôvori	
+pregradi	pregradí	pregrádi	
+pregrinjal	pregrínjaw	pregrinjáł	l49
+pregrinjala	pregrínjala	pregrinjála	l
+pregrinjali	pregrínjali	pregrinjáli	l
+pregrinjalo	pregrínjalo	pregrinjálo	l
+prehladi	prehladí	prehládi	
+preje	prejé	prêje	
+prekinjala	prekínjala	prekinjála	l
+prekopa	prekopá	prekópa	
+preleti	preletí	preléti	
+prelomi	prelómi	prelômi	
+premami	premámi	prémami	
+premeni	premení	preméni	
+premore	premóre	premôre	
+premosti	premostí	prémosti	
+premoči	premóči	premôči	
+prenašal	prenášaw	prenašáł	l1
+prenašala	prenášala	prenašála	l
+prenašalo	prenášalo	prenašálo	l
+prenovi	prenoví	prenôvi	
+preparati	prepárati	preparáti	
+preplete	preplête	prepléte	
+prepozna	prepozná	prepôzna	
+prepusti	prepustí	prepústi	
+prepustim	prepustím	prepústim	
+preskrbi	preskrbí	preskŕbi	
+presti	prêsti	présti	
+presvetli	presvetlí	presvêtli	
+pretepe	pretêpe	pretépe	
+preteče	pretêče	pretéče	
+preteči	pretêči	pretéči	
+prevali	prevalí	preváli	
+prevozi	prevózi	prevôzi	
+prevrete	prevrête	prevréte	
+prevzgoji	prevzgojí	prevzgóji	
+prešle	prešlè	prêšle	l
+prešli	prešlì	prêšli	l
+preži	preží	préži	
+prežive	preživé	prežíve	
+preživi	preživí	prežívi	
+preživim	preživím	prežívim	
+pribori	priborí	pribôri	
+prideta	prídeta	pridéta	
+prijemala	prijémala	prijemála	l
+prikloni	priklóni	priklôni	
+prileti	priletí	priléti	
+pripetim	pripetím	pripétim	
+priporočil	priporóčiw	priporočíł	l41
+pripusti	pripustí	pripústi	
+prispeta	prispêta	prispéta	
+prižigala	prižígala	prižigála	l
+proda	prodá	próda	
+proglasi	proglasí	proglási	
+proslavi	proslaví	proslávi	
+pršil	pršíw	pršíł	l75
+puhal	púhaw	puháł	l11
+puhala	púhala	puhála	l
+puhalo	púhalo	puhálo	l
+pusti	pustí	pústi	
+pustim	pustím	pústim	
+radosti	radostí	rádosti	
+rastel	rástəw	rástəw	l
+rastem	rástem	rastém	
+rasti	rásti	rastí	
+ravna	ravná	rávna	
+razglasi	razglasí	razglási	
+razgovori	razgovorí	razgôvori	
+razkroji	razkrojí	razkrôji	
+razkužil	razkúžiw	razkužíł	l34
+razkužila	razkúžila	razkužíla	l
+razkužili	razkúžili	razkužíli	l
+razpel	razpéw	razpéł	l8
+razplete	razplête	razpléte	
+razporedi	razporedí	razporédi	
+razpršil	razpŕšiw	razpršíł	l14
+razpusti	razpustí	razpústi	
+razredčil	razrédčiw	razredčíł	l10
+razredčila	razrédčila	razredčíla	l
+razredčilo	razrédčilo	razredčílo	l
+razvedril	razvédriw	razvedríł	l13
+računal	račúnaw	računáł	l3
+računala	račúnala	računála	l
+računali	račúnali	računáli	l
+računalo	račúnalo	računálo	l
+rdeči	rdečí	rdéči	
+rdečim	rdečím	rdéčim	
+redi	redí	rédi	
+redčil	rédčiw	redčíł	l55
+redčila	rédčila	redčíla	l
+rezal	rézaw	rezáł	l2
+rezala	rézala	rezála	l
+rezalo	rézalo	rezálo	l
+rečem	rêčem	rečém	
+reči	rêči	rečí	
+rešetal	rešetàw	rešetáł	l15
+reži	reží	réži	
+risal	rísaw	risáł	l2
+risala	rísala	risála	l
+risali	rísali	risáli	l
+risalo	rísalo	risálo	l
+rjave	rjavé	rjáve	
+rjavi	rjaví	rjávi	
+rjavim	rjavím	rjávim	
+rodil	rodíw	rodíł	l1
+rogati	rógati	rogáti	
+roji	rojí	rôji	
+ropota	ropotá	ropôta	
+ropotal	ropotàw	ropotáł	l9
+rosi	rosí	rôsi	
+rumeni	rumení	rumêni	
+rumenim	rumením	rumênim	
+sablja	sabljá	sáblja	
+sanjarijo	sanjárijo	sanjaríjo	
+sedal	sédaw	sedáł	l21
+sedala	sédala	sedála	l
+sedali	sédali	sedáli	l
+sedalo	sédalo	sedálo	l
+sede	séde	sedé	
+sedla	sédla	sêdla	l
+sedli	sédli	sêdli	l
+sedlo	sédlo	sêdlo	l
+sekala	sékala	sekála	l
+sekalo	sékalo	sekálo	l
+senčil	sénčiw	senčíł	l65
+senčila	sénčila	senčíla	l
+senčili	sénčili	senčíli	l
+sevala	sévala	sevála	l
+sežeta	séžeta	sežéta	
+sivi	siví	sívi	
+sivim	sivím	sívim	
+skali	skalí	skáli	
+skloni	sklóni	sklôni	
+skrivala	skrívala	skrivála	l
+skrivalo	skrívalo	skriválo	l
+slabi	slabí	slábi	
+slabim	slabím	slábim	
+sladil	sladíw	sladíł	l81
+sladka	sladká	sládka	
+slavi	slaví	slávi	
+slepi	slepí	slépi	
+slepil	slepíw	slepíł	l28
+slepim	slepím	slépim	
+sloni	sloní	slôni	
+smeje	smêje	smejé	
+smeti	sméti	smetí	
+smoli	smolí	smôli	
+smučem	smúčem	smúčəm	
+sneti	snéti	snetí	
+sodil	sódiw	sodíł	l7
+solzi	solzí	sôlzi	
+spete	spête	spéte	
+speča	spečá	spéča	
+speče	spêče	spéče	
+spečem	spêčem	spéčem	
+speči	spêči	spéči	
+spiral	spíraw	spiráł	l26
+spirala	spírala	spirála	l
+spirale	spírale	spirále	l
+spirali	spírali	spiráli	l
+spiralo	spíralo	spirálo	l
+splavila	splávila	splavíla	l
+splete	splête	spléte	
+spodbudi	spodbudí	spodbúdi	
+spodleti	spodletí	spodléti	
+spoji	spojí	spôji	
+sporočil	sporóčiw	sporočíł	l24
+spoti	spotí	spóti	
+spravila	správila	spravíla	l
+spravilo	správilo	spravílo	l
+spuste	spusté	spúste	
+spusti	spustí	spústi	
+spuščala	spúščala	spuščála	l
+spuščalo	spúščalo	spuščálo	l
+sramoti	sramotí	sramôti	
+stekel	stékəw	stêkəł	l8
+stepe	stêpe	stépe	
+stikal	stíkaw	stikáł	l56
+stikala	stíkala	stikála	l
+stikali	stíkali	stikáli	l
+stikalo	stíkalo	stikálo	l
+stiskal	stískaw	stiskáł	l22
+stiskala	stískala	stiskála	l
+stiskalo	stískalo	stiskálo	l
+stoje	stojé	stóje	
+stoji	stojí	stóji	
+stopal	stópaw	stopáł	l63
+stopala	stópala	stopála	l
+stopali	stópali	stopáli	l
+stopalo	stópalo	stopálo	l
+stopi	stopí	stópi	
+stopica	stopíca	stópica	
+strašil	strašíw	strašíł	l26
+strdi	stŕdi	strdí	
+streljaj	stréljaj	streljáj	
+strgal	stŕgaw	strgáł	l20
+strgala	stŕgala	strgála	l
+strgali	stŕgali	strgáli	l
+strgalo	stŕgalo	strgálo	l
+strmi	strmí	stŕmi	
+strmim	strmím	stŕmim	
+stroji	strojí	strôji	
+sunite	súnite	suníte	
+suniti	súniti	suníti	
+suši	suší	súši	
+sušil	sušíw	sušíł	l20
+svaril	svaríw	svaríł	l35
+svetil	svétiw	svetíł	l59
+svetli	svetlí	svêtli	
+svetlim	svetlím	svêtlim	
+tabori	taborí	tábori	
+taca	tacá	táca	
+talil	talíw	talíł	l32
+temelji	temeljí	têmelji	
+temni	temní	tèmni	
+temnim	temním	tèmnim	
+tesni	tesní	têsni	
+tesnijo	tesníjo	tesnijó	
+tesnil	tesníw	tesníł	l88
+teži	teží	téži	
+težka	téžka	têžka	
+tipal	típaw	tipáł	l53
+tipala	típala	tipála	l
+tipali	típali	tipáli	l
+tipalo	típalo	tipálo	l
+tipkala	típkala	tipkála	l
+tiči	tičí	tíči	
+tolažil	tolážiw	tolažíł	l4
+tolažila	tolážila	tolažíla	l
+tolažilo	tolážilo	tolažílo	l
+topi	topí	tôpi	
+topil	topíw	topíł	l62
+topim	topím	tôpim	
+topota	topotá	topôta	
+trapa	trapá	trápa	
+trdi	trdí	tŕdi	
+trdim	trdím	tŕdim	
+tremo	trêmo	trémo	
+trepeta	trepetá	trepéta	
+trkala	tŕkala	trkála	l
+trkalo	tŕkalo	trkálo	l
+trobil	tróbiw	trobíł	l73
+turbopuhala	turbopúhala	turbopuhála	l
+turbopuhalo	turbopúhalo	turbopuhálo	l
+ujemi	ujêmi	ujémi	
+ukloni	uklóni	uklôni	
+ulovi	uloví	ulôvi	
+umori	umorí	umôri	
+uspaval	uspávaw	uspaváł	l55
+uspavala	uspávala	uspavála	l
+uspavali	uspávali	uspaváli	l
+uspavalo	uspávalo	uspaválo	l
+ustanovi	ustanoví	ustanôvi	
+utaji	utají	utáji	
+utopi	utopí	utópi	
+uvozi	uvózi	uvôzi	
+učil	učíw	učíł	l12
+vabil	vábiw	vabíł	l44
+vali	valí	váli	
+valovi	valoví	valôvi	
+vari	varí	vári	
+varoval	varovàw	varováł	l7
+vede	vêde	véde	
+vedo	vedó	védo	
+vedri	vedrí	vêdri	
+veni	vení	véni	
+vesele	veselé	veséle	
+veseli	veselí	veséli	
+veselim	veselím	vesélim	
+vesla	veslá	vêsla	
+vesti	vésti	vestí	
+vezem	vézem	vezém	
+večeri	večerí	večéri	
+veže	véže	vêže	
+vihra	vihrá	víhra	
+vil	víw	víł	l67
+vlivalo	vlívalo	vliválo	l
+vlomi	vlómi	vlômi	
+vodene	vodené	vódene	
+vodeni	vodení	vódeni	
+vodenim	vodením	vódenim	
+vodi	vódi	vôdi	
+vodil	vôdiw	vodíł	l2
+voli	vóli	vôli	
+volil	vôliw	volíł	l47
+vozil	vôziw	vozíł	l73
+vozla	vozlá	vôzla	
+voščil	vóščiw	voščíł	l62
+vrel	vréw	vréw	l
+vroči	vročí	vróči	
+vročim	vročím	vróčim	
+vrsti	vrstí	vŕsti	
+vrtal	vŕtaw	vrtáł	l4
+vrtala	vŕtala	vrtála	l
+vrtalo	vŕtalo	vrtálo	l
+vrti	vrtí	vŕti	
+vrtnarijo	vrtnárijo	vrtnaríjo	
+vrši	vrší	vŕši	
+vtikala	vtíkala	vtikála	l
+vzgoji	vzgojí	vzgóji	
+vzleti	vzletí	vzléti	
+vzpodbudi	vzpodbudí	vzpodbúdi	
+zadosti	zadostí	zadôsti	
+zagotovil	zagotôviw	zagotovíł	l2
+zagovori	zagovorí	zagôvori	
+zagrinjalo	zagrínjalo	zagrinjálo	l
+zajemala	zajémala	zajemála	l
+zajemalo	zajémalo	zajemálo	l
+zaleti	zaletí	zaléti	
+zalomi	zalómi	zalômi	
+zamete	zamête	zaméte	
+zamudi	zamudí	zamúdi	
+zanosi	zanósi	zanôsi	
+zapirala	zapírala	zapirála	l
+zapiralo	zapíralo	zapirálo	l
+zaplete	zaplête	zapléte	
+zaroti	zarotí	zaróti	
+zasedi	zasedí	zasédi	
+zasloni	zaslóni	zaslôni	
+zastirala	zastírala	zastirála	l
+zatikal	zatíkaw	zatikáł	l26
+zatikalo	zatíkalo	zatikálo	l
+zavesti	zavêsti	zavésti	
+zavrti	zavrtí	zavŕti	
+zdravil	zdráviw	zdravíł	l95
+zdravila	zdrávila	zdravíla	l
+zdravili	zdrávili	zdravíli	l
+zdravilo	zdrávilo	zdravílo	l
+zdrsi	zdrsí	zdŕsi	
+zeleni	zelení	zelêni	
+zelenim	zelením	zelênim	
+zgodi	zgodí	zgódi	
+zgubi	zgubí	zgúbi	
+zijal	zijàw	zijáł	l18
+zlati	zlatí	zláti	
+zlatim	zlatím	zlátim	
+zleti	zletí	zléti	
+zlomi	zlómi	zlômi	
+zmede	zmêde	zméde	
+zobati	zóbati	zobáti	
+zori	zorí	zôri	
+zveni	zvení	zvéni	
+zvesti	zvêsti	zvésti	
+čepi	čepí	čêpi	
+česna	česná	čêsna	
+čistil	čístiw	čistíł	l67
+čistila	čístila	čistíla	l
+čistili	čístili	čistíli	l
+čistilo	čístilo	čistílo	l
+črnil	čŕniw	črníł	l85
+črnila	čŕnila	črníla	l
+črnili	čŕnili	črníli	l
+črnilo	čŕnilo	črnílo	l
+črnim	črním	čŕnim	
+črpal	čŕpaw	črpáł	l12
+črpala	čŕpala	črpála	l
+črpalo	čŕpalo	črpálo	l
+črtal	čŕtaw	črtáł	l58
+črtala	čŕtala	črtála	l
+črtalo	čŕtalo	črtálo	l
+črti	črtí	čŕti	
+čutil	čútiw	čutíł	l6
+čveka	čveká	čvêka	
+šepeta	šepetá	šepéta	
+šibi	šibí	šíbi	
+škripala	škrípala	škripála	l
+škripalo	škrípalo	škripálo	l
+šotori	šotorí	šotóri	
+štorklja	štorkljá	štórklja	
+šumi	šumí	šúmi	
+žalosti	žalostí	žálosti	
+žela	žéla	žêla	l
+žele	žéle	želé	l
+želi	želí	žêli	
+želo	žélo	žêlo	l
+ženeta	žêneta	ženéta	
+ženete	žênete	ženéte	
+ženi	žéni	žêni	
+žive	živé	žíve	
+živi	živí	žívi	
+živim	živím	žívim	
+žlahtni	žlahtní	žláhtni	
+žvenketa	žvenketá	žvenkéta	
+žvepla	žveplá	žvêpla	

@@ -3,6 +3,8 @@
 //! sentence goes on with. Private use characters, consumed by the Slovenian
 //! front end, never spoken.
 
+use crate::text::frontend::letters::{is_base_letter, is_one_of};
+
 /// The mark the engine puts at the end of a clause whose comma is followed
 /// by a clause [`opens_complement_clause`] says yes to: a verb of saying or
 /// thinking is told by what follows it. Meni, da je prav. Ni obvestil, da
@@ -27,17 +29,32 @@ pub const IN_EXCLAMATION_MARK: char = '\u{E002}';
 pub const VOCATIVE_MARK: char = '\u{E003}';
 
 /// Whether a clause begins with da, naj, kdaj, kako ...
-pub fn opens_complement_clause(_text: &[char]) -> bool {
-    // TODO(sl)
-    false
+pub fn opens_complement_clause(text: &[char]) -> bool {
+    const OPENERS: &[&str] = &["da", "naj", "kdaj", "kako", "kje", "zakaj", "ali", "kaj", "kdo", "koliko", "kam", "če"];
+    // The first word of the clause, in small letters
+    let lower = |c: char| match c {
+        'Č' => 'č',
+        'Š' => 'š',
+        'Ž' => 'ž',
+        _ => c.to_ascii_lowercase(),
+    };
+    let letters = text.iter().map(|&c| lower(c)).skip_while(|&c| !is_base_letter(c));
+    let first: Vec<char> = letters.take_while(|&c| is_base_letter(c)).collect();
+    is_one_of(&first, OPENERS)
 }
 
 /// Whether a clause is one capitalized word (Pero, Janez, Mama), the shape
 /// of an address before a comma; for [`VOCATIVE_MARK`], with the sentence's
 /// end.
-pub fn is_address(_text: &[char]) -> bool {
-    // TODO(sl)
-    false
+pub fn is_address(text: &[char]) -> bool {
+    // One word of letters, capitalized and not all in capitals, with the
+    // engine's marks of the clause after it
+    let letters: Vec<char> = text.iter().copied().filter(|c| !('\u{E000}'..='\u{E00F}').contains(c)).collect();
+    let mut words = letters.split(|&c| c == ' ' || c == '\t').filter(|word| !word.is_empty());
+    let (Some([first, rest @ ..]), None) = (words.next(), words.next()) else { return false };
+    (first.is_ascii_uppercase() || matches!(first, 'Č' | 'Ć' | 'Š' | 'Ž' | 'Đ'))
+        && !rest.is_empty()
+        && rest.iter().all(|&c| is_base_letter(c))
 }
 
 /// Marks the clauses of a text for what the front end, which sees one clause
