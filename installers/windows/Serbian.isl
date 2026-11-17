@@ -396,4 +396,4 @@ LaprdusUninstallName=Deinstaliraj Laprdus
 LaprdusUninstallComment=Uklonite Laprdus sa računara
 LaprdusOldVersionFound=Prethodna verzija programa Laprdus je već instalirana. Želite li da je deinstalirate pre nastavka?%n%nKliknite Da za deinstalaciju prethodne verzije ili Ne za prekid instalacije.
 LaprdusUpgradeFound=Prethodna verzija programa Laprdus je već instalirana. Instalacioni program će nadograditi postojeću instalaciju.%n%nKliknite Da za nastavak nadogradnje ili Ne za prekid.
-LaprdusRequiresWindows7=Laprdus zahteva Windows 7 ili noviji.
+LaprdusRequiresWindows10=Laprdus zahteva Windows 10 ili noviji.

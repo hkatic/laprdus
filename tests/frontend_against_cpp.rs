@@ -1,6 +1,6 @@
 //! The text front end against the C++ engine: for every text of the golden
 //! corpus, in every language and both spelling modes, the phones of the
-//! clause must be those `tools/golden/dump.cpp` wrote.
+//! clause must be those a dump program built from the C++ engine (removed with it) wrote.
 //!
 //! The reference, `frontend_full.tsv`, is too large for the repository:
 //! `tools/golden/golden.py` writes it to `build/golden`, and the test passes

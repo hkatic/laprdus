@@ -4,7 +4,7 @@
     python tools/golden/golden.py record <library> <data dir> <dictionary dir>
     python tools/golden/golden.py check  <library> <data dir> <dictionary dir> [set ...]
 
-`record` renders tests/golden/corpus.jsonl (see corpus.py) in the sets below
+`record` renders tests/golden/corpus.jsonl (frozen: the texts of the former C++ test programs) in the sets below
 and writes tests/golden/<set>.tsv: voice, language, settings, mode, the text's
 line in the corpus, the number of samples and a hash of them. `check` renders
 again and reports every line that differs. The reference was recorded from the

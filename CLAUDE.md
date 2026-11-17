@@ -14,7 +14,7 @@ It has two kinds of voices:
 
 ## Architecture
 
-The engine and every program are written in Rust (migrated from C++ in November 2026). There is no C or C++ to build: the C++ test programs left in `tests/linux/` are only the text source of the golden corpus (`tools/golden/corpus.py`).
+The engine and every program are written in Rust (migrated from C++ in November 2026). There is no C or C++ left. The golden corpus (`tests/golden/corpus.jsonl`, the texts of the former C++ test programs) and the hashes of the last C++ engine's output for it are frozen; `tools/golden/golden.py check` compares a build with them.
 
 ### Build System
 - **Cargo** workspace at the repository root (Rust 1.85 or newer, edition 2024). The root crate `laprdus` is the engine (`[lib] path = "src/common/lib.rs"`); every program is a member crate under `src/platform/`

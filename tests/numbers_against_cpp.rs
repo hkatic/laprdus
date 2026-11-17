@@ -1,6 +1,6 @@
 //! The number converter against the C++ engine, text for text.
 //!
-//! `tools/golden/dump.cpp` writes, for every text of the golden corpus
+//! A dump program built from the C++ engine (removed with it) wrote, for every text of the golden corpus
 //! (`tests/golden/corpus.jsonl`) and every language, what the C++ converter
 //! made of it in both reading modes:
 //!

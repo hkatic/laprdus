@@ -1,6 +1,6 @@
 //! Both synthesizers against the C++ engine, phone for phone.
 //!
-//! `tools/golden/dump.cpp` writes, for every text of the golden corpus, the
+//! A dump program built from the C++ engine (removed with it) wrote, for every text of the golden corpus, the
 //! phones the C++ front end made of it and a hash of the audio the C++
 //! synthesizers rendered for them. These tests render the same phones and
 //! compare. The dumps are local files (`build/golden/*_full.tsv`); the tests

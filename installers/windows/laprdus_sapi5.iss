@@ -72,7 +72,7 @@ english.LaprdusUninstallName=Uninstall Laprdus
 english.LaprdusUninstallComment=Remove Laprdus from your computer
 english.LaprdusOldVersionFound=A previous version of Laprdus is already installed. Do you want to uninstall it before continuing?%n%nClick Yes to uninstall the previous version or No to cancel installation.
 english.LaprdusUpgradeFound=A previous version of Laprdus is already installed. The installer will upgrade your existing installation.%n%nClick Yes to continue with the upgrade or No to cancel.
-english.LaprdusRequiresWindows7=Laprdus requires Windows 7 or later.
+english.LaprdusRequiresWindows10=Laprdus requires Windows 10 or later.
 ; Slovenian (the messages of Setup itself are Inno Setup's own translation)
 slovenian.LaprdusDesktopShortcut=Ustvari bližnjico na namizju
 slovenian.LaprdusAdditionalOptions=Dodatne možnosti:
@@ -84,7 +84,7 @@ slovenian.LaprdusUninstallName=Odstrani Laprdus
 slovenian.LaprdusUninstallComment=Odstranite Laprdus iz računalnika
 slovenian.LaprdusOldVersionFound=Prejšnja različica programa Laprdus je že nameščena. Ali jo želite odstraniti, preden nadaljujete?%n%nKliknite Da, če želite odstraniti prejšnjo različico, ali Ne, če želite preklicati namestitev.
 slovenian.LaprdusUpgradeFound=Prejšnja različica programa Laprdus je že nameščena. Namestitveni program bo nadgradil obstoječo namestitev.%n%nKliknite Da, če želite nadaljevati nadgradnjo, ali Ne, če želite preklicati.
-slovenian.LaprdusRequiresWindows7=Laprdus zahteva Windows 7 ali novejši.
+slovenian.LaprdusRequiresWindows10=Laprdus zahteva Windows 10 ali novejši.
 
 [Files]
 ; ============================================================================
@@ -441,11 +441,11 @@ var
   InstallDir: String;
 begin
   Result := True;
-  // Check for Windows 7 or later (version 6.1)
+  // Rust's Windows targets need Windows 10 or later
   GetWindowsVersionEx(Version);
-  if (Version.Major < 6) or ((Version.Major = 6) and (Version.Minor < 1)) then
+  if Version.Major < 10 then
   begin
-    MsgBox(CustomMessage('LaprdusRequiresWindows7'), mbError, MB_OK);
+    MsgBox(CustomMessage('LaprdusRequiresWindows10'), mbError, MB_OK);
     Result := False;
     Exit;
   end;
