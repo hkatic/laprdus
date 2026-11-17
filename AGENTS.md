@@ -10,7 +10,7 @@ iPhone**. The user explicitly requested this workflow on 8 October 2026 and
 asked that it persist across sessions. Do not stop after building the CLI or
 an Android APK, and do not ask the user to repeat this deployment request.
 
-- Use `Lapplerdus/Laprdus/Laprdus.xcodeproj`, scheme `Laprdus`, and the existing
+- Use `src/platform/apple/Laprdus/Laprdus.xcodeproj`, scheme `Laprdus`, and the existing
   automatic signing configuration. Build the app and its `LaprdusVoices`
   extension from the current working tree.
 - Update the existing Mac installation at `/Applications/Laprdus.app`, quit
