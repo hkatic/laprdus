@@ -343,7 +343,7 @@ pub(super) static ENTRIES: &[&str] = &[
     // ---- More places ----
     // Varàždin, Vukòvār and Kòprīvnica are the second forms of HJP (Vȁraždīn,
     // Vȕkovār); Bjȅlovār, Virovìtica, Ȍgulīn, Ivánec, Slàvōnija and Dàlmācija
-    // as HJP has them. The place-name table (formant_proper_names.inc) has these
+    // as HJP has them. The place-name table (`tables/places.txt`) has these
     // and some four thousand more with their case forms; the entries here
     // also serve lowercase text and the derived words their stems reach.
     // (visok* is the adjective vìsok, visòka, visòko; the town Vìsokō is in

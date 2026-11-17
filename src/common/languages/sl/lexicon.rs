@@ -213,7 +213,7 @@ fn opens_entry(c: char) -> bool {
 /// the spelling they are for. The first entry of a line is written whole;
 /// each of the others begins with one character from `!` (0) to `` ` `` (63)
 /// for the number of leading bytes it shares with the entry before it, then
-/// the rest of it (`tools/formant/slovenian_tables_from_inc.py`).
+/// the rest of it (`tools/formant/slovenian_tables.py`).
 pub(super) fn find_in_table(table: &str, key: &[char]) -> Option<Vec<char>> {
     // The last line whose first entry is not after the key
     let bytes = table.as_bytes();
