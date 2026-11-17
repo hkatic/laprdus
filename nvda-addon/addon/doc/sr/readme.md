@@ -76,7 +76,7 @@ Ukratko: savremeni sintetizatori nude kvalitet po cenu resursa; Laprdus nudi per
 
 Laprdus je dostupan na sledećim platformama:
 
-- **Windows 7 do Windows 11** - preko standarda Microsoft SAPI5, što omogućava korišćenje Laprdusa u svim programima koji podržavaju Windows govor, uključujući i čitače ekrana kao što su Narrator, NVDA i JAWS
+- **Windows 10 i Windows 11** - preko standarda Microsoft SAPI5, što omogućava korišćenje Laprdusa u svim programima koji podržavaju Windows govor, uključujući i čitače ekrana kao što su Narrator, NVDA i JAWS
 - **Direktna integracija sa NVDA čitačem ekrana** - dostupan je i kao poseban dodatak za besplatni Windows čitač ekrana NVDA
 - **Linux** - preko sistema Speech Dispatcher za čitač ekrana Orca i kao program za komandnu liniju
 - **Android** - kao ugrađeni sintetizator govora za Android uređaje

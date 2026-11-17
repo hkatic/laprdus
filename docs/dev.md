@@ -20,32 +20,39 @@ This document provides comprehensive technical documentation for developers work
 
 ```
 LaprdusTTS/
-├── src/                    # Core C++ source code
-│   ├── core/               # TTS engine, phoneme mapping, numbers
-│   ├── audio/              # Recorded voices: analysis, prosody, PSOLA
-│   ├── formant/            # Formant voices: front end, rules, Klatt synthesizer
-│   ├── c_api/              # Public C API
+├── Cargo.toml              # Cargo workspace; the root crate `laprdus` is the engine
+├── src/
+│   ├── common/             # The engine (Rust crate `laprdus`, lib.rs)
+│   │   ├── engine.rs       # Engine: the synthesis pipeline
+│   │   ├── params.rs, config.rs, voice.rs, language.rs
+│   │   ├── dictionary/     # Pronunciation, spelling and emoji dictionaries
+│   │   ├── text/           # Clauses, marks, numbers, the shared front end
+│   │   ├── languages/      # hr, sr, bs, sl: each language complete and independent
+│   │   │                   # (front end, stress, lexicon, numerals, tables, voices)
+│   │   ├── prosody/        # Utterance, intonation model (both kinds of voices)
+│   │   ├── formant/        # Formant voices: rules, Klatt synthesizer, singing
+│   │   ├── concatenative/  # Recorded voices: voice data, analysis, prosody, PSOLA
+│   │   └── audio/          # Volume boost, brightness tilt
 │   └── platform/           # Platform-specific code
-│       ├── windows/        # SAPI5, CLI, config GUI
-│       ├── linux/          # CLI, Speech Dispatcher
-│       └── android/        # JNI bridge
-├── include/                # Public header files
-│   └── laprdus/
-│       ├── laprdus_api.h   # C API declarations
-│       ├── types.hpp       # Type definitions
-│       └── laprdus.hpp     # C++ header (optional)
+│       ├── c_api/          # Public C API (crate laprdus-capi)
+│       │   └── include/laprdus/laprdus_api.h   # C API declarations
+│       ├── cli/            # Command-line program (Windows, Linux, macOS)
+│       ├── windows/        # sapi5/ (SAPI5 driver), configurator/ (config GUI)
+│       ├── linux/          # speechd/ (Speech Dispatcher module)
+│       ├── android/        # Android app (Kotlin, Gradle); native/ is the JNI crate
+│       └── apple/          # Xcode project (app + speech extension)
 ├── nvda-addon/             # NVDA screen reader addon
-├── android/                # Android app (Kotlin + CMake)
 ├── installers/             # Platform installers
 │   └── linux/              # deb, rpm, PKGBUILD, tarball
 │   └── windows/            # InnoSetup
-├── data/                   # Runtime data
-│   ├── voices/             # Generated voice .bin files
-│   └── dictionary/         # Pronunciation dictionaries
-├── phonemes/               # Source phoneme WAV files
-│   ├── Josip/              # Croatian voice phonemes
-│   └── Vlado/              # Serbian voice phonemes
-└── tools/                  # Build tools (phoneme_packer)
+├── data/                   # Data
+│   ├── hr/                 # Josip/*.wav, dictionary.json, spelling.json, emoji.json
+│   ├── sr/                 # Vlado/*.wav
+│   ├── sl/                 # emoji.json
+│   ├── voices/             # Generated voice .bin files (cargo xtask data)
+│   └── dictionary/         # Generated: the dictionaries as the platforms ship them
+├── tests/                  # Engine tests (formant.rs, recorded.rs, golden data)
+└── tools/                  # xtask/ (build steps), formant/ (generators, analysis), golden/
 ```
 
 ### 1.2 Component Relationships
@@ -66,128 +73,148 @@ LaprdusTTS/
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                      TTSEngine                                  │
-│  - preprocess_text() → number expansion, dictionary lookup      │
+│                 Engine (src/common/engine.rs)                   │
+│  - preprocess() → dictionary lookup, number expansion           │
 │  - synthesize() → full text-to-speech pipeline                  │
 │  - synthesize_spelled() → character-by-character spelling       │
 └─────────────┬───────────────────────────────────────┬───────────┘
               │                                       │
               ▼                                       ▼
 ┌─────────────────────────┐         ┌─────────────────────────────┐
-│     PhonemeMapper       │         │    InflectionProcessor      │
-│  - map_text()           │         │  - analyze_text()           │
-│  - utf8_to_utf32()      │         │  - apply_inflection()       │
-│  - cyrillic_to_latin()  │         │  - segment by punctuation   │
+│  text::numbers          │         │  text::clauses              │
+│  - NumberReader         │         │  - split_clauses()          │
+│  languages::<code>      │         │  - segment by punctuation   │
+│  - front end, numerals  │         │                             │
 └───────────┬─────────────┘         └─────────────────────────────┘
             │
             ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                    AudioSynthesizer                             │
+│          ConcatSynthesizer  /  FormantSynthesizer               │
 │  - synthesize_clause() → front end, plan_clause(), render()     │
-│    (durations, pitch contour, TD-PSOLA over the pitch marks)    │
+│    (durations, pitch contour, TD-PSOLA over the pitch marks;    │
+│    the formant voices: ClauseBuilder, KlattSynth)               │
 └─────────────┬───────────────────────────────────────────────────┘
               │
               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                      PhonemeData                                │
-│  - load_from_file() / load_from_memory()                        │
-│  - get_phoneme_samples() → return WAV data for phoneme          │
+│                       VoiceData                                 │
+│  - from_file() / from_packed() / from_directory()               │
+│  - sound() → the samples of one recording                       │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+The programs written in Rust (the CLI, the SAPI5 driver, the Speech
+Dispatcher module, the Android JNI library, the Configurator) use the
+`laprdus` crate directly; the C API is for programs in other languages (the
+NVDA add-on through the SAPI5 DLL, which exports it too, and the Apple app
+through the static library).
 
 ### 1.3 Data Flow
 
 1. **Input**: UTF-8 text string
 2. **Preprocessing**: Number expansion, dictionary lookup, emoji replacement
 3. **Clause segmentation**: Split text at punctuation (chooses the melody and the pause)
-4. **Front end**: `formant::Frontend` → phones with stress, word and syllable indices
-5. **Prosody**: durations, closures, word gaps, pitch contour (`concat_prosody.cpp`, `formant_intonation.cpp`)
-6. **Rendering**: TD-PSOLA from the pitch marks of the recordings (`psola.cpp`), volume, soft limit
+4. **Front end**: `languages::Frontend` (the rules of the language spoken, `src/common/languages/<code>/`) → phones with stress, word and syllable indices
+5. **Prosody**: durations, closures, word gaps, pitch contour (`concatenative/prosody.rs`, `prosody/intonation.rs`)
+6. **Rendering**: TD-PSOLA from the pitch marks of the recordings (`concatenative/psola.rs`), volume, soft limit
 7. **Output**: 16-bit PCM audio @ 22050 Hz mono
 
 ---
 
 ## 2. Core Engine Components
 
-### 2.1 TTSEngine (`src/core/tts_engine.cpp`)
+### 2.1 Engine (`src/common/engine.rs`)
 
-The main orchestrator class that coordinates the synthesis pipeline.
+The main orchestrator type that coordinates the synthesis pipeline.
 
 **Key Methods:**
-```cpp
-// Initialize with voice data (old voice ids accepted); starts in the voice's native language
-bool initialize(const std::string& voice_id, const std::string& data_path);
+```rust
+// Switch to a voice (old voice ids accepted); a recorded voice loads its data
+// file from the directory, a formant voice needs none. The voice speaks the
+// language chosen with set_language(), else its native language
+pub fn set_voice(&mut self, id: &str, data_directory: &Path) -> Result<(), Error>;
 
-// Language of any voice: front end rules, lexicon, letter names, number dialect
-void set_language(VoiceLanguage language);
-VoiceLanguage language() const;
+// Language of any voice: front end rules, lexicon, letter names, number words;
+// None goes back to the voice's native language
+pub fn set_language(&mut self, language: Option<Language>);
+pub fn language(&self) -> Language;
 
 // Main synthesis function
-SynthesisResult synthesize(const std::string& text);
+pub fn synthesize(&mut self, text: &str) -> Result<Vec<i16>, Error>;
 
 // Spelling mode (character-by-character); final_pause = false leaves the
-// silence after the last character out and reports its length
-SynthesisResult synthesize_spelled(const std::string& text, bool final_pause = true,
-                                   uint32_t* final_pause_ms = nullptr);
-
-// Text preprocessing
-std::string preprocess_text(const std::string& text);
+// silence after the last character out; its length (ms) is returned
+pub fn synthesize_spelled(&mut self, text: &str, final_pause: bool) -> Result<(Vec<i16>, u32), Error>;
 ```
 
+Text preprocessing (emoji and pronunciation dictionaries, then numbers to
+words) is the private `Engine::preprocess()`.
+
 **Internal Components:**
-- `PhonemeData` - Loads and provides access to phoneme audio samples
-- `PhonemeMapper` - Converts text to phoneme sequences
-- `AudioSynthesizer` - Concatenates phonemes into audio
-- `InflectionProcessor` - Applies pitch modulation based on punctuation
+- `VoiceData` (`concatenative/voice_data.rs`) - Loads and provides access to the recordings of a voice
+- `languages::Frontend` - Converts text to phones (letter-to-sound, stress) by the rules of the language spoken
+- `ConcatSynthesizer` / `FormantSynthesizer` - Render a clause with a recorded or a formant voice
+- `split_clauses()` (`text/clauses.rs`) - Segments text into clauses at punctuation
 - `PronunciationDictionary` - Word/phrase replacements
 - `SpellingDictionary` - Character-to-pronunciation mapping
 - `EmojiDictionary` - Emoji-to-text conversion
 
 **Thread Safety:**
-TTSEngine is NOT thread-safe by design. Create one instance per thread or use external synchronization. This is documented and intentional for performance.
+An `Engine` is used by one thread at a time (its methods take `&mut self`, so the compiler enforces it). Create one instance per thread or use external synchronization, as the platform crates do with a mutex. This is documented and intentional for performance.
 
-### 2.2 PhonemeMapper (`src/core/phoneme_mapper.cpp`)
+### 2.2 Text to sounds (`src/common/text/`, `src/common/languages/`)
 
-Converts UTF-8 text to phoneme token sequences.
+The phoneme mapper of the first engine is gone: text becomes phones in the
+front end of the language spoken (`src/common/languages/<code>/`), over the
+shared tokenizer and word model of `src/common/text/frontend/`.
 
 **Croatian Alphabet Support:**
 - Standard letters: A-Z
 - Special characters: Č, Ć, Đ, Š, Ž
 - Digraphs: LJ, NJ, DŽ (treated as single phonemes)
 
-**Key Functions:**
-```cpp
-// Map text to phoneme sequence
-std::vector<Phoneme> map_text(const std::string& text);
+**Key Items:**
+```rust
+// The front end of a language: a clause of text to an Utterance (phones with
+// stress, words, clause kind); src/common/text/mod.rs
+pub trait Frontend {
+    fn process(&self, text: &[char], punct: Punctuation, letter_sounds: bool) -> Utterance;
+    fn letter_sound(&self, letter: &[char]) -> Utterance;
+}
 
-// UTF-8 to UTF-32 conversion
-std::u32string utf8_to_utf32(const std::string& str);
-
-// Serbian Cyrillic to Latin conversion
-std::string cyrillic_to_latin(const std::string& text);
+// Serbian (and Macedonian) Cyrillic to Latin; src/common/text/cyrillic.rs
+pub fn to_latin(text: &[char]) -> Vec<char>;
 ```
 
-**Phoneme Enum (`include/laprdus/types.hpp`):**
-```cpp
-enum class Phoneme : uint8_t {
-    A = 0, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, R, S, T, U, V, Z,
-    CH,    // Č
-    CHj,   // Ć
-    DH,    // Đ
-    SH,    // Š
-    ZH,    // Ž
-    LJ,    // LJ digraph
-    NJ,    // NJ digraph
-    DZH,   // DŽ digraph
-    SILENCE,
-    COUNT
-};
+Text is a Rust `&str` (UTF-8) at the API and a slice of `char` inside the
+front end.
+
+**The recordings of a voice (`Sound` in `src/common/concatenative/voice_data.rs`):**
+```rust
+#[repr(u8)]
+pub enum Sound {
+    A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
+    Ch,    // Č
+    Tj,    // Ć
+    Dj,    // Đ and DŽ
+    Sh,    // Š
+    Zh,    // Ž
+    Lj,    // LJ digraph
+    Nj,    // NJ digraph
+    Silence,
+}
 ```
 
-### 2.3 CroatianNumbers (`src/core/croatian_numbers.cpp`)
+The phones the front end produces are `Ph` in `src/common/formant/phones.rs`;
+`unit_for()` in `concatenative/prosody.rs` maps a phone to its recording.
 
-Converts numeric strings to words in the current language: `set_dialect()`
-is called by `TTSEngine::set_language()` for every voice (Croatian
+### 2.3 NumberReader (`src/common/text/numbers/`)
+
+Converts numeric strings to words in the current language: the engine makes
+a `NumberReader` for the language in `Engine::set_language()` for every
+voice; the language-neutral part (scanning, phone numbers, currency, cell
+addresses, cardinals) is in `text/numbers/`, the grammar of each language
+(the `Grammar` trait) in `src/common/languages/<code>/numerals.rs` (Croatian
 *tisuća / milijun / dvjesto*, Serbian *hiljada / milion / dvesta*, Bosnian
 *hiljada / milion / dvjesto*; one and two agree with the feminine scale
 words: *dvije tisuće*, *dve hiljade*). Slovenian has a system of its own
@@ -209,9 +236,11 @@ genitive, sedmega oktobra*).
 1000000 → "jedan milijun"
 ```
 
-### 2.4 InflectionProcessor (`src/core/inflection.cpp`)
+### 2.4 Clauses (`src/common/text/clauses.rs`)
 
-Applies natural-sounding pitch variation based on punctuation.
+`split_clauses()` segments the text into clauses at punctuation; the
+punctuation of a clause chooses its melody (the shared intonation model,
+`src/common/prosody/intonation.rs`) and the pause after it.
 
 **Punctuation Effects:**
 - Period (.) → falling pitch, longer pause
@@ -220,26 +249,27 @@ Applies natural-sounding pitch variation based on punctuation.
 - Exclamation mark (!) → emphasis, longer pause
 - Newline → configurable pause
 
-**Configuration:**
-```cpp
-struct PauseSettings {
-    uint32_t sentence_pause_ms = 100;  // After . ! ?
-    uint32_t comma_pause_ms = 100;     // After ,
-    uint32_t newline_pause_ms = 100;   // After \n
-};
+**Configuration** (`src/common/params.rs`; the defaults are 100, 100, 100 and 200 ms):
+```rust
+pub struct PauseSettings {
+    pub sentence_pause_ms: u32,  // After . ! ?
+    pub comma_pause_ms: u32,     // After ,
+    pub newline_pause_ms: u32,   // After \n
+    pub spelling_pause_ms: u32,  // Between spelled characters
+}
 ```
 
-### 2.5 VoiceRegistry (`src/core/voice_registry.cpp`)
+### 2.5 Voice registry (`src/common/voice.rs`)
 
 Manages voice definitions including physical, derived and formant voices.
 
 **Voices and languages are separate.** Every voice speaks every language
 (Croatian `hr-HR`, Serbian `sr-RS`, Bosnian `bs-BA`, Slovenian `sl-SI`); the registry's
 `language` of a voice is only its *native* language, spoken when the host
-asks for nothing else. `TTSEngine::set_language()` switches the language of
+asks for nothing else. `Engine::set_language()` switches the language of
 any voice (letter-to-sound rules, accent lexicon, letter names, number
-dialect), `TTSEngine::language()` reports it. The default voice is
-`VoiceRegistry::default_voice_id()` = `zvonko`, for every language and
+words), `Engine::language()` reports it. The default voice is
+`voice::default_voice()` (`DEFAULT_VOICE_ID`) = `zvonko`, for every language and
 platform. The registry order below is part of the contract: code and saved
 settings rely on the index of the first five.
 
@@ -279,7 +309,7 @@ suffix); platform UIs must not hard-code them, though they may append a
 localized description (child, grandma, formant, singing).
 
 **Aliases.** The ids of earlier versions are accepted by
-`VoiceRegistry::find_by_id()`, `laprdus_set_voice()` and
+`voice::find()`, `laprdus_set_voice()` and
 `laprdus_get_voice_info_by_id()` and resolve to the renamed voice;
 `laprdus_get_current_voice()` returns the canonical id. UIs that compare a
 saved id against the voice list should normalize it first.
@@ -295,7 +325,7 @@ saved id against the voice list should normalize it first.
 | `solist` | `sarajevo_bembasa` |
 
 **Voice Info Structure** (C API `LaprdusVoiceInfo`):
-```cpp
+```c
 typedef struct LaprdusVoiceInfo {
     const char* id;              // Plain ASCII: "josip", "djedo", "lika_velebit"
     const char* display_name;    // Shown to the user: "Josip", "Đedo", "Dalmacija Klapa"
@@ -311,8 +341,8 @@ typedef struct LaprdusVoiceInfo {
 ```
 
 **Languages** (`LaprdusLanguageInfo`, `laprdus_get_language_info()`;
-`laprdus::VoiceLanguage` and `voice_language_code/short_code/lcid/english_name/native_name()`
-in `types.hpp`; `laprdus::parse_voice_language()` parses tags and names):
+`laprdus::language::Language` with `code()`, `short_code()`, `lcid()`, `english_name()`, `native_name()`
+in `src/common/language.rs`; `Language::parse()` parses tags and names):
 
 | index | code | short | LCID | English | native |
 |-------|------|-------|------|---------|--------|
@@ -321,9 +351,13 @@ in `types.hpp`; `laprdus::parse_voice_language()` parses tags and names):
 | 2 | bs-BA | bs | 0x141A | Bosnian | Bosanski |
 | 3 | sl-SI | sl | 0x0424 | Slovenian | Slovenščina |
 
-### 2.6 Dictionary System (`src/core/`)
+### 2.6 Dictionary System (`src/common/dictionary/`)
 
-Three dictionary types for text transformation:
+Three dictionary types for text transformation. The sources are per
+language (`data/hr/dictionary.json`, `spelling.json`, `emoji.json`,
+`data/sl/emoji.json`); `cargo xtask data` stages them in `data/dictionary/`
+under the names the platforms ship (`internal.json`, `spelling.json`,
+`emoji.json`, `emoji_sl.json`), which is a build product and not checked in.
 
 **Pronunciation Dictionary (`data/dictionary/internal.json`):**
 ```json
@@ -367,29 +401,37 @@ Three dictionary types for text transformation:
 
 ## 3. Audio Processing Pipeline
 
-### 3.1 PhonemeData (`src/audio/phoneme_data.cpp`)
+### 3.1 VoiceData (`src/common/concatenative/voice_data.rs`)
 
-Manages loading and access to phoneme audio samples.
+Manages loading and access to the recordings of a voice (`VoiceData::from_file()`,
+`from_packed()`, `from_directory()`); `pack()` writes the packed file, which is
+what `cargo xtask data` calls.
 
-**Binary Format (64-byte header + 32-byte entries):**
-```cpp
-struct PhonemeFileHeader {
-    uint32_t magic;           // 'LPRD'
-    uint32_t version;         // 1
-    uint32_t phoneme_count;   // Number of phonemes
-    uint32_t total_size;      // Total file size
-    uint32_t sample_rate;     // 22050
-    uint16_t bits_per_sample; // 16
-    uint16_t channels;        // 1 (mono)
-    uint8_t reserved[44];     // Padding to 64 bytes
-};
+**Binary Format (64-byte header + 32-byte entries, little-endian), as `pack()` writes and `VoiceData::parse()` reads it:**
+```text
+Header (HEADER_SIZE = 64 bytes)
+  offset  0  u32  magic            FILE_MAGIC 0x4C505244, 'LPRD'
+  offset  4  u16  version          FILE_VERSION 1
+  offset  6  u16  flags            FLAG_ENCRYPTED 0x0001
+  offset  8  u32  count            Number of recordings
+  offset 12  u32  index offset     64
+  offset 16  u32  audio offset
+  offset 20  u32  total size       Total file size
+  offset 24  u32  sample rate      22050
+  offset 28  u16  bits per sample  16
+  offset 30  u16  channels         1 (mono)
+  offset 32  u32  CRC-32 of the audio
+  ...             unused, zero, to 64 bytes
 
-struct PhonemeEntry {
-    uint32_t phoneme_id;      // Phoneme enum value
-    uint32_t data_offset;     // Offset in file
-    uint32_t data_size;       // Size in bytes
-    uint8_t reserved[20];     // Padding to 32 bytes
-};
+Index entry (INDEX_ENTRY_SIZE = 32 bytes)
+  offset  0  u32  id               Sound enum value
+  offset  4  u32  name hash
+  offset  8  u32  data offset      Within the audio
+  offset 12  u32  packed size      Bytes
+  offset 16  u32  size             Bytes
+  offset 20  u32  duration         Samples
+  offset 24  u16  flags            0x0004 truncated
+  ...             reserved, to 32 bytes
 ```
 
 **Audio Properties:**
@@ -398,7 +440,7 @@ struct PhonemeEntry {
 - Channels: 1 (mono)
 - Phoneme truncation: L, M, N, S, SH, V, Z, ZH capped at 2000 bytes
 
-### 3.2 UnitBank (`src/audio/unit_bank.cpp`)
+### 3.2 UnitBank (`src/common/concatenative/unit_bank.rs`)
 
 Analysis of every recording when a voice is loaded: DC removal and 2 ms edge
 fades, a pitch track (normalised autocorrelation with the voice's median
@@ -407,16 +449,16 @@ waveform, marks every 5 ms in unvoiced sound, the sounding part and the
 burst onset of a stop. A voice character pitch other than 1.0 resamples the
 recordings by `sqrt(pitch)` first (spectrum warp of the derived voices).
 
-### 3.3 Prosody (`src/audio/concat_prosody.cpp`)
+### 3.3 Prosody (`src/common/concatenative/prosody.rs`)
 
 Durations by the rules of the formant voices (stress, length, final
 lengthening, rate floors), stops never stretched (burst kept, closure takes
 or gives the time), 22 ms gaps between words, and the pitch contour from the
-shared `formant::Intonation` model: accents on stressed syllables, question
+shared `Intonation` model (`src/common/prosody/intonation.rs`): accents on stressed syllables, question
 rises, final falls, declination; inflection level and enable, voice character
 pitch and user pitch all multiply onto the voice's natural pitch.
 
-### 3.4 PSOLA renderer (`src/audio/psola.cpp`)
+### 3.4 PSOLA renderer (`src/common/concatenative/psola.rs`)
 
 Time-domain pitch-synchronous overlap-add: one Hann-windowed period of a
 recording per output period, placed at output marks spaced by the target
@@ -432,9 +474,16 @@ See `docs/concatenative.md` for the full description and measurements.
 
 ## 4. Platform Integration
 
-### 4.1 C API (`src/c_api/laprdus_api.cpp`)
+### 4.1 C API (`src/platform/c_api/`)
 
-Clean C interface for all platforms.
+Clean C interface for programs written in other languages: the crate
+`laprdus-capi` (`src/lib.rs`), declared in
+`include/laprdus/laprdus_api.h`. It builds as a shared library, a static
+library and a Rust library (`liblaprdus_capi`, installed on Linux and macOS
+under the name it has always had, `liblaprdus`); the SAPI5 DLLs export it
+too. Every exported function checks its pointers and catches a panic, which
+becomes the function's error value, so nothing the engine does can take a
+host (a screen reader) down with it.
 
 **Key Functions:**
 ```c
@@ -486,9 +535,10 @@ another; the chosen language then sticks across later `laprdus_set_voice()`
 calls ("set the language once, switch voices freely"). `NULL` or `""`
 returns to the voice's native language, now and after every later voice
 change; an unknown tag is `LAPRDUS_ERROR_INVALID_PARAMETER`. Platform code
-that bypasses the C API (the Android JNI bridge, the SAPI5 driver) calls
-`TTSEngine::set_language(VoiceLanguage)` after `initialize()` /
-`initialize_formant()`, which start in the voice's native language.
+that uses the engine directly (the Android JNI library, the SAPI5 driver,
+the CLI, the Speech Dispatcher module) calls `Engine::set_language()`; the
+language then holds across `Engine::set_voice()` / `set_voice_from()`, which
+without it start in the voice's native language.
 
 **Host rate and pitch.** The user's own rate and pitch (`speech.speed`,
 `speech.pitch` in `settings.json`, `speed`/`pitch` on Android and Apple) are
@@ -507,7 +557,7 @@ VoiceOver puts in the request's `<prosody volume>`, in dB).
 **Volume boost** (`VoiceParams::volume_boost`, `laprdus_set_volume_boost()`,
 `speech.volume_boost` in settings.json, key `volume_boost` on Android and
 Apple, CLI `-B`): louder speech for a phone's earpiece in traffic, after the amplified speech volume of phone systems. Both renderers drive the clause through
-`src/audio/volume_boost.hpp` before the volume is applied: a gain of
+`src/common/audio/boost.rs` before the volume is applied: a gain of
 `VOLUME_BOOST_GAIN` (5.0, +14 dB), then a lookahead peak limiter (5 ms
 lookahead, a 20 ms hold, a 50 ms release) with its ceiling
 `VOLUME_BOOST_CEILING` at 0.944 on the true peak (`inter_sample_peak()`, an
@@ -554,8 +604,8 @@ already. Until November 2026 the limiter had a 1 ms attack, a 30 ms
 release and a ceiling of 1.4, and a soft clipper from 0.6 up rounded every
 vowel peak off: 3 dB louder, at a residual of -18 dB (10 % distortion), which
 phone users heard. The output is still deterministic, and a host at half
-volume with the boost on is louder than without it. Tests: `[volume]` in
-`test_formant.cpp` and `test_concat.cpp`, `test_volume_boost` in
+volume with the boost on is louder than without it. Tests: the volume boost cases of
+`tests/formant.rs` and `tests/recorded.rs`, `test_volume_boost` in
 `tests/nvda/test_driver.py`; the sweep behind the settings is in "Hiss,
 crackle and the boost" in `docs/formant.md`.
 
@@ -569,7 +619,7 @@ them. Head size multiplies every formant by 0.71 at 0 and 1.4 at 100 (0.8 and
 1.25 until November 2026; the
 higher value is the higher voice, at the maintainer's word; synthesizer A's runs
 the other way)
-(`head_size_factor()` in `types.hpp`): the formant voices through a
+(`head_size_factor()` in `src/common/params.rs`): the formant voices through a
 per-utterance copy of the voice with a scaled `formant_scale` (also the fixed
 F5-F8), the recorded voices through the bank warp of `ensure_bank()`, which
 leaves the pitch where it was. Breathiness runs from a pressed, hard voice at 0
@@ -585,7 +635,7 @@ November 2026 the diplophonia is twice as strong (every second period up to
 10 % shorter and 80 % weaker) and below 50 the slow pitch drift goes too, so
 0 is a perfectly steady voice. Brightness is a one-pole tilt of the whole
 output around 1.5 kHz for every voice (`tilt_brightness()` in
-`src/audio/brightness_tilt.hpp`: 0 the top folded away from an 800 Hz pivot,
+`src/common/audio/brightness.rs`: 0 the top folded away from an 800 Hz pivot,
 100 the top above 1.5 kHz tripled), which
 also reaches the hissing consonants and the bursts (Zvonko's s 8 dB further
 under the vowel at 0), plus, for the formant voices, the source emphasis (0
@@ -593,22 +643,24 @@ the bare pulse, 100 the 0.85 cap; the voice's own is 0.55 since the match to
 the reference balance, see "The reference balance" in `docs/formant.md`).
 Until November 2026 the formant voices had the emphasis alone, and 0 left
 their s as sharp as before. The engine applies them
-per clause, so a change is heard with the next utterance. Tests: `[quality]` in
-`test_formant.cpp`, "Head size and brightness shape the recorded voices" in
-`test_concat.cpp`, `test_voice_quality` in `tests/nvda/test_driver.py`.
+per clause, so a change is heard with the next utterance. Tests: the voice quality cases of
+`tests/formant.rs`, `head_size_and_brightness_shape_the_recorded_voices` in
+`tests/recorded.rs`, `test_voice_quality` in `tests/nvda/test_driver.py`.
 
 **Thread Safety:**
-- Error messages use thread-local storage with mutex protection
-- Each handle should be used from single thread
+- The last error message is kept with the handle; strings handed to the caller are held per thread
+- A handle must not be used from two threads at once
 
 ### 4.2 Windows SAPI5 (`src/platform/windows/sapi5/`)
 
-COM-based Speech API 5 driver.
+COM-based Speech API 5 driver (crate `laprdus-sapi5`, the `windows` crate
+for COM; Windows 10 or later, which the Rust toolchain needs).
 
 **Files:**
-- `sapi_driver.cpp` - ISpTTSEngine implementation
-- `laprdus_sapi.idl` - Interface definition
-- `laprdus_sapi.rgs` - Registry script
+- `src/lib.rs` - ISpTTSEngine implementation, the class factory, `DllRegisterServer` (registers the COM class; the voice tokens are the installer's)
+- `laprdus_sapi5.rc`, `build.rs` - version resource, embedded with `embed-resource`
+
+The DLL also exports the C API (`laprdus_*`), which the NVDA add-on loads it for.
 
 **Registration:**
 - 32-bit: `laprd32.dll` → HKLM\SOFTWARE\WOW6432Node\Microsoft\Speech\Voices
@@ -622,7 +674,7 @@ Three voice tokens, one per language, instead of one per Laprdus voice:
 - "Laprdus Bosnian" - LCID 0x141A (bs-BA)
 - "Laprdus Slovenian" - LCID 0x0424 (sl-SI)
 
-The token sets the language (`TTSEngine::set_language()`); the voice comes
+The token sets the language (`Engine::set_language()`); the voice comes
 from `settings.json` (`voice.default`, empty = `zvonko`, old ids accepted),
 so all three tokens speak with the voice chosen in the Laprdus
 Configurator. There is no language key in `settings.json`: the host chooses
@@ -657,7 +709,7 @@ Python-based synthesizer driver for NVDA screen reader.
 Module for Speech Dispatcher (used by Orca screen reader).
 
 **Files:**
-- `sd_laprdus.c` - Speech Dispatcher module
+- `src/main.rs` - Speech Dispatcher module (crate `laprdus-speechd`, binary `sd_laprdus`): a process that speaks the module protocol over its standard input and output; it needs no Speech Dispatcher headers to build
 - `laprdus.conf` - Module configuration
 
 **Configuration:**
@@ -676,15 +728,15 @@ The symbolic voices are the same in all three languages: MALE1 = `zvonko`,
 MALE2 = `josip`, MALE3 = `djedo`, FEMALE1 = `baba`, CHILD_MALE = `detence`.
 SSIP `pitch_range` maps onto the inflection level.
 
-### 4.5 Android (`android/` and `src/platform/android/`)
+### 4.5 Android (`src/platform/android/`)
 
 Native library + Kotlin TTS Service.
 
-**JNI Bridge (`src/platform/android/jni_bridge.cpp`):**
-- One native engine per `LaprdusTTS` object, each with its own mutex: `nativeCreate()` returns a handle that every other call takes as its first argument (a handle, not a field read from `thiz`, so R8 renaming cannot break it). The engine exists from creation, so settings applied before the first voice are kept
+**JNI library (`src/platform/android/native/src/lib.rs`, crate `laprdus-android`, built as `liblaprdus.so`):**
+- One native engine per `LaprdusTTS` object, each with its own mutex: `nativeCreate()` returns a handle that every other call takes as its first argument (a handle, not a field read from `thiz`, so R8 renaming cannot break it; a number that names an engine in a table, never a pointer, so a stale handle finds nothing). The engine exists from creation, so settings applied before the first voice are kept
 - Two engines in one process: `LaprdusTTS.service` (the TTS service: TalkBack and other apps) and `LaprdusTTS.app` (the app's preview and settings, provided by Hilt), so a voice, rate or dictionary set by one never reaches the other
 - Asset manager integration for voice data
-- Proper JNI type conversions
+- Proper JNI type conversions (the `jni` crate); a panic is caught and gives the call's failure value
 
 **Keeping the two engines in step:** the service follows the app through the
 saved settings and the dictionary files, not through the engine: a newly
@@ -696,69 +748,78 @@ dictionaries and then the user's from `userDictionaryDir`
 (`UserDictionaries.load()`), inside `exclusive { }`, which is also where the
 service sets a request's rate and pitch and synthesizes.
 
-**TTS Service (`android/app/.../LaprdusTTSService.kt`):**
+**TTS Service (`src/platform/android/app/.../LaprdusTTSService.kt`):**
 - Implements `TextToSpeechService`
 - Hilt dependency injection
 - Jetpack Compose settings UI
-- Offers every voice for every locale: 54 system voices named `<id>-<lang>` (`zvonko-sr`). The requested locale sets the engine language (`TTSEngine::set_language()` through the JNI bridge), the voice stays the one configured in the app, and the default voice is `zvonko`. The app has a Language setting for its in-app playback; "Force language" means: ignore the requested language and speak the one chosen in Laprdus settings
+- Offers every voice for every locale: 54 system voices named `<id>-<lang>` (`zvonko-sr`). The requested locale sets the engine language (`Engine::set_language()` through the JNI library), the voice stays the one configured in the app, and the default voice is `zvonko`. The app has a Language setting for its in-app playback; "Force language" means: ignore the requested language and speak the one chosen in Laprdus settings
 
 **Build Requirements:**
-- NDK with CMake
-- 16KB page size alignment (Android 15+)
+- The Rust toolchain with the four Android targets, cargo-ndk and the NDK (the linker); Gradle's `buildNativeLibrary` task runs `cargo ndk ... build --release -p laprdus-android`, so the library is optimized in debug builds of the app too
+- 16KB page size alignment (Android 15+), set in `.cargo/config.toml`
 - API level 24-36 support
 
 ---
 
 ## 5. Build System
 
-### 5.1 SCons Configuration (`SConstruct`)
+### 5.1 Cargo workspace (`Cargo.toml`)
 
-Python-based build system with multi-platform support.
+The engine and every program are Rust (1.85 or later, edition 2024); Cargo is
+the build system. The workspace's members are the engine (the root crate
+`laprdus`, `src/common/lib.rs`), the platform crates under `src/platform/`
+(`laprdus-capi`, `laprdus-cli`, `laprdus-sapi5`, `laprdus-configurator`,
+`laprdus-speechd`, `laprdus-android`) and `tools/xtask`. `cargo xtask <step>`
+(an alias in `.cargo/config.toml`) runs the build steps Cargo does not do by
+itself. The NVDA add-on keeps its own SCons build (the NVDA add-on template),
+the Android app its Gradle build, the Apple app its Xcode project.
 
 **Platforms:**
-- `windows` - MSVC compiler
-- `linux` - GCC compiler
-- `macos` - Apple clang (library and CLI; the app is built by Xcode)
-- `android` - NDK toolchain
+- Windows - the MSVC build tools as the linker (targets `x86_64-pc-windows-msvc`, `i686-pc-windows-msvc`); Windows 10 or later
+- Linux - the host target; `pkg-config` and `libasound2-dev` for the CLI's audio
+- macOS - `aarch64-apple-darwin`, `x86_64-apple-darwin` (library and CLI; the app is built by Xcode, whose script phase `src/platform/apple/build-rust-engine.sh` builds the engine as `liblaprdus_capi.a`). Not yet run on a Mac since the engine moved to Rust
+- Android - the four Android targets through cargo-ndk and the NDK
 
 **Architectures:**
-- `x64`, `x86` (Windows/Linux)
-- `arm64`, `arm` (Android)
-- `arm64`, `x64`, `universal` (macOS; `auto` picks the host)
+- x64, x86 (Windows)
+- the host's (Linux)
+- arm64-v8a, armeabi-v7a, x86_64, x86 (Android)
+- arm64, x64, or both in one binary with `--universal` (macOS)
 
 **Build Configurations:**
-- `release` - Optimized, no debug symbols
-- `debug` - Debug symbols, no optimization
+- `--release` - Optimized (`opt-level = 3`, LTO, one codegen unit); what `cargo xtask` and the Gradle build use, and what the tests should run with
+- the default dev profile - Debug symbols, no optimization
 
-### 5.2 Build Targets
+### 5.2 Build Steps
 
-| Target | Description |
-|--------|-------------|
-| (default) | Build library + phoneme data |
-| `sapi5` | Windows SAPI5 DLL |
-| `cli` | Command-line interface |
-| `config` | Windows configuration GUI |
-| `speechd` | Linux Speech Dispatcher module |
-| `linux-all` | All Linux targets |
-| `macos-all` | macOS library and CLI |
-| `macos-dist` | macOS distribution tarball (CLI, library, headers, voice data, dictionaries) |
-| `voice-data` | Generate voice .bin files |
-| `install` | Linux installation |
+| Step | Description |
+|------|-------------|
+| `cargo xtask data` | Pack the recordings into `data/voices/*.bin` and stage the dictionaries in `data/dictionary/` (`--key HEX` or `LAPRDUS_PHONEME_KEY` packs the voice files with a key) |
+| `cargo xtask windows` | SAPI5 DLLs, `laprdus.exe` and `laprdgui.exe` (the configuration GUI) for x64 and x86, staged in `dist/windows-x64/` and `dist/windows-x86/` |
+| `cargo xtask build` | Linux, macOS: the CLI, the C API library and on Linux the Speech Dispatcher module (runs `data` first) |
+| `cargo xtask install` | Linux, macOS: build and install (`--destdir`, `--prefix`, `--libdir`, `--moduledir`) |
+| `cargo xtask dist` | Linux, macOS: the release tarball (CLI, library, header, voice data, dictionaries, install script) in `dist/<os>-<arch>/` |
+| `cargo build --release -p <crate>` | One crate by itself |
+
+`build`, `install` and `dist` also take `--universal` and
+`--codesign-identity ID` (macOS) and `--locked`, `--offline`, `--frozen`.
 
 ### 5.3 Build Order
 
-1. **phoneme_packer** tool is built first
-2. **Voice data** generated from `phonemes/*/` directories
-3. **Voice data copied** to `data/voices/` for all platforms
-4. **Platform-specific builds** proceed with dependencies
+1. **Voice data** packed from `data/<language>/<Voice>/*.wav` (`cargo xtask data`; the packer is `pack()` in `src/common/concatenative/voice_data.rs`)
+2. **Voice data and dictionaries** land in `data/voices/` and `data/dictionary/` for all platforms
+3. **Platform-specific builds** proceed with dependencies (`cargo xtask build`, `install`, `dist` and the Android Gradle build run step 1 themselves)
 
 ### 5.4 Building
 
 **Windows:**
 ```bash
-# SAPI5 DLLs
-scons --platform=windows --arch=x64 --build-config=release sapi5
-scons --platform=windows --arch=x86 --build-config=release sapi5
+# Voice data and dictionaries
+cargo xtask data
+
+# SAPI5 DLLs, CLI and Configurator, both architectures, into dist/windows-x64 and dist/windows-x86
+rustup target add x86_64-pc-windows-msvc i686-pc-windows-msvc
+cargo xtask windows
 
 # Installer (requires InnoSetup)
 iscc installers/windows/laprdus_sapi5.iss
@@ -769,19 +830,20 @@ cd nvda-addon && scons
 
 **Linux:**
 ```bash
-scons --platform=linux --arch=x64 --build-config=release linux-all
+cargo xtask build
+sudo cargo xtask install --prefix /usr
 ```
 
 **Android:**
 ```bash
-cd android
+cd src/platform/android
 ./gradlew assembleRelease
 ```
 
-**macOS:**
+**macOS** (not yet run on a Mac since the engine moved to Rust):
 ```bash
 # Library and CLI for the host architecture
-scons --platform=macos --build-config=release macos-all
+cargo xtask build
 
 # Release for distribution outside the Mac App Store: the notarized app DMG and
 # the universal, Developer ID signed command-line tools tarball in dist/macos/.
@@ -790,41 +852,52 @@ scons --platform=macos --build-config=release macos-all
 # pipeline without them, --skip-notarization signs only.
 ./scripts/build-macos-release.sh
 
-# The SCons half of it by hand: universal binaries, signed after linking, packed
+# The Cargo half of it by hand: universal binaries, signed after linking, packed
 # as dist/macos-universal/laprdus-<version>-macos-universal.tar.xz
-scons --platform=macos --arch=universal --build-config=release \
-      --codesign-identity="Developer ID Application: Name (TEAMID)" macos-dist
+cargo xtask dist --universal --codesign-identity "Developer ID Application: Name (TEAMID)"
 ```
 
 ---
 
 ## 6. Testing
 
-### 6.1 Linux Tests
+### 6.1 Automated Tests
 
-**CLI Tests (`tests/linux/test_cli.cpp`):**
-- 20 tests covering CLI and API functionality
+**Engine (`tests/formant.rs`, 94 cases; `tests/recorded.rs`, 24 cases; unit tests inside `src/common/`):**
+- Formant and recorded voices: languages, numerals, accents, rate, pitch, voice quality, pauses, spelling, streaming, singing
+- `tests/dsp_against_cpp.rs`, `tests/frontend_against_cpp.rs`, `tests/numbers_against_cpp.rs` compare with dumps of the last C++ engine's output (local files in `build/golden`); they pass without the dumps
+
+**CLI Tests (`src/platform/cli/tests/cli.rs`):**
+- 14 tests of the command-line program
 - Voice selection, synthesis, file output
 
-**Speech Dispatcher Tests (`tests/linux/test_speechd_module.cpp`):**
-- 5 tests for module parameter mapping
+**C API Tests (`src/platform/c_api/tests/c_api.rs`, `header.rs`):**
+- 27 tests of the exported functions, and one of the header against the library
+
+**Speech Dispatcher Tests (unit tests in `src/platform/linux/speechd/src/main.rs`):**
+- 3 tests for module parameter mapping
 
 **Running Tests:**
 ```bash
-# Build and run
-scons --platform=linux --arch=x64 --build-config=release linux-all
+# The recorded voice cases need the packed voices and dictionaries
+cargo xtask data
 
-# Compile tests
-g++ -std=c++17 -I include tests/linux/test_cli.cpp \
-    -o build/linux-x64-release/test_cli \
-    -L build/linux-x64-release -llaprdus -lpthread
+# Release, because the suites render a lot of audio
+cargo test --release --workspace
 
-# Run
-LD_LIBRARY_PATH=build/linux-x64-release \
-    LAPRDUS_CLI=./build/linux-x64-release/laprdus \
-    LAPRDUS_DATA=./build/linux-x64-release \
-    ./build/linux-x64-release/test_cli
+# One suite; LAPRDUS_TEST_INFO=1 prints the measured values behind the thresholds
+cargo test --release --test formant
+LAPRDUS_TEST_INFO=1 cargo test --release --test recorded -- --nocapture
+
+# Python tests of the Windows programs and the NVDA driver (after cargo xtask windows)
+python tests/nvda/test_driver.py
+python tests/nvda/test_manuals.py
+python tests/windows/test_configurator_language.py
+python tests/windows/test_sapi5_driver.py
 ```
+
+`LAPRDUS_DATA` names the directory of the packed voices when it is not
+`data/voices`.
 
 ### 6.2 Manual Verification
 
@@ -858,12 +931,13 @@ laprdus -o output.wav "Test"
 
 ### 7.1 Code Style
 
-**C++ (C++17):**
-- 4-space indentation
-- `snake_case` for functions and variables
-- `PascalCase` for classes and types
-- Braces on same line
-- Use `std::unique_ptr` for ownership
+**Rust (edition 2024):**
+- `cargo fmt` with the repository's `rustfmt.toml` (`max_width = 120`, `use_small_heuristics = "Max"`)
+- `cargo clippy`: the workspace warns on `clippy::all`
+- `unsafe` is forbidden in the engine and in every crate that takes the workspace lints (`unsafe_code = "forbid"`: the engine, the CLI, the Speech Dispatcher module, xtask). It lives only in the platform boundary crates: the C API (`laprdus-capi`), the JNI library (`laprdus-android`), the SAPI5 driver's COM code (`laprdus-sapi5`), and in the Configurator only its Win32 wrapper `win32.rs` (the crate denies it elsewhere)
+- Exported C API functions and the JNI functions catch panics and return the call's failure value
+- Croatian, Serbian and Bosnian are three independent copies under `src/common/languages/` by the owner's decision: a fix to rules they share is made three times
+- Adding a language: a folder `src/common/languages/<code>/`, one match arm in `languages/mod.rs` (`rules()`), a `Language` variant in `language.rs`
 
 **Python (Python 3):**
 - Tab indentation (NVDA convention)

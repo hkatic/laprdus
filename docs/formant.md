@@ -17,13 +17,22 @@ known from its published tables), **a recorded Croatian speaker** (a diphone
 database) and the **commercial concatenative voices D, E and F**.
 
 This document explains how the pieces fit together, where the numbers come
-from, and how to check a change. Code lives in `src/formant/`.
+from, and how to check a change. The engine is written in Rust (it was C++
+until November 2026); the code lives in `src/common/`: the synthesizer and
+the rules that turn phones into control frames in `src/common/formant/`, the
+shared part of the text front end in `src/common/text/frontend/`, the
+intonation model in `src/common/prosody/`, and each language whole in
+`src/common/languages/<hr|sr|bs|sl>/` (front end, stress rules, lexicon,
+numerals, generated tables in `tables/`, its voices in `formant/`). Croatian,
+Serbian and Bosnian are three independent copies: a fix to rules they share
+is made three times, and a path written `{hr,sr,bs}/...` below means the same
+file in each of the three folders.
 
 ## 1. Pipeline
 
 ```
-text ──▶ TTSEngine::preprocess_text()        emoji, pronunciation dictionary, numbers
-     ──▶ InflectionProcessor::analyze_text() split into clauses at punctuation
+text ──▶ Engine::preprocess()                emoji, pronunciation dictionary, numbers
+     ──▶ Engine::segment(), split_clauses()  split into clauses at punctuation
      ──▶ Frontend::process()                 clause ──▶ phones with stress
      ──▶ ClauseBuilder                       phones ──▶ control frames (one per ~2 ms)
      ──▶ KlattSynth::render()                frames ──▶ 16-bit PCM, 22050 Hz
@@ -71,13 +80,13 @@ was a space and the newline pause setting did nothing.
 
 | File | Role |
 |------|------|
-| `formant_frontend.cpp` | Letter-to-sound, stress, clitics, assimilation |
-| `formant_lexicon.cpp` | Accent lexicon (words the rules get wrong) |
-| `formant_phonemes.cpp` | Acoustic definition of every phone |
-| `formant_synthesizer.cpp` | Durations, transitions, amplitudes, intonation; the three speakers |
-| `klatt_synth.cpp` | The synthesizer itself |
+| `src/common/text/frontend/` (`tokenizer.rs`, `utterance.rs`, `letters.rs`, `user_lexicon.rs`) and `src/common/languages/<code>/` (`frontend.rs`, `clause.rs`, `phonemize.rs`, `stress.rs`, `words.rs`) | Letter-to-sound, stress, clitics, assimilation |
+| `src/common/languages/{hr,sr,bs}/lexicon/` (`entries.rs`, `verbs.rs`), `src/common/languages/sl/lexicon.rs` | Accent lexicon (words the rules get wrong) |
+| `src/common/formant/phones.rs` | Acoustic definition of every phone |
+| `src/common/formant/builder.rs` (`ClauseBuilder`), `synthesizer.rs`, `singing.rs`, `voice.rs`; `src/common/prosody/intonation.rs`; `src/common/languages/{hr,sr,bs}/formant/mod.rs` | Durations, transitions, amplitudes; intonation; the three speakers and their singing presets |
+| `src/common/formant/klatt.rs` | The synthesizer itself |
 
-## 2. The synthesizer (`klatt_synth.cpp`)
+## 2. The synthesizer (`src/common/formant/klatt.rs`)
 
 A cascade/parallel formant synthesizer after Klatt (1980).
 
@@ -105,7 +114,7 @@ A cascade/parallel formant synthesizer after Klatt (1980).
 Control frames are 44 samples long; parameters are interpolated in between
 and filter coefficients are recomputed twice per frame.
 
-## 3. Sounds (`formant_phonemes.cpp`)
+## 3. Sounds (`src/common/formant/phones.rs`)
 
 Each phone has formant targets or loci, bandwidths, source levels, a noise
 spectrum, an inherent duration and a transition time.
@@ -202,8 +211,8 @@ Points specific to Croatian/Serbian/Bosnian:
   To repeat a measurement:
 
   ```bash
-  B=build/macos-arm64-release
-  LAPRDUS_CLI=$B/laprdus LAPRDUS_DATA=$B \
+  B=target/release
+  LAPRDUS_CLI=$B/laprdus LAPRDUS_DATA=data/voices \
       python3 tools/formant/analyze.py --voice zvonko "asa" "aša" "ara"
   python3 tools/formant/analyze.py recording.wav
   ```
@@ -338,8 +347,8 @@ sentences of section 7 the three voices stayed within 0.6 points of their
 earlier scores, with words flipping both ways.
 
 ```bash
-B=build/macos-arm64-release
-for w in asta aska pat pak; do $B/laprdus -D $B -v zvonko -o $w.wav $w; done
+B=target/release
+for w in asta aska pat pak; do $B/laprdus -D data/voices -v zvonko -o $w.wav $w; done
 python3 tools/formant/stops.py asta.wav aska.wav pat.wav pak.wav
 ```
 
@@ -406,8 +415,8 @@ with g, which shares the changes to the release, went from 25 to 32 of 53
 section 7 Zvonko, Stojan and Mirsad moved by +0.8, +0.1 and -1.4 points.
 
 ```bash
-B=build/macos-arm64-release
-for w in pa pra aba ada; do $B/laprdus -D $B -v zvonko -o $w.wav $w; done
+B=target/release
+for w in pa pra aba ada; do $B/laprdus -D data/voices -v zvonko -o $w.wav $w; done
 python3 tools/formant/onsets.py pa.wav pra.wav aba.wav ada.wav
 ```
 
@@ -614,8 +623,8 @@ the user asked for is that of the classic synthesizers, which it hears worse
 than the recorded speaker too (section 7).
 
 ```bash
-B=build/macos-arm64-release
-for w in apa aba ipi ibi; do $B/laprdus -D $B -v zvonko -o $w.wav $w; done
+B=target/release
+for w in apa aba ipi ibi; do $B/laprdus -D data/voices -v zvonko -o $w.wav $w; done
 python3 tools/formant/onsets.py apa.wav aba.wav ipi.wav ibi.wav
 ```
 
@@ -838,8 +847,8 @@ heard as f or p rather than l, and their nj recording is a murmur much
 like n; playing a piece of their j recording after it was heard as l or r.
 
 ```bash
-python3 tools/formant/phones.py build/macos-arm64-release/laprdus
-python3 tools/formant/phones.py --letters build/macos-arm64-release/laprdus
+python3 tools/formant/phones.py target/release/laprdus
+python3 tools/formant/phones.py --letters target/release/laprdus
 python3 tools/formant/phones.py --say "<a macOS voice>" --classes nj
 ```
 
@@ -852,7 +861,7 @@ long-term spectrum. Three differences were systematic and were taken over:
 - **Formant bandwidths.** synthesizer A's F1-F3 bandwidths measure 100-140 Hz;
   Zvonko's measured 20-100 Hz, and the narrow ones rang (the harmonic at F1
   of *i* stood 13 dB above its neighbours, in synthesizer A 3 dB). The vowel
-  bandwidths in `formant_phonemes.cpp` were widened by 20-30 Hz.
+  bandwidths in `src/common/formant/phones.rs` were widened by 20-30 Hz.
 - **A fixed resonance near 3.9 kHz.** In every synthesizer A vowel there is a
   peak at 3.8-3.9 kHz, the first of its fixed upper formants (the synthesizer
   runs at 11025 Hz). Ours sat at 4.4 kHz; F5 is now 3950 Hz and the others
@@ -936,12 +945,12 @@ under, voice E 1.4 over). Changed, each step measured on its own:
   the voiced 2.5-6 kHz region 11.0 dB under 300-1000 Hz (8.8 before; Josip
   12.7, synthesizer B 10.3, voice D 15.0, voice E 12.8).
 - The friction of the whole sibilant class 2 dB down (`af` 0.62 → 0.50,
-  0.60 → 0.48, 0.70 → 0.56 in `formant_phonemes.cpp`): the friction frames
+  0.60 → 0.48, 0.70 → 0.56 in `src/common/formant/phones.rs`): the friction frames
   are now 4.6 dB under the voiced median (voice D's 4.9), and the sibilant table
   above gets its last row (s -12 dB at 5.0 kHz, š -13 dB at 3.6 kHz, č -12 dB
   at 3.3 kHz, ć -10 dB at 3.9 kHz; the same items measured -11.4, -11.6,
   -10.6 and -9.0 dB before), at the edge of synthesizer A's -13 to -17 dB.
-- The 7 kHz peak of v and f halved (0.7 → 0.35 in `set_noise`): the recorded
+- The 7 kHz peak of v and f halved (0.7 → 0.35 in the noise peaks of `src/common/formant/phones.rs`): the recorded
   f is flat over 2-6.5 kHz and the recorded v has almost nothing above
   500 Hz, while ours rose towards 5-6.5 kHz; f's bands over 2-6.5 kHz now lie
   within 3 dB of each other.
@@ -968,7 +977,7 @@ that opens with s, š, f or h: the friction track is box-smoothed with a radius
 of 3 frames and the lead was 3 frames, so the first output sample of "sapa"
 jumped to 4 % of full scale (-28 dBFS). The lead is now `LEAD_FRAMES` = 4:
 the first 2 ms are digital silence and the friction ramps up from there
-(tested in `test_formant.cpp`). A second fault was found by reading the track
+(tested in `tests/formant.rs`). A second fault was found by reading the track
 assembly: the frames after a noisy segment took the spectrum of the *next*
 noisy segment at once, while the friction of the first was still being
 smoothed out over 6 ms, so the tail of every s, š or f before a labial went
@@ -1002,7 +1011,7 @@ copy of the plain output.
 | ceiling 1.1, knee 0.8, hold 20 ms, release 50 ms | +11.4 dB | +3.9 dB | -33 dB | -10.1 dBFS |
 | ceiling 1.25, knee 0.7, hold 20 ms, release 50 ms | +12.2 dB | +4.7 dB | -24 dB | -9.5 dBFS |
 
-The chosen limiter (`src/audio/volume_boost.hpp`) takes the minimum of the
+The chosen limiter (`src/common/audio/boost.rs`) takes the minimum of the
 wanted gains over a window that reaches 5 ms ahead and 20 ms back, ramps down
 to it linearly over the 5 ms and recovers with a 50 ms one-pole: the hold is
 longer than a glottal period down to 50 Hz, so the gain never moves inside a
@@ -1016,16 +1025,16 @@ of 2.0's +5 dB; on the test sentence the formant voices' RMS comes up 2.1-2.8
 times, Josip's 1.16 and Baba's 1.28.
 
 Constants for the listening pass: `VoiceQuality::upper_b[0]` (500) and
-`brightness` (0.65) in `klatt_synth.hpp`, the sibilant `af` values in
-`formant_phonemes.cpp`, `LEAD_FRAMES` and `NOISE_HOLD_FRAMES` in
-`formant_synthesizer.cpp`, `VOLUME_BOOST_CEILING` / `VOLUME_BOOST_KNEE`
-(0.97 / 0.9; 1.1 / 0.8 is the next notch up) in `types.hpp`, and
-`HOLD_SECONDS` / `RELEASE_SECONDS` in `volume_boost.hpp`. To repeat the
+`brightness` (0.65) in `src/common/formant/klatt.rs`, the sibilant `af` values in
+`src/common/formant/phones.rs`, `LEAD_FRAMES` and `NOISE_HOLD_FRAMES` in
+`src/common/formant/builder.rs`, `VOLUME_BOOST_CEILING` / `VOLUME_BOOST_KNEE`
+(0.97 / 0.9; 1.1 / 0.8 is the next notch up) in `src/common/params.rs`, and
+`HOLD_SECONDS` / `RELEASE_SECONDS` in `src/common/audio/boost.rs`. To repeat the
 measurements (the CLI must have the `-B` and `-I` options, which the Windows
 CLI gained in this round):
 
 ```bash
-export LAPRDUS_CLI=build/windows-x64-release/laprdus.exe LAPRDUS_DATA=build/windows-x64-release
+export LAPRDUS_CLI=target/release/laprdus.exe LAPRDUS_DATA=data/voices
 python tools/formant/spectrum.py --voice zvonko --voice josip -i paragraph.txt   # levels, spectra
 python tools/formant/spectrum.py reference_b.wav voice_d.wav voice_e.wav      # the references
 python tools/formant/spectrum.py --clicks --voice zvonko sapa zbog bistro         # clicks
@@ -1056,14 +1065,14 @@ the C API, `settings.json`, every settings screen and both CLIs carry them):
 
 | Setting | 0 | 50 | 100 | Where |
 |---|---|---|---|---|
-| head size | every formant × 0.71 (a tract 40 % longer, a deeper voice; × 0.8 until the wider ranges below) | the voice | × 1.4 (30 % shorter, a higher voice; × 1.25 before; synthesizer A's head size runs the other way, the maintainer asked for this one) | `formant_scale` of a per-utterance copy of the voice and the fixed F5-F8 (`voice_with_quality()`, `quality_for()`); recorded voices: the bank warp, pitch unchanged |
+| head size | every formant × 0.71 (a tract 40 % longer, a deeper voice; × 0.8 until the wider ranges below) | the voice | × 1.4 (30 % shorter, a higher voice; × 1.25 before; synthesizer A's head size runs the other way, the maintainer asked for this one) | `formant_scale` of a per-utterance copy of the voice and the fixed F5-F8 (`FormantVoice::with_quality()`, `FormantVoice::quality()`); recorded voices: the bank warp, pitch unchanged |
 | breathiness | a pressed, hard voice: no breath noise, open quotient towards 0.30, the source 8 dB flatter, emphasis towards 0.88, 80 % of the low shelf gone (0.40 and 4 dB alone before the wider ranges below) | the voice's own (`FormantVoice::breathiness`, open quotient, tilt) | a whisper: no voicing, breath through the cascade, open quotient 0.85, the source 10 dB steeper, B1 150 Hz wider | `VoiceQuality::whisper`, `tension` (`breathiness_whisper()`, `breathiness_tension()`); the noise scale on the same copy (formant voices) |
 | roughness | no jitter, shimmer or slow pitch drift: a perfectly steady voice | the voice's own (0.4 %, 3 %, flutter 0.2) | eight times, and from 50 up diplophonia: every second period up to 10 % shorter and 80 % weaker (5 % and 60 % until November 2026) | `VoiceQuality::jitter`, `shimmer`, `flutter`, `roughness` (formant voices) |
-| brightness | the bare pulse (emphasis 0) and the top of the whole sound folded away from an 800 Hz pivot | the voice's own emphasis (0.55 since "The reference balance" below; 0.65 before), no tilt | emphasis 0.85 and the top above 1.5 kHz tripled | `VoiceQuality::brightness` and `tilt_brightness()` (`brightness_tilt.hpp`, a one-pole tilt of the whole output around 1.5 kHz, for every voice; the recorded voices have the tilt alone) |
+| brightness | the bare pulse (emphasis 0) and the top of the whole sound folded away from an 800 Hz pivot | the voice's own emphasis (0.55 since "The reference balance" below; 0.65 before), no tilt | emphasis 0.85 and the top above 1.5 kHz tripled | `VoiceQuality::brightness` and `tilt_brightness()` (`src/common/audio/brightness.rs`, a one-pole tilt of the whole output around 1.5 kHz, for every voice; the recorded voices have the tilt alone) |
 
 The mappings are `head_size_factor()`, `breathiness_whisper()`,
 `breathiness_tension()`, `breathiness_noise_scale()`, `voice_quality_scale()`,
-`roughness_diplophonia()` and `brightness_emphasis()` in `types.hpp`; at 50
+`roughness_diplophonia()` and `brightness_emphasis()` in `src/common/params.rs`; at 50
 each returns the voice's own value exactly, and the tests require the samples
 to be identical. Brightness 0 is the setting at which a phone's speaker at
 full volume stops biting; the listening pass came back the same day, see the
@@ -1084,14 +1093,14 @@ caps its lift and shelves the treble, head size is inverted.
 level re the loudest vowel frame): s -15.5 dB at 4.39 kHz (was -12.3 at
 4.95), š -15.4 at 3.24 (-12.9 at 3.61), c -16.1 at 4.42 (-12.7 at 4.64), č
 -13.3 at 3.14 (-11.9 at 3.30), ć -14.1 at 3.72 (-10.3 at 3.95). In
-`formant_phonemes.cpp`: af S/Z 0.36, SH/ZH 0.38, SJ/ZJ 0.52, C/DZ 0.32,
+`src/common/formant/phones.rs`: af S/Z 0.36, SH/ZH 0.38, SJ/ZJ 0.52, C/DZ 0.32,
 CH/DZH 0.60, TJ/DJ 0.52; the peaks 150-400 Hz lower, 100-200 Hz wider and
 weaker at the top (s 4450/900, 5400/1200 × 0.4, 6800/1500 × 0.08; š 2550/550
 × 0.75, 3300/850, 4400/1100 × 0.3; č 2500/550 × 0.7, 3250/850, 4350/1100 ×
 0.32; c 4350/900, 5400/1200 × 0.35, 6500/1500 × 0.08; ć 2850/550 × 0.5,
 3600/850, 4800/1300 × 0.35; [ɕ] 3050/550 × 0.5, 3800/850, 5000/1300 × 0.35);
 and the transient that opens an affricate's friction (`AFFRICATE_ATTACK` in
-`formant_synthesizer.cpp`) is 1.15 instead of 1.5 (1.25 for c): it was the
+`src/common/formant/builder.rs`) is 1.15 instead of 1.5 (1.25 for c): it was the
 strongest friction in the voice after the k burst. The distances are kept:
 s−š 1.15 kHz, c−č 1.28, ć−č 0.58.
 
@@ -1123,7 +1132,7 @@ Reverted; the aspiration stays white.
 friction frames from 7.1 dB under the voiced median (plain) to 3.7 dB under,
 and the long-term spectrum of the boosted speech 5.1 dB up at 4-5 kHz against
 0.3-1 kHz (it holds the vowels down and lifts the rest): the "high annoying
-frequencies" of the report. Two changes in `volume_boost.hpp`, both in boost
+frequencies" of the report. Two changes in `src/common/audio/boost.rs`, both in boost
 mode only: the gain may rise at most `VOLUME_BOOST_MAX_LIFT_DB` (6 dB) above
 the running minimum of the envelope over the last 0.6 s (applied to the
 envelope before the 5 ms attack average, so the gain still moves only in the
@@ -1151,8 +1160,8 @@ synthesizer A's head size is the reverse. Measured on a sustained a (LPC,
 **Roughness** was not heard: five times the voice's random jitter and shimmer
 (σ 2.3 % and 17 % per period at 100) is noise, not roughness. From 50 up the
 setting now adds diplophonia (`VoiceQuality::roughness`,
-`roughness_diplophonia()` in `types.hpp`, `source_sample()` in
-`klatt_synth.cpp`): every second glottal period comes up to 5 % sooner and up
+`roughness_diplophonia()` in `src/common/params.rs`, `source_sample()` in
+`src/common/formant/klatt.rs`): every second glottal period comes up to 5 % sooner and up
 to 60 % weaker, a subharmonic an octave under the voice, the rasp of a creaky
 or hoarse voice; the random jitter and shimmer rise to eight times at 100. The
 share grows with the square root of the distance above 50 (0.45 at 60, 0.71
@@ -1176,7 +1185,7 @@ maintainer heard no difference anywhere on the slider; the test asked only
 that the samples change. The maintainer's decision: 100 a whisper, 0 a tense,
 clear voice, 50 the voice as it is.
 
-**What it is now** (`klatt_synth.cpp`, after Klatt & Klatt 1990: a breathy
+**What it is now** (`src/common/formant/klatt.rs`, after Klatt & Klatt 1990: a breathy
 voice has a larger open quotient, more spectral tilt and more aspiration, a
 pressed one the reverse). Above 50, `breathiness_whisper()` (0 at 50, 1 at
 100, linear) moves the open quotient towards `WHISPER_OQ` 0.85, steepens the
@@ -1217,7 +1226,7 @@ as they do in a real whisper. Stojan and Mirsad measure alike (periodicity
 0.981/0.977 at 50, 0.671/0.715 at 75, 0.368/0.286 at 100; paragraph 8 dB
 under 50 at 100; peaks at -1.5 dBFS or lower). H1-H2 falls 3.9 and 6.7 dB from 50
 to 0 for them. The singing presets follow the same curve (periodicity 0.35-0.40
-at 100). Test: `test_formant.cpp` "Breathiness runs from a tense voice to a
+at 100). Test: `tests/formant.rs` "Breathiness runs from a tense voice to a
 whisper".
 
 ### The hissing consonants in boost mode; brightness and roughness heard (November 2026)
@@ -1244,7 +1253,7 @@ boosted recorded voices also went over full scale between the samples:
 Josip's paragraph +1.39 dBTP, Vlado's -0.03 (and their plain output +0.65
 and +0.75 dBTP), which a phone's resampler clips.
 
-**The hiss limiter** (`limit_hiss()` in `volume_boost.hpp`, boost mode only,
+**The hiss limiter** (`limit_hiss()` in `src/common/audio/boost.rs`, boost mode only,
 after the treble shelf and before the limiter, so the limiter never lifts
 what it lowered). Detection: second-order Butterworth high- and low-pass at
 `VOLUME_BOOST_HISS_HZ` 3 kHz, their power followed over 2 and 5 ms; the cut
@@ -1309,7 +1318,7 @@ full volume and -66 dB at half volume, the soft knee's distortion; see
 **Brightness** did nothing for the hiss of the formant voices: it moved their
 source emphasis, which the frication never passes through (Zvonko's s -14.3
 dB re the vowel at 0, -14.9 at 50). The one-pole tilt of the recorded voices
-(`tilt_brightness()`, now in `src/audio/brightness_tilt.hpp`) is applied to
+(`tilt_brightness()`, now in `src/common/audio/brightness.rs`) is applied to
 the whole output of the formant voices too, after the emphasis: the s of asa
 -23.0 at 0, -17.8 at 25, -14.9 at 50, -13.8 at 75, -11.8 at 100, the a's 3.5-4.5
 kHz band -37.2 / -31.2 / -24.5 / -19.5 / -15.7 dB re its total (before: -29.7
@@ -1328,12 +1337,12 @@ first round), also within 0.5-3 kHz, which a phone's speaker plays:
 `ROUGHNESS_AMPLITUDE_DIP` from 0.6 to 0.8; at 100 the subharmonics stand as
 high as the harmonics and the pitch tracker cannot follow the voice. Below 50
 `VoiceQuality::flutter`, the slow drift of the pitch, goes to none at 0
-(`quality_for()`): the spread of a held a at a flat pitch went from 6.5 cents
-at 50 to 0.0 at 0 (5.0 before). Tests: `test_formant.cpp` "The volume boost
+(`FormantVoice::quality()` in `src/common/formant/voice.rs`): the spread of a held a at a flat pitch went from 6.5 cents
+at 50 to 0.0 at 0 (5.0 before). Tests: `tests/formant.rs` "The volume boost
 makes the speech louder without clipping" (s, c and ć further under the
 vowel in boost mode, the true peak), "Voice quality settings shape the voice
 and 50 leaves it alone" (the hiss of asa at brightness 0), "Roughness is a
-rasp above 50 and a steady voice at 0"; `test_concat.cpp` "The volume boost
+rasp above 50 and a steady voice at 0"; `tests/recorded.rs` "The volume boost
 makes the recorded voices louder without clipping" (the vowels rise, Josip's
 s comes down by more than 10 dB, the true peak).
 
@@ -1379,14 +1388,14 @@ The sharp ends raised the peaks into the formant renderer's soft knee (0.8):
 a waveshaping residual (after the best gain per 2 ms, full volume against
 half) of -21 dB at breathiness 0, -17.5 at brightness 100 and -16 with both,
 where clean output measures -75. The plain output of `FormantSynthesizer`
-now goes through the limiter of `volume_boost.hpp` at unity gain after the
+now goes through the limiter of `src/common/audio/boost.rs` at unity gain after the
 volume with its ceiling at the knee, as the recorded voices' does: -43 to
 -48 dB (the limiter's 5 ms ramp is what a 2 ms fit still sees), peaks at
 -2.1 dBFS. The speaking voices at their defaults peak near -4 dBFS and are
 bit for bit unchanged; seven of the ten singing presets were bending their
 loudest notes at their defaults (Orguljaš -35 dB, Harmonikaš -44, Sevdalija
 -47, Sazlija -48) and are now at -53 to -61 dB, their peaks 1.5 dB lower.
-Test: `test_formant.cpp` "Voice quality settings shape the voice and 50
+Test: `tests/formant.rs` "Voice quality settings shape the voice and 50
 leaves it alone" (breathiness 0's top, no waveshaping at the sharpest
 setting).
 
@@ -1464,10 +1473,10 @@ byte what they were; their consonants follow the tables):
 - *The presence region*: the source emphasis `VoiceQuality::brightness` 0.65 →
   0.55 (the brightness setting still maps 0..50..100 onto 0..0.55..0.85), F5's
   bandwidth 500 → 650 Hz and F4's 180 → 220 Hz for the speaking voices
-  (`SPEAKING_F5_BANDWIDTH`, `SPEAKING_F4_BANDWIDTH` in `formant_synthesizer.cpp`;
+  (`SPEAKING_F5_BANDWIDTH` in `src/common/formant/voice.rs`, `SPEAKING_F4_BANDWIDTH` in `builder.rs`;
   the presets keep 500 and 180). The /a/'s 3-4 kHz went from -19/-18 to
   -22/-22 dB re the vowel (synthesizer A -24/-25).
-- *The consonants* (`formant_phonemes.cpp`): af F 0.13 → 0.08; H/GH af 0.06 →
+- *The consonants* (`src/common/formant/phones.rs`): af F 0.13 → 0.08; H/GH af 0.06 →
   0.032 and ah 0.30 → 0.16; T/D af 0.50 → 0.27 with `D_BURST` 1.15 → 1.5 and
   t's release breath `rel.ah` 0.20 → 0.15 (synthesizer A's release after the burst
   is -24 to -27 dB, ours was -22 to -24) and a prepausal tail 0.65 so that pat
@@ -1488,7 +1497,7 @@ byte what they were; their consonants follow the tables):
 Tests: "The speaking voices have the reference balance", "Friction sits
 about ten decibels under the voice", "f, h, t, p, k and the sibilants sit at
 Synthesizer A's levels" and "The singing presets keep their top" in
-`test_formant.cpp`, with the same measures as `build/measure`'s
+`tests/formant.rs`, with the same measures as `build/measure`'s
 `testmetrics.py` of the round (an FFT over the frames within 35 dB of the
 loudest; a zero-crossing-rate class for friction; the burst as the loudest
 6 ms within 10 ms after the gap, since a longer window reaches the vowel).
@@ -1580,13 +1589,13 @@ left alone.
 
 **What changed.**
 
-- *The friction has its own top* (`klatt_synth.cpp`): the 6th-order ceiling
+- *The friction has its own top* (`src/common/formant/klatt.rs`): the 6th-order ceiling
   at 5.3 kHz is on the voiced path alone (the cascade's output: voicing,
   breath, aspiration), and the friction of every voice, the singing presets
   included, goes through the fourth-order low-pass `FRICATION_CUTOFF` at
   8 kHz (6.6 kHz before, and under the ceiling for the speaking voices). The
   vowels are sample for sample what they were.
-- *s, z, c and dz* (`formant_phonemes.cpp`): peaks 4500/1100 × 0.55,
+- *s, z, c and dz* (`src/common/formant/phones.rs`): peaks 4500/1100 × 0.55,
   5500/1500 × 1.0, 7000/2000 × 0.55 (c 4400, 5400, 6900 × 0.50), in rising
   order so that the alternating signs of the bank leave no notch between
   them (designed on an analytic copy of the bank, then measured on the
@@ -1604,7 +1613,7 @@ left alone.
 - *t, d, f, v, k* keep their tables; the new low-pass gives the t burst
   (-23.0 dB, was -24.0) and f (-25.6, was -26.4) the little top their own
   third peaks ask for.
-- *The recorded voices* (`audio_synthesizer.cpp`): the plain output goes
+- *The recorded voices* (`src/common/concatenative/synthesizer.rs`): the plain output goes
   through the hiss limiter of boost mode with a mild hold, `RECORDED_HISS_DB`
   -10 dB under the loudest nearby vowel (boost mode keeps its -22). The sweep
   (0, -6, -8, -10, -12) was read on the table above: -10 puts Josip's s, c, č
@@ -1644,25 +1653,32 @@ and 2 dB over, 1 dB over at 6.3 kHz and inside the range at 8. In boost mode the
 Đedo's share above -10 dB hardly moved: it is their vowels' 0.8-2.5 kHz, the
 voice itself.
 
-Tests: `test_formant.cpp` "s and c are not heard as š and č" (the middle of
+Tests: `tests/formant.rs` "s and c are not heard as š and č" (the middle of
 the friction between 5.0 and 6.5 kHz, under 5 % of it under 4 kHz, a top
 above 6 kHz; š and č between 2.6 and 3.9 kHz with a tail), "The speaking
 voices have the reference balance" (the ceiling measured on a sentence of
 sonorants), "The singing presets keep their top" (the vowels' top);
-`test_concat.cpp` "The hiss of the recorded voices is held under the vowels".
+`tests/recorded.rs` "The hiss of the recorded voices is held under the vowels".
 `LAPRDUS_TEST_INFO=1` makes the test programs print every measured value
 behind a threshold. Constants for the listening pass: the sibilant tables and
-`af` values in `formant_phonemes.cpp`, `FRICATION_CUTOFF` in
-`klatt_synth.cpp`, and `RECORDED_HISS_DB` in `types.hpp` (0 turns the hold of
+`af` values in `src/common/formant/phones.rs`, `FRICATION_CUTOFF` in
+`src/common/formant/klatt.rs`, and `RECORDED_HISS_DB` in `src/common/params.rs` (0 turns the hold of
 the recorded voices off). To repeat:
 
 ```bash
-export LAPRDUS_CLI=build/windows-x64-release/laprdus.exe LAPRDUS_DATA=build/windows-x64-release
+export LAPRDUS_CLI=target/release/laprdus.exe LAPRDUS_DATA=data/voices
 python tools/formant/sibilants.py zvonko_asa.wav zvonko_asha.wav josip_asa.wav reference_asa.wav
 python tools/formant/spectrum.py --voice zvonko --voice josip -i paragraph.txt   # the last line: the ear's band
 ```
 
-## 4. Text to sounds (`formant_frontend.cpp`)
+## 4. Text to sounds (`src/common/text/frontend/`, `src/common/languages/{hr,sr,bs}/`)
+
+The tokenizer, the word model, the letters and the user's lexicon are shared
+(`src/common/text/frontend/`); the rules of this section are in each
+language's folder (`frontend.rs`, `clause.rs`, `phonemize.rs`, `stress.rs`,
+`verbs.rs`, `english.rs`, `words.rs`, `lexicon/`), three times over for
+Croatian, Serbian and Bosnian. `languages/mod.rs` chooses the folder by the
+language (`rules()`, the `Frontend` there).
 
 - Serbian Cyrillic is transliterated first.
 - **Digraphs** lj, nj, dž are single sounds, except across a few prefix
@@ -1700,7 +1716,7 @@ python tools/formant/spectrum.py --voice zvonko --voice josip -i paragraph.txt  
   „*S tobom*“) and in all-caps text (*ALI SAM S NJOM*), and the letter
   anywhere else (*Mercedes S klasa*, *pritisnite S za spremanje*). A line
   starts a sentence too, since a line break ends the clause (section 1,
-  `analyze_text`): in a post VoiceOver reads as "prije 18 h, Javno⏎S ponosom
+  `split_clauses()` in `src/common/text/clauses.rs`): in a post VoiceOver reads as "prije 18 h, Javno⏎S ponosom
   predstavljam" the *S* used to sit mid-clause and was read *es*. Before an
   instrumental (*-om, -em, -im, -ima, -ama, -lju, -šću*) a capital *S* is
   the preposition anywhere, for hosts that join lines with a space (*Javno
@@ -1765,8 +1781,10 @@ drops the length the dictionaries keep after the accent (*nè znām*), which is
 not heard in Croatian as commonly spoken; Stojan and Mirsad keep it. Bosnian additionally moves the accent
 onto prepositions before a fixed list of words (*ù grād*, *nà more*).
 
-To correct a word, add an entry to `formant_lexicon.cpp` (notation at the top
-of the file). Language-specific tables override the common one (*pròfesor* in
+To correct a word, add an entry to `lexicon/entries.rs` of the language
+(`src/common/languages/{hr,sr,bs}/lexicon/`; the notation is described in
+`src/common/text/frontend/notation.rs`). Each language has its whole table,
+and a later entry overrides an earlier one of the same spelling (*pròfesor* in
 Croatian, *profèsor* in Serbian and Bosnian).
 
 **Ispuna, Hrvata, vatrogasci, kafanica, laganica, muškarci, policajci and nisi,
@@ -2157,7 +2175,7 @@ lengthen the vowel as the *víru* rule does. These remain local heuristics,
 not a full syntactic parser: *noći* defaults to short falling without a
 cue, and an ambiguous prepositional phrase can still need an explicit
 accent. Written accents and user exact/stem/verb entries retain priority.
-Tests in `tests/linux/test_frontend.cpp` cover the twelve requested forms,
+Tests in `src/common/languages/tests.rs` cover the twelve requested forms,
 related inflections, context, stressed quantity and override precedence.
 
 The Croatian *pobjednik* and *pobjednički* paradigms were checked on
@@ -2375,7 +2393,7 @@ regular verb forms. The local case cues are not a complete syntax parser:
 unmarked ambiguous forms retain the documented defaults outside recognized
 contexts. Written accents and user accent entries override every new cue.
 Regression checks cover all supplied spellings, inflection contrasts,
-context, quantity and override precedence in `tests/linux/test_frontend.cpp`.
+context, quantity and override precedence in `src/common/languages/tests.rs`.
 
 **Presvlačenje: accent audit, 11 October 2026.**
 [Školski rječnik](https://rjecnik.hr/search/?q=presvla%C4%8Denje&strict=yes)
@@ -2570,7 +2588,7 @@ komponenta*. The definite singular cue in *o novoj komponènti* selects D/L
 singular. *Bez stvari* can be singular or plural and keeps the default.
 Written accents and user entries always override these choices. Regression
 checks cover the supplied forms, inflection contrasts, hiatus, case cues,
-and both override mechanisms in `tests/linux/test_frontend.cpp`.
+and both override mechanisms in `src/common/languages/tests.rs`.
 
 **Komarac–glavni list (11 October 2026).** Checked against the Institute's
 *Školski rječnik hrvatskoga jezika* (ŠR) and HJP. As in the preceding audit,
@@ -2867,7 +2885,7 @@ dictionary directories) holds entries in the same notation, as JSON:
 `{ "word": "kontr'o:l*" }`, `{ "word": "sign'a:l|a|u|om" }`,
 `{ "verb": "ur'e:d=i<p" }`, `{ "verb": "dijel:i" }`, each optionally with
 `"language": "hr" | "sr" | "bs"` and a `"comment"`. `UserLexicon::parse()`
-(`formant_frontend.cpp`) reads the file once, checks every entry (one stress
+(`src/common/text/frontend/user_lexicon.rs`) reads the file once, checks every entry (one stress
 mark, length only after a vowel, known verb classes) and counts the ones it
 skips; `laprdus_get_accent_lexicon_report()` returns the counts and the first
 reason. `Frontend::set_user_lexicon()` copies the entries for its language
@@ -3021,7 +3039,7 @@ pročìtaj; pokrénuti, pokréni; podijéliti, podijéli*. The rule for long
 infinitives found the infinitive, but nothing told the front end that
 *uredi, uredio, uredim, uređen* belong to the same verb, so every other form
 got the first syllable: *Ùredi, Òtvori, Ìsključi, Pòdijeli* on every button.
-Two tables in `formant_lexicon.cpp` now name the verbs, and
+Two tables in `lexicon/verbs.rs` (`IJE_VERBS`, `VERBS`) now name the verbs, and
 `StressRules::verb_form()` recognizes their forms (infinitive, future,
 present, imperative, aorist, both participles, verbal noun; the passive
 participle with its consonant change: *uređen, zamišljen, očišćen,
@@ -3747,7 +3765,8 @@ countries are in none of the three sources and keep the rules; going by the
 places that are, about four in ten of them have a wrong accent in at least
 one form.
 
-The forms are in `src/formant/formant_proper_names.inc`, generated by
+The forms are in `src/common/languages/{hr,sr,bs}/tables/places.txt`
+(and `persons.txt` for the personal names below), generated by
 `tools/formant/proper_names.py` from `tools/formant/places.tsv` (one row per
 place with its accented nominative and genitive, gender, the voices it is
 for and the source). To add or correct a place, edit the TSV and run the
@@ -3886,7 +3905,8 @@ The voices still read an English word with the sounds of their own
 letters (*croatian* is *kro-a-ti-an*); what changed is where it is
 stressed and how:
 
-- **Where English stresses it.** The table `formant_english.inc` holds the
+- **Where English stresses it.** The table `tables/english.txt` (the same file in
+  `src/common/languages/hr/`, `sr/` and `bs/`) holds the
   stressed vowel letter of 5,600 English words (*cro'atian, e'leven,
   comp'uter, notific'ation, techn'ology*). The voices read every vowel letter
   as a syllable, so the letter is all they need: the English stress of
@@ -3963,7 +3983,7 @@ dictionaries stress on the first syllable anyway (*pȁnsion*).
 
 **The table** is made by `tools/formant/english_words.py` from the Carnegie
 Mellon University Pronouncing Dictionary (BSD licence; the notice is in
-`formant_english.inc`):
+`english.rs` of the three languages, which read the table):
 
 1. The 30,000 commonest English words of the `wordfreq` package that are
    written with *a-z*, are in the pronouncing dictionary, and are words of
@@ -3985,7 +4005,7 @@ Mellon University Pronouncing Dictionary (BSD licence; the notice is in
    syllables differ (*record, update, present, import*), the noun's, which a
    label or a heading usually is; a vowel spelled with two letters is
    stressed on the first (*heart*, not *he-ART*).
-3. The front end, built with an empty table (`english_stress.cpp`), says
+3. The front end, built with an empty table (`examples/english_stress.rs`), says
    where it stresses each word. A word goes into the table when that is
    another syllable, or the right one with a rising accent, and the front
    end does not already find it through a shorter word of the table and an
@@ -4003,13 +4023,13 @@ that lexicon. The test "English words are stressed where English stresses
 them" checks the pitch peak of *Croatian, Ableton, Eleven* and the reading
 of words with inner capitals.
 
-## 4a. Slovenian (`formant_slovenian.cpp`)
+## 4a. Slovenian (`src/common/languages/sl/`)
 
 Slovenian was added in October 2026 as a fourth language of every voice
-(`VoiceLanguage::Slovenian`, "sl-SI", LCID 0x0424). It shares the tokenizer,
+(`Language::Slovenian`, "sl-SI", LCID 0x0424). It shares the tokenizer,
 the clause structure, the clitic grouping and the flattening into one phone
-string with the other three languages (`Frontend::process_slovenian()` in
-`formant_frontend.cpp`), but its letters, its stress and its function words
+string with the other three languages (the shared `src/common/text/frontend/`,
+called from `process()` in `src/common/languages/sl/frontend.rs`), but its letters, its stress and its function words
 are different enough that the rules and the lexicon live in a module of
 their own. The sources are the normative ones: the Slovenski pravopis 2001
 (Pravila, "Glasoslovje", §§ 615-744 on the vowels, l, v, the schwa and the
@@ -4026,10 +4046,12 @@ measurements are Tivadar's (2004), Toporišič's (1978) and Petek,
 Standard Slovenian has eight vowels. The close *e* and *o* occur only long
 and stressed (*mésto*, *góra*); every unstressed *e* and *o* and every short
 stressed one is open (*člôvek*, *otròk*, *vôda*); the schwa is always short
-(Pravopis § 618). Four phones were added for them: `EH` [ɛ] and `OH` [ɔ],
-`EE` [eː] and `OO` [oː] (the shared `E` and `O` of the other languages lie
-between the two qualities), and `AX`, the schwa as a syllable of its own
-(the `SCHWA` of the syllabic r stays the brief vocoid it was). Their
+(Pravopis § 618). Four phones were added for them: `Ph::Eh` [ɛ] and `Ph::Oh` [ɔ],
+`Ph::Ee` [eː] and `Ph::Oo` [oː] (the shared `Ph::E` and `Ph::O` of the other languages lie
+between the two qualities), and `Ph::Ax`, the schwa as a syllable of its own
+(the `Ph::Schwa` of the syllabic r stays the brief vocoid it was; this document
+also writes the phones in capitals, EH, AX, SH, as the tables of the C++
+engine named them). Their
 targets are the means of Tivadar's adult male speakers (i 351/2218, e
 397/2169, ɛ 526/1821, a 603/1324, ɔ 551/1000, o 397/872, u 385/754 Hz),
 the open vowels moved a little towards Toporišič's more peripheral values
@@ -4097,7 +4119,10 @@ Toporišič's rules), so the lexicon carries most of the load:
    long, close *e*/*o* (*mésto*), circumflex = long, open (*člôvek*), grave =
    short (*otròk*). A word with two accents (*nàjlépši*) has its main stress
    on the last of them.
-2. **The lexicon.** `formant_slovenian.inc` is generated by
+2. **The lexicon.** The tables in `src/common/languages/sl/tables/`
+   (`forms.txt` and `stems.txt`, the lexicon, and ten word lists the rules
+   of context read; each is a static of the module named after its file,
+   `FINAL_L` for `final_l.txt`) are generated by
    `tools/formant/slovenian_words.py` from Sloleks 3.1 (CJVT, University of
    Ljubljana; CLARIN.SI, http://hdl.handle.net/11356/2080; CC BY-SA 4.0):
    the word forms of 101,000 lemmas, every one of the 100,000 entries whose
@@ -4156,7 +4181,7 @@ Toporišič's rules), so the lexicon carries most of the load:
      (*posodobíti, posodobím, posodobí, posodobíl, posodobíla*), against SSKJ²
      and SP (*posodôbiti -im*); the passive *posodôbljen* has no i to carry it
      and stays, and so does the command *posodôbi* at the head of a clause
-     (the listener's second report, 2026-11-03; `SLOVENIAN_HEAD_IMPERATIVES`
+     (the listener's second report, 2026-11-03; `HEAD_IMPERATIVES`
      below takes Sloleks's imperative before the correction).
    - **The final l of a participle.** A final *l* after a vowel is [w] in the
      participles and [l] in the loanwords stressed on the last syllable
@@ -4190,7 +4215,7 @@ Toporišič's rules), so the lexicon carries most of the load:
      engine said [w] and Sloleks [l], Fran's entries put about 75 lemmas among
      the marked (`tools/formant/slovenian_final_w.tsv`; a [u̯] given only as a
      second variant, *véčidel [tudi -u̯]*, *vítel*, does not count). The others go
-     into the generated table `SLOVENIAN_FINAL_L` (300 spellings), which
+     into the generated table `FINAL_L` (300 spellings), which
      `finish_word()` consults: those loanwords, names (*Izrael, Daniel, Emil,
      Istanbul, Pavel, Karel*) and the genitive plurals, whose l belongs to the
      stem (*sil, žil, kril, škatel, gesel*). A verb's participle stays out whatever
@@ -4201,9 +4226,9 @@ Toporišič's rules), so the lexicon carries most of the load:
      231 of the 352 changed; about 40 very rare forms remain, of frequency two.
      Where a noun in *-l* shares its spelling with a rarer participle the noun
      decides: *je kril* now reads [l] with *kril*, the genitive plural of *krilo*.
-   - **Every form is checked.** The tool simulates `Lexicon::find_exact`
-     and `find_stem` of the C++, the hand-written entries included (it
-     reads `HAND_ENTRIES` from `formant_slovenian.cpp`), over every
+   - **Every form is checked.** The tool simulates `Lexicon::find_exact()`
+     and `find_stem()` of the engine, the hand-written entries included (it
+     reads `HAND_ENTRIES` from `src/common/languages/sl/lexicon.rs`), over every
      form, and lists whole any form the lookup misreads. A stem of one word
      caught the forms of another: *postavít\**, the stem of *postavítev*,
      read *postaviti* as *postavíti*, and likewise *preveriti*,
@@ -4236,8 +4261,8 @@ Toporišič's rules), so the lexicon carries most of the load:
    *sestradati*, *vôd\** decided 316 forms of other words. A new hand entry
    needs a reason in the dictionaries, should be a whole form rather than a
    stem, and a deviation for every form of a word belongs in `CORRECTIONS`.
-   The notation of an entry (`slovenian::Lexicon` in
-   `formant_slovenian.hpp`) is the word spelled as it is pronounced: the
+   The notation of an entry (`Lexicon` in
+   `src/common/languages/sl/lexicon.rs`) is the word spelled as it is pronounced: the
    accented letters of SSKJ, *ə* for the schwa, *w* for an *l* that is [w], *ł* for one that stays [l],
    `*` for a stem, `|` for a list of forms, `spelling=pronunciation` where
    the two cannot be matched letter by letter; `'` and `:` are accepted as
@@ -4271,7 +4296,7 @@ Toporišič's rules), so the lexicon carries most of the load:
    *gél*, *mól*.
 
 A few spellings read differently by their place in the clause
-(`HEAD_READINGS`, `slovenian::head_reading()`): at the head of the clause,
+(`HEAD_READINGS`, `head_reading()` in `sl/readings.rs`): at the head of the clause,
 or after a conjunction or an adverb that opens a request (*in, pa, zdaj,
 potem, prosim, samo, raje ...*), *živijo* is the greeting *žívijo* and
 *naredi*, *govori*, *odgovori*, *dobi*, *zapusti*, *spusti*, *stori*,
@@ -4295,7 +4320,7 @@ the last syllable) are the same thing, generated: the imperative of a verb in
 "it upgrades", *dovólite* "you allow"). `tools/formant/slovenian_commands.tsv`
 lists about 90 such verbs (Save, Install, Update, Allow, Confirm, Export,
 Log in ...), chosen by hand; the generator writes
-`SLOVENIAN_HEAD_IMPERATIVES` from Sloleks's hand-accented second-person
+`HEAD_IMPERATIVES` from Sloleks's hand-accented second-person
 imperatives (`Gg?vde`, `Gg?vdm`; the first accentuation, before
 `CORRECTIONS`, so the command is *posodôbi* while the present is
 *posodobí*; the listener answered that *Posodobite* as a command is
@@ -4324,7 +4349,7 @@ odgovori, prosi*) before a comma and a clause of *da* is the present
 (*Govori, da bo prišel*; `BEFORE_COMPLEMENT_MARK`), while *Poskrbi, da bo
 delovalo* keeps the command.
 
-*Meni* is three words (`slovenian::clause_reading()`): *mení* the menu
+*Meni* is three words (`clause_reading()` in `sl/clause.rs`): *mení* the menu
 (SSKJ² "mení tudi menu [mení]", SP *mení -ja*), *mêni* the dative and
 locative of *jàz* (SSKJ², SP: *mêne, mêni*) and *méni* the present of
 *méniti* "think" (SP *meníti in méniti -im tudi méniti -im*). Alone in its
@@ -4366,9 +4391,9 @@ against both the listener and the dictionaries.
 
 A spelling that is a verb's form in one reading and a noun's, an
 adjective's or an adverb's in another, with a different accent, is read by
-the words around it (`SLOVENIAN_VERB_NOUN`, 941 spellings the generator
+the words around it (`VERB_NOUN`, 941 spellings the generator
 finds where both readings occur at least 20 times in the corpus;
-`slovenian::context_reading()`). Without a cue the lexicon's reading, the
+`context_reading()` in `sl/readings.rs`). Without a cue the lexicon's reading, the
 more frequent one, stays. The cues were chosen on the tagged corpus SUK 1.1
 (see Checking): of the 6,863 tokens of these spellings there, the more
 frequent reading alone is right for 93.3 %, the cues below for 94.8 %.
@@ -4411,7 +4436,7 @@ frequent reading alone is right for 93.3 %, the cues below for 94.8 %.
   cue the listener named; without it the shape is the present (*Veseli se
   novega dneva.* "he looks forward to the new day"). The exclamation mark of a
   later clause reaches the front end as `IN_EXCLAMATION_MARK`, appended by
-  `TTSEngine::segment_text()` like `IN_QUESTION_MARK`.
+  `Engine::segment()` like `IN_QUESTION_MARK`.
 - *leti*: the noun *léti* (the dual and instrumental of *léto*, the plural
   of *lèt* "flight") only with a preposition, a number or a word in *-imi*,
   *-ema* among the three words before it (*dve leti*, *pred leti*, *pred
@@ -4474,7 +4499,7 @@ SSKJ², SP and the Collocations Dictionary of Modern Slovene at CJVT (Kolokacije
   (*obvestíl* "of notifications" with [l] and *obvéstil* "notified" with [u̯],
   *vozíl* and *vôzil*, *sporočíl* and *sporóčil*, *zdravíl* and *zdrávil*,
   *sêdel* and *sedél*; the listener's *Ni obvestil* and *On me ni obvestil*). The
-  generator lists them in `SLOVENIAN_VERB_NOUN`, 153 spellings with the share
+  generator lists them in `VERB_NOUN`, 153 spellings with the share
   of the noun in percent of their uses in Gigafida (Sloleks's form frequencies:
   73 for *vozil*, 30 for *obvestil*, 3 for *pojasnil*), also where only the final
   l differs (*predál* the drawer, *predáw* "handed over"), leaving out those whose
@@ -4548,7 +4573,7 @@ SSKJ², SP and the Collocations Dictionary of Modern Slovene at CJVT (Kolokacije
   measured there (each with the auxiliaries it also caught in the corpus):
   *ne* right before it (the negated auxiliary is *ni*; 10 of 10 "eats"; SSKJ²
   *od skrbi ne je*, SP *Kdor ne dela, naj ne jé*); a food noun as its object
-  (`SLOVENIAN_FOOD`, generated from `tools/formant/slovenian_food.tsv`, about
+  (`FOOD`, generated from `tools/formant/slovenian_food.tsv`, about
   180 lemmas from the collocations of *jesti* in Kolokacije of CJVT, SSKJ²'s
   examples and the corpus, with every Sloleks form and its cases), in the
   accusative, or in the genitive after an amount or *ne* (*veliko sadja*,
@@ -4614,7 +4639,7 @@ SSKJ², SP and the Collocations Dictionary of Modern Slovene at CJVT (Kolokacije
   report of November 2026; *odprti meni*, *skriti meni*, *najboljši meni*): the
   verb's subject is no adjective and a pronoun has no use for one. The endings
   *-ni, -ski, -ški, -čki, -nji, -oči, -eči* show it, and for the rest the generator
-  writes the table `SLOVENIAN_DEFINITE_ADJECTIVES` (Sloleks's masculine definite
+  writes the table `DEFINITE_ADJECTIVES` (Sloleks's masculine definite
   adjectives of frequency 10 or more, 1,479, without those another lemma's verb
   form outweighs, such as *pravi*, the present of *praviti*). *Zaprt meni* and *Meni
   zaprt* name its state. The Kolokacije of CJVT give the adjectives and the verbs
@@ -4640,8 +4665,8 @@ SSKJ², SP and the Collocations Dictionary of Modern Slovene at CJVT (Kolokacije
   so is one after a surname that looks like an adjective (*Franco Frattini meni*).
   **Across a comma:** *Meni, da je prav* is the commonest *meni* of the news,
   and alone in its clause it would be the menu (26 of 32 such tokens are followed
-  by *da*). `TTSEngine::segment_text()` puts `BEFORE_COMPLEMENT_MARK` (a private use
-  character, consumed by `process_slovenian()`, as is `IN_QUESTION_MARK` for a clause
+  by *da*). `Engine::segment()` puts `BEFORE_COMPLEMENT_MARK` (a private use
+  character, consumed by `process()` of `sl/frontend.rs`, as is `IN_QUESTION_MARK` for a clause
   of a sentence that ends in a question mark) at the end of a clause whose comma
   comes before one of *da, naj, kdaj, kako, kje, zakaj, ali, kaj, kdo, koliko, kam,
   če*, and then *meni* last in its clause is the verb, unless the rules made it the
@@ -4716,7 +4741,7 @@ SSKJ², SP and the Collocations Dictionary of Modern Slovene at CJVT (Kolokacije
   stvar*, *Program podari sistemu čas* the present *podarí* (the listener's examples).
   For the second, a capitalized dative pronoun opening the sentence (*Meni, Tebi,
   Njemu, Njej, Nam, Vam, Njim, Mi*) counts as a head word before the command, like
-  *takoj* and *prosim* (`head_pronouns` in `process_slovenian()`): *Meni podari
+  *takoj* and *prosim* (`HEAD_PRONOUNS` in `sl/frontend.rs`): *Meni podari
   ljubezen*, *Nam pokaži pot*. Not the accusatives (*Nas deli samo meja* is the present
   *déli*) and not *ti* (*Ti deli so ...* are parts). SUK 1.1 has no such pronoun at a
   clause head before a verb of the class.
@@ -4806,9 +4831,9 @@ SSKJ², SP and the Collocations Dictionary of Modern Slovene at CJVT (Kolokacije
   preveriti* (last), *pri miru* and *na gradu* (first) and disagreed with the
   dictionaries on *V tvojem glasu* (last; against the listener too), *brez strahu*
   and *do gradu* (first).
-  Tests: `test_frontend.cpp` "Slovenian glasu: the genitive on the ending, the
+  Tests: `src/common/languages/sl/tests.rs` "Slovenian glasu: the genitive on the ending, the
   dative and locative on the stem", and the listener's four sentences as audio in
-  `test_formant.cpp` "Slovenian reads a word by the clause after the comma".
+  `tests/formant.rs` "Slovenian reads a word by the clause after the comma".
 
 Clitics (Toporišič: the monosyllabic prepositions and conjunctions, *ne*,
 *naj*, the forms of *biti* and the future auxiliary, *bi*, the short
@@ -4855,8 +4880,8 @@ marked AUTOMATIC) are not taken; the hand-accented ones stay.
 
 **The tables of names**, consulted only for a word with a capital letter
 (not in text written all in capitals) before the context readings
-(`slovenian::name_reading()`, the tables `SLOVENIAN_NAMES` and
-`SLOVENIAN_NAMES_INSIDE` of the generated `.inc`). The lexicon is looked up
+(`name_reading()` in `sl/readings.rs`, the generated tables `NAMES` and
+`NAMES_INSIDE`, `tables/names.txt` and `names_inside.txt`). The lexicon is looked up
 in small letters, and since 2026-10-30 a name never takes a spelling a
 common word has there (until then a name counted a tenth of a common word
 and could still win: *jelena* read as the name *Jêlena*, not *jeléna* "of
@@ -4961,7 +4986,7 @@ adjectives and let *nàjpopôlnejši* break the stem of *popôln*; and the
 generator's check of every form did not know that a stem before *-lc*,
 *-lk*, *-ln*, *-ls*, *-lt* is stressed on its last vowel
 (`stress_derived_l_suffix()`), so *popôlnoma* read through the stem *popô\**
-came out *popólnoma* unnoticed (`l_suffix_stem()` now mirrors it). On the
+came out *popólnoma* unnoticed (`l_suffix()` of the generator now mirrors it). On the
 corpus below the stressed syllable stays at 99.40 % and the quality and
 length at 99.84 %; the table has 96,000 forms and 80,000 stems.
 
@@ -4997,14 +5022,14 @@ misread (*David Trimble*).
 Sloleks only with the network's accent (*Pêro*, 690 times), which never enters
 the tables, and SP 2001 has no entry for it, so it is a row of
 `slovenian_persons.tsv` with Sloleks's accent and the listener's syllable, and
-lands in `SLOVENIAN_NAMES_INSIDE` because the pen holds the spelling: inside a
+lands in `NAMES_INSIDE` because the pen holds the spelling: inside a
 clause the name (*kličejo Pero*, *Dragi Pero*), at the head the pen (*Pero je
 na mizi*). The address is the head of its own clause, so
-`TTSEngine::segment_text()` marks it (`VOCATIVE_MARK`): a clause of one
-capitalized word (`slovenian::is_address()`) before a comma or after one
+`Engine::segment()` marks it (`VOCATIVE_MARK`): a clause of one
+capitalized word (`is_address()` in `sl/marks.rs`) before a comma or after one
 (*Pero, pridi sem.*, *Hvala, Pero.*, *Veseli se, Pero!*) is read by the tables
-as inside a clause, and so is a given name (`SLOVENIAN_GIVEN_NAMES`,
-`slovenian::is_given_name()`) at the head of a clause followed by another
+as inside a clause, and so is a given name (`GIVEN_NAMES`,
+`is_given_name()` in `sl/readings.rs`) at the head of a clause followed by another
 capitalized word, its surname (*Pero Novak je prišel*, *Roman Jančič*, *Vera
 Šolinc*; the maintainer's note of 2026-11-03), except *samo*, which is "only"
 there (*Samo Janez je prišel*). Any capitalized head word before a capital
@@ -5024,8 +5049,8 @@ The number converter has a Slovenian dialect (Pravopis § 11 and § 536):
 *štiriinštirideset* written as one word
 and read as three, *ena in dvajset*, with an accent on the ones and on the
 tens and the *in* a clitic between them, without a pause (SP 2001:
-*ênaindvájset*, *pétindvájset*; `slovenian::split_compound_numeral()` in
-`process_slovenian()`; read as one word with one accent, as until
+*ênaindvájset*, *pétindvájset*; `split_compound_numeral()` of `sl/readings.rs`, called from
+`process()` in `sl/frontend.rs`; read as one word with one accent, as until
 2026-10-29, the ones were swallowed and *25* was heard as *dvajset* with a
 mumble before it), *dvesto*, the invariable *tisoč* (*dva tisoč*, *tristo
 en tisoč*), the dual
@@ -5039,7 +5064,7 @@ is *sto dvaintrideset tisoč štiristo sedeminpetdeset*: § 253; *3.14* stays
 depend on the sentence (*7. 10. 2026* is *sedmega desetega dva tisoč
 šestindvajset*, *7. oktobra* *sedmega oktobra*; Jezikovna svetovalnica).
 The numbers 1 to 4 agree with what they count, in gender, number and case
-(`CroatianNumbers::slovenian_agree()`). A listener's report of November 2026:
+(`agree()` in `src/common/languages/sl/numerals.rs`). A listener's report of November 2026:
 a 2 was always *dve* (*2 koša*, *2 načina*, the operator *T2*), and asked about
 the rest he answered *en koš*, *trije koši*, *z dvema žličkama*. There is no
 parser at this point of the pipeline, so the ending of the next word and the
@@ -5088,19 +5113,20 @@ is fixed only in *dva tisoč*, *dvaintrideset*, *dvakrat*, *dvajset*.
   koši, tisoč dve knjigi*), not in the compounds, which do not change
   (*dvaindvajset*). Units are not expanded but agree with their noun's gender,
   the capitals of *MB, GB, kW* included: *en kg, en km, en MB, ena min, dve
-  min, en tisoč, dva tisoč* (`SL_MASCULINE_UNITS`, `SL_FEMININE_UNITS`: minuta,
+  min, en tisoč, dva tisoč* (`MASCULINE_UNITS`, `FEMININE_UNITS` in `sl/numerals.rs`: minuta,
   ura, sekunda, tona are feminine, the rest masculine; SSKJ²).
 
 **The numerals' grammar (the maintainer's request of 2026-11-03: "correct the
 numerals to match the spelling and grammar").** A survey of about 400 inputs
 found the bare numbers right and the following wrong; all of it is gated to
-the Slovenian dialect (`CroatianNumbers::slovenian_number_at()`, the hook the
-shared loop calls first, and the Slovenian branches of `slovenian_agree()` and
-of the silent-period block), and the Croatian, Serbian and Bosnian audio is
+Slovenian (`number_at()` in `src/common/languages/sl/numerals.rs`, the hook the
+shared loop of `NumberReader` calls first through the `Grammar` trait, and the
+Slovenian `agree()` and `ordinal_before()` the shared code calls for a number
+and for a silent period), and the Croatian, Serbian and Bosnian audio is
 byte for byte what it was.
 
-- **Ordinals before a noun** (`slovenian_ordinal_before()`, `slovenian_ordinal()`,
-  `sl_ordinal_ending()`): *1. mesto* was *ena mesto*. A number of up to four
+- **Ordinals before a noun** (`ordinal_before()`, `ordinal()`,
+  `ordinal_ending()` in `sl/numerals.rs`): *1. mesto* was *ena mesto*. A number of up to four
   digits with a period before a lowercase word is now the ordinal in the
   gender, number and case the noun's ending and the preposition show, the way
   the agreement of 1 to 4 reads them: *prvo mesto, drugo mesto, tretje mesto,
@@ -5124,15 +5150,15 @@ byte for byte what it was.
   answers of the same day: before a noun in *-o* the ordinal is the feminine
   accusative or instrumental (*za 3. nagrado* *za tretjo nagrado*, *s 3.
   nagrado*, *3. svetovno vojno*, *3. zlato medaljo*) unless the noun is in
-  the generated table of neuter nouns in *-o* (`SLOVENIAN_NEUTER_O`, 1,843
+  the generated table of neuter nouns in *-o* (`NEUTER_O` in `sl/nouns.rs`, `tables/neuter_o.txt`, 1,843
   nominative and accusative singulars of Sloleks, `noun_gender_tables()` in
   the generator; *3. mesto* *tretje mesto*, *3. veliko mesto*), the word after
   an adjective in *-o* deciding, also a neuter noun in *-je, -šče* (*tretje
   politično zatočišče*); only *tretji* shows the difference, and the feminine
   *-o* is 3.6 times the commoner in Gigafida, so it is the default
-  (`sl_neuter_o()`, the ending `"O"` of `slovenian_ordinal()`). Before a word
+  (`is_neuter_o()`, the ending `"O"` of `ordinal()`). Before a word
   in *-a* that is a masculine noun's genitive or animate accusative
-  (`SLOVENIAN_NOUN_A`, below) the ordinal is *-ega* wherever it stands (*videl
+  (`NOUN_A`, below) the ordinal is *-ega* wherever it stands (*videl
   sem 3. otroka* *tretjega otroka*), before a masculine nominative in *-a*
   *-i* (*prvi kolega*); *leta* is left to the old rule because it is the
   decades' plural too (*80. leta* *osemdeseta leta*), except after a year,
@@ -5142,7 +5168,7 @@ byte for byte what it was.
   before a year, not in an enumeration *1. 2. in 3. mesto*, not after another
   *N.*), and the final period stays a clause end unless a lowercase word
   follows.
-- **5 and above in the oblique cases** (`slovenian_agree()`, the `five_plus`
+- **5 and above in the oblique cases** (`agree()`, the `is_five_plus()`
   branch): *v petih urah, s petimi prsti, pred petimi leti, pred
   enaindvajsetimi leti, po petih letih, v dvanajstih urah, k petim osebam, do
   petih let, od petih ur, pri dvajsetih stopinjah, sedmih, osmimi* (SP 2001
@@ -5154,19 +5180,19 @@ byte for byte what it was.
   -ih*), and so do the milijon words and a unit's abbreviation (*v 5 min*).
   *starosti* governs the genitive like a preposition (*otroci starosti 2 do 3
   let* *dveh do treh let*, *v starosti 68 let* *oseminšestdesetih*).
-- **1 before a word in *-a*** (`slovenian_agree()`, the listener's *videl sem 1
+- **1 before a word in *-a*** (`agree()`, the listener's *videl sem 1
   otroka*): *ena* is the feminine nominative (*ena miza*), but before a
   masculine noun's animate accusative or a masculine or neuter noun's genitive
   singular it is *enega* (*videl sem enega otroka*, *imam enega brata*,
   *poznam enega človeka*), and before a masculine nominative in *-a* *en*
-  (*en kolega*, *en ha*). The words come from the generated `SLOVENIAN_NOUN_A`
+  (*en kolega*, *en ha*). The words come from the generated `NOUN_A`
   (4,855: the animate accusatives of form frequency 10 or more, the genitives
   of 1,000 or more, the masculine nominatives of 10 or more, never a spelling
   that is also a noun's nominative singular or a feminine adjective's, so
   *fanta, gospoda, mlada, sveta* are left out; `noun_gender_tables()`), and
   only the number 1 alone looks it up: a year before a verb in *-a* (*2001
   pooblastila*) is not counting.
-- **The nouns of the unit signs** (`SL_UNITS`, `slovenian_count()`): *%, €, $,
+- **The nouns of the unit signs** (`UNITS`, `count()` in `sl/numerals.rs`): *%, €, $,
   °, °C, °F* were one fixed genitive plural (*ena evrov*). The converter now
   writes the noun in the form the number asks for and the number agreeing
   with it: *en odstotek, dva odstotka, trije odstotki, štirje evri, pet
@@ -5175,14 +5201,14 @@ byte for byte what it was.
   genitive singular (*ena cela pet odstotka, dve celi petdeset evra, nič celih
   devet odstotka*), and *tri evre, štiri odstotke* where the number is an
   object (after *za, na, po, stane, znaša*, after a participle, also across an
-  auxiliary: *plačal sem 4 €*; `sl_accusative_context()`); *°C* is *stopinj
+  auxiliary: *plačal sem 4 €*; `is_accusative_context()`); *°C* is *stopinj
   Celzija* (SP 2001 *odstótek -tka m* "pet ~ov ‹5 %›", *évro -a m*, *dólar -ja
   m*, *stopínja -e ž* "pet stopinj Celzija ‹5 °C›", *Célzij -a* "37 stopinj
   ~a"; Pravopis 8.0 § 35). The front end's `SYMBOLS` names a sign that stands
   without a number. Since the listener's answers of the same day the noun
   and the number also take the case of the preposition before them
-  (`sl_unit_case()`, the `SlCase` of `slovenian_count()`, the oblique forms in
-  `SL_UNITS`): the genitive after *od, do, brez, okoli ...* (*do enega
+  (`unit_case()`, the `Case` of `count()`, the oblique forms in
+  `UNITS`): the genitive after *od, do, brez, okoli ...* (*do enega
   odstotka, do dveh, treh, štirih, petih, enaindvajsetih odstotkov, do sto
   odstotkov, do sto enega odstotka*), the dative after *k, h, proti* (*k enemu
   evru, k dvema evroma, k trem, petim evrom*), the locative after *pri, ob, o,
@@ -5223,7 +5249,7 @@ byte for byte what it was.
   stopinjami Celzija*, *od 2 do 3 ur* *od dveh do treh ur*, *od 5 do 10 let*,
   *od 1 do 5 ur* *od ene do petih ur*, *starosti 2 do 3 let* *dveh do treh*;
   the second number agrees with the noun and the first takes the second's
-  case (`slovenian_range_left()`), or the plain form when the second is in
+  case (`range_left()`), or the plain form when the second is in
   the nominative or the accusative, since the noun's ending then belongs to
   the second number (*2 do 3 ure* *dve do tri ure*, *1 do 2 litra* *ena do
   dva litra*, *ocene od 1 do 5* *od ena do pet*, *med 4 in 8 milijonov*
@@ -5251,7 +5277,7 @@ byte for byte what it was.
   (*ob osem trideset, od osem trideset do šestnajst nič nič*), so that *3.14*
   and *3.2* stay what they were and *7.10.* with a possible month inside is
   the date; *24:00* (*štiriindvajset nič nič*). *Ura je 5* stays *ura je pet*.
-- **The front end** (`is_number_word()` in `formant_slovenian.cpp`) counts the
+- **The front end** (`is_number_word()` in `sl/readings.rs`) counts the
   oblique forms, the ordinals, the *cela* forms and the multiplicatives as
   number words, so *Meni 21* stays the menu in any case, and the noun rule of
   *leti* counts only the words that are not a number in its window: *pred 21
@@ -5259,9 +5285,9 @@ byte for byte what it was.
   compound pushed *pred* out of the three words.
 
 Checked: the survey file through the phones tool (only the readings above
-changed, 100 of 408 inputs), `test_formant` ("Slovenian is spoken by every
-voice", the table `numerals`, 101 pairs of digits and words that must sound
-the same) and `test_frontend`, the SUK 1.1 sentences with a digit (1,450 of
+changed, 100 of 408 inputs), `tests/formant.rs` ("Slovenian is spoken by every
+voice", the table `NUMERALS`, 101 pairs of digits and words that must sound
+the same) and `src/common/languages/sl/tests.rs`, the SUK 1.1 sentences with a digit (1,450 of
 7,326 change, read by category: the ordinals of crossword clues *1. pisec
 kronike* now *prvi pisec*, which is the one disputable class), and the
 Croatian, Serbian and Bosnian audio of the survey and of 60 sentences of prose,
@@ -5301,40 +5327,42 @@ Symbols inside a clause without a number before them are *pika, dvopičje,
 klicaj, odstotkov, evrov, afna* (after a number the converter writes the
 noun's form, *dva odstotka*, see above); the spelled names of digits, punctuation and symbols (*ena, pika,
 vejica, podpičje, vprašaj, oklepaj, zaklepaj, poševnica, afna, lojtra,
-zvezdica, enačaj ...*) are a table of the module (`spelled_name()`), which
-`TTSEngine::spell_character()` uses instead of the Croatian spelling
+zvezdica, enačaj ...*) are a table of the module (`spelled_name()` in `sl/words.rs`), which
+`Engine::spell_character()` uses instead of the Croatian spelling
 dictionary when Slovenian is spoken.
 
 Emoji are named in Slovenian from `data/dictionary/emoji_sl.json`, the
 `tts` annotations of the Unicode CLDR for *sl* (*režeči obraz*, *mahajoča
 dlan*, *rdeče srce*) for the same 1,121 emoji as the Croatian `emoji.json`
 (which is CLDR *hr*, edited). The engine loads it by itself next to the
-bundled dictionary (`TTSEngine::load_emoji_dictionary()` looks for
+bundled dictionary (`Engine::load_emoji_dictionary()` looks for
 `emoji_<short code>.json` beside the file it is given; Android loads the
-asset through `load_language_emoji_dictionary_from_memory()`) and consults
+asset through `Engine::load_language_emoji_dictionary()`) and consults
 it before the bundled one while Slovenian is spoken; the user's emoji
 entries win in every language. Serbian and Bosnian share the Croatian file.
 
 ### Checking
 
-`tests/linux/test_frontend.cpp` ("[slovenian]") checks the sounds of some
+`src/common/languages/sl/tests.rs` (the unit tests of the module; `cargo test
+--release --lib languages::sl`) checks the sounds of some
 forty words against the Pravopis, the clitics and sandhi, the clause types,
 the marks in the text and the user's entries, the words of the user
 reports with their head-of-clause readings, the verb/noun spellings in
 context, and the names (the surnames in -ović, the rules of names, the
 tables of names with their head-of-clause limits, the places of SP in
-their cases); `test_formant.cpp` checks the Slovenian emoji names and the
+their cases); `tests/formant.rs` checks the Slovenian emoji names and the
 compound numerals. The generator is run with
 
 ```bash
 python3 tools/formant/slovenian_words.py extract /path/to/Sloleks.3.1 forms.tsv 0
-python3 tools/formant/slovenian_words.py generate forms.tsv src/formant/formant_slovenian.inc \
+python3 tools/formant/slovenian_words.py generate forms.tsv \
     --manual-min 0 --auto-min 100 --form-min 1 [--names-report names.tsv]
 ```
 
 (the first step streams 13 GB of XML in about four minutes; the 275 MB zip
 is `Sloleks.3.1.zip` at the handle above; `generate` takes a minute and
-reads `HAND_ENTRIES` of `formant_slovenian.cpp` and the two SP files of
+writes the twelve tables into `src/common/languages/sl/tables/`, reading
+`HAND_ENTRIES` of `src/common/languages/sl/lexicon.rs` and the two SP files of
 names in `tools/formant/`; `--names-report` lists every entry of the
 tables of names with the lexicon's reading and the frequencies of the name
 and the common word, which is how the tables were reviewed). The SP files
@@ -5380,8 +5408,8 @@ Slovenian large language model of CJVT (GaMS-9B-Instruct-Nemotron, 4-bit,
 asked with five examples to write each word with the accents of SSKJ), was
 asked about the first 76 of them: it stressed 26 right (34 %; *karámbol*,
 *léteti*, *mládika*), where the engine had 62 before and 71 now. It is no
-reference for accents: it learned from text, which carries none. The words-printing scratch tool
-of section 7, built with `formant_slovenian.cpp` added, shows the phones a
+reference for accents: it learned from text, which carries none. The helper `phones_of()` of the unit tests
+(`src/common/languages/sl/tests.rs`) writes out the phones a
 Slovenian text gets; a Whisper run on twenty everyday sentences (section 7)
 is the rough intelligibility check used when the language was added.
 
@@ -5401,7 +5429,7 @@ remains ahead of this rule. Other ambiguous contexts keep *samó*.
 The name *Sámo* (2026-11-10, a report that *Samo, pridi sem.* addresses a
 man and is stressed on the first syllable;
 [SP 2001](https://fran.si/iskanje?Query=Samo&View=1&FilteredDictionaryIds=134):
-*Sámo -a, °-ta m, oseb. i.*, *Sámov -a -o*) is in `SLOVENIAN_NAMES_INSIDE`
+*Sámo -a, °-ta m, oseb. i.*, *Sámov -a -o*) is in `NAMES_INSIDE`
 from Sloleks, so it needed no new rule: an address (*Samo, pridi sem.*,
 *Samo, kje si?*, *Hvala, Samo.*, `VOCATIVE_MARK`) and a capitalized *Samo*
 inside a clause (*Dragi Samo*, *To je rekel Samo*) are the name, and the
@@ -5474,7 +5502,7 @@ before *zemljišče*. Each changes an erroneous feminine *-e* to neuter *-o*;
 all were inspected. The corpus has little coverage of the newly tested
 feminine ordinal phrases, so the explicit case matrices are necessary too.
 
-**Telephone numbers (2026-11-09).** `CroatianNumbers::convert_phone_number()`
+**Telephone numbers (2026-11-09).** `convert()` in `src/common/text/numbers/phone.rs`
 recognizes international `+` / `00` numbers, compact or separated by spaces,
 slashes or dashes, before the ordinary grammatical rules in both number modes.
 It emits comma pauses after the country code, after the area/network code,
@@ -5520,7 +5548,7 @@ has `+` at the level "some" without "preserve", so at the punctuation level
 (` 385 91 123 4567  `), and at "some" and above it is the word (`plus 385
 ...`); the same text reaches SAPI5 voices used through NVDA. Measured through
 the add-on's driver: three comma pauses with the sign, none without.
-`convert_phone_number()` therefore has two more ways to be international:
+The phone converter therefore has two more ways to be international:
 
 - after the word *plus* (any case, Cyrillic *плус*; `plus_word_before()`), any
   country, with the rules of the sign; not after a number, where it is a sum
@@ -5541,9 +5569,11 @@ countries (`38641453375`, until now *trideset osam milijardi ...*) is read as
 a telephone number. The ranges were written from the numbering plans cited
 above and are deliberately narrower than them (no 6x, 7x, 8x service numbers
 for 385); they were not checked line by line against libphonenumber's
-metadata again. Tests: `test_numbers.cpp` "Telephone numbers whose plus sign a
+metadata again. Tests: `src/common/text/numbers/tests.rs` "Telephone numbers whose plus sign a
 screen reader took", the refusals in "Telephone recognition leaves other
-numeric formats alone", the `[phone]` audio tests, and
+numeric formats alone", the audio tests "Telephone grouping reaches the audio
+and honors comma pauses" (`tests/formant.rs`) and "Recorded voices pause between
+telephone groups" (`tests/recorded.rs`), and
 `tests/nvda/test_driver.py` `test_items_and_phone_numbers()`.
 
 **Currency amounts (2026-11-09).** The shared number normalizer now recognizes
@@ -5605,17 +5635,17 @@ through `parse_date()`), so the difference the listener heard is not in the
 engine; what was wrong with dates is listed under "Dates" below.
 
 The marks. The number converter cannot make a pause or a letter itself, so it
-leaves two characters in the text (`src/core/text_marks.hpp`). They are
+leaves two characters in the text (`src/common/text/marks.rs`). They are
 Unicode noncharacters, set aside for a program's internal use, so no host's
 text has them; a private use character can come from an icon font in a
 button's label:
 
-- `MINOR_BREAK_MARK`, U+FDD0, written as a word of its own (`PART_BREAK`):
+- `MINOR_BREAK_MARK`, U+FDD0, written as a word of its own (`part_break()` in `src/common/text/numbers/scan.rs`):
   a short pause before the next word. `time_to_words()` writes it between the
   hours, minutes and seconds (every path that reads a time: `12:30:45`,
   `24:00`, `u 8.30`, `od 8.30 do 16.00`, Slovenian `ob 8.30`; *ob 17:00* is the
   one word *ob sedemnajstih* and has none), `date_to_words()` and the dates of
-  `hr_number_at()` / `slovenian_number_at()` between the day, month and year
+  `number_at()` in each language's `numerals.rs` between the day, month and year
   (`10.11.2026.`, `10. 11. 2026.`, `5.3.`, the right side of `15.–20. 3.`), and
   `mark_cell_address()` before a cell's address.
 - `LETTER_CODE_MARK`, U+FDD1, right after the letters of a designation: they
@@ -5660,16 +5690,16 @@ The rendering. A comma at these places would end the clause: its own melody
 and, worse, its own context for the front end ("u dvanaest, trideset u
 uredu" asks which thirty is in the office). So the front end still reads the
 clause whole, and the synthesizers split the *utterance*:
-`formant::split_at_breaks()` returns the parts between the pauses, words and
+`split_at_breaks()` returns the parts between the pauses, words and
 syllables counted from each part's start, and both renderers
-(`FormantSynthesizer::append_group()`, `AudioSynthesizer::synthesize_clause()`)
+(`FormantSynthesizer::synthesize_clause()`, `ConcatSynthesizer::synthesize_clause()`)
 render them one after another, so the sounds before a pause end as they do
 before any pause (a released final stop, a fading vowel) and the sounds after
 it start as at the head of a clause. Between the parts stands a silence of
 **half the user's comma pause**, shorter by the square root of the rate when
 speech is fast (`minor_break_pause_ms()`, `MINOR_BREAK_PAUSE_PERCENT` 50: 50
 ms at the default 100 and rate 1, 35 ms at 2x, 29 ms at 3x, 25 ms at 4x;
-`TTSEngine::synthesize_segments()` passes it). A clause pause is a length the
+`Engine::synthesize_clauses()` passes it). A clause pause is a length the
 user sets and keeps at every rate, but this pause stands inside a phrase, and
 at a screen reader's rate a fixed one was as long as a syllable; the square
 root is how the formant transitions and the segments' floors shrink, so the
@@ -5711,7 +5741,7 @@ dva" → "Ivana A2"; *Zagreb A4* "zagreba četili" → "Zagreb A4"; *Stjepan I5*
 for Josip the recognizer is too noisy to say anything either way.
 
 Dates (hr, sr and bs unless noted; found while the date paths were read for
-the pauses, each covered in `test_numbers.cpp`):
+the pauses, each covered in `src/common/text/numbers/tests.rs`):
 
 - The period after a date's year is the ordinal's, as the orthography writes
   it (*10. 11. 2026.*), and before a lowercase word it ends no sentence
@@ -5724,7 +5754,7 @@ the pauses, each covered in `test_numbers.cpp`):
   *nič pet pika nič tri*), `Danas je 07.10.2026.` had the genitive of the
   shared path instead of *sedmi deseti*, `u 08.30` was no time. A two-digit
   number with a leading zero before a period now reaches the date and time
-  rules of `hr_number_at()`; in Slovenian only a date without a year does.
+  rules of `number_at()` in `{hr,sr,bs}/numerals.rs`; in Slovenian only a date without a year does.
   `007`, `05.03` without the final period and `05.000` are read as before.
 - A day and a month before a conjunction: `od 1.12. do 5.12.` was *od jedan
   točka dvanaest. do petog dvanaestog*, because two ordinals before *do, i,
@@ -5765,11 +5795,13 @@ melody going on. Three-letter columns (from AAA, the 703rd) have no pause
 and no letter reading. A range written with a dash (`A1–B5`) and a
 designation after a hyphen or slash are read as before. A host that says the
 address first gets no pause between it and a word that follows (`A17 Marjan`).
-The pause has no setting of its own: it follows the comma pause and the rate. Tests: `test_numbers.cpp`
-`[breaks]` (three cases), `test_frontend.cpp` `[breaks]` (the letters; the
-parts of a clause), `test_formant.cpp` "Clock times, dates and cell addresses
+The pause has no setting of its own: it follows the comma pause and the rate. Tests: `src/common/text/numbers/tests.rs`
+(three cases: the clock times and dates, the dates inside a sentence, the
+cell's address), `src/common/languages/tests.rs` and `languages/sl/tests.rs`
+("The letters of a designation are letters whatever word they spell", "A short
+pause inside a clause splits it into parts"), `tests/formant.rs` "Clock times, dates and cell addresses
 have short pauses" (the samples, the comma pause, the melody, every language,
-both number modes, a singing preset), `test_concat.cpp` "Recorded voices
+both number modes, a singing preset), `tests/recorded.rs` "Recorded voices
 pause inside a time and before a cell's address".
 
 **The pause before a cell's address is the whole comma pause (2026-11-10).**
@@ -5781,7 +5813,7 @@ driver joins them with a third (`Marjan   A17  `), and the engine did write
 the pause: 54 ms at NVDA's rate 60 and the comma pause of 100, the length of a
 stop's closure (56 ms in *Marijana 17*), which is not heard as a pause between
 two items. The place before an address, and before a number after one, now
-has a mark of its own, `ITEM_BREAK_MARK` (U+FDD2, `text_marks.hpp`), carried
+has a mark of its own, `ITEM_BREAK_MARK` (U+FDD2, `src/common/text/marks.rs`), carried
 as `Word::item_break`, `Phone::item_break` and `Utterance::item_break` next to
 the short pause's flags; `split_at_breaks()` splits at both, and the
 synthesizers put `item_break_pause_ms()` there, the user's comma pause as it
@@ -5810,7 +5842,7 @@ so the letter was never glued to the number, no mark was written, and the A
 stayed the conjunction *a*. The replay above had been built from NVDA's source
 and from the glued form the first report named, not from a capture; the
 capture is the first thing to take next time. `spaced_code_begin()`
-(`croatian_numbers.cpp`) reads this form as the same address, with the same
+(`src/common/text/numbers/cells.rs`) reads this form as the same address, with the same
 mark and pause, under narrower conditions than the glued form, because
 letters written apart from a number are usually a word (*U 5 sati*, *A 3 su
 došla*, *NA 5 mjesta*): exactly one space between one or two capital letters
@@ -5823,23 +5855,20 @@ of `Marijan A3` (108 ms of silence through the driver at rate 60), and
 NVDA splits inside a sentence (*Samsung S 22 je nov*) is still read as the
 words, a whole utterance that is only *U 5* or *A 3* is read as an address,
 and a host that puts a single space after the item gets the address only at
-the end of the text. Tests: `test_numbers.cpp` "A cell's address is set off
+the end of the text. Tests: `src/common/text/numbers/tests.rs` "A cell's address is set off
 from the cell's contents" (the forms and thirteen that must stay words),
-`test_formant.cpp` and `test_concat.cpp` (the samples),
+`tests/formant.rs` and `tests/recorded.rs` (the samples),
 `tests/nvda/test_driver.py` `test_items_and_phone_numbers()` (the logged
 sequence).
 
-Regression tests: `test_frontend.cpp` and `test_numbers.cpp`. Build the latter:
+Regression tests: `src/common/languages/tests.rs`, `src/common/languages/sl/tests.rs`
+and `src/common/text/numbers/tests.rs`. Run the latter:
 
 ```bash
-clang++ -std=c++17 -I include -I src -I tests/linux \
-  tests/linux/test_numbers.cpp src/core/croatian_numbers.cpp \
-  src/formant/formant_slovenian.cpp src/formant/formant_phonemes.cpp \
-  src/core/phoneme_mapper.cpp -o build/macos-arm64-release/test_numbers
-build/macos-arm64-release/test_numbers
+cargo test --release --lib text::numbers
 ```
 
-## 5. Timing and melody (`formant_synthesizer.cpp`)
+## 5. Timing and melody (`src/common/formant/builder.rs`, `src/common/prosody/intonation.rs`)
 
 **Durations** start from the inherent value and are scaled by context:
 stressed and long vowels are longer, vowels before voiceless consonants and
@@ -5873,7 +5902,7 @@ recorded voices use the same product, narrowed to their own 0.5 to 4.0.
 User interfaces print the rate the top of the slider reaches in words per
 minute: Zvonko speaks 175 words per minute at speed 1.0 on running text
 (measured on a 79-word paragraph: 27.1 s), Stojan and Mirsad that times
-their tempo (`VoiceRegistry::nominal_wpm()`), so the top of a 2.0 slider is
+their tempo (`Voice::nominal_wpm()`), so the top of a 2.0 slider is
 350 words per minute at acceleration 1.0 and 700 at 2.0.
 
 **Pitch** is the sum of:
@@ -6100,7 +6129,7 @@ at 1.0x, 1.7x and 4.0x, with an uninterrupted single-word control.
 
 Zvonko, Stojan and Mirsad are voices, not languages. Each has a native
 language (the "Language" row below), spoken when the host asks for nothing
-else, but every one of them speaks all three: `TTSEngine::set_language()`
+else, but every one of them speaks all three: `Engine::set_language()`
 rebuilds the front end of any of them (letter-to-sound rules, lexicon,
 letter names, number dialect) and leaves the voice's sound (pitch, vocal
 tract, phonation, tempo) alone. Zvonko is the default voice for every
@@ -6170,16 +6199,16 @@ first line of *Kreće se lađa* comes from a printed score, the other three
 follow the harmony and still want checking against a recording; the
 rhythm of *Bembaša* is that of a performance, the song is sung rubato.
 
-How it works (`ClauseBuilder` with `m_singing`):
+How it works (`ClauseBuilder` with `singing` set):
 
 - **Notes.** `plan_notes()` takes the next notes of the song for every
   syllable of the clause: one note, any notes tied to it (`~`, a melisma)
   and the rests after it. The cursor lives in `FormantSynthesizer` so the
-  clauses of one utterance continue the song; `TTSEngine::begin_utterance()`
+  clauses of one utterance continue the song; `Engine::begin_utterance()`
   rewinds it, so every synthesis call (every line a screen reader sends)
   starts the song from its first note, as those desktop voices do at a
   period. The notation is `pitch/value` (`G4/4`, `Bb3/8.`, `R/2`), parsed
-  once by `parse_song()`.
+  once by `Song::notes()` (`src/common/formant/singing.rs`).
 - **Durations.** The consonants keep their spoken durations (at the tempo
   clamped to 0.6-2.0x: they are spoken, not sung). The syllable's vowel
   starts on the beat: the consonants that open the next syllable are taken
@@ -6225,25 +6254,42 @@ before and after the change (A/B against a worktree build of HEAD).
 ## 7. Checking a change
 
 ```bash
-B=build/macos-arm64-release
-scons --platform=macos --build-config=release macos-all
-clang++ -std=c++17 -I include -I tests/linux tests/linux/test_formant.cpp \
-    -o $B/test_formant -L $B -llaprdus -Wl,-rpath,@loader_path
-LAPRDUS_DATA=$B $B/test_formant
+cargo xtask data                          # data/voices/*.bin, data/dictionary/*.json
+cargo test --release --test formant       # tests/formant.rs
+cargo test --release --workspace          # every suite
 
 # Inspect frontend accents and joined word boundaries directly.
-clang++ -std=c++17 -I include -I src -I tests/linux \
-    tests/linux/test_frontend.cpp src/formant/formant_frontend.cpp \
-    src/formant/formant_lexicon.cpp src/formant/formant_phonemes.cpp \
-    src/formant/formant_slovenian.cpp src/core/phoneme_mapper.cpp -o $B/test_frontend
-$B/test_frontend
+cargo test --release --lib languages::    # src/common/languages/tests.rs, sl/tests.rs
+
+# The command-line program the measuring tools drive: target/release/laprdus
+cargo build --release -p laprdus-cli
 ```
 
-`test_frontend` checks the number and position of accents, component
-boundaries and override precedence without synthesizing audio. It compiles
-the five implementation files directly because these internal C++ types
-are not exported by the shared library. On Linux, use `g++` and the Linux
-build directory for this command; it needs no voice data or library link.
+The tests are run optimized because they render a lot of audio. The test
+functions carry the titles this document quotes, in snake case: "Voice
+quality settings shape the voice and 50 leaves it alone" is
+`voice_quality_settings_shape_the_voice_and_50_leaves_it_alone` in
+`tests/formant.rs`; there are no test tags, a part of a name selects the
+tests (`cargo test --release --test formant breathiness`).
+`LAPRDUS_TEST_INFO=1` (with `-- --nocapture`) prints the measured values
+behind the thresholds, and `LAPRDUS_DATA` names another directory of packed
+voices than `data/voices`. The formant voices need no voice data; the few
+cases of `tests/formant.rs` that also speak with a recorded voice, and the
+bundled dictionaries in `data/dictionary`, need `cargo xtask data` first.
+A CLI run from `target/release` with `-D data/voices` finds the recordings
+but not the bundled dictionaries, which it looks for in the data directory
+or in `dictionaries` next to the program.
+
+The unit tests of the front ends (`src/common/languages/tests.rs` for
+Croatian, `src/common/languages/sl/tests.rs` for Slovenian) check the number
+and position of accents, component boundaries and override precedence
+without synthesizing audio. They are inside the crate because these internal
+types are not part of the C API; they need no voice data. The tests
+`tests/frontend_against_cpp.rs`, `tests/numbers_against_cpp.rs` and
+`tests/dsp_against_cpp.rs` compare the engine with dumps of the last C++
+engine's output and pass without those local files; `tools/golden/golden.py`
+checks the audio through the C API against the hashes in `tests/golden/`,
+recorded from the C++ engine before the port.
 
 The tests cover behaviour (registry, parameters, intonation direction,
 determinism, edge cases), not sound quality. For sound quality:
@@ -6299,11 +6345,11 @@ Croatian speaker 11.1%; synthesizer B (Croatian) 23.2%; Josip 33.1%.
   punctuation and symbols in Croatian for all voices (*točka*, not *tačka*);
   Slovenian has its own names (*pika*, *vejica*; section 4a).
   Letters are named by the front end in the language being spoken, which
-  any voice can switch (`formant::letter_name`), or spelled by their sounds
-  (`Frontend::letter_sound`: an `Utterance` with `isolated_sound` set, whose
+  any voice can switch (`letter_name()`), or spelled by their sounds
+  (`Frontend::letter_sound()`: an `Utterance` with `isolated_sound` set, whose
   durations the builder fixes: the consonant and a neutral release vowel
   after it, "bə", "sə", as synthesizer B's Croatian voice sounds letters out). The
-  foreign letters q, x and y (`formant::is_foreign_letter`, which also has w)
+  foreign letters q, x and y (`is_foreign_letter()`, which also has w)
   have no sound of their own in the language and keep their names (ku, iks,
   ipsilon) in that mode too; w is duplo v, with the sound of the v (`expand_words()`).
 

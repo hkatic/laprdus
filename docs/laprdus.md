@@ -83,7 +83,7 @@ Ukratko: moderni sintetizatori nude kvalitetu po cijenu resursa; Laprdus nudi pe
 
 Laprdus je dostupan na sljedećim platformama:
 
-- **Windows 7 do Windows 11** - putem Microsoft SAPI5 standarda, što omogućuje korištenje Laprdusa u svim programima koji podržavaju Windows govor, što uključuje i čitače ekrana poput Narrator-a, NVDA-a i JAWS-a
+- **Windows 10 i Windows 11** - putem Microsoft SAPI5 standarda, što omogućuje korištenje Laprdusa u svim programima koji podržavaju Windows govor, što uključuje i čitače ekrana poput Narrator-a, NVDA-a i JAWS-a
 - **Direktna integracija sa NVDA čitačem ekrana** - dostupan i kao poseban dodatak za besplatan Windows čitač ekrana NVDA
 - **Linux** - putem Speech Dispatcher sustava za Orca čitač ekrana, te kao naredbeni program
 - **Android** - kao ugrađen sintetizator govora za Android uređaje
@@ -1606,10 +1606,10 @@ Skript za uklanjanje automatski:
 
 #### Instalacija iz izvornog koda
 
-Ako ste Laprdus instalirali putem `scons install`, koristite odgovarajuću naredbu za uklanjanje:
+Ako ste Laprdus instalirali putem `cargo xtask install`, uklonite ga skriptom iz izvornog koda, kojoj se navodi prefiks instalacije (zadani je `/usr/local`):
 
 ```bash
-sudo scons --platform=linux --build-config=release uninstall
+sudo installers/linux/tarball/uninstall.sh /usr/local
 ```
 
 ### 7.4 Android

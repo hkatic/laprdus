@@ -22,7 +22,7 @@ In short: modern synthesizers offer quality at the cost of resources; Laprdus of
 
 ## Supported Platforms
 
-- **Windows 7-11** - via Microsoft SAPI5 standard, works with Narrator, NVDA, JAWS, and other SAPI5-compatible applications
+- **Windows 10 and 11** - via Microsoft SAPI5 standard, works with Narrator, NVDA, JAWS, and other SAPI5-compatible applications
 - **[NVDA](https://github.com/nvaccess/nvda) Screen Reader** - dedicated addon for the free and open-source NVDA screen reader
 - **Linux** - via Speech Dispatcher for Orca screen reader, plus command-line interface
 - **Android** - built-in TTS engine for Android devices
@@ -487,7 +487,7 @@ xcodebuild -scheme Laprdus -destination 'generic/platform=iOS' build -allowProvi
 
 ##### Debugging
 
-- **App**: run from Xcode (Cmd+R); breakpoints, the console, and the memory/thread debugger work as usual. The C++ engine sources (`src/core`, `src/audio`, `src/c_api`) are part of the project, so you can set breakpoints in C++ files too — the Swift and C++ code run in the same process.
+- **App**: run from Xcode (Cmd+R); breakpoints, the console, and the memory/thread debugger work as usual. The engine is the Rust static library `liblaprdus_capi.a`, which a script phase of the project builds (`src/platform/apple/build-rust-engine.sh`) and both targets link; the Swift code and the engine run in the same process. (The Apple build has not yet been run on a Mac since the engine moved to Rust.)
 - **Speech extension**: the `LaprdusVoices` extension runs in its own process, started on demand by the system. To debug it, use the `LaprdusVoices` scheme (Run > it asks for a host app — choose Settings on iOS or any speech client on macOS), or attach to the running process via Debug > Attach to Process when a client (e.g. VoiceOver or Spoken Content) is using a Laprdus voice.
 - **Logs**: the extension's `os_log`/`print` output is visible in Console.app — filter by process `LaprdusVoices` (on iOS, select the device in Console.app's sidebar).
 - **Unit tests**: Product > Test in Xcode, or:
@@ -497,8 +497,8 @@ xcodebuild -scheme Laprdus -destination 'generic/platform=iOS' build -allowProvi
   xcodebuild test -scheme Laprdus -destination 'platform=macOS'
   ```
 
-  The tests exercise real synthesis through the C++ engine, the dictionary store, and the settings store.
-- **After changing the engine or voices**: if you change a voice's phoneme recordings, regenerate voice data (see prerequisites) and rebuild — the `.bin` files are copied into the app and extension bundles at build time. C++ engine changes are picked up automatically since the sources are compiled directly into both targets.
+  The tests exercise real synthesis through the engine, the dictionary store, and the settings store.
+- **After changing the engine or voices**: if you change a voice's phoneme recordings, regenerate voice data (see prerequisites) and rebuild — the `.bin` files are copied into the app and extension bundles at build time. Engine changes are picked up by the next build: the script phase runs Cargo again and both targets link the new library.
 
 ##### Testing checklist for Apple
 
@@ -548,9 +548,9 @@ rm -rf dist data/voices data/dictionary
 
 GNU General Public License v3.0 - see [LICENSE](LICENSE) for details.
 
-The stress of English words (`src/formant/formant_english.inc`) is derived from the
+The stress of English words (`src/common/languages/{hr,sr,bs}/tables/english.txt`) is derived from the
 [CMU Pronouncing Dictionary](https://github.com/cmusphinx/cmudict), Copyright (C) 1993-2015
-Carnegie Mellon University, under a BSD-style licence; its full notice is in that file and in
+Carnegie Mellon University, under a BSD-style licence; its full notice is in `english.rs` next to those tables and in
 section 8.4 of the [user guide](docs/laprdus.md).
 
 ## Author

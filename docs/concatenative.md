@@ -1,8 +1,8 @@
 # The recorded voices: Josip and Vlado
 
 Josip and Vlado are concatenative voices: one recording per sound (34 WAV
-files each, `phonemes/<Voice>/PHONEME_*.wav`, 16-bit mono at 22050 Hz), packed
-into `Josip.bin` and `Vlado.bin`. This document describes the engine that
+files each, `data/<language>/<Voice>/PHONEME_*.wav`, 16-bit mono at 22050 Hz), packed
+into `Josip.bin` and `Vlado.bin` by `cargo xtask data`. This document describes the engine that
 turns those recordings into speech since October 2026, when the old engine
 (raw concatenation with a 3 ms crossfade, rate and pitch through the Sonic
 and Signalsmith Stretch libraries, a pitch "inflection" pasted onto the last
@@ -35,20 +35,20 @@ the `analyse_unit()` function at load time) explain the complaints:
 ## The new engine
 
 ```
-text  ─► formant::Frontend ─► Utterance (phones, stress, words, clause kind)
+text  ─► languages::Frontend ─► Utterance (phones, stress, words, clause kind)
                                    │
                                    ▼
-                     concat::plan_clause()  (concat_prosody.cpp)
+                     plan_clause()  (concatenative/prosody.rs)
                      durations, closures, word gaps, syllable timing,
-                     pitch contour from formant::Intonation
+                     pitch contour from prosody::Intonation
                                    │
                                    ▼
-                     concat::render()  (psola.cpp, TD-PSOLA)
+                     render()  (concatenative/psola.rs, TD-PSOLA)
                      one windowed period per output period, from
-                     the pitch marks of concat::UnitBank (unit_bank.cpp)
+                     the pitch marks of UnitBank (concatenative/unit_bank.rs)
 ```
 
-### Analysis of the recordings (`src/audio/unit_bank.cpp`)
+### Analysis of the recordings (`src/common/concatenative/unit_bank.rs`)
 
 When a recorded voice is loaded (and again when its voice character pitch
 changes), every recording is analysed once:
@@ -81,16 +81,16 @@ its neighbours), `unit.f0` the median pitch of the recording, and
 
 A **voice character pitch** other than 1.0 (the derived voices: detence 1.5,
 baba 1.2, djedo (Đedo) 0.75) resamples the recordings by the square root of the
-factor before the analysis (`AudioSynthesizer::formant_warp_for_pitch`): the
+factor before the analysis (`formant_warp_for_pitch()` in `src/common/concatenative/synthesizer.rs`): the
 whole spectrum scales by 1.22 for detence, so the vocal tract sounds shorter,
 and the pitch itself is then raised by the full factor by the renderer. A
 child's formants are only about 20% above a man's while its pitch is 50-100%
 higher, which is why the two no longer move together as they did with Sonic.
 
-### Prosody (`src/audio/concat_prosody.cpp`)
+### Prosody (`src/common/concatenative/prosody.rs`)
 
 The recorded voices use the text front end of the formant voices
-(`formant::Frontend`): the same letter-to-sound rules, accent lexicon,
+(`languages::Frontend`, the front end of the language being spoken): the same letter-to-sound rules, accent lexicon,
 suffix rules, user accent lexicon (`accents.json`), clitics and assimilation.
 Each phone of the resulting `Utterance` is mapped to a recording
 (`unit_for()`: the allophones [ŋ], [dz], [ɕ], [ʑ], [ɣ] use the plain
@@ -99,8 +99,8 @@ Letters without a Croatian sound (q, w, x, y) are spelled out by the front
 end as they are for Zvonko.
 
 **Durations** follow the rules of `ClauseBuilder::assign_durations()` in
-`formant_synthesizer.cpp`: the inherent durations and rate floors of
-`formant_phonemes.cpp`, stress and length (×1.35 / ×1.9), word length,
+`src/common/formant/builder.rs`: the inherent durations and rate floors of
+`src/common/formant/phones.rs`, stress and length (×1.35 / ×1.9), word length,
 closed syllables, final lengthening (×1.4 before a full stop, ×1.3 before a
 comma), clusters, the rate floor `min_dur / sqrt(speed)` above rate 1.0. The
 recorded `R` is a trill and gets 50 ms rather than the tap's duration. The
@@ -120,7 +120,7 @@ instead of a clitic's 0.9, with no shortening for its neighbours (see
 "Words of one vowel" in `docs/formant.md`). Vowels within a word and joined
 compound components get no extra gap.
 
-**Pitch** comes from `formant::Intonation` (`src/formant/formant_intonation.cpp`),
+**Pitch** comes from `Intonation` (`src/common/prosody/intonation.rs`),
 the model extracted from the formant synthesizer so that both kinds of voices
 share one melody: a raised start of a sentence, a movement on the stressed
 syllable of every content word (shape by accent type, the first one the
@@ -134,7 +134,7 @@ of read Croatian" in `docs/formant.md`). The contour is sampled every millisecon
 `natural_f0 × pitch × user_pitch`. The formant voices' own output is
 unchanged by the extraction (verified sample for sample).
 
-### Rendering (`src/audio/psola.cpp`)
+### Rendering (`src/common/concatenative/psola.rs`)
 
 Time-domain pitch-synchronous overlap-add (Moulines & Charpentier 1990), the
 method of diphone synthesizers and of Praat's pitch manipulation:
@@ -174,7 +174,7 @@ method of diphone synthesizers and of Praat's pitch manipulation:
   if there is one within four marks), and only when there is none shortens
   the window's halves to what the recording holds.
 - The sum is scaled by the volume and then held under 90% of full scale by
-  the peak limiter of `volume_boost.hpp` at unity gain (its gain moves only
+  the peak limiter of `src/common/audio/boost.rs` at unity gain (its gain moves only
   between syllables, so nothing is waveshaped; the peaks between the samples
   are counted too). Until November 2026 a soft knee bent everything above 90%:
   the recordings touch full scale, and at full volume Vlado and Đedo drove the
@@ -185,8 +185,8 @@ method of diphone synthesizers and of Praat's pitch manipulation:
   utterance that stays under the knee, at a lower volume for one, is what it
   was. In boost mode the boost's own limiter does the work instead.
 - Before the volume, the hissing consonants are held under the vowels
-  (`RECORDED_HISS_DB` in `types.hpp`, -10 dB, through `limit_hiss()` of
-  `volume_boost.hpp`; since 10 November 2026). In the recordings s, c, č, ć
+  (`RECORDED_HISS_DB` in `src/common/params.rs`, -10 dB, through `limit_hiss()` of
+  `audio/boost.rs`; since 10 November 2026). In the recordings s, c, č, ć
   and the release of t stand level with the vowels (Josip's s -2.3 dB re the
   loudest vowel frame, his ć -0.1, Vlado's š, č and ć 0.0) and, weighted by
   the ear's sensitivity, 1-9 dB over them, where the softest of four
@@ -197,11 +197,12 @@ method of diphone synthesizers and of Praat's pitch manipulation:
   Vlado's s cannot be mended this way: his recordings hold nothing above
   5 kHz, so his s has its middle at 2.9 kHz, next to his š at 2.8. The
   measurements are in "The hiss where the ear is sharpest" in
-  `docs/formant.md`; the test is "The hiss of the recorded voices is held
-  under the vowels" in `test_concat.cpp`.
+  `docs/formant.md`; the test is
+  `the_hiss_of_the_recorded_voices_is_held_under_the_vowels` in
+  `tests/recorded.rs`.
 
 Everything is deterministic: the same text and settings give the same
-samples (`tests/linux/test_concat.cpp`).
+samples (`tests/recorded.rs`).
 
 ## Ranges and settings
 
@@ -216,7 +217,7 @@ samples (`tests/linux/test_concat.cpp`).
 | brightness | 0 - 100 | a one-pole tilt after rendering (`tilt_brightness()`): the top folded away from an 800 Hz pivot at 0, the top above 1.5 kHz tripled at 100 |
 | volume | 0 - 1 | gain before the limiter |
 
-Spelling by letter sounds (`AudioSynthesizer::synthesize_letter_sound`) plays
+Spelling by letter sounds (`ConcatSynthesizer::synthesize_letter_sound()`) plays
 the consonant's recording with the planner's fixed durations for an isolated
 sound and the "e" recording after it as the release vowel ("bə", "sə", as
 Synthesizer B sounds letters out); a vowel letter is the vowel alone.
@@ -224,10 +225,8 @@ Synthesizer B sounds letters out); a vowel letter is the vowel alone.
 ## Testing and tuning
 
 ```bash
-B=build/macos-arm64-release
-clang++ -std=c++17 -I include -I tests/linux tests/linux/test_concat.cpp \
-    -o $B/test_concat -L $B -llaprdus -Wl,-rpath,@loader_path
-LAPRDUS_DATA=$B $B/test_concat      # 10 tests: rate, pitch, derived voices, melody, streaming
+cargo xtask data                       # data/voices/Josip.bin, Vlado.bin (LAPRDUS_DATA names another directory)
+cargo test --release --test recorded   # 24 tests: rate, pitch, derived voices, melody, streaming ...
 ```
 
 Things that are worth checking by ear after a change:
@@ -248,9 +247,10 @@ less than about 500 there; a cut-off one leaves thousands. On 20 sentences
 and Vlado 57, with peaks of 4150 and 3197; after the fixes above 113 and 16,
 none above 490, all of them the tails of windows.
 
-The analysis of every recording can be printed with a small tool compiled
-from `unit_bank.cpp`, `phoneme_data.cpp` and `phoneme_mapper.cpp` (call
-`concat::UnitBank::build()` and print `lead`, `onset`, `trail`, `f0`, the
+The analysis of every recording can be printed with a small program that
+uses the `laprdus` crate (an example next to `examples/english_stress.rs`,
+say): load the voice with `VoiceData::from_file()`
+(`src/common/concatenative/voice_data.rs`), call `UnitBank::build()` and print `lead`, `onset`, `trail`, `f0`, the
 marks and their periods); a regular vowel shows periods within ±2 samples of
 each other, and a stop's `onset` sits on its burst.
 
