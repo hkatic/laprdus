@@ -63,6 +63,8 @@ goto :end
 :sapi5
 call :generate_voice_data || exit /b 1
 call :build_sapi5_dlls || exit /b 1
+REM The installer carries the NVDA add-on: the add-on is built first.
+call :build_nvda_addon || exit /b 1
 call :build_sapi5_installer || exit /b 1
 goto :end
 
@@ -84,8 +86,8 @@ goto :end
 :all
 call :generate_voice_data || exit /b 1
 call :build_sapi5_dlls || exit /b 1
-call :build_sapi5_installer || exit /b 1
 call :build_nvda_addon || exit /b 1
+call :build_sapi5_installer || exit /b 1
 call :build_linux
 call :build_android || exit /b 1
 goto :end

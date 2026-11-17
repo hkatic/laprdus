@@ -397,3 +397,4 @@ LaprdusUninstallComment=Uklonite Laprdus s računala
 LaprdusOldVersionFound=Prethodna verzija programa Laprdus je već instalirana. Želite li je deinstalirati prije nastavka?%n%nKliknite Da za deinstalaciju prethodne verzije ili Ne za prekid instalacije.
 LaprdusUpgradeFound=Prethodna verzija programa Laprdus je već instalirana. Instalacijski program će nadograditi postojeću instalaciju.%n%nKliknite Da za nastavak nadogradnje ili Ne za prekid.
 LaprdusRequiresWindows10=Laprdus zahtijeva Windows 10 ili noviji.
+LaprdusInstallNvdaAddon=Instaliraj dodatak Laprdus za NVDA

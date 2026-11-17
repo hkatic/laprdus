@@ -537,13 +537,16 @@ cargo build -p laprdus-sapi5                    # debug build in target/debug/ (
 cargo xtask data
 cargo xtask windows
 
+# The NVDA add-on, which the installer carries
+(cd nvda-addon && scons)
+
 # Then build installer
 iscc installers/windows/laprdus_sapi5.iss
 ```
 
 Output: `installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe`
 
-The installer is in English, Croatian, Serbian and Slovenian (Slovenian: Inno Setup's own `Languages\Slovenian.isl`, with the Laprdus messages as `slovenian.*` in the script's `[CustomMessages]`; the others carry theirs in `Croatian.isl` / `Serbian.isl`). Setup preselects the display language of Windows, with an exact match on `LanguageID`, then the first entry of the same primary language (hr, sr and bs share 0x1A, so `Serbian.isl` has 0x241A, sr-Latn-RS, and Serbian in Cyrillic and Bosnian preselect Croatian), then the first entry, English.
+The installer is in English, Croatian, Serbian and Slovenian (Slovenian: Inno Setup's own `Languages\Slovenian.isl`, with the Laprdus messages as `slovenian.*` in the script's `[CustomMessages]`; the others carry theirs in `Croatian.isl` / `Serbian.isl`). Setup shows no language dialog (`ShowLanguageDialog=no`): it takes the display language of Windows, with an exact match on `LanguageID`, then the first entry of the same primary language (hr, sr and bs share 0x1A, so `Serbian.isl` has 0x241A, sr-Latn-RS, and Serbian in Cyrillic and Bosnian get Croatian), then the first entry, English; `/LANG=croatian` and the like force one. The installer carries the NVDA add-on (`nvda-addon/laprdus-<version>.nvda-addon`, so build the add-on before the installer; it is installed into the install directory): where NVDA is installed (the `.nvda-addon` file type is registered), the last page has a checkbox, on by default, "Install the Laprdus add-on for NVDA" (`[Run]`, `postinstall shellexec runasoriginaluser skipifsilent`), which opens the add-on with NVDA, and NVDA asks whether to install it, as when the file is opened by hand. The add-on can still be installed on its own.
 
 #### Laprdus Configurator languages
 
@@ -1017,7 +1020,8 @@ cargo xtask data
 # 2. Build Windows SAPI5 DLLs, CLI and Configurator (both architectures)
 cargo xtask windows
 
-# 3. Build SAPI5 Installer (requires InnoSetup 6+)
+# 3. Build the NVDA add-on (the installer carries it), then the SAPI5 installer (requires InnoSetup 6+)
+(cd nvda-addon && scons)
 iscc installers/windows/laprdus_sapi5.iss
 
 # 4. Build Linux (C API library, CLI, Speech Dispatcher module); on Linux or in WSL
@@ -1114,7 +1118,8 @@ cargo xtask windows
 # 3. Run the tests (release: the suites render a lot of audio)
 cargo test --release --workspace
 
-# 4. Build SAPI5 Installer
+# 4. Build the NVDA add-on (the installer carries it), then the SAPI5 installer
+(cd nvda-addon && scons)
 "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" installers/windows/laprdus_sapi5.iss
 
 # 5. Build NVDA Addon (automatically copies DLLs, voice data, and dictionaries)

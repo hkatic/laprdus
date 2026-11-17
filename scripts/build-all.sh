@@ -255,6 +255,8 @@ main() {
         sapi5)
             generate_voice_data
             build_sapi5_dlls
+            # The installer carries the NVDA add-on: the add-on is built first.
+            build_nvda_addon
             build_sapi5_installer
             ;;
         nvda)
@@ -285,8 +287,8 @@ main() {
             case "$HOST_PLATFORM" in
                 windows)
                     build_sapi5_dlls
-                    build_sapi5_installer
                     build_nvda_addon
+                    build_sapi5_installer
                     ;;
                 linux)
                     build_linux

@@ -49,8 +49,12 @@ PrivilegesRequired=admin
 CloseApplications=force
 CloseApplicationsFilter=*.dll,*.exe
 RestartApplications=yes
+; No language dialog: Setup speaks the display language of Windows
+; (/LANG=croatian and the like still force one).
+ShowLanguageDialog=no
+LanguageDetectionMethod=uilanguage
 
-; Setup preselects the language of Windows's display language. English comes
+; Setup takes the language of Windows's display language. English comes
 ; first because any other display language gets the first entry; Croatian comes
 ; before Serbian because a display language with no exact match gets the first
 ; entry of its primary language (hr, sr and bs share 0x1A), so Bosnian gets Croatian.
@@ -73,6 +77,7 @@ english.LaprdusUninstallComment=Remove Laprdus from your computer
 english.LaprdusOldVersionFound=A previous version of Laprdus is already installed. Do you want to uninstall it before continuing?%n%nClick Yes to uninstall the previous version or No to cancel installation.
 english.LaprdusUpgradeFound=A previous version of Laprdus is already installed. The installer will upgrade your existing installation.%n%nClick Yes to continue with the upgrade or No to cancel.
 english.LaprdusRequiresWindows10=Laprdus requires Windows 10 or later.
+english.LaprdusInstallNvdaAddon=Install the Laprdus add-on for NVDA
 ; Slovenian (the messages of Setup itself are Inno Setup's own translation)
 slovenian.LaprdusDesktopShortcut=Ustvari bližnjico na namizju
 slovenian.LaprdusAdditionalOptions=Dodatne možnosti:
@@ -85,6 +90,7 @@ slovenian.LaprdusUninstallComment=Odstranite Laprdus iz računalnika
 slovenian.LaprdusOldVersionFound=Prejšnja različica programa Laprdus je že nameščena. Ali jo želite odstraniti, preden nadaljujete?%n%nKliknite Da, če želite odstraniti prejšnjo različico, ali Ne, če želite preklicati namestitev.
 slovenian.LaprdusUpgradeFound=Prejšnja različica programa Laprdus je že nameščena. Namestitveni program bo nadgradil obstoječo namestitev.%n%nKliknite Da, če želite nadaljevati nadgradnjo, ali Ne, če želite preklicati.
 slovenian.LaprdusRequiresWindows10=Laprdus zahteva Windows 10 ali novejši.
+slovenian.LaprdusInstallNvdaAddon=Namesti dodatek Laprdus za NVDA
 
 [Files]
 ; ============================================================================
@@ -124,6 +130,13 @@ Source: "..\..\data\dictionary\internal.json"; DestDir: "{app}\dictionaries"; De
 Source: "..\..\data\dictionary\spelling.json"; DestDir: "{app}\dictionaries"; Flags: ignoreversion
 Source: "..\..\data\dictionary\emoji.json"; DestDir: "{app}\dictionaries"; Flags: ignoreversion
 Source: "..\..\data\dictionary\emoji_sl.json"; DestDir: "{app}\dictionaries"; Flags: ignoreversion
+
+; ============================================================================
+; The NVDA add-on, for the checkbox on the last page ([Run]); it stays in the
+; install directory, so it can also be installed later by opening it.
+; Build it first: cd nvda-addon && scons
+; ============================================================================
+Source: "..\..\nvda-addon\laprdus-{#AppVersion}.nvda-addon"; DestDir: "{app}"; Flags: ignoreversion
 
 [InstallDelete]
 ; Remove old voice data files from root directory (pre-1.0.0 structure)
@@ -328,7 +341,22 @@ Name: "{group}\{cm:LaprdusUninstallName}"; Filename: "{uninstallexe}"; Comment: 
 ; Desktop shortcut (optional)
 Name: "{commondesktop}\{cm:LaprdusConfiguratorName}"; Filename: "{app}\laprdgui.exe"; Comment: "{cm:LaprdusConfiguratorComment}"; Tasks: desktopicon
 
+[Run]
+; A checkbox on the last page: hand the add-on to NVDA, which asks whether to
+; install it, as when the file is opened by hand. Offered only where NVDA is
+; installed; opened as the user who started Setup, not as the administrator
+; Setup runs as, so it reaches that user's NVDA; never in a silent install.
+Filename: "{app}\laprdus-{#AppVersion}.nvda-addon"; Description: "{cm:LaprdusInstallNvdaAddon}"; Flags: postinstall shellexec nowait skipifsilent runasoriginaluser; Check: NvdaInstalled
+
 [Code]
+// An installed NVDA registers the .nvda-addon file type; a portable copy
+// registers nothing, and without the file type there is nothing to open the
+// add-on with.
+function NvdaInstalled(): Boolean;
+begin
+  Result := RegKeyExists(HKEY_CLASSES_ROOT, '.nvda-addon');
+end;
+
 // Get the uninstall string from registry
 function GetUninstallString(): String;
 var

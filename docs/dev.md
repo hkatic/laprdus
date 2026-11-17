@@ -821,11 +821,11 @@ cargo xtask data
 rustup target add x86_64-pc-windows-msvc i686-pc-windows-msvc
 cargo xtask windows
 
-# Installer (requires InnoSetup)
-iscc installers/windows/laprdus_sapi5.iss
+# NVDA add-on (the installer carries it and offers to install it on its last page)
+(cd nvda-addon && scons)
 
-# NVDA Addon
-cd nvda-addon && scons
+# Installer (requires InnoSetup); it starts in the display language of Windows, without a language dialog
+iscc installers/windows/laprdus_sapi5.iss
 ```
 
 **Linux:**

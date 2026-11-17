@@ -24,8 +24,12 @@ cargo xtask windows
 
 Needs Rust with the MSVC build tools and both targets (`rustup target add x86_64-pc-windows-msvc i686-pc-windows-msvc`).
 
-### 3. Build InnoSetup Installer
+### 3. Build the NVDA add-on, then the InnoSetup installer
+
+The installer carries the add-on and offers to install it on its last page, so the add-on is built first.
+
 ```bash
+(cd nvda-addon && scons)
 "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" installers/windows/laprdus_sapi5.iss
 ```
 
