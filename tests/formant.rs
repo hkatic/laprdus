@@ -4645,7 +4645,9 @@ fn a_mark_glued_to_a_word_is_read_by_name_not_as_a_clause_end() {
             // Since 2026-11-03 the ordinal takes the case the noun's ending and
             // the preposition show; the period is silent and does not end the
             // clause. Before an uppercase word it ends the sentence as before.
-            ("7. listopada 2026.", "sedmog listopada dvije tisuće dvadeset šest.", true),
+            // The year after a month's name is the ordinal of "godine", as in a
+            // numeric date (2026-11-18; the cardinal before)
+            ("7. listopada 2026.", "sedmog listopada dvije tisuće dvadeset šeste.", true),
             ("u 19. stoljeću", "u devetnaestom stoljeću", true),
             ("1990. godine", "tisuću devetsto devedesete godine", true),
             ("2000. godine", "dvije tisućite godine", true),
@@ -4694,6 +4696,12 @@ fn a_mark_glued_to_a_word_is_read_by_name_not_as_a_clause_end() {
             ("7. 10. 2026.", "sedmog \u{FDD0} desetog \u{FDD0} dvije tisuće dvadeset šeste.", true),
             ("07.10.26", "sedmog \u{FDD0} desetog \u{FDD0} dvadeset šeste", true),
             ("31.12.1999", "trideset prvog \u{FDD0} dvanaestog \u{FDD0} tisuću devetsto devedeset devete", true),
+            // The other written forms of a date are the same date (2026-11-18)
+            ("31/12/1999", "trideset prvog \u{FDD0} dvanaestog \u{FDD0} tisuću devetsto devedeset devete", true),
+            ("31-12-1999", "trideset prvog \u{FDD0} dvanaestog \u{FDD0} tisuću devetsto devedeset devete", true),
+            ("1999-12-31", "trideset prvog \u{FDD0} dvanaestog \u{FDD0} tisuću devetsto devedeset devete", true),
+            ("31. XII. 1999", "trideset prvog \u{FDD0} dvanaestog \u{FDD0} tisuću devetsto devedeset devete", true),
+            ("05/03/1985", "petog \u{FDD0} trećeg \u{FDD0} tisuću devetsto osamdeset pete", true),
             // Not a time or a date: the marks are read
             ("3:1", "tri dvotočka jedan", true),
             ("25:00", "dvadeset pet dvotočka nula nula", true),

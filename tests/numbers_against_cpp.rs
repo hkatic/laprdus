@@ -17,6 +17,16 @@ use laprdus::language::Language;
 use laprdus::text::numbers::NumberReader;
 use std::path::{Path, PathBuf};
 
+/// Texts read otherwise than the C++ engine read them, on purpose
+/// (2026-11-18): a date with the year first (2026-11-03) is a date, and the
+/// year after a month's name is the ordinal of "godine" (hr, sr, bs).
+const INTENDED: &[&str] = &[
+    "7. listopada 2026.",
+    "od 2006 do 1. aprila 2007",
+    "Slovenian listener's report of 2026-11-03: commands, veseli se, Pero",
+    "Slovenian listener's report of 2026-11-03: meni to me, menu phrases, podari, vprašaj",
+];
+
 fn golden() -> PathBuf {
     std::env::var_os("LAPRDUS_GOLDEN")
         .map_or_else(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("build/golden"), PathBuf::from)
@@ -47,6 +57,9 @@ fn numbers_match_the_cpp_engine() {
         };
         let language = Language::parse(lang).unwrap_or_else(|| panic!("unknown language: {lang}"));
         let input = &corpus[index.parse::<usize>().expect("a line number") - 1];
+        if INTENDED.contains(&input.as_str()) {
+            continue;
+        }
         let reader = NumberReader::new(language);
         let got = escape(&match mode {
             "w" => reader.convert_numbers(input),

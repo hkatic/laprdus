@@ -30,6 +30,13 @@ const INTENDED: &[(&str, &str)] = &[
     ("sl", "Na lijevoj strani"),
     ("sl", "Strani jezik"),
     ("sl", "Lepo je"),
+    // 2026-11-18: a stem of the lexicon before the suffix of a verb in
+    // -írati gives its stress to that í (these are Croatian words of the
+    // corpus read in Slovenian)
+    ("sl", "chatirati"),
+    ("sl", "prostirati"),
+    ("sl", "prostire"),
+    ("sl", "prostiremo"),
 ];
 
 /// Fields 4 and 5 of a line of the reference: the clause, then every phone.

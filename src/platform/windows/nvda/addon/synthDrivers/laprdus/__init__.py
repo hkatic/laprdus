@@ -421,6 +421,19 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         # Create the engine
         self._engine = _laprdus.LaprdusEngine()
 
+        # A numeric date keeps its separators through NVDA's symbol
+        # processing: see _dates.py. The filter is NVDA 2024.2's; an older
+        # NVDA has none, and a date reaches the engine as NVDA leaves it.
+        from . import _dates
+        self._dates = _dates
+        self._speechSequenceFilter = None
+        try:
+            from speech.extensions import filter_speechSequence
+            filter_speechSequence.register(self._keepDates)
+            self._speechSequenceFilter = filter_speechSequence
+        except Exception:
+            log.debug("LaprdusTTS: no speech sequence filter in this NVDA")
+
         # Audio player - import nvwave here
         import nvwave
         self._nvwave = nvwave
@@ -1062,9 +1075,34 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             if self._player:
                 self._player.pause(switch)
 
+    def _keepDates(self, speechSequence):
+        """speech.extensions.filter_speechSequence: the numeric dates of the
+        text items in the spaced form NVDA's symbol processing leaves alone
+        (18. 11. 2026), whatever way they were written."""
+        try:
+            import config
+            level = int(config.conf["speech"]["symbolLevel"])
+        except Exception:
+            level = 0
+        try:
+            return [
+                self._dates.spaced_dates(item, level) if isinstance(item, str) else item
+                for item in speechSequence
+            ]
+        except Exception:
+            log.debugWarning("LaprdusTTS: date filter failed", exc_info=True)
+            return speechSequence
+
     def terminate(self):
         """Clean up resources."""
         log.debug("LaprdusTTS: Terminating...")
+
+        if self._speechSequenceFilter is not None:
+            try:
+                self._speechSequenceFilter.unregister(self._keepDates)
+            except Exception:
+                pass
+            self._speechSequenceFilter = None
 
         # Stop speech thread, and the synthesis it may be in the middle of
         self._shouldStop.set()

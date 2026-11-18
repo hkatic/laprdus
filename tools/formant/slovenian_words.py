@@ -845,6 +845,19 @@ def l_suffix(stem_note, ending):
     return ''.join(plain), None
 
 
+def ir_suffix(stem_note, ending):
+    """stress_derived_ir_suffix() of sl/phonemize.rs: a stem ending in a
+    consonant before the suffix of a verb in -írati (resèt + iraj) gives its
+    stress to that í. Returns the stem's notation with the í, or None."""
+    if len(ending) < 3 or not ending.startswith('ir') or ending[2] not in 'aeuoj':
+        return None
+    spans = letter_spans(unicodedata.normalize('NFC', stem_note))
+    plain = [PLAIN_OF.get(sp[0], sp[0]) + sp[1:].replace(GRAVE, '') for sp in spans]
+    if not plain or plain[-1] in LONG_CLOSE:
+        return None
+    return ''.join(plain) + 'í'
+
+
 def declension_ending(ending):
     """An ending of NAME_ENDINGS, also after one consonant: the j or t of
     names in -r and -e (Cánkarjev, Jóžetov), the consonant after a fleeting
@@ -892,6 +905,9 @@ class Reader:
                     continue
                 stem = table.get(word[:length])
                 if stem is not None:
+                    moved = ir_suffix(stem, word[length:])
+                    if moved is not None:
+                        return moved + ending_by_rule(moved, word[length + 1:]), hand
                     stem, ending = l_suffix(stem, word[length:])
                     return stem + (ending or ending_by_rule(stem, word[length:])), hand
         return None, False

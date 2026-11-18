@@ -98,6 +98,11 @@ const HAND_ENTRIES: &[&str] = &[
     "vŕnite", "povéj", "razúmel", "gréjo", "dájo", "dobíjo", "jéjo", "učíjo",
     // ---- Words of computers and phones, and names ----
     "ínternet", "ínternet*",
+    // minimirati, the window command (Minimiraj): in no dictionary and not
+    // in Sloleks, stressed as every verb in -írati (SSKJ², SP 2001 kopírati
+    // -am); whole forms, because with a capital the name rules would read
+    // Minimira, Minimiram as Vladimira (a listener's report of 2026-11-18)
+    "minimír|ati|am|aš|a|amo|ate|ajo|aj|ajte|ajmo|al|ala|alo|ali|ale|an|ana|ano|anje|anja",
     "menu=mení", // SSKJ² mení tudi menu [mení]
     "žívjo", "zarádi", "médtem", "anglésk*", "laprdus=láprdus*",
 ];
@@ -457,7 +462,7 @@ mod tests {
 
     #[test]
     fn every_entry_of_the_generated_tables_is_found_and_reads() {
-        for (table, count) in [(FORMS, 95_144), (STEMS, 79_671)] {
+        for (table, count) in [(FORMS, 95_128), (STEMS, 79_671)] {
             let all = entries(table);
             assert_eq!(all.len(), count);
             for entry in &all {

@@ -1405,3 +1405,37 @@ fn a_short_pause_inside_a_clause_splits_it_into_parts() {
     assert_eq!(split_at_breaks(&time).len(), 2);
     assert!(split_at_breaks(&time)[1].slovenian);
 }
+
+/// A listener's report of 2026-11-18: Minimiraj is stressed on its third
+/// syllable. A verb in -írati has the stress on that í in every form (SSKJ²,
+/// SP 2001: kopírati -am), also written with a capital, as a button or a menu
+/// item is (the rules of names had read the -aj as in Andréj), and after a
+/// stem of the lexicon with another accent (resèt + iraj).
+#[test]
+fn slovenian_listeners_report_of_2026_11_18_minimiraj() {
+    let frontend = slovenian();
+    check(
+        &frontend,
+        &[
+            ("minimiraj", "minim'i:raj"),
+            ("Minimiraj", "minim'i:raj"),
+            ("Minimiraj okno", "minim'i:raj 'O:knO"),
+            ("Gumb Minimiraj", "g'u:mp minim'i:raj"),
+            ("Kliknite Minimiraj", "kl'i:knitE minim'i:raj"),
+            ("Okno se Minimira", "'O:knO sE minim'i:ra"),
+            ("Minimirajo okna", "minim'i:rajO 'O:kna"),
+            ("minimiral", "minim'i:raw"),
+            // The other commands, inside a clause with a capital
+            ("Kliknite Kopiraj", "kl'i:knitE kOp'i:raj"),
+            ("Kliknite Formatirajte", "kl'i:knitE fOrmat'i:rajtE"),
+            // After a stem with an accent of its own
+            ("resetiraj", "rEsEt'i:raj"),
+            ("resetira", "rEsEt'i:ra"),
+            ("Resetirajte", "rEsEt'i:rajtE"),
+            ("to je skadriral", "t'ó: jE skadr'i:raw"),
+            // The names keep their rule
+            ("Gospod Andrej", "gOsp'ó:t andr'E:j"),
+            ("Gospod Jernej", "gOsp'ó:t jErn'E:j"),
+        ],
+    );
+}

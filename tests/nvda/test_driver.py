@@ -336,6 +336,42 @@ def test_items_and_phone_numbers():
     synth.terminate()
 
 
+def test_dates():
+    """A numeric date in any written form goes to NVDA's symbol processing
+    as "18. 11. 2026", which it leaves alone; what is no date is untouched,
+    and a separator NVDA speaks at the user's level is left to NVDA."""
+    from laprdus import _dates
+
+    spaced = _dates.spaced_dates
+
+    def check(ok, name):
+        globals()["check"](name, ok)
+
+    for text in (
+        "18.11.2026", "18/11/2026", "18-11-2026", "18\u201111\u20112026", "2026-11-18", "2026/11/18",
+        "2026.11.18", "11/18/2026", "18.XI.2026", "18. XI. 2026", "18/XI/2026", "18-XI-2026",
+        "18.\u00a011.\u00a02026", "18. 11. 2026",
+    ):
+        check(spaced(text) == "18. 11. 2026", "%a is the spaced date, got %a" % (text, spaced(text)))
+        check(spaced("Danes je %s." % text) == "Danes je 18. 11. 2026.", "%a inside a sentence" % text)
+    check(spaced("05/03/1985") == "5. 3. 1985", "a slashed date with leading zeros")
+    check(spaced("05.03.1985") == "05. 03. 1985", "a dotted date keeps its digits")
+    check(spaced("18/11/26") == "18. 11. 26", "a two-digit year after slashes")
+    check(spaced("2026-11-18T10:30") == "18. 11. 2026 10:30", "the time of ISO 8601")
+    check(spaced("18.11.") == "18. 11.", "a day and a month")
+    for text in (
+        "1/2", "24/7", "50/50", "PS/2", "10-15", "716-844", "10-12-14", "1/2/2026/3", "2026-11-18-4",
+        "32/11/2026", "18/13/2026", "2026-13-18", "3.14", "192.168.1.1", "10.10.10.10", "1.000.000",
+        "A18/11/2026", "18/11/2026a", "tel. 05-03-1985", "1. I. Kant", "12:30", "www.rtvslo.si", "Dobar dan.",
+    ):
+        check(spaced(text) == text, "%a is left alone, got %a" % (text, spaced(text)))
+    # At "some" NVDA names the period and the slash, at "most" the hyphen too
+    check(spaced("18.11.2026", 100) == "18.11.2026", "periods are NVDA's at the level some")
+    check(spaced("18/11/2026", 100) == "18/11/2026", "slashes are NVDA's at the level some")
+    check(spaced("2026-11-18", 100) == "18. 11. 2026", "hyphens are silent at the level some")
+    check(spaced("2026-11-18", 200) == "2026-11-18", "hyphens are NVDA's at the level most")
+
+
 def test_cancel():
     """A screen reader's "stop speaking" (the Ctrl key). A tester's report:
     Laprdus finished the old utterance before it spoke the new one. cancel()
@@ -452,6 +488,7 @@ if __name__ == "__main__":
     test_voice_quality()
     test_delayed_description()
     test_items_and_phone_numbers()
+    test_dates()
     test_cancel()
     print("%d failed" % len(failures))
     sys.exit(1 if failures else 0)

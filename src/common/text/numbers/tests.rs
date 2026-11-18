@@ -671,3 +671,123 @@ fn any_text_is_safe() {
         n.convert_numbers(&format!("{long}.{long},{long} 1.{long}.2026 {long}:30"));
     }
 }
+
+/// A date in every written form is read as the dotted one (a listener's
+/// report of 2026-11-18): slashes, hyphens, the year first as in ISO 8601,
+/// the month first where the second number is no month, a Roman month,
+/// typeset spaces after the periods; and what only looks like one is left.
+#[test]
+fn a_date_is_read_in_every_written_form() {
+    let n = NumberReader::new(Croatian);
+    let date = parts(&["osamnaestog", "jedanaestog", "dvije tisuće dvadeset šeste"]);
+    for text in [
+        "18.11.2026",
+        "18. 11. 2026",
+        "18/11/2026",
+        "18-11-2026",
+        "18\u{2011}11\u{2011}2026",
+        "2026-11-18",
+        "2026/11/18",
+        "2026.11.18",
+        "11/18/2026",
+        "18.XI.2026",
+        "18. XI. 2026",
+        "18/XI/2026",
+        "18-XI-2026",
+        "18.\u{A0}11.\u{A0}2026",
+        "18.\u{202F}11.\u{2009}2026",
+    ] {
+        assert_eq!(n.convert_numbers(text), date, "{text}");
+        assert_eq!(n.convert_digits(text), date, "{text}");
+        // The period after the year, the sentence around the date
+        assert_eq!(n.convert_numbers(&format!("{text}.")), format!("{date}."), "{text}.");
+        assert_eq!(
+            n.convert_numbers(&format!("Danas je {text}.")),
+            parts(&["Danas je osamnaesti", "jedanaesti", "dvije tisuće dvadeset šeste."]),
+            "{text}"
+        );
+        assert_eq!(n.convert_numbers(&format!("Rođen je {text} u Zagrebu")), format!("Rođen je {date} u Zagrebu"));
+    }
+    // Leading zeros, which the telephone numbers took, and a two-digit year
+    let born = parts(&["petog", "trećeg", "tisuću devetsto osamdeset pete"]);
+    for text in ["05.03.1985", "05/03/1985", "05-03-1985", "1985-03-05", "5/3/1985", "05.III.1985"] {
+        assert_eq!(n.convert_numbers(text), born, "{text}");
+    }
+    assert_eq!(n.convert_numbers("18/11/26"), parts(&["osamnaestog", "jedanaestog", "dvadeset šeste"]));
+    assert_eq!(n.convert_numbers("18. XI. 26."), parts(&["osamnaestog", "jedanaestog", "dvadeset šeste."]));
+    // The time of ISO 8601, and a time after a date
+    assert_eq!(n.convert_numbers("2026-11-18T10:30"), format!("{date} {}", parts(&["deset", "trideset"])),);
+    assert_eq!(n.convert_numbers("18/11/2026 10:30"), format!("{date} {}", parts(&["deset", "trideset"])));
+    // A day and a month with typeset spaces
+    assert_eq!(n.convert_numbers("5.\u{A0}3."), parts(&["petog", "trećeg."]));
+
+    // The other languages
+    let serbian = parts(&["osamnaestog", "jedanaestog", "dve hiljade dvadeset šeste"]);
+    let bosnian = parts(&["osamnaestog", "jedanaestog", "dvije hiljade dvadeset šeste"]);
+    let slovenian = parts(&["osemnajstega", "enajstega", "dva tisoč šestindvajset"]);
+    for text in ["18.11.2026", "18/11/2026", "18-11-2026", "2026-11-18", "18. XI. 2026", "18.\u{A0}11.\u{A0}2026"] {
+        assert_eq!(numbers(Serbian, text), serbian, "{text}");
+        assert_eq!(numbers(Bosnian, text), bosnian, "{text}");
+        assert_eq!(numbers(Slovenian, text), slovenian, "{text}");
+        assert_eq!(digits(Slovenian, text), slovenian, "{text}");
+        assert_eq!(
+            numbers(Slovenian, &format!("Danes je {text}")),
+            parts(&["Danes je osemnajsti", "enajsti", "dva tisoč šestindvajset"]),
+            "{text}"
+        );
+    }
+    // Slovenian: the day a sentence names, with a leading zero too
+    assert_eq!(
+        numbers(Slovenian, "Danes je 07.10.2026"),
+        parts(&["Danes je sedmi", "deseti", "dva tisoč šestindvajset"])
+    );
+    assert_eq!(
+        numbers(Slovenian, "Rodil se je 07.10.2026"),
+        parts(&["Rodil se je sedmega", "desetega", "dva tisoč šestindvajset"])
+    );
+
+    // The year after a month's name is the ordinal of "godine"
+    assert_eq!(n.convert_numbers("7. listopada 2026."), "sedmog listopada dvije tisuće dvadeset šeste.");
+    assert_eq!(n.convert_numbers("7. listopada 2026"), "sedmog listopada dvije tisuće dvadeset šeste");
+    assert_eq!(n.convert_numbers("7. listopada 2026. godine"), "sedmog listopada dvije tisuće dvadeset šeste godine");
+    assert_eq!(
+        n.convert_numbers("Rođen je 7. listopada 1985. u Zagrebu"),
+        "Rođen je sedmog listopada tisuću devetsto osamdeset pete u Zagrebu"
+    );
+    assert_eq!(numbers(Serbian, "18. novembra 2026."), "osamnaestog novembra dve hiljade dvadeset šeste.");
+    assert_eq!(numbers(Bosnian, "18. novembra 2026."), "osamnaestog novembra dvije hiljade dvadeset šeste.");
+    assert_eq!(numbers(Slovenian, "18. novembra 2026"), "osemnajstega novembra dva tisoč šestindvajset");
+
+    // No dates: fractions, ranges, scores, versions, addresses, telephone
+    // numbers, numbers glued to more
+    for text in [
+        "1/2",
+        "24/7",
+        "50/50",
+        "PS/2",
+        "10-15",
+        "2-3 dana",
+        "716-844",
+        "10-12-14",
+        "1/2/2026/3",
+        "2026-11-18-4",
+        "32/11/2026",
+        "18/13/2026",
+        "13/13/2026",
+        "2026-13-18",
+        "18/11/202",
+        "3.14",
+        "192.168.1.1",
+        "10.10.10.10",
+        "verzija 1.12.10.3",
+        "1.000.000",
+        "A18/11/2026",
+        "18/11/2026a",
+        "1. I. Kant",
+        "5. V.",
+    ] {
+        assert!(!n.convert_numbers(text).contains(MINOR_BREAK_MARK), "{text}: {}", n.convert_numbers(text));
+    }
+    assert_eq!(n.convert_numbers("tel. 05-03-1985"), n.convert_numbers("tel. 05 03 1985"));
+    assert!(!numbers(Slovenian, "10.10.10.10").contains(MINOR_BREAK_MARK));
+}

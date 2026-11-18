@@ -463,11 +463,17 @@ fn default_stress(w: &[char], wp: &WordPhones, prothetic: &[bool], capital: Capi
         // -aj, -ej, -oj, -uj: that vowel (Andréj, Jernéj, Cigój): 29
         // against 14; -al, -il, -ul of two syllables: its vowel (Abdúl,
         // Kanál, Ciríl): 19 against 3 (-el and -ol are as often on the
-        // first syllable: Pável, Kárel, Bártol)
+        // first syllable: Pável, Kárel, Bártol). Not -iraj, -irajo: the
+        // imperative and the third person plural of a verb in -írati, which
+        // a button or a menu item writes with a capital (Minimiraj, Kopiraj,
+        // Formatiraj: minimíraj; SSKJ², SP 2001 kopírati -am, and the
+        // -írati rule below; a listener's report of 2026-11-18). No
+        // hand-accented name of Sloleks ends so.
         if let Some(b) = based("j")
             && b >= 2
             && w[b - 2] != 'i'
             && is_vowel_letter(w[b - 2])
+            && !(b >= 6 && w[b - 4] == 'i' && w[b - 3] == 'r' && w[b - 2] == 'a')
             && before(b).len() >= 2
             && let Some(k) = at_letter(b - 2)
         {
@@ -743,6 +749,25 @@ fn stress_derived_l_suffix(ending: &[char], a: &mut Analysis) {
     }
 }
 
+/// A stem of the lexicon followed by the suffix of a verb in -írati
+/// (resèt* + iraj, format* + iran): the stress is on that í in every form,
+/// whatever the stem's own accent (SSKJ², SP 2001: kopírati -am, formatírati,
+/// resetírati; the -írati rule of default_stress() says the same for a word
+/// no stem begins). A listener's report of 2026-11-18.
+fn stress_derived_ir_suffix(ending: &[char], a: &mut Analysis) {
+    let stem = a.notation_letters;
+    let [.., before] = a.plain[..stem.min(a.plain.len())] else { return };
+    if !(starts_with(ending, "ir") && matches!(at(ending, 2), 'a' | 'e' | 'u' | 'o' | 'j')) || is_vowel_letter(before) {
+        return;
+    }
+    for f in &mut a.flags {
+        *f &= !(F_STRESS | F_LONG | F_CLOSE | F_OPEN);
+    }
+    if let Some(f) = a.flags.get_mut(stem) {
+        *f |= F_STRESS | F_LONG;
+    }
+}
+
 /// The pronunciation the lexicons have for a word, and how many of its
 /// letters it covers (the rest is an ending read by rule): the user's exact
 /// forms and stems, then the reading the clause chose, then the built-in
@@ -864,6 +889,7 @@ pub fn phonemize(
             out.from_lexicon = true;
             if !ending.is_empty() {
                 stress_derived_l_suffix(ending, &mut a);
+                stress_derived_ir_suffix(ending, &mut a);
             }
             // A stem and the ending -l alone is the l-participle: [w], also
             // after a stem that ends in its stressed vowel (želé*, sledí*,

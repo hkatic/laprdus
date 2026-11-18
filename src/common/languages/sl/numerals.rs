@@ -1042,7 +1042,21 @@ pub(crate) fn number_at(r: &NumberReader, t: Text, i: usize, out: &mut Out, in_r
     // A leading zero is read digit by digit by the shared path (007, 01),
     // except in a date without a year written with one: 05.03., 07. 10.
     if leading_zero {
-        let ending = if !in_range && names_the_day(t, &prev) { "i" } else { "ega" };
+        let nominative = !in_range && names_the_day(t, &prev);
+        // A full date with a leading zero that names the day: Danes je
+        // 07.10.2026 is the nominative, as without the zero
+        if nominative
+            && end - i == 2
+            && let Some((date_end, groups)) = t.parse_date(i)
+        {
+            out.push_str(&join_parts([
+                ordinal(r, groups[0], "i"),
+                ordinal(r, groups[1], "i"),
+                r.number_to_words(groups[2]),
+            ]));
+            return Some(date_end);
+        }
+        let ending = if nominative { "i" } else { "ega" };
         let (words, stop) = short_date(r, t, i, ending).filter(|_| !in_range && end - i == 2)?;
         out.push_str(&words);
         return Some(stop);

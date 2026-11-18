@@ -65,13 +65,13 @@ are clauses with the comma pause. It reads clock times ("12:30") and dates
 ("7.10.2026", "7. 10. 2026.") without the separators, with a short pause
 between their parts and before a spreadsheet cell's address since November
 2026 (see "Short pauses inside a clause"), and a number of up to
-four digits followed by a period before a lowercase word as the cardinal
-("7. listopada" *sedam listopada*, "1990. godine") with the period silent;
-before an uppercase word the period ends the sentence as usual. Ordinals
-(*sedmi*, the day and month of a date as *sedmi deseti*) were read until
-October 2026 and taken out: they need the case of the noun (*sedmog
-listopada*), which the converter cannot know, and the nominative was wrong
-more often than right. A line break ends the clause too (since
+four digits followed by a period before a lowercase word as the ordinal in
+the case the noun and the preposition show ("7. listopada" *sedmog
+listopada*, "1990. godine"; since 2026-11-03, the cardinal before) with the
+period silent; before an uppercase word the period ends the sentence as
+usual. A date written with slashes, hyphens, the year first or a Roman month
+is read as the dotted one (since 2026-11-18, "Every written form of a
+date"). A line break ends the clause too (since
 October 2026), with the newline pause and the contour of a clause without a
 mark, so the lines of a post, a list or a label are phrases of their own; a
 run of breaks and spaces (a blank line, CR LF) is one boundary, and after a
@@ -4338,7 +4338,13 @@ Toporišič's rules), so the lexicon carries most of the load:
    *zaganjálnik*, *napajálnik*, *brálec*, *gledálec*, *poslušálec*,
    *učílnica*, *spálnica*: SSKJ), and before *-lišče* to its *í*
    (*gledalíšče*); `stress_derived_l_suffix()`. Before that, *zaganjalnik*
-   was read with the accent of *zagánja\**. At the end of a word of one
+   was read with the accent of *zagánja\**. The same for a stem before
+   the suffix of a verb in *-írati*: the stress is on that *í* in every form
+   (*resèt* + *iraj* is *resetíraj*, *skadríral*, *sedimentírane*; SSKJ², SP
+   2001: *kopírati -am*; `stress_derived_ir_suffix()`, a listener's report
+   of 2026-11-18, mirrored by `ir_suffix()` of the generator, which no longer
+   lists such forms whole). Of the 105,000 word types of SUK 1.1, alone and
+   inside a clause, 16 readings moved, every one to the *í*. At the end of a word of one
    syllable after a vowel, *l* is [w] (*bil*, *stol*, *sol*) except in
    *dél* (SSKJ: "[tudi deu̯]", the [l] first) and the loans *šál*, *bál*,
    *gél*, *mól*.
@@ -5215,7 +5221,8 @@ it beats them on those names; together they raise the rules alone from
 | *-in* | its *i* (*Albín, Avguštín, Martína*) | 56 / 21 |
 | *-ak* of 3+ syllables | its *a* (*Cerkvenják*) | 18 / 0 |
 | *-ij*; *-ija* inside a clause | before it (*Júrij, Albánija, Ávstrija*) | 18 / 3; 85 / 30 |
-| *-aj, -ej, -oj, -uj* | that vowel (*Andréj, Jernéj, Cigój*) | 29 / 14 |
+| *-aj, -ej, -oj, -uj*, not *-iraj, -irajo* | that vowel (*Andréj, Jernéj, Cigój*) | 29 / 14 |
+| *-iraj, -irajo* | the *í* of the verb in *-írati*, as a button writes it (*Minimíraj, Kopíraj*; 2026-11-18) | |
 | *-al, -il, -ul* of two syllables | that vowel (*Kanál, Ciríl, Abdúl*) | 19 / 3 |
 | *-iel, -ael* | first (*Gábriel, Ízrael*) | 6 / 0 |
 
@@ -6069,6 +6076,72 @@ the pauses, each covered in `src/common/text/numbers/tests.rs`):
 - A hyphen after an ordinal's period stands for the dash: `10.-15.11.2026.`
   (*desetog do petnaestog jedanaestog ...*), `3.-4. mjesto`, `1991.-2000.`
   were read with the period and the hyphen left in the text.
+
+**Every written form of a date (2026-11-18).** A listener asked that a date
+be read as a date however it is written. The dotted forms were (`18.11.2026`,
+`18. 11. 2026.`, with or without the final period and leading zeros); the
+others were not: `18/11/2026` and `2026/11/18` were plain cardinals,
+`18-11-2026` and `2026-11-18` half a range (*... jedanaest do dvije tisuće
+...*), `05/03/1985` and `05-03-1985` telephone numbers, `18.XI.2026.` *osamnaest
+točka ksi točka ...*, `18. XI. 2026.` three sentences, and a no-break or thin
+space after the periods, as typeset text has it, broke the date. The forms are
+those of the lists of national date formats (Wikipedia, "List of date formats
+by country"; "Date and time notation in Croatia": *17. 3. 2018.*, *17. III.
+2018.*) and of ISO 8601.
+
+`dates::normalize()` (`src/common/text/numbers/dates.rs`) rewrites them into
+the dotted form before the numbers are read, in both number modes, so every
+form has the words, the cases, the pauses, the nominative after *Danas je* /
+*Danes je* and the silent period after the year of the dotted one, in all four
+languages, and is taken before the telephone numbers and the ranges:
+
+| written | read as |
+|---|---|
+| `18/11/2026`, `18/11/26`, `18-11-2026` (also the non-breaking hyphen) | `18.11.2026`, `18.11.26` |
+| `2026-11-18`, `2026/11/18`, `2026.11.18` | `18.11.2026` |
+| `2026-11-18T10:30` | `18.11.2026 10:30` |
+| `11/18/2026` (the second number is no month: the month is first) | `18.11.2026` |
+| `18.XI.2026.`, `18. XI. 2026.`, `18/XI/2026`, `18-XI-2026` (I to XII, capitals) | `18.11.2026.` |
+| `18.` + no-break, narrow no-break or thin space + `11.` ... | `18. 11. ...` |
+
+Left alone: a day and month without a year written with slashes or hyphens
+(`1/2`, `24/7`, `50/50`, `10-15`, `2-3 dana`), a two-digit year with hyphens
+(`10-12-14`), a Roman month without a year (`1. I. Kant`, `5. V.`), a year
+first written with spaces, numbers glued to more groups or to a letter
+(`1/2/2026/3`, `2026-11-18-4`, `A18/11/2026`), a day over 31 or a month over
+12, and a number after *telefon, tel, mob, faks*. `parse_date()` no longer
+takes the first three groups of a longer dotted number: `10.10.10.10` was
+*desetog desetog desete točka deset*.
+
+In Croatian, Serbian and Bosnian the year after a month's name is the ordinal
+of *godine*, as in a numeric date: `7. listopada 2026.` is *sedmog listopada
+dvije tisuće dvadeset šeste* with or without the period (the cardinal until
+now unless *godine* followed; `number_at()` of `{hr,sr,bs}/numerals.rs`, after
+a month in the genitive). Slovenian reads the cardinal year, as before, and
+`Danes je 07.10.2026` now has the nominative like the date without the zero.
+
+**NVDA.** The report came from NVDA: `18.11.2026` was heard as plain numbers
+while `18. 11. 2026.` was a date. NVDA processes the symbols of a text by the
+table of the language being spoken before the synthesizer gets it, and at the
+punctuation level "none" a symbol that is not preserved becomes a space.
+NVDA's Slovenian table redefines the "decimal point" pattern as the comma, so
+a period between digits is the plain symbol `.`: Laprdus received `18 11
+2026`. The Croatian, Serbian, Bosnian and English tables preserve it, but
+every table drops the slashes of `18/11/2026`, and the Slovenian one the
+hyphens too. An add-on's symbol dictionary cannot define a pattern
+(`allowComplexSymbols=False` in NVDA's `characterProcessing.py`), so the
+driver registers a filter of the speech sequence
+(`speech.extensions.filter_speechSequence`, NVDA 2024.2 and later, applied
+before the symbol processing) that writes a date as `18. 11. 2026`, the form
+NVDA leaves alone at every level (`spaced_dates()` in
+`synthDrivers/laprdus/_dates.py`, the shapes of `dates.rs`: change the two
+together). Only a separator NVDA does not speak at the user's punctuation
+level is rewritten (periods and slashes below "some", hyphens below "most"):
+where the user asked to hear *pika* or *kosa crta*, NVDA says them as before.
+An older NVDA has no such filter and sends what its tables leave. Tests:
+`a_date_is_read_in_every_written_form` in `src/common/text/numbers/tests.rs`,
+the date rows of `tests/formant.rs`, `test_dates` in
+`tests/nvda/test_driver.py`.
 
 The digit mode reads times and dates as the whole-number mode does and now
 also sets a number off from the letters it is glued to

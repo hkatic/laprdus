@@ -9,6 +9,7 @@
 pub(crate) mod cardinal;
 mod cells;
 mod currency;
+mod dates;
 mod phone;
 pub(crate) mod scan;
 #[cfg(test)]
@@ -202,6 +203,9 @@ impl NumberReader {
     /// Convert all numbers in text to words (whole number mode): "123" ->
     /// "sto dvadeset tri".
     pub fn convert_numbers(&self, text: &str) -> String {
+        // A date written with slashes, hyphens, the year first or a Roman
+        // month is read as the dotted one
+        let text = &*dates::normalize(text);
         let t = Text(text);
         let length = t.len();
         let mut out = Out(Vec::with_capacity(length * 2));
@@ -356,6 +360,7 @@ impl NumberReader {
     /// Convert all numbers in text to words digit by digit: "123" -> "jedan
     /// dva tri".
     pub fn convert_digits(&self, text: &str) -> String {
+        let text = &*dates::normalize(text);
         let t = Text(text);
         let length = t.len();
         let mut out = Out(Vec::with_capacity(length * 4));

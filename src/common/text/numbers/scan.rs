@@ -463,7 +463,9 @@ impl<'a> Text<'a> {
     /// year of two or four digits, and no digit after that ("7.10.2026",
     /// "07.10.26"). One space may follow each period, as the orthography
     /// writes it ("7. 10. 2026."). A period after the year is left in the
-    /// text: it ends the sentence or the clause as usual.
+    /// text: it ends the sentence or the clause as usual. The other written
+    /// forms of a date (slashes, hyphens, the year first, a Roman month,
+    /// typeset spaces) arrive here in this one (`dates::normalize()`).
     pub(crate) fn parse_date(self, i: usize) -> Option<(usize, [&'a str; 3])> {
         let mut groups = [""; 3];
         let mut pos = i;
@@ -493,6 +495,11 @@ impl<'a> Text<'a> {
                     return None;
                 }
             }
+        }
+        // More groups after the year: an address or a version, not a date
+        // (10.10.10.10, 1.12.10.3)
+        if self.is_separator_between_digits(pos) {
+            return None;
         }
         Some((pos, groups))
     }

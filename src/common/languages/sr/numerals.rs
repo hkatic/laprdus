@@ -577,6 +577,24 @@ pub(crate) fn number_at(r: &NumberReader, t: Text, i: usize, out: &mut Out, in_r
         return Some(date_end);
     }
 
+    // The year after a month's name is the ordinal of "godine", as in a
+    // numeric date: 7. listopada 2026. is sedmog listopada dvije tisuće
+    // dvadeset šeste, with or without the period (it was the cardinal unless
+    // "godine" followed; a listener's report of 2026-11-18)
+    if !in_range
+        && !leading_zero
+        && end - i == 4
+        && is_month_genitive(prev)
+        && !t.is_separator_between_digits(end)
+        && !matches!(t.at(end), b':' | b'-' | b'/')
+        && !dash_at(t, end)
+    {
+        let mut words = ordinal(r, digits, "e");
+        let year_end = t.date_period_end(end, &mut words);
+        out.push_str(&words);
+        return Some(year_end);
+    }
+
     // A clock time with a colon: the shared path, 24:00 too
     if let Some((time_end, groups)) = t.parse_time(i) {
         if in_range {
