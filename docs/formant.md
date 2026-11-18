@@ -4487,6 +4487,73 @@ on 2026-11-18, asked to accent the listener's eight sentences and
 the first syllable in all nine, and called *lepo* an adverb where it
 answered, *Lepo majico nosiš* included: no help with the accent, again.
 
+***Čast*, *částiti*, *častíti* (2026-11-18).** A listener's report: *To je
+hiša časti.*, *Kriminalci nimajo nobene časti.* and *Časti ne moreš z
+lahkoto dobiti nazaj.* on the last syllable, *Mama časti vse nas!* and
+*Danes lahko ti častiš!* on the first, *Počasti se s hrano in pijačo!* on
+the second. The noun was right already; the verb was read on the *í* in
+every form. The dictionaries have what the listener asked for:
+
+| Word | Source | Reading |
+|------|--------|---------|
+| the noun *čast* | SSKJ², SP 2001 *část -í*; Sloleks | *častí* the genitive and the plural, *části* the dative and the locative (`GENITIVE_I`) |
+| *částiti¹ -im* dov. in nedov., pog., "to treat, to pay the bill" | SSKJ²: *danes te častim jaz; častiti komu pijačo; častiti večerjo* | on the stem in every form: *částim, částiš, části, částil* |
+| *častíti² -ím* nedov., "to honour, to worship" | SSKJ²: *častijo ga kakor boga; častiti spomin slavnih mož; častiti križ, svetnike*; SP 2001 *častíti -ím, části -íte, -íl -íla* | *častím, častí, častíl*; the imperative *části* |
+| *počastíti -ím* | SSKJ² *počástil*; SP 2001 "drugo gl. častiti"; Sloleks | the present *počastí*, the imperative *počásti* |
+
+Sloleks has only *častíti*, so the lexicon knew nothing of the colloquial
+verb. The rules (`sl/clause.rs`: `CASTITI`, `castiti_sense()`,
+`castiti_reading()`, `casti_is_verb()`, `casti_reading()`, called by
+`clause_reading()`):
+
+- **Which verb** (*častim, častiš, častimo, častite, častijo, častil,
+  častila, častili, častile, častilo, častiti*): *častíti* where the clause
+  has *kot* or *kakor* after the verb, *po božje*, something honoured (*boga,
+  bogove, svetnike, Marijo, križ, spomin, prednike, junake, tradicijo* ...)
+  or someone who worships (*verniki, kristjani, muslimani, hindujci,
+  Slovani, cerkev, ljudstvo* ...); *částiti* where it has a first or second
+  person or the company as the object (*me, te, nas, vas, vse, vso družbo,
+  sodelavce*), something one pays for (*pijačo, rundo, večerjo, kosilo, s
+  pivom*), or *danes, nocoj, kdo, jaz*. With no cue, *částiti* for the
+  forms of conversation and of one person (*častim, častiš, častimo,
+  častite, častil, častila, častiti*) and *častíti* for *častijo, častili,
+  častile, častilo*. That default is ours, not the listener's: in written
+  text the plural forms are worship (every token of SUK; Sloleks counts
+  *častijo* 1,852 and *častili* 1,861 times in Gigafida, *častiš* 39).
+- ***časti*** is the verb after someone who treats (*on, ona, kdo, mama,
+  oče, šef, kolega* ..., a given name: *Mama časti. Kdo časti? Janez
+  časti.*), after an object clitic, *ne, naj, rad, lahko, danes* (*Danes
+  časti Janez*), before an object clitic, *vse, vso*, or something one pays
+  for (*Časti me! Časti pijačo! Mama časti vse nas!*), and alone with an
+  exclamation mark (*Časti!*). The verb is *části*, the treat and the
+  imperative of both verbs (*Časti očeta in mater!*), and *častí* inside a
+  clause with a cue of worship (*Katoliška cerkev ga časti kot svetnika*).
+  Everywhere else it is the noun, by its case as before: after a
+  preposition, an adjective, another noun (*hiša časti, stvar časti,
+  razžalitev časti*), before *ni, je, ne* (*Časti ni več. Časti ne moreš
+  dobiti nazaj.*), and alone.
+- ***Počasti*** at the head of a clause before *se* or *si*, or in a
+  sentence that exclaims, is the imperative *počásti*; elsewhere the
+  present *počastí* (*Predsednik počasti goste*).
+
+A mistake between the noun's genitive and the present of *častíti* is not
+heard (both *častí*), nor one between the dative and *částiti* (both
+*části*). Limits: *Hiša časti!* ("it is on the house") reads the noun, as
+the listener's own first sentence asks; a subject that is no pronoun, name
+or one of the listed persons before a bare *časti* reads the noun (*Naš
+novi sosed časti.*); the adjective *častite* (*častite sestre*) reads as the
+verb. SUK 1.1 has 5 tokens of the noun *časti*, 6 of the verbs' forms above
+and 6 of *počastiti*: all read as before, all right; it has no token of
+*částiti*, so the treat is checked by the dictionaries' examples and the
+listener's alone. GaMS 9B, asked what the word is and where its stress
+falls in the listener's six sentences, *Katoliška cerkev ga časti kot
+svetnika* and *Kolegi častijo*, said the first syllable in all eight (the
+genitive *časti* included), called *častiš* and *častijo* nouns and found
+the treat only in *častiš* and *počasti*: against the dictionaries and the
+listener, and no help. Tests: `src/common/languages/sl/tests.rs`
+`slovenian_listeners_report_of_2026_11_18_cast_castiti`, rows of `READINGS`
+in `tests/formant.rs`.
+
 A spelling that is a verb's form in one reading and a noun's, an
 adjective's or an adverb's in another, with a different accent, is read by
 the words around it (`VERB_NOUN`, 941 spellings the generator

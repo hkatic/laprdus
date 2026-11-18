@@ -1439,3 +1439,53 @@ fn slovenian_listeners_report_of_2026_11_18_minimiraj() {
         ],
     );
 }
+
+/// A listener's report of 2026-11-18: the noun čast (častí the genitive and
+/// the plural, části the dative and the locative), SSKJ² částiti "to treat"
+/// on the stem, častíti "to honour" on the ending, and the imperative počásti.
+#[test]
+fn slovenian_listeners_report_of_2026_11_18_cast_castiti() {
+    let frontend = slovenian();
+    check(
+        &frontend,
+        &[
+            // The listener's six sentences
+            ("To je hiša časti", "t'ó: jE h'i:ša čast'i:"),
+            ("Mama časti vse nas", "m'a:ma č'a:sti us'E nas"),
+            ("Danes lahko ti častiš", "d'a:nəs lahk'ó: ti č'a:stiš"),
+            ("Kriminalci nimajo nobene časti", "krimin'a:wci n'i:majO nOb'E:nE čast'i:"),
+            ("Časti ne moreš z lahkoto dobiti nazaj", "čast'i: nE m'ó:rEž z lahk'O:tO dOb'i:ti naz'a:j"),
+            ("Počasti se z dobro večerjo", "pOč'a:sti sE z d'O:brO vEč'é:rjO"),
+            // To treat: SSKJ² danes te častim jaz, častiti komu pijačo
+            ("Kdo časti", "gd'ó: č'a:sti"),
+            ("Jaz častim", "j'as č'a:stim"),
+            ("Danes častim jaz", "d'a:nəs č'a:stim j'as"),
+            ("Častim rundo", "č'a:stim r'u:ndO"),
+            ("Šef nas je častil s kosilom", "š'é:f nas jE č'a:stiw s kOs'i:lOm"),
+            ("Včeraj je častila vso družbo", "uč'é:raj jE č'a:stila us'O dr'u:žbO"),
+            ("Danes časti Janez", "d'a:nəs č'a:sti j'a:nEs"),
+            ("Janez časti", "j'a:nEs č'a:sti"),
+            ("Časti me", "č'a:sti mE"),
+            ("Časti pijačo", "č'a:sti pij'a:čO"),
+            ("Kolegi častijo", "kOl'é:gi č'a:stijO"),
+            // To honour: SSKJ² častijo ga kakor boga, častiti spomin
+            ("Verniki častijo Marijo", "v'é:rniki čast'i:jO mar'i:jO"),
+            ("Častijo ga kot boga", "čast'i:jO ga k'Ot bOg'a:"),
+            ("Stari Slovani so častili Peruna", "st'a:ri slOv'a:ni sO čast'i:li pEr'u:na"),
+            ("Katoliška cerkev ga časti kot svetnika", "kat'ó:liška c'é:rkəw ga čast'i: k'Ot sv'é:tnika"),
+            ("Častiti moramo spomin prednikov", "čast'i:ti m'ó:ramO spOm'i:n pr'é:dnikOw"),
+            // Its imperative is on the stem too (SP 2001 části -íte)
+            ("Časti očeta in mater", "č'a:sti Oč'é:ta in m'a:tEr"),
+            // The noun
+            ("Brez časti", "brEš čast'i:"),
+            ("To je stvar časti", "t'ó: jE stv'a:r čast'i:"),
+            ("Časti ni več", "čast'i: ni v'Eč"),
+            ("Izkazali so mu vse časti", "iskaz'a:li sO mu us'E čast'i:"),
+            ("Tudi v časti je sreča", "t'u:di u č'a:sti jE sr'é:ča"),
+            ("Časti", "čast'i:"),
+            // The present of počastiti, and the derived words
+            ("Predsednik počasti goste", "prEts'é:dnik pOčast'i: g'O:stE"),
+            ("Bil je častilec sonca", "b'i:w jE čast'i:ləc s'ó:nca"),
+        ],
+    );
+}

@@ -1531,6 +1531,181 @@ fn genitive_i_reading(clause: &Clause, i: usize, must_say: bool) -> Option<&'sta
     }
 }
 
+// časti is three words, and častim, častiš, častil ... two (a listener's
+// report of 2026-11-18: To je hiša časti, Kriminalci nimajo nobene časti,
+// Časti ne moreš z lahkoto dobiti nazaj on the last syllable; Mama časti vse
+// nas!, Danes lahko ti častiš! on the first; Počasti se s hrano in pijačo! on
+// the second). The dictionaries have the same:
+//
+// - the noun část -í (SSKJ², SP 2001; Sloleks: the genitive and the plural
+//   častí, the dative and the locative části), read by `GENITIVE_I`;
+// - SSKJ² částiti¹ -im dov. in nedov., pog., "to treat someone, to pay the
+//   bill" (danes te častim jaz; častiti komu pijačo; častiti večerjo), on
+//   the stem in every form. Sloleks does not have this verb, so the lexicon
+//   reads every form as the next one;
+// - SSKJ² častíti² -ím nedov., "to honour, to worship" (častijo ga kakor
+//   boga; častiti spomin slavnih mož; častiti križ, svetnike); SP 2001
+//   častíti -ím, části -íte, -íl -íla: its imperative is on the stem too.
+//
+// So part of the question is which verb is meant, and no corpus here says
+// much: SUK 1.1 has six tokens of the verb, all of worship, in written prose
+// (Katoliška cerkev ga časti kot svetnika; ki jih hindujci še posebej
+// častijo; so ga častili kot napitek modrosti). The cues are the
+// dictionaries' own examples; where there is none, the forms of conversation
+// and of one person are the treat (častim, častiš, častil), the third person
+// plural and the plural participles the worship (častijo, častili), which is
+// our reading of that evidence and not the listener's word.
+
+/// The forms that only the two verbs have: the spelling, the reading of
+/// částiti "to treat", and whether that is the reading where the clause says
+/// nothing (else the lexicon's častíti "to honour").
+#[rustfmt::skip] // one form per row
+const CASTITI: &[(&str, &str, bool)] = &[
+    ("častim", "částim", true),
+    ("častiš", "částiš", true),
+    ("častiva", "částiva", true),
+    ("častita", "částita", true),
+    ("častimo", "částimo", true),
+    ("častite", "částite", true),
+    ("častijo", "částijo", false),
+    ("častil", "částiw", true),
+    ("častila", "částila", true),
+    ("častili", "částili", false),
+    ("častile", "částile", false),
+    ("častilo", "částilo", false),
+    ("častiti", "částiti", true),
+    ("častit", "částit", true),
+];
+
+/// What one pays for when one treats (SSKJ² častiti komu pijačo, častiti
+/// večerjo), in the accusative and after s, z.
+#[rustfmt::skip] // rows of words
+const TREATS: &[&str] = &[
+    "pijačo", "pijače", "pijačami", "rundo", "runde", "pivo", "pivom", "vino", "vinom", "kavo", "kavico", "sok",
+    "sokom", "čaj", "čajem", "kosilo", "kosilom", "večerjo", "malico", "zajtrk", "zajtrkom", "sladoled",
+    "sladoledom", "pico", "torto", "šampanjec", "šampanjcem", "kozarček", "kozarčkom", "špricer", "burek",
+    "bombone", "bomboni", "kino", "vstopnice", "račun",
+];
+
+/// Which verb a form of častiti is in its clause: `Some(true)` částiti "to
+/// treat", `Some(false)` častíti "to honour", `None` when nothing says.
+fn castiti_sense(clause: &Clause, i: usize) -> Option<bool> {
+    // What is honoured and who worships: the examples of SSKJ² and SP 2001
+    // (častiti po božje, častijo ga kakor boga, častiti spomin slavnih mož,
+    // častiti križ, svetnike, zaslužnega človeka) and the sentences of SUK
+    // 1.1 (častijo lurško mater božjo, ki jih hindujci častijo, muslimani
+    // častijo kot preroka, so ga častile nekatere antične kulture)
+    #[rustfmt::skip] // rows of words
+    const HONOURED: &[&str] = &[
+        "boga", "bogove", "bogov", "bogu", "bogovom", "boginjo", "boginje", "božanstvo", "božanstva", "malika",
+        "malike", "svetnika", "svetnike", "svetnico", "svetnice", "marijo", "devico", "božjo", "božje", "kristusa",
+        "jezusa", "alaha", "gospoda", "križ", "relikvijo", "relikvije", "spomin", "prednike", "prednikov", "junaka",
+        "junake", "mučenca", "mučence", "preroka", "preroke", "mrtve", "pokojne", "pokojnega", "tradicijo", "izročilo",
+        "ogenj", "sonce", "luno", "naravo", "idola", "idole", "duhove", "kip", "podobo", "ikono", "ikone", "praznik",
+        "obletnico", "zavetnika", "zavetnico", "patrona",
+    ];
+    #[rustfmt::skip] // rows of words
+    const WORSHIPPERS: &[&str] = &[
+        "verniki", "vernik", "kristjani", "kristjan", "katoličani", "katoličan", "muslimani", "musliman", "hindujci",
+        "hindujec", "budisti", "budist", "judje", "pravoslavci", "protestanti", "pogani", "pogan", "romarji",
+        "rimljani", "grki", "slovani", "egipčani", "kelti", "germani", "indijanci", "azteki", "inki", "maji",
+        "cerkev", "ljudstvo", "ljudstva", "pleme", "plemena", "narod", "narodi", "kultura", "kulture", "vera", "vere",
+        "religija", "religije", "sekta", "predniki",
+    ];
+    // Whom one treats: the first and the second person, the company
+    #[rustfmt::skip] // rows of words
+    const TREATED: &[&str] = &[
+        "me", "te", "nas", "vas", "naju", "vaju", "mene", "tebe", "nam", "vam", "nama", "vama", "vse", "vso", "vsem",
+        "družbo", "omizje", "sodelavce", "sodelavke", "kolege", "kolegice", "prijatelje", "prijateljice", "goste",
+        "ekipo", "druščino",
+    ];
+    // When and who: danes te častim jaz; Kolegi častijo.
+    #[rustfmt::skip] // rows of words
+    const OCCASIONS: &[&str] = &[
+        "danes", "nocoj", "drevi", "zvečer", "tokrat", "kdo", "jaz", "kolegi", "sodelavci", "prijatelji", "fantje",
+        "punce",
+    ];
+    let words = clause.words;
+    let has = |list: &[&str]| words.iter().enumerate().any(|(k, x)| k != i && is_one_of(x, list));
+    let like = (i + 1..words.len()).any(|k| clause.one_of(k, &["kot", "kakor"]));
+    let divinely = (0..words.len()).any(|k| clause.is(k, "po") && clause.is(k + 1, "božje"));
+    if like || divinely || has(HONOURED) || has(WORSHIPPERS) {
+        return Some(false);
+    }
+    (has(TREATED) || has(TREATS) || has(OCCASIONS)).then_some(true)
+}
+
+/// částim or the lexicon's častím, and the like of the other forms of
+/// `CASTITI`.
+fn castiti_reading(clause: &Clause, i: usize) -> Option<&'static str> {
+    let w = clause.word(i)?;
+    let &(_, treat, default) = CASTITI.iter().find(|&&(spelling, ..)| eq(w, spelling))?;
+    castiti_sense(clause, i).unwrap_or(default).then_some(treat)
+}
+
+/// Whether časti is the verb in its clause and not the noun: a verb has a
+/// subject that treats or an object, a noun stands after its preposition,
+/// its adjective, the noun it is the genitive of (hiša časti, stvar časti,
+/// razžalitev časti) or a verb that lacks it (nimajo nobene časti), and is
+/// what the spelling is where nothing says (all 5 tokens of SUK 1.1; Časti ne
+/// moreš z lahkoto dobiti nazaj).
+fn casti_is_verb(clause: &Clause, i: usize) -> bool {
+    // Who treats, in the nominative right before the verb (Mama časti vse
+    // nas! Kdo časti? Šef časti.); not hiša, whose "hiša časti" is the noun
+    // in the listener's own example
+    #[rustfmt::skip] // rows of words
+    const SUBJECTS: &[&str] = &[
+        "on", "ona", "ono", "kdo", "kdor", "nekdo", "nihče", "vsakdo", "mama", "mami", "mamica", "oče", "oči", "ata",
+        "ati", "očka", "babica", "dedek", "stric", "teta", "brat", "sestra", "sin", "hči", "hčerka", "mož", "žena",
+        "fant", "punca", "šef", "šefica", "direktor", "direktorica", "kolega", "kolegica", "sodelavec", "sodelavka",
+        "prijatelj", "prijateljica", "sosed", "soseda", "slavljenec", "slavljenka", "zmagovalec", "zmagovalka",
+        "natakar", "gostilničar", "podjetje", "firma",
+    ];
+    // Before the verb: its object clitic (not te and ti, the demonstratives
+    // of te časti, ti časti), ne, naj, and the words of a round of drinks
+    const BEFORE: &[&str] = &[
+        "me", "ga", "jo", "nas", "vas", "jih", "ju", "naju", "vaju", "mi", "mu", "ji", "nam", "vam", "jim", "ne",
+        "naj", "rad", "rada", "rado", "lahko", "danes", "nocoj", "drevi", "zvečer", "tokrat", "zdaj", "vedno", "spet",
+        "potem", "pijačo", "rundo", "večerjo", "kosilo",
+    ];
+    const OBJECT_CLITICS: &[&str] =
+        &["me", "te", "ga", "jo", "nas", "vas", "jih", "ju", "naju", "vaju", "mi", "mu", "ji", "nam", "vam", "jim"];
+    const BITI: &[&str] = &["je", "ni", "so", "niso", "bo", "bodo", "bi", "bila", "bilo", "bile", "biti", "ne"];
+    // Its object right after it: vse nas, vso družbo, pijačo, očeta in mater
+    const OBJECTS: &[&str] = &["vse", "vso", "vsem", "celo", "očeta", "mater", "starše", "boga", "bogove", "družbo"];
+    let words = clause.words;
+    // A noun is what a form of biti or ne follows (Časti ni več, Danes časti
+    // ni, Časti ne moreš dobiti nazaj), unless ne stands before it
+    let prev = clause.before(i);
+    if clause.one_of(i + 1, BITI) && !prev.is_some_and(|prev| eq(prev, "ne")) {
+        return false;
+    }
+    if clause.one_of(i + 1, OBJECT_CLITICS) || clause.one_of(i + 1, OBJECTS) || clause.one_of(i + 1, TREATS) {
+        // Časti me! Časti nas mama. Časti pijačo!; not after a preposition
+        // or an adjective of the noun (brez časti me je strah)
+        return !prev.is_some_and(|prev| is_preposition(prev) || ends_with_any(prev, &["ne", "ke", "je", "ih"]));
+    }
+    let Some(prev) = prev else {
+        // Časti! alone is the command; Časti, a heading, the noun
+        return words.len() == 1 && clause.exclamation;
+    };
+    // Janez časti. Danes časti Janez.
+    let named = i == 1 && is_given_name(prev);
+    is_one_of(prev, SUBJECTS) || is_one_of(prev, BEFORE) || named
+}
+
+/// The reading of časti: the verb's části (to treat, and the imperative of
+/// both verbs) or častí (honours), else the noun's by its case.
+fn casti_reading(clause: &Clause, i: usize) -> Option<&'static str> {
+    if casti_is_verb(clause, i) {
+        // Cerkev ga časti kot svetnika: the present of častíti; at the head
+        // of a clause it is the command (Časti očeta in mater!)
+        let honours = i > 0 && castiti_sense(clause, i) == Some(false);
+        return Some(if honours { "častí" } else { "části" });
+    }
+    genitive_i_reading(clause, i, false)
+}
+
 /// vas the village, vás (SSKJ² vás -í ž; SP 2001 vás -í), not the pronoun
 /// vas, which is the commoner word and a clitic: after a word that agrees
 /// with a feminine noun (ta vas, naša vas, sosednja vas, majhna vas, v našo
@@ -1700,6 +1875,18 @@ pub fn clause_reading(clause: &Clause, i: usize) -> Option<&'static str> {
         && let Some(reading) = genitive_plural_a_reading(clause, i)
     {
         return Some(reading);
+    }
+    // čast the noun, částiti "to treat" and častíti "to honour"
+    if starts_with(w, "časti") {
+        return if w.len() == 5 { casti_reading(clause, i) } else { castiti_reading(clause, i) };
+    }
+    // Počasti se s hrano in pijačo! The imperative počásti (SP 2001
+    // počastíti -ím, "drugo gl. častiti": části -íte; Sloleks počásti) at the
+    // head of a clause before se or si or in a sentence that exclaims (a
+    // listener's report of 2026-11-18); elsewhere the present počastí
+    // (Predsednik počasti goste. Počasti ga predsednik.)
+    if eq(w, "počasti") && i == 0 && (clause.exclamation || clause.one_of(1, &["se", "si"])) {
+        return Some("počásti");
     }
     if w.last() == Some(&'i')
         && let Some(reading) = genitive_i_reading(clause, i, false)

@@ -397,6 +397,17 @@ fn slovenian_reads_a_word_by_the_clause_after_the_comma() {
     // Each row: a text, the same text with the accent written, and whether
     // the two must sound the same.
     const READINGS: &[(&str, &str, bool)] = &[
+        // čast the noun, částiti "to treat", častíti "to honour", and the
+        // imperative počásti (a listener's report of 2026-11-18)
+        ("To je hiša časti.", "To je hiša častí.", true),
+        ("Mama časti vse nas!", "Mama části vse nas!", true),
+        ("Mama časti vse nas!", "Mama častí vse nas!", false),
+        ("Danes lahko ti častiš!", "Danes lahko ti částiš!", true),
+        ("Kriminalci nimajo nobene časti.", "Kriminalci nimajo nobene častí.", true),
+        ("Počasti se s hrano in pijačo!", "Počásti se s hrano in pijačo!", true),
+        ("Počasti se s hrano in pijačo!", "Počastí se s hrano in pijačo!", false),
+        ("Časti ne moreš z lahkoto dobiti nazaj.", "Častí ne moreš z lahkoto dobiti nazaj.", true),
+        ("Častijo ga kot boga.", "Častíjo ga kot boga.", true),
         // lepo before a pronoun or a verb is the adverb lepó, before a noun
         // the adjective lépo (a listener's report of 2026-11-18)
         ("Lepo pišeš.", "Lepó pišeš.", true),
