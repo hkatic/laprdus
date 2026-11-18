@@ -88,7 +88,7 @@ Rules of the layout:
 | `src/platform/windows/configurator/` | Laprdus Configurator (laprdgui.exe) |
 | `src/platform/linux/speechd/` | Speech Dispatcher module (sd_laprdus) |
 | `src/platform/android/` | The Android app (Gradle project); `native/` is the JNI crate (`laprdus-android`, liblaprdus.so) |
-| `src/platform/apple/` | The Apple app and speech extension (Xcode project in `Laprdus/`), `build-rust-engine.sh`; not yet built on a Mac since the migration |
+| `src/platform/apple/` | The Apple app and speech extension (Xcode project in `Laprdus/`), `build-rust-engine.sh`; built for the iPhone and as the notarized macOS release on 2026-11-18, not yet tested with VoiceOver |
 | `src/platform/windows/legacy/` | The build for Windows 7 SP1, 8 and 8.1: `README.md`, `toolchain.txt` (the pinned nightly) and `compat/` (crate `laprdus-win7`, the hook that answers `combase.dll` with `ole32.dll`) |
 | `src/platform/windows/nvda/` | NVDA add-on: the Python synthesizer driver and its SCons build (it was `nvda-addon/` at the root until November 2026) |
 
@@ -860,7 +860,7 @@ cd src/platform/android
 
 **What Gradle does by itself** (`app/build.gradle.kts`):
 1. `generateVoiceData` runs `cargo xtask data` (voice data in `data/voices/`, dictionaries in `data/dictionary/`)
-2. `buildNativeLibrary` runs `cargo ndk` for `arm64-v8a`, `armeabi-v7a`, `x86_64` and `x86` (`--platform 24`, `build --release -p laprdus-android`) into `app/build/rustJniLibs`. The library is built optimized for debug builds of the app too: an unoptimized synthesizer is too slow for a screen reader, and Rust keeps its bounds checks in release builds
+2. `buildNativeLibrary` runs `cargo ndk` for `arm64-v8a`, `armeabi-v7a`, `x86_64` and `x86` (`--platform 24`, `build --release -p laprdus-android`) into `app/build/rustJniLibs`. It first asks rustup whether the four Rust targets are installed and fails with the `rustup target add` command for the missing ones (without rustup the check is skipped); a missing target otherwise shows only as rustc's "can't find crate for `std`" in the middle of the cargo output, under a Gradle error that names nothing but cargo's exit code. The library is built optimized for debug builds of the app too: an unoptimized synthesizer is too slow for a screen reader, and Rust keeps its bounds checks in release builds
 3. `copyVoiceData` and `copyDictionaries` copy voice data and dictionaries to the APK assets
 
 **Manual steps** (to see where a failing build stops):
@@ -1609,9 +1609,10 @@ laprdus_synthesize_spelled(handle, "ABC", &samples, &format);
 Separate from the Apple app in `src/platform/apple/` (which builds with Xcode), the
 Cargo build supports macOS as a first-class platform for the C API library and the CLI.
 
-**Not yet built on a Mac since the migration to Rust**: what this section and the next
-say about the Cargo build is what `tools/xtask/src/install.rs` and
-`scripts/build-macos-release.sh` do, unverified on macOS.
+**First built on a Mac since the migration to Rust on 2026-11-18**: `scripts/build-macos-release.sh`
+ran end to end (universal CLI and library, app archive, three notarizations, `spctl` accepts
+the app and the DMG), and the tarball's CLI speaks Zvonko, Josip and Vlado. The app's voices
+have not yet been tried with VoiceOver.
 
 ```bash
 # Builds the voice data, liblaprdus_capi.dylib and the laprdus CLI for the host
@@ -1691,8 +1692,8 @@ without either, since it has no certificate) and the `dist` step, which stages
 `dist/macos-universal/laprdus-<version>-macos-universal/` (`dist/macos-<arch>/...`
 without `--universal`) with the Linux tarball's `bin/lib/include/share` layout and
 packs it. The engine is linked into the CLI, so it runs from `target/` and from the
-tarball alike without a run path. As said above, none of this has been run on a Mac
-since the migration.
+tarball alike without a run path. All of this ran on a Mac for the first time since the
+migration on 2026-11-18 (see above).
 
 **Not built on macOS:** SAPI5, the NVDA addon, the Windows config GUI and the
 Speech Dispatcher module are all platform-specific and remain Windows/Linux only.
@@ -1703,7 +1704,7 @@ warning rather than failing.
 
 ### Overview
 
-The Apple port lives in `src/platform/apple/Laprdus/Laprdus.xcodeproj` (Xcode 26+; the project moved here from a folder of its own at the root with the migration to Rust) and mirrors the Android app. **The project has not been built on a Mac since the migration**: the paths, the script phase and the build settings below are what the project file and `build-rust-engine.sh` say, unverified. Deployment targets: **iOS 16.0** and **macOS 13.0** — the minimum versions supporting `AVSpeechSynthesisProviderAudioUnit`; the SwiftUI code deliberately uses only iOS 16 / macOS 13 APIs (`ObservableObject`/`@Published`, single-parameter `onChange`, no `@Observable`/`@Bindable`, no `navigationDestination(item:)`). visionOS is not supported.
+The Apple port lives in `src/platform/apple/Laprdus/Laprdus.xcodeproj` (Xcode 26+; the project moved here from a folder of its own at the root with the migration to Rust) and mirrors the Android app. **First built after the migration on 2026-11-18** (iOS device Release build, installed on the iPhone; macOS archive of the release script): the paths, the script phase and the build settings below work; the voices have not yet been tried with VoiceOver since. Deployment targets: **iOS 16.0** and **macOS 13.0** — the minimum versions supporting `AVSpeechSynthesisProviderAudioUnit`; the SwiftUI code deliberately uses only iOS 16 / macOS 13 APIs (`ObservableObject`/`@Published`, single-parameter `onChange`, no `@Observable`/`@Bindable`, no `navigationDestination(item:)`). visionOS is not supported.
 
 | Target | Purpose |
 |--------|---------|
@@ -1724,7 +1725,7 @@ src/platform/apple/Laprdus/     (next to it: src/platform/apple/build-rust-engin
 └── LaprdusTests/    Unit tests
 ```
 
-- The engine is the Rust static library `liblaprdus_capi.a` (crate `laprdus-capi`, the C API). Both targets have a "Build the Rust engine" script phase that runs `src/platform/apple/build-rust-engine.sh`: it builds the crate with Cargo for the platform and the architectures Xcode is building (always `--release`, also for Debug builds of the app: an unoptimized synthesizer is too slow for a screen reader), joins the architectures and puts the library into the products folder, where both targets link it (`LIBRARY_SEARCH_PATHS = $(BUILT_PRODUCTS_DIR)`, `OTHER_LDFLAGS = -llaprdus_capi`). Swift reaches it through the bridging header `Shared/LaprdusC.h`. It needs rustup with the targets of the platforms built: `rustup target add aarch64-apple-darwin x86_64-apple-darwin aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios`. Not yet built on a Mac: unverified.
+- The engine is the Rust static library `liblaprdus_capi.a` (crate `laprdus-capi`, the C API). Both targets have a "Build the Rust engine" script phase that runs `src/platform/apple/build-rust-engine.sh`: it builds the crate with Cargo for the platform and the architectures Xcode is building (always `--release`, also for Debug builds of the app: an unoptimized synthesizer is too slow for a screen reader), joins the architectures and puts the library into the target's own derived files folder, where that target links it (`LIBRARY_SEARCH_PATHS = $(DERIVED_FILE_DIR)`, `OTHER_LDFLAGS = -llaprdus_capi`; one copy in the shared products folder, as it was at first, is produced by two tasks, and Xcode refuses the build with "Multiple commands produce"). Swift reaches it through the bridging header `Shared/LaprdusC.h`. It needs rustup with the targets of the platforms built: `rustup target add aarch64-apple-darwin x86_64-apple-darwin aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios`. Built and linked this way for the first time on 2026-11-18.
 - Voice data (`data/voices/*.bin`) and dictionaries (`data/dictionary/*.json`) are bundle resources of both targets. **On a fresh checkout, generate voice data first** (`cargo xtask data` or `./scripts/build-all.sh voice-data`) — `.bin` files are gitignored.
 - **What the system needs before it lists the voices** (from Apple's "Creating a custom speech synthesizer" sample and from other working speech extensions; all three were missing until October 2026). Note: on macOS 27 the voice load was still failing after these were added (`TextToSpeech.MultiError`, extension never launched), with the cause not yet found:
   - the extension's `AudioComponents` entry declares `sandboxSafe` (`Config/LaprdusVoices-Info.plist`);

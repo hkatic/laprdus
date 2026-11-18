@@ -1,8 +1,11 @@
 #!/bin/sh
 # Builds the Laprdus engine (the Rust crate laprdus-capi, a static library
 # with the C API) for the platform and architectures Xcode is building, and
-# puts it into the products folder as liblaprdus_capi.a, where the app and
-# the LaprdusVoices extension link it.
+# puts it as liblaprdus_capi.a into the target's own derived files folder,
+# where the target links it. The app and the LaprdusVoices extension each
+# have their copy: one file in the shared products folder would be produced
+# by two tasks, which Xcode refuses ("Multiple commands produce"). Cargo
+# builds the library once; the second target finds it up to date.
 #
 # Run by the "Build the Rust engine" phase of both targets. Needs rustup with
 # the targets of the platforms built:
@@ -41,6 +44,6 @@ for arch in $ARCHS; do
     libraries="$libraries $repository/target/$triple/release/liblaprdus_capi.a"
 done
 
-mkdir -p "$BUILT_PRODUCTS_DIR"
+mkdir -p "$DERIVED_FILE_DIR"
 # shellcheck disable=SC2086
-lipo -create $libraries -output "$BUILT_PRODUCTS_DIR/liblaprdus_capi.a"
+lipo -create $libraries -output "$DERIVED_FILE_DIR/liblaprdus_capi.a"

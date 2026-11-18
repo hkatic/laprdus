@@ -193,16 +193,49 @@ val generateVoiceData = tasks.register<Exec>("generateVoiceData") {
 // The library is optimized in debug builds of the app too: an unoptimized
 // synthesizer is too slow for a screen reader, and Rust keeps its bounds
 // checks in release builds.
+val androidRustTargets = mapOf(
+    "arm64-v8a" to "aarch64-linux-android",
+    "armeabi-v7a" to "armv7-linux-androideabi",
+    "x86_64" to "x86_64-linux-android",
+    "x86" to "i686-linux-android",
+)
+
 val buildNativeLibrary = tasks.register<Exec>("buildNativeLibrary") {
     description = "Build liblaprdus.so for every ABI (cargo ndk)"
     val ndk = androidComponents.sdkComponents.ndkDirectory
     environment("ANDROID_NDK_HOME", ndk.get().asFile.path)
     environment("ANDROID_NDK_ROOT", ndk.get().asFile.path)
     cargo(
-        "ndk", "-t", "arm64-v8a", "-t", "armeabi-v7a", "-t", "x86_64", "-t", "x86",
+        "ndk", *androidRustTargets.keys.flatMap { listOf("-t", it) }.toTypedArray(),
         "--platform", "24", "-o", nativeLibraryDir.get().asFile.path,
         "build", "--release", "-p", "laprdus-android"
     )
+    // A missing Rust target makes rustc fail with "can't find crate for `std`"
+    // in the middle of the cargo output, and Gradle reports only cargo's exit
+    // code: name the missing targets first. Without rustup (Rust from a
+    // package manager) the check is skipped and cargo speaks for itself.
+    val targets = androidRustTargets.values.toList()
+    val workDir = repositoryDir
+    val rustup = if (System.getProperty("os.name").lowercase().contains("windows")) "rustup.exe" else "rustup"
+    doFirst {
+        val installed = try {
+            val process = ProcessBuilder(rustup, "target", "list", "--installed")
+                .directory(workDir)
+                .redirectError(ProcessBuilder.Redirect.DISCARD)
+                .start()
+            val output = process.inputStream.bufferedReader().readText()
+            if (process.waitFor() == 0) output.lines().map { it.trim() }.toSet() else null
+        } catch (e: java.io.IOException) {
+            null
+        }
+        val missing = if (installed == null) emptyList() else targets.filterNot { it in installed }
+        if (missing.isNotEmpty()) {
+            throw GradleException(
+                "The Rust toolchain lacks the Android target(s) ${missing.joinToString(", ")}. " +
+                    "Install them with:\n    rustup target add ${missing.joinToString(" ")}"
+            )
+        }
+    }
     inputs.dir(File(repositoryDir, "src/common"))
     inputs.dir(File(repositoryDir, "src/platform/android/native/src"))
     inputs.files(File(repositoryDir, "Cargo.toml"), File(repositoryDir, "Cargo.lock"))

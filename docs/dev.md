@@ -779,7 +779,7 @@ the Android app its Gradle build, the Apple app its Xcode project.
 **Platforms:**
 - Windows - the MSVC build tools as the linker (targets `x86_64-pc-windows-msvc`, `i686-pc-windows-msvc`): Windows 10 or later. Windows 7 SP1, 8 and 8.1: the targets `x86_64-win7-windows-msvc` and `i686-win7-windows-msvc`, built by `cargo xtask windows-legacy` with the nightly toolchain named in `src/platform/windows/legacy/toolchain.txt` (see the README there)
 - Linux - the host target; `pkg-config` and `libasound2-dev` for the CLI's audio
-- macOS - `aarch64-apple-darwin`, `x86_64-apple-darwin` (library and CLI; the app is built by Xcode, whose script phase `src/platform/apple/build-rust-engine.sh` builds the engine as `liblaprdus_capi.a`). Not yet run on a Mac since the engine moved to Rust
+- macOS - `aarch64-apple-darwin`, `x86_64-apple-darwin` (library and CLI; the app is built by Xcode, whose script phase `src/platform/apple/build-rust-engine.sh` builds the engine as `liblaprdus_capi.a`, a copy for each target). Built on a Mac since the engine moved to Rust: 2026-11-18, the notarized release
 - Android - the four Android targets through cargo-ndk and the NDK
 
 **Architectures:**
