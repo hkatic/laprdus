@@ -594,19 +594,35 @@ pub fn context_reading(clause: &Clause, i: usize, participle: bool, noun_percent
         };
     }
     // leti: léti is the dual and the instrumental of léto (dve leti, pred
-    // leti, z leti) or the plural of lèt "flight" (leti so odpovedani),
-    // always with a number or a preposition close before it or a form of
-    // biti after it; letí "flies" elsewhere (ptič leti, letalo leti nad
-    // mestom). The noun is 98 % of the corpus, and every one of its
-    // occurrences there has such a word next to it.
+    // leti, z leti) or the plural of lèt "flight" (leti so odpovedani,
+    // poskusni leti), always with a number or a preposition close before it,
+    // its adjective right before it or a form of biti after it; letí "flies"
+    // elsewhere (ptič leti, letalo leti nad mestom). The noun is 98 % of the
+    // corpus, and every one of its occurrences there has such a word next
+    // to it.
     if eq(w, "leti") {
         // Three words back, not counting the words of a number, which the
         // front end splits (pred ena in dvajsetimi leti; a listener's "pred
-        // 21 leti" read the verb while the window ended at "ena")
+        // 21 leti" read the verb while the window ended at "ena"). Not the
+        // conjunction in, a number word only inside a numeral, whose other
+        // words count here already: until 2026-11-18 any in before it made
+        // leti the noun (Ptič poje in leti)
         let counted = |x: &[char]| {
-            is_preposition(x) || is_one_of(x, COUNTS) || is_number_word(x) || ends_with_any(x, &["imi", "ema"])
+            is_preposition(x)
+                || is_one_of(x, COUNTS)
+                || (is_number_word(x) && !eq(x, "in"))
+                || ends_with_any(x, &["imi", "ema"])
         };
-        return if words[..i].iter().rev().take(3).any(|x| counted(x)) || clause.one_of(i + 1, BITI) {
+        // The flights after their adjective (dogovori s srbskim Jatom in
+        // poskusni leti v Beograd, SUK 1.1; redni leti, čarterski leti): the
+        // shapes only adjectives have, so not ponoči leti, oni leti, and not
+        // the two other words of that shape a bird flies after (Lastovka
+        // jeseni leti na jug)
+        let flights = prev.is_some_and(|prev| {
+            (prev.len() >= 5 && ends_with(prev, "ni") && !is_one_of(prev, &["jeseni", "strani"]))
+                || ends_with_any(prev, &["ski", "ški"])
+        });
+        return if flights || words[..i].iter().rev().take(3).any(|x| counted(x)) || clause.one_of(i + 1, BITI) {
             VerbOrNoun::Nominal
         } else {
             VerbOrNoun::Verb

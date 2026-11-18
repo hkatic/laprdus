@@ -1489,3 +1489,75 @@ fn slovenian_listeners_report_of_2026_11_18_cast_castiti() {
         ],
     );
 }
+
+/// An audit of the tables of names and of the rules that ask for a numeral
+/// (2026-11-18): the genitives of plural place names the generator had put
+/// together wrongly
+/// (Stóperce -erc gave "stópercerc", Répnje -enj "répnjenj"), the fleeting e
+/// of such a genitive, a noun joined by in to one in the locative, leti after
+/// in, and the adjective that begins a name in every case alike.
+#[test]
+fn slovenian_place_genitives_and_the_conjunction_in_2026_11_18() {
+    let frontend = slovenian();
+    check(
+        &frontend,
+        &[
+            // SP 2001: Ráteče -eč, Stóperce -erc, Hrpélje -élj, Senožéče -éč,
+            // Črnéče -éč, Šebrélje -élj; the ending replaces the stem's tail
+            ("Do Rateč", "dO r'a:tEč"),
+            ("Do Stoperc", "dO st'ó:pErc"),
+            ("Do Hrpelj", "dO hərp'é:l"),
+            ("Do Senožeč", "dO sEnOž'é:č"),
+            ("Do Črneč", "dO čərn'é:č"),
+            ("Do Šebrelj", "dO šEbr'é:l"),
+            ("V Ratečah", "u r'a:tEčah"),
+            // Podbrézje -ij, Gôrje -ij: the i is put into the stem
+            ("Do Podbrezij", "dO pOdbr'é:zij"),
+            ("Do Gorij", "dO g'O:rij"),
+            // Répnje -enj, Žáblje -elj, Kôtlje -telj, Pékre -ker: the e put
+            // in is fleeting, a schwa (Sloleks: Trbôvelj, Cérkelj, čéšenj);
+            // the l of Déskel stays [l], as in every genitive plural
+            ("Do Repenj", "dO r'é:pən"),
+            ("Do Velikih Žabelj", "dO vEl'i:kih ž'a:bəl"),
+            ("Do Kotelj", "dO k'O:təl"),
+            ("Do Peker", "dO p'é:kər"),
+            ("Do Deskel", "dO d'é:skəl"),
+            ("Iz Trbovelj", "is tərb'O:vəl"),
+            // The adjective of a plural name declines as one
+            ("Pred Velikimi Laščami", "prEd vEl'i:kimi l'a:ščami"),
+            // A noun joined by in has the case of the one before it: the
+            // locative on the stem (SUK 1.1: o specifikacijah in moči, pakt o
+            // stabilnosti in rasti). in is no numeral there
+            ("O specifikacijah in moči", "O spEcifik'a:cijah in m'O:či"),
+            ("O specifikacijah ali moči", "O spEcifik'a:cijah ali m'O:či"),
+            ("Pakt o stabilnosti in rasti", "p'a:kt O stab'i:lnOsti in r'a:sti"),
+            ("Po učinkovitosti in moči", "pO učiŋkOv'i:tOsti in m'O:či"),
+            // ... and the accusative plural or the genitive on the ending
+            ("Na ljudi in zveri", "na ljud'i: in zvEr'i:"),
+            ("Brez strahu in moči", "brE strah'u: in mOč'i:"),
+            ("V tri vasi", "u tr'i: vas'i:"),
+            // leti after in is the verb; the flights have their adjective
+            ("Ptič poje in leti", "pt'ič p'O:jE in lEt'i:"),
+            ("Poskusni leti v Beograd", "pOsk'u:sni l'é:ti u b'é:Ograt"),
+            ("Ponoči leti", "pOn'O:či lEt'i:"),
+            ("Lastovka jeseni leti domov", "l'a:stOwka jEs'é:ni lEt'i: dOm'O:w"),
+            ("pred enaindvajsetimi leti", "prEd 'E:naindv'a:jsEtimi l'é:ti"),
+            // The adjective that begins a name is the lexicon's in every
+            // case (the maintainer's decision; SP 2001 has Vélika Británija):
+            // veliko alone had been the name's
+            ("Velika Britanija", "vEl'i:ka brit'a:nija"),
+            ("V Veliki Britaniji", "u vEl'i:ki brit'a:niji"),
+            ("Nad Veliko Britanijo", "nad vEl'i:kO brit'a:nijO"),
+            ("Grem na Veliko planino", "gr'é:m na vEl'i:kO plan'i:nO"),
+            ("Pred Veliko nočjo", "prEd vEl'i:kO nOčj'ó:"),
+            ("Veliko ljudi", "vEl'i:kO ljud'i:"),
+            // A name of one word that an adjective is spelled like stays
+            // the name (Kózje, Jezêrsko; kôzji, jézerski)
+            ("To je Kozje", "t'ó: jE k'ó:zjE"),
+            ("Na Jezerskem", "na jEz'E:rskEm"),
+        ],
+    );
+    // Veliko, če ne kar vse, je odvisno ...: alone before a comma it had been
+    // read as an address, by the table of names
+    assert_eq!(phones(&frontend, &format!("Veliko{VOCATIVE_MARK}")), "vEl'i:kO");
+}

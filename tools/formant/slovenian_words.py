@@ -667,8 +667,9 @@ SOFT_ENDS = ('c', 'č', 'ć', 'j', 'š', 'ž')
 
 
 def plain_word(word):
-    """An accented word's letters without the marks, lowercase."""
-    return ''.join(ACCENTED[ch][0] if ch in ACCENTED else ch
+    """An accented word's letters without the marks, lowercase; of a
+    notation the spelling it is for (ə as e, ł as l)."""
+    return ''.join(ACCENTED[ch][0] if ch in ACCENTED else {SCHWA: 'e', 'ł': 'l'}.get(ch, ch)
                    for ch in unicodedata.normalize('NFC', word.lower()) if ch != GRAVE)
 
 
@@ -683,7 +684,11 @@ def place_genitive(word, token):
     the final vowel (Ljubljána -e, Kŕško -ega) or replaces the end of the
     word from the last occurrence of its first letter (Kóper -pra, Trbôvlje
     -velj, Grádec -dca); an accented ending takes the accent (Bôhinj -hínja
-    Bohínja, Domžále -ál)."""
+    Bohínja, Domžále -ál). A genitive without an ending (of a plural name
+    in -e, -a, -i) replaces the end of the stem, the word without its last
+    vowel: the tail the ending repeats (Ráteče -eč Ráteč, Hrpélje -élj
+    Hrpélj), or that tail with the ending's fleeting vowel put in (Répnje
+    -enj Répenj, Žáblje -elj Žábelj, Podbrézje -ij Podbrézij)."""
     if token == '~':
         return word
     if token.startswith('~') and len(token) > 1:
@@ -698,30 +703,72 @@ def place_genitive(word, token):
         return None                         # an indeclinable name (Mêri --)
     word = unicodedata.normalize('NFC', word)
     ending = unicodedata.normalize('NFC', ending)
+    bare = False
     if pe in PLACE_INFLECTIONS:
         k = len(word) - 1 if pw[-1] in 'aeiou' else len(word)
     elif pe[0] in 'jt' and pe[1:] in PLACE_INFLECTIONS:
         k = len(word)                       # Kozár -ja, Švájncer -ja, Jóže -ta
     else:
-        k = pw.rfind(pe[0])
-        k = k if k > 0 else len(word)
+        # The last occurrence of the ending's first letter is the wrong
+        # place where the nominative's own ending is that letter (Ráteče -eč
+        # gave "rátečeč") and there is none where the ending opens with a
+        # fleeting vowel the nominative lacks (Podbrézje -ij gave
+        # "podbrézjeij"): 15 genitives were not words until 2026-11-18
+        stem = pw[:-1] if pw[-1] in 'aeiou' else pw
+        bare = pw[-1] in 'aeiou' and pe[-1] not in 'aeiou'
+        if bare and stem.endswith(pe):
+            k = len(stem) - len(pe)
+        elif bare and pe[0] in 'aeiou' and len(pe) > 1 and stem.endswith(pe[1:]):
+            k = len(stem) - len(pe) + 1
+        else:
+            k = pw.rfind(pe[0])
+            k = k if k > 0 else len(word)
     base = word[:k]
     if any(ch in ACCENTED for ch in ending):
-        return unaccented(base) + ending
-    # The accent in the replaced part moves to the same letter of the
-    # ending (Škofíje -ij: Škofíj)
-    for o, ch in enumerate(word[k:]):
-        if ch in ACCENTED and o < len(ending) and ending[o] == ACCENTED[ch][0]:
-            ending = ending[:o] + ch + ending[o + 1:]
-    return base + ending
+        genitive = unaccented(base) + ending
+    else:
+        # The accent in the replaced part moves to the same letter of the
+        # ending (Škofíje -ij: Škofíj)
+        for o, ch in enumerate(word[k:]):
+            if ch in ACCENTED and o < len(ending) and ending[o] == ACCENTED[ch][0]:
+                ending = ending[:o] + ch + ending[o + 1:]
+        genitive = base + ending
+    return bare_genitive_sounds(genitive, stem) if bare else genitive
+
+
+def bare_genitive_sounds(genitive, stem):
+    """The sounds of a genitive without an ending that the spelling does not
+    show, in the lexicon's notation. The vowel put between the last
+    consonants of the stem is fleeting: an unaccented e is a schwa. SP
+    2001 says so in the entry, in brackets the file of names does not
+    carry (Répnje -enj [pə], Žáblje -elj [bə], Kôtlje -telj [tə], Pékre
+    -ker [kə], Trbôvlje -velj [və]), and the hand-accented Sloleks has the
+    same (Trbôvelj [təɾˈbɔːʋəlʲ], Cérkelj [ˈʦeːɾkəlʲ], the common čéšenj
+    [ˈʧeːʃənʲ], ôken, písem); Kôtelj, Péker, Móšenj had the full e of the
+    spelling. An i is an i (Gôrij, Podbrézij: no bracket in SP), an
+    accented one a full vowel (Cerkèlj). An l after that schwa stays [l],
+    as in every genitive plural (SP Déskle -kel [kə], with no [u̯];
+    Sloleks ígel [ˈiːɡəl], škátel [ˈʃkaːtəl]; FINAL_L): the word only
+    looks like a participle (Déskel had been read with [w])."""
+    plain = plain_word(genitive)
+    if len(plain) == len(genitive) == len(stem) + 1:
+        at = next((j for j in range(len(stem)) if plain[j] != stem[j]), len(stem))
+        if genitive[at] == 'e':
+            genitive = genitive[:at] + SCHWA + genitive[at + 1:]
+            if genitive.endswith(SCHWA + 'l'):
+                genitive = genitive[:-1] + 'ł'
+    return genitive
 
 
 def place_forms(head, genitive, gender, extra, ambiguous):
     """The case forms of one name of SP 2001 (the singular, or the plural
     of a plural name; the accusative is the nominative or a form already
-    listed), per word: (spelling, notation) pairs. The oblique cases keep
-    the accent of the genitive (masculine and neuter) or the nominative
-    (feminine)."""
+    listed), per word: (spelling, notation, the nominative's spelling,
+    whether it is a word after the first). The oblique cases keep the
+    accent of the genitive (masculine and neuter) or the nominative
+    (feminine). A word of a plural name with the genitive in -ih is an
+    adjective and declined as one (Vélike Lášče -ih: Vélikim, Vélikimi; it
+    had the noun's -am, -ah, -ami until 2026-11-18, "vélikah", "bélami")."""
     words = head.split()
     tokens = genitive.split()
     plural = 'mn.' in gender
@@ -740,10 +787,21 @@ def place_forms(head, genitive, gender, extra, ambiguous):
         gen = place_genitive(nom, token.lower())
         if token != '~' and gen:
             pn, pg = plain_word(nom), plain_word(gen)
+            # A genitive has the consonants of its nominative, and after
+            # them at most the one of -ja, -ta, -ih, -ega, -ev: anything
+            # else is an ending put in the wrong place ("rátečeč")
+            cn, cg = (''.join(ch for ch in p if ch not in 'aeiou') for p in (pn, pg))
+            if cg != cn and not (cg[:-1] == cn and cg[-1] in 'jthgv'):
+                sys.exit('a name of Slovenski pravopis: %s %s gives the genitive "%s"' % (word, token, gen))
             forms.append(gen)
             if pg.endswith('ega'):                      # Nôvo -ega, Kŕško -ega, Zgórnji -ega
                 stem = gen[:-3]
                 forms += [stem + 'emu', stem + 'em', stem + 'im']
+            elif plural and pg.endswith('ih'):          # Vélike -ih, Górnji -ih: an adjective
+                stem = gen[:-2]
+                forms += [stem + 'im', stem + 'imi']
+                if kind == 'm':
+                    forms.append(stem + 'e')            # v Górnje Petróvce
             elif plural and kind == 'ž':                # Trbôvlje -velj, Domžále -ál
                 stem = nom[:-1] if pn.endswith(('e', 'i')) else nom
                 if nom[-1] in ACCENTED:                 # Lescè Lèsc, v Lescáh
@@ -779,7 +837,7 @@ def place_forms(head, genitive, gender, extra, ambiguous):
                 forms += [nom + 'u', nom + ('em' if soft else 'om')]
         for form in forms:
             accents = sum(1 for ch in form if ch in ACCENTED)
-            if 1 <= accents <= 2 and all(ch in LETTERS or ch in ACCENTED for ch in form):
+            if 1 <= accents <= 2 and all(ch in LETTERS or ch in ACCENTED or ch in (SCHWA, 'ł') for ch in form):
                 out.append((plain_word(form), form, plain_word(nom), i > 0))
     return out
 
@@ -787,10 +845,17 @@ def place_forms(head, genitive, gender, extra, ambiguous):
 def read_places(paths):
     """spelling -> (notation, the nominatives of the words it is a form of)
     of the names of places and persons of SP 2001, without the spellings
-    two names read differently, and the spellings of the words after the
-    first of a name (Sóbota of Múrska Sóbota)."""
+    two names read differently; the spellings of the words after the first
+    of a name (Sóbota of Múrska Sóbota); and the nominatives of the words
+    that stand before another accented word of their name, its adjective
+    (Vélika of Vélika planína; not Zagórje of Zagórje ob Sávi, whose next
+    word is a preposition, and not a name of one word, Kózje, Jezêrsko)."""
+    def accented(word):
+        return 1 <= sum(1 for ch in unicodedata.normalize('NFC', word.lower()) if ch in ACCENTED) <= 2
+
     readings = defaultdict(set)
     tails = set()
+    attributes = set()
     lines = []
     for path in paths:
         if os.path.exists(path):
@@ -805,8 +870,10 @@ def read_places(paths):
             readings[spelling].add((note, nominative))
             if tail:
                 tails.add(spelling)
+        words = head.split()
+        attributes |= {plain_word(word) for word, after in zip(words, words[1:]) if accented(word) and accented(after)}
     return {sp: (next(iter(notes))[0], frozenset(n for _note, n in notes))
-            for sp, notes in readings.items() if len({note for note, _n in notes}) == 1}, tails
+            for sp, notes in readings.items() if len({note for note, _n in notes}) == 1}, tails, attributes
 
 
 # The endings of the declension of nouns and adjectives and of the
@@ -1425,7 +1492,7 @@ def generate(forms_path, out_dir, manual_min=50, auto_min=2000, form_min=3, hand
     # krajína; Starè and Belè are surnames; but Zóran and Déjan, not the
     # participles zorán, deján), and not the words of COMMON_CAPITALIZED.
     names_w, common_w = names['weights'], names['common']
-    places, place_tails = read_places(places_path or [])
+    places, place_tails, place_attributes = read_places(places_path or [])
     clashes = defaultdict(list)     # name -> [(spelling, notation, its weight, the common words')]
     for orth, notes in names_w.items():
         pnote, pw = max(notes.items(), key=lambda kv: (kv[1], kv[0]))
@@ -1460,6 +1527,27 @@ def generate(forms_path, out_dir, manual_min=50, auto_min=2000, form_min=3, hand
         lexicon's notation knows (cérkəv, SP Cérkev)."""
         return norm(a).replace(SCHWA, 'e') == norm(b).replace(SCHWA, 'e')
 
+    def frequent_adjective(orth):
+        """A spelling that is mostly a frequent common adjective's form."""
+        return names['adjective'].get(orth, 0) * 2 > common_w.get(orth, 0) > 200
+
+    # The adjective that begins a name of several words is left to the
+    # lexicon word by word, not spelling by spelling: where one form of it
+    # is a frequent common adjective (velika of Vélika planína), so are the
+    # others, also the one another word outweighs (veliko, mostly the
+    # adverb, had stayed in the table alone until 2026-11-18: Velíka
+    # Británija but nad Véliko Británijo). SP 2001 has Vélika Británija,
+    # Vélika planína with the definite adjective's accent; the lexicon's
+    # velíka is kept for every form by the maintainer's decision of that
+    # day. Not a name of one word
+    # that an adjective is spelled like (Kózje, Jezêrsko, Trnôvo: kôzji,
+    # jézerski, tŕnov), whose forms stay the name's.
+    adjective_words = set()
+    for orth, (note, nominatives) in places.items():
+        got, _hand = reader.read(orth, name=True)
+        if not (got is not None and same(got, note)) and frequent_adjective(orth):
+            adjective_words |= nominatives & place_attributes
+
     for orth, (note, nominatives) in places.items():
         if any(lemma not in nominatives for lemma in names['lemma'].get(orth, ())):
             continue
@@ -1467,6 +1555,10 @@ def generate(forms_path, out_dir, manual_min=50, auto_min=2000, form_min=3, hand
         if got is not None and same(got, note):
             names_any.pop(orth, None)
             names_mid.pop(orth, None)
+            continue
+        if nominatives <= adjective_words and orth not in names_any and orth not in names_mid:
+            if not frequent_adjective(orth):
+                print('left to the lexicon with its adjective:', orth, note, 'lexicon', got, file=sys.stderr)
             continue
         if orth in names_any or orth in names_mid:
             (names_any if orth in names_any else names_mid)[orth] = note
@@ -1477,8 +1569,7 @@ def generate(forms_path, out_dir, manual_min=50, auto_min=2000, form_min=3, hand
             place_count += 1
             continue
         cw = common_w.get(orth, 0)
-        adjective = names['adjective'].get(orth, 0)
-        if orth in names['unnamed'] or (adjective * 2 > cw > 200):
+        if orth in names['unnamed'] or frequent_adjective(orth):
             continue
         # SP gives no frequencies: a spelling of any common word (Rávnam
         # of Rávne, ravnám "I act") is the name only inside a clause

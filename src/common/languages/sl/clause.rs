@@ -1477,7 +1477,15 @@ fn feminine_case_before(clause: &Clause, at: usize, noun: &[char]) -> Option<boo
         k -= 1;
     }
     let before = clause.before(k);
-    let other_case = before.is_some_and(|before| is_preposition(before) || is_number_word(before));
+    // A numeral, but not the conjunction in, which is a number word only
+    // between the ones and the tens (ena in dvajset) and never stands right
+    // before a noun or its adjectives there. Counted as a numeral it had
+    // said "another case" for every noun after in, so the rule of
+    // genitive_i_reading() for a noun joined to another never ran for the
+    // commonest conjunction (o specifikacijah in moči read močí until
+    // 2026-11-18)
+    let numeral = |x: &[char]| is_number_word(x) && !eq(x, "in");
+    let other_case = before.is_some_and(|before| is_preposition(before) || numeral(before));
     if agreeing && !other_case {
         // sosednji vasi (je pomagal): the dative by its adjective alone
         return Some(true);
@@ -1509,13 +1517,21 @@ fn genitive_i_reading(clause: &Clause, i: usize, must_say: bool) -> Option<&'sta
     if cue.is_none() && i >= 2 && is_one_of(&words[i - 1], CONJUNCTIONS) {
         // o specifikacijah in moči, po učinkovitosti in moči: the case of
         // the noun before the conjunction
-        cue = if ends_with_any(&words[i - 2], &["ih", "ah", "eh"]) {
+        let joined = &words[i - 2];
+        cue = if ends_with_any(joined, &["ih", "ah", "eh"]) {
             Some(true)
         } else {
             // (only by a preposition: ne pomeni priznanja ali časti)
             let preposition =
                 words[i.saturating_sub(6)..i - 2].iter().any(|x| is_one_of(x, &["v", "na", "o", "ob", "po", "pri"]));
-            feminine_case_before(clause, i - 2, w).filter(|&dative| dative && preposition)
+            // v, na, o, ob, po take the accusative too, and then the noun
+            // after the conjunction is a plural, on its ending (pomislila
+            // nisem na ljudi in zveri; SUK 1.1): the noun before the
+            // conjunction must have an ending of the dative or locative
+            // singular itself, -i or -u (po učinkovitosti in moči, o delu in
+            // moči), which the plural ljudi only looks like
+            let singular = (ends_with(joined, "i") || ends_with(joined, "u")) && !eq(joined, "ljudi");
+            feminine_case_before(clause, i - 2, w).filter(|&dative| dative && preposition && singular)
         };
     }
     if cue.is_none() {

@@ -5056,7 +5056,7 @@ SSKJ², SP and the Collocations Dictionary of Modern Slovene at CJVT (Kolokacije
   | the same before words in *-i* that agree with it (*v tej vasi*, *po očetovi strani*, *na državni, regionalni in lokalni ravni*, *na približno enaki ravni*), unless one has the shape of a noun (*v bližini vasi*, *v dobi rasti*, *na strani osi*) | stem |
   | an adjective in the dative alone (*sosednji vasi*; only the shapes of adjectives: *veji oblasti*, *sledovi krvi*, *videti krvi* are not) | stem |
   | a word that takes the dative (*bližje pomoči*, *namenjen predvsem pomoči*; `governs_dative()`) | stem |
-  | *in, ali, ter* after a locative (*o specifikacijah in moči*) | stem |
+  | *in, ali, ter, oziroma* after a noun in the locative plural (*o specifikacijah in moči*), or after one in *-i* or *-u* that has a locative preposition (*pakt o stabilnosti in rasti*, *o delu in moči*; not *na ljudi in zveri*, the accusative) | stem |
   | *na stvari*; *v, na kosti* (the accusative plural: *vpliva na stvari*, *strah v kosti*; SUK 5 of 5) | ending |
   | an adjective in *-e*, another preposition, a numeral (*iz te vasi*, *v te vasi*, *z druge strani*, *v tri vasi*) | ending |
   | nothing of these (*prebivalci vasi*, *sredi vasi*, *vasi so majhne*, *del poti*) | ending |
@@ -5080,6 +5080,33 @@ SSKJ², SP and the Collocations Dictionary of Modern Slovene at CJVT (Kolokacije
   the verb shows; a dative with no cue (*nagajala oblasti*); adjectives the
   shapes miss (*na oni strani*, *po dobro preživeti noči*). Every token that
   moved away from its tag was read; they are these.
+
+  **The conjunction *in* (2026-11-18).** The row of the table for a noun joined
+  to another had never applied to *in*, only to *ali, ter, oziroma*: *in* is a
+  number word (`is_number_word()`: the *in* of *ena in dvajset*, which the front
+  end writes as three words), and `feminine_case_before()` took the *in* before
+  the noun for a numeral, which says "another case" (*v tri vasi*). *O
+  specifikacijah in moči* was *močí*, the very sentence of SUK the comment
+  named, and no test read it. A numeral there is now any number word but *in*
+  (right before a noun or its adjectives it is never part of one). The rule of
+  *leti* had the same fault the other way round: any *in* in the three words
+  before it counted as a number and made it the noun (*Ptič poje in leti* was
+  *léti*). Measured in three steps, each read token by token:
+
+  | Step | Measured on | What moved |
+  |---|---|---|
+  | *in* no numeral | the tokens of the 50 nouns and *leti* (`slovenian_suk.py`) | 2: *o specifikacijah in moči* (tagged locative) to the stem, right; *pomislila nisem na ljudi in zveri*, an accusative plural, to the stem, wrong: *na* takes the accusative too |
+  | the noun before the conjunction must itself end as a dative or locative singular does, in *-i* or *-u*, and not be *ljudi* | all 48,594 sentences through the old and the new build | 3 sentences: *moči* as above and *pakt o stabilnosti in rasti* to the stem, right; *dogovori s srbskim Jatom in poskusni leti v Beograd* to the verb, wrong: the *in* had made it the noun by accident |
+  | *leti* right after its adjective (*poskusni, redni, čarterski*: `-ni`, `-ski`, `-ški`) is the noun | the same | 2 sentences, the two right ones; *leti* 141 of 141 as before, the 50 nouns 1,727 → 1,728 of the 1,742 tokens tagged as their noun |
+
+  The second and third rows hold sentences with a number in them, which
+  `slovenian_suk.py` leaves out: a whole-corpus comparison of two builds finds
+  what the token count cannot. *jeseni* and *strani* have the adjective's shape
+  too and are left out of it (*Lastovka jeseni leti domov* is the verb). GaMS,
+  asked for the case of *moči*, *rasti* and *zveri* in the three sentences,
+  answered "nominative singular" each time (they are the locative, the locative
+  and the accusative plural by SUK's tags), and told the verb and the noun
+  *leti* apart in both of its sentences; it decided nothing.
 
 - **The imperative and the present of** *izgovoriti, govoriti, sprostiti* (the
   same report: *Izgovori prosim pravilno!* on the third syllable, *On to pogosto
@@ -5254,7 +5281,11 @@ word or that the lexicon reads otherwise:
   *Bohínja, Bohínju, Bohínjem*; *Trbôvlje -velj* gives *Trbôvelj,
   Trbôvljah*; *Lescè Lèsc* gives *v Lescáh*; *Nôvo mésto -ega -a*; *Kozár
   -ja*, *Jóže -ta* append; *Vás -í* gives *vasjó*, *Lókev -kve* *Lókvijo*,
-  *Grád -ú* *grádu*; an indeclinable name, *Mêri --*, only itself). SP
+  *Grád -ú* *grádu*; an indeclinable name, *Mêri --*, only itself; a
+  genitive without an ending replaces the tail of the stem, *Ráteče -eč*
+  *Ráteč*, or puts the ending's fleeting vowel into it, *Répnje -enj*
+  *Répenj*, *Podbrézje -ij* *Podbrézij*; the adjective of a plural name
+  declines as one, *Vélike Lášče -ih*: *Vélikim, Vélikimi*). SP
   replaces Sloleks where they differ (*Bôhinj*, not *Bohínj*; *Litíja*,
   *Sôlkan*, *Áfrika*), except where SP itself accents the word otherwise in
   another entry (*Cerkljè na Gorenjskem*, *Cérklje ob Krki*; the surname
@@ -5264,6 +5295,98 @@ word or that the lexicon reads otherwise:
   gives no frequencies). Of the 735 words of places SP and Sloleks both
   accent, they agree on 713. SP covers about a sixth of the 5,700
   settlement names; the rest are left to the lexicon and the rules.
+
+**The audit of the tables of names (2026-11-18).** The generated tables were
+read against the entries of Slovenski pravopis 2001 they come from. Four
+faults were found, each checked against the generator, the tables and Fran:
+
+- **Genitives that were not words.** `place_genitive()` replaced the end of
+  the nominative from the last occurrence of the ending's first letter. Where
+  the nominative's own ending is that letter the ending was appended instead
+  (*Ráteče -eč* gave *rátečeč*, *Hrpélje -élj* *hrpeljélj*, *Stóperce -erc*
+  *stópercerc*), and where the ending opens with a fleeting vowel the
+  nominative lacks there was no such letter at all (*Podbrézje -ij*
+  *podbrézjeij*, *Répnje -enj* *répnjenj*, *Žáblje -elj* *žábljelj*): 15 of
+  the 1,340 genitives, all of plural names whose genitive has no ending, all
+  in `names.txt`. The split is now found from the stem, the nominative without
+  its last vowel: the tail the ending repeats, or that tail with the vowel put
+  in. Ten of the fifteen the lexicon and the rules of names read right by
+  themselves; *Stóperc* (*stopérc* by the rule for *-rc*), *Šebrélj*
+  (*šébrelj*), *Črnéč* (short before), *Répenj* and *Žábelj* are new in the
+  table. The generator now stops when a genitive's consonants are not its
+  nominative's, with at most the one of *-ja, -ta, -ih, -ega, -ev* after them,
+  which would have caught every one of the fifteen.
+- **The fleeting e of such a genitive is a schwa**, and the spelling does not
+  show it (`bare_genitive_sounds()`). SP 2001 says so in the entry, in
+  brackets that `slovenian_places.tsv` does not carry: *Répnje -enj [pə]*,
+  *Vélike Žáblje -ih -elj [bə]*, *Kôtlje -telj [tə]*, *Pékre -ker [kə]*,
+  *Móšnje -šenj [šə]*, *Déskle -kel [kə]*, *Trbôvlje -velj [və]*; it has no
+  bracket where the vowel is an i (*Podbrézje -ij*, *Brézje -zij*). All 15
+  forms with the schwa that are in the tables were read against SP's
+  bracket. The hand-accented Sloleks has the same: *Trbôvelj*
+  [təɾˈbɔːʋəlʲ], *Cérkelj* [ˈʦeːɾkəlʲ], *Dúpelj* [ˈduːpəlʲ], and the common
+  *čéšenj* [ˈʧeːʃənʲ], *ôken*, *písem*. The names Sloleks lacks had the full e
+  of SP's spelling: *Kôtelj, Péker, Móšenj, Dobrávelj, Névelj, Sávelj,
+  Drávelj, Srómelj, Táter, Vátovelj, Hrastôvelj, Dobrôvelj, Déskel*, 13 forms.
+  An *i* stays an i (*Gôrij*, as *ládij*), an accented vowel a full one
+  (*Cerkèlj*). The *l* after that schwa stays [l], as in every genitive plural
+  (Sloleks *ígel* [ˈiːɡəl], *škátel* [ˈʃkaːtəl]): *Déskel* had been read with
+  [w], as a participle.
+- **The adjective of a plural name** (*Vélike Lášče -ih*, *Béle Vôde*,
+  *Slovénske Konjíce*, *Górnji Petróvci*: 23 words) had the noun's endings.
+  Most of the wrong forms never reached a table, because the lexicon reads the
+  stem alike; *vélikah, vélikam, vélikami, bélah, bélam, bélami* did. They are
+  *-im, -imi* now (and *-e*, the masculine accusative).
+- ***Veliko*.** The engine said *Velíka Británija* but *nad Véliko
+  Británijo*. SP 2001 has **Vélika Británija -e -e**,
+  as it has *Vélika planína*, *Vélika Pólana*, *Vélike Lášče*: the definite
+  adjective *véliki -a -o* (SP: "véliki -a -o, v zvezi velika noč velíka"),
+  where the plain adjective is *vêlik -íka -o*. So the table's *véliko* was
+  SP's. What was wrong is that it stood there alone: the generator leaves a
+  name's adjective to the lexicon where the spelling is mostly a frequent
+  common adjective (*velika, velike, veliki*), and *veliko*, mostly the adverb,
+  slipped past that test, so the engine said *Velíka Británija* and *nad
+  Véliko Británijo*. The test is now made word by word, not spelling by
+  spelling: where one form of the adjective that begins a name of several
+  words is a frequent common adjective, all its forms are the lexicon's.
+  **By the maintainer's decision of 2026-11-18 that is *velík-* in every case,
+  which departs from SP 2001** and agrees with Sloleks's commoner form. A
+  name of one word that an adjective is spelled like is not
+  touched (*Kózje, Jezêrsko, Trnôvo*, whose adjectives are *kôzji, jézerski,
+  tŕnov*: the first draft of the test had taken *Kózjemu, Jezêrskim, Trnôvim*
+  with it). In SUK 1.1 sixteen tokens of *Veliko* move: 14 *Veliko Britanijo*
+  from SP's reading to the lexicon's, and two that were wrong by every source,
+  *pred Veliko nočjo* (SP *velíka nóč*) and *Veliko, če ne kar vse, je
+  odvisno* (the quantifier, which the address rule had handed to the table of
+  names). *Velika Britanija* (27), *Veliki Britaniji* (26), *Velike Britanije*
+  (14) were *velík-* already.
+
+Regenerated with the committed generator first, whose 14 tables came out
+byte for byte as committed; with the changes only `names.txt` (1,982 → 1,966
+entries: 21 out, 5 in, 12 with their schwa) and `names_inside.txt` (506 →
+505: *véliko* out, *Móšenj* with its schwa) differ. Test: `src/common/languages/sl/tests.rs`
+`slovenian_place_genitives_and_the_conjunction_in_2026_11_18`.
+
+**That nothing else moved** was checked by reading through the build before
+the change and the build after it, and reading every line that differs:
+
+| Read through both builds | Lines | Differ |
+|---|---|---|
+| Every sentence of SUK 1.1 | 48,594 | 18: the two of the rule for *in*, 14 *Veliko Britanijo*, *pred Veliko nočjo* and *Veliko, če ne kar vse* |
+| Every string of the tests, every example of this file, of `CLAUDE.md` and of the manual, every commit message and source comment of the Slovenian rounds, each also with a capital, inside *To je ...* and with a period | 116,545 | 24: *o specifikacijah in moči*, *po učinkovitosti in moči* (the rule's own examples) and a capitalized *Veliko* put inside a sentence |
+| Every Slovenian text of the Android and Apple apps, the NVDA add-on, the Configurator, the installer and the emoji names, each also inside a sentence | 13,545 | 0 |
+| The audio of the golden corpus, Zvonko in hr, sr, bs and sl, Josip in hr and sl (hashes of the old and the new library) | 38,078 | 0 |
+
+No sentence a listener reported reads otherwise than before. The forms were
+read again in the dictionaries: SP 2001 has each of the fifteen genitives as
+the table now has it (*Ráteče -eč*, *Stóperce -erc*, *Hrpélje -élj*, *Senožéče
+-éč*, *Črnéče -éč*, *Šebrélje -élj*, *Podbrézje -ij*, *Zgórnje Gôrje -ih -ij*,
+*Répnje -enj [pə]*, *Vélike Žáblje -ih -elj [bə]*, *Kapéle -él*, *Pišéce -éc*,
+*Koséze -éz*, *Gostéče -éč*, *Rádeče -eč*), *móč -í ž môči -- môči -jó* and
+*rást -í ž -i -- -i -jó* (the dative and the locative on the stem), SSKJ² *zvér
+-í ž, daj., mest. ed. zvéri*, *lèt léta m* and *letéti -ím*; every word of
+the new test rows is the hand-accented form of Sloleks or, where Sloleks only
+guesses (*Stóperc, Šebrélj, Kôtelj*), SP's.
 
 **A stem inside a clause.** A capitalized word inside a clause takes a
 stem of the lexicon only with an ending of the declension or of a
