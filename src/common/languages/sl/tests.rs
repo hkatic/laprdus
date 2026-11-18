@@ -198,7 +198,8 @@ fn slovenian_words_reported_by_the_first_users_october_2026() {
         }
     }
     // lepo: lepó at the end of the clause, lépo before another word
-    // (a listener, 2026-10-30)
+    // (a listener, 2026-10-30); before a pronoun or a verb lepó too
+    // (2026-11-18, the test of that report)
     assert_eq!(phones(&frontend, "Hvala lepo"), "hv'a:la lEp'ó:");
     assert_eq!(phones(&frontend, "To je lepo"), "t'ó: jE lEp'ó:");
     assert_eq!(phones(&frontend, "Lepo"), "lEp'ó:");
@@ -493,7 +494,7 @@ fn slovenian_spellings_told_apart_by_the_clause_november_2026() {
             ("Suči je hrano darovala pred vsakim obedom", "s'u:či jE hr'a:nO darOv'a:la prEd us'a:kim Ob'é:dOm"),
             ("Zdelo se je", "zd'é:lO sE jE"),
             ("Strah ga je", "str'a:ɣ ga jE"),
-            ("Lepo je", "l'é:pO jE"),
+            ("Lepo je", "lEp'ó: jE"),
             ("Tega je veliko", "t'é:ga jE vEl'i:kO"),
             ("Tako je", "tak'ó: jE"),
             ("On je", "'On jE"),
@@ -1193,6 +1194,52 @@ fn slovenian_glasu_the_genitive_on_the_ending_the_dative_and_locative_on_the_ste
     assert_eq!(phones(&frontend, "Barva glasu"), "b'a:rva gl'a:su");
 }
 
+/// A listener's report of 2026-11-18: lepo before a pronoun or a verb is the
+/// adverb lepó, before a noun the adjective lépo (SP 2001: lepó nač. prisl.,
+/// lepó povdk.; lép -a -o), and so are težko, slabo, močno ...
+#[test]
+fn slovenian_listeners_report_of_2026_11_18_lepo_before_a_verb() {
+    let frontend = slovenian();
+    check(
+        &frontend,
+        &[
+            // The listener's sentences: the adverb ...
+            ("Lepo mi je s tabo", "lEp'ó: mi jE s t'a:bO"),
+            ("Lepo se imejte", "lEp'ó: sE im'E:jtE"),
+            ("Lepo bodi", "lEp'ó: b'ó:di"),
+            ("Lepo bodite", "lEp'ó: bOd'i:tE"),
+            ("Lepo vas pozdravljam", "lEp'ó: vas pOzdr'a:wljam"),
+            ("Lepo pišeš", "lEp'ó: p'i:šEš"),
+            // ... and the adjective
+            ("Lepo majico nosiš", "l'é:pO m'a:jicO n'ó:siš"),
+            ("Lepo mačko imaš", "l'é:pO m'a:čkO im'a:š"),
+            ("lepo obalo imajo na Hrvaškem", "l'é:pO Ob'a:lO im'a:jO na hərv'a:škEm"),
+            // Not only at the head of a sentence, and pa between
+            ("On lepo piše", "'On lEp'ó: p'i:šE"),
+            ("Lepo pa je tukaj", "lEp'ó: pa jE t'u:kaj"),
+            // Nouns whose endings a verb has too stay nouns: the table of
+            // verb forms leaves them out
+            ("Lepo pesem poje", "l'é:pO p'é:səm p'O:jE"),
+            ("Lepo zimo smo imeli", "l'é:pO z'i:mO smO im'é:li"),
+            ("Imam lepo mamo", "im'a:m l'é:pO m'a:mO"),
+            ("Lepo šolo imajo", "l'é:pO š'ó:lO im'a:jO"),
+            // After a preposition the adjective, whatever follows (the
+            // instrumental of misel, spelled like the verb's mislijo)
+            ("Z lepo mislijo", "z l'é:pO m'i:slijO"),
+            // Before an adjective or a participle in -n as the listener asked
+            // on 2026-10-30
+            ("Lepo pozdravljeni", "l'é:pO pOzdr'a:wljEni"),
+            // The other spellings of the class
+            ("Težko mi je", "tEšk'ó: mi jE"),
+            ("Slabo se počutim", "slab'ó: sE pOč'u:tim"),
+            ("Močno dežuje", "mOčn'ó: dEž'u:jE"),
+            ("Težko delo", "t'E:škO d'é:lO"),
+            // lahko keeps its own rule
+            ("Lahko pridem", "lahk'ó: pr'i:dEm"),
+        ],
+    );
+}
+
 /// A listener's report of 2026-11-17: meja, vasi, izgovori, sprosti, petega
 #[test]
 fn slovenian_listeners_report_of_2026_11_17_meja_vasi_izgovori_sprosti() {
@@ -1288,7 +1335,7 @@ fn slovenian_listeners_report_of_2026_11_17_meja_vasi_izgovori_sprosti() {
             ("Hvala za vas", "hv'a:la za v'as"),
             ("Pridi k nam", "pr'i:di k n'am"),
             ("V nas je upanje", "u n'as jE 'u:panjE"),
-            ("Lepo vas prosim", "l'é:pO vas pr'ó:sim"),
+            ("Lepo vas prosim", "lEp'ó: vas pr'ó:sim"),
             ("Ana vas čaka", "'a:na vaš č'a:ka"),
             ("Vas je strah", "v'as jE str'a:h"),
             ("To vas ne briga", "t'ó: vas nE br'i:ga"),

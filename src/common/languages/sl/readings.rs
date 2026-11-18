@@ -43,6 +43,12 @@ static FOOD: &str = include_str!("tables/food.txt");
 /// percent of a genitive plural in -l.
 static VERB_NOUN: &str = include_str!("tables/verb_noun.txt");
 
+/// The present, the imperative and the neuter l-participle of the main verbs
+/// of Sloleks, of frequency 100 or more, without the spellings a noun or an
+/// adjective in the feminine accusative or the neuter has as often (prodajo,
+/// vozilo): the forms that make lepo, težko ... before them the adverb.
+static FINITE_VERBS: &str = include_str!("tables/finite_verbs.txt");
+
 /// A word as the key of a generated table.
 fn key(w: &[char]) -> String {
     w.iter().collect()
@@ -238,6 +244,13 @@ pub fn head_reading(w: &[char]) -> Option<HeadReading> {
 /// already.
 pub fn imperative_reading(w: &[char]) -> Option<Vec<char>> {
     find_in_table(IMPERATIVES, w)
+}
+
+/// A verb's present, imperative or neuter l-participle that no noun in the
+/// feminine accusative or the neuter is spelled like (pišeš, poje, imajo,
+/// uspelo; not zimo, pesem, prodajo).
+pub fn is_finite_verb(w: &[char]) -> bool {
+    table::contains(FINITE_VERBS, &key(w))
 }
 
 /// A spelling read one way as a verb's form and another way as a noun, an

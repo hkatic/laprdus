@@ -23,7 +23,7 @@ Usage (the tables in the repository are made with these values):
 
 `extract` streams the XML once into a TSV of word forms (13 GB of XML,
 about four minutes; the last argument is the lowest lemma frequency kept);
-`generate` writes the thirteen tables into src/common/languages/sl/tables (or
+`generate` writes the fourteen tables into src/common/languages/sl/tables (or
 into the folder named after forms.tsv), reading HAND_ENTRIES from
 src/common/languages/sl/lexicon.rs of this repository so that every form is
 checked as the engine will look it up (lexicon_reading() of
@@ -1191,6 +1191,43 @@ def noun_gender_tables(forms_path):
     return neuter_o, [(w, kinds[w]) for w in sorted(kinds, key=key)]
 
 
+def finite_verbs(forms_path, min_frequency=100):
+    """The verb forms an adverb in -o stands before, for the table
+    finite_verbs.txt (sl/clause.rs: lepo, težko, močno and the others are
+    the adverb lepó before a verb, Lepo pišeš, and the adjective lépo before
+    a noun, Lepo majico nosiš; a listener's report of 2026-11-18): the
+    present and the imperative of the main verbs, and the neuter singular of
+    the l-participle, whose -lo a noun has too (šolo, obalo, darilo), of
+    frequency min_frequency or more. A spelling that is a third as often or
+    more the noun or adjective such an adjective agrees with, a feminine
+    accusative or instrumental singular or a neuter nominative or accusative
+    singular, is left out (prodajo, vozilo, steklo). The other forms the
+    engine knows by their endings (-ti, -či, -l, -la, -li, -le), which no
+    such noun has."""
+    verbs = defaultdict(int)
+    agreeing = defaultdict(int)
+    with open(forms_path, encoding='utf-8') as f:
+        for line in f:
+            parts = line.rstrip('\n').split('\t')
+            if len(parts) < 8:
+                continue
+            cat, msd, orth, ff = parts[1], parts[5], parts[6], int(parts[7])
+            if orth != orth.lower():
+                continue
+            if cat == 'verb' and msd.startswith('Gg') and len(msd) >= 4:
+                if msd[3] in 'sv' or (msd[3] == 'd' and msd.endswith('-es')):
+                    verbs[orth] += ff
+            elif cat == 'noun' and len(msd) >= 5:
+                gender, number, case = msd[2], msd[3], msd[4]
+            elif cat == 'adjective' and len(msd) >= 6:
+                gender, number, case = msd[3], msd[4], msd[5]
+            else:
+                continue
+            if cat != 'verb' and number == 'e' and ((gender == 'z' and case in 'to') or (gender == 's' and case in 'it')):
+                agreeing[orth] += ff
+    return [w for w, ff in verbs.items() if ff >= min_frequency and agreeing.get(w, 0) * 3 <= ff]
+
+
 def command_imperatives(forms_path, lemmas, reader):
     return imperatives(forms_path, set(lemmas), reader)
 
@@ -1455,6 +1492,8 @@ def generate(forms_path, out_dir, manual_min=50, auto_min=2000, form_min=3, hand
     print('definite adjectives', len(adjectives), file=sys.stderr)
     neuter_o, noun_a = noun_gender_tables(forms_path)
     print('neuter nouns in -o', len(neuter_o), 'nouns in -a after 1', len(noun_a), file=sys.stderr)
+    verbs_after_adverb = finite_verbs(forms_path)
+    print('finite verb forms', len(verbs_after_adverb), file=sys.stderr)
     food = food_forms(forms_path, read_word_list(food_path)) if food_path else []
     print('food forms', len(food), file=sys.stderr)
     verb_noun_rows = []
@@ -1509,6 +1548,9 @@ def generate(forms_path, out_dir, manual_min=50, auto_min=2000, form_min=3, hand
     # genitive singular (otroka: enega otroka), 2 a masculine noun's
     # nominative (kolega: en kolega)
     lines(out_dir, 'noun_a.txt', noun_a)
+    # The present, the imperative and the neuter l-participle of the verbs,
+    # which make lepo, težko ... before them the adverb (lepó pišeš)
+    lines(out_dir, 'finite_verbs.txt', verbs_after_adverb)
     # Food nouns (slovenian_food.tsv): every form of Sloleks with its cases,
     # 1 nominative, 2 accusative, 4 genitive (singular and plural)
     lines(out_dir, 'food.txt', food)

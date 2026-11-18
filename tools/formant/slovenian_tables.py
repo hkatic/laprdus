@@ -20,12 +20,12 @@ followed by the rest of its bytes. The entries themselves have only bytes of
 no '*'.
 
 Sorted lines (final_l.txt, given_names.txt, definite_adjectives.txt,
-food.txt, verb_noun.txt, neuter_o.txt, noun_a.txt; read by lookup() and
+food.txt, verb_noun.txt, neuter_o.txt, noun_a.txt, finite_verbs.txt; read by lookup() and
 contains() of src/common/text/table.rs): `key` or `key<TAB>value`, sorted by
 the key in code point order; the key is the spelling, lowercase, as the word
 stands in the clause.
-    final_l.txt, given_names.txt, definite_adjectives.txt, neuter_o.txt:
-        the spelling alone.
+    final_l.txt, given_names.txt, definite_adjectives.txt, neuter_o.txt,
+    finite_verbs.txt: the spelling alone.
     food.txt: spelling <TAB> cases (1 nominative | 2 accusative | 4 genitive).
     noun_a.txt: spelling <TAB> kind (1 a masculine noun's animate accusative
         or a masculine or neuter noun's genitive singular, 2 a masculine
@@ -56,7 +56,7 @@ MAX_SHARED = 63
 FRONT_CODED = ('forms.txt', 'stems.txt', 'names.txt', 'names_inside.txt', 'head_imperatives.txt',
                'imperatives.txt')
 SORTED_LINES = ('final_l.txt', 'given_names.txt', 'definite_adjectives.txt', 'food.txt',
-                'verb_noun.txt', 'neuter_o.txt', 'noun_a.txt')
+                'verb_noun.txt', 'neuter_o.txt', 'noun_a.txt', 'finite_verbs.txt')
 
 # The notation's letters and the plain letters they stand for (notation_letter()
 # of sl/lexicon.rs); compare_key() skips * ' : and the combining grave

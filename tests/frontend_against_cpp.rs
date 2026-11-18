@@ -22,8 +22,15 @@ const LANGUAGES: [&str; 4] = ["hr", "sr", "bs", "sl"];
 /// had the participle's pétega), and strani is read by its case, straní
 /// where no preposition or adjective says the locative (the C++ engine read
 /// stráni everywhere; the two texts are Croatian phrases of the corpus).
-const INTENDED: &[(&str, &str)] =
-    &[("sl", "petega"), ("sl", "dvanajstega do petega"), ("sl", "Na lijevoj strani"), ("sl", "Strani jezik")];
+/// The same listener's report of 2026-11-18: lepo before a pronoun or a verb
+/// is the adverb lepó (the C++ engine read lépo before any word).
+const INTENDED: &[(&str, &str)] = &[
+    ("sl", "petega"),
+    ("sl", "dvanajstega do petega"),
+    ("sl", "Na lijevoj strani"),
+    ("sl", "Strani jezik"),
+    ("sl", "Lepo je"),
+];
 
 /// Fields 4 and 5 of a line of the reference: the clause, then every phone.
 fn describe(utt: &Utterance) -> (String, String) {

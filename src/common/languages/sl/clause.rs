@@ -5,7 +5,8 @@
 use super::phonemize::{Capital, phonemize};
 use super::readings::{
     Clause, FOOD_ACCUSATIVE, FOOD_GENITIVE, FOOD_NOMINATIVE, VerbOrNoun, context_reading, food_cases,
-    is_adjective_ending, is_definite_adjective, is_given_name, is_number_word, is_preposition, verb_noun_readings,
+    is_adjective_ending, is_definite_adjective, is_finite_verb, is_given_name, is_number_word, is_preposition,
+    verb_noun_readings,
 };
 use super::words::{is_enclitic, is_function_word, is_proclitic, is_question_word};
 use crate::formant::phones::Ph;
@@ -21,23 +22,25 @@ use crate::text::frontend::letters::{ends_with, ends_with_any, eq, find, is_one_
 // meni, o meni: 17 of 17) and before se or je (meni se zdi, meni je
 // všeč); the lexicon's méni stays elsewhere (minister meni, kaj meni).
 //
-// lepo is lepó at the end of its clause and lépo before another word, as
-// a listener asked on 2026-10-30 (Hvala lepo. To je lepo. Lepo vreme.
-// Lepo pozdravljeni.), and so are the other spellings Sloleks reads as an
-// adverb on -ó and an adjective on its stem (težkó/têžko, slabó/slábo:
-// the listener said yes to them the same day). The dictionaries have -ó
-// for the adverb and the predicative (SP 2001: lepó nač. prisl., lepó
-// povdk.) and the stem for the adjective (SP: lép -a -o tudi -ó), so
-// before a word the adverb (lepo pozdravljeni, močno dežuje, težko je)
-// follows the listener, not them: in SUK 1.1 that is 361 of the 579
-// occurrences of these spellings, and the adjective before a word, which
-// the lexicon read as the adverb (težko delo, slabo vreme), 158. Not
-// lahko: the modal lahkó "can" stands before its verb (Lahko pridem).
-// Not nelepo: Sloleks has no reading of its adverb. The readings are
-// Sloleks's (the adverb's -ó, the adjective's first stem variant).
+// lepo is the adverb and the predicative lepó (SP 2001: lepó nač. prisl.,
+// lepó povdk.) and the adjective lépo (SP: lép -a -o tudi -ó), and so are
+// the other spellings Sloleks reads as an adverb on -ó and an adjective on
+// its stem (težkó/têžko, slabó/slábo). A listener asked on 2026-10-30 for
+// lepó at the end of its clause and lépo before another word (Hvala lepo.
+// To je lepo. Lepo vreme. Lepo pozdravljeni.) and said yes to the others,
+// and on 2026-11-18 for lepó before a pronoun or a verb too (Lepo mi je s
+// tabo. Lepo se imejte. Lepo bodi. Lepo vas pozdravljam. Lepo pišeš.), lépo
+// staying before a noun (Lepo majico nosiš. Lepo mačko imaš. lepo obalo
+// imajo na Hrvaškem.), which is what the dictionaries have: see
+// `adverb_before()`. What is left to the first report against the
+// dictionaries is the adverb before an adjective or a participle in -n, -t
+// (lepo pozdravljeni, močno zadolžena, tesno povezana), read on the stem.
+// Not lahko: the modal lahkó "can" has a rule of its own. Not nelepo:
+// Sloleks has no reading of its adverb. The readings are Sloleks's (the
+// adverb's -ó, the adjective's first stem variant).
 
-/// The spelling, the adverb at the end of its clause, the adjective before
-/// another word.
+/// The spelling, the adverb (at the end of its clause, before a clitic or a
+/// verb), the adjective (before any other word).
 const END_READINGS: &[(&str, &str, &str)] = &[
     ("lepo", "lepó", "lépo"),
     ("težko", "težkó", "têžko"),
@@ -66,6 +69,52 @@ const END_READINGS: &[(&str, &str, &str)] = &[
     ("pretenko", "pretenkó", "pretènko"),
     ("pregrdo", "pregrdó", "pregŕdo"),
 ];
+
+/// Lepo, težko, močno ... at `i` before the words that make it the adverb
+/// or the predicative on -ó, not the adjective on the stem: a short pronoun
+/// or se (Lepo mi je, Lepo se imejte, Lepo vas pozdravljam), a form of biti
+/// or ne (Lepo je, Lepo bodi, Težko bi rekel), a verb's present, imperative
+/// or l-participle (Lepo pišeš, lepo poje, močno vpliva, težko dobili) or an
+/// infinitive (težko reči), pa between them or not (Lepo pa je). A noun the
+/// adjective agrees with is none of these: its accusative or neuter ends in
+/// -o, -e or a consonant (majico, vreme, pesem), so the endings -ti, -či,
+/// -la, -li, -le are a verb's, a masculine -l is one but for a few feminine
+/// nouns, and the rest is the generated table of [`is_finite_verb`], which
+/// leaves out the spellings such a noun has (zimo, mamo, prodajo). After a
+/// preposition the word is the adjective whatever follows (z lepo mislijo,
+/// na toplo gredo: the nouns misel, greda). SUK 1.1, the 1,150 tokens of
+/// these spellings: before these words the adverb 325 times and the
+/// predicative 55 (Težko je reči, težko najti: tagged an adjective, SP
+/// povdk.), an attributive adjective once (vse hudo spremenil v dobro); a
+/// noun never follows the adverb, and of the 116 verbs in the present after
+/// one the table misses one (se močno prisesajta).
+fn adverb_before(clause: &Clause, i: usize) -> bool {
+    #[rustfmt::skip] // rows of words
+    const BEING: &[&str] = &[
+        "sem", "si", "je", "sva", "sta", "smo", "ste", "so", "nisem", "nisi", "ni", "nisva", "nista", "nismo", "niste",
+        "niso", "bom", "boš", "bo", "bova", "bosta", "bomo", "boste", "bodo", "bi", "bodi", "bodite", "bodimo",
+        "bodiva", "bodita", "biti", "ne",
+    ];
+    // Feminine nouns whose accusative ends in -l (lepo misel, težko žival)
+    const NOUNS_L: &[&str] = &["misel", "zamisel", "pomisel", "domisel", "žival", "piščal", "kopel", "zibel"];
+    // Words in -ti, -či, -li, -le that are no verb
+    const NOT_VERBS: &[&str] = &["proti", "nasproti", "niti", "dokler", "koli", "karkoli", "kdorkoli", "vsaj"];
+    if clause.before(i).is_some_and(is_preposition) {
+        return false;
+    }
+    let at = if clause.is(i + 1, "pa") { i + 2 } else { i + 1 };
+    let Some(next) = clause.word(at) else { return false };
+    if is_one_of(next, SHORT_PRONOUNS) || is_one_of(next, BEING) {
+        return true;
+    }
+    if is_one_of(next, NOT_VERBS) {
+        return false;
+    }
+    (next.len() >= 4 && ends_with_any(next, &["ti", "či"]))
+        || (next.len() >= 5 && ends_with_any(next, &["la", "li", "le"]))
+        || (next.len() >= 5 && ends_with(next, "l") && !is_one_of(next, NOUNS_L))
+        || is_finite_verb(next)
+}
 
 const SHORT_PRONOUNS: &[&str] = &[
     "mi", "ti", "mu", "ji", "nam", "vam", "jim", "me", "te", "ga", "jo", "nas", "vas", "jih", "se", "si", "ju", "naju",
@@ -1604,8 +1653,8 @@ fn samo_is_subject(clause: &Clause, i: usize) -> bool {
 /// after another preposition or before se, je, ni the pronoun mêni;
 /// elsewhere the lexicon's méni, the verb. Lepo, težko, slabo and the other
 /// spellings of an adverb on -ó and an adjective on its stem are the adverb
-/// at the end of the clause (lepó, težkó), the adjective before another word
-/// (lépo, têžko). Lahko is the adjective láhko before a noun it qualifies
+/// at the end of the clause and before a pronoun or a verb (lepó, težkó),
+/// the adjective before another word (lépo, têžko). Lahko is the adjective láhko before a noun it qualifies
 /// (lahko noč, z lahko nogo, moraš lahko hrano, daj mi lahko nalogo), else
 /// the lexicon's modal lahkó. Roka is the genitive róka of the deadline
 /// after a preposition or a genitive (do roka, vojaškega roka) or of the
@@ -1676,8 +1725,8 @@ pub fn clause_reading(clause: &Clause, i: usize) -> Option<&'static str> {
         return Some("vesêli");
     }
     if w.last() == Some(&'o') {
-        if let Some(&(_, at_end, before_word)) = END_READINGS.iter().find(|&&(spelling, ..)| eq(w, spelling)) {
-            return Some(if next.is_none() { at_end } else { before_word });
+        if let Some(&(_, adverb, adjective)) = END_READINGS.iter().find(|&&(spelling, ..)| eq(w, spelling)) {
+            return Some(if next.is_none() || adverb_before(clause, i) { adverb } else { adjective });
         }
         return (eq(w, "lahko") && lahko_is_adjective(clause, i)).then_some("láhko");
     }

@@ -397,6 +397,13 @@ fn slovenian_reads_a_word_by_the_clause_after_the_comma() {
     // Each row: a text, the same text with the accent written, and whether
     // the two must sound the same.
     const READINGS: &[(&str, &str, bool)] = &[
+        // lepo before a pronoun or a verb is the adverb lepó, before a noun
+        // the adjective lépo (a listener's report of 2026-11-18)
+        ("Lepo pišeš.", "Lepó pišeš.", true),
+        ("Lepo pišeš.", "Lépo pišeš.", false),
+        ("Lepo vas pozdravljam.", "Lepó vas pozdravljam.", true),
+        ("Lepo majico nosiš.", "Lépo majico nosiš.", true),
+        ("Lepo majico nosiš.", "Lepó majico nosiš.", false),
         ("Meni, da je prav.", "Méni, da je prav.", true),
         ("Meni, gumb.", "Méni, gumb.", false),
         ("Ni obvestil, da pride.", "Ni obvéstil, da pride.", true),
