@@ -39,6 +39,8 @@ pub struct Segment<'a> {
     pub join_next: bool,
     /// Level of the segment.
     pub gain: f32,
+    /// Long friction (s, z, š, ž, c, č, ć, đ, f): what the hiss hold acts on.
+    pub hiss: bool,
 }
 
 impl Default for Segment<'_> {
@@ -53,6 +55,7 @@ impl Default for Segment<'_> {
             join_prev: false,
             join_next: false,
             gain: 1.0,
+            hiss: false,
         }
     }
 }

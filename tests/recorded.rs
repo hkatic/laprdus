@@ -583,7 +583,10 @@ fn the_hiss_of_the_recorded_voices_is_held_under_the_vowels() {
     // -2.3), and weighted by the ear's sensitivity above them, where the
     // softest of four commercial recorded Croatian voices has them 4-8 dB
     // under. The plain output holds the hiss RECORDED_HISS_DB under the
-    // nearby vowel (November 2026), and the result is the same every time.
+    // nearby vowel (November 2026; -10 dB at first, -4 since 2026-11-17, when
+    // listeners found the voices hard to understand and a phoneme recognizer
+    // heard the sibilants right more often the less they were held), and the
+    // result is the same every time.
     let mut engine = Speaker::empty();
     for (voice, text) in
         [("josip", "asa"), ("josip", "aća"), ("josip", "aca"), ("baba", "asa"), ("vlado", "aša"), ("vlado", "ača")]
@@ -592,10 +595,100 @@ fn the_hiss_of_the_recorded_voices_is_held_under_the_vowels() {
         let audio = engine.say(text);
         let hiss = hiss_pair_db(&audio, &audio).0;
         info!("{voice} {text}: hiss re the loudest frame {hiss} dB");
-        assert!(hiss < -6.0, "{voice} {text}: {hiss} dB"); // measured -8.6 to -10.7
-        assert!(hiss > -16.0, "{voice} {text}: {hiss} dB"); // held, not removed
+        assert!(hiss < -2.0, "{voice} {text}: {hiss} dB"); // held: measured -2.8 to -5.5
+        assert!(hiss > -8.0, "{voice} {text}: {hiss} dB"); // and heard
         assert!(engine.say(text) == audio, "{voice} {text}");
     }
+}
+
+#[test]
+fn affricates_keep_their_friction_at_fast_rates() {
+    // A listener's report of 2026-11-17: the recorded voices swallow their
+    // letters. Josip's c, ć and đ swell out of their closure with no abrupt
+    // rise, so the analysis took their first sample for the release, and a
+    // slot shorter than the recording kept the quiet build-up and cut the
+    // friction, which comes last: at twice the rate nothing of the friction
+    // of c and đ was left. The release is now the strong part of the
+    // recording, and an affricate short of time is played faster, not cut.
+    // Measured at 2x, the time the sound above 2 kHz stands within 20 dB of
+    // the vowel: c 60 -> 84 ms, đ 40 -> 80 ms, ć 60 -> 80 ms (with the milder
+    // hiss hold of the same day).
+    let mut engine = Speaker::empty();
+    engine.set_voice("josip").expect("josip");
+    for (text, at_least) in [("aca", 48.0), ("ađa", 32.0), ("aća", 40.0)] {
+        engine.set_speed(2.0);
+        let fast = hiss_ms(&engine.say(text));
+        engine.set_speed(1.0);
+        let normal = hiss_ms(&engine.say(text));
+        info!("josip {text}: hiss {normal} ms at 1.0, {fast} ms at 2.0");
+        assert!(fast >= at_least, "josip {text}: {fast} ms of hiss at 2.0");
+        assert!(fast < normal, "josip {text}: {fast} ms at 2.0, {normal} ms at 1.0");
+    }
+}
+
+#[test]
+fn a_stop_that_begins_a_word_has_its_closure() {
+    // The closure of a stop was written only after another sound, and the
+    // word gap before a word-initial stop had reset that: "ona kuka" had the
+    // 22 ms of the gap before its first k and 49 ms of closure before its
+    // second. The gap is now a part of the closure and the rest follows it.
+    let mut engine = Speaker::empty();
+    engine.set_voice("josip").expect("josip");
+    let initial = gaps(&engine.say("ona kaka")).longest_ms;
+    let inside = gaps(&engine.say("onakaka")).longest_ms;
+    info!("josip: silence before k, word-initial {initial} ms, inside a word {inside} ms");
+    assert!(initial >= 36.0, "{initial} ms");
+    assert!(initial <= inside + 16.0, "{initial} ms, inside a word {inside} ms");
+}
+
+#[test]
+fn the_hiss_hold_lets_go_where_the_hiss_ends() {
+    // Found by the sound alone, the hold of the hissing consonants released
+    // over 15 ms into the vowel after them and took 2 to 8 dB off its first
+    // 10 to 25 ms above 2 kHz, where a vowel's F2 and F3 say which consonant
+    // came before it; it also held the burst of t. Confined to the spans of
+    // the sibilants and f that the planner lays out, it leaves every sample
+    // from 6 ms after the span as it was.
+    use laprdus::audio::boost::{limit_hiss, limit_hiss_in};
+    let fs = 22050.0f32;
+    let tone = |i: usize| {
+        let t = i as f32 / fs;
+        0.5 * (2.0 * std::f32::consts::PI * 200.0 * t).sin() + 0.05 * (2.0 * std::f32::consts::PI * 2500.0 * t).sin()
+    };
+    // a vowel, 80 ms of hiss (white noise, differenced: its weight at the top), a vowel
+    let (vowel, hiss) = (2205usize, 1764usize);
+    let mut seed = 12345u32;
+    let mut last = 0f32;
+    let wave: Vec<f32> = (0..2 * vowel + hiss)
+        .map(|i| {
+            if (vowel..vowel + hiss).contains(&i) {
+                seed = seed.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
+                let noise = (seed >> 8) as f32 / 8_388_608.0 - 1.0;
+                let out = 0.4 * (noise - last);
+                last = noise;
+                out
+            } else {
+                tone(i)
+            }
+        })
+        .collect();
+    let power = |x: &[f32]| x.iter().map(|v| f64::from(*v) * f64::from(*v)).sum::<f64>() / x.len() as f64;
+
+    let mut confined = wave.clone();
+    let span = vowel..vowel + hiss;
+    limit_hiss_in(&mut confined, fs, -10.0, Some(std::slice::from_ref(&span)));
+    let held = 10.0
+        * (power(&confined[vowel + 220..vowel + hiss - 220]) / power(&wave[vowel + 220..vowel + hiss - 220])).log10();
+    info!("the hiss inside its span: {held} dB");
+    assert!(held < -3.0, "{held} dB");
+    let after = vowel + hiss + 132; // 6 ms
+    assert!(confined[after..] == wave[after..], "the vowel after the span is touched");
+    assert!(confined[..vowel - 66] == wave[..vowel - 66], "the vowel before the span is touched");
+
+    // by the sound alone the hold reaches into the vowel after it
+    let mut free = wave.clone();
+    limit_hiss(&mut free, fs, -10.0);
+    assert!(free[after..] != wave[after..]);
 }
 
 #[test]

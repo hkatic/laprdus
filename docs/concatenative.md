@@ -105,11 +105,15 @@ closed syllables, final lengthening (×1.4 before a full stop, ×1.3 before a
 comma), clusters, the rate floor `min_dur / sqrt(speed)` above rate 1.0. The
 recorded `R` is a trill and gets 50 ms rather than the tap's duration. The
 segment of a vowel, nasal, liquid, glide or fricative is stretched or
-compressed to its duration by the renderer. A **stop or affricate is never
-stretched**: the burst and as much of the tail as the slot allows are played
-at their natural rate, the time left over goes to the closure, first from
-the recording's own closure or murmur, then as silence, and a fast rate cuts
-the tail and the closure but never the burst (at least 20 ms of it). A
+compressed to its duration by the renderer. A **stop is never stretched**:
+the burst and as much of the tail as the slot less a closure's time
+(`CLOSURE_MS`, 18 ms, floor 8 ms) allows are played at their natural rate,
+the time left over goes to the closure, first from the recording's own
+closure or murmur, then as silence, and a fast rate cuts the tail but never
+the burst (at least 20 ms of it). An **affricate** with less room than its
+release is long is played faster instead, friction and all; a stop that
+begins a word counts the word gap as a part of its closure (see "Clarity").
+A
 **22 ms gap** (floor 5 ms at fast rates) separates words; clitics join their
 host without one unless two full vowels meet across the word boundary
 (*vidio ih*). This keeps *video uradak* and *moju ulicu* distinct too,
@@ -185,8 +189,10 @@ method of diphone synthesizers and of Praat's pitch manipulation:
   utterance that stays under the knee, at a lower volume for one, is what it
   was. In boost mode the boost's own limiter does the work instead.
 - Before the volume, the hissing consonants are held under the vowels
-  (`RECORDED_HISS_DB` in `src/common/params.rs`, -10 dB, through `limit_hiss()` of
-  `audio/boost.rs`; since 10 November 2026). In the recordings s, c, č, ć
+  (`RECORDED_HISS_DB` in `src/common/params.rs`, through `limit_hiss_in()` of
+  `audio/boost.rs`; -10 dB from 10 November 2026, **-4 dB and on the spans of
+  the sibilants and f alone since 17 November**, see "Clarity"; the levels in
+  the rest of this item are those of the -10 dB hold). In the recordings s, c, č, ć
   and the release of t stand level with the vowels (Josip's s -2.3 dB re the
   loudest vowel frame, his ć -0.1, Vlado's š, č and ć 0.0) and, weighted by
   the ear's sensitivity, 1-9 dB over them, where the softest of four
@@ -203,6 +209,112 @@ method of diphone synthesizers and of Praat's pitch manipulation:
 
 Everything is deterministic: the same text and settings give the same
 samples (`tests/recorded.rs`).
+
+## Clarity (17 November 2026)
+
+A listener's report: the recorded voices swallow their letters; the sounds
+are unclear and hard to understand, all of them. What was measured, what was
+changed and what cannot be.
+
+**The measure.** `tools/formant/phones.py` renders vowel-consonant-vowel
+items, syllables and words for every consonant (23 classes, 516 items for the
+two voices) and gives them to a phoneme recognizer, which writes down the
+phones it hears; an item counts when the consonant is among them. It is a
+harsh judge of single syllables (it has no word to guess from) and a few
+items either way are noise, but it showed what no level measurement had.
+The right consonant, Josip and Vlado together:
+
+| rate | before | now |
+|---|---|---|
+| 1.0 | 207 of 516 | 233 |
+| 1.5 | 138 | 165 |
+| 2.0 | 96 | 116 |
+
+By class at 1.0, before and now: z 5 and 14 of 36, ž 6 and 11 of 34, š 15
+and 18 of 18, c 9 and 12 of 22, ć 10 and 11 of 20, đ 10 and 12 of 20, p 11
+and 14 of 20, t 10 and 8 of 20; at 1.5 č 1 and 6, ć 4 and 8, š 9 and 14, p 7
+and 11; at 2.0 đ 1 and 6, ć 3 and 7, š 5 and 10, z 2 and 8, t 9 and 4. The
+other classes moved by an item or two or not at all.
+
+**The limit is in the recordings.** The same recordings put end to end with
+no processing at all (the vowel twice, the consonant, the vowel twice) are
+heard no better than the engine's rendering of the same item: Josip 57 of 115
+raw and 58 rendered, Vlado 42 and 30. Every recording is one sound spoken or
+cut out alone: the vowels are level stretches of 78 ms with no movement into
+or out of a consonant, so the place of a stop or a nasal, which a listener
+takes from the formant transitions of the vowels around it, is in the burst
+or the murmur alone. What the recognizer hears instead says so: t and k as p,
+g as b, d as t or p, n as m, nj as n, j as l, at every rate and raw as well.
+No change to the planner or the renderer brings those back; recordings of
+syllables or diphones would.
+
+**What was changed** (each kept only where the recognizer heard more):
+
+- *The release of an affricate that swells out of its closure.* Josip's c is
+  within 9 dB of its loudest only from 45 ms of its 116 on, his đ from 45 of
+  78, his ć from 20 of 78, with no abrupt rise, so the analysis left `onset`
+  at the first sounding sample and the planner, which plays a stop from its
+  onset and cuts the tail when the slot is short, kept the quiet build-up
+  and cut the friction: at twice the rate c and đ had none left. The
+  analysis now finds the strong part of every recording
+  (`Unit::strong_begin..strong_end`: the 5 ms averages within
+  `STRONG_LEVEL_DB`, 9 dB, of the loudest) and puts the onset at its start
+  where no rise is found, and an affricate with less room than its release
+  is long is played faster, from its start to its end, instead of cut
+  (`plan_clause()`). The time the sound above 2 kHz stands within 20 dB of
+  the vowel at 2x: c 60 to 84 ms, đ 40 to 80, ć 60 to 80 (the milder hold
+  below has a share in it).
+- *Closures.* A stop or affricate keeps `CLOSURE_MS` (18 ms, floor 8 ms at
+  fast rates, at most 0.4 of the slot) before its release, from the
+  recording's own closure or as silence: Vlado's p, k and affricates, whose
+  releases are longer than their slots, had none at any rate. The closure of
+  a stop that begins a word was not written at all (the word gap before it
+  had reset the "after a sound" condition); the gap is now a part of it and
+  the rest follows (*ona kaka*: 22 ms before the first k then, 58 now, 50
+  inside a word). p gained at every rate; t lost at 2x (9 to 4 of 20, 6
+  without the reserve), where the reserve takes 5 ms of its 31 ms release.
+- *The voicing of z, ž and đ.* Their friction drowned the voicing in the
+  correlation: Josip's z had no voiced mark, his ž and đ 2 and 3 of 15, and
+  they were put together from 5 ms pieces out of step with their periods,
+  with no join to the vowels. Their pitch is tracked on the sound under
+  `MURMUR_HZ` (500 Hz), where the murmur is alone: 9 of 11, 9 of 11 and 10 of
+  11 marks are voiced now. z went from 5 to 14 of 36.
+- *The hiss hold* acts on the spans of the sibilants and f that the planner
+  lays out (`Segment::hiss`, `limit_hiss_in()` of `audio/boost.rs`), not on
+  whatever the detector finds: found by the sound alone it also took 6 dB off
+  the burst of t and, its release being 15 ms, 2 to 8 dB off the band above
+  2 kHz of the first 10 to 25 ms of the vowel after every sound it held. It
+  now lets go within 1.5 ms of the span's end (the windows of a hiss reach
+  5 ms into its neighbours, and the span is that much wider). And it holds
+  less: `RECORDED_HISS_DB` is -4 dB, not -10. The sibilants and f at 1.0
+  were right in 98 of 208 items at -10, 105 at -7, 108 at -4 and 111 unheld,
+  at 1.5 in 68, 77, 80 and 81. The hold had been set on 10 November from
+  level measurements against commercial voices, without a listening pass.
+  Boost mode keeps its -22 dB, confined to the same spans.
+- *The glide of "ije"* (34 ms) gives up the quiet build-up of the j recording
+  (a hum for 38 ms, the glide for the last 20) before any of the glide.
+
+**Tried and taken out again:** a join shorter than 14 ms where a segment is
+short (no item changed at 1.5 or 2.0); giving up the quiet start of every
+consonant short of time, not only the glide's (l, j, v and h a little better
+at 1.5, l 14 to 9 of 38 and r 11 to 8 of 20 at 2.0); holding the burst of t
+with the sibilants (no item changed).
+
+The output of the recorded voices is no longer that of the C++ engine: of the
+20,400 renderings of the `recorded` set of `tools/golden/golden.py` 1,616
+keep their hash, and `tests/dsp_against_cpp.rs` no longer compares the
+recorded voices. Tests: `affricates_keep_their_friction_at_fast_rates`,
+`a_stop_that_begins_a_word_has_its_closure`,
+`the_hiss_hold_lets_go_where_the_hiss_ends` and
+`the_hiss_of_the_recorded_voices_is_held_under_the_vowels` in
+`tests/recorded.rs`. To repeat the measurement (numpy, scipy, torch,
+transformers; the model is 1.2 GB):
+
+```bash
+python tools/formant/phones.py --classes z,ž,s,š,c,č,ć,đ,t,k,p,b,g,d,f,h,r,j,v,l,nj,n,m \
+    --voices josip,vlado --rates 1.0 --data data/voices old/laprdus.exe target/release/laprdus.exe
+cargo run --release --example recorded_units -- data/hr/Josip   # what the analysis makes of every recording
+```
 
 ## Ranges and settings
 
@@ -226,7 +338,7 @@ Synthesizer B sounds letters out); a vowel letter is the vowel alone.
 
 ```bash
 cargo xtask data                       # data/voices/Josip.bin, Vlado.bin (LAPRDUS_DATA names another directory)
-cargo test --release --test recorded   # 24 tests: rate, pitch, derived voices, melody, streaming ...
+cargo test --release --test recorded   # 28 tests: rate, pitch, derived voices, melody, streaming, clarity ...
 ```
 
 Things that are worth checking by ear after a change:
@@ -247,12 +359,11 @@ less than about 500 there; a cut-off one leaves thousands. On 20 sentences
 and Vlado 57, with peaks of 4150 and 3197; after the fixes above 113 and 16,
 none above 490, all of them the tails of windows.
 
-The analysis of every recording can be printed with a small program that
-uses the `laprdus` crate (an example next to `examples/english_stress.rs`,
-say): load the voice with `VoiceData::from_file()`
-(`src/common/concatenative/voice_data.rs`), call `UnitBank::build()` and print `lead`, `onset`, `trail`, `f0`, the
-marks and their periods); a regular vowel shows periods within ±2 samples of
-each other, and a stop's `onset` sits on its burst.
+The analysis of every recording is printed by `examples/recorded_units.rs`
+(`cargo run --release --example recorded_units -- data/hr/Josip`): length,
+`lead`, `onset`, `trail`, the strong part, `f0`, how many marks are voiced,
+and the level every 5 ms. A stop's `onset` sits on its burst, an affricate's
+at the start of its friction, and z, ž and đ have voiced marks.
 
 ## Sources
 

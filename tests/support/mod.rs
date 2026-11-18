@@ -550,6 +550,78 @@ pub fn friction_spectrum(audio: &[i16]) -> Vec<f64> {
     spectrum
 }
 
+/// How long the hiss of an item is heard, in ms: the time its sound above
+/// 3 kHz (8 ms frames, hop 2 ms) stands within 20 dB of the loudest frame of
+/// the whole sound.
+pub fn hiss_ms(audio: &[i16]) -> f64 {
+    const N: usize = 176;
+    const HOP: usize = 44;
+    let high = butterworth_3k(audio, true);
+    let top = frame_starts(audio.len(), N, HOP).map(|s| frame_energy(audio, s, N)).fold(0.0, f64::max);
+    let heard = frame_starts(high.len(), N, HOP)
+        .filter(|&s| high[s..s + N].iter().map(|x| x * x).sum::<f64>() / N as f64 > top / 100.0)
+        .count();
+    heard as f64 * 2.0
+}
+
+/// The hiss of the consonant of a vowel-consonant-vowel item, voiced or not:
+/// the mean power above 2 kHz of the frames between the two vowels against
+/// the loudest frame's whole power, in dB. The frames are 512-sample Hann
+/// frames, hop 64, and the consonant is the longest run of them whose
+/// 600-1400 Hz band, where an a has its F1 and F2 and no consonant its murmur
+/// or noise, is 10 dB or more under its loudest, with a vowel on either side.
+/// A voiced fricative has too few zero crossings for `vcv_friction_db()`: its
+/// murmur carries the wave.
+pub fn vcv_hiss_db(audio: &[i16]) -> f64 {
+    const N: usize = 512;
+    const HOP: usize = 64;
+    let mut frames = Vec::new(); // (whole, vowel band, above 2 kHz)
+    for s in frame_starts(audio.len(), N, HOP) {
+        let (mut whole, mut vowel, mut hiss) = (0.0, 0.0, 0.0);
+        for k in 1..=N / 2 {
+            let (mut re, mut im) = (0.0, 0.0);
+            for i in 0..N {
+                let w = 0.5 - 0.5 * (2.0 * PI * i as f64 / (N - 1) as f64).cos();
+                let a = 2.0 * PI * k as f64 * i as f64 / N as f64;
+                re += f64::from(audio[s + i]) * w * a.cos();
+                im -= f64::from(audio[s + i]) * w * a.sin();
+            }
+            let power = re * re + im * im;
+            let f = k as f64 * FS / N as f64;
+            whole += power;
+            if (600.0..1400.0).contains(&f) {
+                vowel += power;
+            } else if f >= 2000.0 {
+                hiss += power;
+            }
+        }
+        frames.push((whole, vowel, hiss));
+    }
+    let top = frames.iter().map(|f| f.0).fold(0.0, f64::max);
+    let floor = frames.iter().map(|f| f.1).fold(0.0, f64::max) / 10.0;
+    let first = frames.iter().position(|f| f.1 > floor);
+    let last = frames.iter().rposition(|f| f.1 > floor);
+    let (Some(first), Some(last)) = (first, last) else { return f64::NAN };
+    // the longest run under the floor between the two vowels
+    let (mut best, mut run) = (0..0, first..first);
+    for (i, frame) in frames.iter().enumerate().take(last + 1).skip(first) {
+        if frame.1 < floor {
+            if run.end != i {
+                run = i..i;
+            }
+            run.end = i + 1;
+            if run.len() > best.len() {
+                best = run.clone();
+            }
+        }
+    }
+    if best.is_empty() {
+        return f64::NAN;
+    }
+    let hiss: f64 = frames[best.clone()].iter().map(|f| f.2).sum();
+    10.0 * (hiss / best.len() as f64 / top).log10()
+}
+
 /// The share of a friction spectrum's energy above 2 kHz that lies between lo
 /// and hi Hz.
 pub fn friction_share(spectrum: &[f64], lo: f64, hi: f64) -> f64 {

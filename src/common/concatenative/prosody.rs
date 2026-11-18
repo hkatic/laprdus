@@ -27,6 +27,14 @@ const WORD_GAP_MIN_MS: f32 = 5.0;
 /// The burst of a stop is played whole even when the rate leaves less time.
 const BURST_MIN_MS: f32 = 20.0;
 
+/// The closure a stop or affricate keeps before its release whatever the
+/// rate (ms at rate 1.0, and the floor at fast rates): without one, a release
+/// that fills its slot follows the vowel with no stop to be heard. Above 1.4x
+/// only Josip's k had a closure left, and Vlado's p, k and affricates, whose
+/// releases are longer than their slots, had none at any rate (2026-11-17).
+const CLOSURE_MS: f32 = 18.0;
+const CLOSURE_MIN_MS: f32 = 8.0;
+
 // A trill recording: the duration of /r/ between vowels.
 const TRILL_MS: f32 = 50.0;
 const TRILL_MIN_MS: f32 = 22.0;
@@ -270,6 +278,9 @@ pub fn plan_clause<'a>(
     };
 
     let mut prev_is_unit = false;
+    // The word gap just written, which is a part of the closure of a stop
+    // that begins the word.
+    let mut gap_before = 0f32;
     for (i, p) in ph.iter().enumerate() {
         let d_ms = dur[i];
 
@@ -278,7 +289,8 @@ pub fn plan_clause<'a>(
         // One-vowel words also keep their separation next to /j/.
         let hiatus = i > 0 && needs_vowel_separation(&ph[i - 1], p);
         if i > 0 && p.word_start && (p.prominence >= 1 || hiatus) && prev_is_unit {
-            add_silence(&mut segments, &mut cursor, rate(WORD_GAP_MS, WORD_GAP_MIN_MS) * samples_per_ms);
+            gap_before = rate(WORD_GAP_MS, WORD_GAP_MIN_MS) * samples_per_ms;
+            add_silence(&mut segments, &mut cursor, gap_before);
             prev_is_unit = false;
         }
 
@@ -296,6 +308,7 @@ pub fn plan_clause<'a>(
             if d_ms > 0.0 {
                 add_silence(&mut segments, &mut cursor, d_ms * samples_per_ms);
                 prev_is_unit = false;
+                gap_before = 0.0;
             }
             note_syllable(p, t0_ms, cursor / samples_per_ms);
             continue;
@@ -303,31 +316,66 @@ pub fn plan_clause<'a>(
 
         let slot = d_ms * samples_per_ms;
         let mut s = Segment { unit: Some(unit), src_begin: unit.lead, src_end: unit.trail, ..Segment::default() };
-        if matches!(p.ph.class(), PhClass::Stop | PhClass::Affricate) {
-            // A stop is never stretched. The recording is closure (silent or
-            // murmured), burst and tail: the burst and as much of the tail as
-            // the slot allows are played at their natural rate, the time left
+        // The long friction the hiss hold acts on: the sibilants, voiced and
+        // voiceless (in the recordings z, ž and đ hiss as loudly as s, š and
+        // ć), and f, as loud above 2 kHz as they are. Not the burst of t,
+        // which is short and all there is of a t.
+        s.hiss = matches!(
+            sound,
+            Some(Sound::S | Sound::Z | Sound::Sh | Sound::Zh | Sound::C | Sound::Ch | Sound::Tj | Sound::Dj | Sound::F)
+        );
+        let class = p.ph.class();
+        if matches!(class, PhClass::Stop | PhClass::Affricate) {
+            // The recording is closure (silent or murmured), burst and tail.
+            // The release has the slot less a closure's time, the time left
             // goes to the closure, first from the recording's own, then as
-            // silence. A fast rate cuts the tail and the closure, never the
-            // burst.
+            // silence. A stop is never stretched: a release longer than its
+            // room loses its tail, never its burst. The friction of an
+            // affricate is the sound itself: it is played faster instead,
+            // from its start to its end.
             let release_len = (unit.trail - unit.onset) as f32;
-            let release = release_len.min(slot.max(release_len.min(BURST_MIN_MS * samples_per_ms)));
+            let reserve = (rate(CLOSURE_MS, CLOSURE_MIN_MS) * samples_per_ms).min(0.4 * slot);
+            let room = (slot - reserve).max(release_len.min(BURST_MIN_MS * samples_per_ms));
+            let release = release_len.min(room);
             let pre_len = (unit.onset - unit.lead) as f32;
             let pre = (slot - release).max(0.0).min(pre_len);
-            let closure = slot - release - pre;
-            if closure > 0.0 && prev_is_unit {
+            // A stop that begins a word has the word gap as a part of its
+            // closure, and the rest of it after the gap.
+            let closure = slot - release - pre - if prev_is_unit { 0.0 } else { gap_before };
+            if closure > 0.0 && (prev_is_unit || gap_before > 0.0) {
                 add_silence(&mut segments, &mut cursor, closure);
                 prev_is_unit = false;
             }
             s.src_begin = unit.onset - pre as i32;
-            s.src_end = unit.onset + release as i32;
-            s.stretch = false;
-            s.length = (s.src_end - s.src_begin) as f32;
+            if class == PhClass::Affricate && release < release_len {
+                s.src_end = unit.trail;
+                s.stretch = true;
+                s.length = pre + release;
+            } else {
+                s.src_end = unit.onset + release as i32;
+                s.stretch = false;
+                s.length = (s.src_end - s.src_begin) as f32;
+            }
         } else {
             s.stretch = true;
             s.length = slot;
             if release_vowel {
                 s.gain = 0.8;
+            } else if p.short_glide {
+                // The glide of "ije" has 34 ms, and the recording of j is a
+                // hum for 38 ms and the glide for its last 20: played whole,
+                // the hum had the larger share. It gives up the quiet
+                // build-up before its strong part first (2026-11-17). Only
+                // here: for every consonant short of time a recognizer heard
+                // l, r and v right a little more often at 1.5x and clearly
+                // less often at 2x (l in 9 of 38 items against 14).
+                let sounding = (unit.trail - unit.lead) as f32;
+                let strong = (unit.strong_end - unit.strong_begin) as f32;
+                let mut cut = sounding - slot.max(strong).min(sounding);
+                let before = cut.min((unit.strong_begin - unit.lead) as f32);
+                s.src_begin += before as i32;
+                cut -= before;
+                s.src_end -= cut.min((unit.trail - unit.strong_end) as f32) as i32;
             }
         }
         s.start = cursor;
@@ -342,6 +390,7 @@ pub fn plan_clause<'a>(
         cursor += s.length;
         segments.push(s);
         prev_is_unit = true;
+        gap_before = 0.0;
         note_syllable(p, t0_ms, cursor / samples_per_ms);
     }
 

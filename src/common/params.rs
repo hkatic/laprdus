@@ -132,10 +132,14 @@ pub const VOLUME_BOOST_HISS_HZ: f32 = 3000.0;
 pub const VOLUME_BOOST_HISS_SPLIT_HZ: f32 = 2000.0;
 pub const VOLUME_BOOST_HISS_MAX_CUT_DB: f32 = 24.0;
 /// The same limiter on the plain output of the recorded voices, with a mild
-/// hold: in the recordings s, c, č, ć and the release of t stand level with
-/// the vowels ("The hiss where the ear is sharpest" in docs/formant.md).
-/// 0 turns it off.
-pub const RECORDED_HISS_DB: f32 = -10.0;
+/// hold: in the recordings the sibilants and f stand level with the vowels
+/// ("The hiss where the ear is sharpest" in docs/formant.md). It acts on the
+/// spans of those sounds alone (`limit_hiss_in()`). -10 dB until 2026-11-17,
+/// when listeners found the recorded voices hard to understand and a phoneme
+/// recognizer heard the sibilants right more often the less they were held
+/// (98 of 208 trials at -10 dB, 105 at -7, 108 at -4, 111 unheld; "Clarity"
+/// in docs/concatenative.md). 0 turns it off.
+pub const RECORDED_HISS_DB: f32 = -4.0;
 
 // Voice quality (head size, breathiness, roughness, brightness): four
 // settings of 0-100 after the voice-parameter model of a classic formant

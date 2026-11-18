@@ -5026,6 +5026,31 @@ fn s_and_c_are_not_heard_as_sh_and_ch() {
     }
 }
 
+/// z and ž are not heard as v
+#[test]
+fn z_and_zh_are_not_heard_as_v() {
+    // A listener's report of 2026-11-17: z and ž sounded more like v. Their
+    // friction had been 0.40 and 0.50 of the friction of s and š since the
+    // first version, and every later round took the shared friction down:
+    // above 2 kHz z and ž lay 25.5 and 25.8 dB under the loudest frame and v
+    // 26.2, under the same murmur. The recorded speaker's z and ž hiss as his
+    // s and š do. Now z is 3 dB and ž 2 dB under the voiceless partner
+    // (-19.7 and -21.0 dB) and 5 to 6 dB over v; s, š and v are the samples
+    // they were.
+    for voice in FORMANT_VOICES {
+        let mut speaker = Speaker::new(voice);
+        let mut hiss = |text: &str| vcv_hiss_db(&speaker.say(text));
+        let (z, zh, v, s, sh) = (hiss("aza"), hiss("aža"), hiss("ava"), hiss("asa"), hiss("aša"));
+        let context = format!("{voice}: hiss above 2 kHz z {z} ž {zh} v {v} s {s} š {sh} dB");
+        info!("{context}");
+        assert!(z > v + 3.5, "{context}");
+        assert!(zh > v + 2.5, "{context}");
+        // voiced: under the voiceless partner, and not far under
+        assert!(z < s - 1.5 && z > s - 7.0, "{context}");
+        assert!(zh < sh - 1.0 && zh > sh - 6.0, "{context}");
+    }
+}
+
 #[test]
 fn a_voiceless_stop_before_a_pause_is_released_audibly() {
     // The release is all that is heard of a final stop: it has to outlast

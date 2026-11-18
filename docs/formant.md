@@ -1671,6 +1671,54 @@ python tools/formant/sibilants.py zvonko_asa.wav zvonko_asha.wav josip_asa.wav r
 python tools/formant/spectrum.py --voice zvonko --voice josip -i paragraph.txt   # the last line: the ear's band
 ```
 
+### z and ž are not heard as v (17 November 2026)
+
+A listener's report: z and ž of the formant voices sound more like v; s and
+c are good. The friction and the voicing of the voiced fricatives are not in
+the phone table but in `ClauseBuilder` (`src/common/formant/builder.rs`, the
+`PhClass::Fricative` branch): the friction a share of the voiceless partner's
+(`af` of s and š), the voicing a fixed `av` and source tilt. The shares, 0.40
+for z and 0.50 for ž, and the voicing, 0.42 with 8 dB of tilt, dated from the
+first version and had never been measured; every later round lowered the
+friction of s and š they are a share of, the low shelf of the reference
+balance raised the murmur, and the move of the s and z noise to 5.5 kHz took
+it out of the band the ear is sharpest in.
+
+Measured in *aza, aža, ava, asa, aša* (the mean power above 2 kHz of the
+consonant re the loudest frame of the item; `vcv_hiss_db()` of the tests):
+
+| | before | now |
+|---|---|---|
+| z | -25.5 dB, 9.1 under s | -19.7 dB, 3.3 under s |
+| ž | -25.8 dB, 6.8 under š | -21.0 dB, 2.0 under š |
+| v | -26.2 dB | -26.2 dB (the same samples) |
+| s, š | -16.4, -19.0 dB | the same samples |
+
+(Zvonko; Stojan and Mirsad are within 0.5 dB of him, Mirsad's s 1 dB lower.)
+So z and ž had hissed 0.4 to 0.7 dB over v, under the same murmur: nothing
+but the place of a faint noise told the three apart. In the recordings of
+Josip z and ž have the friction of his s and š (above 2 kHz -11.6 and -9.0 dB
+re the vowel in *aza* and *aža*, s -11.3 in *asa*, with the hold of the time),
+with the murmur under it.
+
+Now (`Z_FRICTION` 0.85, `ZH_FRICTION` 1.0, `VOICED_SIBILANT_AV` 0.30,
+`VOICED_SIBILANT_TILT` 10): the friction is that of the voiceless partner
+less the pulsing of the glottal cycle and, for z, 1.4 dB, and the voicing is
+that of the release of the voiced affricates. The palatal ʑ and the velar ɣ
+keep 0.50, 0.42 and 8; s, š, c, č, ć, v and every clause without a z or ž are
+sample for sample what they were (`tests/dsp_against_cpp.rs`, which no longer
+compares the clauses with a z or ž: 7,699 to 7,735 of 9,066 clauses per
+language are compared and match).
+
+The phoneme recognizer (`tools/formant/phones.py --classes z,ž,v`, three
+voices, rates 1.0 and 1.7) heard ž in 60 of 102 trials before and 85 now (the
+rest are *žu* and *žo*, which it takes for Mandarin syllables), z in 105 and
+106 of 108, v in 91 of 120 both times. It had no complaint about the old z,
+which listeners had: its verdict is a check, not the reason for the change.
+
+Test: `tests/formant.rs` `z_and_zh_are_not_heard_as_v` (z 3.5 dB and ž 2.5 dB
+or more over v above 2 kHz; each under its voiceless partner by 1 to 7 dB).
+
 ## 4. Text to sounds (`src/common/text/frontend/`, `src/common/languages/{hr,sr,bs}/`)
 
 The tokenizer, the word model, the letters and the user's lexicon are shared

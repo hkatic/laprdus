@@ -41,6 +41,12 @@ const VOICED_LEVEL: f32 = 0.05; // of the loudest frame
 /// The sounding part: -34 dB below the loudest block.
 const SOUNDING_LEVEL: f32 = 0.02;
 
+/// The murmur of a voiced fricative lies under this frequency.
+const MURMUR_HZ: f32 = 500.0;
+
+/// The strong part of a recording: within this many dB of its loudest 5 ms.
+const STRONG_LEVEL_DB: f32 = 9.0;
+
 /// One analysed recording.
 #[derive(Clone, Debug, Default)]
 pub struct Unit {
@@ -58,6 +64,12 @@ pub struct Unit {
     pub trail: i32,
     /// Sharpest rise in level: the burst of a stop.
     pub onset: i32,
+    /// The strong part of the sounding part, `strong_begin..strong_end`: from
+    /// the first to the last 5 ms within [`STRONG_LEVEL_DB`] of the loudest.
+    /// What lies before and after it is a quiet build-up or decay, the first
+    /// to go when the sound has less time than the recording is long.
+    pub strong_begin: i32,
+    pub strong_end: i32,
     /// Median pitch of the voiced marks (Hz), 0 if unvoiced.
     pub f0: f32,
     /// Level of the sounding part.
@@ -345,7 +357,7 @@ pub fn analyse_unit(samples: &[i16], sample_rate: u32, formant_warp: f32, f0_pri
     if samples.is_empty() {
         return Unit::default();
     }
-    analyse_prepared(prepare_unit(samples, formant_warp), sample_rate, f0_prior)
+    analyse_prepared(prepare_unit(samples, formant_warp), sample_rate, f0_prior, false)
 }
 
 /// A recording as the analysis reads it: float, without its DC, warped, its
@@ -373,7 +385,12 @@ fn prepare_unit(samples: &[i16], formant_warp: f32) -> Vec<f32> {
 }
 
 /// Analyses a recording [prepared](prepare_unit) for it.
-fn analyse_prepared(x: Vec<f32>, sample_rate: u32, f0_prior: f32) -> Unit {
+///
+/// `murmured`: a voiced fricative or affricate (z, ž, đ), whose friction
+/// drowns the voicing in the correlation: its pitch is tracked on the sound
+/// under 500 Hz, where the murmur is alone. Josip's z had no voiced mark at
+/// all and was put together from 5 ms pieces out of step with its own periods.
+fn analyse_prepared(x: Vec<f32>, sample_rate: u32, f0_prior: f32, murmured: bool) -> Unit {
     let mut unit = Unit::default();
     let fs = sample_rate as f32;
     let n = x.len() as i32;
@@ -425,11 +442,40 @@ fn analyse_prepared(x: Vec<f32>, sample_rate: u32, f0_prior: f32) -> Unit {
         }
     }
 
+    // The strong part: 5 ms averages within 9 dB of the loudest.
+    (unit.strong_begin, unit.strong_end) = (unit.lead, unit.trail);
+    let smooth: Vec<f32> = (0..env_db.len())
+        .map(|b| {
+            let around = &env_db[b.saturating_sub(2)..(b + 3).min(env_db.len())];
+            10.0 * (around.iter().map(|db| 10f32.powf(db / 10.0)).sum::<f32>() / around.len() as f32).log10()
+        })
+        .collect();
+    let smooth_peak = smooth.iter().fold(-120f32, |peak, &db| peak.max(db));
+    let strong = |&db: &f32| db >= smooth_peak - STRONG_LEVEL_DB;
+    if let (Some(first), Some(last)) = (smooth.iter().position(strong), smooth.iter().rposition(strong)) {
+        unit.strong_begin = unit.lead + first as i32 * HOP;
+        unit.strong_end = unit.trail.min(unit.lead + last as i32 * HOP + BLOCK);
+    }
+
+    // No abrupt rise: an affricate whose friction swells out of its closure
+    // (Josip's c is within 9 dB of its loudest only from 45 ms on, his đ
+    // from 45, his ć from 20). Its release is the strong part; with the
+    // onset at the first sounding sample the quiet build-up counted as the
+    // release, and a slot shorter than the recording kept the build-up and
+    // cut the friction (2026-11-17).
+    if best_rise <= 10.0 {
+        unit.onset = unit.strong_begin;
+    }
+
     // Level of the sounding part.
     unit.rms = (energy(&x[unit.lead as usize..unit.trail as usize]) / f64::from(unit.trail - unit.lead)).sqrt() as f32;
 
     // Pitch track and voicing.
-    let frames = pitch_track(x, fs, f0_prior);
+    let frames = if murmured && f0_prior > 0.0 {
+        pitch_track(&lowpass_zero_phase(x, MURMUR_HZ, fs), fs, f0_prior)
+    } else {
+        pitch_track(x, fs, f0_prior)
+    };
     let (lag_min, lag_max) = lag_range(fs);
 
     // Voiced runs of frames -> sample regions [begin, end).
@@ -570,8 +616,8 @@ impl UnitBank {
         const VOWELS: [Sound; 5] = [Sound::A, Sound::E, Sound::I, Sound::O, Sound::U];
         let fs = if data.sample_rate() > 0 { data.sample_rate() } else { SAMPLE_RATE };
 
-        let analyse = |prepared: Option<Vec<f32>>, prior| {
-            prepared.map_or_else(Unit::default, |prepared| analyse_prepared(prepared, fs, prior))
+        let analyse = |prepared: Option<Vec<f32>>, prior, murmured| {
+            prepared.map_or_else(Unit::default, |prepared| analyse_prepared(prepared, fs, prior, murmured))
         };
         let prepare = |sound| {
             let samples = data.sound(sound);
@@ -581,7 +627,11 @@ impl UnitBank {
         // Pass 1: the vowels, without a prior, give the voice's pitch.
         let mut vowels = VOWELS.map(|vowel| (vowel, prepare(vowel)));
         let prior = median(
-            vowels.iter().map(|(_, prepared)| analyse(prepared.clone(), 0.0).f0).filter(|&f0| f0 > 0.0).collect(),
+            vowels
+                .iter()
+                .map(|(_, prepared)| analyse(prepared.clone(), 0.0, false).f0)
+                .filter(|&f0| f0 > 0.0)
+                .collect(),
         );
 
         // Pass 2: every recording, with the prior.
@@ -590,7 +640,7 @@ impl UnitBank {
                 Some((_, prepared)) => prepared.take(),
                 None => prepare(sound),
             };
-            analyse(prepared, prior)
+            analyse(prepared, prior, matches!(sound, Sound::Z | Sound::Zh | Sound::Dj))
         });
         let vowel_f0 = VOWELS.iter().map(|&vowel| units[vowel as usize].f0).filter(|&f0| f0 > 0.0).collect();
         let base_f0 = match median(vowel_f0) {

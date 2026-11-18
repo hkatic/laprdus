@@ -9,13 +9,14 @@ use super::prosody::plan_clause;
 use super::psola::render;
 use super::unit_bank::UnitBank;
 use super::voice_data::VoiceData;
-use crate::audio::boost::{Boost, boost_volume, limit_hiss};
+use crate::audio::boost::{Boost, boost_volume, boost_volume_in, limit_hiss_in};
 use crate::audio::brightness::tilt_brightness;
 use crate::engine::CancelHandle;
 use crate::params::{RECORDED_HISS_DB, VoiceParams, head_size_factor};
 use crate::prosody::{Utterance, split_at_breaks};
 use crate::text::{Frontend, Punctuation};
 use crate::{SAMPLE_RATE, silence};
+use std::ops::Range;
 
 /// Output above this level is bent back softly instead of clipped.
 const LIMIT_KNEE: f32 = 0.90;
@@ -232,14 +233,26 @@ impl ConcatSynthesizer {
         // moves only between syllables, so nothing is waveshaped, and an
         // utterance that stays under the knee, between the samples too, is
         // bit for bit what it was (every lower volume included).
+        // The friction to hold as the planner laid it out, with the
+        // 5 ms their windows reach into the sounds around them.
+        let reach = fs as usize / 200;
+        let hiss: Vec<Range<usize>> = plan
+            .segments
+            .iter()
+            .filter(|segment| segment.hiss)
+            .map(|segment| {
+                (segment.start as usize).saturating_sub(reach)..(segment.start + segment.length) as usize + reach
+            })
+            .collect();
         let boosted = params.volume_boost;
         if boosted {
-            boost_volume(&mut wave, fs, &Boost::default());
+            boost_volume_in(&mut wave, fs, &Boost::default(), Some(&hiss));
         } else if RECORDED_HISS_DB < 0.0 {
             // The hissing consonants of the recordings stand level with the
             // vowels: the plain output holds them where a commercial recorded
-            // voice has them; boost mode has its own, lower hold.
-            limit_hiss(&mut wave, fs as f32, RECORDED_HISS_DB);
+            // voice has them; boost mode has its own, lower hold. Both hold
+            // the sibilants and f alone, and let go where they end.
+            limit_hiss_in(&mut wave, fs as f32, RECORDED_HISS_DB, Some(&hiss));
         }
         wave.iter_mut().for_each(|x| *x *= params.volume);
         if !boosted {

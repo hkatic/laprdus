@@ -73,6 +73,15 @@ const INITIAL_VOICE_BAR_B1: f32 = 200.0;
 // a voiceless fricative and before a pause.
 const INITIAL_V_MS: f32 = 60.0;
 const V_AFTER_STOP_AF: f32 = 0.3;
+
+/// The friction of z and of ž as a share of the friction of s and of š
+/// (0.40 and 0.50 until 2026-11-17, when both were heard as v).
+const Z_FRICTION: f32 = 0.85;
+const ZH_FRICTION: f32 = 1.0;
+/// The voicing of z and ž and the tilt of its source in dB at 3 kHz above the
+/// voice's own (0.42 and 8 until 2026-11-17).
+const VOICED_SIBILANT_AV: f32 = 0.30;
+const VOICED_SIBILANT_TILT: f32 = 10.0;
 const V_DEVOICED_AV: f32 = 0.5;
 const V_DEVOICED_AF: f32 = 1.5;
 
@@ -1043,10 +1052,25 @@ impl<'a> ClauseBuilder<'a> {
                     seg.noise = noise;
                     let strength = if matches!(p.ph, Ph::H | Ph::Gh) { voice.h_strength } else { 1.0 };
                     if def.voiced {
-                        seg.av = 0.42;
-                        seg.af = def.af * (if p.ph == Ph::Z { 0.40 } else { 0.50 }) * strength;
+                        // z and ž (a listener's report of 2026-11-17: both were heard
+                        // as v). Measured in aza, aža, ava: their friction above 2 kHz
+                        // lay 27 dB under the vowel, v's 28, under the same murmur
+                        // (-11 dB), so nothing but the place of a faint noise told
+                        // them from v; the recorded speaker's z and ž have the
+                        // friction of his s and š. Now the friction is 3 dB (z) and
+                        // 2 dB (ž) under the voiceless partner's, 5-6 dB over v's,
+                        // and the voicing is that of the voiced affricates' release.
+                        // The palatal ʑ and the velar ɣ are as they were.
+                        let sibilant = matches!(p.ph, Ph::Z | Ph::Zh);
+                        seg.av = if sibilant { VOICED_SIBILANT_AV } else { 0.42 };
+                        let share = match p.ph {
+                            Ph::Z => Z_FRICTION,
+                            Ph::Zh => ZH_FRICTION,
+                            _ => 0.50,
+                        };
+                        seg.af = def.af * share * strength;
                         seg.ah = def.ah * 0.45 * strength;
-                        seg.tilt = voice.tilt + 8.0;
+                        seg.tilt = voice.tilt + if sibilant { VOICED_SIBILANT_TILT } else { 8.0 };
                         seg.f0_shift = -0.8;
                     } else {
                         seg.af = def.af * strength;

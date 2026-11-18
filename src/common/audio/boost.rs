@@ -43,6 +43,7 @@ use crate::params::{
     VOLUME_BOOST_TREBLE_HZ,
 };
 use std::collections::VecDeque;
+use std::ops::Range;
 
 /// The gain ramps down over this time before a peak ...
 const LOOKAHEAD_SECONDS: f32 = 0.005;
@@ -69,6 +70,10 @@ const HISS_GATE_HIGH_DB: f32 = -3.0;
 const HISS_LOOKAHEAD_SECONDS: f32 = 0.002;
 const HISS_HOLD_SECONDS: f32 = 0.005;
 const HISS_RELEASE_SECONDS: f32 = 0.015;
+/// The release outside the spans the hold is confined to (see
+/// [`limit_hiss_in`]): the gain is back at 1 this long after the cut at the
+/// latest.
+const HISS_SPAN_RELEASE_SECONDS: f32 = 0.0015;
 
 /// π as the reference recordings were made with it.
 #[allow(clippy::approx_constant)]
@@ -172,6 +177,17 @@ fn sliding_extreme(values: &[f32], ahead: usize, back: usize, better: impl Fn(f3
 /// is the signal minus its low-passed part, and a sample whose gain is 1 is
 /// left as it is.
 pub fn limit_hiss(wave: &mut [f32], fs: f32, hiss_db: f32) {
+    limit_hiss_in(wave, fs, hiss_db, None);
+}
+
+/// [`limit_hiss`] confined to `spans` (sample ranges in ascending order: the
+/// sibilants and f as the planner of a recorded voice laid them out), when
+/// there are any. Found by the sound alone, the hold also took 6 dB off the
+/// burst of t, all there is of a t, and, its release being 15 ms, 2 to 8 dB
+/// off the band above 2 kHz of the first 10 to 25 ms of the vowel after every
+/// sound it held, where the vowel's F2 and F3 say which consonant it was
+/// (2026-11-17).
+pub fn limit_hiss_in(wave: &mut [f32], fs: f32, hiss_db: f32, spans: Option<&[Range<usize>]>) {
     let n = wave.len();
     if n == 0 {
         return;
@@ -230,8 +246,18 @@ pub fn limit_hiss(wave: &mut [f32], fs: f32, hiss_db: f32) {
     // ratio, without its logarithm (most samples of a vowel).
     let surely_under_gate = 0.5 * pow10f(HISS_GATE_LOW_DB / 10.0);
     let mut cut = false;
+    let inside = spans.map(|spans| {
+        let mut inside = vec![false; n];
+        for span in spans {
+            inside[span.start.min(n)..span.end.min(n)].fill(true);
+        }
+        inside
+    });
     let want: Vec<f32> = (0..n)
         .map(|i| {
+            if inside.as_ref().is_some_and(|inside| !inside[i]) {
+                return 1.0;
+            }
             let vowel = average[vowel[i]];
             if !(hi_pow[i] > 0.0) || !(vowel > 0.0) {
                 return 1.0;
@@ -260,10 +286,20 @@ pub fn limit_hiss(wave: &mut [f32], fs: f32, hiss_db: f32) {
     let ahead = (HISS_LOOKAHEAD_SECONDS * fs) as usize;
     let hold = (HISS_HOLD_SECONDS * fs) as usize;
     let release = (-1.0 / (HISS_RELEASE_SECONDS * fs)).exp();
+    // Outside the spans the gain rises in a straight line and arrives.
+    let span_step = 1.0 / (HISS_SPAN_RELEASE_SECONDS * fs);
     let mut g = 1f32;
     for (j, lowest) in sliding_extreme(&want, ahead, hold, |new, old| old >= new).into_iter().enumerate() {
-        let t = want[lowest];
-        g = if t < g { t } else { g + (t - g) * (1.0 - release) };
+        // Past the end of a span the hold lets go at once.
+        let outside = inside.as_ref().is_some_and(|inside| !inside[j]);
+        let t = if outside && want[lowest] < 1.0 && lowest < j { 1.0 } else { want[lowest] };
+        g = if t < g {
+            t
+        } else if outside {
+            (g + span_step).min(t)
+        } else {
+            g + (t - g) * (1.0 - release)
+        };
         // Untouched where nothing is cut: low + (wave - low) is not the sample
         // bit for bit, and the plain output of the recorded voices goes
         // through here too.
@@ -306,6 +342,12 @@ pub struct Boost {
     pub hiss_db: f32,
 }
 
+/// [`boost_volume`] with the hiss limiter confined to `hiss_spans` (see
+/// [`limit_hiss_in`]).
+pub fn boost_volume_in(wave: &mut [f32], sample_rate: u32, boost: &Boost, hiss_spans: Option<&[Range<usize>]>) {
+    boost_stages(wave, sample_rate, boost, hiss_spans);
+}
+
 impl Default for Boost {
     /// The volume boost.
     fn default() -> Self {
@@ -334,6 +376,10 @@ impl Boost {
 /// with a soft clipper. In place; deterministic. The limiter starts at unity
 /// gain, so a quiet clause is the plain product.
 pub fn boost_volume(wave: &mut [f32], sample_rate: u32, boost: &Boost) {
+    boost_stages(wave, sample_rate, boost, None);
+}
+
+fn boost_stages(wave: &mut [f32], sample_rate: u32, boost: &Boost, hiss_spans: Option<&[Range<usize>]>) {
     let Boost { gain, ceiling, knee, max_lift_db, treble_db, hiss_db } = *boost;
     if wave.is_empty() || !(gain > 0.0) || !(ceiling > 0.0) {
         return;
@@ -355,7 +401,7 @@ pub fn boost_volume(wave: &mut [f32], sample_rate: u32, boost: &Boost) {
 
     // The hissing consonants held under the vowels.
     if hiss_db < 0.0 {
-        limit_hiss(wave, fs, hiss_db);
+        limit_hiss_in(wave, fs, hiss_db, hiss_spans);
     }
 
     // The gain each sample wants on its own: 1 below the ceiling, less above,

@@ -107,6 +107,8 @@ class Engine:
 
 
 def main():
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # the texts are printed; a console may be cp1252
     command, library, data_dir, dictionary_dir, *only = sys.argv[1:]
     texts = [json.loads(line) for line in (GOLDEN / "corpus.jsonl").read_text(encoding="utf-8").splitlines()]
     engine = Engine(str(pathlib.Path(library).resolve()), data_dir, dictionary_dir)

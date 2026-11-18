@@ -1,20 +1,27 @@
-//! Both synthesizers against the C++ engine, phone for phone.
+//! The formant synthesizer against the C++ engine, phone for phone.
 //!
 //! A dump program built from the C++ engine (removed with it) wrote, for every text of the golden corpus, the
 //! phones the C++ front end made of it and a hash of the audio the C++
-//! synthesizers rendered for them. These tests render the same phones and
-//! compare. The dumps are local files (`build/golden/*_full.tsv`); the tests
-//! pass without them.
+//! synthesizers rendered for them. This test renders the same phones and
+//! compares. The dump is a local file (`build/golden/frontend_full.tsv`); the
+//! test passes without it.
+//!
+//! What no longer sounds as the C++ engine did, on purpose (2026-11-17):
+//! - z and ž of the formant voices, which listeners heard as v: a clause with
+//!   either is not compared, and every other clause still is, sample for
+//!   sample;
+//! - the recorded voices as a whole (the release of the affricates, the
+//!   closures of the stops, the joins, the hiss hold, the voicing of z, ž and
+//!   đ; "Clarity" in `docs/concatenative.md`): nearly every clause has a
+//!   stop, an affricate or a join, so their comparison was removed. Their
+//!   tests are those of `tests/recorded.rs`.
 
-use laprdus::concatenative::synthesizer::ConcatSynthesizer;
-use laprdus::concatenative::voice_data::VoiceData;
 use laprdus::formant::phones::{Accent, Ph, Phone};
 use laprdus::formant::synthesizer::FormantSynthesizer;
 use laprdus::languages::hr::formant::ZVONKO;
 use laprdus::params::VoiceParams;
 use laprdus::prosody::{ClauseKind, Utterance, split_at_breaks};
 use laprdus::silence;
-use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 const PHONES: [Ph; Ph::COUNT] = {
@@ -105,20 +112,25 @@ fn compare(
     expected: impl Fn(&[&str]) -> Option<(String, String)>,
     mut render: impl FnMut(&Utterance) -> Vec<i16>,
 ) {
-    let (mut compared, mut wrong) = (0, Vec::new());
+    let (mut compared, mut changed, mut wrong) = (0, 0, Vec::new());
     for line in dump.lines() {
         let fields: Vec<&str> = line.split('\t').collect();
         if fields[0] != language || fields[1] != "1" {
             continue;
         }
         let Some((count, hash)) = expected(&fields) else { continue };
-        let audio = clause(&utterance(fields[3], fields[4]), &mut render);
+        let utt = utterance(fields[3], fields[4]);
+        if utt.phones.iter().any(|phone| matches!(phone.ph, Ph::Z | Ph::Zh)) {
+            changed += 1;
+            continue;
+        }
+        let audio = clause(&utt, &mut render);
         compared += 1;
         if audio.len().to_string() != count || fnv(&audio) != hash {
             wrong.push(format!("{language} {}: {} samples, C++ {count}", fields[2], audio.len()));
         }
     }
-    eprintln!("{language}: {} of {compared} match", compared - wrong.len());
+    eprintln!("{language}: {} of {compared} match; {changed} with z or ž not compared", compared - wrong.len());
     assert!(wrong.is_empty(), "{} differ, first:\n{}", wrong.len(), wrong[..wrong.len().min(15)].join("\n"));
 }
 
@@ -137,33 +149,6 @@ fn formant_synthesizer_matches_the_cpp_engine() {
                 synth.render_utterance(utt, &params, &mut audio, false);
                 audio
             },
-        );
-    }
-}
-
-#[test]
-fn recorded_voices_match_the_cpp_engine() {
-    let (Ok(dump), Ok(recorded)) = (
-        std::fs::read_to_string(golden().join("frontend_full.tsv")),
-        std::fs::read_to_string(golden().join("recorded_full.tsv")),
-    ) else {
-        return;
-    };
-    let recorded: HashMap<(&str, &str), (&str, &str)> = recorded
-        .lines()
-        .filter_map(|line| {
-            let fields: Vec<&str> = line.split('\t').collect();
-            Some(((*fields.first()?, *fields.get(1)?), (*fields.get(2)?, *fields.get(3)?)))
-        })
-        .collect();
-    let voices = Path::new(env!("CARGO_MANIFEST_DIR")).join("data/voices");
-    for (language, file) in [("hr", "Josip.bin"), ("sr", "Vlado.bin")] {
-        let synth = ConcatSynthesizer::new(VoiceData::from_file(&voices.join(file), &[]).unwrap());
-        compare(
-            &dump,
-            language,
-            |fields| recorded.get(&(language, fields[2])).map(|(count, hash)| (count.to_string(), hash.to_string())),
-            |utt| synth.render_utterance(utt),
         );
     }
 }
