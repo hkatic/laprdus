@@ -36,7 +36,8 @@ TOKEN_ID = "HKEY_CURRENT_USER\\Software\\LaprdusDriverTest\\Token"
 CLSID_LAPRDUS = GUID("{D4B5A4E1-8B5C-4C5D-9E6F-1A2B3C4D5E6F}")
 CLSID_SP_OBJECT_TOKEN = GUID("{EF411752-3736-4CB4-9C8C-8EF4CCB58EFE}")
 SPDFID_WAVE_FORMAT_EX = GUID("{C31ADBAE-527F-4FF5-A230-F62BB61FF70C}")
-SPVA_SPEAK, SPVA_SILENCE, SPVA_SPELL_OUT = 0, 1, 4
+SPVA_SPEAK, SPVA_SILENCE, SPVA_SPELL_OUT, SPVA_BOOKMARK = 0, 1, 4, 3
+SPEI_TTS_BOOKMARK, SPET_LPARAM_IS_STRING = 4, 4
 SPVES_ABORT = 1
 
 
@@ -63,6 +64,11 @@ class SPVSTATE(Structure):
 
 class SPVTEXTFRAG(Structure):
     pass
+
+
+class SPEVENT(Structure):
+    _fields_ = [("eEventId", c_ushort), ("elParamType", c_ushort), ("ulStreamNum", c_ulong),
+                ("ullAudioStreamOffset", c_ulonglong), ("wParam", ctypes.c_size_t), ("lParam", c_void_p)]
 
 
 SPVTEXTFRAG._fields_ = [("pNext", POINTER(SPVTEXTFRAG)), ("State", SPVSTATE), ("pTextStart", c_wchar_p),
@@ -154,8 +160,12 @@ class Site(COMObject):
         self.rate, self.volume, self.abort_after = rate, volume, abort_after
         self.audio = bytearray()
         self.writes = []
+        self.events = []
 
     def AddEvents(self, this, events, count):
+        for event in ctypes.cast(events, POINTER(SPEVENT))[:count]:
+            text = ctypes.wstring_at(event.lParam) if event.elParamType == SPET_LPARAM_IS_STRING else None
+            self.events.append((event.eEventId, event.ullAudioStreamOffset, event.wParam, text))
         return 0
 
     def GetEventInterest(self, this, interest):
@@ -334,6 +344,30 @@ def main():
               0 < len(stopped.audio) < len(whole.audio) // 100 and stopped_seconds < whole_seconds / 10,
               f"{len(stopped.audio)} of {len(whole.audio)} bytes, {stopped_seconds:.3f} of {whole_seconds:.3f} s")
         check("empty text is no audio and no error", speak(engine, Site(), (SPVA_SPEAK, "  \r\n", 0)) == b"")
+
+        # A screen reader marks the end of each phrase with a bookmark and
+        # waits for its event before it sends the next utterance: NVDA
+        # 2023.3 on Windows 7 spoke only the first of several without it
+        marked = Site()
+        speak(engine, marked, (SPVA_SPEAK, "Radna površina", 0), (SPVA_BOOKMARK, "1", 0),
+              (SPVA_SPEAK, "Ovo računalo", 0), (SPVA_BOOKMARK, "2", 0))
+        first, total = len(reference.render("hr", "Radna površina")), len(marked.audio)
+        check("a bookmark is reported where it stands in the audio",
+              marked.events == [(SPEI_TTS_BOOKMARK, first, 1, "1"), (SPEI_TTS_BOOKMARK, total, 2, "2")]
+              and 0 < first < total, f"{marked.events}, {first} of {total}")
+        check("the texts around a bookmark are both spoken",
+              bytes(marked.audio) == reference.render("hr", "Radna površina") + reference.render("hr", "Ovo računalo"))
+        typed = Site()
+        check("a single character before a bookmark is still spelled",
+              speak(engine, typed, (SPVA_SPEAK, "b", 0), (SPVA_BOOKMARK, "7", 0)) == one
+              and typed.events == [(SPEI_TTS_BOOKMARK, len(one), 7, "7")], f"{typed.events}")
+        alone = Site()
+        check("a bookmark alone is reported without audio",
+              speak(engine, alone, (SPVA_BOOKMARK, "12", 0)) == b"" and alone.events == [(SPEI_TTS_BOOKMARK, 0, 12, "12")],
+              f"{alone.events}")
+        stopped = Site(abort_after=8192)
+        speak(engine, stopped, (SPVA_SPEAK, text, 0), (SPVA_BOOKMARK, "3", 0))
+        check("a bookmark after a stop is not reported", stopped.events == [], f"{stopped.events}")
 
         for language, sample in (("sr", "Имам 2000 динара."), ("bs", "Imam 2000 maraka."), ("sl", "Imam 2 uri časa.")):
             engine, token = engine_for(language)

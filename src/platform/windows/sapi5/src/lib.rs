@@ -27,18 +27,21 @@ use laprdus::language::Language;
 use laprdus::params::VoiceParams;
 use laprdus::voice;
 use laprdus::{SAMPLE_RATE, silence};
+use std::cell::Cell;
 use std::ffi::c_void;
 use std::ops::ControlFlow;
 use std::path::PathBuf;
 use std::sync::{Mutex, PoisonError};
 use std::time::SystemTime;
 use windows::Win32::Foundation::{
-    CLASS_E_CLASSNOTAVAILABLE, CLASS_E_NOAGGREGATION, E_FAIL, E_INVALIDARG, E_POINTER, HMODULE, S_FALSE, S_OK,
+    CLASS_E_CLASSNOTAVAILABLE, CLASS_E_NOAGGREGATION, E_FAIL, E_INVALIDARG, E_POINTER, HMODULE, LPARAM, S_FALSE, S_OK,
+    WPARAM,
 };
 use windows::Win32::Media::Audio::{WAVE_FORMAT_PCM, WAVEFORMATEX};
 use windows::Win32::Media::Speech::{
     ISpObjectToken, ISpObjectWithToken, ISpObjectWithToken_Impl, ISpTTSEngine, ISpTTSEngine_Impl, ISpTTSEngineSite,
-    SPVA_Bookmark, SPVA_Silence, SPVA_SpellOut, SPVES_ABORT, SPVTEXTFRAG,
+    SPEI_TTS_BOOKMARK, SPET_LPARAM_IS_STRING, SPEVENT, SPVA_Bookmark, SPVA_Silence, SPVA_SpellOut, SPVES_ABORT,
+    SPVTEXTFRAG,
 };
 use windows::Win32::System::Com::{CoTaskMemAlloc, CoTaskMemFree, IClassFactory, IClassFactory_Impl};
 use windows::Win32::System::LibraryLoader::{
@@ -109,14 +112,21 @@ fn token_language(token: &ISpObjectToken) -> Language {
 
 /// One stretch of what SAPI asked for.
 enum Run {
-    Text { text: String, spell: bool },
+    Text {
+        text: String,
+        spell: bool,
+    },
     Silence(u32),
+    /// A bookmark's text, NUL-terminated.
+    Bookmark(Vec<u16>),
 }
 
 /// The fragments as runs. Consecutive fragments of the same kind stay one
 /// run, so a sentence that SAPI cut at a tag is still synthesized as one
 /// sentence; text is trimmed (SAPI often adds trailing spaces and line
-/// breaks) and runs with nothing left are dropped.
+/// breaks) and runs with nothing left are dropped. A bookmark is a run of
+/// its own and ends the text before it, so that its event is sent where it
+/// stands in the audio.
 ///
 /// # Safety
 /// `fragment` must be null or the head of a valid fragment list.
@@ -129,7 +139,14 @@ unsafe fn runs_of(mut fragment: *const SPVTEXTFRAG) -> Vec<Run> {
             if frag.State.SilenceMSecs > 0 {
                 runs.push(Run::Silence(frag.State.SilenceMSecs));
             }
-        } else if action != SPVA_Bookmark && !frag.pTextStart.is_null() && frag.ulTextLen > 0 {
+        } else if action == SPVA_Bookmark {
+            let mut mark = match frag.pTextStart.is_null() {
+                true => Vec::new(),
+                false => unsafe { std::slice::from_raw_parts(frag.pTextStart.0, frag.ulTextLen as usize) }.to_vec(),
+            };
+            mark.push(0);
+            runs.push(Run::Bookmark(mark));
+        } else if !frag.pTextStart.is_null() && frag.ulTextLen > 0 {
             // Only a spell-out fragment is spelled; pronunciation hints and
             // unknown actions are spoken as text.
             let spell = action == SPVA_SpellOut;
@@ -149,7 +166,7 @@ unsafe fn runs_of(mut fragment: *const SPVTEXTFRAG) -> Vec<Run> {
                 let text = text.trim_matches([' ', '\t', '\r', '\n']);
                 (!text.is_empty()).then(|| Run::Text { text: text.to_owned(), spell })
             }
-            silence => Some(silence),
+            other => Some(other),
         })
         .collect()
 }
@@ -157,6 +174,35 @@ unsafe fn runs_of(mut fragment: *const SPVTEXTFRAG) -> Vec<Run> {
 fn should_stop(site: &ISpTTSEngineSite) -> bool {
     // SAFETY: a plain call on a valid interface.
     unsafe { site.GetActions() & SPVES_ABORT.0 as u32 != 0 }
+}
+
+/// The number a bookmark's text begins with, as C's `_wtol` reads it: what a
+/// host gets as the bookmark's id.
+fn bookmark_id(mark: &[u16]) -> i32 {
+    let text = String::from_utf16_lossy(mark);
+    let text = text.trim_start();
+    let digits = text.strip_prefix(['-', '+']).unwrap_or(text);
+    let end = digits.find(|c: char| !c.is_ascii_digit()).unwrap_or(digits.len());
+    let value = digits[..end].parse::<i64>().map_or(0, |value| value.min(i64::from(i32::MAX)) as i32);
+    if text.starts_with('-') { -value } else { value }
+}
+
+/// Tells SAPI that the bookmark was reached after `offset` bytes of this
+/// call's audio. A screen reader waits for this event before it sends its
+/// next utterance (NVDA 2023.3, the last for Windows 7, has nothing else to
+/// go by: without it only the first utterance of several was spoken).
+fn bookmark_reached(site: &ISpTTSEngineSite, mark: &[u16], offset: u64) {
+    let event = SPEVENT {
+        // The event's id in the low 16 bits, the kind of `lParam` above them.
+        _bitfield: SPEI_TTS_BOOKMARK.0 | (SPET_LPARAM_IS_STRING.0 << 16),
+        ulStreamNum: 0,
+        ullAudioStreamOffset: offset,
+        wParam: WPARAM(bookmark_id(mark) as isize as usize),
+        lParam: LPARAM(mark.as_ptr() as isize),
+    };
+    // SAFETY: one event, whose string is NUL-terminated and outlives the
+    // call; SAPI copies it. An event SAPI does not take costs no speech.
+    let _ = unsafe { site.AddEvents(&event, 1) };
 }
 
 /// The engine of one voice token with the user's settings.
@@ -252,7 +298,8 @@ impl Voice {
     /// so the first sound of a long text does not wait for the rest, and
     /// stops when SAPI asks (`SPVES_ABORT`): the synthesis under way is cut
     /// short, where it used to finish the whole text before `Speak` returned
-    /// and the next utterance could start. An error when none of the runs
+    /// and the next utterance could start. A bookmark is reported with the
+    /// number of bytes written before it. An error when none of the runs
     /// could be spoken, or when the site refused the audio.
     fn speak(&mut self, runs: &[Run], site: &ISpTTSEngineSite) -> Result<()> {
         let spelling_pause = self.engine.params().pause_settings.spelling_pause_ms;
@@ -263,6 +310,8 @@ impl Voice {
         let mut previous_spelled = false;
         // Why the site took no more audio, when it refused some.
         let mut refused = None;
+        // The bytes of audio the site has taken.
+        let written = Cell::new(0u64);
         let mut write = |samples: &[i16]| {
             for chunk in samples.chunks(CHUNK_SAMPLES) {
                 if should_stop(site) {
@@ -273,6 +322,7 @@ impl Voice {
                     refused = Some(error);
                     return ControlFlow::Break(());
                 }
+                written.set(written.get() + size_of_val(chunk) as u64);
             }
             ControlFlow::Continue(())
         };
@@ -286,6 +336,10 @@ impl Voice {
                         break;
                     }
                     separated = true;
+                    continue;
+                }
+                Run::Bookmark(mark) => {
+                    bookmark_reached(site, mark, written.get());
                     continue;
                 }
                 Run::Text { text, spell } => (text, *spell),
