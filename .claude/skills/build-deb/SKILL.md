@@ -8,7 +8,18 @@ allowed-tools: Bash, Read
 
 Build .deb packages for Debian-based Linux distributions (Debian, Ubuntu, Linux Mint, etc.).
 
-**Note:** This build must be run on a Debian/Ubuntu system (native or WSL).
+**Note:** The native build below must be run on a Debian/Ubuntu system (native or WSL).
+
+## Normal route: built and tested in containers
+
+On any machine with Docker (a Mac with OrbStack or Docker Desktop included), and in CI (`.github/workflows/linux-packages.yml`):
+
+```bash
+scripts/linux-packages.sh deb                  # this machine's architecture
+scripts/linux-packages.sh --arch x86_64 deb    # the other one (emulated on Apple silicon: slow)
+```
+
+It builds the package in a container and tests it on Debian 12 and 13 and Ubuntu 22.04, 24.04 and 26.04 (built in `ubuntu:22.04`, the oldest C library of them) (`installers/linux/ci/build.sh`, `test.sh`; the test is `tests/linux/test_package_install.sh`, strict). The package lands in `dist/linux-packages/<arch>/`. The steps below are the native build, for a machine running the distribution.
 
 ## Prerequisites
 

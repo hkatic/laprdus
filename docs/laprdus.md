@@ -1710,7 +1710,7 @@ Podesite brzinu govora:
 
 1. Provjerite je li Laprdus modul instaliran:
    ```bash
-   ls /usr/lib/speech-dispatcher-modules/sd_laprdus
+   spd-say -O
    ```
 
 2. Provjerite konfiguraciju:

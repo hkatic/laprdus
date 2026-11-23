@@ -1477,7 +1477,7 @@ Podesite brzinu govora:
 
 1. Proverite da li je Laprdus modul instaliran:
 
-        ls /usr/lib/speech-dispatcher-modules/sd_laprdus
+        spd-say -O
 
 2. Proverite konfiguraciju:
 

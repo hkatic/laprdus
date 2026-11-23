@@ -1477,7 +1477,7 @@ Adjust the speech rate:
 
 1. Check that the Laprdus module is installed:
 
-        ls /usr/lib/speech-dispatcher-modules/sd_laprdus
+        spd-say -O
 
 2. Check the configuration:
 

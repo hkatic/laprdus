@@ -52,17 +52,16 @@ rm -fv "${PREFIX}/lib64/liblaprdus.so"* 2>/dev/null || true
 # (it comes with the development package on Debian), the failed command
 # would end the script under "set -e" before the fallback below.
 SD_MODULE_DIR=$(pkg-config --variable=modulebindir speech-dispatcher 2>/dev/null || true)
-if [ -z "$SD_MODULE_DIR" ]; then
-    for dir in /usr/lib64/speech-dispatcher-modules /usr/lib/speech-dispatcher-modules; do
-        if [ -d "$dir" ]; then
-            SD_MODULE_DIR="$dir"
-            break
-        fi
-    done
-fi
 if [ -n "$SD_MODULE_DIR" ]; then
     rm -fv "${SD_MODULE_DIR}/sd_laprdus"
 fi
+# Every location install.sh may have chosen (Fedora, Debian and Ubuntu,
+# Arch, other multiarch folders)
+for dir in /usr/lib64/speech-dispatcher-modules /usr/lib/speech-dispatcher-modules \
+    /usr/lib/speech-dispatcher/speech-dispatcher-modules /usr/lib/*/speech-dispatcher-modules \
+    /usr/libexec/speech-dispatcher-modules; do
+    rm -fv "${dir}/sd_laprdus"
+done
 rm -fv "${PREFIX}/lib/speech-dispatcher-modules/sd_laprdus"
 rm -rfv "${PREFIX}/share/laprdus"
 rm -rfv "${PREFIX}/share/doc/laprdus"

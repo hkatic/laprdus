@@ -8,7 +8,18 @@ allowed-tools: Bash, Read
 
 Build .rpm packages for RPM-based Linux distributions (Fedora, RHEL, CentOS, openSUSE).
 
-**Note:** This build must be run on a Fedora/RHEL system (native or WSL).
+**Note:** The native build below must be run on a Fedora/RHEL system (native or WSL).
+
+## Normal route: built and tested in containers
+
+On any machine with Docker (a Mac with OrbStack or Docker Desktop included), and in CI (`.github/workflows/linux-packages.yml`):
+
+```bash
+scripts/linux-packages.sh rpm                  # this machine's architecture
+scripts/linux-packages.sh --arch x86_64 rpm    # the other one (emulated on Apple silicon: slow)
+```
+
+It builds the package in a container and tests it on Fedora 44 and 45 (built in `fedora:44`) (`installers/linux/ci/build.sh`, `test.sh`; the test is `tests/linux/test_package_install.sh`, strict). The package lands in `dist/linux-packages/<arch>/`. The steps below are the native build, for a machine running the distribution.
 
 ## Prerequisites
 
@@ -29,12 +40,10 @@ rpmdev-setuptree
 ### 2. Create source tarball (xz compression to match spec)
 ```bash
 cd /home/hrvojekatic/.repo/hkatic/laprdus
-tar --transform='s,^\.,laprdus-2.0.0,' -cJf ~/rpmbuild/SOURCES/laprdus-2.0.0.tar.xz \
-    --exclude='./.git' --exclude='./target' --exclude='./dist' --exclude='./build' \
-    --exclude='*.pyc' --exclude='__pycache__' \
-    --exclude='./src/platform/android/.gradle' --exclude='./src/platform/android/app/build' \
-    --exclude='./src/platform/windows/nvda' .
+installers/linux/ci/source.sh ~/rpmbuild/SOURCES    # laprdus-2.0.0.tar.xz, top folder laprdus-2.0.0/
 ```
+
+`source.sh` packs the working tree as Git sees it (uncommitted changes and new files included, nothing `.gitignore` leaves out) and first checks that `Cargo.toml`, `debian/changelog`, the spec and the PKGBUILD name the same version.
 
 **IMPORTANT:** Use `-cJf` (xz) — the spec file `Source0` expects `.tar.xz`. Using `-czf` (gzip) creates a `.tar.gz` which rpmbuild will not find.
 

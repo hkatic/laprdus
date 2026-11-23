@@ -68,16 +68,25 @@ cp -v include/laprdus/* "${PREFIX}/include/laprdus/"
 if [ -d lib/speech-dispatcher-modules ] && [ -n "$(ls -A lib/speech-dispatcher-modules/ 2>/dev/null)" ]; then
     # Detect the system speechd module directory
     # "|| true": without pkg-config, or without Speech Dispatcher's .pc file
-    # (it comes with the development package on Debian), the failed command
-    # would end the script under "set -e" before the fallback below.
+    # (it comes with the development package on Debian, and Arch has none),
+    # the failed command would end the script under "set -e" before the
+    # fallback below.
     SD_MODULE_DIR=$(pkg-config --variable=modulebindir speech-dispatcher 2>/dev/null || true)
     if [ -z "$SD_MODULE_DIR" ]; then
-        # Fallback: check common locations
-        for dir in /usr/lib64/speech-dispatcher-modules /usr/lib/speech-dispatcher-modules; do
-            if [ -d "$dir" ]; then
-                SD_MODULE_DIR="$dir"
-                break
-            fi
+        # Fallback: the first known location that holds one of Speech
+        # Dispatcher's own modules (sd_dummy, sd_espeak-ng, ...). Fedora:
+        # /usr/lib64/speech-dispatcher-modules; Debian and Ubuntu:
+        # /usr/lib/speech-dispatcher-modules; Arch:
+        # /usr/lib/speech-dispatcher/speech-dispatcher-modules.
+        for dir in /usr/lib64/speech-dispatcher-modules /usr/lib/speech-dispatcher-modules \
+            /usr/lib/speech-dispatcher/speech-dispatcher-modules /usr/lib/*/speech-dispatcher-modules \
+            /usr/libexec/speech-dispatcher-modules; do
+            for module in "$dir"/sd_*; do
+                if [ -x "$module" ] && [ "${module##*/}" != sd_laprdus ]; then
+                    SD_MODULE_DIR="$dir"
+                    break 2
+                fi
+            done
         done
     fi
     if [ -n "$SD_MODULE_DIR" ] && { [ -w "$SD_MODULE_DIR" ] || [ $EUID -eq 0 ]; }; then
@@ -174,17 +183,16 @@ rm -fv "${PREFIX}/lib64/liblaprdus.so"* 2>/dev/null || true
 # (it comes with the development package on Debian), the failed command
 # would end the script under "set -e" before the fallback below.
 SD_MODULE_DIR=$(pkg-config --variable=modulebindir speech-dispatcher 2>/dev/null || true)
-if [ -z "$SD_MODULE_DIR" ]; then
-    for dir in /usr/lib64/speech-dispatcher-modules /usr/lib/speech-dispatcher-modules; do
-        if [ -d "$dir" ]; then
-            SD_MODULE_DIR="$dir"
-            break
-        fi
-    done
-fi
 if [ -n "$SD_MODULE_DIR" ]; then
     rm -fv "${SD_MODULE_DIR}/sd_laprdus"
 fi
+# Every location install.sh may have chosen (Fedora, Debian and Ubuntu,
+# Arch, other multiarch folders)
+for dir in /usr/lib64/speech-dispatcher-modules /usr/lib/speech-dispatcher-modules \
+    /usr/lib/speech-dispatcher/speech-dispatcher-modules /usr/lib/*/speech-dispatcher-modules \
+    /usr/libexec/speech-dispatcher-modules; do
+    rm -fv "${dir}/sd_laprdus"
+done
 # Also remove from prefix in case it was installed there
 rm -fv "${PREFIX}/lib/speech-dispatcher-modules/sd_laprdus"
 

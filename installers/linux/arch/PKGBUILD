@@ -40,7 +40,14 @@ package() {
     # The library (liblaprdus.so.2.0.0 and its links), the CLI, the header,
     # the voice data and dictionaries, the Speech Dispatcher module and its
     # configuration. Everything is built already; this only copies.
-    cargo --frozen xtask install --frozen --destdir "$pkgdir" --prefix /usr
+    # The module goes where Arch's own modules are (sd_dummy, sd_espeak-ng):
+    # Speech Dispatcher is built with --libexecdir=/usr/lib/speech-dispatcher/,
+    # so its module folder is the one below. It also scans the folder of
+    # older versions, ${libdir}/speech-dispatcher-modules
+    # (/usr/lib/speech-dispatcher-modules, where this package put the module
+    # until November 2026), but only for compatibility.
+    cargo --frozen xtask install --frozen --destdir "$pkgdir" --prefix /usr \
+        --moduledir /usr/lib/speech-dispatcher/speech-dispatcher-modules
 
     # Install documentation
     install -Dm644 readme.md "$pkgdir/usr/share/doc/$pkgname/readme.md"

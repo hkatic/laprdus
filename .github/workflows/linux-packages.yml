@@ -1,0 +1,121 @@
+# Linux packages: builds the .deb, the .rpm, the Arch package and the tarball
+# in distribution containers, tests each on the systems it is for, and on a
+# tag drafts a GitHub release with them.
+#
+# Every job runs scripts/linux-packages.sh, the same command that builds and
+# tests the packages on a developer's machine (Docker or OrbStack); the
+# systems each format is built and tested on are listed there, not here.
+#
+#   push of a tag v*    build, test, then a draft release with every package,
+#                       the source tarball and SHA256SUMS-linux (the maintainer
+#                       writes the notes and publishes it)
+#   push to dev         build and test, when the engine, the Linux programs or
+#                       their packaging changed
+#   workflow_dispatch   build and test, by hand (Actions > Linux packages)
+#
+# The packages of every run are kept as artifacts for 14 days.
+
+name: Linux packages
+
+on:
+  push:
+    tags: ["v*"]
+    branches: [dev]
+    # Not evaluated for tags: a tag always builds.
+    paths:
+      - "src/common/**"
+      - "src/platform/c_api/**"
+      - "src/platform/cli/**"
+      - "src/platform/linux/**"
+      - "data/**"
+      - "installers/linux/**"
+      - "tests/linux/**"
+      - "scripts/linux-packages.sh"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".cargo/**"
+      - "tools/xtask/**"
+      - ".github/workflows/linux-packages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-packages-${{ github.ref }}
+  # A newer push to dev replaces a run still going; a release is never cut short.
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  packages:
+    name: ${{ matrix.format }} (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        format: [deb, rpm, arch, tarball]
+        arch: [x86_64, aarch64]
+        exclude:
+          # Arch Linux has no official arm64 image.
+          - format: arch
+            arch: aarch64
+    runs-on: ${{ matrix.arch == 'aarch64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build and test
+        env:
+          # On a tag, source.sh checks that the tag names the packages' version.
+          LAPRDUS_RELEASE_TAG: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
+        run: scripts/linux-packages.sh --arch "${{ matrix.arch }}" "${{ matrix.format }}"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: linux-${{ matrix.format }}-${{ matrix.arch }}
+          path: dist/linux-packages/${{ matrix.arch }}/
+          retention-days: 14
+
+  release:
+    name: Draft release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: packages
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Source tarball
+        env:
+          LAPRDUS_RELEASE_TAG: ${{ github.ref_name }}
+        run: installers/linux/ci/source.sh release
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: linux-*
+          path: release
+          merge-multiple: true
+
+      - name: Checksums
+        working-directory: release
+        run: |
+          sha256sum -- * > SHA256SUMS-linux
+          cat SHA256SUMS-linux
+
+      - name: Draft the release, or add to the one there is
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            # A release made for this tag already (by hand or by another
+            # platform's build): the Linux files are added or replaced.
+            gh release upload "$TAG" release/* --clobber
+          else
+            flags=(--draft --title "Laprdus ${TAG#v}"
+                   --notes "Linux packages built and tested by the Linux packages workflow. Write the release notes before publishing.")
+            case "$TAG" in *-*) flags+=(--prerelease) ;; esac
+            gh release create "$TAG" "${flags[@]}" release/*
+          fi

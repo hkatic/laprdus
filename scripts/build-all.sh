@@ -15,6 +15,7 @@
 #   ./scripts/build-all.sh nvda               # Build NVDA addon only
 #   ./scripts/build-all.sh android            # Build Android APK only
 #   ./scripts/build-all.sh linux              # Build Linux only
+#   ./scripts/build-all.sh linux-packages     # .deb, .rpm, Arch package, tarball, built and tested in containers (Docker)
 #   ./scripts/build-all.sh macos              # Build macOS only
 #   ./scripts/build-all.sh macos-release      # macOS release: signed, notarized DMG + CLI tarball
 #   ./scripts/build-all.sh voice-data         # Generate voice data only
@@ -281,6 +282,11 @@ main() {
             generate_voice_data
             build_linux
             ;;
+        linux-packages)
+            # In Docker containers, on any host: the options of
+            # scripts/linux-packages.sh (--arch, --no-test, a format) follow.
+            "$PROJECT_ROOT/scripts/linux-packages.sh" "$@"
+            ;;
         macos)
             generate_voice_data
             build_macos
@@ -313,7 +319,7 @@ main() {
             ;;
         *)
             log_error "Unknown target: $TARGET"
-            echo "Usage: $0 [all|sapi5|nvda|android|linux|macos|macos-release|voice-data]"
+            echo "Usage: $0 [all|sapi5|nvda|android|linux|linux-packages|macos|macos-release|voice-data]"
             exit 1
             ;;
     esac

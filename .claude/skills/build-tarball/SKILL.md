@@ -8,6 +8,17 @@ allowed-tools: Bash, Read
 
 Build a portable tarball package that works on any Linux distribution. Includes compiled binaries and install/uninstall scripts.
 
+## Normal route: built and tested in containers
+
+On any machine with Docker (a Mac with OrbStack or Docker Desktop included), and in CI (`.github/workflows/linux-packages.yml`):
+
+```bash
+scripts/linux-packages.sh tarball                  # this machine's architecture
+scripts/linux-packages.sh --arch x86_64 tarball    # the other one (emulated on Apple silicon: slow)
+```
+
+It builds the package in a container and tests it on Debian 12, Fedora 45 and Arch Linux (built in `ubuntu:22.04`, so the binaries run with that C library or a newer one; its own `install.sh` with the default prefix `/usr/local`, after the system's Speech Dispatcher) (`installers/linux/ci/build.sh`, `test.sh`; the test is `tests/linux/test_package_install.sh`, strict). The package lands in `dist/linux-packages/<arch>/`. The steps below build it natively, for the C library of the machine they run on.
+
 ## Build Steps
 
 ```bash
@@ -54,7 +65,7 @@ laprdus-2.0.0-linux-x86_64/
 ## Key Design Decisions
 
 - **Single package**: Everything in one tarball
-- **Speech Dispatcher module**: Install script detects system speechd module dir via `pkg-config --variable=modulebindir speech-dispatcher` and installs `sd_laprdus` THERE (not under the prefix). This is critical — SD only looks in its own module dir (e.g., `/usr/lib64/speech-dispatcher-modules/`)
+- **Speech Dispatcher module**: Install script detects system speechd module dir via `pkg-config --variable=modulebindir speech-dispatcher`, else the first known folder that holds one of Speech Dispatcher's own modules (Fedora `/usr/lib64/speech-dispatcher-modules/`, Debian and Ubuntu `/usr/lib/speech-dispatcher-modules/`, Arch `/usr/lib/speech-dispatcher/speech-dispatcher-modules/`, which has no `.pc` file), and installs `sd_laprdus` THERE (not under the prefix). This is critical — SD scans only its own module dir, the user's (`~/.local/libexec/speech-dispatcher-modules`) and, for compatibility, `${libdir}/speech-dispatcher-modules`; never the tarball's prefix. Until 2026-11-23 the fallback knew only `/usr/lib64/` and `/usr/lib/speech-dispatcher-modules/` and required the folder to exist, so on Arch (no `.pc` file, neither folder) the module was not installed
 - **ldconfig**: For non-standard prefixes (e.g., `/usr/local`), install script creates `/etc/ld.so.conf.d/laprdus.conf` so the library is discoverable
 - **Persistent uninstall**: After install, uninstall script is saved to `<prefix>/share/laprdus/uninstall.sh` so it survives tarball directory deletion
 - **Multiarch library paths**: Install script detects Debian/Ubuntu multiarch via `dpkg-architecture -qDEB_HOST_MULTIARCH`, Fedora `/usr/lib64/`, or falls back to `<prefix>/lib`

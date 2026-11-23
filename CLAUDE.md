@@ -702,6 +702,7 @@ Before marking a task complete, verify:
 - [ ] NVDA addon builds successfully
 - [ ] `python tests/nvda/test_driver.py` and the other Python tests pass
 - [ ] Linux: `cargo xtask build` builds the library, the CLI and the Speech Dispatcher module without errors
+- [ ] Linux packages: `scripts/linux-packages.sh` (Docker, any host) or the "Linux packages" GitHub workflow builds the .deb, .rpm, Arch package and tarball and tests each on its distributions (`.claude/rules/linux.md`)
 - [ ] Android APK builds successfully (warnings OK)
 - [ ] Android APK installed on user's physical device
 - [ ] Installers launched for user testing
