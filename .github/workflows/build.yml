@@ -1,0 +1,234 @@
+# Builds every platform and runs its tests, on GitHub's own machines.
+#
+# - Cargo tests: cargo test --release --workspace on Linux, Windows and macOS.
+# - Windows: the SAPI5 driver, the CLI and the Configurator (cargo xtask
+#   windows), the same for Windows 7 SP1, 8 and 8.1 (cargo xtask
+#   windows-legacy), the NVDA add-on (scons) and the installer (Inno Setup),
+#   then the Python tests of tests/windows and tests/nvda; the driver and the
+#   NVDA driver are tested with a 64-bit and with a 32-bit Python.
+# - Android: the debug and the release APK, the unit tests and lint.
+# - Apple: the macOS app (arm64 and x86_64) and the iPhone app built without
+#   signing, and the unit tests in an iPhone simulator.
+#
+# Nothing is signed and nothing is published: the installer, the NVDA add-on
+# and the debug APK are kept as the run's artifacts for 14 days. Signed
+# releases (the macOS notarization, Google Play, the App Store) are made on the
+# maintainer's machines. Listening, the screen readers and the devices are not
+# tested here. The Linux packages have a workflow of their own
+# (linux-packages.yml).
+
+name: Build and test
+
+on:
+  push:
+    branches: [dev, main]
+    paths-ignore:
+      - "docs/**"
+      - ".claude/**"
+      - "CLAUDE.md"
+      - "AGENTS.md"
+      - "**/changes-*.md"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  cargo-tests:
+    name: Cargo tests (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025, macos-26]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+      - name: ALSA headers (the CLI's playback)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update -q && sudo apt-get install -y -q libasound2-dev pkg-config
+      - name: Rust
+        run: rustup update stable --no-self-update && rustup default stable && rustc --version
+      - name: Voice data and dictionaries
+        run: cargo xtask data
+      - name: cargo test --release --workspace
+        run: cargo test --release --workspace --locked
+
+  windows:
+    name: Windows programs, NVDA add-on, installer
+    runs-on: windows-2025
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - name: Rust (stable with both Windows targets, the pinned nightly of the legacy build)
+        run: |
+          rustup update stable --no-self-update
+          rustup default stable
+          rustup target add x86_64-pc-windows-msvc i686-pc-windows-msvc
+          rustup toolchain install "$(cat src/platform/windows/legacy/toolchain.txt)" --profile minimal --component rust-src
+      # Two Pythons: the 32-bit driver (NVDA before 2026.1 is a 32-bit program)
+      # is tested from a 32-bit Python, the 64-bit one from a 64-bit Python.
+      - id: py32
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          architecture: x86
+      - id: py64
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          architecture: x64
+      - name: Python packages (the add-on build, the COM tests)
+        run: |
+          "${{ steps.py64.outputs.python-path }}" -m pip install -q scons==4.10.1 Markdown==3.10 polib comtypes
+          "${{ steps.py32.outputs.python-path }}" -m pip install -q comtypes
+      # Inno Setup is not on GitHub's Windows images. 6.x: the script is
+      # written for Inno Setup 6, whose folder it names.
+      - name: Inno Setup
+        run: choco install innosetup --version=6.7.1 -y --no-progress
+
+      - name: Tests that need no build
+        run: |
+          python tests/nvda/test_python37.py
+          python tests/nvda/test_manuals.py
+          python tests/windows/test_installer_languages.py
+
+      - name: Voice data and dictionaries
+        run: cargo xtask data
+      - id: programs
+        name: SAPI5 driver, CLI and Configurator (x64, x86)
+        run: cargo xtask windows --locked
+      - id: legacy
+        name: The same for Windows 7 SP1, 8 and 8.1
+        run: cargo xtask windows-legacy --locked
+      - id: addon
+        name: NVDA add-on
+        working-directory: src/platform/windows/nvda
+        run: scons
+      - id: installer
+        name: Installer
+        run: '"/c/Program Files (x86)/Inno Setup 6/ISCC.exe" installers/windows/laprdus_sapi5.iss'
+
+      - name: SAPI5 driver, 64-bit
+        if: ${{ !cancelled() && steps.programs.outcome == 'success' }}
+        run: '"${{ steps.py64.outputs.python-path }}" tests/windows/test_sapi5_driver.py'
+      - name: SAPI5 driver, 32-bit
+        if: ${{ !cancelled() && steps.programs.outcome == 'success' }}
+        run: '"${{ steps.py32.outputs.python-path }}" tests/windows/test_sapi5_driver.py'
+      - name: Configurator languages
+        if: ${{ !cancelled() && steps.programs.outcome == 'success' }}
+        run: '"${{ steps.py64.outputs.python-path }}" tests/windows/test_configurator_language.py'
+      - name: Imports of the build for Windows 7, 8 and 8.1
+        if: ${{ !cancelled() && steps.legacy.outcome == 'success' }}
+        run: '"${{ steps.py64.outputs.python-path }}" tests/windows/test_legacy_imports.py'
+      - name: Legacy SAPI5 driver, 64-bit
+        if: ${{ !cancelled() && steps.legacy.outcome == 'success' }}
+        run: '"${{ steps.py64.outputs.python-path }}" tests/windows/test_sapi5_driver.py dist/windows-legacy-x64/laprd64.dll'
+      - name: NVDA driver, 64-bit (NVDA 2026.1 and later)
+        if: ${{ !cancelled() && steps.addon.outcome == 'success' }}
+        run: '"${{ steps.py64.outputs.python-path }}" tests/nvda/test_driver.py'
+      - name: NVDA driver, 32-bit (NVDA 2025.3 and earlier)
+        if: ${{ !cancelled() && steps.addon.outcome == 'success' }}
+        run: '"${{ steps.py32.outputs.python-path }}" tests/nvda/test_driver.py'
+
+      - name: Keep the installer and the add-on
+        if: ${{ !cancelled() && steps.installer.outcome == 'success' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows
+          path: |
+            installers/windows/Output/Laprdus_SAPI5_Setup_*.exe
+            src/platform/windows/nvda/laprdus-*.nvda-addon
+          retention-days: 14
+
+  android:
+    name: Android app
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: src/platform/android
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Rust (the four Android targets, cargo-ndk)
+        run: |
+          rustup update stable --no-self-update
+          rustup default stable
+          rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android i686-linux-android
+          cargo install cargo-ndk --locked
+      - name: NDK (the version app/build.gradle.kts names)
+        run: |
+          ndk="$(sed -n 's/^ *ndkVersion = "\(.*\)"/\1/p' app/build.gradle.kts)"
+          yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null
+          "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --install "ndk;${ndk}" >/dev/null
+          ls "${ANDROID_HOME}/ndk/${ndk}/source.properties"
+      - name: Build the APKs, run the unit tests and lint
+        run: ./gradlew --no-daemon :app:assembleDebug :app:assembleRelease :app:testDebugUnitTest :app:lintDebug
+      - name: Keep the debug APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: android
+          path: src/platform/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
+      - name: Keep the test and lint reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-reports
+          path: |
+            src/platform/android/app/build/reports/
+            src/platform/android/app/build/test-results/
+          retention-days: 14
+
+  apple:
+    name: Apple app
+    runs-on: macos-26
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: src/platform/apple/Laprdus
+    steps:
+      - uses: actions/checkout@v7
+      - name: Rust (the Apple targets build-rust-engine.sh builds for)
+        run: |
+          rustup update stable --no-self-update
+          rustup default stable
+          rustup target add aarch64-apple-darwin x86_64-apple-darwin aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios
+          xcodebuild -version
+      # The app and the extension bundle data/voices and data/dictionary.
+      - name: Voice data and dictionaries
+        working-directory: .
+        run: cargo xtask data
+      # Unsigned: the project signs automatically with the maintainer's team,
+      # whose certificates are not here.
+      - name: macOS app (Release, arm64 and x86_64)
+        run: xcodebuild -scheme Laprdus -configuration Release -destination 'generic/platform=macOS' build CODE_SIGNING_ALLOWED=NO
+      - name: iPhone app (Release)
+        run: xcodebuild -scheme Laprdus -configuration Release -destination 'generic/platform=iOS' build CODE_SIGNING_ALLOWED=NO
+      - name: Unit tests in an iPhone simulator
+        run: |
+          # The newest iPhone simulator of the newest runtime on the machine.
+          udid="$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          runtimes = json.load(sys.stdin)["devices"]
+          ios = sorted((r for r in runtimes if ".iOS-" in r),
+                       key=lambda r: [int(p) for p in r.rsplit(".iOS-", 1)[1].split("-")])
+          phones = [d for d in runtimes[ios[-1]] if d["name"].startswith("iPhone")]
+          print(phones[-1]["udid"])')"
+          xcrun simctl list devices | grep "${udid}"
+          xcodebuild test -scheme Laprdus -destination "id=${udid}" CODE_SIGNING_ALLOWED=NO

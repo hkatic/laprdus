@@ -651,7 +651,7 @@ ADB paths, the commands, the instrumented tests and the checklist: `.claude/rule
 
 ### Engine and Program Tests (Cargo)
 
-The tests of the engine and of the programs are Cargo tests and run the same way on Windows, Linux and macOS (not yet run on macOS since the migration).
+The tests of the engine and of the programs are Cargo tests and run the same way on Windows, Linux and macOS (all three pass since 2026-11-23, the first run on macOS since the migration); GitHub Actions runs them on the three on every push (see "GitHub Actions" below).
 
 #### Build and Test Commands
 
@@ -692,6 +692,17 @@ What is where:
 
 The Linux checklist, the package tests and the RPM build: `.claude/rules/linux.md`.
 
+### GitHub Actions
+
+Two workflows build and test on GitHub's machines (free for the public repository, since 2026-11-23). Nothing is signed, and only the Linux workflow publishes anything (a draft release, on a tag).
+
+| Workflow | When | What |
+|----------|------|------|
+| `.github/workflows/build.yml` "Build and test" | a push to `dev` or `main` (not one that changes only `docs/`, `.claude/`, `CLAUDE.md`, `AGENTS.md` or the `changes-*.md` files), a pull request, by hand (`gh workflow run build.yml --ref dev`) | `cargo test --release --workspace` on `ubuntu-24.04`, `windows-2025` and `macos-26`. **Windows:** `cargo xtask windows` and `windows-legacy`, the NVDA add-on (`scons`), the installer (Inno Setup 6.7.1 from Chocolatey: GitHub's Windows images have none), and every Python test of `tests/windows` and `tests/nvda`; the SAPI5 and the NVDA driver tests run with a 64-bit and with a 32-bit Python, the SAPI5 test also on the legacy x64 driver. **Android:** the debug and the release APK, the unit tests, lint. **Apple:** the macOS app (Release, arm64 and x86_64) and the iPhone app without signing (`CODE_SIGNING_ALLOWED=NO`), the unit tests in an iPhone simulator. The installer, the add-on and the debug APK are kept as the run's artifacts for 14 days |
+| `.github/workflows/linux-packages.yml` "Linux packages" | see `.claude/rules/linux.md` | the .deb, .rpm, Arch package and tarball, built and tested in containers of their distributions |
+
+Not covered: listening; NVDA, VoiceOver and TalkBack by hand; the phones; Windows 7, 8 and 8.1 themselves (their build is checked by its import tables and the driver test); the Android instrumented tests (several need TalkBack, which the emulator images lack); signing, notarization and the stores, which stay on the maintainer's machines. A failed run: `gh run list --limit 5`, then `gh run view <id> --log-failed`.
+
 ### Build Verification Checklist
 
 Before marking a task complete, verify:
@@ -703,6 +714,7 @@ Before marking a task complete, verify:
 - [ ] `python tests/nvda/test_driver.py` and the other Python tests pass
 - [ ] Linux: `cargo xtask build` builds the library, the CLI and the Speech Dispatcher module without errors
 - [ ] Linux packages: `scripts/linux-packages.sh` (Docker, any host) or the "Linux packages" GitHub workflow builds the .deb, .rpm, Arch package and tarball and tests each on its distributions (`.claude/rules/linux.md`)
+- [ ] After a push: the "Build and test" workflow passes for the commit (`gh run list --workflow build.yml --limit 3`); it covers the items above that a machine of the maintainer's is not at hand for
 - [ ] Android APK builds successfully (warnings OK)
 - [ ] Android APK installed on user's physical device
 - [ ] Installers launched for user testing

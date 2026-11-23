@@ -158,6 +158,8 @@ xcodebuild -scheme Laprdus -destination 'generic/platform=iOS Simulator' build
 xcodebuild test -scheme Laprdus -destination 'platform=macOS'
 ```
 
+GitHub Actions (`.github/workflows/build.yml`, job "Apple app", `macos-26` with Xcode 26.6) builds both apps unsigned with `CODE_SIGNING_ALLOWED=NO` and runs the unit tests in an iPhone simulator (51 tests in 5 suites on 2026-11-23). Run `cargo xtask data` before `xcodebuild`: both targets bundle `data/voices` and `data/dictionary`, and without them the build fails on `spelling.json` and `internal.json`.
+
 ### App icons
 
 `Laprdus/Assets.xcassets/AppIcon.appiconset` contains checked-in opaque RGB PNGs
