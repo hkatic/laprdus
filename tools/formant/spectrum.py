@@ -33,7 +33,7 @@ Reports (one per invocation):
                                             high-frequency products of the
                                             volume boost
   spectrum.py --alias                       the aliasing of the glottal pulse
-                                            as klatt_synth.cpp computes it
+                                            as formant/klatt.rs computes it
                                             (no audio needed)
 
 Synthesis: --voice zvonko [--language hr] [--rate 1.0] [--volume-boost]
@@ -70,7 +70,7 @@ except ImportError:  # the filters then run in Python, slower but the same
 THIRD_OCTAVES = [100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250,
                  1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000]
 ACTIVE_DB = 45.0          # a frame counts as speech above this under the loudest
-BUTTERWORTH_Q = (0.54119610, 1.30656296)   # the fourth-order pair of klatt_synth.cpp
+BUTTERWORTH_Q = (0.54119610, 1.30656296)   # the fourth-order pair of src/common/formant/klatt.rs
 
 
 # -----------------------------------------------------------------------------
@@ -597,10 +597,10 @@ def report_boost(plain, boosted, rate, rotate=()):
 # -----------------------------------------------------------------------------
 
 def glottal_train(f0, rate, seconds, oq=0.6, brightness=0.72, blep_samples=1.0):
-    """klatt_synth.cpp's glottal_pulse() with its polyBLEP closing edge (the
+    """glottal_pulse() of src/common/formant/klatt.rs with its polyBLEP closing edge (the
     edge is smoothed over `blep_samples` on either side), followed by the
     first-order brightness emphasis. Pure Python, sample by sample, so that
-    it matches the C++ exactly."""
+    it matches the engine exactly."""
     dt = f0 / rate
     n = int(seconds * rate)
     out = np.zeros(n)

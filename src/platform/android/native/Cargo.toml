@@ -1,0 +1,24 @@
+[package]
+name = "laprdus-android"
+description = "JNI library of the Laprdus text-to-speech engine for the Android app"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license-file.workspace = true
+repository.workspace = true
+
+[lib]
+# liblaprdus.so, loaded by System.loadLibrary("laprdus").
+name = "laprdus"
+crate-type = ["cdylib"]
+
+[dependencies]
+engine = { package = "laprdus", path = "../../../.." }
+jni = "0.21"
+
+# Exported names need `#[unsafe(no_mangle)]`; there is no other unsafe code.
+[lints.rust]
+unsafe_code = "allow"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }

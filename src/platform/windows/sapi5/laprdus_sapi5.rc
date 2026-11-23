@@ -3,9 +3,6 @@
 
 #include <windows.h>
 
-// Resource ID for ATL registry script
-#define IDR_LAPRDUS 101
-
 // Architecture-specific filenames
 #ifdef _WIN64
 #define LAPRDUS_FILENAME "laprd64.dll"
@@ -14,9 +11,6 @@
 #define LAPRDUS_FILENAME "laprd32.dll"
 #define LAPRDUS_INTERNAL "laprd32"
 #endif
-
-// ATL registry script resource
-IDR_LAPRDUS REGISTRY "laprdus.rgs"
 
 // Version information
 VS_VERSION_INFO VERSIONINFO

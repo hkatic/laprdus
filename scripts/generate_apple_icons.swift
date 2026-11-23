@@ -10,7 +10,7 @@ import UniformTypeIdentifiers
 
 let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
 let sourceURL = root.appendingPathComponent("images/laprdus_icon_1024x1024.png")
-let output = root.appendingPathComponent("Lapplerdus/Laprdus/Laprdus/Assets.xcassets/AppIcon.appiconset")
+let output = root.appendingPathComponent("src/platform/apple/Laprdus/Laprdus/Assets.xcassets/AppIcon.appiconset")
 guard let source = CGImageSourceCreateWithURL(sourceURL as CFURL, nil),
       let image = CGImageSourceCreateImageAtIndex(source, 0, nil),
       image.width == 1024, image.height == 1024,

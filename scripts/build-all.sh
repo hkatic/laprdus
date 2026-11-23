@@ -6,6 +6,9 @@
 # It ensures voice data, dictionaries, and libraries are built and copied
 # in the correct order.
 #
+# The engine and every program are built by Cargo; `cargo xtask` does the
+# steps Cargo does not do by itself (voice data, staging, installation).
+#
 # Usage:
 #   ./scripts/build-all.sh                    # Build all platforms
 #   ./scripts/build-all.sh sapi5              # Build Windows SAPI5 only
@@ -41,17 +44,10 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 check_prerequisites() {
     log_info "Checking prerequisites..."
 
-    # Check SCons
-    if ! command -v scons &> /dev/null; then
-        log_error "SCons not found. Install with: pip install scons"
+    # Check Cargo
+    if ! command -v cargo &> /dev/null; then
+        log_error "Cargo not found. Install Rust from https://rustup.rs"
         exit 1
-    fi
-
-    # Check for MSVC on Windows
-    if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]] || [[ -n "$WINDIR" ]]; then
-        if ! command -v cl &> /dev/null; then
-            log_warning "MSVC not in PATH. Windows builds may fail."
-        fi
     fi
 
     log_success "Prerequisites check passed"
@@ -73,17 +69,18 @@ detect_host() {
     esac
 }
 
+# Where Cargo puts what it builds for the host.
+target_dir() {
+    echo "${CARGO_TARGET_DIR:-$PROJECT_ROOT/target}/release"
+}
+
 # Step 1: Generate voice data (pack phonemes into .bin files)
 generate_voice_data() {
     log_info "Step 1: Generating voice data..."
 
-    # Ensure data/voices directory exists
-    mkdir -p "$PROJECT_ROOT/data/voices"
-
-    # Build phoneme packer and pack voice data
-    # This builds the packer, then uses it to create .bin files.
-    # The packer is a host tool, so it must be built for the host platform.
-    scons --platform="$HOST_PLATFORM" --build-config=release voice-data
+    # Packs data/<language>/<Voice>/*.wav into data/voices/<Voice>.bin and
+    # stages the dictionaries in data/dictionary.
+    cargo xtask data
 
     # Verify voice data was created
     if [[ -f "$PROJECT_ROOT/data/voices/Josip.bin" ]] && [[ -f "$PROJECT_ROOT/data/voices/Vlado.bin" ]]; then
@@ -94,21 +91,27 @@ generate_voice_data() {
     fi
 }
 
-# Step 2: Build Windows SAPI5 DLLs (both architectures)
+# Step 2: Build the Windows programs (both architectures): the SAPI5 DLLs,
+# the CLI and the Configurator, staged in dist/windows-x64 and dist/windows-x86
 build_sapi5_dlls() {
     log_info "Step 2: Building Windows SAPI5 DLLs..."
 
-    # Build x64
-    log_info "  Building x64 DLL..."
-    scons --platform=windows --arch=x64 --build-config=release sapi5
+    # Needs the MSVC build tools and both targets:
+    #   rustup target add x86_64-pc-windows-msvc i686-pc-windows-msvc
+    cargo xtask windows
 
-    # Build x86
-    log_info "  Building x86 DLL..."
-    scons --platform=windows --arch=x86 --build-config=release sapi5
+    # The same programs for Windows 7 SP1, 8 and 8.1, staged in
+    # dist/windows-legacy-x64 and dist/windows-legacy-x86; the installer and
+    # the NVDA add-on carry both builds. Needs the nightly toolchain named in
+    # src/platform/windows/legacy/toolchain.txt:
+    #   rustup toolchain install <name> --component rust-src
+    cargo xtask windows-legacy
 
     # Verify DLLs
-    if [[ -f "$PROJECT_ROOT/build/windows-x64-release/laprd64.dll" ]] && \
-       [[ -f "$PROJECT_ROOT/build/windows-x86-release/laprd32.dll" ]]; then
+    if [[ -f "$PROJECT_ROOT/dist/windows-x64/laprd64.dll" ]] && \
+       [[ -f "$PROJECT_ROOT/dist/windows-x86/laprd32.dll" ]] && \
+       [[ -f "$PROJECT_ROOT/dist/windows-legacy-x64/laprd64.dll" ]] && \
+       [[ -f "$PROJECT_ROOT/dist/windows-legacy-x86/laprd32.dll" ]]; then
         log_success "SAPI5 DLLs built successfully"
     else
         log_error "Failed to build SAPI5 DLLs"
@@ -130,7 +133,7 @@ build_sapi5_installer() {
 
     "$ISCC" "$PROJECT_ROOT/installers/windows/laprdus_sapi5.iss"
 
-    if [[ -f "$PROJECT_ROOT/installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe" ]]; then
+    if [[ -n "$(ls "$PROJECT_ROOT/installers/windows/Output/Laprdus_SAPI5_Setup_"*.exe 2>/dev/null)" ]]; then
         log_success "SAPI5 Installer built successfully"
     else
         log_error "Failed to build SAPI5 Installer"
@@ -138,29 +141,24 @@ build_sapi5_installer() {
     fi
 }
 
-# Step 4: Copy DLLs to NVDA addon directory
-copy_dlls_to_nvda() {
-    log_info "Step 4: Copying DLLs to NVDA addon directory..."
-
-    NVDA_DIR="$PROJECT_ROOT/nvda-addon/addon/synthDrivers/laprdus"
-    mkdir -p "$NVDA_DIR"
-
-    cp "$PROJECT_ROOT/build/windows-x64-release/laprd64.dll" "$NVDA_DIR/"
-    cp "$PROJECT_ROOT/build/windows-x86-release/laprd32.dll" "$NVDA_DIR/"
-
-    log_success "DLLs copied to NVDA addon"
-}
-
-# Step 5: Build NVDA Addon
+# Step 4: Build NVDA Addon
+# The add-on has its own SCons build (the NVDA add-on template); it takes the
+# DLLs and the Configurator from dist/windows-*, the voice data from
+# data/voices and the dictionaries from data/dictionary by itself.
 build_nvda_addon() {
-    log_info "Step 5: Building NVDA Addon..."
+    log_info "Step 4: Building NVDA Addon..."
 
-    cd "$PROJECT_ROOT/nvda-addon"
+    if ! command -v scons &> /dev/null; then
+        log_error "SCons not found (the NVDA add-on is built with it). Install with: pip install scons"
+        exit 1
+    fi
+
+    cd "$PROJECT_ROOT/src/platform/windows/nvda"
     scons
     cd "$PROJECT_ROOT"
 
     # Find the built addon
-    ADDON_FILE=$(ls "$PROJECT_ROOT/nvda-addon/laprdus-"*.nvda-addon 2>/dev/null | head -1)
+    ADDON_FILE=$(ls "$PROJECT_ROOT/src/platform/windows/nvda/laprdus-"*.nvda-addon 2>/dev/null | head -1)
     if [[ -f "$ADDON_FILE" ]]; then
         log_success "NVDA Addon built: $(basename "$ADDON_FILE")"
     else
@@ -169,33 +167,32 @@ build_nvda_addon() {
     fi
 }
 
-# Step 6: Build Linux components
+# Step 5: Build Linux components (CLI, Speech Dispatcher module, C API library)
 build_linux() {
-    log_info "Step 6: Building Linux components..."
+    log_info "Step 5: Building Linux components..."
 
-    scons --platform=linux --arch=x64 --build-config=release linux-all
+    cargo xtask build
 
-    if [[ -f "$PROJECT_ROOT/build/linux-x64-release/liblaprdus.so" ]] && \
-       [[ -f "$PROJECT_ROOT/build/linux-x64-release/laprdus" ]]; then
-        log_success "Linux components built successfully"
+    local built
+    built="$(target_dir)"
+    if [[ -f "$built/liblaprdus_capi.so" ]] && [[ -f "$built/laprdus" ]] && [[ -f "$built/sd_laprdus" ]]; then
+        log_success "Linux components built successfully in $built"
+        log_info "Install them with: sudo cargo xtask install --prefix /usr"
     else
         log_warning "Some Linux components may not have been built"
     fi
 }
 
-# Build macOS components (shared library + CLI)
+# Build macOS components (C API library + CLI) for the host architecture
 build_macos() {
     log_info "Building macOS components..."
 
-    scons --platform=macos --build-config=release macos-all
+    cargo xtask build
 
-    # SCons defaults --arch to the host architecture on macOS.
-    local mac_arch build_dir
-    [[ "$(uname -m)" == "arm64" ]] && mac_arch="arm64" || mac_arch="x64"
-    build_dir="$PROJECT_ROOT/build/macos-${mac_arch}-release"
-
-    if [[ -f "$build_dir/liblaprdus.dylib" ]] && [[ -f "$build_dir/laprdus" ]]; then
-        log_success "macOS components built successfully"
+    local built
+    built="$(target_dir)"
+    if [[ -f "$built/liblaprdus_capi.dylib" ]] && [[ -f "$built/laprdus" ]]; then
+        log_success "macOS components built successfully in $built"
     else
         log_warning "Some macOS components may not have been built"
     fi
@@ -216,25 +213,29 @@ build_macos_release() {
     "$PROJECT_ROOT/scripts/build-macos-release.sh" "$@"
 }
 
-# Step 7: Build Android APK
+# Step 6: Build Android APK
+# Gradle packs the voice data and builds the native library itself (cargo
+# xtask data, cargo ndk).
 build_android() {
-    log_info "Step 7: Building Android APK..."
+    log_info "Step 6: Building Android APK..."
 
     # Check for JAVA_HOME
     if [[ -z "$JAVA_HOME" ]]; then
         # Try common locations
         if [[ -d "/c/Program Files/Android/Android Studio/jbr" ]]; then
             export JAVA_HOME="/c/Program Files/Android/Android Studio/jbr"
+        elif [[ -d "/Applications/Android Studio.app/Contents/jbr/Contents/Home" ]]; then
+            export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
         else
             log_warning "JAVA_HOME not set. Android build may fail."
         fi
     fi
 
-    cd "$PROJECT_ROOT/android"
+    cd "$PROJECT_ROOT/src/platform/android"
     ./gradlew assembleDebug
     cd "$PROJECT_ROOT"
 
-    if [[ -f "$PROJECT_ROOT/android/app/build/outputs/apk/debug/app-debug.apk" ]]; then
+    if [[ -f "$PROJECT_ROOT/src/platform/android/app/build/outputs/apk/debug/app-debug.apk" ]]; then
         log_success "Android APK built successfully"
     else
         log_error "Failed to build Android APK"
@@ -263,12 +264,13 @@ main() {
         sapi5)
             generate_voice_data
             build_sapi5_dlls
+            # The installer carries the NVDA add-on: the add-on is built first.
+            build_nvda_addon
             build_sapi5_installer
             ;;
         nvda)
             generate_voice_data
             build_sapi5_dlls
-            copy_dlls_to_nvda
             build_nvda_addon
             ;;
         android)
@@ -294,9 +296,8 @@ main() {
             case "$HOST_PLATFORM" in
                 windows)
                     build_sapi5_dlls
-                    build_sapi5_installer
-                    copy_dlls_to_nvda
                     build_nvda_addon
+                    build_sapi5_installer
                     ;;
                 linux)
                     build_linux

@@ -8,11 +8,11 @@ You are an Android accessibility expert. Scan every Compose UI file in this proj
 
 ## Reference patterns
 
-If the project has an accessibility reference document (check CLAUDE.md or project memory files for accessibility patterns), read it first and use those patterns as the primary reference alongside the rules below.
+If the project has an accessibility reference document (check CLAUDE.md, `.claude/rules/android.md` or project memory files for accessibility patterns), read it first and use those patterns as the primary reference alongside the rules below.
 
 ## Step 1: Find all UI files
 
-Discover the project's UI layer package by reading CLAUDE.md (look for the presentation/UI layer). If not documented, grep for `@Composable` to identify which packages contain UI code. Use Glob to find all `*.kt` files under the identified UI package(s). Read each file completely.
+Discover the project's UI layer package by reading CLAUDE.md and `.claude/rules/android.md` (look for the presentation/UI layer). If not documented, grep for `@Composable` to identify which packages contain UI code. Use Glob to find all `*.kt` files under the identified UI package(s). Read each file completely.
 
 ## Step 2: Audit and fix each file against ALL rules below
 

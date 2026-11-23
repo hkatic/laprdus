@@ -30,7 +30,7 @@ import time
 import zlib
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-RESOURCE_H = os.path.join(ROOT, "src", "platform", "windows", "config", "resource.h")
+RESOURCE_H = os.path.join(ROOT, "src", "platform", "windows", "configurator", "resource.h")
 
 LANGUAGES = {"en": 0x0409, "hr": 0x041A, "sr": 0x241A, "sl": 0x0424}
 
@@ -478,7 +478,7 @@ if __name__ == "__main__":
         shots = args[i + 1]
         del args[i:i + 2]
         os.makedirs(shots, exist_ok=True)
-    exe = os.path.abspath(args[0] if args else os.path.join(ROOT, "build", "windows-x64-release", "laprdgui.exe"))
+    exe = os.path.abspath(args[0] if args else os.path.join(ROOT, "dist", "windows-x64", "laprdgui.exe"))
     user32.SetProcessDpiAwarenessContext(ctypes.c_void_p(-4))
     test_dialogs(exe, test_tables(exe), shots)
     print("%d failed" % len(failures))

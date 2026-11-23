@@ -1,6 +1,6 @@
 """Tests of the NVDA synthesizer driver without NVDA.
 
-The driver (nvda-addon/addon/synthDrivers/laprdus) runs against stubbed NVDA
+The driver (src/platform/windows/nvda/addon/synthDrivers/laprdus) runs against stubbed NVDA
 modules (nvda_stubs.py) and the DLL of the built add-on, so these tests need
 the add-on's DLLs in place (scons --platform=windows ... sapi5 for both
 architectures, or scripts\\build-all.cmd nvda). They feed the driver the
@@ -24,12 +24,19 @@ What is covered:
   file without them leaves the voice as it is;
 - NVDA's delayed character descriptions: the break after a spelled
   character is played as silence and the description follows;
-- the Language setting comes before the Voice setting.
+- the Language setting comes before the Voice setting;
+- cancel(): an item the speech thread has already taken is dropped wherever
+  the thread has got to with it (before its synthesis, in the middle of it,
+  after it, before a break), nothing of it is played or reported, and the
+  next utterance is spoken whole; a long text is played clause by clause;
+- a setting NVDA changes while the speech thread synthesizes waits for the
+  item to end.
 """
 import json
 import os
 import struct
 import sys
+import threading
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -41,7 +48,7 @@ os.makedirs(os.path.join(APPDATA, "Laprdus"), exist_ok=True)
 sys.path.insert(0, HERE)
 import nvda_stubs as S  # noqa: E402  (installs the stub modules)
 
-sys.path.insert(0, os.path.join(ROOT, "nvda-addon", "addon", "synthDrivers"))
+sys.path.insert(0, os.path.join(ROOT, "src", "platform", "windows", "nvda", "addon", "synthDrivers"))
 import laprdus as drv  # noqa: E402
 from speech.commands import (  # noqa: E402
     BreakCommand,
@@ -329,6 +336,142 @@ def test_items_and_phone_numbers():
     synth.terminate()
 
 
+def test_dates():
+    """A numeric date in any written form goes to NVDA's symbol processing
+    as "18. 11. 2026", which it leaves alone; what is no date is untouched,
+    and a separator NVDA speaks at the user's level is left to NVDA."""
+    from laprdus import _dates
+
+    spaced = _dates.spaced_dates
+
+    def check(ok, name):
+        globals()["check"](name, ok)
+
+    for text in (
+        "18.11.2026", "18/11/2026", "18-11-2026", "18\u201111\u20112026", "2026-11-18", "2026/11/18",
+        "2026.11.18", "11/18/2026", "18.XI.2026", "18. XI. 2026", "18/XI/2026", "18-XI-2026",
+        "18.\u00a011.\u00a02026", "18. 11. 2026",
+    ):
+        check(spaced(text) == "18. 11. 2026", "%a is the spaced date, got %a" % (text, spaced(text)))
+        check(spaced("Danes je %s." % text) == "Danes je 18. 11. 2026.", "%a inside a sentence" % text)
+    check(spaced("05/03/1985") == "5. 3. 1985", "a slashed date with leading zeros")
+    check(spaced("05.03.1985") == "05. 03. 1985", "a dotted date keeps its digits")
+    check(spaced("18/11/26") == "18. 11. 26", "a two-digit year after slashes")
+    check(spaced("2026-11-18T10:30") == "18. 11. 2026 10:30", "the time of ISO 8601")
+    check(spaced("18.11.") == "18. 11.", "a day and a month")
+    for text in (
+        "1/2", "24/7", "50/50", "PS/2", "10-15", "716-844", "10-12-14", "1/2/2026/3", "2026-11-18-4",
+        "32/11/2026", "18/13/2026", "2026-13-18", "3.14", "192.168.1.1", "10.10.10.10", "1.000.000",
+        "A18/11/2026", "18/11/2026a", "tel. 05-03-1985", "1. I. Kant", "12:30", "www.rtvslo.si", "Dobar dan.",
+    ):
+        check(spaced(text) == text, "%a is left alone, got %a" % (text, spaced(text)))
+    # At "some" NVDA names the period and the slash, at "most" the hyphen too
+    check(spaced("18.11.2026", 100) == "18.11.2026", "periods are NVDA's at the level some")
+    check(spaced("18/11/2026", 100) == "18/11/2026", "slashes are NVDA's at the level some")
+    check(spaced("2026-11-18", 100) == "18. 11. 2026", "hyphens are silent at the level some")
+    check(spaced("2026-11-18", 200) == "2026-11-18", "hyphens are NVDA's at the level most")
+
+
+def test_cancel():
+    """A screen reader's "stop speaking" (the Ctrl key). A tester's report:
+    Laprdus finished the old utterance before it spoke the new one. cancel()
+    emptied the queue and stopped the player, but an item the speech thread
+    had already taken was still being synthesized, the player had nothing to
+    stop, and the whole item was played afterwards."""
+    write_settings("sounds")
+    synth = new_synth()
+    text = "Prva rečenica. Druga rečenica. Treća rečenica."
+    whole = spoken(synth, text)
+    after = spoken(synth, "Novi tekst.")
+    indexes = S.synthIndexReached.calls
+
+    def next_is_whole(name):
+        out = run(synth, ["Novi tekst.", IndexCommand(9)])
+        check("%s: the next utterance is spoken whole" % name,
+              b"".join(out) == after and [c["index"] for c in indexes][-1:] == [9])
+
+    # A long text is played clause by clause, the same samples
+    del indexes[:]
+    out = run(synth, [text, IndexCommand(1)])
+    check("a text is played clause by clause", len(out) == 3 and b"".join(out) == whole)
+    check("its index is reported once", [c["index"] for c in indexes] == [1])
+
+    # cancel() arrives when the thread has taken the item and is about to
+    # synthesize it: the old bug's window
+    engine = synth._engine
+    real_streaming = engine.synthesize_streaming
+
+    def cancelled_before(text, on_audio):
+        engine.synthesize_streaming = real_streaming
+        synth.cancel()
+        return real_streaming(text, on_audio)
+
+    engine.synthesize_streaming = cancelled_before
+    del indexes[:]
+    out = run(synth, [text, IndexCommand(2)])
+    check("cancel before the synthesis: nothing is played or reported", out == [] and not indexes)
+    next_is_whole("cancel before the synthesis")
+
+    # ... and while the first clause is being played: the rest is neither
+    # rendered nor played
+    def cancel_on_feed(_data):
+        S.HOOKS["feed"] = None
+        synth.cancel()
+
+    S.HOOKS["feed"] = cancel_on_feed
+    del indexes[:]
+    out = run(synth, [text, IndexCommand(3)])
+    check("cancel during playback: only the clause being played was fed",
+          len(out) == 1 and whole.startswith(out[0]))
+    check("cancel stops the player", len(S.STOPS) > 0)
+    next_is_whole("cancel during playback")
+
+    # A spelled character whose synthesis has just finished
+    real_spelled = engine.synthesize_spelled
+
+    def cancelled_after(text, final_pause=True):
+        engine.synthesize_spelled = real_spelled
+        result = real_spelled(text, final_pause=final_pause)
+        synth.cancel()
+        return result
+
+    engine.synthesize_spelled = cancelled_after
+    del indexes[:]
+    out = run(synth, [CharacterModeCommand(True), "b", CharacterModeCommand(False), IndexCommand(4)])
+    check("cancel after a character's synthesis: nothing is played or reported", out == [] and not indexes)
+    out = run(synth, ["Novi tekst.", IndexCommand(9)])
+    check("a cancelled character owes no pause to the next utterance", b"".join(out) == after)
+
+    # A break the thread has taken but not yet played
+    real_check = synth._checkConfigChanged
+
+    def cancelled_at_start():
+        synth._checkConfigChanged = real_check
+        synth.cancel()
+
+    synth._checkConfigChanged = cancelled_at_start
+    out = run(synth, [BreakCommand(1000), "Biokovo", IndexCommand(5)])
+    check("cancel before a break: neither the silence nor the text is played", out == [])
+    next_is_whole("cancel before a break")
+
+    # A setting NVDA changes while the thread is inside the engine waits
+    # for the item to end: the item keeps its voice, the next one has the
+    # new one
+    def change_voice(_data):
+        S.HOOKS["feed"] = None
+        changer = threading.Thread(target=synth._set_voice, args=("stojan",))
+        changer.start()
+        changer.join()
+
+    S.HOOKS["feed"] = change_voice
+    out = run(synth, [text, IndexCommand(6)])
+    check("a voice change during a synthesis leaves the item whole", b"".join(out) == whole)
+    check("the voice is changed when the item is done", engine.get_current_voice() == "stojan")
+    out = run(synth, ["Novi tekst.", IndexCommand(7)])
+    check("the next utterance has the new voice", b"".join(out) == spoken(synth, "Novi tekst.") != after)
+    synth.terminate()
+
+
 def test_settings_order():
     ids = [getattr(s, "id", s) for s in drv.SynthDriver.supportedSettings]
     check("the Language setting comes before the Voice setting",
@@ -345,5 +488,7 @@ if __name__ == "__main__":
     test_voice_quality()
     test_delayed_description()
     test_items_and_phone_numbers()
+    test_dates()
+    test_cancel()
     print("%d failed" % len(failures))
     sys.exit(1 if failures else 0)

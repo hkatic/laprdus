@@ -1,6 +1,6 @@
 """Stand-ins for the NVDA modules the Laprdus synthesizer driver imports.
 
-They let the driver in nvda-addon/addon/synthDrivers/laprdus run under a
+They let the driver in src/platform/windows/nvda/addon/synthDrivers/laprdus run under a
 plain Python without NVDA: the speech commands follow NVDA's
 source/speech/commands.py, the audio player records what the driver feeds
 it, and the notifications record their calls. Import this module before the
@@ -259,6 +259,10 @@ sys.modules["languageHandler"] = lh
 
 # --- nvwave: records everything the driver feeds, in order
 FED = []
+# Hooks of a test: called with the data before it is recorded as fed, and
+# when the driver stops the player
+HOOKS = {"feed": None, "stop": None}
+STOPS = []
 
 
 class WavePlayer:
@@ -267,6 +271,8 @@ class WavePlayer:
 
     def feed(self, data, *a, **k):
         FED.append(bytes(data))
+        if HOOKS["feed"]:
+            HOOKS["feed"](bytes(data))
 
     def idle(self):
         pass
@@ -275,7 +281,9 @@ class WavePlayer:
         pass
 
     def stop(self):
-        pass
+        STOPS.append(len(FED))
+        if HOOKS["stop"]:
+            HOOKS["stop"]()
 
     def pause(self, switch):
         pass

@@ -1,6 +1,10 @@
 # Laprdus project instructions
 
 Read `CLAUDE.md` for the project architecture, build rules, and testing guidance.
+The details of each area (Slovenian, numbers and dates, the voices' sound, spelling,
+streaming, Windows, Android, Apple, Linux, the CLI) are in `.claude/rules/*.md`; `CLAUDE.md`
+lists them, and the `paths:` at the top of each says which files it covers. Read the one
+for your area before you change it.
 
 ## User's standing testing preference
 
@@ -10,7 +14,7 @@ iPhone**. The user explicitly requested this workflow on 8 October 2026 and
 asked that it persist across sessions. Do not stop after building the CLI or
 an Android APK, and do not ask the user to repeat this deployment request.
 
-- Use `Lapplerdus/Laprdus/Laprdus.xcodeproj`, scheme `Laprdus`, and the existing
+- Use `src/platform/apple/Laprdus/Laprdus.xcodeproj`, scheme `Laprdus`, and the existing
   automatic signing configuration. Build the app and its `LaprdusVoices`
   extension from the current working tree.
 - Update the existing Mac installation at `/Applications/Laprdus.app`, quit

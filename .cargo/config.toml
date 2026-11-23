@@ -1,0 +1,7 @@
+# Android: 16 KB pages on every ABI (Google Play requires them on the 64-bit
+# ones), symbols bound at load, read-only relocations.
+[target.'cfg(target_os = "android")']
+rustflags = ["-C", "link-arg=-Wl,-z,max-page-size=16384", "-C", "link-arg=-Wl,-z,now", "-C", "link-arg=-Wl,-z,relro"]
+
+[alias]
+xtask = "run --quiet --release -p xtask --"

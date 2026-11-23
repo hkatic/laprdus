@@ -1,0 +1,21 @@
+[package]
+name = "laprdus-cli"
+description = "Command-line interface of the Laprdus text-to-speech engine"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license-file.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "laprdus"
+path = "src/main.rs"
+
+[dependencies]
+laprdus = { path = "../../.." }
+# Playback through the system's audio device: WASAPI, CoreAudio, ALSA (and
+# through ALSA PulseAudio or PipeWire).
+rodio = { version = "0.21", default-features = false, features = ["playback"] }
+
+[lints]
+workspace = true

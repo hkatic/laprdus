@@ -1,0 +1,13 @@
+[package]
+name = "xtask"
+description = "Build steps of Laprdus that Cargo does not do by itself"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+laprdus = { path = "../.." }
+
+[lints]
+workspace = true

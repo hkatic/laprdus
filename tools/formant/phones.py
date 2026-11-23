@@ -20,7 +20,8 @@ voice). See "v, l, nj and d" in
 docs/formant.md.
 
 Usage:
-    phones.py [--classes v,l,nj,d,n,m] [--letters] CLI [CLI2 ...]
+    phones.py [--classes v,l,nj,d,n,m,z,ž,s,š,c,č,ć,đ,t,k,p,b,g,f,h,r,j] [--voices josip,vlado]
+              [--rates 1.0,1.5,2.0] [--data data/voices] [--letters] CLI [CLI2 ...]
     phones.py --say "<a macOS voice>" --classes nj
 
 Requires numpy, scipy, torch, transformers (the model is about 1.2 GB and
@@ -39,6 +40,8 @@ import scipy.io.wavfile as wavfile
 import scipy.signal as sg
 
 warnings.filterwarnings("ignore")
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 MODEL = "facebook/wav2vec2-xlsr-53-espeak-cv-ft"
 
@@ -51,6 +54,28 @@ HEARD = {
     "n": {"n"},
     "m": {"m"},
 }
+# The obstruents, r and j (2026-11-17: z and ž heard as v in the formant
+# voices, consonants swallowed by the recorded ones). An affricate counts when
+# its phone or its two parts in a row are heard.
+HEARD.update({
+    "z": {"z"},
+    "ž": {"ʒ", "ʐ", "ʑ", "z."},
+    "s": {"s"},
+    "š": {"ʃ", "ʂ", "ɕ", "s."},  # "s." and "ɕ": the recognizer's Mandarin retroflex and palatal
+    "c": {"ts", "t͡s"},
+    "č": {"tʃ", "t͡ʃ", "tʂ", "ʈʂ", "tɕ", "t͡ɕ", "ts."},
+    "ć": {"tɕ", "t͡ɕ", "tʃ", "t͡ʃ", "c", "tʂ", "ts."},
+    "đ": {"dʑ", "d͡ʑ", "dʒ", "d͡ʒ", "ɟ", "dʐ", "dz.", "tɕ", "ts."},
+    "t": {"t", "t̪", "ʈ"},
+    "k": {"k"},
+    "p": {"p"},
+    "b": {"b"},
+    "g": {"ɡ", "g"},
+    "f": {"f"},
+    "h": {"x", "h", "χ", "ɣ"},
+    "r": {"r", "ɾ"},
+    "j": {"j"},
+})
 ITEMS = {
     "v": "ava ivi uvu eve ovo va vi vu ve vo voli vila vuk vlak vrata lav plavi svaki dva novac",
     "l": "ala ili ulu ele olo la li lu le lo loli lila luk plav sol bila malo selo pol",
@@ -58,6 +83,23 @@ ITEMS = {
     "d": "da de di do du ada ede idi odo udu dan dobro voda dva",
     "n": "ana ini nos na ne ni",
     "m": "ama imi mos",
+    "z": "aza izi uzu eze ozo za zi zu ze zo zima zub voziti jezik koza mraz zvono zdravo",
+    "ž": "aža iži užu eže ožo ža ži žu že žo žaba život muž nože koža želim može",
+    "s": "asa isi usu sa si su sam selo nos pas",
+    "š": "aša iši ušu ša ši šu šuma naš koš",
+    "c": "aca ici ucu ca ci cu cesta lice otac novac cijena",
+    "č": "ača iči uču ča či ču čaj mačka oči ključ",
+    "ć": "aća ići uću ća ći ću kuća noć već ćup",
+    "đ": "ađa iđi uđu đa đi đu đak međa leđa rođen",
+    "t": "ata iti utu ta ti tu tata sat put tri",
+    "k": "aka iki uku ka ki ku kuka rak oko kraj",
+    "p": "apa ipi upu pa pi pu papa lipa top prst",
+    "b": "aba ibi ubu ba bi bu baba riba dobro",
+    "g": "aga igi ugu ga gi gu gdje noga grad",
+    "f": "afa ifi ufu fa fi fu fin kafa šef",
+    "h": "aha ihi uhu ha hi hu hvala kruh uho",
+    "r": "ara iri uru ra ri ru riba more prst krv",
+    "j": "aja iji uju ja ju je jaje moj lijepo mlijeko",
 }
 LETTERS = {"v": "v", "l": "l", "nj": "ǌ", "d": "d", "n": "n", "m": "m"}
 
@@ -113,6 +155,7 @@ def main():
     rec = Recognizer()
     tmp = tempfile.mkdtemp()
     wav = os.path.join(tmp, "x.wav")
+    txt = os.path.join(tmp, "x.txt")
     sources = [("say", args.say)] if args.say else [("cli", c) for c in args.cli]
     if not sources:
         sys.exit("give a CLI or --say VOICE")
@@ -120,7 +163,7 @@ def main():
         score, missed = {}, {}
         def check(cls, label, x, rate, highpass=False):
             ph = rec.phones(x, rate, highpass)
-            ok = any(p in HEARD[cls] for p in ph)
+            ok = any(p in HEARD[cls] for p in ph) or any(want in "".join(ph) for want in HEARD[cls])
             s = score.setdefault(cls, [0, 0])
             s[0] += ok
             s[1] += 1
@@ -148,7 +191,10 @@ def main():
                     continue
                 for r in args.rates.split(","):
                     for word in ITEMS[cls].split():
-                        subprocess.run(base + ["-v", voice, "-r", r, "-o", wav, word],
+                        # the text through a file: argv loses diacritics on Windows
+                        with open(txt, "w", encoding="utf-8") as f:
+                            f.write(word)
+                        subprocess.run(base + ["-v", voice, "-r", r, "-o", wav, "-i", txt],
                                        check=True, capture_output=True)
                         check(cls, word, *read(wav))
         print(f"{src}: " + "  ".join(f"{c} {v[0]}/{v[1]}" for c, v in score.items()), flush=True)
