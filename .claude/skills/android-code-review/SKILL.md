@@ -8,9 +8,9 @@ You are a senior Android engineer performing a pre-release code review. Scan eve
 
 ## Step 1: Scan all source files by architecture layer
 
-Use Glob to find all `*.kt` files. Read `CLAUDE.md` to discover the project's architecture layers and key classes, then read every source file organized by those layers.
+Use Glob to find all `*.kt` files. Read `CLAUDE.md` and `.claude/rules/android.md` to discover the project's architecture layers and key classes, then read every source file organized by those layers.
 
-If `CLAUDE.md` does not describe the architecture, discover it from the source tree — list the top-level packages under `app/src/main/java/` and group files by package (e.g., domain, data, presentation, di, etc.).
+If they do not describe the architecture, discover it from the source tree — list the top-level packages under `app/src/main/java/` and group files by package (e.g., domain, data, presentation, di, etc.).
 
 For each file, check:
 - Logic errors, off-by-one bugs, null safety issues
@@ -28,12 +28,12 @@ Read and verify:
 - `AndroidManifest.xml` — permissions, components, service declarations, intent filters
 - `proguard-rules.pro` — rules if minification is enabled
 
-Check that AGP, Kotlin, Hilt, KSP, and Compose BOM versions are compatible with each other. Reference CLAUDE.md compatibility notes.
+Check that AGP, Kotlin, Hilt, KSP, and Compose BOM versions are compatible with each other. Reference the compatibility notes in `.claude/rules/android.md`.
 
 ## Step 3: Review resources
 
 Read and verify:
-- **strings.xml** — discover all localized `values-*/strings.xml` directories. Verify all keys exist in every locale file, no orphan keys, no hardcoded strings in code. Check CLAUDE.md for supported languages.
+- **strings.xml** — discover all localized `values-*/strings.xml` directories. Verify all keys exist in every locale file, no orphan keys, no hardcoded strings in code. Check CLAUDE.md and `.claude/rules/android.md` for supported languages.
 - **Drawables/mipmaps** — all referenced in code exist, no unreferenced files
 - **Raw resources** — all `R.raw.*` references in code map to actual files in `res/raw/`
 - **Themes/colors** — no unused colors, theme properly applied
@@ -51,20 +51,20 @@ Target: minSdk through targetSdk (check `build.gradle.kts` for exact values).
 ## Step 5: Check for warnings and deprecated APIs
 
 - Zero compile warnings target
-- No deprecated Compose APIs — check CLAUDE.md for known deprecations; also grep for common deprecated APIs
+- No deprecated Compose APIs — check `.claude/rules/android.md` for known deprecations; also grep for common deprecated APIs
 - No deprecated Android APIs without `@Suppress("DEPRECATION")` + version-gated fallback
 - Hilt annotation targets — `@ApplicationContext` and `@ActivityContext` on constructor params should use `@param:` target
 
 ## Step 6: Verify runtime correctness
 
-Read CLAUDE.md for project-specific runtime patterns, then verify:
+Read CLAUDE.md and `.claude/rules/android.md` for project-specific runtime patterns, then verify:
 
 - Thread safety of all persistence read/write paths (DataStore, Room, SharedPreferences, etc.)
 - Correct clock sources for timing (`SystemClock.elapsedRealtime()` for duration measurement, not `System.currentTimeMillis()`)
 - Proper null/error handling on I/O operations (file import/export, network calls, stream handling)
 - Debounce and throttle correctness (verify delay values and cancellation behavior)
 - Foreground service lifecycle matches the component it serves (starts/stops in sync)
-- Any other project-specific patterns documented in CLAUDE.md
+- Any other project-specific patterns documented in CLAUDE.md or `.claude/rules/android.md`
 
 ## Step 7: Run tests and expand coverage
 

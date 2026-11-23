@@ -1,6 +1,10 @@
 # Laprdus project instructions
 
 Read `CLAUDE.md` for the project architecture, build rules, and testing guidance.
+The details of each area (Slovenian, numbers and dates, the voices' sound, spelling,
+streaming, Windows, Android, Apple, Linux, the CLI) are in `.claude/rules/*.md`; `CLAUDE.md`
+lists them, and the `paths:` at the top of each says which files it covers. Read the one
+for your area before you change it.
 
 ## User's standing testing preference
 
