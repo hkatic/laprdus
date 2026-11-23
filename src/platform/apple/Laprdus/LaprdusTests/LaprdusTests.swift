@@ -711,6 +711,17 @@ struct SSMLParserTests {
         #expect(utterance.parts == [text("Ivan &lt; Marko & Ana")])
     }
 
+    /// Numeric references too, as the Speech Dispatcher module of Linux
+    /// reads them; what is no reference stays as written.
+    @Test func decodesNumericReferences() {
+        #expect(SSMLParser.decodeEntities("&#269;&#x161;&#X17E;") == "čšž")
+        #expect(SSMLParser.decodeEntities("&amp;#38;") == "&#38;")
+        #expect(SSMLParser.decodeEntities("a &gt; b, &quot;c&quot; &apos;d&apos;") == "a > b, \"c\" 'd'")
+        for written in ["&nbsp;", "&#0;", "&#xD800;", "&#;", "&bogus;", "& alone", "&", "a&b", "&#99999999;"] {
+            #expect(SSMLParser.decodeEntities(written) == written)
+        }
+    }
+
     /// The log line names what a request was made of, never what it said.
     @Test func summaryLeavesTheTextOut() {
         let utterance = SSMLParser.parse(

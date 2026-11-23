@@ -4,8 +4,15 @@
 //! the text as a list of fragments. The installer registers four tokens, one
 //! per language; the token sets the language, and the voice is the one of the
 //! user's `settings.json` (`voice.default`, empty = Zvonko), which the
-//! Configurator edits. A changed `settings.json` is picked up at the next
-//! `Speak`, without a restart of the application.
+//! Configurator edits. The settings and the user's dictionaries are applied
+//! by `Engine::apply_user_config()`, as on the other platforms; a changed
+//! `settings.json`, `user.json`, `spelling.json`, `emoji.json` or
+//! `accents.json` is picked up at the next `Speak`, without a restart of the
+//! application.
+//!
+//! The rate, volume and pitch SAPI's XML asks for (`<rate>`, `<volume>`,
+//! `<pitch>`, as NVDA writes them around a capital letter) are applied per
+//! fragment, on top of the voice's rate and volume.
 //!
 //! The library also exports the C API (`laprdus_*`): the NVDA add-on loads it
 //! for that.
@@ -24,7 +31,6 @@ use laprdus_win7 as _;
 use laprdus::config::{UserConfig, UserSettings};
 use laprdus::engine::{Engine, Error};
 use laprdus::language::Language;
-use laprdus::params::VoiceParams;
 use laprdus::voice;
 use laprdus::{SAMPLE_RATE, silence};
 use std::cell::Cell;
@@ -110,23 +116,55 @@ fn token_language(token: &ISpObjectToken) -> Language {
     }
 }
 
+/// The prosody of a fragment, as SAPI's XML set it (SAPI SDK, `SPVSTATE`):
+/// `<rate>` adds `rate` (-10 to 10) to the voice's rate, `<volume>` is
+/// `volume` per cent (0-100, 100 without a tag) of the voice's volume, and
+/// `<pitch>` moves the pitch by `pitch` (-10 to 10 nominally; NVDA writes up
+/// to 25), a semitone per two.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct Prosody {
+    rate: i32,
+    volume: u32,
+    pitch: i32,
+}
+
+impl Prosody {
+    fn of(fragment: &SPVTEXTFRAG) -> Self {
+        let state = &fragment.State;
+        Self { rate: state.RateAdj, volume: state.Volume.min(100), pitch: state.PitchAdj.MiddleAdj }
+    }
+}
+
+/// The voice's rate and volume, which a fragment's prosody is relative to.
+#[derive(Clone, Copy)]
+struct Base {
+    rate: i32,
+    volume: Option<u16>,
+}
+
 /// One stretch of what SAPI asked for.
 enum Run {
     Text {
         text: String,
         spell: bool,
+        prosody: Prosody,
     },
     Silence(u32),
     /// A bookmark's text, NUL-terminated.
     Bookmark(Vec<u16>),
 }
 
-/// The fragments as runs. Consecutive fragments of the same kind stay one
-/// run, so a sentence that SAPI cut at a tag is still synthesized as one
-/// sentence; text is trimmed (SAPI often adds trailing spaces and line
-/// breaks) and runs with nothing left are dropped. A bookmark is a run of
-/// its own and ends the text before it, so that its event is sent where it
-/// stands in the audio.
+const BLANKS: [char; 4] = [' ', '\t', '\r', '\n'];
+
+/// The fragments as runs. Consecutive fragments of the same kind and
+/// prosody stay one run, so a sentence that SAPI cut at a tag is still
+/// synthesized as one sentence; a fragment of blanks alone joins the run
+/// before it whatever its prosody, and never decides one. A change of
+/// prosody (NVDA's raised pitch for a capital letter, a `<rate>` stretch)
+/// begins a run of its own. Text is trimmed (SAPI often adds trailing spaces
+/// and line breaks) and runs with nothing left are dropped. A bookmark is a
+/// run of its own and ends the text before it, so that its event is sent
+/// where it stands in the audio.
 ///
 /// # Safety
 /// `fragment` must be null or the head of a valid fragment list.
@@ -150,21 +188,36 @@ unsafe fn runs_of(mut fragment: *const SPVTEXTFRAG) -> Vec<Run> {
             // Only a spell-out fragment is spelled; pronunciation hints and
             // unknown actions are spoken as text.
             let spell = action == SPVA_SpellOut;
+            let prosody = Prosody::of(frag);
             let piece = String::from_utf16_lossy(unsafe {
                 std::slice::from_raw_parts(frag.pTextStart.0, frag.ulTextLen as usize)
             });
-            match runs.last_mut() {
-                Some(Run::Text { text, spell: spelled }) if *spelled == spell => text.push_str(&piece),
-                _ => runs.push(Run::Text { text: piece, spell }),
+            let blank = piece.trim_matches(BLANKS).is_empty();
+            let joined = match runs.last_mut() {
+                Some(Run::Text { text, spell: spelled, prosody: last }) if *spelled == spell => {
+                    if *last != prosody && !blank && text.trim_matches(BLANKS).is_empty() {
+                        // Blanks so far: the text decides the run's prosody
+                        *last = prosody;
+                    }
+                    let joins = *last == prosody || blank;
+                    if joins {
+                        text.push_str(&piece);
+                    }
+                    joins
+                }
+                _ => false,
+            };
+            if !joined {
+                runs.push(Run::Text { text: piece, spell, prosody });
             }
         }
         fragment = frag.pNext;
     }
     runs.into_iter()
         .filter_map(|run| match run {
-            Run::Text { text, spell } => {
-                let text = text.trim_matches([' ', '\t', '\r', '\n']);
-                (!text.is_empty()).then(|| Run::Text { text: text.to_owned(), spell })
+            Run::Text { text, spell, prosody } => {
+                let text = text.trim_matches(BLANKS);
+                (!text.is_empty()).then(|| Run::Text { text: text.to_owned(), spell, prosody })
             }
             other => Some(other),
         })
@@ -209,23 +262,20 @@ fn bookmark_reached(site: &ISpTTSEngineSite, mark: &[u16], offset: u64) {
 struct Voice {
     engine: Engine,
     settings: UserSettings,
-    settings_path: Option<PathBuf>,
-    settings_time: Option<SystemTime>,
-}
-
-fn modified(path: Option<&PathBuf>) -> Option<SystemTime> {
-    std::fs::metadata(path?).and_then(|file| file.modified()).ok()
+    /// The user's configuration directory ...
+    config: UserConfig,
+    /// ... and when its files were last changed, as the engine read them.
+    times: [Option<SystemTime>; 5],
 }
 
 impl Voice {
     /// The engine for a token: the token's language, the voice of the token
     /// or of the user's settings, the bundled dictionaries from the install
-    /// directory and the user's own on top.
+    /// directory and the user's settings and dictionaries on top.
     fn new(token: &ISpObjectToken) -> Option<Self> {
         let mut config = UserConfig::new();
-        let settings_path = config.path(UserConfig::SETTINGS);
-        let settings_time = modified(settings_path.as_ref());
         let loaded = config.load_settings();
+        let times = config.modified_times();
         let settings = config.settings.clone();
 
         // SAFETY: a plain call on a valid interface.
@@ -242,50 +292,44 @@ impl Voice {
         engine.dictionary().load_file(&dictionaries.join("dictionary.json"));
         engine.load_spelling_dictionary_file(&dictionaries.join("spelling.json"));
         engine.load_emoji_dictionary_file(&dictionaries.join("emoji.json"));
+        // The settings with their pauses, and the user's dictionaries, as
+        // every platform applies them
         if loaded {
-            let pitch = engine.params().pitch;
-            engine.set_params(&VoiceParams { pitch, ..settings.to_voice_params() });
-            if settings.user_dictionaries_enabled {
-                let user_file = |name| config.path(name).filter(|path| path.is_file());
-                let content = |name| user_file(name).and_then(|path| std::fs::read_to_string(path).ok());
-                if let Some(path) = user_file(UserConfig::DICTIONARY) {
-                    engine.dictionary().append_file(&path);
-                }
-                if let Some(json) = content(UserConfig::SPELLING) {
-                    engine.append_spelling_dictionary(&json);
-                }
-                if let Some(json) = content(UserConfig::EMOJI) {
-                    engine.append_emoji_dictionary(&json);
-                }
-                if let Some(path) = user_file(UserConfig::ACCENTS) {
-                    engine.load_accent_lexicon_file(&path);
-                }
-            }
+            engine.apply_user_config(&config);
         }
-        Some(Self {
-            engine,
-            settings: if loaded { settings } else { UserSettings::default() },
-            settings_path,
-            settings_time,
-        })
+        Some(Self { engine, settings: if loaded { settings } else { UserSettings::default() }, config, times })
     }
 
-    /// The rate, pitch and volume of this call. The user's rate and pitch
-    /// are the voice's normal and SAPI's are relative to it, so they
-    /// multiply; the force switches mean "ignore SAPI".
-    fn apply_request(&mut self, site: &ISpTTSEngineSite, first: Option<&SPVTEXTFRAG>) {
+    /// Whether the user changed the settings or a dictionary since the
+    /// engine read them.
+    fn outdated(&self) -> bool {
+        self.config.modified_times() != self.times
+    }
+
+    /// The voice's rate and volume for this call.
+    fn base(site: &ISpTTSEngineSite) -> Base {
+        // SAFETY: plain calls on a valid interface.
+        unsafe { Base { rate: site.GetRate().unwrap_or(0), volume: site.GetVolume().ok() } }
+    }
+
+    /// The rate, pitch and volume of a run. The user's rate and pitch are
+    /// the voice's normal and SAPI's are relative to it, so they multiply;
+    /// the XML's rate adds to the voice's, its volume is a share of the
+    /// voice's; the force switches mean "ignore SAPI".
+    fn apply_prosody(&mut self, base: Base, prosody: Prosody) {
         let settings = &self.settings;
         let (mut speed, mut user_pitch, mut volume) = (settings.speed, settings.user_pitch, settings.volume);
-        // SAFETY: plain calls on a valid interface.
-        let (rate, site_volume) = unsafe { (site.GetRate().unwrap_or(0), site.GetVolume().ok()) };
+        let rate = base.rate.saturating_add(prosody.rate).clamp(-10, 10);
         if !settings.force_speed && rate != 0 {
             speed *= 2f32.powf(rate as f32 / 10.0).clamp(0.5, 2.0);
         }
         if !settings.force_volume {
-            volume = site_volume.map_or(1.0, |volume| (f32::from(volume) / 100.0).clamp(0.0, 1.0));
+            let voice = base.volume.map_or(1.0, |volume| (f32::from(volume) / 100.0).clamp(0.0, 1.0));
+            // Exactly the voice's volume without a <volume> tag
+            volume = voice * (prosody.volume as f32 / 100.0);
         }
-        if let Some(first) = first.filter(|_| !settings.force_pitch) {
-            user_pitch *= 2f32.powf(first.State.PitchAdj.MiddleAdj as f32 / 24.0).clamp(0.5, 2.0);
+        if !settings.force_pitch {
+            user_pitch *= 2f32.powf(prosody.pitch as f32 / 24.0).clamp(0.5, 2.0);
         }
         self.engine.update_params(|params| {
             params.speed = speed;
@@ -298,10 +342,14 @@ impl Voice {
     /// so the first sound of a long text does not wait for the rest, and
     /// stops when SAPI asks (`SPVES_ABORT`): the synthesis under way is cut
     /// short, where it used to finish the whole text before `Speak` returned
-    /// and the next utterance could start. A bookmark is reported with the
-    /// number of bytes written before it. An error when none of the runs
+    /// and the next utterance could start. Each text run gets its own rate,
+    /// volume and pitch before it is synthesized. A bookmark is reported with
+    /// the number of bytes written before it. An error when none of the runs
     /// could be spoken, or when the site refused the audio.
     fn speak(&mut self, runs: &[Run], site: &ISpTTSEngineSite) -> Result<()> {
+        let base = Self::base(site);
+        // The prosody the engine has now, once a run has set it
+        let mut applied = None;
         let spelling_pause = self.engine.params().pause_settings.spelling_pause_ms;
         let text_runs = runs.iter().filter(|run| matches!(run, Run::Text { .. })).count();
         let (mut succeeded, mut failed) = (false, false);
@@ -342,7 +390,13 @@ impl Voice {
                     bookmark_reached(site, mark, written.get());
                     continue;
                 }
-                Run::Text { text, spell } => (text, *spell),
+                Run::Text { text, spell, prosody } => {
+                    if applied != Some(*prosody) {
+                        self.apply_prosody(base, *prosody);
+                        applied = Some(*prosody);
+                    }
+                    (text, *spell)
+                }
             };
             // Many SAPI5 applications spell by sending single characters as
             // ordinary text, so an utterance that is one character is
@@ -422,10 +476,10 @@ impl ISpTTSEngine_Impl for Driver_Impl {
         site: Ref<ISpTTSEngineSite>,
     ) -> Result<()> {
         let mut voice = self.voice.lock().unwrap_or_else(PoisonError::into_inner);
-        // A changed settings.json: the engine is made again; the old one
-        // stays when that fails.
+        // A changed settings.json or user dictionary: the engine is made
+        // again; the old one stays when that fails.
         if let Some(current) = voice.as_ref()
-            && modified(current.settings_path.as_ref()) != current.settings_time
+            && current.outdated()
             && let Some(reloaded) = self.token().and_then(|token| Voice::new(&token))
         {
             *voice = Some(reloaded);
@@ -437,10 +491,7 @@ impl ISpTTSEngine_Impl for Driver_Impl {
         }
 
         // SAFETY: SAPI hands a valid fragment list.
-        let runs = unsafe {
-            voice.apply_request(site, fragments.as_ref());
-            runs_of(fragments)
-        };
+        let runs = unsafe { runs_of(fragments) };
         voice.speak(&runs, site)
     }
 

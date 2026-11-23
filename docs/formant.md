@@ -2944,8 +2944,9 @@ built-in verb tables. The whole cost is one or two extra hash probes per word;
 the file is capped at 20 000 word forms and 2 000 verbs so that the linear
 verb scan stays short. The lexicon lives in the engine, survives voice
 changes, and is replaced wholesale by the next load, so a removed entry is
-really gone. `laprdus_load_user_config()` and every platform's user-dictionary
-loader pick the file up; the C API is `laprdus_load_accent_lexicon()`,
+really gone. `laprdus_load_user_config()` (`Engine::apply_user_config()`,
+which SAPI5 and Speech Dispatcher use too) and every platform's
+user-dictionary loader pick the file up; the C API is `laprdus_load_accent_lexicon()`,
 `laprdus_load_accent_lexicon_from_memory()`, `laprdus_clear_accent_lexicon()`,
 and `laprdus_check_accent_lexicon()` runs the parser over JSON without an
 engine, for the dictionary editors of the Windows Configurator, the Android
@@ -6320,18 +6321,56 @@ a period between digits is the plain symbol `.`: Laprdus received `18 11
 every table drops the slashes of `18/11/2026`, and the Slovenian one the
 hyphens too. An add-on's symbol dictionary cannot define a pattern
 (`allowComplexSymbols=False` in NVDA's `characterProcessing.py`), so the
-driver registers a filter of the speech sequence
+add-on registers a filter of the speech sequence
 (`speech.extensions.filter_speechSequence`, NVDA 2024.2 and later, applied
-before the symbol processing) that writes a date as `18. 11. 2026`, the form
-NVDA leaves alone at every level (`spaced_dates()` in
-`synthDrivers/laprdus/_dates.py`, the shapes of `dates.rs`: change the two
-together). Only a separator NVDA does not speak at the user's punctuation
-level is rewritten (periods and slashes below "some", hyphens below "most"):
-where the user asked to hear *pika* or *kosa crta*, NVDA says them as before.
-An older NVDA has no such filter and sends what its tables leave. Tests:
-`a_date_is_read_in_every_written_form` in `src/common/text/numbers/tests.rs`,
-the date rows of `tests/formant.rs`, `test_dates` in
-`tests/nvda/test_driver.py`.
+before the symbol processing). An older NVDA has no such filter and sends
+what its tables leave.
+
+The filter was the synth driver's until 2026-11-23, when a tester reported
+that through the SAPI5 voices dates were read in Croatian and not in
+Slovenian: NVDA's SAPI5 driver processes the symbols by the token's language
+too, and the driver's filter was not there. The installed SAPI5 engine read
+`18.11.2026` and `18. 11. 2026` to the same samples through "Laprdus
+Slovenian"; only `18 11 2026` was not a date. The **global plugin** now
+registers it (`globalPlugins/laprdus/__init__.py`), and it works whenever
+Laprdus speaks: through its own NVDA driver, and through NVDA's SAPI5 driver
+(`sapi5`, `sapi5_32` in a 64-bit NVDA) with a Laprdus voice. For each text
+Laprdus speaks it
+
+1. writes a date with slashes, hyphens or a Roman month as `18. 11. 2026`,
+   the form NVDA leaves alone (`spaced_dates()` in
+   `globalPlugins/laprdus/_dates.py`, the shapes of `dates.rs`: change the two
+   together), only where NVDA does not speak the separator at the user's
+   level (slashes and the periods of a Roman month below "some", hyphens below
+   "most": where the user asked to hear *kosa crta*, NVDA says it as before);
+2. writes every period between two digits as a one dot leader (U+2024),
+   which no table of NVDA names, wherever NVDA's table would not keep the
+   period, at every level: from "some" up the Slovenian table says *18 pika 11
+   pika 2026*, while the Croatian table keeps the period at every level, so
+   Croatian never heard the name there either. Whether a table keeps it is
+   asked of NVDA (`processSpeechSymbols(locale, "0.0", level)` must give
+   `0.0`): in practice Slovenian alone. The engine reads a one dot leader
+   between two ASCII digits as the period again, first thing in
+   `Engine::preprocess()` (`restore_carried_points()` in
+   `src/common/text/numbers/mod.rs`), so dates, `ob 8.30`, `od 8.30 do
+   16.00`, `3.14`, `132.457` and addresses reach every number rule as written:
+   Slovenian gets the text Croatian gets.
+
+The filter follows NVDA's automatic language switching (`LangChangeCommand`,
+as `speech.speak()` works out each stretch's language), and through SAPI5 it
+leaves alone a stretch that SAPI gives another vendor's voice of a language
+Laprdus does not speak. NVDA's Slovenian table also drops the hyphen and the
+em dash below "most", which the Croatian, Serbian, Bosnian and English
+tables preserve: the add-on's mandatory Slovenian symbol dictionary
+(`locale/sl/symbols-laprdus.dic`) preserves them too, so `2-krat`,
+`10-letnica`, `2-3 dni` and `1991-2000` keep their hyphen (with every
+synthesizer that speaks Slovenian in NVDA). Tests:
+`a_date_is_read_in_every_written_form` (all fifteen forms in all four
+languages) and `a_one_dot_leader_between_digits_is_a_period` in
+`src/common/text/numbers/tests.rs`, the date rows of `tests/formant.rs` and
+`a_period_nvda_carries_as_a_one_dot_leader_is_a_period`,
+`tests/nvda/test_global_plugin.py`, `test_carried_periods_and_the_settings_file`
+in `tests/nvda/test_driver.py`.
 
 The digit mode reads times and dates as the whole-number mode does and now
 also sets a number off from the letters it is glued to

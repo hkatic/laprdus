@@ -324,18 +324,40 @@ enum SSMLParser {
         min(max(value, 0.25), 4.0)
     }
 
-    private static func decodeEntities(_ text: String) -> String {
-        var result = text
-        let entities: [(String, String)] = [
-            ("&lt;", "<"),
-            ("&gt;", ">"),
-            ("&quot;", "\""),
-            ("&apos;", "'"),
-            ("&amp;", "&"),
-        ]
-        for (entity, character) in entities {
-            result = result.replacingOccurrences(of: entity, with: character)
+    /// The text with its character references read, in one pass: the five
+    /// named ones of XML and the numeric ones (`&#269;`, `&#x161;`). Anything
+    /// else is left as it is written, and `&amp;lt;` is `&lt;`. The Speech
+    /// Dispatcher module of Linux reads them the same way (`decode_entities`
+    /// in `src/platform/linux/speechd/src/main.rs`).
+    static func decodeEntities(_ text: String) -> String {
+        let named: [Substring: Character] = ["amp": "&", "lt": "<", "gt": ">", "quot": "\"", "apos": "'"]
+        var result = ""
+        var rest = Substring(text)
+        while let ampersand = rest.firstIndex(of: "&") {
+            result += rest[..<ampersand]
+            rest = rest[ampersand...]
+            let window = rest.dropFirst().prefix(11)
+            if let semicolon = window.firstIndex(of: ";") {
+                let name = rest[rest.index(after: rest.startIndex)..<semicolon]
+                var character = named[name]
+                if character == nil, name.first == "#" {
+                    let number = name.dropFirst()
+                    let value = number.first == "x" || number.first == "X"
+                        ? UInt32(number.dropFirst(), radix: 16) : UInt32(number, radix: 10)
+                    if let value, value != 0, let scalar = Unicode.Scalar(value) {
+                        character = Character(scalar)
+                    }
+                }
+                if let character {
+                    result.append(character)
+                    rest = rest[rest.index(after: semicolon)...]
+                    continue
+                }
+            }
+            result.append("&")
+            rest = rest.dropFirst()
         }
+        result += rest
         return result
     }
 }

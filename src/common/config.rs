@@ -9,6 +9,7 @@ use crate::params::{
 };
 use serde_json::Value;
 use std::path::{Path, PathBuf};
+use std::time::SystemTime;
 
 /// What `settings.json` holds.
 #[derive(Clone, Debug, PartialEq)]
@@ -311,9 +312,27 @@ impl UserConfig {
     pub const SPELLING: &'static str = "spelling.json";
     pub const EMOJI: &'static str = "emoji.json";
     pub const ACCENTS: &'static str = "accents.json";
+    /// Every file of the configuration, in the order of
+    /// [`modified_times`](Self::modified_times).
+    pub const FILES: [&'static str; 5] = [Self::SETTINGS, Self::DICTIONARY, Self::SPELLING, Self::EMOJI, Self::ACCENTS];
 
     pub fn new() -> Self {
         Self { dir: Self::directory(), settings: UserSettings::default() }
+    }
+
+    /// The configuration of another directory than the system's.
+    pub fn in_directory(dir: impl Into<PathBuf>) -> Self {
+        Self { dir: Some(dir.into()), settings: UserSettings::default() }
+    }
+
+    /// When each of [`FILES`](Self::FILES) was last changed; `None` for one
+    /// that is not there. A host compares them to see that the user changed
+    /// the settings or a dictionary.
+    pub fn modified_times(&self) -> [Option<SystemTime>; 5] {
+        Self::FILES.map(|name| {
+            let path = self.path(name)?;
+            std::fs::metadata(path).and_then(|file| file.modified()).ok()
+        })
     }
 
     /// The configuration directory of the system: `%APPDATA%\Laprdus` on

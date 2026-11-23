@@ -62,6 +62,8 @@ The installation:
 
 The module lists every voice for every language; `SET LANGUAGE` calls `Engine::set_language()` and keeps the voice; `MALE1` is Zvonko for all three languages (MALE2 Josip, MALE3 Đedo, FEMALE1 Baba, CHILD_MALE Detence).
 
+**The same rules as the other platforms (2026-11-23).** The module loads the bundled `internal.json`, `spelling.json` and `emoji.json` (`load_bundled_dictionaries()`; the engine finds `emoji_sl.json` next to it: until then the module had no emoji names at all) and then `Engine::load_user_config()`, which is `Engine::apply_user_config()` of SAPI5 and the C API: the pauses of `settings.json` too (it applied the file with `set_params()` alone, which leaves the clause pauses alone) and the user's dictionaries *on top of* the bundled ones (a `user.json` used to replace `internal.json`, a user `emoji.json` the bundled emoji names). Speech Dispatcher wraps a text message in `<speak>` and writes its `<`, `>`, `&` as `&lt;`, `&gt;`, `&amp;` (`insert_index_marks()` in its `src/server/index_marking.c`; its own `module_strip_ssml()` reads those and `&quot;`, `&apos;`): `message_text()` strips the tags and reads the five named and the numeric references of a text message (`decode_entities()`, one pass, `&amp;lt;` stays `&lt;`), while a character or a key comes as it is (a typed `<` was stripped to nothing). Apple's `SSMLParser.decodeEntities` reads them the same way. Tests: `cargo test --release -p laprdus-speechd` (`a_text_message_is_read_without_its_markup_and_with_its_entities`, `the_bundled_emoji_names_are_loaded_slovenian_too`, which needs `data/dictionary` from `cargo xtask data`).
+
 After installation, restart Speech Dispatcher:
 ```bash
 systemctl --user restart speech-dispatcher

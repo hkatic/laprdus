@@ -107,6 +107,24 @@ def _normalize_voice_id(voice_id):
     return LEGACY_VOICE_IDS.get(voice_id, voice_id)
 
 
+def _without_trailing_commas(text):
+    """JSON text without the commas before a closing } or ], outside strings:
+    the engine forgives them too (without_trailing_commas in
+    src/common/config.rs; change the two together)."""
+    out = []
+    in_string = escaped = False
+    for at, c in enumerate(text):
+        if in_string:
+            in_string = escaped or c != '"'
+            escaped = not escaped and c == '\\'
+        elif c == '"':
+            in_string = True
+        elif c == ',' and text[at + 1:].lstrip()[:1] in ('}', ']'):
+            continue
+        out.append(c)
+    return ''.join(out)
+
+
 def _debug_log(msg):
     """Log debug message to file if debug mode is enabled."""
     if not _DEBUG_ENABLED or _DEBUG_LOG_PATH is None:
@@ -421,18 +439,10 @@ class SynthDriver(synthDriverHandler.SynthDriver):
         # Create the engine
         self._engine = _laprdus.LaprdusEngine()
 
-        # A numeric date keeps its separators through NVDA's symbol
-        # processing: see _dates.py. The filter is NVDA 2024.2's; an older
-        # NVDA has none, and a date reaches the engine as NVDA leaves it.
-        from . import _dates
-        self._dates = _dates
-        self._speechSequenceFilter = None
-        try:
-            from speech.extensions import filter_speechSequence
-            filter_speechSequence.register(self._keepDates)
-            self._speechSequenceFilter = filter_speechSequence
-        except Exception:
-            log.debug("LaprdusTTS: no speech sequence filter in this NVDA")
+        # The text keeps its dates and the periods between its digits
+        # through NVDA's symbol processing by the add-on's global plugin
+        # (globalPlugins/laprdus/_speechFilter.py), which does the same for
+        # the Laprdus SAPI5 voices.
 
         # Audio player - import nvwave here
         import nvwave
@@ -1075,34 +1085,9 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             if self._player:
                 self._player.pause(switch)
 
-    def _keepDates(self, speechSequence):
-        """speech.extensions.filter_speechSequence: the numeric dates of the
-        text items in the spaced form NVDA's symbol processing leaves alone
-        (18. 11. 2026), whatever way they were written."""
-        try:
-            import config
-            level = int(config.conf["speech"]["symbolLevel"])
-        except Exception:
-            level = 0
-        try:
-            return [
-                self._dates.spaced_dates(item, level) if isinstance(item, str) else item
-                for item in speechSequence
-            ]
-        except Exception:
-            log.debugWarning("LaprdusTTS: date filter failed", exc_info=True)
-            return speechSequence
-
     def terminate(self):
         """Clean up resources."""
         log.debug("LaprdusTTS: Terminating...")
-
-        if self._speechSequenceFilter is not None:
-            try:
-                self._speechSequenceFilter.unregister(self._keepDates)
-            except Exception:
-                pass
-            self._speechSequenceFilter = None
 
         # Stop speech thread, and the synthesis it may be in the middle of
         self._shouldStop.set()
@@ -1267,8 +1252,15 @@ class SynthDriver(synthDriverHandler.SynthDriver):
             # Record file modification time for change detection
             self._settingsMtime = os.path.getmtime(settings_path)
 
-            with open(settings_path, 'r', encoding='utf-8') as f:
-                settings = json.load(f)
+            # As the engine reads it (UserSettings::parse in
+            # src/common/config.rs): a byte order mark and trailing commas
+            # are forgiven, so the file means the same to SAPI5 and NVDA
+            with open(settings_path, 'r', encoding='utf-8-sig') as f:
+                content = f.read()
+            try:
+                settings = json.loads(content)
+            except ValueError:
+                settings = json.loads(_without_trailing_commas(content))
 
             _debug_log("_loadSharedSettings: Loaded settings from %s" % settings_path)
 

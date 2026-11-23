@@ -550,7 +550,13 @@ range; with the force flag on (`force.speed`, `force_speed`, ...) it passes
 the setting alone. The acceleration then multiplies the rate inside the
 engine. Speech Dispatcher has no force flags and reads the setting back
 with `laprdus_get_speed()` / `laprdus_get_user_pitch()` after
-`laprdus_load_user_config()`. Volume is not scaled: without force the host's
+`laprdus_load_user_config()`. SAPI5 also applies what SAPI's XML asks for
+each fragment (SAPI SDK, `SPVSTATE`): `<rate>` adds to the voice's rate
+(`RateAdj` + `GetRate()`, clamped to -10..10, 2^(n/10)), `<volume>` is a share
+of the voice's volume (`Volume`/100 × `GetVolume()`/100), `<pitch>` moves
+the pitch (`PitchAdj.MiddleAdj`, 2^(n/24)); a change of them begins a run of
+its own, so NVDA's raised pitch for a capital letter raises that letter
+alone, and the force flags ignore the XML too. Volume is not scaled: without force the host's
 volume is used (Android: 1.0, the system volume governs; Apple: the volume
 VoiceOver puts in the request's `<prosody volume>`, in dB).
 

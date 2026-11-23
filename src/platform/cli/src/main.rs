@@ -406,24 +406,12 @@ fn speak(mut options: Options, config: Option<&UserConfig>) -> Result<(), String
     if let Some(path) = bundled_dictionary(&data_dir, &["emoji.json"]) {
         engine.load_emoji_dictionary_file(&path);
     }
-    if let Some(config) = config.filter(|config| config.settings.user_dictionaries_enabled) {
-        let user_file = |name| config.path(name).filter(|path| path.is_file());
-        let content = |name| user_file(name).and_then(|path| std::fs::read_to_string(path).ok());
-        if let Some(path) = user_file(UserConfig::DICTIONARY) {
-            engine.dictionary().append_file(&path);
-        }
-        if let Some(json) = content(UserConfig::SPELLING) {
-            engine.append_spelling_dictionary(&json);
-        }
-        if let Some(json) = content(UserConfig::EMOJI) {
-            engine.append_emoji_dictionary(&json);
-        }
-        // The accent lexicon (word stress, length, tone).
-        if let Some(path) = user_file(UserConfig::ACCENTS) {
-            engine.load_accent_lexicon_file(&path);
-            if options.verbose {
-                eprintln!("Accent lexicon: {}", engine.accent_lexicon_report());
-            }
+    // As every platform loads them: pronunciation, spelling, emoji and the
+    // accent lexicon (word stress, length, tone), unless switched off.
+    if let Some(config) = config {
+        engine.load_user_dictionaries(config);
+        if options.verbose && config.settings.user_dictionaries_enabled && config.exists(UserConfig::ACCENTS) {
+            eprintln!("Accent lexicon: {}", engine.accent_lexicon_report());
         }
     }
 

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # LaprdusTTS Global Plugin
-# Adds Laprdus menu to NVDA main menu
+# Adds the Laprdus menu to NVDA's main menu, and hands Laprdus the text as
+# written whichever NVDA driver it speaks through (_speechFilter.py)
 
 from __future__ import unicode_literals
 
@@ -12,8 +13,56 @@ import gui
 import languageHandler
 import wx
 import addonHandler
+from logHandler import log
+
+from . import _speechFilter
 
 addonHandler.initTranslation()
+
+# NVDA 2024.2 and later; an older NVDA hands the text on as it processed it
+try:
+    from speech.extensions import filter_speechSequence
+except ImportError:
+    filter_speechSequence = None
+try:
+    from speech.commands import LangChangeCommand
+except ImportError:
+    LangChangeCommand = None
+
+
+def _speechContext(speaks):
+    """NVDA's settings for _speechFilter.filter_sequence(), read for one sequence."""
+    import config
+    import speech
+    conf = config.conf["speech"]
+    level = int(conf["symbolLevel"])
+    try:
+        language = speech.getCurrentLanguage()
+    except Exception:
+        language = languageHandler.getLanguage()
+    kept = {}
+
+    def keepsPeriod(locale):
+        # Whether NVDA's table for the locale leaves a period between digits
+        # alone at this level (it does in hr, sr, bs and en, not in sl);
+        # when NVDA cannot tell, the period is carried, which is harmless
+        if locale not in kept:
+            try:
+                import characterProcessing
+                kept[locale] = characterProcessing.processSpeechSymbols(locale, "0.0", level) == "0.0"
+            except Exception:
+                kept[locale] = False
+        return kept[locale]
+
+    return _speechFilter.Context(
+        level=level,
+        language=language,
+        auto_language=bool(conf["autoLanguageSwitching"]),
+        auto_dialect=bool(conf["autoDialectSwitching"]),
+        keeps_period=keepsPeriod,
+        speaks=speaks,
+        lang_change=LangChangeCommand,
+    )
 
 
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
@@ -23,8 +72,30 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         super(GlobalPlugin, self).__init__()
         self._laprdusMenu = None
         self._laprdusMenuItem = None
+        # The text NVDA hands Laprdus, before NVDA's symbol processing
+        self._speechFilterRegistered = False
+        if filter_speechSequence is not None:
+            try:
+                filter_speechSequence.register(self._filterSpeech)
+                self._speechFilterRegistered = True
+            except Exception:
+                log.debugWarning("Laprdus: the speech filter could not be registered", exc_info=True)
         # Schedule menu creation on main thread
         wx.CallAfter(self._createMenu)
+
+    def _filterSpeech(self, speechSequence):
+        """speech.extensions.filter_speechSequence: while Laprdus speaks, its
+        texts as written (see _speechFilter.py); any other synthesizer's
+        sequence is left as it is."""
+        try:
+            import synthDriverHandler
+            speaks = _speechFilter.laprdus_speaker(synthDriverHandler.getSynth())
+            if speaks is None:
+                return speechSequence
+            return _speechFilter.filter_sequence(speechSequence, _speechContext(speaks))
+        except Exception:
+            log.debugWarning("Laprdus: the speech filter failed", exc_info=True)
+            return speechSequence
 
     def _createMenu(self):
         """Create the Laprdus submenu in NVDA main menu."""
@@ -152,6 +223,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
     def terminate(self):
         """Clean up when plugin is terminated."""
+        if self._speechFilterRegistered:
+            try:
+                filter_speechSequence.unregister(self._filterSpeech)
+            except Exception:
+                pass
+            self._speechFilterRegistered = False
         try:
             if self._laprdusMenuItem:
                 mainMenu = gui.mainFrame.sysTrayIcon.menu

@@ -22,7 +22,7 @@ use crate::prosody::{item_break_pause_ms, minor_break_pause_ms};
 use crate::text::Punctuation;
 use crate::text::clauses::{Clause, split_clauses};
 use crate::text::frontend::{UserLexicon, is_foreign_letter, is_letter_name, letter_name, spelling_letter};
-use crate::text::numbers::NumberReader;
+use crate::text::numbers::{NumberReader, restore_carried_points};
 use crate::voice::{self, Synthesis, Voice};
 use crate::{SAMPLE_RATE, silence};
 use std::collections::HashMap;
@@ -124,6 +124,10 @@ pub struct Engine {
     clause_pauses: PauseSettings,
 
     dictionary: PronunciationDictionary,
+    /// The user's pronunciation entries from the configuration directory
+    /// (`user.json`), applied after the bundled ones and replaced, not
+    /// added to, when the configuration is applied again.
+    user_dictionary: PronunciationDictionary,
     /// Bundled: digits, punctuation, symbols.
     spelling: SpellingDictionary,
     /// The user's: wins over everything.
@@ -165,6 +169,7 @@ impl Engine {
             params: VoiceParams::default(),
             clause_pauses: PauseSettings::default(),
             dictionary: PronunciationDictionary::default(),
+            user_dictionary: PronunciationDictionary::default(),
             spelling: SpellingDictionary::default(),
             user_spelling: SpellingDictionary::default(),
             emoji: EmojiDictionary::default(),
@@ -451,7 +456,10 @@ impl Engine {
 
     /// Emoji and pronunciation dictionaries, then numbers to words.
     fn preprocess(&self, text: &str) -> String {
-        let mut text = text.to_owned();
+        // A period between digits that a host carried as a one dot leader
+        // (the NVDA add-on, past NVDA's Slovenian symbol table) is a period
+        // again before anything reads the text.
+        let mut text = restore_carried_points(text).into_owned();
         // The user's emoji entries, then the dictionary of the language
         // spoken, then the bundled one.
         if self.params.emoji_enabled {
@@ -462,6 +470,11 @@ impl Engine {
         }
         if !self.dictionary.is_empty() {
             text = self.dictionary.apply(&text);
+        }
+        // The rules apply one after another, so this is one list of the
+        // bundled entries followed by the user's
+        if !self.user_dictionary.is_empty() {
+            text = self.user_dictionary.apply(&text);
         }
         match self.params.number_mode {
             NumberMode::WholeNumbers => self.numbers.convert_numbers(&text),
@@ -778,35 +791,60 @@ impl Engine {
     /// Applies the user's `settings.json` and, unless the user switched them
     /// off, the user's dictionaries from the configuration directory. False
     /// when a missing settings file could not be created.
+    ///
+    /// Call it after loading the bundled dictionaries: the user's entries go
+    /// on top of them. Called again, it replaces the user's entries of the
+    /// last call.
     pub fn load_user_config(&mut self) -> bool {
         let mut config = UserConfig::new();
         if !config.load_settings() {
             return false;
         }
-        let settings = &config.settings;
-        let mut params = VoiceParams { pitch: self.params.pitch, ..settings.to_voice_params() };
+        self.apply_user_config(&config);
+        true
+    }
+
+    /// Applies a configuration that has been read: every setting, the
+    /// clause pauses too (which [`set_params`](Self::set_params) leaves
+    /// alone), and the user's dictionaries
+    /// ([`load_user_dictionaries`](Self::load_user_dictionaries)). Every
+    /// host that reads `settings.json` itself applies it this way, so the
+    /// settings and dictionaries mean the same on every platform.
+    pub fn apply_user_config(&mut self, config: &UserConfig) {
+        let mut params = VoiceParams { pitch: self.params.pitch, ..config.settings.to_voice_params() };
         params.clamp();
         self.set_params(&params);
+        self.set_pause_settings(&params.pause_settings);
+        self.load_user_dictionaries(config);
+    }
 
-        let file = |name| config.path(name).filter(|path| path.exists());
-        if !settings.user_dictionaries_enabled {
+    /// The user's dictionaries of a configuration directory, on top of the
+    /// bundled ones: pronunciation (`user.json`), spelling, emoji and the
+    /// accent lexicon. They replace the user's entries loaded before; when
+    /// the settings switch the user's dictionaries off, there are none.
+    pub fn load_user_dictionaries(&mut self, config: &UserConfig) {
+        self.user_dictionary.clear();
+        self.user_spelling.clear();
+        self.user_emoji.clear();
+        if !config.settings.user_dictionaries_enabled {
             self.clear_accent_lexicon();
-            return true;
+            return;
         }
+        let file = |name| config.path(name).filter(|path| path.is_file());
+        let content = |name| file(name).and_then(|path| std::fs::read_to_string(path).ok());
         if let Some(path) = file(UserConfig::DICTIONARY) {
-            self.dictionary.load_file(&path);
+            self.user_dictionary.append_file(&path);
         }
-        if let Some(json) = file(UserConfig::SPELLING).and_then(|path| std::fs::read_to_string(path).ok()) {
+        if let Some(json) = content(UserConfig::SPELLING) {
             self.append_spelling_dictionary(&json);
         }
-        if let Some(path) = file(UserConfig::EMOJI) {
-            self.load_emoji_dictionary_file(&path);
+        if let Some(json) = content(UserConfig::EMOJI) {
+            self.append_emoji_dictionary(&json);
         }
         match file(UserConfig::ACCENTS) {
             Some(path) => drop(self.load_accent_lexicon_file(&path)),
             None => self.clear_accent_lexicon(),
         }
-        true
     }
 }
 
@@ -837,4 +875,136 @@ fn split_capital_announcement(text: &str) -> Option<(String, String)> {
         .enumerate()
         .all(|(i, word)| plain(word).is_some_and(|word| if i == 0 { FIRST } else { MORE }.contains(&word.as_str())));
     known.then(|| (words.join(" "), (*letter).to_owned()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::language::Language::{Croatian, Slovenian};
+
+    /// A configuration directory of one test with these files in it, read.
+    fn configuration(test: &str, files: &[(&str, &str)]) -> UserConfig {
+        let dir = std::env::temp_dir().join(format!("laprdus-engine-{test}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("a configuration directory");
+        for (name, content) in files {
+            std::fs::write(dir.join(name), content).expect("a configuration file");
+        }
+        let mut config = UserConfig::in_directory(&dir);
+        assert!(config.load_settings());
+        config
+    }
+
+    fn zvonko() -> Engine {
+        let mut engine = Engine::new();
+        engine.set_voice("zvonko", Path::new("")).expect("Zvonko needs no data");
+        engine
+    }
+
+    const BUNDLED: &str = r#"{"entries": [{"grapheme": "Laprdus", "phoneme": "Lapardus"}]}"#;
+    const USER: &str = r#"{"entries": [{"grapheme": "Biokovo", "phoneme": "Bijokovo"}]}"#;
+
+    /// The bundled dictionaries as a host loads them before the user's.
+    fn with_bundled(engine: &mut Engine) {
+        assert!(engine.dictionary().load(BUNDLED));
+        assert!(engine.load_spelling_dictionary(r##"{"entries": [{"character": "#", "pronunciation": "ljestve"}]}"##));
+        assert!(engine.load_emoji_dictionary(r#"{"entries": [{"emoji": "😀", "text": "nasmijano lice"}]}"#));
+        assert!(
+            engine
+                .load_language_emoji_dictionary(Slovenian, r#"{"entries": [{"emoji": "😀", "text": "režeči obraz"}]}"#)
+        );
+    }
+
+    #[test]
+    fn the_users_configuration_brings_its_clause_pauses() {
+        // SAPI5 and Speech Dispatcher applied settings.json with set_params,
+        // which leaves the clause pauses alone: the user's pauses were lost
+        let config = configuration(
+            "pauses",
+            &[("settings.json", r#"{"pauses": {"sentence": 700, "comma": 400, "newline": 300, "spelling": 250}}"#)],
+        );
+        let text = "Dobar dan, kako ste? Dobro.";
+        let mut configured = zvonko();
+        let before = configured.synthesize(text).unwrap();
+        configured.apply_user_config(&config);
+        let pauses = PauseSettings {
+            sentence_pause_ms: 700,
+            comma_pause_ms: 400,
+            newline_pause_ms: 300,
+            spelling_pause_ms: 250,
+        };
+        assert_eq!(configured.clause_pauses, pauses);
+        assert_eq!(configured.params().pause_settings, pauses);
+        let mut by_setter = zvonko();
+        by_setter.set_pause_settings(&pauses);
+        let after = configured.synthesize(text).unwrap();
+        assert!(after == by_setter.synthesize(text).unwrap(), "the pauses of the setters");
+        assert!(after.len() > before.len() + SAMPLE_RATE as usize / 2, "{} vs {}", after.len(), before.len());
+    }
+
+    #[test]
+    fn the_users_dictionaries_go_on_top_of_the_bundled_ones() {
+        let config = configuration(
+            "dictionaries",
+            &[
+                ("settings.json", r#"{"speech": {"emoji": true}}"#),
+                ("user.json", USER),
+                ("spelling.json", r#"{"entries": [{"character": "@", "pronunciation": "majmunče"}]}"#),
+                ("emoji.json", r#"{"entries": [{"emoji": "🐒", "text": "majmunček"}]}"#),
+            ],
+        );
+        let mut engine = zvonko();
+        with_bundled(&mut engine);
+        engine.apply_user_config(&config);
+        // The bundled pronunciation, then the user's
+        assert_eq!(engine.preprocess("Laprdus Biokovo"), "Lapardus Bijokovo");
+        // The bundled emoji, the Slovenian ones and the user's
+        engine.set_language(Some(Croatian));
+        assert_eq!(engine.preprocess("😀 🐒"), "nasmijano lice majmunček");
+        engine.set_language(Some(Slovenian));
+        assert_eq!(engine.preprocess("😀 🐒"), "režeči obraz majmunček");
+        // The bundled spelling entry and the user's
+        assert_eq!(engine.spelling.find("#"), Some("ljestve"));
+        assert_eq!(engine.user_spelling.find("@"), Some("majmunče"));
+
+        // Applied again, the user's entries replace their earlier copy
+        let rules = engine.user_dictionary.len();
+        engine.apply_user_config(&config);
+        assert_eq!(engine.user_dictionary.len(), rules);
+        assert_eq!(engine.dictionary.len(), 1);
+        std::fs::write(
+            config.path("user.json").unwrap(),
+            r#"{"entries": [{"grapheme": "Velebit", "phoneme": "Velebitu"}]}"#,
+        )
+        .unwrap();
+        engine.apply_user_config(&config);
+        assert_eq!(engine.preprocess("Laprdus Biokovo Velebit"), "Lapardus Biokovo Velebitu");
+    }
+
+    #[test]
+    fn switched_off_the_users_dictionaries_are_gone() {
+        let on =
+            configuration("on", &[("user.json", USER), ("accents.json", r#"{"entries": [{"word": "kontr'o:l*"}]}"#)]);
+        let mut engine = zvonko();
+        with_bundled(&mut engine);
+        engine.apply_user_config(&on);
+        assert_eq!(engine.preprocess("Biokovo"), "Bijokovo");
+        assert!(engine.user_lexicon.is_some(), "{}", engine.accent_lexicon_report());
+
+        let mut off = on.clone();
+        off.settings.user_dictionaries_enabled = false;
+        engine.apply_user_config(&off);
+        assert_eq!(engine.preprocess("Laprdus Biokovo"), "Lapardus Biokovo");
+        assert!(engine.user_lexicon.is_none() && engine.user_dictionary.is_empty());
+    }
+
+    #[test]
+    fn a_period_carried_as_a_one_dot_leader_is_a_period() {
+        let mut engine = zvonko();
+        engine.set_language(Some(Slovenian));
+        assert_eq!(engine.preprocess("18\u{2024}11\u{2024}2026"), engine.preprocess("18.11.2026"));
+        // Before the dictionaries: a user entry with a period matches it
+        engine.add_pronunciation("v1.5", "verzija ena pet", true, true);
+        assert_eq!(engine.preprocess("v1\u{2024}5"), "verzija ena pet");
+    }
 }

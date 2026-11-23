@@ -672,31 +672,36 @@ fn any_text_is_safe() {
     }
 }
 
+/// Every written form of 18 November 2026 that is read as the dotted one.
+const DATE_FORMS: [&str; 15] = [
+    "18.11.2026",
+    "18. 11. 2026",
+    "18/11/2026",
+    "18-11-2026",
+    "18\u{2011}11\u{2011}2026",
+    "2026-11-18",
+    "2026/11/18",
+    "2026.11.18",
+    "11/18/2026",
+    "18.XI.2026",
+    "18. XI. 2026",
+    "18/XI/2026",
+    "18-XI-2026",
+    "18.\u{A0}11.\u{A0}2026",
+    "18.\u{202F}11.\u{2009}2026",
+];
+
 /// A date in every written form is read as the dotted one (a listener's
 /// report of 2026-11-18): slashes, hyphens, the year first as in ISO 8601,
 /// the month first where the second number is no month, a Roman month,
 /// typeset spaces after the periods; and what only looks like one is left.
+/// In all four languages alike (Slovenian, Serbian and Bosnian were checked
+/// for six of the forms until 2026-11-23).
 #[test]
 fn a_date_is_read_in_every_written_form() {
     let n = NumberReader::new(Croatian);
     let date = parts(&["osamnaestog", "jedanaestog", "dvije tisuće dvadeset šeste"]);
-    for text in [
-        "18.11.2026",
-        "18. 11. 2026",
-        "18/11/2026",
-        "18-11-2026",
-        "18\u{2011}11\u{2011}2026",
-        "2026-11-18",
-        "2026/11/18",
-        "2026.11.18",
-        "11/18/2026",
-        "18.XI.2026",
-        "18. XI. 2026",
-        "18/XI/2026",
-        "18-XI-2026",
-        "18.\u{A0}11.\u{A0}2026",
-        "18.\u{202F}11.\u{2009}2026",
-    ] {
+    for text in DATE_FORMS {
         assert_eq!(n.convert_numbers(text), date, "{text}");
         assert_eq!(n.convert_digits(text), date, "{text}");
         // The period after the year, the sentence around the date
@@ -721,21 +726,46 @@ fn a_date_is_read_in_every_written_form() {
     // A day and a month with typeset spaces
     assert_eq!(n.convert_numbers("5.\u{A0}3."), parts(&["petog", "trećeg."]));
 
-    // The other languages
-    let serbian = parts(&["osamnaestog", "jedanaestog", "dve hiljade dvadeset šeste"]);
-    let bosnian = parts(&["osamnaestog", "jedanaestog", "dvije hiljade dvadeset šeste"]);
+    // The other languages, every form
     let slovenian = parts(&["osemnajstega", "enajstega", "dva tisoč šestindvajset"]);
-    for text in ["18.11.2026", "18/11/2026", "18-11-2026", "2026-11-18", "18. XI. 2026", "18.\u{A0}11.\u{A0}2026"] {
-        assert_eq!(numbers(Serbian, text), serbian, "{text}");
-        assert_eq!(numbers(Bosnian, text), bosnian, "{text}");
-        assert_eq!(numbers(Slovenian, text), slovenian, "{text}");
-        assert_eq!(digits(Slovenian, text), slovenian, "{text}");
+    for (language, date) in [
+        (Serbian, parts(&["osamnaestog", "jedanaestog", "dve hiljade dvadeset šeste"])),
+        (Bosnian, parts(&["osamnaestog", "jedanaestog", "dvije hiljade dvadeset šeste"])),
+        (Slovenian, slovenian.clone()),
+    ] {
+        let today = if language == Slovenian { "Danes je" } else { "Danas je" };
+        let dotted_sentence = numbers(language, &format!("{today} 18.11.2026."));
+        for text in DATE_FORMS {
+            assert_eq!(numbers(language, text), date, "{language:?}: {text}");
+            assert_eq!(digits(language, text), date, "{language:?}: {text}");
+            assert_eq!(numbers(language, &format!("{text}.")), format!("{date}."), "{language:?}: {text}.");
+            assert_eq!(numbers(language, &format!("{today} {text}.")), dotted_sentence, "{language:?}: {text}");
+        }
+    }
+    for text in DATE_FORMS {
         assert_eq!(
             numbers(Slovenian, &format!("Danes je {text}")),
             parts(&["Danes je osemnajsti", "enajsti", "dva tisoč šestindvajset"]),
             "{text}"
         );
+        // The sentence of the report of 2026-11-23
+        assert_eq!(
+            numbers(Slovenian, &format!("Rojen je {text} v Ljubljani.")),
+            format!("Rojen je {slovenian} v Ljubljani."),
+            "{text}"
+        );
     }
+    // Slovenian: leading zeros, a two-digit year, the time of ISO 8601 and
+    // a day and a month with typeset spaces are read as their dotted forms
+    let dotted = |text| numbers(Slovenian, text);
+    assert!(dotted("5.3.1985").contains(MINOR_BREAK_MARK));
+    for text in ["05.03.1985", "05/03/1985", "05-03-1985", "1985-03-05", "5/3/1985", "05.III.1985"] {
+        assert_eq!(dotted(text), dotted("5.3.1985"), "{text}");
+    }
+    assert_eq!(dotted("18/11/26"), dotted("18.11.26"));
+    assert_eq!(dotted("18. XI. 26"), dotted("18. 11. 26"));
+    assert_eq!(dotted("2026-11-18T10:30"), format!("{slovenian} {}", dotted("10:30")));
+    assert_eq!(dotted("5.\u{A0}3."), dotted("5. 3."));
     // Slovenian: the day a sentence names, with a leading zero too
     assert_eq!(
         numbers(Slovenian, "Danes je 07.10.2026"),
@@ -790,4 +820,28 @@ fn a_date_is_read_in_every_written_form() {
     }
     assert_eq!(n.convert_numbers("tel. 05-03-1985"), n.convert_numbers("tel. 05 03 1985"));
     assert!(!numbers(Slovenian, "10.10.10.10").contains(MINOR_BREAK_MARK));
+}
+
+/// A period between digits that the NVDA add-on carried past NVDA's
+/// Slovenian symbol table as a one dot leader is a period again; a dot
+/// leader anywhere else is left (the number converter writes it between
+/// words).
+#[test]
+fn a_one_dot_leader_between_digits_is_a_period() {
+    use super::restore_carried_points as restore;
+    let c = super::DOT_LEADER;
+    for (carried, written) in [
+        (format!("18{c}11{c}2026"), "18.11.2026".to_owned()),
+        (format!("Rojen je 18{c}11{c}2026 v Ljubljani."), "Rojen je 18.11.2026 v Ljubljani.".to_owned()),
+        (format!("3{c}14"), "3.14".to_owned()),
+        (format!("192{c}168{c}1{c}1"), "192.168.1.1".to_owned()),
+        (format!("ob 8{c}30"), "ob 8.30".to_owned()),
+        (format!("1{c}5{c}"), format!("1.5{c}")),
+    ] {
+        assert_eq!(restore(&carried), written, "{carried}");
+    }
+    for text in [format!("{c}5"), format!("3{c} 4"), format!("a{c}5"), format!("tri{c}četrnaest"), "3.14".into()] {
+        assert_eq!(restore(&text), text);
+    }
+    assert!(matches!(restore("18.11.2026"), std::borrow::Cow::Borrowed(_)));
 }

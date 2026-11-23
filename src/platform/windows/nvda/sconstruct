@@ -14,7 +14,7 @@ from typing import Final
 # Linters aren't aware about them.
 # To avoid PyRight `reportUndefinedVariable` errors about them they are imported explicitly.
 # When using other  Scons functions please add them to the line below.
-from SCons.Script import EnsurePythonVersion, Variables, BoolVariable, Environment, Copy
+from SCons.Script import EnsurePythonVersion, Variables, BoolVariable, Environment, Copy, Delete
 
 # Imports for type hints
 from SCons.Node import FS
@@ -55,6 +55,7 @@ vars.Add("version", "The version of this build", buildVars.addon_info["addon_ver
 vars.Add("versionNumber", "Version number of the form major.minor.patch", "0.0.0", validateVersionNumber)
 vars.Add(BoolVariable("dev", "Whether this is a daily development version", False))
 vars.Add("channel", "Update channel for this build", buildVars.addon_info["addon_updateChannel"])
+vars.Add(BoolVariable("legacy", "Whether the add-on carries the build for Windows 7 SP1, 8 and 8.1", True))
 
 env = Environment(variables=vars, ENV=os.environ, tools=["gettexttool", "NVDATool"])
 env.Append(
@@ -169,49 +170,37 @@ repoRoot = Path("../../../..")
 # the legacy build is carried for 32 bits alone; the driver and the menu pick
 # it there by the version of Windows.
 programFiles = [
-    ("dist/windows-x64/laprd64.dll", "laprd64.dll", "cargo xtask windows"),
-    ("dist/windows-x86/laprd32.dll", "laprd32.dll", "cargo xtask windows"),
-    ("dist/windows-legacy-x86/laprd32.dll", "laprd32_legacy.dll", "cargo xtask windows-legacy"),
-    ("dist/windows-x64/laprdgui.exe", "laprdgui64.exe", "cargo xtask windows"),
-    ("dist/windows-x86/laprdgui.exe", "laprdgui32.exe", "cargo xtask windows"),
-    ("dist/windows-legacy-x86/laprdgui.exe", "laprdgui32_legacy.exe", "cargo xtask windows-legacy"),
+	("dist/windows-x64/laprd64.dll", "laprd64.dll", "cargo xtask windows"),
+	("dist/windows-x86/laprd32.dll", "laprd32.dll", "cargo xtask windows"),
+	("dist/windows-legacy-x86/laprd32.dll", "laprd32_legacy.dll", "cargo xtask windows-legacy"),
+	("dist/windows-x64/laprdgui.exe", "laprdgui64.exe", "cargo xtask windows"),
+	("dist/windows-x86/laprdgui.exe", "laprdgui32.exe", "cargo xtask windows"),
+	("dist/windows-legacy-x86/laprdgui.exe", "laprdgui32_legacy.exe", "cargo xtask windows-legacy"),
 ]
-for srcFile, destFile, step in programFiles:
-    srcPath = repoRoot / srcFile
-    if srcPath.exists():
-        destPath = synthDriverDir / destFile
-        programCopy = env.Command(str(destPath), str(srcPath), Copy("$TARGET", "$SOURCE"))
-        env.Depends(addon, programCopy)
-    elif not (synthDriverDir / destFile).exists():
-        # Not staged, and no earlier copy in the add-on's folder either
-        print(f"Warning: {srcFile} not found. Build the Windows programs first with:")
-        print(f"  {step}")
-
-# Copy voice data files to voices subdirectory
-voiceFiles = ["Josip.bin", "Vlado.bin"]
-for voiceFile in voiceFiles:
-    srcPath = repoRoot / "data/voices" / voiceFile
-    if srcPath.exists():
-        destPath = voicesDir / voiceFile
-        voiceCopy = env.Command(str(destPath), str(srcPath), Copy("$TARGET", "$SOURCE"))
-        env.Depends(addon, voiceCopy)
-    else:
-        print(f"Warning: {srcPath} not found. Pack the voice data first with:")
-        print(f"  cargo xtask data")
-
-# Copy dictionary files to dictionaries subdirectory
+# What the add-on carries, from where, and the step that makes it. Every one
+# is a source of the add-on: a missing one fails the add-on's build (SCons:
+# "Source ... not found, needed by target ..."), so an older copy left in the
+# add-on's folder is never packed in its place. `scons pot` and `scons -c`
+# need none of them.
+voiceFiles = [(f"data/voices/{name}", voicesDir / name, "cargo xtask data") for name in ("Josip.bin", "Vlado.bin")]
 dictFiles = [
-    ("internal.json", "internal.json"),
-    ("spelling.json", "spelling.json"),
-    ("emoji.json", "emoji.json"),
-    ("emoji_sl.json", "emoji_sl.json"),
+	(f"data/dictionary/{name}", dictsDir / name, "cargo xtask data")
+	for name in ("internal.json", "spelling.json", "emoji.json", "emoji_sl.json")
 ]
-for srcFile, destFile in dictFiles:
-    srcPath = repoRoot / "data/dictionary" / srcFile
-    if srcPath.exists():
-        destPath = dictsDir / destFile
-        dictCopy = env.Command(str(destPath), str(srcPath), Copy("$TARGET", "$SOURCE"))
-        env.Depends(addon, dictCopy)
+legacyFiles = [synthDriverDir / destFile for srcFile, destFile, step in programFiles if "legacy" in srcFile]
+inputs = [(srcFile, synthDriverDir / destFile, step) for srcFile, destFile, step in programFiles] + voiceFiles + dictFiles
+if not env["legacy"]:
+	# Without the build for Windows 7 SP1, 8 and 8.1: none of it is packed,
+	# not even an earlier copy
+	inputs = [entry for entry in inputs if entry[1] not in legacyFiles]
+	for stale in legacyFiles:
+		env.AddPreAction(addon, Delete(str(stale)))
+for srcFile, destPath, step in inputs:
+	srcPath = repoRoot / srcFile
+	if not srcPath.exists():
+		print(f"Missing {srcFile}: make it first with  {step}")
+	fileCopy = env.Command(str(destPath), str(srcPath), Copy("$TARGET", "$SOURCE"))
+	env.Depends(addon, fileCopy)
 
 env.Default(addon)
 env.Clean(addon, [".sconsign.dblite", "addon/doc/" + buildVars.baseLanguage + "/"])

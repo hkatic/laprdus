@@ -18,6 +18,41 @@ mod tests;
 use crate::language::Language;
 use cardinal::Numerals;
 use scan::{Out, Text, Unit, is_letter_byte, is_word_byte, join_parts};
+use std::borrow::Cow;
+
+/// The one dot leader (U+2024): the number converter writes a period between
+/// digits as it, and a host may carry such a period through a screen reader
+/// as it ([`restore_carried_points`]).
+pub(crate) const DOT_LEADER: char = '\u{2024}';
+const DOT_LEADER_STR: &str = "\u{2024}";
+
+/// The text with every one dot leader between two ASCII digits made a period
+/// again, so that every number rule (dates, clock times, decimals, thousands,
+/// addresses) and the dictionaries see the text as it was written.
+///
+/// NVDA's Slovenian symbol table turns a period between digits into a space
+/// (into "pika" from the punctuation level "some" up), where the Croatian,
+/// Serbian, Bosnian and English ones keep it: "18.11.2026" reached the
+/// engine as "18 11 2026". No table of NVDA names the one dot leader, so the
+/// NVDA add-on writes such a period as it (`globalPlugins/laprdus/
+/// _speechFilter.py`), with Laprdus's own NVDA driver and with its SAPI5
+/// voices alike. A dot leader that is not between digits is left as it is.
+pub(crate) fn restore_carried_points(text: &str) -> Cow<'_, str> {
+    if !text.contains(DOT_LEADER) {
+        return Cow::Borrowed(text);
+    }
+    let mut out = String::with_capacity(text.len());
+    let mut previous = None;
+    let mut chars = text.chars().peekable();
+    while let Some(c) = chars.next() {
+        let between_digits = c == DOT_LEADER
+            && previous.is_some_and(|p: char| p.is_ascii_digit())
+            && chars.peek().is_some_and(char::is_ascii_digit);
+        out.push(if between_digits { '.' } else { c });
+        previous = Some(c);
+    }
+    Cow::Owned(out)
+}
 
 /// What the number converter asks of a language: its number words and the
 /// grammar of a number in a sentence. `r` is the reader of the language, for
@@ -195,7 +230,7 @@ impl NumberReader {
     /// names the dot leader "pika").
     pub(crate) fn separator_words(&self, separator: u8) -> &'static str {
         match separator {
-            b'.' => "\u{2024}",
+            b'.' => DOT_LEADER_STR,
             _ => self.grammar.decimal_comma(),
         }
     }

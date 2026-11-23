@@ -51,7 +51,26 @@ fn volume_of(volume: i32) -> f32 {
     (volume + 100) as f32 / 200.0
 }
 
-/// Text without its markup: Speech Dispatcher wraps text in `<speak>`.
+/// The dictionaries installed with the voices, as every platform loads
+/// them: pronunciation, spelling, and the emoji names with the Slovenian
+/// ones next to them (`emoji_sl.json`, found by the engine).
+fn load_bundled_dictionaries(engine: &mut Engine, data_dir: &Path) {
+    engine.dictionary().load_file(&data_dir.join("internal.json"));
+    engine.load_spelling_dictionary_file(&data_dir.join("spelling.json"));
+    engine.load_emoji_dictionary_file(&data_dir.join("emoji.json"));
+}
+
+/// The text of a message to speak. Speech Dispatcher wraps a text message in
+/// `<speak>` and writes its `<`, `>` and `&` as `&lt;`, `&gt;` and `&amp;`
+/// (`insert_index_marks()` in its `src/server/index_marking.c`; a client's
+/// SSML comes as written): the markup goes and the entities are read.
+/// Characters and keys come as they are, so a typed `<` or `&` is spoken.
+fn message_text(text: &str, message_type: MessageType) -> String {
+    let markup = text.len() > 1 && text.starts_with('<') && text.ends_with('>');
+    if message_type == MessageType::Text || markup { decode_entities(&strip_ssml_tags(text)) } else { text.to_owned() }
+}
+
+/// Text without its markup.
 fn strip_ssml_tags(text: &str) -> String {
     let mut in_tag = false;
     text.chars()
@@ -61,6 +80,52 @@ fn strip_ssml_tags(text: &str) -> String {
             !tag
         })
         .collect()
+}
+
+/// Text with its character references read, in one pass: the five named
+/// ones of XML (Speech Dispatcher's own `module_strip_ssml()` reads them)
+/// and the numeric ones (`&#269;`, `&#x161;`). Anything else is left as it
+/// is written, and `&amp;lt;` is `&lt;`.
+fn decode_entities(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(at) = rest.find('&') {
+        out.push_str(&rest[..at]);
+        rest = &rest[at..];
+        match entity(rest) {
+            Some((character, length)) => {
+                out.push(character);
+                rest = &rest[length..];
+            }
+            None => {
+                out.push('&');
+                rest = &rest[1..];
+            }
+        }
+    }
+    out.push_str(rest);
+    out
+}
+
+/// The character of the reference `text` begins with, and its length.
+fn entity(text: &str) -> Option<(char, usize)> {
+    let end = text.char_indices().take(12).find(|&(_, c)| c == ';')?.0;
+    let character = match &text[1..end] {
+        "amp" => '&',
+        "lt" => '<',
+        "gt" => '>',
+        "quot" => '"',
+        "apos" => '\'',
+        name => {
+            let number = name.strip_prefix('#')?;
+            let value = match number.strip_prefix(['x', 'X']) {
+                Some(hex) => u32::from_str_radix(hex, 16).ok()?,
+                None => number.parse().ok()?,
+            };
+            char::from_u32(value).filter(|&c| c != '\0')?
+        }
+    };
+    Some((character, end + 1))
 }
 
 /// A name in lower case with č, ć, đ, š, ž as c, c, dj, s, z: the way voice
@@ -338,7 +403,7 @@ impl Module {
         self.speaking = true;
         self.send("200 OK SPEAKING");
         self.apply_parameters();
-        let stopped = !self.speak_text(&strip_ssml_tags(text), message_type);
+        let stopped = !self.speak_text(&message_text(text, message_type), message_type);
         self.speaking = false;
         self.send(if stopped { "703 STOP" } else { "702 END" });
     }
@@ -539,10 +604,10 @@ fn main() -> ExitCode {
         module.send("399-Laprdus could not load its default voice\n399 ERR CANT INIT MODULE");
         return ExitCode::FAILURE;
     }
-    module.engine.dictionary().load_file(&data_dir.join("internal.json"));
-    module.engine.load_spelling_dictionary_file(&data_dir.join("spelling.json"));
+    load_bundled_dictionaries(&mut module.engine, data_dir);
     // The user's settings from ~/.config/Laprdus: rate, pitch, pauses,
-    // dictionaries. The server's rate and pitch are relative to them.
+    // dictionaries on top of the bundled ones. The server's rate and pitch
+    // are relative to them.
     module.engine.load_user_config();
     let params = module.engine.params();
     (module.configured_speed, module.configured_pitch, module.configured_inflection) =
@@ -572,6 +637,42 @@ mod tests {
             assert_eq!(volume_of(volume), level);
         }
         assert_eq!((number("250"), number("-250"), number("x"), number(" 7\n")), (100, -100, 0, 7));
+    }
+
+    #[test]
+    fn a_text_message_is_read_without_its_markup_and_with_its_entities() {
+        // What the server makes of "Tom & Jerry <3" in a text message
+        let text = MessageType::Text;
+        assert_eq!(message_text("<speak>Tom &amp; Jerry &lt;3</speak>", text), "Tom & Jerry <3");
+        assert_eq!(message_text("<speak>a &gt; b, &quot;c&quot; &apos;d&apos;</speak>", text), "a > b, \"c\" 'd'");
+        assert_eq!(message_text("<speak>&#269;&#x161;&#X17E;</speak>", text), "čšž");
+        // Read once: what was written as &lt; stays that
+        assert_eq!(message_text("<speak>&amp;lt;</speak>", text), "&lt;");
+        // Not references, or no characters: as written
+        for written in ["&nbsp;", "&#0;", "&#xD800;", "&#;", "&bogus;", "& alone", "&", "a&b", "&#99999999;"] {
+            assert_eq!(message_text(&format!("<speak>{written}</speak>"), text), written);
+        }
+        // A typed character or a key comes as it is
+        assert_eq!(message_text("<", MessageType::Char), "<");
+        assert_eq!(message_text("&", MessageType::Char), "&");
+        assert_eq!(message_text(">", MessageType::Key), ">");
+        assert_eq!(message_text("<speak>a</speak>", MessageType::Char), "a");
+    }
+
+    #[test]
+    fn the_bundled_emoji_names_are_loaded_slovenian_too() {
+        let data = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../data/dictionary");
+        assert!(data.join("emoji_sl.json").is_file(), "{} has no emoji_sl.json: run cargo xtask data", data.display());
+        let mut engine = Engine::new();
+        engine.set_voice(DEFAULT_VOICE_ID, Path::new("")).expect("Zvonko needs no data");
+        load_bundled_dictionaries(&mut engine, &data);
+        engine.update_params(|params| params.emoji_enabled = true);
+        let mut say = |language| {
+            engine.set_language(Some(language));
+            engine.synthesize("😀").unwrap_or_default()
+        };
+        let (croatian, slovenian) = (say(Language::Croatian), say(Language::Slovenian));
+        assert!(!croatian.is_empty() && !slovenian.is_empty() && croatian != slovenian);
     }
 
     #[test]

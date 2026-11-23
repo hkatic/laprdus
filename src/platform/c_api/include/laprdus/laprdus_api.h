@@ -1141,6 +1141,11 @@ LAPRDUS_API size_t LAPRDUS_CALL laprdus_get_config_directory(
 /**
  * Load user configuration from the user config directory.
  * Creates default settings.json if it doesn't exist.
+ * Applies every setting of settings.json, the pauses included, and, unless
+ * they are switched off there, the user's dictionaries (user.json,
+ * spelling.json, emoji.json, accents.json) on top of the bundled ones: call
+ * it after loading the bundled dictionaries. Called again, it replaces the
+ * user's entries of the last call instead of adding them a second time.
  * @param handle Engine handle.
  * @return LAPRDUS_OK on success, error code on failure.
  */

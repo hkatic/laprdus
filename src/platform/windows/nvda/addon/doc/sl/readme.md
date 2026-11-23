@@ -394,6 +394,8 @@ Ko Laprdus uporabljate z bralnikom zaslona NVDA, nastavitve glasu spremenite tak
 
 **Samodejna menjava jezika.** Če je v nastavitvah govora NVDA vklopljena možnost »Samodejna menjava jezika, (ko je to možno)«, Laprdus besedilo, označeno kot hrvaško, srbsko, bosansko ali slovensko, izgovori v tem jeziku in z istim glasom; besedilo v katerem koli drugem jeziku izgovori v jeziku, ki ste ga izbrali. Glas se pri tem nikoli ne spremeni.
 
+**Datumi in števila v slovenščini.** Slovenska tabela simbolov NVDA piko med števkami pri nižjih ravneh ločil spremeni v presledek, pri višjih pa v besedo »pika«, vezaj in dolgo črtico pa pri nižjih ravneh izpusti, medtem ko ju hrvaška, srbska in bosanska tabela ohranijo. Od NVDA 2024.2 dalje dodatek Laprdusu preda datume (»18.11.2026«, »18/11/2026«), čas (»ob 8.30«), decimalna števila (»3.14«) in besede z vezajem (»2-krat«) tako, kot so zapisani, tudi kadar NVDA govori z glasovi Laprdus SAPI5. Vezaj in dolgo črtico dodatek v slovenščini ohrani tudi za druge sintetizatorje.
+
 ### 3.4 Aplikacija za Android
 
 Aplikacija Laprdus za Android ima zaslon z nastavitvami, kjer lahko:

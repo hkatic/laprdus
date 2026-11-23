@@ -703,6 +703,41 @@ fn a_settings_json_of_version_1_0_keeps_its_meaning() {
         assert_eq!(laprdus_get_brightness(engine.0), 71);
     }
 
+    // The pauses of settings.json are the voice's: the sentence and comma
+    // pauses were applied by the setters only, and a host that applied the
+    // file the engine's way (SAPI5, Speech Dispatcher) had the defaults
+    let text = "Dobar dan, kako ste? Dobro.";
+    let paused = load(r#"{ "pauses": { "sentence": 700, "comma": 400, "newline": 300 } }"#);
+    let by_setters = Engine::formant("zvonko");
+    // SAFETY: a live handle.
+    unsafe {
+        assert_eq!((laprdus_get_sentence_pause(paused.0), laprdus_get_comma_pause(paused.0)), (700, 400));
+        laprdus_set_sentence_pause(by_setters.0, 700);
+        laprdus_set_comma_pause(by_setters.0, 400);
+        laprdus_set_newline_pause(by_setters.0, 300);
+    }
+    assert!(paused.speak(text) == by_setters.speak(text));
+    assert!(paused.speak(text).len() > Engine::formant("zvonko").speak(text).len() + 11025);
+
+    // The user's pronunciation entries go on top of the bundled ones, also
+    // after a second call (that it adds no second copy, the engine's own
+    // tests check)
+    std::fs::write(laprdus_dir.join("user.json"), r#"{"entries": [{"grapheme": "Biokovo", "phoneme": "Bijokovo"}]}"#)
+        .expect("user.json");
+    let bundled = c(r#"{"entries": [{"grapheme": "Laprdus", "phoneme": "Lapardus"}]}"#);
+    let engine = Engine::formant("zvonko");
+    // SAFETY: a live handle and a C string of that length.
+    unsafe {
+        assert_eq!(
+            laprdus_load_dictionary_from_memory(engine.0, bundled.as_ptr(), bundled.as_bytes().len()),
+            LAPRDUS_OK
+        );
+        assert_eq!(laprdus_load_user_config(engine.0), LAPRDUS_OK);
+        assert_eq!(laprdus_load_user_config(engine.0), LAPRDUS_OK);
+    }
+    assert!(engine.speak("Laprdus Biokovo") == Engine::formant("zvonko").speak("Lapardus Bijokovo"));
+    let _ = std::fs::remove_file(laprdus_dir.join("user.json"));
+
     // SAFETY: as above.
     unsafe {
         match saved {

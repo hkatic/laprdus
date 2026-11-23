@@ -5,6 +5,17 @@
 # English table, have the level "most". A listener reported them spoken
 # with the punctuation off (2026-11-03). The names are NVDA's own without
 # the stray English word "double".
+#
+# The hyphen and the em dash are not preserved in NVDA's Slovenian table,
+# while the Croatian, Serbian, Bosnian and English tables preserve them
+# ("most always"): below the level "most" NVDA turned them into spaces in
+# Slovenian alone, so a synthesizer got "2 krat", "10 letnica", "2 3 dni"
+# and "1991 2000" for 2-krat, 10-letnica, 2-3 dni and 1991-2000 (found
+# 2026-11-23). They keep NVDA's Slovenian names and level and are preserved
+# as in the other tables. NVDA applies this dictionary to every synthesizer
+# that speaks Slovenian, as it applies its own table.
 symbols:
 «	dvojni začetni narekovaj	most	always
 »	dvojni zaključni narekovaj	most	always
+-	kratka črtica	most	always
+—	črtica	most	always

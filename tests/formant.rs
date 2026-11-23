@@ -651,6 +651,25 @@ fn slovenian_is_spoken_by_every_voice() {
         ("Danes smo 16.4.", "Danes smo šestnajstega \u{FDD0} četrtega."),
         ("do 5.11.", "do pêtega \u{FDD0} enajstega."),
         ("15.–20. 3.", "petnajstega do dvajsetega \u{FDD0} tretjega."),
+        // A date in every written form (the sentence of a report of
+        // 2026-11-23, which came through SAPI5)
+        (
+            "Rojen je 18.11.2026 v Ljubljani.",
+            "Rojen je osemnajstega \u{FDD0} enajstega \u{FDD0} dva tisoč šestindvajset v Ljubljani.",
+        ),
+        (
+            "Rojen je 18/11/2026 v Ljubljani.",
+            "Rojen je osemnajstega \u{FDD0} enajstega \u{FDD0} dva tisoč šestindvajset v Ljubljani.",
+        ),
+        (
+            "Rojen je 2026-11-18 v Ljubljani.",
+            "Rojen je osemnajstega \u{FDD0} enajstega \u{FDD0} dva tisoč šestindvajset v Ljubljani.",
+        ),
+        (
+            "Rojen je 18. XI. 2026 v Ljubljani.",
+            "Rojen je osemnajstega \u{FDD0} enajstega \u{FDD0} dva tisoč šestindvajset v Ljubljani.",
+        ),
+        ("Danes je 18-11-2026.", "Danes je osemnajsti \u{FDD0} enajsti \u{FDD0} dva tisoč šestindvajset."),
         ("3.–4. mesto", "tretje do četrto mesto"),
         ("do 3. razreda", "do tretjega razreda"),
         ("k 1. členu", "k prvemu členu"),
@@ -4237,6 +4256,29 @@ fn gap_ms(audio: &[i16]) -> f64 {
 /// pause, less at a fast rate (the whole of it at first and 65 % next, which
 /// the listener found too long both times), and the letters of the address
 /// are letters.
+#[test]
+fn a_period_nvda_carries_as_a_one_dot_leader_is_a_period() {
+    // NVDA's Slovenian symbol table drops a period between digits, so the
+    // NVDA add-on carries it as a one dot leader (U+2024), with Laprdus's
+    // own driver and with its SAPI5 voices: the engine must read it as the
+    // period it was, in every number mode and language
+    let mut engine = Speaker::new("zvonko");
+    let mut failures = Failures::new();
+    for language in ["hr", "sl"] {
+        assert!(engine.set_language(language));
+        for mode in [NumberMode::WholeNumbers, NumberMode::DigitByDigit] {
+            engine.set_number_mode(mode);
+            for text in ["Rojen je 18.11.2026 v Ljubljani.", "3.14", "132.457", "ob 8.30", "192.168.1.1", "18.11."] {
+                let carried =
+                    text.replacen('.', "\u{2024}", text.matches('.').count() - usize::from(text.ends_with('.')));
+                let same = engine.say(&carried) == engine.say(text);
+                failures.check(same, || format!("{language} {mode:?}: {carried} is not {text}"));
+            }
+        }
+    }
+    failures.finish();
+}
+
 #[test]
 fn clock_times_dates_and_cell_addresses_have_short_pauses() {
     let mut engine = Speaker::new("zvonko");

@@ -70,7 +70,7 @@ def check(name, ok):
 
 
 def write_settings(mode="names", force_pitch=False, force_volume=False, volume=1.0, volume_boost=None,
-                   quality=None):
+                   quality=None, numbers="words"):
     """quality: the voice quality keys to write into the speech section
     (head_size, breathiness, roughness, brightness), none by default."""
     path = os.path.join(APPDATA, "Laprdus", "settings.json")
@@ -83,6 +83,7 @@ def write_settings(mode="names", force_pitch=False, force_volume=False, volume=1
                            **({} if volume_boost is None else {"volume_boost": volume_boost}),
                            **(quality or {})),
             "spelling": {"speed": 50, "mode": mode},
+            "numbers": {"mode": numbers},
             "force": {"speed": False, "pitch": force_pitch, "volume": force_volume},
         }, f)
     # The driver reloads on a changed mtime: make every write a change
@@ -336,40 +337,38 @@ def test_items_and_phone_numbers():
     synth.terminate()
 
 
-def test_dates():
-    """A numeric date in any written form goes to NVDA's symbol processing
-    as "18. 11. 2026", which it leaves alone; what is no date is untouched,
-    and a separator NVDA speaks at the user's level is left to NVDA."""
-    from laprdus import _dates
+def test_carried_periods_and_the_settings_file():
+    """The text keeps its dates and the periods between its digits through
+    NVDA's symbol processing by the global plugin's filter, not the
+    driver's (test_global_plugin.py): the driver registers none. A period
+    the filter carried as a one dot leader is read as the period, in both
+    number modes. settings.json is read as the engine reads it: with a byte
+    order mark and trailing commas."""
+    check("the driver registers no filter of NVDA's speech", S.extensions.filter_speechSequence.handlers == [])
+    carried = "Rojen je 18\u202411\u20242026 v Ljubljani."
+    for mode in ("words", "digits"):
+        write_settings("sounds", numbers=mode)
+        synth = new_synth()
+        synth._set_language("sl")
+        out = b"".join(run(synth, [carried, IndexCommand(1)]))
+        check("%s: a carried period is the period" % mode, out == spoken(synth, "Rojen je 18.11.2026 v Ljubljani."))
+        check("%s: ... not the space NVDA's table made of it" % mode,
+              out != spoken(synth, "Rojen je 18 11 2026 v Ljubljani."))
+        synth.terminate()
 
-    spaced = _dates.spaced_dates
-
-    def check(ok, name):
-        globals()["check"](name, ok)
-
-    for text in (
-        "18.11.2026", "18/11/2026", "18-11-2026", "18\u201111\u20112026", "2026-11-18", "2026/11/18",
-        "2026.11.18", "11/18/2026", "18.XI.2026", "18. XI. 2026", "18/XI/2026", "18-XI-2026",
-        "18.\u00a011.\u00a02026", "18. 11. 2026",
-    ):
-        check(spaced(text) == "18. 11. 2026", "%a is the spaced date, got %a" % (text, spaced(text)))
-        check(spaced("Danes je %s." % text) == "Danes je 18. 11. 2026.", "%a inside a sentence" % text)
-    check(spaced("05/03/1985") == "5. 3. 1985", "a slashed date with leading zeros")
-    check(spaced("05.03.1985") == "05. 03. 1985", "a dotted date keeps its digits")
-    check(spaced("18/11/26") == "18. 11. 26", "a two-digit year after slashes")
-    check(spaced("2026-11-18T10:30") == "18. 11. 2026 10:30", "the time of ISO 8601")
-    check(spaced("18.11.") == "18. 11.", "a day and a month")
-    for text in (
-        "1/2", "24/7", "50/50", "PS/2", "10-15", "716-844", "10-12-14", "1/2/2026/3", "2026-11-18-4",
-        "32/11/2026", "18/13/2026", "2026-13-18", "3.14", "192.168.1.1", "10.10.10.10", "1.000.000",
-        "A18/11/2026", "18/11/2026a", "tel. 05-03-1985", "1. I. Kant", "12:30", "www.rtvslo.si", "Dobar dan.",
-    ):
-        check(spaced(text) == text, "%a is left alone, got %a" % (text, spaced(text)))
-    # At "some" NVDA names the period and the slash, at "most" the hyphen too
-    check(spaced("18.11.2026", 100) == "18.11.2026", "periods are NVDA's at the level some")
-    check(spaced("18/11/2026", 100) == "18/11/2026", "slashes are NVDA's at the level some")
-    check(spaced("2026-11-18", 100) == "18. 11. 2026", "hyphens are silent at the level some")
-    check(spaced("2026-11-18", 200) == "2026-11-18", "hyphens are NVDA's at the level most")
+    # The spelling mode of a file with a byte order mark and trailing commas
+    write_settings("sounds")
+    synth = new_synth()
+    typed = [CharacterModeCommand(True), "b", CharacterModeCommand(False), IndexCommand(1)]
+    sound = run(synth, typed)[-1]
+    path = os.path.join(APPDATA, "Laprdus", "settings.json")
+    with open(path, "w", encoding="utf-8-sig") as f:
+        f.write('{"version": "2.0", "speech": {"inflection_level": 0.5,}, "spelling": {"mode": "names",},}')
+    _mtime[0] += 5
+    os.utime(path, (_mtime[0], _mtime[0]))
+    named = run(synth, typed)[-1]
+    check("a settings.json with a byte order mark and trailing commas is read", named != sound)
+    synth.terminate()
 
 
 def test_cancel():
@@ -488,7 +487,7 @@ if __name__ == "__main__":
     test_voice_quality()
     test_delayed_description()
     test_items_and_phone_numbers()
-    test_dates()
+    test_carried_periods_and_the_settings_file()
     test_cancel()
     print("%d failed" % len(failures))
     sys.exit(1 if failures else 0)

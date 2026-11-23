@@ -111,7 +111,7 @@ Rules of the layout:
 
 ### Processing Pipeline
 
-1. Text → `Engine::preprocess()` (`src/common/engine.rs`) → Number expansion, dictionaries
+1. Text → `Engine::preprocess()` (`src/common/engine.rs`) → a one dot leader (U+2024) between digits back to the period (`restore_carried_points()`: the NVDA add-on carries a period past NVDA's Slovenian symbol table so), emoji and pronunciation dictionaries (bundled, then the user's layer), number expansion
 2. → `split_clauses()` (`src/common/text/clauses.rs`, called by `Engine::segment()`) → Segment into clauses by punctuation and at line breaks (a line break ends the clause with the newline pause, so the next line starts a sentence: a capital S or K there is the preposition; a colon or exclamation mark glued to the next character, as in `12:30`, is not a clause end: it stays in the text and is read by name by the front end's `SYMBOLS` table; a glued period stays only before a file extension or domain label of up to five letters or digits in one case, `datoteka.txt`, `www.index.hr`, and after a single letter, where it is an abbreviation dot, silent, with the letters read by name: `s.a.r.s.`, `U.S.A.`; every other glued period ends the clause, `Preslušano.Nestajuća`; the decimal point is written by the number converter as U+2024 so it survives, `3.14` tri točka četrnaest; a period between groups of three digits is the thousands separator in every language (`1.317` tisuću tristo sedamnaest, `1.000.000` milijun; since 2026-11-03, before that read by name), any other group after a period is a whole number (`3.14` tri točka četrnaest, `192.168.1.1` group by group), the decimal comma as *zarez* (but a comma between the single digits of a phone number spelled out by a screen reader, `+ 1 2 3,5 6,7 8 9,8 7 6`, as a comma pause), clock times `12:30` and dates `7.10.2026` / `7. 10. 2026.` without the separators and with a short pause between their parts (see "Short pauses inside a clause"), a number of up to four digits with a period before a lowercase word as the cardinal with the period silent: `7. listopada` sedam listopada, `1990. godine` (no ordinals: they would need the noun's case), and sets a number glued to letters off from them (`u20:03` u dvadeset nula tri, `5kg`), silencing the period that joins a word to those letters: `7.listopada.u20:03` sedam listopada u dvadeset nula tri; the front end expands no abbreviation, spells a vowelless one (`dr.` de er), and silences the colon of `https://`)
 3. → `Frontend::process()` (the trait `text::Frontend`; `languages::Frontend` hands the clause to the front end of the language being spoken, `src/common/languages/<code>/frontend.rs`) → phones with stress, words, clause kind (both kinds of voices); for Slovenian `process()` of `languages/sl/frontend.rs` with the rules and lexicon of `src/common/languages/sl/`
 4. → Recorded voices: `plan_clause()` (`src/common/concatenative/prosody.rs`: durations, pitch contour) → `render()` (`concatenative/psola.rs`: TD-PSOLA)
@@ -232,7 +232,7 @@ $B/laprdus -D data/voices -v vlado -L hr "Vlado govori hrvatski: dvije tisuće."
 
 ### Telephone numbers, currency amounts, short pauses, dates
 
-Telephone numbers (`src/common/text/numbers/phone.rs`), currency amounts (`currency.rs`), the short pauses inside a clause of clock times, dates and cell addresses (`src/common/text/marks.rs`) and every written form of a date (`dates.rs`, mirrored by the NVDA driver's `_dates.py`: change the two together): `.claude/rules/numbers-dates.md`.
+Telephone numbers (`src/common/text/numbers/phone.rs`), currency amounts (`currency.rs`), the short pauses inside a clause of clock times, dates and cell addresses (`src/common/text/marks.rs`) and every written form of a date (`dates.rs`, mirrored by the NVDA add-on's `globalPlugins/laprdus/_dates.py`: change the two together): `.claude/rules/numbers-dates.md`.
 
 ## C API
 
@@ -585,6 +585,7 @@ python tests/windows/test_configurator_language.py
 python tests/windows/test_sapi5_driver.py
 python tests/windows/test_legacy_imports.py
 python tests/nvda/test_python37.py
+python tests/nvda/test_global_plugin.py
 
 # 7. Build Linux (C API library, CLI, Speech Dispatcher module); on Linux or in WSL
 cargo xtask build
@@ -686,7 +687,7 @@ What is where:
 - The recorded voices need the packed recordings: `data/voices/Josip.bin` and `Vlado.bin` from `cargo xtask data`, or the directory `LAPRDUS_DATA` names; without them those tests fail and say so. The bundled dictionaries are read from `data/dictionary`.
 - `LAPRDUS_TEST_INFO=1` (with `-- --nocapture`) prints the measured values behind the thresholds.
 - **Against the C++ engine.** `tests/dsp_against_cpp.rs`, `tests/frontend_against_cpp.rs` and `tests/numbers_against_cpp.rs` compare the formant synthesizer (since 2026-11-17 without the clauses that have a z or ž, and without the recorded voices, which sound different on purpose), the front end and the number converter with dumps the last C++ engine wrote. The dumps are local files in `build/golden` (`LAPRDUS_GOLDEN` names another folder for the front end and the numbers), too large for the repository, and the program that wrote them went with the C++ sources; **the three tests pass without the dumps**, having checked nothing. `tools/golden/golden.py check <library> <data dir> <dictionary dir> [set ...]` renders the corpus `tests/golden/corpus.jsonl` through the C API (the library is `laprdus-capi`'s, e.g. `target/release/laprdus_capi.dll`) and compares it with the hashes in `tests/golden/*.tsv`, recorded from the C++ engine on Windows x64 before the port. One intended difference: a spelled `]` is now named (the C++ spelling dictionary parser could not read that entry and left it silent).
-- Python tests: `python tests/nvda/test_driver.py`, `python tests/nvda/test_manuals.py`, `python tests/windows/test_configurator_language.py`, `python tests/windows/test_sapi5_driver.py` (the last needs `cargo xtask windows` and `comtypes`), `python tests/windows/test_legacy_imports.py` (needs `cargo xtask windows-legacy`), `python tests/nvda/test_python37.py`.
+- Python tests: `python tests/nvda/test_driver.py`, `python tests/nvda/test_global_plugin.py` (the add-on's speech filter; no build needed), `python tests/nvda/test_manuals.py`, `python tests/windows/test_configurator_language.py`, `python tests/windows/test_sapi5_driver.py` (the last needs `cargo xtask windows` and `comtypes`), `python tests/windows/test_legacy_imports.py` (needs `cargo xtask windows-legacy`), `python tests/nvda/test_python37.py`.
 
 #### Linux tests and packages
 

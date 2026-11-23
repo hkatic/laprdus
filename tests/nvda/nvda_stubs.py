@@ -1,10 +1,13 @@
-"""Stand-ins for the NVDA modules the Laprdus synthesizer driver imports.
+"""Stand-ins for the NVDA modules the Laprdus add-on imports.
 
-They let the driver in src/platform/windows/nvda/addon/synthDrivers/laprdus run under a
-plain Python without NVDA: the speech commands follow NVDA's
+They let the driver in src/platform/windows/nvda/addon/synthDrivers/laprdus
+and the global plugin in addon/globalPlugins/laprdus run under a plain
+Python without NVDA: the speech commands follow NVDA's
 source/speech/commands.py, the audio player records what the driver feeds
-it, and the notifications record their calls. Import this module before the
-driver (see test_driver.py).
+it, the notifications record their calls, speech.extensions keeps the
+handlers registered with it, and characterProcessing does to a period
+between digits what NVDA's tables do. Import this module before the add-on
+(see test_driver.py and test_global_plugin.py).
 """
 import builtins
 import sys
@@ -148,10 +151,59 @@ class RateCommand(BaseProsodyCommand):
 for _name, _cls in list(globals().items()):
     if isinstance(_cls, type) and issubclass(_cls, SpeechCommand):
         setattr(commands, _name, _cls)
+
+
+# --- speech.extensions (after NVDA's extensionPoints.Filter)
+class Filter:
+    def __init__(self):
+        self.handlers = []
+
+    def register(self, handler):
+        if handler not in self.handlers:
+            self.handlers.append(handler)
+
+    def unregister(self, handler):
+        self.handlers = [h for h in self.handlers if h != handler]
+
+    def apply(self, value):
+        for handler in self.handlers:
+            value = handler(value)
+        return value
+
+
+extensions = types.ModuleType("speech.extensions")
+extensions.filter_speechSequence = Filter()
+
+# The language speech.getCurrentLanguage() returns: the synthesizer's
+CURRENT_LANGUAGE = ["hr"]
+
 speech = types.ModuleType("speech")
 speech.commands = commands
+speech.extensions = extensions
+speech.getCurrentLanguage = lambda: CURRENT_LANGUAGE[0]
 sys.modules["speech"] = speech
 sys.modules["speech.commands"] = commands
+sys.modules["speech.extensions"] = extensions
+
+# --- config: the speech settings the add-on reads
+config = types.ModuleType("config")
+config.conf = {"speech": {"symbolLevel": 0, "autoLanguageSwitching": True, "autoDialectSwitching": False}}
+sys.modules["config"] = config
+
+
+# --- characterProcessing: what NVDA's tables do to a period between digits.
+# The Slovenian one turns it into a space below the level "some" and into
+# "pika" from there (its decimal point is the comma); the others keep it.
+def processSpeechSymbols(locale, text, level):
+    if str(locale).split("_")[0] != "sl":
+        return text
+    import re
+    return re.sub(r"(?<=\d)\.(?=\d)", " " if level < 100 else " pika ", text)
+
+
+characterProcessing = types.ModuleType("characterProcessing")
+characterProcessing.processSpeechSymbols = processSpeechSymbols
+sys.modules["characterProcessing"] = characterProcessing
 
 
 # --- synthDriverHandler
@@ -206,12 +258,42 @@ class SynthDriver:
         pass
 
 
+# The synthesizer NVDA speaks with: set by a test
+CURRENT_SYNTH = [None]
+
 sdh = types.ModuleType("synthDriverHandler")
 sdh.SynthDriver = SynthDriver
 sdh.VoiceInfo = VoiceInfo
 sdh.synthIndexReached = synthIndexReached
 sdh.synthDoneSpeaking = synthDoneSpeaking
+sdh.getSynth = lambda: CURRENT_SYNTH[0]
 sys.modules["synthDriverHandler"] = sdh
+
+# --- globalPluginHandler, gui and wx: what the global plugin touches
+gph = types.ModuleType("globalPluginHandler")
+
+
+class GlobalPlugin:
+    def __init__(self):
+        pass
+
+    def terminate(self):
+        pass
+
+
+gph.GlobalPlugin = GlobalPlugin
+sys.modules["globalPluginHandler"] = gph
+
+wx = types.ModuleType("wx")
+wx.CallAfter = lambda function, *a, **k: None
+wx.ID_ANY = -1
+wx.EVT_MENU = object()
+wx.OK = 4
+wx.ICON_ERROR = 0x200
+sys.modules["wx"] = wx
+gui = types.ModuleType("gui")
+gui.messageBox = lambda *a, **k: None
+sys.modules["gui"] = gui
 
 # --- autoSettingsUtils
 ds = types.ModuleType("autoSettingsUtils.driverSetting")

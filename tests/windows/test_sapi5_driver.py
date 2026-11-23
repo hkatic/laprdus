@@ -9,11 +9,18 @@ neither read nor written (the engine writes a default one into that folder).
 
     cargo xtask windows
     python tests/windows/test_sapi5_driver.py [path to the DLL]
+    python tests/windows/test_sapi5_driver.py --hashes [path to the DLL]
+
+--hashes prints a hash of the audio of every case without per-fragment
+prosody instead of checking anything: run it with an older and a newer DLL
+to see that a change left that audio as it was.
 
 Needs comtypes (pip install comtypes) and a Python of the DLL's bitness.
 """
 
 import ctypes
+import hashlib
+import json
 import os
 import pathlib
 import struct
@@ -24,7 +31,9 @@ from ctypes import POINTER, Structure, byref, c_int, c_int16, c_long, c_ulong, c
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 BITS = struct.calcsize("P") * 8
-DLL = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "dist" / ("windows-x64" if BITS == 64 else "windows-x86") / f"laprd{BITS}.dll"
+ARGUMENTS = [argument for argument in sys.argv[1:] if not argument.startswith("--")]
+HASHES = "--hashes" in sys.argv[1:]
+DLL = pathlib.Path(ARGUMENTS[0]) if ARGUMENTS else ROOT / "dist" / ("windows-x64" if BITS == 64 else "windows-x86") / f"laprd{BITS}.dll"
 
 SCRATCH = tempfile.mkdtemp(prefix="laprdus_sapi_test_")
 os.environ["APPDATA"] = SCRATCH
@@ -199,11 +208,17 @@ class Site(COMObject):
 
 
 def fragments(*parts):
-    """A fragment list from (action, text or milliseconds, pitch) tuples."""
+    """A fragment list from (action, text or milliseconds, pitch[, rate[,
+    volume]]) tuples: the XML's pitch, rate and volume adjustments, which
+    are 0, 0 and 100 (per cent) when SAPI's XML sets none."""
     frags = [SPVTEXTFRAG() for _ in parts]
-    for index, (frag, (action, value, pitch)) in enumerate(zip(frags, parts)):
+    for index, (frag, part) in enumerate(zip(frags, parts)):
+        action, value, pitch = part[:3]
+        rate, volume = (tuple(part[3:]) + (0, 100)[len(part) - 3:])[:2]
         frag.State.eAction = action
         frag.State.PitchAdj.MiddleAdj = pitch
+        frag.State.RateAdj = rate
+        frag.State.Volume = volume
         if action == SPVA_SILENCE:
             frag.State.SilenceMSecs = value
         else:
@@ -225,16 +240,21 @@ class Reference:
             getattr(lib, "laprdus_" + name).argtypes = [c_void_p, ctypes.c_char_p, POINTER(POINTER(c_int16)), c_void_p]
         for name in ("speed", "user_pitch", "volume"):
             getattr(lib, "laprdus_set_" + name).argtypes = [c_void_p, ctypes.c_float]
+        for name in ("sentence", "comma", "newline"):
+            getattr(lib, f"laprdus_set_{name}_pause").argtypes = [c_void_p, ctypes.c_uint32]
         lib.laprdus_free_buffer.argtypes = [POINTER(c_int16)]
         lib.laprdus_destroy.argtypes = [c_void_p]
 
-    def render(self, language, text, spelled=False, speed=1.0, pitch=1.0, volume=1.0):
+    def render(self, language, text, spelled=False, speed=1.0, pitch=1.0, volume=1.0, pauses=None):
+        """`pauses`: {"sentence": ms, "comma": ms, "newline": ms}, any of them."""
         lib, handle = self.lib, self.lib.laprdus_create()
         assert lib.laprdus_set_voice(handle, b"zvonko", b"") == 0
         assert lib.laprdus_set_language(handle, language.encode()) == 0
         lib.laprdus_set_speed(handle, speed)
         lib.laprdus_set_user_pitch(handle, pitch)
         lib.laprdus_set_volume(handle, volume)
+        for name, ms in (pauses or {}).items():
+            getattr(lib, f"laprdus_set_{name}_pause")(handle, ms)
         samples, fmt = POINTER(c_int16)(), (ctypes.c_uint32 * 2)()
         call = lib.laprdus_synthesize_spelled if spelled else lib.laprdus_synthesize
         count = call(handle, text.encode("utf-8"), byref(samples), fmt)
@@ -290,6 +310,34 @@ def main():
     token = None
     try:
         engine, token = engine_for("hr")
+        if HASHES:
+            # Every case whose fragments have one prosody: a change of the
+            # driver must leave their audio as it was
+            text = "Dobar dan, kako ste? Imam 25 kuna."
+            cases = [
+                ("text", Site(), [(SPVA_SPEAK, text, 0)]),
+                ("fragments", Site(), [(SPVA_SPEAK, "Dobar dan, ", 0), (SPVA_SPEAK, "kako ste? Imam 25 kuna.  \r\n", 0)]),
+                ("rate 10", Site(rate=10), [(SPVA_SPEAK, text, 0)]),
+                ("rate -4", Site(rate=-4), [(SPVA_SPEAK, text, 0)]),
+                ("volume 50", Site(volume=50), [(SPVA_SPEAK, text, 0)]),
+                ("volume 37", Site(volume=37), [(SPVA_SPEAK, text, 0)]),
+                ("pitch 12", Site(), [(SPVA_SPEAK, text, 12)]),
+                ("pitch -7", Site(), [(SPVA_SPEAK, text, -7)]),
+                ("spelled", Site(), [(SPVA_SPELL_OUT, "abc", 0)]),
+                ("one character", Site(), [(SPVA_SPEAK, "b", 0)]),
+                ("spelled and text", Site(), [(SPVA_SPELL_OUT, "ab", 0), (SPVA_SPEAK, "Dobar dan.", 0)]),
+                ("silence", Site(), [(SPVA_SPEAK, "Dobar dan.", 0), (SPVA_SILENCE, 500, 0), (SPVA_SPEAK, "Laku noć.", 0)]),
+                ("bookmarks", Site(), [(SPVA_SPEAK, "Radna površina", 0), (SPVA_BOOKMARK, "1", 0),
+                                       (SPVA_SPEAK, "Ovo računalo", 0), (SPVA_BOOKMARK, "2", 0)]),
+                ("date", Site(), [(SPVA_SPEAK, "Rođen je 18.11.2026. u Zagrebu.", 0)]),
+            ]
+            for name, site, parts in cases:
+                print(f"{name}: {hashlib.sha256(speak(engine, site, *parts)).hexdigest()[:16]} {site.events}")
+            for language, sample in (("sr", "Имам 2000 динара."), ("bs", "Imam 2000 maraka."),
+                                     ("sl", "Rojen je 18.11.2026 v Ljubljani.")):
+                engine, token = engine_for(language)
+                print(f"{language}: {hashlib.sha256(speak(engine, Site(), (SPVA_SPEAK, sample, 0))).hexdigest()[:16]}")
+            return 0
         format_id, wave = GUID(), POINTER(WAVEFORMATEX)()
         engine.GetOutputFormat(None, None, byref(format_id), byref(wave))
         check("the output format is 22050 Hz, 16 bit, mono",
@@ -317,6 +365,35 @@ def main():
         check("a spell-out fragment is spelled", spelled == reference.render("hr", "abc", spelled=True))
         one = speak(engine, Site(), (SPVA_SPEAK, "b", 0))
         check("a single character is spelled", one == reference.render("hr", "b", spelled=True))
+
+        # Prosody per fragment. NVDA's SAPI5 driver raises a capital letter
+        # by <pitch absmiddle="15"> (capital pitch change 30 at pitch 50)
+        # around that letter alone: only the capital is raised
+        raised = 2 ** (15 / 24)
+        capital = reference.render("hr", "A", spelled=True, pitch=raised)
+        small = reference.render("hr", "b", spelled=True)
+        spelled_word = speak(engine, Site(), (SPVA_SPELL_OUT, "A", 15), (SPVA_SPELL_OUT, "b", 0))
+        check("a capital's raised pitch is the capital's alone", spelled_word == capital + small,
+              f"{len(spelled_word)} / {len(capital + small)}")
+        check("... not the whole word's", spelled_word != reference.render("hr", "Ab", spelled=True, pitch=raised))
+        later = speak(engine, Site(), (SPVA_SPELL_OUT, "a", 0), (SPVA_SPELL_OUT, "B", 15))
+        check("a capital after a small letter is raised alone",
+              later == reference.render("hr", "a", spelled=True) + reference.render("hr", "B", spelled=True, pitch=raised))
+        rated = speak(engine, Site(rate=5), (SPVA_SPEAK, "Dobar dan.", 0, 5), (SPVA_SPEAK, "Laku noć.", 0))
+        check("a fragment's rate adds to the voice's",
+              rated == reference.render("hr", "Dobar dan.", speed=2.0) + reference.render("hr", "Laku noć.", speed=2 ** 0.5))
+        softer = speak(engine, Site(volume=80), (SPVA_SPEAK, "Dobar dan.", 0, 0, 50), (SPVA_SPEAK, "Laku noć.", 0))
+        check("a fragment's volume is a share of the voice's",
+              softer == reference.render("hr", "Dobar dan.", volume=0.4) + reference.render("hr", "Laku noć.", volume=0.8))
+        check("a fragment of blanks with another prosody leaves the sentence whole",
+              speak(engine, Site(), (SPVA_SPEAK, "Dobar dan,", 0), (SPVA_SPEAK, " ", 12),
+                    (SPVA_SPEAK, "kako ste? Imam 25 kuna.", 0)) == audio)
+        # NVDA writes a bookmark before its first <pitch>: the bookmark's
+        # fragment has none, and the text's pitch must still be used
+        marked = Site()
+        after_mark = speak(engine, marked, (SPVA_BOOKMARK, "1", 0), (SPVA_SPEAK, text, 12))
+        check("the pitch of a text after a leading bookmark is the text's",
+              after_mark == high and marked.events == [(SPEI_TTS_BOOKMARK, 0, 1, "1")], f"{marked.events}")
 
         pause = speak(engine, Site(), (SPVA_SPEAK, "Dobar dan.", 0), (SPVA_SILENCE, 500, 0), (SPVA_SPEAK, "Laku noć.", 0))
         expected = reference.render("hr", "Dobar dan.") + bytes(2 * 11025) + reference.render("hr", "Laku noć.")
@@ -380,6 +457,54 @@ def main():
         written = sorted(str(path.relative_to(SCRATCH)) for path in pathlib.Path(SCRATCH).rglob("*") if path.is_file())
         check("only a default settings.json is written to the settings folder",
               written == [os.path.join("Laprdus", "settings.json")], str(written))
+
+        # The user's settings and dictionaries as every platform applies
+        # them (Engine::apply_user_config): the pauses of settings.json,
+        # which SAPI5 ignored until 2026-11-23, the user's dictionaries on
+        # top of the bundled ones, and a change to any of the five files
+        # picked up at the next Speak
+        folder = pathlib.Path(SCRATCH) / "Laprdus"
+        stamp = [time.time()]
+
+        def write(name, content):
+            path = folder / name
+            path.write_text(json.dumps(content), encoding="utf-8")
+            # A change the driver sees whatever the clock's resolution
+            stamp[0] += 5
+            os.utime(path, (stamp[0], stamp[0]))
+
+        def say(text, site=None):
+            return speak(engine, site or Site(), (SPVA_SPEAK, text, 0))
+
+        engine, token = engine_for("hr")
+        sentence = "Dobar dan. Laku noć, prijatelju. 18.11.2026."
+        before = say(sentence)
+        check("a sentence with the default pauses", before == reference.render("hr", sentence))
+        pauses = {"sentence": 600, "comma": 300}
+        write("settings.json", {"pauses": pauses})
+        paused = say(sentence)
+        check("the pauses of settings.json are the voice's", paused == reference.render("hr", sentence, pauses=pauses),
+              f"{len(paused)} bytes, {len(before)} with the default pauses")
+
+        write("user.json", {"entries": [{"grapheme": "Laprdus", "phoneme": "Lapardus"}]})
+        check("user.json is applied at the next Speak", say("Laprdus") == reference.render("hr", "Lapardus", pauses=pauses))
+        write("user.json", {"entries": [{"grapheme": "Laprdus", "phoneme": "Lopordus"}]})
+        check("a changed user.json is applied at the next Speak",
+              say("Laprdus") == reference.render("hr", "Lopordus", pauses=pauses))
+        plain = say("Biokovo")
+        write("accents.json", {"entries": [{"word": "bi'o:kovo"}]})
+        stressed = say("Biokovo")
+        check("an accents.json that appears is applied at the next Speak", stressed != plain)
+        os.remove(folder / "accents.json")
+        check("... and one that goes is gone at the next Speak", say("Biokovo") == plain)
+
+        write("settings.json", {"force": {"speed": True, "pitch": True, "volume": True}})
+        forced = speak(engine, Site(rate=10, volume=50), (SPVA_SPEAK, "Dobar dan.", 12, 5, 50))
+        check("the force switches ignore SAPI's rate, volume and pitch, the XML's too",
+              forced == reference.render("hr", "Dobar dan."))
+        write("settings.json", {"dictionaries": {"user_enabled": False}})
+        check("with the user's dictionaries off, user.json is not applied",
+              say("Laprdus") == reference.render("hr", "Laprdus"))
     finally:
         if token is not None:
             try:
