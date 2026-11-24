@@ -10,11 +10,17 @@
 # "ob 8 30", "3 14" and "132 457", in Slovenian only, while every other
 # platform and the other languages got the digits with their period.
 #
-# filter_sequence() runs before NVDA's symbol processing (the global
-# plugin registers it with speech.extensions.filter_speechSequence, NVDA
-# 2024.2 and later) whenever Laprdus speaks: through its own NVDA driver or
-# through NVDA's SAPI5 driver with a Laprdus voice (the report of
-# 2026-11-23 came from there). For each text it
+# filter_sequence() runs before NVDA's symbol processing whenever Laprdus
+# speaks: through its own NVDA driver or through NVDA's SAPI5 driver with a
+# Laprdus voice (the report of 2026-11-23 came from there). The global plugin
+# registers it with speech.extensions.filter_speechSequence, which NVDA has
+# from 2024.2 on. An older NVDA (2019.3 to 2024.1; 2023.3.4 is the last for
+# Windows 7 and 8) has no such filter: there ProcessTextHook puts
+# filter_text() in front of the processText() of NVDA's speech module, which
+# speak() calls for every text of a sequence, with the language of its
+# stretch, before the user's speech dictionaries and the symbols (a tester's
+# report from Windows 7: dates were read in Croatian, not in Slovenian,
+# through the add-on's driver and SAPI5 alike). For each text it
 #
 # 1. writes a date whose separators NVDA would drop as "18. 11. 2026"
 #    (_dates.py), and then
@@ -120,6 +126,20 @@ def carried_periods(text):
 	return _PERIOD_BETWEEN_DIGITS.sub(CARRIER, text)
 
 
+def filter_text(text, language, context):
+	"""One text of a speech sequence, which NVDA speaks in `language`,
+	rewritten for NVDA's symbol processing when Laprdus speaks it; otherwise
+	the text as it is. Applying it twice is applying it once."""
+	# With automatic language switching NVDA hands the synthesizer the
+	# language of every stretch, the default one too
+	if not text or not context.speaks(language if context.auto_language else None):
+		return text
+	text = _dates.spaced_dates(text, context.level)
+	if _PERIOD_BETWEEN_DIGITS.search(text) and not context.keeps_period(language):
+		text = carried_periods(text)
+	return text
+
+
 def filter_sequence(sequence, context):
 	"""The speech sequence with the texts Laprdus speaks rewritten for NVDA's
 	symbol processing; the same list when nothing changed. Applying it twice
@@ -140,14 +160,56 @@ def filter_sequence(sequence, context):
 				if not language or (not context.auto_dialect and language.split("_")[0] == root):
 					language = default
 		elif isinstance(item, str) and item:
-			# With automatic language switching NVDA hands the synthesizer
-			# the language of every stretch, the default one too
-			if context.speaks(language if context.auto_language else None):
-				text = _dates.spaced_dates(item, context.level)
-				if not context.keeps_period(language):
-					text = carried_periods(text)
-				if text != item:
-					item = text
-					changed = True
+			text = filter_text(item, language, context)
+			if text != item:
+				item = text
+				changed = True
 		result.append(item)
 	return result if changed else sequence
+
+
+class ProcessTextHook(object):
+	"""filter(locale, text, symbolLevel) in front of module.processText(), for
+	an NVDA without speech.extensions.filter_speechSequence (before 2024.2).
+
+	In NVDA 2019.3 to 2024.1 speak() hands each text of a sequence, with the
+	language of its stretch already worked out (automatic language and dialect
+	switching), to processText(locale, text, symbolLevel), a global of its own
+	module (speech.speech from 2021.1 on, the speech package before), which
+	applies the user's speech dictionaries and then the symbols; speak() is
+	its only caller. The hook therefore sees each text where
+	filter_speechSequence would: before both. filter() returns the text to
+	hand on; an error in it hands on the text as it was.
+
+	remove() puts the original back while the module still holds the hook's
+	function; when another add-on has wrapped it since, the hook only stops
+	filtering, so that add-on's wrapper keeps working.
+	"""
+
+	def __init__(self, module, filter):
+		self._module = module
+		self._original = original = module.processText
+		self._active = True
+		hook = self
+
+		def processText(locale, text, symbolLevel, *args, **kwargs):
+			if hook._active:
+				try:
+					text = filter(locale, text, symbolLevel)
+				except Exception:
+					pass
+			return original(locale, text, symbolLevel, *args, **kwargs)
+
+		processText.__doc__ = getattr(original, "__doc__", None)
+		self._function = processText
+		module.processText = processText
+
+	@property
+	def installed(self):
+		"""Whether the hook still filters."""
+		return self._active
+
+	def remove(self):
+		self._active = False
+		if getattr(self._module, "processText", None) is self._function:
+			self._module.processText = self._original

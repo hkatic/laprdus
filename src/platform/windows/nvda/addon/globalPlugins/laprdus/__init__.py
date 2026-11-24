@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 # LaprdusTTS Global Plugin
-# Adds the Laprdus menu to NVDA's main menu, and hands Laprdus the text as
-# written whichever NVDA driver it speaks through (_speechFilter.py)
+# Adds the Laprdus menu to NVDA's main menu, hands Laprdus the text as
+# written whichever NVDA driver it speaks through (_speechFilter.py), and
+# gives an NVDA before 2024.4 the add-on's symbol dictionaries (_symbols.py)
 
 from __future__ import unicode_literals
 
@@ -15,11 +16,11 @@ import wx
 import addonHandler
 from logHandler import log
 
-from . import _speechFilter
+from . import _speechFilter, _symbols
 
 addonHandler.initTranslation()
 
-# NVDA 2024.2 and later; an older NVDA hands the text on as it processed it
+# NVDA 2024.2 and later; an older NVDA gets _speechFilter.ProcessTextHook
 try:
     from speech.extensions import filter_speechSequence
 except ImportError:
@@ -29,13 +30,31 @@ try:
 except ImportError:
     LangChangeCommand = None
 
+# The add-on's folder: this file is in addon/globalPlugins/laprdus/
+_ADDON_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-def _speechContext(speaks):
-    """NVDA's settings for _speechFilter.filter_sequence(), read for one sequence."""
+
+def _speakModule():
+    """The module whose speak() hands each text to its processText(): in
+    NVDA 2021.1 and later speech.speech, in 2019.3 to 2020.4 the speech
+    package itself; None when this NVDA has no such pair."""
+    try:
+        from speech import speech as module
+    except ImportError:
+        import speech as module
+    if callable(getattr(module, "speak", None)) and callable(getattr(module, "processText", None)):
+        return module
+    return None
+
+
+def _speechContext(speaks, level=None):
+    """NVDA's settings for _speechFilter.filter_sequence() and filter_text(),
+    read for one sequence or text; `level` is the punctuation level NVDA
+    processes the text at, when it is known (else the user's)."""
     import config
     import speech
     conf = config.conf["speech"]
-    level = int(conf["symbolLevel"])
+    level = int(conf["symbolLevel"] if level is None else level)
     try:
         language = speech.getCurrentLanguage()
     except Exception:
@@ -74,12 +93,31 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         self._laprdusMenuItem = None
         # The text NVDA hands Laprdus, before NVDA's symbol processing
         self._speechFilterRegistered = False
+        self._processTextHook = None
         if filter_speechSequence is not None:
             try:
                 filter_speechSequence.register(self._filterSpeech)
                 self._speechFilterRegistered = True
             except Exception:
                 log.debugWarning("Laprdus: the speech filter could not be registered", exc_info=True)
+        if not self._speechFilterRegistered:
+            # NVDA before 2024.2 (Windows 7 and 8 have 2023.3.4 at most)
+            try:
+                module = _speakModule()
+                if module is not None:
+                    self._processTextHook = _speechFilter.ProcessTextHook(module, self._filterText)
+            except Exception:
+                log.debugWarning("Laprdus: the speech filter could not be put before processText", exc_info=True)
+        # NVDA before 2024.4 ignores the manifest's symbol dictionaries
+        self._symbolDictionaryHook = None
+        try:
+            import characterProcessing
+            if not _symbols.reads_manifest_dictionaries(characterProcessing):
+                dictionaries = _symbols.addon_dictionaries(_ADDON_DIR)
+                if dictionaries:
+                    self._symbolDictionaryHook = _symbols.SymbolDictionaryHook(characterProcessing, dictionaries, log)
+        except Exception:
+            log.debugWarning("Laprdus: the add-on's symbol dictionaries could not be loaded", exc_info=True)
         # Schedule menu creation on main thread
         wx.CallAfter(self._createMenu)
 
@@ -96,6 +134,24 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         except Exception:
             log.debugWarning("Laprdus: the speech filter failed", exc_info=True)
             return speechSequence
+
+    def _filterText(self, locale, text, symbolLevel):
+        """_speechFilter.ProcessTextHook, NVDA before 2024.2: one text on its
+        way to NVDA's symbol processing, in the language NVDA speaks it in,
+        as _filterSpeech() would hand it on; any other synthesizer's text is
+        left as it is."""
+        # Most texts have no digit, and nothing to rewrite
+        if not isinstance(text, str) or not any(c.isdigit() for c in text):
+            return text
+        try:
+            import synthDriverHandler
+            speaks = _speechFilter.laprdus_speaker(synthDriverHandler.getSynth())
+            if speaks is None:
+                return text
+            return _speechFilter.filter_text(text, locale or "", _speechContext(speaks, symbolLevel))
+        except Exception:
+            log.debugWarning("Laprdus: the speech filter failed", exc_info=True)
+            return text
 
     def _createMenu(self):
         """Create the Laprdus submenu in NVDA main menu."""
@@ -173,10 +229,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         # Detect architecture
         is64bit = sys.maxsize > 2**32
 
-        # Get addon path - this file is in addon/globalPlugins/laprdus/
-        # We need to go up 3 levels to addon/, then to synthDrivers/laprdus/
-        addon_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        synth_path = os.path.join(addon_path, "synthDrivers", "laprdus")
+        synth_path = os.path.join(_ADDON_DIR, "synthDrivers", "laprdus")
 
         # Select appropriate executable. On Windows 7, 8 and 8.1 (a 32-bit
         # NVDA there) it is the build made for those systems, when the
@@ -229,6 +282,14 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             except Exception:
                 pass
             self._speechFilterRegistered = False
+        for name in ("_processTextHook", "_symbolDictionaryHook"):
+            hook = getattr(self, name, None)
+            if hook is not None:
+                try:
+                    hook.remove()
+                except Exception:
+                    log.debugWarning("Laprdus: %s could not be removed" % name, exc_info=True)
+                setattr(self, name, None)
         try:
             if self._laprdusMenuItem:
                 mainMenu = gui.mainFrame.sysTrayIcon.menu

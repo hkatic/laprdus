@@ -394,7 +394,7 @@ When you use Laprdus with the NVDA screen reader, you can change the voice setti
 
 **Automatic language switching.** When "Automatic language switching (when supported)" is turned on in NVDA's speech settings, Laprdus speaks text marked as Croatian, Serbian, Bosnian or Slovenian in that language, with the same voice; it speaks text in any other language in the language you chose. The voice never changes.
 
-**Dates and numbers in Slovenian.** NVDA's Slovenian symbol table turns a period between digits into a space at the lower punctuation levels and into the word "pika" at the higher ones, and drops the hyphen and the em dash at the lower levels, while its Croatian, Serbian and Bosnian tables keep them. From NVDA 2024.2 on, the add-on hands Laprdus dates ("18.11.2026", "18/11/2026"), times ("ob 8.30"), decimals ("3.14") and words with a hyphen ("2-krat") as they are written, also when NVDA speaks with the Laprdus SAPI5 voices. In Slovenian the add-on keeps the hyphen and the em dash for other synthesizers too.
+**Dates and numbers in Slovenian.** NVDA's Slovenian symbol table turns a period between digits into a space at the lower punctuation levels and into the word "pika" at the higher ones, and drops the hyphen and the em dash at the lower levels, while its Croatian, Serbian and Bosnian tables keep them. With every NVDA the add-on works with (2019.3 and later, NVDA 2023.3.4 on Windows 7 and 8 included), the add-on hands Laprdus dates ("18.11.2026", "18/11/2026"), times ("ob 8.30"), decimals ("3.14") and words with a hyphen ("2-krat") as they are written, also when NVDA speaks with the Laprdus SAPI5 voices. In Slovenian the add-on keeps the hyphen and the em dash for other synthesizers too.
 
 ### 3.4 Android app
 

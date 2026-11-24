@@ -4922,7 +4922,8 @@ SSKJ², SP and the Collocations Dictionary of Modern Slovene at CJVT (Kolokacije
   quotation mark, and these two in NVDA's English table, have *most*. The add-on
   therefore ships a mandatory speech symbol dictionary,
   `src/platform/windows/nvda/addon/locale/sl/symbols-laprdus.dic` (`symbolDictionaries` in
-  `buildVars.py`, NVDA 2024.1 and later; earlier versions ignore the manifest key),
+  `buildVars.py`; NVDA reads that key from 2024.4 on, and for 2019.3 to 2024.3
+  the global plugin loads the file itself: "NVDA before 2024.2" below),
   with » and « at *most*, named *dvojni začetni narekovaj* and *dvojni zaključni
   narekovaj*, NVDA's own names without their stray English *double*. *SDS meni, da je prav* keeps the verb: an acronym before it, last in
   its clause before a clause of *da*, no verb of menus earlier in the clause. SUK 1.1:
@@ -6416,8 +6417,9 @@ hyphens too. An add-on's symbol dictionary cannot define a pattern
 (`allowComplexSymbols=False` in NVDA's `characterProcessing.py`), so the
 add-on registers a filter of the speech sequence
 (`speech.extensions.filter_speechSequence`, NVDA 2024.2 and later, applied
-before the symbol processing). An older NVDA has no such filter and sends
-what its tables leave.
+before the symbol processing). An older NVDA has no such filter; there the
+add-on puts the same rules in front of NVDA's `processText()` (below, "NVDA
+before 2024.2").
 
 The filter was the synth driver's until 2026-11-23, when a tester reported
 that through the SAPI5 voices dates were read in Croatian and not in
@@ -6464,6 +6466,50 @@ languages) and `a_one_dot_leader_between_digits_is_a_period` in
 `a_period_nvda_carries_as_a_one_dot_leader_is_a_period`,
 `tests/nvda/test_global_plugin.py`, `test_carried_periods_and_the_settings_file`
 in `tests/nvda/test_driver.py`.
+
+**NVDA before 2024.2.** A tester's report of 2026-11-24 from Windows 7: dates
+were read in Croatian, Serbian and Bosnian, but not in Slovenian, through the
+add-on's driver and the SAPI5 voices alike, while on Windows 11 all four
+were. The last NVDA for Windows 7 is 2023.3.4, and `filter_speechSequence`
+came with 2024.2 (`source/speech/extensions.py` of `release-2024.2`; not in
+`release-2024.1` nor `release-2023.3.4`), so the filter never ran there.
+NVDA 2023.3.4's own `characterProcessing.py` with its Slovenian and English
+`symbols.dic`, run outside NVDA, turns `Rojen je 16.4.1986.` into `Rojen je
+16 4 1986.` at the level "none" and into `16 pika 4 pika 1986` from "some"
+up, and leaves `16․4․1986` alone; its Croatian table keeps the period.
+Slashed dates lost their slashes there in every language.
+
+In every NVDA without the filter (the speech modules of 2019.3, 2020.4,
+2021.1, 2023.3.4 and 2024.1 were read) `speak()` works out the language of
+each stretch and then hands each text to `processText(locale, text,
+symbolLevel)`, a global of its own module (`speech.speech` from 2021.1 on, the
+`speech` package before), which applies the user's speech dictionaries and
+then the symbols; `speak()` is its only caller, so every path, say all
+included, passes there. `_speechFilter.ProcessTextHook` puts the filter's
+rules for one text (`filter_text()`, which `filter_sequence()` also uses) in
+front of it, with the stretch's language and the level `speak()` was given:
+the text reaches the symbol processing as it would through the filter (the
+test compares the two in 672 cases of level, language, language switching,
+synthesizer and sequence). The hook gives way when the filter exists, and
+`terminate()` puts NVDA's function back (or, if another add-on has wrapped it
+since, only stops filtering).
+
+NVDA also reads the symbol dictionaries an add-on's manifest names only from
+2024.4 on (`listAvailableSymbolDictionaryDefinitions`); before that the
+add-on's Slovenian dictionary was not loaded, and » « were spoken at every
+level as *double dvojni zaključni narekovaj*, as in the report of
+2026-11-03. In 2019.3 to 2024.3 a locale's symbol data comes from one
+factory, `SpeechSymbolProcessor.localeSymbols._localeDataFactory`, which
+returns `(builtin, user)`, NVDA's CLDR data and `symbols.dic` loaded one after
+the other into `builtin`; `_symbols.SymbolDictionaryHook` loads the add-on's
+file into `builtin` after them and clears NVDA's caches. The user's own
+symbols still come first, as in 2024.4. With both hooks the real
+`characterProcessing.py` and tables of 2023.3.4 and of 2019.3 hand Laprdus
+`16․4․1986`, `ob 8․30`, `18. 11. 2026`, `»Dober dan«` without the names
+of the marks below "most", and `2-krat` (2019.3's table, unlike 2023.3.4's,
+drops that hyphen; from 2023.3.4 on a Slovenian row without a preserve field
+takes the English one), and NVDA's own text again after `terminate()`. Not
+yet heard on Windows 7 itself.
 
 The digit mode reads times and dates as the whole-number mode does and now
 also sets a number off from the letters it is glued to

@@ -183,7 +183,9 @@ period between digits (`18.11.2026` arrived as `18 11 2026`; hr, sr, bs, en
 preserve it), every table the slashes. An add-on's symbol dictionary cannot
 define patterns, so the add-on registers a filter with
 `speech.extensions.filter_speechSequence` (NVDA 2024.2+; applied before the
-symbol processing). Since 2026-11-23 the **global plugin** registers it
+symbol processing), and in an NVDA without it (2019.3 to 2024.1) puts the
+same rules in front of the `processText()` of NVDA's speech module (see
+"NVDA before 2024.2 and 2024.4" below). Since 2026-11-23 the **global plugin** registers it
 (`globalPlugins/laprdus/__init__.py`, unregistered in `terminate()`; the
 synth driver registers nothing), so it works whenever Laprdus speaks: through
 its own NVDA driver and through NVDA's SAPI5 driver (`sapi5`, `sapi5_32` in a
@@ -218,20 +220,56 @@ through SAPI5 a stretch in a language other than hr, sr, bs, sl is left alone
 when another vendor's voice of that language is installed (SAPI switches to
 it on `<lang>`; with a Laprdus token SAPI switches to the Laprdus token of the
 language, verified). Applying it twice is applying it once; an error leaves
-the sequence as it was. Not covered: NVDA before 2024.2, and SAPI5 hosts other
-than NVDA (they do no such symbol processing). The add-on's mandatory
-Slovenian symbol dictionary (`locale/sl/symbols-laprdus.dic`) also preserves
-`-` and `—` (`most always`, as the hr, sr, bs and en tables do; NVDA's
-Slovenian table turned them into spaces below "most": `2-krat`, `10-letnica`,
-`2-3 dni`, `1991-2000`); it applies to every synthesizer that speaks
-Slovenian in NVDA. Tests: `a_date_is_read_in_every_written_form` (all 15
+the sequence as it was. Not covered: SAPI5 hosts other than NVDA (they do no
+such symbol processing). The add-on's mandatory Slovenian symbol dictionary
+(`locale/sl/symbols-laprdus.dic`) also preserves `-` and `—` (`most always`,
+as the hr, sr, bs and en tables do; NVDA's Slovenian table turned them into
+spaces below "most": `2-krat`, `10-letnica`, `2-3 dni`, `1991-2000`; in
+2023.3.4 and later a Slovenian row without a preserve field takes the
+English one, which preserves them, but 2019.3 says `2 krat`); it applies to
+every synthesizer that speaks Slovenian in NVDA.
+
+**NVDA before 2024.2 and 2024.4** (a tester's report of 2026-11-24 from
+Windows 7, whose last NVDA is 2023.3.4: dates were read in Croatian, Serbian
+and Bosnian but not in Slovenian, through the add-on's driver and SAPI5
+alike). That NVDA has no `filter_speechSequence`
+(`speech/extensions.py` has it from `release-2024.2`), so nothing ran and
+`16.4.1986` reached Laprdus as `16 4 1986` (checked by running 2023.3.4's
+own `characterProcessing.py` on its Slovenian and English tables); slashed
+dates lost their slashes in every language. Without the filter the plugin
+installs `_speechFilter.ProcessTextHook`: in 2019.3 to 2024.1 `speak()`
+hands each text, with its stretch's language already worked out, to
+`processText(locale, text, symbolLevel)`, a global of its module
+(`speech.speech` from 2021.1, the `speech` package before; `_speakModule()`
+in `__init__.py`), which applies the user's speech dictionaries and then the
+symbols, and `speak()` is its only caller; the hook runs `filter_text()` (the
+per-text body of `filter_sequence()`) in front of it, at the level `speak()`
+was given, so the text is what the filter would hand on (the test compares
+the two paths in 672 cases). NVDA reads the manifest's `symbolDictionaries`
+from 2024.4 (`listAvailableSymbolDictionaryDefinitions`); before that it
+ignored `symbols-laprdus.dic`, and » « were spoken at every level as "double
+dvojni zaključni narekovaj". `_symbols.SymbolDictionaryHook` therefore wraps
+`SpeechSymbolProcessor.localeSymbols._localeDataFactory` (the same in 2019.3
+to 2024.3: it returns `(builtin, user)`), loads the add-on's file into the
+locale's `builtin` after NVDA's table and clears the caches
+(`clearSpeechSymbols()`): the user's own symbols still come first, as in
+2024.4. Both hooks are removed in `terminate()` (a later add-on's wrapper of
+the same function is left in place, ours stops working). Checked against the
+real `characterProcessing.py` and tables of 2023.3.4 and 2019.3:
+`16․4․1986`, `ob 8․30`, `18. 11. 2026`, `»Dober dan«` unspoken with the
+punctuation off, `2-krat`, and NVDA's own output again after `terminate()`.
+Not run on Windows 7 itself.
+
+Tests: `a_date_is_read_in_every_written_form` (all 15
 written forms in all four languages since 2026-11-23, Slovenian had six) and
 `a_one_dot_leader_between_digits_is_a_period`
 (`src/common/text/numbers/tests.rs`), the date rows of `tests/formant.rs`
 and `a_period_nvda_carries_as_a_one_dot_leader_is_a_period`,
 `tests/nvda/test_global_plugin.py` (no build needed: registration, the
 synthesizers, Slovenian at every level, Croatian, language switching, the
-dates, the symbols file), `test_carried_periods_and_the_settings_file` of
+dates, the symbols file, and an NVDA before 2024.2 and 2024.4: the hook in
+both layouts of the speech module, the same text as through the filter, the
+symbol dictionary in NVDA's data), `test_carried_periods_and_the_settings_file` of
 `tests/nvda/test_driver.py`; `tests/numbers_against_cpp.rs` and
 `tests/frontend_against_cpp.rs` list the intended differences
 (`INTENDED`). See "Every written form of a date" in `docs/formant.md`.

@@ -394,7 +394,7 @@ Kada koristite Laprdus sa NVDA čitačem ekrana, podešavanja glasa možete da p
 
 **Automatska promena jezika.** Kada je u NVDA podešavanjima govora uključena opcija „Automatska promena jezika (kada je podržana)”, tekst označen kao hrvatski, srpski, bosanski ili slovenački Laprdus izgovara na tom jeziku, istim glasom; tekst na bilo kom drugom jeziku izgovara na jeziku koji ste izabrali. Glas se pritom nikada ne menja.
 
-**Datumi i brojevi na slovenačkom.** NVDA-ova slovenačka tabela simbola tačku između cifara pri nižim nivoima interpunkcije pretvara u razmak, a pri višim u reč „pika”, a crticu i dugu crtu pri nižim nivoima izostavlja, dok ih hrvatska, srpska i bosanska tabela čuvaju. Od NVDA 2024.2 dodatak Laprdusu predaje datume („18.11.2026”, „18/11/2026”), vreme („ob 8.30”), decimalne brojeve („3.14”) i reči sa crticom („2-krat”) onako kako su napisani, i kada NVDA govori Laprdusovim SAPI5 glasovima. Crticu i dugu crtu na slovenačkom dodatak čuva i za druge sintetizatore.
+**Datumi i brojevi na slovenačkom.** NVDA-ova slovenačka tabela simbola tačku između cifara pri nižim nivoima interpunkcije pretvara u razmak, a pri višim u reč „pika”, a crticu i dugu crtu pri nižim nivoima izostavlja, dok ih hrvatska, srpska i bosanska tabela čuvaju. U svakoj verziji NVDA-a sa kojom dodatak radi (od 2019.3, i u NVDA-u 2023.3.4 na sistemima Windows 7 i 8) dodatak Laprdusu predaje datume („18.11.2026”, „18/11/2026”), vreme („ob 8.30”), decimalne brojeve („3.14”) i reči sa crticom („2-krat”) onako kako su napisani, i kada NVDA govori Laprdusovim SAPI5 glasovima. Crticu i dugu crtu na slovenačkom dodatak čuva i za druge sintetizatore.
 
 ### 3.4 Android aplikacija
 

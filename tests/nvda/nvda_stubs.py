@@ -38,8 +38,14 @@ class _Log:
     def error(self, msg, *a, **k):
         self._p("ERROR", msg, *a)
 
-    def debugWarning(self, msg, *a):
+    def debugWarning(self, msg, *a, **k):
+        # NVDA's log takes exc_info=True; the tests read the warnings back
+        WARNINGS.append(msg % a if a else msg)
         self._p("DBGWARN", msg, *a)
+
+
+# The debug warnings logged so far
+WARNINGS = []
 
 
 logHandler = types.ModuleType("logHandler")
@@ -203,6 +209,8 @@ def processSpeechSymbols(locale, text, level):
 
 characterProcessing = types.ModuleType("characterProcessing")
 characterProcessing.processSpeechSymbols = processSpeechSymbols
+# NVDA 2024.4 and later read an add-on's symbol dictionaries themselves
+characterProcessing.listAvailableSymbolDictionaryDefinitions = lambda: []
 sys.modules["characterProcessing"] = characterProcessing
 
 
