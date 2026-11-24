@@ -18,9 +18,22 @@ import tempfile as _tempfile
 # String types - Python 3 only (NVDA 2019.3+ requires Python 3)
 string_types = (str,)
 
+def _secure_mode():
+    """Whether NVDA runs in secure mode (the sign-in and other secure screens)."""
+    try:
+        import globalVars
+        return bool(getattr(globalVars.appArgs, "secure", False))
+    except Exception:
+        return False
+
+
 # Debug file logging - only enabled when debug flag file exists
 # To enable: create an empty file named "laprdus_debug" in the temp directory
-_DEBUG_ENABLED = _os.path.exists(_os.path.join(_tempfile.gettempdir(), "laprdus_debug"))
+# The file holds the beginning of every text NVDA speaks and every spelled
+# character, which may be personal (the user guide, 7.2, says so). It is
+# never written in NVDA's secure mode, where NVDA keeps no log either:
+# secure screens show passwords.
+_DEBUG_ENABLED = not _secure_mode() and _os.path.exists(_os.path.join(_tempfile.gettempdir(), "laprdus_debug"))
 _DEBUG_LOG_PATH = _os.path.join(_tempfile.gettempdir(), "laprdus_debug.log") if _DEBUG_ENABLED else None
 
 # The default voice of every language: every voice speaks every language,

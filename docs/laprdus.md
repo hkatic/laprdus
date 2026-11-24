@@ -1369,7 +1369,7 @@ Laprdus uključuje osamnaest glasova - dva osnovna, tri izvedena, tri formantna 
 | **Josip** | `josip` | Osnovni | Hrvatski | Muški glas normalne visine. |
 | **Vlado** | `vlado` | Osnovni | Srpski | Muški glas normalne visine. |
 | **Detence** | `detence` | Izvedeni | Hrvatski | Dječji glas. Izveden iz glasa Josip s povišenom visinom. |
-| **Baba** | `baba` | Izvedeni | Hrvatski | Ženski glas. Izveden iz glasa Josip s blago povišenom visinom. |
+| **Baba** | `baba` | Izvedeni | Hrvatski | Stariji ženski glas. Izveden iz glasa Josip s blago povišenom visinom. |
 | **Đedo** | `djedo` | Izvedeni | Srpski | Stariji muški glas. Izveden iz glasa Vlado sa sniženom visinom. |
 | **Zvonko** | `zvonko` | Formantni | Hrvatski | Muški glas. Govor nastaje pravilima, bez snimaka. Zadani glas. |
 | **Stojan** | `stojan` | Formantni | Srpski | Muški glas, dublji i tamniji. Govor nastaje pravilima, bez snimaka. |
@@ -1736,6 +1736,8 @@ Za uključivanje dijagnostičkih zapisnika za NVDA dodatak:
 2. Ponovno pokrenite NVDA
 3. Zapisnici će se spremati u `%TEMP%\laprdus_debug.log`
 
+Zapisnik sadrži početak svakog teksta koji NVDA izgovori i svaki znak koji slovka, pa u njemu mogu biti osobni podaci: poruke, imena, adrese. Pročitajte ga prije nego što ga ikome pošaljete, uklonite ono što je privatno i pošaljite ga e-poštom umjesto da ga priložite javnoj prijavi. Kad završite, izbrišite datoteke `laprdus_debug` i `laprdus_debug.log` i ponovno pokrenite NVDA.
+
 #### Linux
 
 Koristite opciju `-w` za opširniji ispis:
@@ -1757,6 +1759,8 @@ Pri prijavi problema, molimo navedite:
 - Korišteni čitač ekrana (ako je primjenjivo)
 - Opis problema
 - Korake za reprodukciju problema
+
+U javnu prijavu nemojte stavljati osobne podatke, ni svoje ni tuđe.
 
 ### 8.4 Podaci drugih autora
 
