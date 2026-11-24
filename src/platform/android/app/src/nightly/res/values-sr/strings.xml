@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The nightly build's names (the "nightly" build type in app/build.gradle.kts):
+     it installs next to the app from Google Play, and the two must be told apart
+     in the launcher and in the system's list of speech engines. -->
+<resources>
+    <string name="app_name">Laprdus TTS Nightly</string>
+    <string name="tts_service_name">Laprdus Nightly</string>
+</resources>

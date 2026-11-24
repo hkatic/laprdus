@@ -55,6 +55,22 @@ apt_install() {
     apt-get install -y -q --no-install-recommends "$@"
 }
 
+# A nightly package (installers/linux/ci/source.sh, LAPRDUS_NIGHTLY) must
+# sort below the release of its version, which is ${VERSION}-1 in every
+# format, by the distribution's own comparison: $1 the package's
+# version-release, $2 the comparison's verdict ("lower" or not).
+nightly_below_release() {
+    if [ "$1" = "${VERSION}-1" ]; then
+        return 0
+    fi
+    if [ "$2" = lower ]; then
+        echo "=== ${FORMAT} ${1} sorts below the release ${VERSION}-1"
+    else
+        echo "build.sh: ${FORMAT} ${1} does not sort below the release ${VERSION}-1" >&2
+        exit 1
+    fi
+}
+
 case "${FORMAT}" in
     deb)
         apt_install build-essential debhelper dpkg-dev pkg-config libasound2-dev \
@@ -67,6 +83,8 @@ case "${FORMAT}" in
         # which are too old here; rustup's are used instead.
         dpkg-buildpackage -us -uc -b -d
         cp -v /build/laprdus_*.deb /build/laprdus-dev_*.deb "${OUT}/"
+        version="$(dpkg-deb -f /build/laprdus_*.deb Version)"
+        nightly_below_release "${version}" "$(dpkg --compare-versions "${version}" lt "${VERSION}-1" && echo lower)"
         ;;
 
     tarball)
@@ -87,6 +105,12 @@ case "${FORMAT}" in
         tar -xJf "${SOURCE}" -C /tmp "${NAME}/installers/linux/rpm/laprdus.spec"
         rpmbuild -ba "/tmp/${NAME}/installers/linux/rpm/laprdus.spec"
         cp -v "${HOME}"/rpmbuild/RPMS/*/laprdus*.rpm "${OUT}/"
+        # %{VERSION}-%{RELEASE} without the distribution's tag (.fc44).
+        version="$(rpm -qp --qf '%{VERSION}-%{RELEASE}' "${HOME}"/rpmbuild/RPMS/*/laprdus-[0-9]*.rpm | head -n 1)"
+        version="${version%"$(rpm --eval '%{?dist}')"}"
+        # rpmdev-vercmp exits with 12 when the second is the newer.
+        verdict="$(rpmdev-vercmp "${version}" "${VERSION}-1" >/dev/null; [ $? -eq 12 ] && echo lower || true)"
+        nightly_below_release "${version}" "${verdict}"
         # The source RPM is the same for every architecture: one copy, with
         # the x86_64 packages.
         if [ "${ARCH}" = x86_64 ]; then
@@ -115,6 +139,8 @@ case "${FORMAT}" in
         runuser -u builder -- bash -c 'cd /build/arch && makepkg --noconfirm -f'
         # Not the laprdus-debug package makepkg may add.
         cp -v /build/arch/laprdus-"${VERSION}"-*.pkg.tar.zst "${OUT}/"
+        version="$(cd /build/arch && . ./PKGBUILD && echo "${pkgver}-${pkgrel}")"
+        nightly_below_release "${version}" "$([ "$(vercmp "${version}" "${VERSION}-1")" -lt 0 ] && echo lower)"
         ;;
 
     *)

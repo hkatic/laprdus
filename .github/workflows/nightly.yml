@@ -1,0 +1,321 @@
+# Nightly builds: every night, when dev has changed since the night before,
+# every platform is built and tested exactly as on a push (build.yml and
+# linux-packages.yml, called from here), and the files are published on the
+# nightly download site (Cloudflare R2), not on GitHub Releases, which hold
+# the stable versions only. .claude/rules/nightly.md has the whole story:
+# the versions, the secrets, the site, the NVDA add-on store, TestFlight.
+#
+# What starts it: a tag nightly/<YYYYMMDD-HHMMSS>[-force] on dev's newest
+# commit. GitHub runs a schedule only on a repository's default branch
+# (main), and nothing nightly goes to main and dev stays non-default (the
+# owner's decision), so a private helper repository, hkatic/laprdus-nightly-
+# trigger, puts that tag here at 02:00 UTC every night and when its "Run
+# workflow" button is pressed. A tag push runs the workflow of the tagged
+# commit, so this file lives on dev only. remove-tag deletes the tag again.
+#
+#   check      stops when the site's latest.json names the same commit
+#              (unless the tag ends in -force); works out the versions
+#   build      build.yml with the nightly's versions
+#   linux      linux-packages.yml with the nightly's version
+#   publish    the files, the page and the lists on the site, the add-on in
+#              the store's folder, the links for the NVDA add-on store form;
+#              only when every job before it has passed
+#   remove-tag always
+
+name: Nightly builds
+
+on:
+  push:
+    tags: ["nightly/*"]
+
+permissions:
+  contents: read
+
+# One nightly at a time; a nightly is never cut short.
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Anything new since the last nightly?
+    runs-on: ubuntu-24.04
+    outputs:
+      build: ${{ steps.check.outputs.build }}
+      version: ${{ steps.check.outputs.version }}
+      addon-version: ${{ steps.check.outputs.addon-version }}
+      date: ${{ steps.check.outputs.date }}
+      number: ${{ steps.check.outputs.number }}
+      previous: ${{ steps.check.outputs.previous }}
+      changes: ${{ steps.check.outputs.changes }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: check
+        env:
+          BASE_URL: ${{ vars.NIGHTLY_BASE_URL }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          sha="$(git rev-parse HEAD)"
+          # Only a commit of dev is built.
+          if ! git merge-base --is-ancestor "${sha}" origin/dev; then
+            echo "::error::The tag ${TAG} is on ${sha}, which is not on dev."
+            exit 1
+          fi
+          case "${TAG}" in *-force) force=true ;; *) force=false ;; esac
+          previous=""
+          if [ -n "${BASE_URL}" ] && curl -fsSL --retry 3 "${BASE_URL%/}/latest.json" -o "${RUNNER_TEMP}/latest.json"; then
+            previous="$(python3 -I -c 'import json, sys; print(json.load(open(sys.argv[1])).get("commit") or "")' "${RUNNER_TEMP}/latest.json")"
+          fi
+          version="$(sed -n '/^\[workspace.package\]/,/^\[/s/^version = "\(.*\)"/\1/p' Cargo.toml)"
+          {
+            # A nightly is a pre-release of the version Cargo.toml names.
+            echo "version=${version}-nightly.$(date -u +%Y%m%d)"
+            # The NVDA add-on's version is the date, YYYY.M.D: the add-on
+            # store takes only plain numbers, each once (the owner's choice).
+            echo "addon-version=$(date -u +%Y).$(date -u +%-m).$(date -u +%-d)"
+            echo "date=$(date -u +%Y-%m-%d)"
+            # Only grows: the Android version code, the Apple build number.
+            echo "number=$(git rev-list --count HEAD)"
+            echo "previous=${previous}"
+          } >> "${GITHUB_OUTPUT}"
+          # The changes since the last nightly, "<short sha>\t<subject>" a
+          # line: the site's page and TestFlight's "What to Test".
+          if [ -n "${previous}" ] && git merge-base --is-ancestor "${previous}" HEAD 2>/dev/null; then
+            git log --no-merges --format='%h%x09%s' "${previous}..HEAD" > "${RUNNER_TEMP}/changes.tsv"
+          else
+            # The first nightly, or a history rewritten since the last one.
+            git log --no-merges -20 --format='%h%x09%s' > "${RUNNER_TEMP}/changes.tsv"
+          fi
+          {
+            echo "changes<<CHANGES_END"
+            head -n 100 "${RUNNER_TEMP}/changes.tsv"
+            echo "CHANGES_END"
+          } >> "${GITHUB_OUTPUT}"
+          if [ -z "${BASE_URL}" ] && [ "${force}" != true ]; then
+            # Before the site is set up the night sleeps, instead of
+            # building for two hours and failing at publish every night. A
+            # forced nightly still builds and tests everything.
+            echo "build=false" >> "${GITHUB_OUTPUT}"
+            echo "::notice::The variable NIGHTLY_BASE_URL is not set, so there is no site to publish on yet: no nightly (a tag ending in -force builds anyway)."
+          elif [ "${previous}" = "${sha}" ] && [ "${force}" != true ]; then
+            echo "build=false" >> "${GITHUB_OUTPUT}"
+            echo "::notice::dev is still at ${sha}, the last nightly's commit: nothing to build."
+          else
+            echo "build=true" >> "${GITHUB_OUTPUT}"
+            echo "Nightly of ${sha} (the last was of ${previous:-nothing yet})."
+          fi
+
+  build:
+    name: Build and test
+    needs: check
+    if: needs.check.outputs.build == 'true'
+    uses: ./.github/workflows/build.yml
+    secrets: inherit
+    with:
+      nightly: ${{ needs.check.outputs.version }}
+      addon-version: ${{ needs.check.outputs.addon-version }}
+      number: ${{ needs.check.outputs.number }}
+      changes: ${{ needs.check.outputs.changes }}
+
+  linux:
+    name: Linux packages
+    needs: check
+    if: needs.check.outputs.build == 'true'
+    uses: ./.github/workflows/linux-packages.yml
+    # GitHub checks the permissions of every job of a called workflow, also
+    # of one that will not run: linux-packages.yml's release job (v* tags
+    # only) asks for contents: write. Its other jobs read only.
+    permissions:
+      contents: write
+    with:
+      nightly: ${{ needs.check.outputs.version }}
+
+  publish:
+    name: Publish on the nightly site
+    needs: [check, build, linux]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      VERSION: ${{ needs.check.outputs.version }}
+      ADDON_VERSION: ${{ needs.check.outputs.addon-version }}
+      DATE: ${{ needs.check.outputs.date }}
+      NUMBER: ${{ needs.check.outputs.number }}
+      TESTFLIGHT: ${{ needs.build.outputs.testflight }}
+      BASE_URL: ${{ vars.NIGHTLY_BASE_URL }}
+      BUCKET: ${{ vars.NIGHTLY_BUCKET || 'laprdus-nightly' }}
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+      # R2 takes the checksums of the S3 API only where the API requires them.
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+    steps:
+      - name: The site's settings
+        run: |
+          missing=""
+          for name in R2_ACCOUNT_ID AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY BASE_URL; do
+            [ -n "${!name}" ] || missing="${missing} ${name}"
+          done
+          if [ -n "${missing}" ]; then
+            echo "::error::Not set:${missing} (the secrets R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY and the variable NIGHTLY_BASE_URL; .claude/rules/nightly.md)."
+            exit 1
+          fi
+          echo "R2=https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com" >> "${GITHUB_ENV}"
+          aws --version
+
+      - uses: actions/checkout@v7
+
+      # Every artifact of the run, each in a folder of its own.
+      - uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+
+      - name: The night's files
+        run: |
+          mkdir night
+          # Not the debug APK, the source RPM, or the debug packages.
+          find artifacts -type f \( \
+              -name 'Laprdus_SAPI5_Setup_*.exe' -o -name 'laprdus-*.nvda-addon' \
+              -o -name 'Laprdus-nightly-*.apk' \
+              -o -name 'Laprdus-*-macOS.dmg' -o -name 'laprdus-*-macos-universal.tar.xz' \
+              -o -name '*.deb' -o -name '*.rpm' -o -name '*.pkg.tar.zst' -o -name 'laprdus-*-linux-*.tar.xz' \) \
+            ! -name '*.src.rpm' ! -name '*-debuginfo-*' ! -name '*-debugsource-*' ! -name '*-debug-*.pkg.tar.zst' \
+            -exec cp -v {} night/ \;
+          # cargo xtask dist names the Linux tarball by the engine's version.
+          for f in night/laprdus-*-linux-*.tar.xz; do
+            [ -e "${f}" ] && mv -v "${f}" "night/laprdus-${VERSION}-linux-${f##*-linux-}"
+          done
+          # The two that every nightly has.
+          ls night/Laprdus_SAPI5_Setup_"${VERSION}".exe "night/laprdus-${ADDON_VERSION}.nvda-addon"
+          ls -l night
+
+      - name: The page and the lists
+        env:
+          CHANGES: ${{ needs.check.outputs.changes }}
+        run: |
+          printf '%s\n' "${CHANGES}" > changes.tsv
+          curl -fsSL --retry 3 "${BASE_URL%/}/nightlies.json" -o nightlies.json || echo "No nightlies.json yet: the site starts with this night."
+          python3 -I tools/nightly/publish.py --files night --out site \
+            --version "${VERSION}" --date "${DATE}" --commit "$(git rev-parse HEAD)" --number "${NUMBER}" \
+            --changes changes.tsv --nightlies nightlies.json --testflight "${TESTFLIGHT}" \
+            --base-url "${BASE_URL}" --repo-url "${{ github.server_url }}/${{ github.repository }}"
+
+      # The night's folder first, the page and the lists last, so that the
+      # page never names a file that is not there yet.
+      - name: Upload to R2
+        run: |
+          s3() { aws s3 "$@" --endpoint-url "${R2}" --no-progress; }
+          s3 sync "site/${DATE}/" "s3://${BUCKET}/${DATE}/" --delete
+          s3 sync site/latest/ "s3://${BUCKET}/latest/" --delete --cache-control no-cache
+          s3 cp site/latest.json "s3://${BUCKET}/latest.json" --content-type application/json --cache-control no-cache
+          s3 cp site/nightlies.json "s3://${BUCKET}/nightlies.json" --content-type application/json --cache-control no-cache
+          s3 cp site/index.html "s3://${BUCKET}/index.html" --content-type "text/html; charset=utf-8" --cache-control no-cache
+          while read -r old; do
+            if [ -n "${old}" ]; then s3 rm "s3://${BUCKET}/${old}/" --recursive; fi
+          done < site/prune.txt
+
+      # The NVDA add-on store wants a download address that stays valid,
+      # and records the file's SHA-256: nvda/ keeps the add-on of every
+      # version in the store, and a version that is there already is never
+      # replaced (a forced second nightly on the same day has the same
+      # version). The others go after 14 nights.
+      - name: The add-on for the NVDA add-on store
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          s3() { aws s3 "$@" --endpoint-url "${R2}" --no-progress; }
+          addon="laprdus-${ADDON_VERSION}.nvda-addon"
+          if aws s3api head-object --bucket "${BUCKET}" --key "nvda/${addon}" --endpoint-url "${R2}" >/dev/null 2>&1; then
+            echo "::notice::nvda/${addon} is there already and is kept as it is: the store's link gives that file."
+          else
+            s3 cp "night/${addon}" "s3://${BUCKET}/nvda/${addon}"
+          fi
+          # The versions the store has (addons/laprdus/<version>.json).
+          gh api repos/nvaccess/addon-datastore/contents/addons/laprdus --jq '.[].name' 2>/dev/null |
+            sed -n 's/\.json$//p' > in-store.txt || true
+          echo "In the store: $(tr '\n' ' ' < in-store.txt)"
+          cutoff="$(date -u -d '14 days ago' +%s)"
+          aws s3api list-objects-v2 --bucket "${BUCKET}" --prefix nvda/ --endpoint-url "${R2}" \
+            --query 'Contents[].[Key, LastModified]' --output text | while read -r key modified; do
+            [ -n "${key}" ] && [ "${key}" != None ] || continue
+            version="${key#nvda/laprdus-}"
+            version="${version%.nvda-addon}"
+            if ! grep -qx "${version}" in-store.txt && [ "$(date -u -d "${modified}" +%s)" -lt "${cutoff}" ]; then
+              s3 rm "s3://${BUCKET}/${key}"
+            fi
+          done
+
+      - name: Read back from the site
+        run: |
+          # The site names this night's commit, and every file it lists comes
+          # back with its SHA-256.
+          curl -fsSL --retry 3 "${BASE_URL%/}/latest.json" -o served.json
+          python3 -I -c '
+          import json, sys
+          served = json.load(open(sys.argv[1]))
+          if served["commit"] != sys.argv[2]:
+              sys.exit("the site names commit " + served["commit"])
+          for f in served["files"]:
+              print(f["sha256"], f["url"])
+          ' served.json "$(git rev-parse HEAD)" > served.txt
+          while read -r sum url; do
+            got="$(curl -fsSL --retry 3 "${url}" | sha256sum | cut -d' ' -f1)"
+            if [ "${got}" != "${sum}" ]; then
+              echo "::error::${url} does not match its SHA-256"
+              exit 1
+            fi
+            echo "ok ${url}"
+          done < served.txt
+
+      # NV Access asks that the store's form be filled in by hand (their
+      # post of 10 March 2026): these links open it filled in, and the owner
+      # checks it and presses Submit. Any nightly can go to dev or to beta.
+      - name: Links for the NVDA add-on store
+        env:
+          SOURCE: ${{ github.server_url }}/${{ github.repository }}
+        run: |
+          python3 -I - >> "${GITHUB_STEP_SUMMARY}" <<'PY'
+          import os
+          from urllib.parse import urlencode
+          base, version = os.environ["BASE_URL"].rstrip("/"), os.environ["ADDON_VERSION"]
+          def link(channel):
+              fields = {
+                  "template": "registerAddon.yml",
+                  "title": f"[Submit add-on]: Laprdus {version} ({channel})",
+                  "download-url": f"{base}/nvda/laprdus-{version}.nvda-addon",
+                  "source-url": os.environ["SOURCE"],
+                  "publisher": "Hrvoje Katić",
+                  "channel": channel,
+                  "license-name": "GPL v3",
+                  "license-url": "https://www.gnu.org/licenses/gpl-3.0.html",
+              }
+              return "https://github.com/nvaccess/addon-datastore/issues/new?" + urlencode(fields)
+          print(f"### Nightly {os.environ['VERSION']}\n")
+          print(f"The site: {base}/index.html\n")
+          if os.environ.get("TESTFLIGHT"):
+              print(f"TestFlight: {os.environ['TESTFLIGHT']}\n")
+          print(f"### NVDA add-on store: add-on {version}\n")
+          print("Open one, check the form, press Submit:\n")
+          print(f"- [Submit {version} to the dev channel]({link('dev')})")
+          print(f"- [Submit {version} to the beta channel]({link('beta')})")
+          PY
+          cat "${GITHUB_STEP_SUMMARY}"
+
+  # The tag has done its work. Deleted with the GITHUB_TOKEN, it starts
+  # nothing.
+  remove-tag:
+    name: Remove the nightly tag
+    needs: [check, build, linux, publish]
+    if: always()
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: gh api -X DELETE "repos/${GH_REPO}/git/refs/tags/${TAG}" && echo "Removed the tag ${TAG}."

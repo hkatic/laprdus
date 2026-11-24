@@ -58,10 +58,10 @@ The language is a separate setting, with word stress and natural sentence melody
     # Add-on update channel (default is None, denoting stable releases,
     # and for development releases, use "dev".)
     addon_updateChannel=None,
-    # Add-on license such as GPL 2
-    addon_license="GPL 2",
+    # Add-on license: the GPL version 3, as LICENSE (the template had "GPL 2")
+    addon_license="GPL v3",
     # URL for the license document the ad-on is licensed under
-    addon_licenseURL=None,
+    addon_licenseURL="https://www.gnu.org/licenses/gpl-3.0.html",
 )
 
 # Define the python files that are the sources of your add-on.

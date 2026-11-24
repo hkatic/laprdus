@@ -10,7 +10,17 @@
 ; Works with NVDA, Balabolka, and all SAPI5-compatible applications
 
 #define AppName "Laprdus"
-#define AppVersion "2.0.0"
+; A nightly build names its own versions (.github/workflows/nightly.yml):
+; ISCC /DAppVersion=2.0.0-nightly.20261124 /DAddonVersion=2026.11.24. The
+; NVDA add-on's is the date (the NVDA add-on store takes plain numbers only),
+; the version it is built with (scons version=...), since the installer
+; carries that file by its name. Without them both are the release's.
+#ifndef AppVersion
+  #define AppVersion "2.0.0"
+#endif
+#ifndef AddonVersion
+  #define AddonVersion AppVersion
+#endif
 #define AppPublisher "Hrvoje Katić"
 #define AppURL "https://hrvojekatic.com/laprdus"
 
@@ -145,7 +155,7 @@ Source: "..\..\data\dictionary\emoji_sl.json"; DestDir: "{app}\dictionaries"; Fl
 ; install directory, so it can also be installed later by opening it.
 ; Build it first: cd src/platform/windows/nvda && scons
 ; ============================================================================
-Source: "..\..\src\platform\windows\nvda\laprdus-{#AppVersion}.nvda-addon"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\src\platform\windows\nvda\laprdus-{#AddonVersion}.nvda-addon"; DestDir: "{app}"; Flags: ignoreversion
 
 [InstallDelete]
 ; Remove old voice data files from root directory (pre-1.0.0 structure)
@@ -355,7 +365,7 @@ Name: "{commondesktop}\{cm:LaprdusConfiguratorName}"; Filename: "{app}\laprdgui.
 ; install it, as when the file is opened by hand. Offered only where NVDA is
 ; installed; opened as the user who started Setup, not as the administrator
 ; Setup runs as, so it reaches that user's NVDA; never in a silent install.
-Filename: "{app}\laprdus-{#AppVersion}.nvda-addon"; Description: "{cm:LaprdusInstallNvdaAddon}"; Flags: postinstall shellexec nowait skipifsilent runasoriginaluser; Check: NvdaInstalled
+Filename: "{app}\laprdus-{#AddonVersion}.nvda-addon"; Description: "{cm:LaprdusInstallNvdaAddon}"; Flags: postinstall shellexec nowait skipifsilent runasoriginaluser; Check: NvdaInstalled
 
 [Code]
 // Windows 7, 8 and 8.1: Rust's ordinary Windows targets need Windows 10, so

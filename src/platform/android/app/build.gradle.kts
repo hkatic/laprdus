@@ -30,6 +30,20 @@ android {
         }
     }
 
+    signingConfigs {
+        // The nightly builds' own key (never Google Play's upload key), from
+        // the nightly workflow's secrets. Without it, a local build of the
+        // nightly is signed with the debug key.
+        System.getenv("LAPRDUS_NIGHTLY_KEYSTORE")?.let { keystore ->
+            create("nightly") {
+                storeFile = file(keystore)
+                storePassword = System.getenv("LAPRDUS_NIGHTLY_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("LAPRDUS_NIGHTLY_KEY_ALIAS")
+                keyPassword = System.getenv("LAPRDUS_NIGHTLY_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -43,6 +57,19 @@ android {
             ndk {
                 debugSymbolLevel = "SYMBOL_TABLE"
             }
+        }
+        // The nightly builds (.github/workflows/nightly.yml): the release
+        // build as an app of its own, "Laprdus Nightly" (src/nightly/res).
+        // Google Play signs the store's app with a key of its own, so no
+        // other build can update it. This one installs next to it, as a
+        // second speech engine with its own settings, and each night's APK
+        // updates the one before. The version comes from the workflow
+        // (androidComponents below).
+        create("nightly") {
+            initWith(getByName("release"))
+            applicationIdSuffix = ".nightly"
+            matchingFallbacks += "release"
+            signingConfig = signingConfigs.findByName("nightly") ?: signingConfigs.getByName("debug")
         }
     }
     compileOptions {
@@ -64,6 +91,24 @@ android {
 
     // The native library is built by Cargo (buildNativeLibrary below).
     sourceSets["main"].jniLibs.directories.add(nativeLibraryDir.get().asFile.path)
+}
+
+// The nightly's version: -PlaprdusNightlyVersion=2.0.0-nightly.20261124 (the
+// version name) and -PlaprdusNightlyNumber=612 (the version code: the number
+// of commits of the nightly's branch, which only grows). Without them, a
+// local build is "<versionName>-nightly.local" with the release's code.
+androidComponents {
+    onVariants(selector().withBuildType("nightly")) { variant ->
+        val version = providers.gradleProperty("laprdusNightlyVersion")
+        val number = providers.gradleProperty("laprdusNightlyNumber").map { it.toInt() }
+        variant.outputs.forEach { output ->
+            val local = "${output.versionName.orNull}-nightly.local"
+            output.versionName.set(version.orElse(local))
+            if (number.isPresent) {
+                output.versionCode.set(number)
+            }
+        }
+    }
 }
 
 // The baseline profile (app start, Settings, the voice list) lives in

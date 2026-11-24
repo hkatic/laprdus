@@ -16,6 +16,16 @@
 # maintainer's machines. Listening, the screen readers and the devices are not
 # tested here. The Linux packages have a workflow of their own
 # (linux-packages.yml).
+#
+# The nightly builds (nightly.yml) call this workflow with the nightly's
+# version (input nightly, e.g. 2.0.0-nightly.20261124), the add-on's version
+# (the date, 2026.11.24: the NVDA add-on store takes plain numbers only), its
+# number (the commit count) and the changes since the last nightly:
+# everything above runs as on a push, the add-on and the installer carry
+# those versions, and the steps named "Nightly" add the nightly APK (signed
+# with the owner's keystore), the notarized macOS app and the TestFlight
+# build for the testers' groups. Each of those runs only when its secrets are
+# set, and says so in a warning when they are not (.claude/rules/nightly.md).
 
 name: Build and test
 
@@ -30,12 +40,37 @@ on:
       - "**/changes-*.md"
   pull_request:
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      nightly:
+        description: The nightly's version (2.0.0-nightly.20261124); empty for an ordinary build
+        type: string
+        default: ""
+      addon-version:
+        description: The nightly NVDA add-on's version, the date (2026.11.24)
+        type: string
+        default: ""
+      number:
+        description: The nightly's number (the commit count), its Android version code
+        type: string
+        default: ""
+      changes:
+        description: The changes since the last nightly, "<short sha><tab><subject>" a line
+        type: string
+        default: ""
+    outputs:
+      testflight:
+        description: The TestFlight build uploaded, "2.0.0 (41.612)", or empty
+        value: ${{ jobs.apple.outputs.testflight }}
 
 permissions:
   contents: read
 
+# The workflow's name is in the group: in a run of nightly.yml, which calls
+# this workflow on the same branch, github.workflow is the nightly's, so a
+# push does not cancel a nightly, nor a nightly a push.
 concurrency:
-  group: build-${{ github.ref }}
+  group: build-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -113,13 +148,26 @@ jobs:
       - id: legacy
         name: The same for Windows 7 SP1, 8 and 8.1
         run: cargo xtask windows-legacy --locked
+      # A nightly gives the add-on its version (the date; no channel: the
+      # store's form chooses it) and the installer its own; the installer
+      # carries the add-on by the add-on's file name.
       - id: addon
         name: NVDA add-on
         working-directory: src/platform/windows/nvda
-        run: scons
+        env:
+          ADDON_VERSION: ${{ inputs.addon-version }}
+        run: scons ${ADDON_VERSION:+version="$ADDON_VERSION"}
       - id: installer
         name: Installer
-        run: '"/c/Program Files (x86)/Inno Setup 6/ISCC.exe" installers/windows/laprdus_sapi5.iss'
+        env:
+          NIGHTLY: ${{ inputs.nightly }}
+          ADDON_VERSION: ${{ inputs.addon-version }}
+          # Git Bash would turn /DAppVersion=... into a path.
+          MSYS_NO_PATHCONV: "1"
+        run: >-
+          "/c/Program Files (x86)/Inno Setup 6/ISCC.exe"
+          ${NIGHTLY:+"/DAppVersion=$NIGHTLY"} ${ADDON_VERSION:+"/DAddonVersion=$ADDON_VERSION"}
+          installers/windows/laprdus_sapi5.iss
 
       - name: SAPI5 driver, 64-bit
         if: ${{ !cancelled() && steps.programs.outcome == 'success' }}
@@ -160,6 +208,9 @@ jobs:
     defaults:
       run:
         working-directory: src/platform/android
+    env:
+      # A step's if cannot read secrets.
+      NIGHTLY_KEY: ${{ secrets.ANDROID_KEYSTORE_B64 != '' }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v5
@@ -186,6 +237,55 @@ jobs:
           name: android
           path: src/platform/android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 14
+
+      # "Laprdus Nightly", com.hrvojekatic.laprdus.nightly: the nightly build
+      # type of app/build.gradle.kts, signed with the owner's keystore (JKS
+      # or PKCS12, either loads).
+      - name: Nightly APK (no keystore, skipped)
+        if: inputs.nightly && env.NIGHTLY_KEY != 'true'
+        run: echo "::warning::The secret ANDROID_KEYSTORE_B64 is not set, so this nightly has no APK (.claude/rules/nightly.md)."
+      - name: Nightly APK
+        if: inputs.nightly && env.NIGHTLY_KEY == 'true'
+        env:
+          NIGHTLY: ${{ inputs.nightly }}
+          NUMBER: ${{ inputs.number }}
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          LAPRDUS_NIGHTLY_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          LAPRDUS_NIGHTLY_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          LAPRDUS_NIGHTLY_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          for secret in KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            variable="LAPRDUS_NIGHTLY_${secret}"
+            if [ -z "${!variable}" ]; then
+              echo "::error::The secret ANDROID_${secret} is not set (.claude/rules/nightly.md)."
+              exit 1
+            fi
+          done
+          export LAPRDUS_NIGHTLY_KEYSTORE="${RUNNER_TEMP}/nightly.jks"
+          printf '%s' "${KEYSTORE_B64}" | base64 --decode > "${LAPRDUS_NIGHTLY_KEYSTORE}"
+          ./gradlew --no-daemon :app:assembleNightly -PlaprdusNightlyVersion="${NIGHTLY}" -PlaprdusNightlyNumber="${NUMBER}"
+          rm -f "${LAPRDUS_NIGHTLY_KEYSTORE}"
+          apk="${RUNNER_TEMP}/apk/Laprdus-nightly-${NIGHTLY}.apk"
+          mkdir -p "$(dirname "${apk}")"
+          cp app/build/outputs/apk/nightly/app-nightly.apk "${apk}"
+          # Signed with the nightly key, not the debug key, and named and
+          # numbered as the nightly.
+          tools="$(ls -d "${ANDROID_HOME}"/build-tools/* | sort -V | tail -n 1)"
+          "${tools}/apksigner" verify --print-certs "${apk}" | tee "${RUNNER_TEMP}/certs.txt"
+          if grep -q "CN=Android Debug" "${RUNNER_TEMP}/certs.txt"; then
+            echo "::error::The nightly APK is signed with the debug key."
+            exit 1
+          fi
+          "${tools}/aapt2" dump badging "${apk}" > "${RUNNER_TEMP}/badging.txt"
+          grep -E "^(package|application-label):" "${RUNNER_TEMP}/badging.txt"
+          grep -q "^package: name='com.hrvojekatic.laprdus.nightly' versionCode='${NUMBER}' versionName='${NIGHTLY}'" "${RUNNER_TEMP}/badging.txt"
+      - name: Keep the nightly APK
+        if: inputs.nightly && env.NIGHTLY_KEY == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-nightly
+          path: ${{ runner.temp }}/apk/
+          retention-days: 14
       - name: Keep the test and lint reports
         if: failure()
         uses: actions/upload-artifact@v7
@@ -199,10 +299,16 @@ jobs:
   apple:
     name: Apple app
     runs-on: macos-26
-    timeout-minutes: 90
+    # A nightly also notarizes three times and uploads to TestFlight.
+    timeout-minutes: ${{ inputs.nightly && 180 || 90 }}
     defaults:
       run:
         working-directory: src/platform/apple/Laprdus
+    outputs:
+      testflight: ${{ steps.testflight.outputs.build }}
+    env:
+      # A step's if cannot read secrets.
+      NIGHTLY_SIGNING: ${{ secrets.ASC_KEY_ID != '' }}
     steps:
       - uses: actions/checkout@v7
       - name: Rust (the Apple targets build-rust-engine.sh builds for)
@@ -233,3 +339,119 @@ jobs:
           print(phones[-1]["udid"])')"
           xcrun simctl list devices | grep "${udid}"
           xcodebuild test -scheme Laprdus -destination "id=${udid}" CODE_SIGNING_ALLOWED=NO
+
+      # The nightly: a notarized disk image and the command-line tools
+      # (scripts/build-macos-release.sh), and the iPhone app on TestFlight
+      # (scripts/upload-testflight.sh). The Developer ID certificate signs
+      # the command-line tools and the disk image; the API key signs the app
+      # (Xcode's cloud signing), fetches the profiles, notarizes and uploads.
+      - name: Nightly Apple builds (no App Store Connect key, skipped)
+        if: inputs.nightly && env.NIGHTLY_SIGNING != 'true'
+        run: echo "::warning::The secret ASC_KEY_ID is not set, so this nightly has no macOS app and no TestFlight build (.claude/rules/nightly.md)."
+      - name: Nightly signing keychain and API key
+        if: inputs.nightly && env.NIGHTLY_SIGNING == 'true'
+        env:
+          APPLE_DEVELOPER_ID_P12_B64: ${{ secrets.APPLE_DEVELOPER_ID_P12_B64 }}
+          APPLE_DEVELOPER_ID_P12_PASSWORD: ${{ secrets.APPLE_DEVELOPER_ID_P12_PASSWORD }}
+          ASC_KEY_P8_B64: ${{ secrets.ASC_KEY_P8_B64 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          for secret in APPLE_DEVELOPER_ID_P12_B64 APPLE_DEVELOPER_ID_P12_PASSWORD ASC_KEY_P8_B64 ASC_ISSUER_ID; do
+            if [ -z "${!secret}" ]; then
+              echo "::error::The secret ${secret} is not set (.claude/rules/nightly.md)."
+              exit 1
+            fi
+          done
+          keychain="${RUNNER_TEMP}/nightly.keychain-db"
+          password="$(uuidgen)"
+          security create-keychain -p "${password}" "${keychain}"
+          security set-keychain-settings -lut 21600 "${keychain}"
+          security unlock-keychain -p "${password}" "${keychain}"
+          printf '%s' "${APPLE_DEVELOPER_ID_P12_B64}" | base64 --decode > "${RUNNER_TEMP}/developer-id.p12"
+          security import "${RUNNER_TEMP}/developer-id.p12" -k "${keychain}" -P "${APPLE_DEVELOPER_ID_P12_PASSWORD}" \
+            -T /usr/bin/codesign -T /usr/bin/security
+          rm -f "${RUNNER_TEMP}/developer-id.p12"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "${password}" "${keychain}" >/dev/null
+          security list-keychains -d user -s "${keychain}" $(security list-keychains -d user | tr -d '"')
+          security find-identity -v -p codesigning "${keychain}"
+          key="${RUNNER_TEMP}/asc/AuthKey_${ASC_KEY_ID}.p8"
+          mkdir -p "$(dirname "${key}")"
+          printf '%s' "${ASC_KEY_P8_B64}" | base64 --decode > "${key}"
+          {
+            echo "ASC_KEY_PATH=${key}"
+            echo "ASC_KEY_ID=${ASC_KEY_ID}"
+            echo "ASC_ISSUER_ID=${ASC_ISSUER_ID}"
+            echo "NIGHTLY_KEYCHAIN=${keychain}"
+          } >> "${GITHUB_ENV}"
+      # The project's build number, then the nightly's number: 41.612. App
+      # Store Connect wants it higher than every build of the version before.
+      - name: Nightly build number
+        if: inputs.nightly && env.NIGHTLY_SIGNING == 'true'
+        env:
+          NUMBER: ${{ inputs.number }}
+        run: |
+          base="$(sed -n 's/.*CURRENT_PROJECT_VERSION = \([0-9.]*\);.*/\1/p' Laprdus.xcodeproj/project.pbxproj | sort -u)"
+          if [ "$(printf '%s\n' "${base}" | wc -l)" -ne 1 ]; then
+            echo "::error::The targets have different build numbers: ${base}"
+            exit 1
+          fi
+          echo "APPLE_BUILD=${base}.${NUMBER}" >> "${GITHUB_ENV}"
+      - name: Nightly macOS app and command-line tools, notarized
+        if: inputs.nightly && env.NIGHTLY_SIGNING == 'true'
+        working-directory: .
+        env:
+          NIGHTLY: ${{ inputs.nightly }}
+        run: |
+          scripts/build-macos-release.sh --api-key "${ASC_KEY_PATH}" --api-key-id "${ASC_KEY_ID}" \
+            --api-issuer "${ASC_ISSUER_ID}" --build-number "${APPLE_BUILD}" --version-suffix "-${NIGHTLY#*-}"
+      - name: Keep the nightly macOS files
+        if: inputs.nightly && env.NIGHTLY_SIGNING == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: macos-nightly
+          path: |
+            dist/macos/Laprdus-*-macOS.dmg
+            dist/macos/laprdus-*-macos-universal.tar.xz
+          retention-days: 14
+      - id: testflight
+        name: Nightly iPhone app to TestFlight
+        if: inputs.nightly && env.NIGHTLY_SIGNING == 'true'
+        working-directory: .
+        run: |
+          scripts/upload-testflight.sh --api-key "${ASC_KEY_PATH}" --api-key-id "${ASC_KEY_ID}" \
+            --api-issuer "${ASC_ISSUER_ID}" --build-number "${APPLE_BUILD}"
+          version="$(sed -n 's/.*MARKETING_VERSION = \([0-9.]*\);.*/\1/p' src/platform/apple/Laprdus/Laprdus.xcodeproj/project.pbxproj | sort -u | head -n 1)"
+          echo "APPLE_VERSION=${version}" >> "${GITHUB_ENV}"
+          echo "build=${version} (${APPLE_BUILD})" >> "${GITHUB_OUTPUT}"
+      # The same testers, the same links: the build goes into the groups the
+      # variable TESTFLIGHT_GROUPS names (comma-separated), with the night's
+      # changes as "What to Test", and to Beta App Review for an external
+      # group (Apple looks at the first build of a version; later ones
+      # usually pass at once).
+      - name: Nightly iPhone app to the TestFlight groups
+        if: inputs.nightly && env.NIGHTLY_SIGNING == 'true'
+        working-directory: .
+        env:
+          GROUPS: ${{ vars.TESTFLIGHT_GROUPS }}
+          NIGHTLY: ${{ inputs.nightly }}
+          CHANGES: ${{ inputs.changes }}
+        run: |
+          if [ -z "${GROUPS}" ]; then
+            echo "::warning::The variable TESTFLIGHT_GROUPS is not set: the build is in TestFlight, but only internal groups with automatic distribution get it (.claude/rules/nightly.md)."
+            exit 0
+          fi
+          {
+            echo "Laprdus ${NIGHTLY}, a nightly build: please test it and tell us what you find."
+            echo
+            echo "Changes since the last nightly:"
+            printf '%s\n' "${CHANGES}" | cut -f2- | sed 's/^/- /'
+          } > "${RUNNER_TEMP}/what-to-test.txt"
+          python3 -I scripts/testflight_distribute.py --api-key "${ASC_KEY_PATH}" --api-key-id "${ASC_KEY_ID}" \
+            --api-issuer "${ASC_ISSUER_ID}" --bundle-id com.hrvojekatic.Laprdus --version "${APPLE_VERSION}" \
+            --build "${APPLE_BUILD}" --groups "${GROUPS}" --what-to-test "${RUNNER_TEMP}/what-to-test.txt"
+      - name: Remove the nightly keychain and key
+        if: always() && inputs.nightly && env.NIGHTLY_SIGNING == 'true'
+        run: |
+          if [ -n "${NIGHTLY_KEYCHAIN:-}" ]; then security delete-keychain "${NIGHTLY_KEYCHAIN}" || true; fi
+          rm -rf "${RUNNER_TEMP}/asc"

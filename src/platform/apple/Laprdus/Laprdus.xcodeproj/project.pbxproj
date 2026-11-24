@@ -543,6 +543,7 @@
 					"$(SRCROOT)/../../c_api/include",
 				);
 				INFOPLIST_KEY_CFBundleDisplayName = "Laprdus TTS";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026., Hrvoje Katić";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -592,6 +593,7 @@
 					"$(SRCROOT)/../../c_api/include",
 				);
 				INFOPLIST_KEY_CFBundleDisplayName = "Laprdus TTS";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026., Hrvoje Katić";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

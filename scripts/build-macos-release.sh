@@ -54,6 +54,17 @@
 #                            tools and the disk image stay unsigned.
 #   --notary-profile NAME    notarytool keychain profile (default:
 #                            $LAPRDUS_NOTARY_PROFILE or "laprdus").
+#   --api-key FILE           An App Store Connect API key (AuthKey_*.p8) instead
+#   --api-key-id ID          of the Xcode account and the keychain profile, with
+#   --api-issuer ID          its key ID and issuer ID: xcodebuild signs and
+#                            fetches the profiles with it, notarytool
+#                            authenticates with it. For machines without an
+#                            Xcode account (the nightly builds on GitHub
+#                            Actions). The three go together.
+#   --build-number N         The build number (CURRENT_PROJECT_VERSION) instead
+#                            of the project's, e.g. 41.612 for a nightly.
+#   --version-suffix S       Appended to the version in the file names and the
+#                            disk image's name, e.g. -nightly.20261124.
 #   --output DIR             Output directory (default: dist/macos).
 #   --clean                  Delete the work directory (build/macos-release)
 #                            first, for a from-scratch Xcode build.
@@ -76,6 +87,11 @@ BUILD_CLI=1
 CLEAN=0
 IDENTITY=""
 NOTARY_PROFILE="${LAPRDUS_NOTARY_PROFILE:-laprdus}"
+API_KEY=""
+API_KEY_ID=""
+API_ISSUER=""
+BUILD_NUMBER=""
+VERSION_SUFFIX=""
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
 log_info()    { echo -e "${BLUE}[INFO]${NC} $1"; }
@@ -93,6 +109,11 @@ while [[ $# -gt 0 ]]; do
         --skip-cli)          BUILD_CLI=0 ;;
         --identity)          IDENTITY="${2:?--identity needs a value}"; shift ;;
         --notary-profile)    NOTARY_PROFILE="${2:?--notary-profile needs a value}"; shift ;;
+        --api-key)           API_KEY="${2:?--api-key needs a file}"; shift ;;
+        --api-key-id)        API_KEY_ID="${2:?--api-key-id needs a value}"; shift ;;
+        --api-issuer)        API_ISSUER="${2:?--api-issuer needs a value}"; shift ;;
+        --build-number)      BUILD_NUMBER="${2:?--build-number needs a value}"; shift ;;
+        --version-suffix)    VERSION_SUFFIX="${2:?--version-suffix needs a value}"; shift ;;
         --output)            OUTPUT_DIR="$(cd "$(dirname "${2:?--output needs a value}")" && pwd)/$(basename "$2")"; shift ;;
         --clean)             CLEAN=1 ;;
         -h|--help)           usage; exit 0 ;;
@@ -111,6 +132,20 @@ done
 xcrun --find notarytool >/dev/null 2>&1 || die "notarytool not found: Xcode 13 or newer is required."
 xcrun --find stapler    >/dev/null 2>&1 || die "stapler not found in the Xcode command line tools."
 
+# How xcodebuild and notarytool authenticate: the Xcode account and the
+# keychain profile, or an App Store Connect API key. Arrays, expanded as
+# ${a[@]+"${a[@]}"}: macOS's bash 3.2 calls an empty array unbound under set -u.
+XCODE_AUTH=()
+NOTARY_AUTH=(--keychain-profile "$NOTARY_PROFILE")
+if [[ -n "$API_KEY$API_KEY_ID$API_ISSUER" ]]; then
+    [[ -n "$API_KEY" && -n "$API_KEY_ID" && -n "$API_ISSUER" ]] || die "--api-key, --api-key-id and --api-issuer go together."
+    [[ -f "$API_KEY" ]] || die "No API key file $API_KEY."
+    XCODE_AUTH=(-authenticationKeyPath "$API_KEY" -authenticationKeyID "$API_KEY_ID" -authenticationKeyIssuerID "$API_ISSUER")
+    NOTARY_AUTH=(--key "$API_KEY" --key-id "$API_KEY_ID" --issuer "$API_ISSUER")
+fi
+XCODE_SETTINGS=()
+[[ -n "$BUILD_NUMBER" ]] && XCODE_SETTINGS=(CURRENT_PROJECT_VERSION="$BUILD_NUMBER")
+
 # -----------------------------------------------------------------------------
 # Versions and team, read from the two build systems so they cannot drift
 # (the engine's version is the Cargo workspace's)
@@ -125,7 +160,7 @@ BUILD_SETTINGS="$(xcodebuild -showBuildSettings -project "$XCODE_PROJECT" -schem
 # early kills the writer with SIGPIPE and the whole pipeline fails.
 setting() { awk -v key="$1" '$1 == key && $2 == "=" { $1 = ""; $2 = ""; sub(/^ +/, ""); print; exit }' <<< "$BUILD_SETTINGS"; }
 APP_VERSION="$(setting MARKETING_VERSION)"
-APP_BUILD="$(setting CURRENT_PROJECT_VERSION)"
+APP_BUILD="${BUILD_NUMBER:-$(setting CURRENT_PROJECT_VERSION)}"
 TEAM_ID="$(setting DEVELOPMENT_TEAM)"
 HARDENED="$(setting ENABLE_HARDENED_RUNTIME)"
 [[ -n "$APP_VERSION" && -n "$TEAM_ID" ]] || die "Could not read MARKETING_VERSION / DEVELOPMENT_TEAM from $XCODE_PROJECT."
@@ -137,7 +172,7 @@ fi
 echo "=============================================="
 echo "  LaprdusTTS macOS release build"
 echo "=============================================="
-echo "  App version:    $APP_VERSION (build $APP_BUILD)"
+echo "  App version:    $APP_VERSION$VERSION_SUFFIX (build $APP_BUILD)"
 echo "  Engine version: $ENGINE_VERSION"
 echo "  Team:           $TEAM_ID"
 if (( DEVELOPMENT )); then
@@ -185,7 +220,10 @@ else
 fi
 
 if (( NOTARIZE )); then
-    if ! xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" >/dev/null 2>&1; then
+    if [[ -n "$API_KEY" ]]; then
+        xcrun notarytool history "${NOTARY_AUTH[@]}" >/dev/null 2>&1 ||
+            die "notarytool does not accept the API key $API_KEY_ID (issuer $API_ISSUER)."
+    elif ! xcrun notarytool history "${NOTARY_AUTH[@]}" >/dev/null 2>&1; then
         log_error "notarytool has no credentials under the keychain profile \"$NOTARY_PROFILE\". Store them once with:"
         log_error "  xcrun notarytool store-credentials $NOTARY_PROFILE --apple-id <Apple ID> --team-id $TEAM_ID --password <app-specific password>"
         die "or run with --skip-notarization."
@@ -201,22 +239,25 @@ EXPORT_DIR="$WORK_DIR/export"
 rm -rf "$ARCHIVE" "$EXPORT_DIR" "$WORK_DIR/dmg" "$WORK_DIR"/*.zip "$WORK_DIR"/*.plist
 mkdir -p "$WORK_DIR" "$OUTPUT_DIR"
 
-DMG_NAME="Laprdus-$APP_VERSION-macOS.dmg"
+DMG_NAME="Laprdus-$APP_VERSION$VERSION_SUFFIX-macOS.dmg"
 DMG="$OUTPUT_DIR/$DMG_NAME"
-DSYM_ZIP="$OUTPUT_DIR/Laprdus-$APP_VERSION-macOS-dSYMs.zip"
-CLI_TARBALL_NAME="laprdus-$ENGINE_VERSION-macos-universal.tar.xz"
+DSYM_ZIP="$OUTPUT_DIR/Laprdus-$APP_VERSION$VERSION_SUFFIX-macOS-dSYMs.zip"
+# cargo xtask dist names the tarball by the engine's version; the copy in
+# the output directory carries the suffix too.
+CLI_DIST_NAME="laprdus-$ENGINE_VERSION-macos-universal.tar.xz"
+CLI_TARBALL_NAME="laprdus-$ENGINE_VERSION$VERSION_SUFFIX-macos-universal.tar.xz"
 rm -f "$DMG" "$DSYM_ZIP" "$OUTPUT_DIR/$CLI_TARBALL_NAME" "$OUTPUT_DIR/SHA256SUMS.txt"
 
 notarize() {
     # $1: a .zip or .dmg; $2: a description for the log
     local file="$1" what="$2" result
     log_info "Submitting $what for notarization (this takes a few minutes)..."
-    result="$(xcrun notarytool submit "$file" --keychain-profile "$NOTARY_PROFILE" --wait 2>&1)" || true
+    result="$(xcrun notarytool submit "$file" "${NOTARY_AUTH[@]}" --wait 2>&1)" || true
     echo "$result"
     if [[ "$result" != *"status: Accepted"* ]]; then
         local id
         id="$(awk '/^ *id: / { print $2; exit }' <<< "$result")"
-        [[ -n "$id" ]] && xcrun notarytool log "$id" --keychain-profile "$NOTARY_PROFILE" || true
+        [[ -n "$id" ]] && xcrun notarytool log "$id" "${NOTARY_AUTH[@]}" || true
         die "Notarization of $what was not accepted."
     fi
     log_success "$what notarized"
@@ -248,7 +289,7 @@ if (( BUILD_CLI )); then
         [[ "$archs" == *arm64* && "$archs" == *x86_64* ]] || die "$f is not universal ($archs)."
         codesign --verify --strict --verbose=1 "$f" 2>&1 | sed 's/^/    /'
     done
-    cp "$CLI_DIST/$CLI_TARBALL_NAME" "$OUTPUT_DIR/"
+    cp "$CLI_DIST/$CLI_DIST_NAME" "$OUTPUT_DIR/$CLI_TARBALL_NAME"
     if (( CLOUD_SIGNING )); then
         log_warning "Command-line tools built without a Developer ID signature (no local certificate)."
     elif (( NOTARIZE )); then
@@ -275,6 +316,8 @@ xcodebuild archive \
     -archivePath "$ARCHIVE" \
     -derivedDataPath "$WORK_DIR/DerivedData" \
     -allowProvisioningUpdates \
+    ${XCODE_AUTH[@]+"${XCODE_AUTH[@]}"} \
+    ${XCODE_SETTINGS[@]+"${XCODE_SETTINGS[@]}"} \
     -quiet
 [[ -d "$ARCHIVE/Products/Applications/Laprdus.app" ]] || die "The archive has no Laprdus.app."
 log_success "Archive: $ARCHIVE"
@@ -308,6 +351,7 @@ xcodebuild -exportArchive \
     -exportOptionsPlist "$EXPORT_OPTIONS" \
     -exportPath "$EXPORT_DIR" \
     -allowProvisioningUpdates \
+    ${XCODE_AUTH[@]+"${XCODE_AUTH[@]}"} \
     -quiet
 APP="$EXPORT_DIR/Laprdus.app"
 [[ -d "$APP" ]] || die "Export produced no Laprdus.app in $EXPORT_DIR."
@@ -355,7 +399,7 @@ ln -s /Applications "$DMG_STAGE/Applications"
 # macOS 26 and later print a deprecation warning here in favour of
 # `diskutil image create fromFolder`, which older systems do not have; hdiutil
 # still works on both, so the warning can be ignored.
-hdiutil create -volname "Laprdus $APP_VERSION" -srcfolder "$DMG_STAGE" -ov \
+hdiutil create -volname "Laprdus $APP_VERSION$VERSION_SUFFIX" -srcfolder "$DMG_STAGE" -ov \
     -fs HFS+ -format UDZO -imagekey zlib-level=9 "$DMG" >/dev/null
 if [[ -n "$IDENTITY" ]]; then
     codesign --force --sign "$IDENTITY" --timestamp "$DMG"

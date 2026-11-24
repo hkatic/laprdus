@@ -12,6 +12,10 @@
 #   push to dev         build and test, when the engine, the Linux programs or
 #                       their packaging changed
 #   workflow_dispatch   build and test, by hand (Actions > Linux packages)
+#   workflow_call       from nightly.yml, with the nightly's version (input
+#                       nightly, 2.0.0-nightly.20261124): the packages get a
+#                       release below the version's own (source.sh,
+#                       LAPRDUS_NIGHTLY), which build.sh checks
 #
 # The packages of every run are kept as artifacts for 14 days.
 
@@ -37,12 +41,20 @@ on:
       - "tools/xtask/**"
       - ".github/workflows/linux-packages.yml"
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      nightly:
+        description: The nightly's version (2.0.0-nightly.20261124); empty for an ordinary build
+        type: string
+        default: ""
 
 permissions:
   contents: read
 
+# The workflow's name is in the group: in a run of nightly.yml it is the
+# nightly's, so a push to dev does not cancel a nightly, nor a nightly a push.
 concurrency:
-  group: linux-packages-${{ github.ref }}
+  group: linux-packages-${{ github.workflow }}-${{ github.ref }}
   # A newer push to dev replaces a run still going; a release is never cut short.
   cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
@@ -65,9 +77,14 @@ jobs:
 
       - name: Build and test
         env:
-          # On a tag, source.sh checks that the tag names the packages' version.
-          LAPRDUS_RELEASE_TAG: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
-        run: scripts/linux-packages.sh --arch "${{ matrix.arch }}" "${{ matrix.format }}"
+          # On a release tag (v*), source.sh checks that the tag names the
+          # packages' version; a nightly's tag (nightly/*) is not one.
+          LAPRDUS_RELEASE_TAG: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '' }}
+          NIGHTLY: ${{ inputs.nightly }}
+        run: |
+          # The night, YYYYMMDD, from 2.0.0-nightly.YYYYMMDD.
+          if [ -n "${NIGHTLY}" ]; then export LAPRDUS_NIGHTLY="${NIGHTLY##*.}"; fi
+          scripts/linux-packages.sh --arch "${{ matrix.arch }}" "${{ matrix.format }}"
 
       - uses: actions/upload-artifact@v7
         if: always()

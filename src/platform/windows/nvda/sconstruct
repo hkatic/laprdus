@@ -80,6 +80,13 @@ if "channel" in env and env["channel"] is not None:
 # This is necessary for further use in formatting file names.
 env.Append(**env["addon_info"])
 
+# The version and channel a build is made with (scons version=... channel=...,
+# as the nightly builds do): the manifest and the manuals print them, so
+# they are made again when these change, not only when buildVars.py does.
+# Without this, a nightly built after an ordinary build kept the manifest
+# of version 2.0.0.
+buildVersion = env.Value(f"{env['addon_info']['addon_version']} {env['addon_info']['addon_updateChannel']}")
+
 
 addonFile = env.File("${addon_name}-${addon_version}.nvda-addon")
 addon = env.NVDAAddon(addonFile, env.Dir(addonDir), excludePatterns=buildVars.excludedFiles)
@@ -122,7 +129,7 @@ for mdFile in env.Glob(docsDir/"*/*.md"):
 	lang = mdFile.dir.name
 	moFile = moByLang.get(lang)
 	htmlFile = env.md2html(mdFile, moFile=moFile, mdExtensions=buildVars.markdownExtensions)
-	env.Depends(htmlFile, mdFile)
+	env.Depends(htmlFile, [mdFile, buildVersion])
 	if moFile:
 		env.Depends(htmlFile, moFile)
 	env.Depends(addon, htmlFile)
@@ -145,7 +152,7 @@ env.Depends(mergePot, i18nFiles)
 # Generate Manifest path
 manifest = env.NVDAManifest(env.File(addonDir/"manifest.ini"), "manifest.ini.tpl")
 # Ensure manifest is rebuilt if buildVars is updated.
-env.Depends(manifest, "buildVars.py")
+env.Depends(manifest, ["buildVars.py", buildVersion])
 
 env.Depends(addon, manifest)
 

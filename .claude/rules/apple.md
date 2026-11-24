@@ -83,7 +83,7 @@ store-credentials laprdus` (`--notary-profile` / `LAPRDUS_NOTARY_PROFILE` for an
 name). The distributor's own setup notes live outside the repository. `--skip-notarization` signs without
 notarizing, `--development` signs with Apple Development and exports with the
 `debugging` method for testing the pipeline, `--identity` picks the certificate,
-`--skip-cli`, `--output`, `--clean` (Xcode work directory `build/macos-release/`).
+`--skip-cli`, `--output`, `--clean` (Xcode work directory `build/macos-release/`). For a machine without an Xcode account (the nightly builds on GitHub Actions; since 2026-11-24): `--api-key FILE --api-key-id ID --api-issuer ID`, an App Store Connect API key for xcodebuild's signing and for notarytool instead of the account and the keychain profile; `--build-number N` overrides `CURRENT_PROJECT_VERSION`, and `--version-suffix S` is appended to the version in the file names. `scripts/upload-testflight.sh` archives the iOS app and uploads it to TestFlight, with the same key options. Both are in `.claude/rules/nightly.md`.
 The script checks that both binaries of the app are universal, that the hardened
 runtime is on (`ENABLE_HARDENED_RUNTIME = YES` in the project's Release configuration,
 required by notarization), verifies the signatures and runs `spctl` on the results.
