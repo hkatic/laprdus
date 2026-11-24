@@ -108,7 +108,8 @@ const MONTHS_GENITIVE: [&str; 12] = [
 
 /// The hours after ob, in the locative plural (SP 2001 pét: "priti ob petih
 /// |ob 5. uri; ob 5h; ob 5.00; ob 17. uri; ob 17h; ob 17.00|"; SSKJ² "vstajati
-/// ob petih zjutraj").
+/// ob petih zjutraj"), when no form of ura follows: before one the hour is
+/// the ordinal (`hour_ordinal_ending()`).
 #[rustfmt::skip]
 const HOURS_LOCATIVE: [&str; 25] = [
     "", "enih", "dveh", "treh", "štirih", "petih", "šestih", "sedmih", "osmih", "devetih", "desetih",
@@ -119,6 +120,118 @@ const HOURS_LOCATIVE: [&str; 25] = [
 
 fn hour_locative(value: i64) -> &'static str {
     usize::try_from(value).ok().and_then(|hour| HOURS_LOCATIVE.get(hour)).copied().unwrap_or("")
+}
+
+/// The singular forms of ura a clock time can be written before (ob 10:00
+/// uri, do 17:00 ure, pred 10:00 uro).
+const URA_FORMS: &[&str] = &["ura", "ure", "uri", "uro"];
+
+/// The end of a whole hour written as a clock time at `pos` (10:00, 17.00,
+/// 24:00: one or two digits of 1 to 24, a colon or a period and 00), or
+/// nothing.
+fn whole_hour_end(t: Text, pos: usize) -> Option<usize> {
+    let end = t.digits_end(pos);
+    let value = small_value(t.str(pos, end));
+    let stop = end + 3;
+    let whole = (1..=2).contains(&(end - pos))
+        && (1..=24).contains(&value)
+        && matches!(t.at(end), b':' | b'.')
+        && t.has(end + 1, "00")
+        && !t.is_digit(stop)
+        && t.at(stop) != b':'
+        && !(t.at(stop) == b'.' && t.is_digit(stop + 1));
+    whole.then_some(stop)
+}
+
+/// The form of ura written right after the clock time ending at `after`,
+/// with its end: ob 10:00 uri, do 17:00 ure.
+fn ura_after<'a>(t: Text<'a>, after: usize) -> Option<Next<'a>> {
+    let next = t.next_word(after);
+    (next.begin > after && next.lowercase && URA_FORMS.contains(&next.word)).then_some(next)
+}
+
+/// The ordinal's ending of a whole hour ending at `after` (after the word
+/// `prev`) when a form of ura follows: ob 10:00 uri is ob deseti uri, do
+/// 17:00 ure do sedemnajste ure, pred 10:00 uro pred deseto uro (a Slovenian
+/// listener's report of 2026-11-24: ob desetih is the hour without uri, the
+/// ordinal with it; SSKJ² úra "sonce vzide ob peti uri [5. uri]", "vstajati
+/// pred šesto (uro)"; the Jezikovna svetovalnica, "Pomen nadpisanega simbola
+/// h", 2021: "Dobiva se ob osmi uri – Dobiva se ob 8. uri"). An hour joined
+/// by a dash, do, in, ali, oziroma or ter to another whole hour before ura
+/// takes the other's ending: od 8:00 do 16:00 ure is od osme do šestnajste
+/// ure, ob 10:00 in 11:00 uri ob deseti in enajsti uri (SSKJ² "popoldne bom
+/// doma med tretjo in četrto (uro)").
+fn hour_ordinal_ending(t: Text, prev: &str, after: usize) -> Option<&'static str> {
+    let ending = |prev: &str, ura: &Next| ordinal_ending(prev, ura.word, lowercase_word(&t.next_word(ura.end)));
+    if let Some(ura) = ura_after(t, after) {
+        return Some(ending(prev, &ura));
+    }
+    let (link, second) = if dash_at(t, after) {
+        ("", after + 3)
+    } else {
+        let word = t.next_word(after);
+        if !(word.begin > after && word.lowercase && ["do", "in", "ali", "oziroma", "ter"].contains(&word.word)) {
+            return None;
+        }
+        (word.word, t.skip_spaces(word.end))
+    };
+    if !t.is_digit(second) {
+        return None;
+    }
+    let second_end = whole_hour_end(t, second)?;
+    ura_after(t, second_end).map(|ura| ending(link, &ura))
+}
+
+/// The minutes after an hour read as the ordinal before ura, in the
+/// nominative whatever the preposition: ob 10:30 uri is ob deseti uri in
+/// trideset minut, ob 11:02 uri ob enajsti uri in dve minuti (SP 2001 úra
+/// "začetek predstave ob dvajseti uri in dvajset minut ‹20.20›"; the Jezikovna
+/// svetovalnica, "Ujemanje: ure in minute v priredno zloženi besedni zvezi",
+/// 2021: "ob 11.02 ... ob enajsti uri / enajstih in dve minuti", "ob 21. uri
+/// in 15 minut"; "Zapis nepolne oz. necele ure", 2016: ob 8.30 "ob osmi uri in
+/// trideset minut").
+fn minutes_words(r: &NumberReader, minutes: &str) -> String {
+    let clean = strip_zeros(minutes);
+    let mut words = r.number_to_words(clean);
+    feminine_two(&mut words);
+    words += match last_digit(clean) {
+        _ if !ones_alone(clean) => " minut",
+        b'1' => " minuta",
+        b'2' => " minuti",
+        b'3' | b'4' => " minute",
+        _ => " minut",
+    };
+    words
+}
+
+/// A clock time at `i` (hours ending at `end`, `minutes` two digits, the time
+/// ending at `after`) before a form of ura: a whole hour is the ordinal
+/// (deseti, with the ura left in the text), any other the ordinal, the ura
+/// and the minutes (deseti uri in trideset minut, the ura consumed; not in a
+/// range, whose other side is read as a time). Writes the words and returns
+/// the end of what it read.
+fn hour_before_ura(
+    r: &NumberReader,
+    t: Text,
+    (i, end, after): (usize, usize, usize),
+    minutes: &str,
+    prev: &str,
+    in_range: bool,
+    out: &mut Out,
+) -> Option<usize> {
+    let digits = t.str(i, end);
+    if !(1..=24).contains(&small_value(digits)) {
+        return None;
+    }
+    if minutes == "00" {
+        let ending = hour_ordinal_ending(t, prev, after)?;
+        out.push_str(&ordinal(r, digits, ending));
+        return Some(after);
+    }
+    let ura = ura_after(t, after).filter(|_| !in_range && small_value(digits) < 24)?;
+    let ending = ordinal_ending(prev, ura.word, lowercase_word(&t.next_word(ura.end)));
+    out.push_str(&format!("{} {} in {}", ordinal(r, digits, ending), ura.word, minutes_words(r, minutes)));
+    Some(ura.end)
 }
 
 /// The nouns of the unit signs, in the forms a number asks for (SP 2001
@@ -1040,8 +1153,11 @@ pub(crate) fn number_at(r: &NumberReader, t: Text, i: usize, out: &mut Out, in_r
     }
 
     // A leading zero is read digit by digit by the shared path (007, 01),
-    // except in a date without a year written with one: 05.03., 07. 10.
-    if leading_zero {
+    // except in a date without a year written with one: 05.03., 07. 10.,
+    // and in a clock time with a colon, which goes on to the clock times
+    // below as without the zero (ob 08:00 ob osmih, ob 08:00 uri ob osmi uri)
+    let colon_time = end - i == 2 && t.at(end) == b':' && t.parse_time(i).is_some();
+    if leading_zero && !colon_time {
         let nominative = !in_range && names_the_day(t, &prev);
         // A full date with a leading zero that names the day: Danes je
         // 07.10.2026 is the nominative, as without the zero
@@ -1093,9 +1209,15 @@ pub(crate) fn number_at(r: &NumberReader, t: Text, i: usize, out: &mut Out, in_r
         return Some(date_end);
     }
 
-    // A clock time with a colon: ob 17:00 is ob sedemnajstih; 24:00 is a
-    // time too (parse_time() stops at 23)
+    // A clock time with a colon: ob 17:00 is ob sedemnajstih, but ob 17:00
+    // uri ob sedemnajsti uri and ob 10:30 uri ob deseti uri in trideset
+    // minut; 24:00 is a time too (parse_time() stops at 23)
     if let Some((time_end, groups)) = t.parse_time(i) {
+        if groups.len() == 2
+            && let Some(stop) = hour_before_ura(r, t, (i, end, end + 3), groups[1], &prev.word, in_range, out)
+        {
+            return Some(stop);
+        }
         if prev.word == "ob" && groups.len() == 2 && groups[1] == "00" && value >= 1 {
             out.push_str(hour_locative(value));
             return Some(t.digits_end(end + 1));
@@ -1107,6 +1229,9 @@ pub(crate) fn number_at(r: &NumberReader, t: Text, i: usize, out: &mut Out, in_r
         return None;
     }
     if digits == "24" && t.has(end, ":00") && !t.is_digit(end + 3) && t.at(end + 3) != b':' {
+        if let Some(stop) = hour_before_ura(r, t, (i, end, end + 3), "00", &prev.word, in_range, out) {
+            return Some(stop);
+        }
         if prev.word == "ob" {
             out.push_str("štiriindvajsetih");
         } else {
@@ -1117,14 +1242,15 @@ pub(crate) fn number_at(r: &NumberReader, t: Text, i: usize, out: &mut Out, in_r
 
     // A clock time written with a period, the Slovenian way (SP 2001: ob
     // 8.30, ob 17.00): h or hh, a period, two minute digits, in the context
-    // of a time: after ob, od, do, med, okoli, okrog, or before h, ure, uri,
-    // ur, zjutraj, zvečer, dopoldne, popoldne, ponoči. Without it 3.14 and
+    // of a time: after ob, od, do, med, okoli, okrog, or before h, ura, ure,
+    // uri, uro, ur, zjutraj, zvečer, dopoldne, popoldne, ponoči (za 23.35 uro
+    // is za triindvajseto uro in petintrideset minut). Without it 3.14 and
     // 3.2 stay what they were. A period after it with a possible month
     // inside (7.10.) is the date, unless ob stands before it.
     const BEFORE_TIME: &[&str] =
         &["ob", "od", "do", "med", "okoli", "okrog", "približno", "točno", "ure", "uri", "ura"];
     const AFTER_TIME: &[&str] =
-        &["h", "ure", "uri", "ur", "zjutraj", "zvečer", "dopoldne", "popoldne", "ponoči", "opoldne"];
+        &["h", "ura", "ure", "uri", "uro", "ur", "zjutraj", "zvečer", "dopoldne", "popoldne", "ponoči", "opoldne"];
     if end - i <= 2 && (0..=24).contains(&value) && t.at(end) == b'.' && two_minutes_after(end) {
         let minutes = t.str(end + 1, end + 3);
         let mm = small_value(minutes);
@@ -1143,6 +1269,9 @@ pub(crate) fn number_at(r: &NumberReader, t: Text, i: usize, out: &mut Out, in_r
             || after_ura
             || (next.lowercase && AFTER_TIME.contains(&next.word) && next.begin <= after + 1);
         if mm <= 59 && (value < 24 || mm == 0) && !glued_more && !colon_after && !date_like && context {
+            if let Some(stop) = hour_before_ura(r, t, (i, end, after), minutes, &prev.word, in_range, out) {
+                return Some(stop);
+            }
             if prev.word == "ob" && mm == 0 && value >= 1 {
                 out.push_str(hour_locative(value));
             } else {
@@ -1379,8 +1508,16 @@ pub(crate) fn number_at(r: &NumberReader, t: Text, i: usize, out: &mut Out, in_r
 
     // The hour after ob: ob 5, ob 5h, ob 13 → ob petih, ob trinajstih, when
     // nothing counted follows (SP 2001 pét: priti ob petih |ob 5h|); ob 5
-    // urah and ob 5. uri are read by the agreement and the ordinal
+    // urah and ob 5. uri are read by the agreement and the ordinal, and so is
+    // ob 5 uri without the period: a singular locative after ob follows no
+    // cardinal (ob peti uri, ob deseti minuti; a listener's report of
+    // 2026-11-24), while v 1 uri stays v eni uri
     if prev.word == "ob" && end - i <= 2 && (1..=24).contains(&value) {
+        let next = t.next_word(end);
+        if next.begin > end && next.lowercase && ["uri", "minuti", "sekundi"].contains(&next.word) {
+            out.push_str(&ordinal(r, digits, "i"));
+            return Some(end);
+        }
         #[rustfmt::skip]
         const AFTER_HOUR: &[&str] = &[
             "zjutraj", "zvečer", "dopoldne", "popoldne", "ponoči", "opoldne", "je", "bo", "bomo", "boste",

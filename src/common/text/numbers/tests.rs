@@ -845,3 +845,77 @@ fn a_one_dot_leader_between_digits_is_a_period() {
     }
     assert!(matches!(restore("18.11.2026"), std::borrow::Cow::Borrowed(_)));
 }
+
+/// A Slovenian listener's report of 2026-11-24: a whole hour before uri is
+/// the ordinal (Sestanek bo ob 10:00 uri: ob deseti uri, not ob desetih uri),
+/// without uri the locative of the cardinal (Sestanek bo ob 11:00: ob
+/// enajstih). SSKJ² úra "sonce vzide ob peti uri [5. uri] in dvajset minut",
+/// "vstajati pred šesto (uro)", "med tretjo in četrto (uro)"; SP 2001
+/// sedemnájsti "oditi ob ~i uri", úra "ob dvajseti ~i in dvajset minut
+/// ‹20.20›"; the Jezikovna svetovalnica on the minutes, which stay in the
+/// nominative (ob enajsti uri in dve minuti).
+#[test]
+fn slovenian_listeners_report_of_2026_11_24_whole_hours_before_uri() {
+    for (text, expected) in [
+        // The listener's sentences
+        ("Sestanek bo ob 10:00 uri.", "Sestanek bo ob deseti uri."),
+        ("Pridi ob 17:00 uri.", "Pridi ob sedemnajsti uri."),
+        (
+            "Nisi prišel ob 19:00 uri, kot sva bila dogovorjena.",
+            "Nisi prišel ob devetnajsti uri, kot sva bila dogovorjena.",
+        ),
+        ("Sestanek bo ob 11:00.", "Sestanek bo ob enajstih."),
+        ("Ne morem priti ob 13:00.", "Ne morem priti ob trinajstih."),
+        // The same hour written otherwise
+        ("ob 10.00 uri", "ob deseti uri"),
+        ("ob 10 uri", "ob deseti uri"),
+        ("ob 10 minuti", "ob deseti minuti"),
+        ("ob 1:00 uri", "ob prvi uri"),
+        ("ob 2:00 uri", "ob drugi uri"),
+        ("ob 24:00 uri", "ob štiriindvajseti uri"),
+        // A leading zero, as digital clocks write the hour
+        ("ob 08:00 uri", "ob osmi uri"),
+        ("ob 08:00", "ob osmih"),
+        ("ob 05:07 uri", "ob peti uri in sedem minut"),
+        ("od 08:00 do 16:00 ure", "od osme do šestnajste ure"),
+        // The other cases of ura
+        ("do 17:00 ure", "do sedemnajste ure"),
+        ("pred 10:00 uro", "pred deseto uro"),
+        ("po 10:00 uri", "po deseti uri"),
+        ("okoli 10.00 ure", "okoli desete ure"),
+        // Two hours joined before ura
+        ("od 8:00 do 16:00 ure", "od osme do šestnajste ure"),
+        ("od 8.00 do 16.00 ure", "od osme do šestnajste ure"),
+        ("8:00–16:00 ure", "osme do šestnajste ure"),
+        ("ob 10:00 in 11:00 uri", "ob deseti in enajsti uri"),
+        ("med 8:00 in 10:00 uro", "med osmo in deseto uro"),
+        // An hour with minutes before ura: the ura before the minutes
+        ("ob 10:30 uri", "ob deseti uri in trideset minut"),
+        ("ob 11:02 uri", "ob enajsti uri in dve minuti"),
+        ("ob 10:01 uri", "ob deseti uri in ena minuta"),
+        ("ob 10:03 uri", "ob deseti uri in tri minute"),
+        ("ob 10:21 uri", "ob deseti uri in enaindvajset minut"),
+        ("Okoli 6.30 ure so odprli.", "Okoli šeste ure in trideset minut so odprli."),
+        (
+            "Glasovanje je predvideno za 23.35 uro.",
+            "Glasovanje je predvideno za triindvajseto uro in petintrideset minut.",
+        ),
+        // Unchanged
+        ("ob 17:00", "ob sedemnajstih"),
+        ("ob 5h", "ob petih"),
+        ("ob 10. uri", "ob deseti uri"),
+        ("ob 5 urah", "ob petih urah"),
+        ("v 1 uri", "v eni uri"),
+        ("za 3 ure", "za tri ure"),
+        ("2 uri", "dve uri"),
+        ("007", "nič nič sedem"),
+    ] {
+        assert_eq!(numbers(Slovenian, text), expected, "{text}");
+    }
+    let brk = brk();
+    assert_eq!(numbers(Slovenian, "ob 8.30"), format!("ob osem{brk}trideset"));
+    assert_eq!(numbers(Slovenian, "od 8.30 do 16.00"), format!("od osem{brk}trideset do šestnajst{brk}nič nič"));
+    assert_eq!(numbers(Slovenian, "Ura je 8.30"), format!("Ura je osem{brk}trideset"));
+    assert_eq!(numbers(Slovenian, "05.03."), format!("petega{brk}tretjega."));
+    assert_eq!(numbers(Slovenian, "08:30–16:00"), format!("osem{brk}trideset do šestnajst{brk}nič nič"));
+}

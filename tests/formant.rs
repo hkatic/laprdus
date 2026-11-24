@@ -752,6 +752,11 @@ fn slovenian_is_spoken_by_every_voice() {
         ("Ura je 8.30", "Ura je osem \u{FDD0} trideset"),
         ("Ura je 5", "Ura je pet"),
         ("ob 5 urah", "ob petih urah"),
+        // A listener's report of 2026-11-24: before uri the hour is the ordinal
+        ("ob 10:00 uri", "ob deseti uri"),
+        ("ob 10.00 uri", "ob deseti uri"),
+        ("do 17:00 ure", "do sedemnajste ure"),
+        ("ob 10:30 uri", "ob deseti uri in trideset minut"),
         ("3.14", "tri pika štirinajst"),
         // The listener's answers of 2026-11-03: the feminine accusative and
         // instrumental of tretji by the table of neuter nouns in -o, 1 before

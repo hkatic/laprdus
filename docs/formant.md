@@ -5799,6 +5799,54 @@ byte for byte what it was.
   (*ob osem trideset, od osem trideset do šestnajst nič nič*), so that *3.14*
   and *3.2* stay what they were and *7.10.* with a possible month inside is
   the date; *24:00* (*štiriindvajset nič nič*). *Ura je 5* stays *ura je pet*.
+- **A clock time before *ura*** (a listener's report of 2026-11-24: *Sestanek
+  bo ob 10:00 uri* had *ob desetih uri*; "for every whole hour the H has to
+  go, but without *uri* after it the H can stay"): a whole hour followed by
+  a form of *ura* is the feminine ordinal in that form's case, the *ura*
+  read as written (`hour_before_ura()` in `sl/numerals.rs`): *ob 10:00 uri,
+  ob 10.00 uri* *ob deseti uri*, *ob 1:00 uri* *ob prvi uri*, *ob 24:00 uri*
+  *ob štiriindvajseti uri*, *do 17:00 ure* *do sedemnajste ure*, *pred 10:00
+  uro* *pred deseto uro*, *po 10:00 uri*, *okoli 10.00 ure*; two whole hours
+  joined by a dash, *do, in, ali, oziroma, ter* before *ura* both (*od 8:00
+  do 16:00 ure* *od osme do šestnajste ure*, *8:00–16:00 ure*, *ob 10:00 in
+  11:00 uri* *ob deseti in enajsti uri*, *med 8:00 in 10:00 uro* *med osmo in
+  deseto uro*); a bare hour after *ob* before *uri, minuti, sekundi* too
+  (*ob 10 uri* *ob deseti uri*, *ob 10 minuti* *ob deseti minuti*: a
+  singular locative after *ob* follows no cardinal, which would be *ob petih
+  urah*; *v 1 uri* stays *v eni uri*, *za 3 ure* *za tri ure*). A time with
+  minutes before *ura* is the ordinal, the *ura* and the minutes in the
+  nominative (*ob 10:30 uri* *ob deseti uri in trideset minut*, *ob 11:02
+  uri* *ob enajsti uri in dve minuti*, *ob 10:01 uri* *in ena minuta*, *ob
+  10:21 uri* *in enaindvajset minut*, *za 23.35 uro* *za triindvajseto uro
+  in petintrideset minut*; *ura* and *uro* joined *ure, uri* as words that
+  make a time of *h.mm*). A colon time with a leading zero, as digital
+  clocks write it, is read as without the zero (*ob 08:00 uri* *ob osmi
+  uri*; *ob 08:00* *ob osmih*, until then *ob osem nič nič*; *08:30–16:00*
+  had lost its *do*). Without *ura* nothing else changed: *ob 11:00* *ob
+  enajstih*, *ob 8.30* *ob osem trideset*, *do 17:00* *do sedemnajst nič
+  nič* (the last two are questions to the listener). Sources: SSKJ² *úra*
+  "sonce vzide ob peti uri [5. uri] in dvajset minut; začetek predstave ob
+  dvajseti uri [20. uri] 20 h; vstajati pred šesto (uro); med tretjo in
+  četrto (uro)", *desêti* "ob deseti (uri) 10 h"; SP 2001 *úra* "začetek
+  predstave ob dvajseti ~i in dvajset minut ‹20.20›", *sedemnájsti* "oditi ob
+  ~i uri |ob 17. uri; ob 17 h; ob 17.00|", *devetnájsti* "priti do ~e ure |do
+  19. ure; do 19 h; do 19.00|"; the Jezikovna svetovalnica: "Pomen
+  nadpisanega simbola h" (Dobrovoljc 2021: *Dobiva se ob osmi uri – ob 8.
+  uri*), "Ujemanje: ure in minute v priredno zloženi besedni zvezi"
+  (Černivec, Vranjek Ošlak 2021: *ob 11.02* "ob enajsti uri / enajstih in dve
+  minuti", the minutes not in the case of *ob*: *ob 21. uri in 15 minut*),
+  "Zapis nepolne oz. necele ure" (Lengar Verovnik 2016: *ob 8.45 uri* is no
+  correct spelling, *ob 8.30* "ob osmi uri in trideset minut"), "Kako je
+  prav: med enajsto in »prvo« ali »eno« uro?" (Dobrovoljc 2017: the cardinal
+  in the locative only after *ob*, *ob enih … desetih*; the feminine ordinal
+  after the other prepositions, *med deveto in deseto*). SUK 1.1, all 48,146
+  sentences through both builds: the 3 with a clock time before *ura* moved
+  (*okoli 14.30 ure*, *Okoli 6.30 ure*, *za 23.35 uro*), nothing else. Tests:
+  `slovenian_listeners_report_of_2026_11_24_whole_hours_before_uri`
+  (`src/common/text/numbers/tests.rs`),
+  `slovenian_listeners_report_of_2026_11_24_ob_deseti_uri`
+  (`src/common/languages/sl/tests.rs`, the accents *desêti*, *sédemnajsti*),
+  the `NUMERALS` rows of `tests/formant.rs`.
 - **The front end** (`is_number_word()` in `sl/readings.rs`) counts the
   oblique forms, the ordinals, the *cela* forms and the multiplicatives as
   number words, so *Meni 21* stays the menu in any case, and the noun rule of

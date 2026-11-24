@@ -1281,6 +1281,26 @@ fn slovenian_listeners_report_of_2026_11_24_lepo_pozdravljeni() {
     );
 }
 
+/// A listener's report of 2026-11-24: the ordinal that the number converter
+/// now writes for a whole hour before uri has the dictionaries' accent:
+/// desêti (SSKJ², SP 2001), sédemnajsti and devétnajsti (SSKJ² sédemnajsti
+/// in sedemnájsti, devétnajsti in devetnájsti, the first-syllable teens of
+/// the lexicon), as the ordinal of ob 10. uri always had.
+#[test]
+fn slovenian_listeners_report_of_2026_11_24_ob_deseti_uri() {
+    let frontend = slovenian();
+    check(
+        &frontend,
+        &[
+            ("Sestanek bo ob deseti uri", "sEst'a:nəg bO Ob dEs'E:ti 'u:ri"),
+            ("Pridi ob sedemnajsti uri", "pr'i:di Op s'é:dəmnajsti 'u:ri"),
+            ("ob devetnajsti uri", "Ob dEv'é:tnajsti 'u:ri"),
+            ("do sedemnajste ure", "dO s'é:dəmnajstE 'u:rE"),
+            ("ob deseti uri in trideset minut", "Ob dEs'E:ti 'u:ri in tr'i:dEsEt min'u:t"),
+        ],
+    );
+}
+
 /// A listener's report of 2026-11-17: meja, vasi, izgovori, sprosti, petega
 #[test]
 fn slovenian_listeners_report_of_2026_11_17_meja_vasi_izgovori_sprosti() {
