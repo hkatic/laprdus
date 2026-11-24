@@ -49,6 +49,13 @@ static VERB_NOUN: &str = include_str!("tables/verb_noun.txt");
 /// vozilo): the forms that make lepo, težko ... before them the adverb.
 static FINITE_VERBS: &str = include_str!("tables/finite_verbs.txt");
 
+/// The feminine accusative and instrumental and the neuter nominative and
+/// accusative singular of the participles of Sloleks (urejeno, povezano,
+/// dišeče), of frequency 100 or more, without the spellings a noun has as
+/// often in those cases: the forms in -o and -e that make lepo, težko ...
+/// before them the adverb, which no ending tells from a noun's.
+static PARTICIPLES: &str = include_str!("tables/participles.txt");
+
 /// A word as the key of a generated table.
 fn key(w: &[char]) -> String {
     w.iter().collect()
@@ -251,6 +258,12 @@ pub fn imperative_reading(w: &[char]) -> Option<Vec<char>> {
 /// uspelo; not zimo, pesem, prodajo).
 pub fn is_finite_verb(w: &[char]) -> bool {
     table::contains(FINITE_VERBS, &key(w))
+}
+
+/// A participle in a form an adjective in -o agrees with too (urejeno,
+/// povezano, dišeče; not majico, vreme, novo).
+pub fn is_agreeing_participle(w: &[char]) -> bool {
+    table::contains(PARTICIPLES, &key(w))
 }
 
 /// A spelling read one way as a verb's form and another way as a noun, an

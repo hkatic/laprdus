@@ -23,7 +23,7 @@ Usage (the tables in the repository are made with these values):
 
 `extract` streams the XML once into a TSV of word forms (13 GB of XML,
 about four minutes; the last argument is the lowest lemma frequency kept);
-`generate` writes the fourteen tables into src/common/languages/sl/tables (or
+`generate` writes the fifteen tables into src/common/languages/sl/tables (or
 into the folder named after forms.tsv), reading HAND_ENTRIES from
 src/common/languages/sl/lexicon.rs of this repository so that every form is
 checked as the engine will look it up (lexicon_reading() of
@@ -1311,6 +1311,41 @@ def finite_verbs(forms_path, min_frequency=100):
     return [w for w, ff in verbs.items() if ff >= min_frequency and agreeing.get(w, 0) * 3 <= ff]
 
 
+def agreeing_participles(forms_path, min_frequency=100):
+    """The participles an adverb in -o stands before in a form an adjective
+    in -o agrees with too, for the table participles.txt (sl/clause.rs:
+    lepo, težko, močno and the others are the adverb lepó before an
+    adjective or a participle, Lepo pozdravljeni, lepo urejeno stanovanje,
+    tesno povezano; a listener's report of 2026-11-24): the feminine
+    accusative and instrumental and the neuter nominative and accusative
+    singular of Sloleks's participles (JOS Pd: urejeno, povezano, dišeče),
+    whose -o and -e nouns and other adjectives have too (lépo majico, lépo
+    vreme, lépo novo hišo), so that the ending cannot tell them. Of
+    frequency min_frequency or more, without a spelling that is a third as
+    often or more such a form of a noun. The other forms of an adjective or
+    a participle (urejena, urejeni, urejen) the engine knows by their
+    endings, which no noun lépo agrees with has."""
+    participles = defaultdict(int)
+    nouns = defaultdict(int)
+    with open(forms_path, encoding='utf-8') as f:
+        for line in f:
+            parts = line.rstrip('\n').split('\t')
+            if len(parts) < 8:
+                continue
+            cat, msd, orth, ff = parts[1], parts[5], parts[6], int(parts[7])
+            if orth != orth.lower():
+                continue
+            if cat == 'adjective' and msd.startswith('Pd') and len(msd) >= 6:
+                gender, number, case = msd[3], msd[4], msd[5]
+            elif cat == 'noun' and len(msd) >= 5:
+                gender, number, case = msd[2], msd[3], msd[4]
+            else:
+                continue
+            if number == 'e' and ((gender == 'z' and case in 'to') or (gender == 's' and case in 'it')):
+                (participles if cat == 'adjective' else nouns)[orth] += ff
+    return [w for w, ff in participles.items() if ff >= min_frequency and nouns.get(w, 0) * 3 <= ff]
+
+
 def command_imperatives(forms_path, lemmas, reader):
     return imperatives(forms_path, set(lemmas), reader)
 
@@ -1601,6 +1636,8 @@ def generate(forms_path, out_dir, manual_min=50, auto_min=2000, form_min=3, hand
     print('neuter nouns in -o', len(neuter_o), 'nouns in -a after 1', len(noun_a), file=sys.stderr)
     verbs_after_adverb = finite_verbs(forms_path)
     print('finite verb forms', len(verbs_after_adverb), file=sys.stderr)
+    participles_after_adverb = agreeing_participles(forms_path)
+    print('participles in -o, -e', len(participles_after_adverb), file=sys.stderr)
     food = food_forms(forms_path, read_word_list(food_path)) if food_path else []
     print('food forms', len(food), file=sys.stderr)
     verb_noun_rows = []
@@ -1658,6 +1695,9 @@ def generate(forms_path, out_dir, manual_min=50, auto_min=2000, form_min=3, hand
     # The present, the imperative and the neuter l-participle of the verbs,
     # which make lepo, težko ... before them the adverb (lepó pišeš)
     lines(out_dir, 'finite_verbs.txt', verbs_after_adverb)
+    # The participles in the forms an adjective in -o agrees with too, which
+    # make lepo, težko ... before them the adverb (lepó urejeno)
+    lines(out_dir, 'participles.txt', participles_after_adverb)
     # Food nouns (slovenian_food.tsv): every form of Sloleks with its cases,
     # 1 nominative, 2 accusative, 4 genitive (singular and plural)
     lines(out_dir, 'food.txt', food)

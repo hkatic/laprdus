@@ -199,12 +199,13 @@ fn slovenian_words_reported_by_the_first_users_october_2026() {
     }
     // lepo: lepó at the end of the clause, lépo before another word
     // (a listener, 2026-10-30); before a pronoun or a verb lepó too
-    // (2026-11-18, the test of that report)
+    // (2026-11-18, the test of that report), and before an adjective or a
+    // participle (2026-11-24)
     assert_eq!(phones(&frontend, "Hvala lepo"), "hv'a:la lEp'ó:");
     assert_eq!(phones(&frontend, "To je lepo"), "t'ó: jE lEp'ó:");
     assert_eq!(phones(&frontend, "Lepo"), "lEp'ó:");
     assert_eq!(phones(&frontend, "Lepo vreme"), "l'é:pO wr'E:mE");
-    assert_eq!(phones(&frontend, "Lepo pozdravljeni"), "l'é:pO pOzdr'a:wljEni");
+    assert_eq!(phones(&frontend, "Lepo pozdravljeni"), "lEp'ó: pOzdr'a:wljEni"); // since 2026-11-24
     // ... and so are the other adverbs on -ó with an adjective on the stem
     assert_eq!(phones(&frontend, "To je težko"), "t'ó: jE tEšk'ó:");
     assert_eq!(phones(&frontend, "Težko delo"), "t'E:škO d'é:lO");
@@ -1226,9 +1227,9 @@ fn slovenian_listeners_report_of_2026_11_18_lepo_before_a_verb() {
             // After a preposition the adjective, whatever follows (the
             // instrumental of misel, spelled like the verb's mislijo)
             ("Z lepo mislijo", "z l'é:pO m'i:slijO"),
-            // Before an adjective or a participle in -n as the listener asked
-            // on 2026-10-30
-            ("Lepo pozdravljeni", "l'é:pO pOzdr'a:wljEni"),
+            // Before an adjective or a participle the adverb too since the
+            // listener's report of 2026-11-24 (on 2026-10-30 the adjective)
+            ("Lepo pozdravljeni", "lEp'ó: pOzdr'a:wljEni"),
             // The other spellings of the class
             ("Težko mi je", "tEšk'ó: mi jE"),
             ("Slabo se počutim", "slab'ó: sE pOč'u:tim"),
@@ -1236,6 +1237,46 @@ fn slovenian_listeners_report_of_2026_11_18_lepo_before_a_verb() {
             ("Težko delo", "t'E:škO d'é:lO"),
             // lahko keeps its own rule
             ("Lahko pridem", "lahk'ó: pr'i:dEm"),
+        ],
+    );
+}
+
+/// A listener's report of 2026-11-24: Lepo pozdravljeni on the last syllable
+/// of lepo. Before an adjective or a participle the adverb lepó (SSKJ² lepó
+/// prisl.: lepo oblikovane roke, lepo zelena trava; SP 2001 lepó nač.
+/// prisl.: ~ pameten bodi), the adjective lépo only before a word it can
+/// agree with
+#[test]
+fn slovenian_listeners_report_of_2026_11_24_lepo_pozdravljeni() {
+    let frontend = slovenian();
+    check(
+        &frontend,
+        &[
+            // The listener's phrase and the dictionaries' examples
+            ("Lepo pozdravljeni", "lEp'ó: pOzdr'a:wljEni"),
+            ("Lepo oblikovane roke", "lEp'ó: OblikOv'a:nE r'O:kE"),
+            ("Lepo zelena trava", "lEp'ó: zEl'E:na tr'a:va"),
+            ("Lepo pameten bodi", "lEp'ó: p'a:mEtən b'ó:di"),
+            // Every form an adjective in -o cannot agree with, a participle in
+            // -o of the table, after a preposition too, and the other spellings
+            ("Lepo urejen vrt", "lEp'ó: urEj'En v'ərt"),
+            ("Lepo urejeno stanovanje", "lEp'ó: urEj'E:nO stanOv'a:njE"),
+            ("Z lepo urejenimi vrtovi", "z lEp'ó: urEj'E:nimi vərt'O:vi"),
+            ("Močno zadolžena država", "mOčn'ó: zadOlž'E:na dərž'a:va"),
+            ("Tesno povezane", "tEsn'ó: pOv'é:zanE"),
+            // The adjective before a word it agrees with: a noun in -o, -e or
+            // a consonant, the feminine and neuter nouns spelled like an
+            // adjective's form, a relational adjective in -o and its noun
+            ("Lepo vreme", "l'é:pO wr'E:mE"),
+            ("Lepo življenje", "l'é:pO žiwlj'E:njE"),
+            ("Lepo novo hišo", "l'é:pO n'O:vO h'i:šO"),
+            ("Lepo jesen", "l'é:pO jEs'é:n"),
+            ("Lepo popoldne", "l'é:pO pOp'O:ldnE"),
+            ("Lepo naše mesto", "l'é:pO n'a:šE m'é:stO"),
+            ("Težko finančno situacijo", "t'E:škO fin'a:nčnO situ'a:cijO"),
+            ("lepo oziroma grdo vreme", "l'é:pO Oz'i:rOma g'ərdO wr'E:mE"),
+            // Found while checking: dekle had been read as an l-participle
+            ("Lepo dekle", "l'é:pO dEkl'E"),
         ],
     );
 }

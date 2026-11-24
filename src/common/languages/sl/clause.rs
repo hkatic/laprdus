@@ -5,8 +5,8 @@
 use super::phonemize::{Capital, phonemize};
 use super::readings::{
     Clause, FOOD_ACCUSATIVE, FOOD_GENITIVE, FOOD_NOMINATIVE, VerbOrNoun, context_reading, food_cases,
-    is_adjective_ending, is_definite_adjective, is_finite_verb, is_given_name, is_number_word, is_preposition,
-    verb_noun_readings,
+    is_adjective_ending, is_agreeing_participle, is_definite_adjective, is_finite_verb, is_given_name, is_number_word,
+    is_preposition, verb_noun_readings,
 };
 use super::words::{is_enclitic, is_function_word, is_proclitic, is_question_word};
 use crate::formant::phones::Ph;
@@ -32,15 +32,17 @@ use crate::text::frontend::letters::{ends_with, ends_with_any, eq, find, is_one_
 // tabo. Lepo se imejte. Lepo bodi. Lepo vas pozdravljam. Lepo pišeš.), lépo
 // staying before a noun (Lepo majico nosiš. Lepo mačko imaš. lepo obalo
 // imajo na Hrvaškem.), which is what the dictionaries have: see
-// `adverb_before()`. What is left to the first report against the
-// dictionaries is the adverb before an adjective or a participle in -n, -t
-// (lepo pozdravljeni, močno zadolžena, tesno povezana), read on the stem.
+// `adverb_before()`. On 2026-11-24 the listener took back the last place
+// where the first report departed from the dictionaries: lepó before an
+// adjective or a participle too (Lepo pozdravljeni on the last syllable;
+// močno zadolžena, tesno povezana, lepo urejeno), `adjective_after_adverb()`.
 // Not lahko: the modal lahkó "can" has a rule of its own. Not nelepo:
 // Sloleks has no reading of its adverb. The readings are Sloleks's (the
 // adverb's -ó, the adjective's first stem variant).
 
-/// The spelling, the adverb (at the end of its clause, before a clitic or a
-/// verb), the adjective (before any other word).
+/// The spelling, the adverb (at the end of its clause, before a clitic, a
+/// verb, an adjective or a participle), the adjective (before any other
+/// word).
 const END_READINGS: &[(&str, &str, &str)] = &[
     ("lepo", "lepó", "lépo"),
     ("težko", "težkó", "têžko"),
@@ -80,14 +82,17 @@ const END_READINGS: &[(&str, &str, &str)] = &[
 /// -o, -e or a consonant (majico, vreme, pesem), so the endings -ti, -či,
 /// -la, -li, -le are a verb's, a masculine -l is one but for a few feminine
 /// nouns, and the rest is the generated table of [`is_finite_verb`], which
-/// leaves out the spellings such a noun has (zimo, mamo, prodajo). After a
-/// preposition the word is the adjective whatever follows (z lepo mislijo,
-/// na toplo gredo: the nouns misel, greda). SUK 1.1, the 1,150 tokens of
-/// these spellings: before these words the adverb 325 times and the
-/// predicative 55 (Težko je reči, težko najti: tagged an adjective, SP
-/// povdk.), an attributive adjective once (vse hudo spremenil v dobro); a
-/// noun never follows the adverb, and of the 116 verbs in the present after
-/// one the table misses one (se močno prisesajta).
+/// leaves out the spellings such a noun has (zimo, mamo, prodajo). Before an
+/// adjective or a participle it modifies, [`adjective_after_adverb`] (Lepo
+/// pozdravljeni, z lepo urejenimi vrtovi). Otherwise, after a preposition
+/// the word is the adjective whatever follows (z lepo mislijo, na toplo
+/// gredo: the nouns misel, greda). SUK 1.1, the 1,150 tokens of these
+/// spellings: before these words the adverb 325 times and the predicative
+/// 55 (Težko je reči, težko najti: tagged an adjective, SP povdk.), an
+/// attributive adjective once (vse hudo spremenil v dobro); a noun never
+/// follows the adverb, and of the 116 verbs in the present after one the
+/// table misses one (se močno prisesajta, read by its ending -a since
+/// 2026-11-24).
 fn adverb_before(clause: &Clause, i: usize) -> bool {
     #[rustfmt::skip] // rows of words
     const BEING: &[&str] = &[
@@ -95,10 +100,19 @@ fn adverb_before(clause: &Clause, i: usize) -> bool {
         "niso", "bom", "boš", "bo", "bova", "bosta", "bomo", "boste", "bodo", "bi", "bodi", "bodite", "bodimo",
         "bodiva", "bodita", "biti", "ne",
     ];
-    // Feminine nouns whose accusative ends in -l (lepo misel, težko žival)
-    const NOUNS_L: &[&str] = &["misel", "zamisel", "pomisel", "domisel", "žival", "piščal", "kopel", "zibel"];
+    // The feminine and neuter nouns of Sloleks 3.1, of frequency 10 or more,
+    // whose accusative ends like an l-participle (lepo misel, težko žival,
+    // lepo dekle; dekle was the verb until 2026-11-24)
+    #[rustfmt::skip] // rows of words
+    const NOUNS_L: &[&str] = &[
+        "misel", "zamisel", "pomisel", "domisel", "žival", "piščal", "kopel", "zibel", "drhal", "globel", "pogibel",
+        "vrzel", "zmrzal", "dekle", "finale",
+    ];
     // Words in -ti, -či, -li, -le that are no verb
     const NOT_VERBS: &[&str] = &["proti", "nasproti", "niti", "dokler", "koli", "karkoli", "kdorkoli", "vsaj"];
+    if adjective_after_adverb(clause, i + 1) {
+        return true;
+    }
     if clause.before(i).is_some_and(is_preposition) {
         return false;
     }
@@ -111,9 +125,70 @@ fn adverb_before(clause: &Clause, i: usize) -> bool {
         return false;
     }
     (next.len() >= 4 && ends_with_any(next, &["ti", "či"]))
-        || (next.len() >= 5 && ends_with_any(next, &["la", "li", "le"]))
-        || (next.len() >= 5 && ends_with(next, "l") && !is_one_of(next, NOUNS_L))
+        || (next.len() >= 5 && ends_with_any(next, &["la", "li", "le", "l"]) && !is_one_of(next, NOUNS_L))
         || is_finite_verb(next)
+}
+
+/// Whether the word at `k`, after lepo, težko ..., is an adjective or a
+/// participle in a form the adjective lépo, têžko cannot agree with, so that
+/// the word before it is the adverb lepó, težkó (SP 2001 lepó nač. prisl.;
+/// a listener's report of 2026-11-24: Lepo pozdravljeni on the last
+/// syllable). The adjective lepo is a feminine accusative or instrumental or
+/// a neuter nominative or accusative singular, and the nouns and adjectives
+/// it agrees with end in -o, -e or, a feminine noun of the i-declension, a
+/// consonant (lepo majico, lepo vreme, lepo pesem, lepo novo hišo). So a
+/// word in -a, -i, -ih, -im, -em, -emu (pozdravljeni, urejena, povezanih,
+/// osvetljenem, grenkega) is not one, nor one in -e after a consonant that
+/// no such neuter noun has before it (povezane, kapitalistične, gibljive;
+/// not vreme, življenje, srce, dekle), nor a masculine adjective or
+/// participle in -en, -an, -it, -et, -ut, -rt, -iv (urejen, plačan, zavit,
+/// marljiv), but for the feminine and neuter nouns of Sloleks 3.1 spelled
+/// so in the accusative (jesen, ljubezen, stran, smrt, dete, popoldne) and
+/// the possessives naše, vaše. A participle in -o or -e is the participle
+/// the adverb modifies (lepo urejeno stanovanje, tesno povezano, močno
+/// dišeče) by the generated table of [`is_agreeing_participle`]: the ending
+/// would not tell it from majico, vreme, novo. Not a function word or a
+/// number, nor a name in -e or a consonant (lepo Catherine). SUK 1.1, the
+/// tokens of these spellings before an adjective: the adverb 124 times, the
+/// adjective 18, every one of those before a relational adjective in -o and
+/// its noun (težko finančno situacijo, trdo jajčno lupino), which stays.
+fn adjective_after_adverb(clause: &Clause, k: usize) -> bool {
+    // The feminine accusative and the neuter nominative and accusative
+    // singular of the nouns of Sloleks 3.1, of frequency 10 or more, that end
+    // like such an adjective, and the neuter of naš, vaš
+    #[rustfmt::skip] // rows of words
+    const AGREEING: &[&str] = &[
+        "babi", "babše", "basen", "bojazen", "bolezen", "dete", "dlan", "dlesen", "dobrobit", "dopoldne", "dresen",
+        "golazen", "golen", "jesen", "kazen", "klet", "laket", "ljubezen", "mami", "mati", "nadlahet", "nadlaket",
+        "nespamet", "obrt", "ohcet", "opoldne", "pamet", "perut", "pesem", "plavut", "plesen", "podlaket", "podstran",
+        "poldne", "popoldne", "prikazen", "ravan", "raven", "revše", "senožet", "smet", "smrt", "snet", "stran", "vajet",
+        "vzmet", "zmene", "četrt", "ščene", "naše", "vaše",
+    ];
+    // Conjunctions in -a, -i that are not in the lists of function words
+    // (lepo oziroma grdo vreme, bodisi lepo bodisi grdo)
+    const NOT_ADJECTIVES: &[&str] = &["oziroma", "bodisi"];
+    let Some(w) = clause.word(k) else { return false };
+    if w.len() < 4
+        || is_function_word(w)
+        || is_proclitic(w)
+        || is_enclitic(w)
+        || is_preposition(w)
+        || is_question_word(w)
+        || is_number_word(w)
+        || is_one_of(w, AGREEING)
+        || is_one_of(w, NOT_ADJECTIVES)
+        || ends_with(w, "koli")
+    {
+        return false;
+    }
+    if ends_with_any(w, &["a", "i", "ih", "im", "em", "emu"]) || is_agreeing_participle(w) {
+        return true;
+    }
+    !clause.capital(k)
+        && ends_with_any(
+            w,
+            &["ne", "ke", "te", "ve", "še", "re", "de", "ge", "he", "pe", "en", "an", "it", "et", "ut", "rt", "iv"],
+        )
 }
 
 const SHORT_PRONOUNS: &[&str] = &[

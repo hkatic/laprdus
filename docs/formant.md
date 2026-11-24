@@ -4421,9 +4421,9 @@ as *mení*.
 *Lepo* is the adverb and the predicative *lepó* and the adjective *lépo*
 (SP 2001 *lepó* nač. prisl., *lepó* povdk.: *lepo mi je*, *lepo je, da si
 prišel*; *lép -a -o tudi -ó*), read by the next word (`clause_reading()`,
-`END_READINGS`, `adverb_before()` in `sl/clause.rs`). Two reports of one
-listener made the rule. On 2026-10-30: *lepó* at the end of its clause and
-*lépo* before another word (*Hvala lepo.*, *To je lepo.*, *Lepo, da si
+`END_READINGS`, `adverb_before()`, `adjective_after_adverb()` in
+`sl/clause.rs`). Three reports of one listener made the rule. On
+2026-10-30: *lepó* at the end of its clause and *lépo* before another word (*Hvala lepo.*, *To je lepo.*, *Lepo, da si
 prišel.* but *Lepo vreme*, *lepo hišo*, *Lepo pozdravljeni*, *Lepo je.*),
 which read every adverb before a word on the stem, against the
 dictionaries. On 2026-11-18: *lepó* also before a pronoun or a verb at the
@@ -4432,7 +4432,10 @@ vas pozdravljam. Lepo pišeš.*: open e, the stress on a close o), *lépo* in
 "all other cases" (*Lepo majico nosiš. Lepo mačko imaš. lepo obalo imajo na
 Hrvaškem.*). The second report is what the dictionaries have, and it takes
 back the first one's *Lepo je.*, which is the construction of *Lepo bodi*
-and *Lepo mi je*.
+and *Lepo mi je*. On 2026-11-24: *Lepo pozdravljeni* on the last syllable
+of *lepo*, which takes back the last place where the first report departed
+from the dictionaries (SSKJ² *lepó* prisl.: *lepo oblikovane roke*, *lepo
+zelena trava*; SP 2001 *lepó* nač. prisl.: *~ pameten bodi*).
 
 The word is *lepó*
 
@@ -4441,8 +4444,8 @@ The word is *lepó*
   of *biti* or *ne* (*je, so, ni, bo, bi, bodi, bodite*), with *pa*
   between or not (*Lepo pa je*);
 - before a verb: an infinitive or an l-participle by its ending (*-ti,
-  -či, -l, -la, -li, -le*; not *proti, niti* and the feminine nouns
-  *misel, žival* ...), a present, an imperative or a neuter participle in
+  -či, -l, -la, -li, -le*; not *proti, niti* and the nouns *misel,
+  žival, vrzel, dekle, finale* ...), a present, an imperative or a neuter participle in
   *-lo* by the generated table `FINITE_VERBS` (`tables/finite_verbs.txt`,
   `is_finite_verb()` in `sl/readings.rs`): the 16,729 such forms of
   Sloleks's main verbs of frequency 100 or more, without a spelling that is
@@ -4450,14 +4453,44 @@ The word is *lepó*
   a feminine accusative or instrumental singular or a neuter nominative or
   accusative singular (*prodajo, vozilo, steklo, sporočilo*). The endings
   alone would not do: *pesem, zimo, mamo, šolo* end as verbs do, and they
-  are exactly the nouns of *lepo zimo*.
+  are exactly the nouns of *lepo zimo*;
+- before an adjective or a participle it modifies, after a preposition too
+  (`adjective_after_adverb()`): *Lepo pozdravljeni*, *močno zadolžena*,
+  *tesno povezane*, *lepo urejen vrt*, *z lepo urejenimi vrtovi*. The
+  adjective *lepo* is a feminine accusative or instrumental or a neuter
+  nominative or accusative singular, and what it agrees with ends in *-o*,
+  *-e* or, a feminine noun of the i-declension, a consonant (*lepo majico*,
+  *lepo vreme*, *lepo pesem*, *lepo novo hišo*). So the endings tell the
+  forms it cannot agree with: *-a*, *-i*, *-ih*, *-im*, *-em*, *-emu* of any
+  word but a function word or a number, and, unless it is written with a
+  capital (*lepo Catherine*), *-e* after a consonant no neuter noun of
+  Sloleks ends in before it (*-ne*, *-ke*, *-te*, *-ve*, *-še*, *-re*,
+  *-de*, *-ge*, *-he*, *-pe*: *povezane*, *kapitalistične*, *gibljive*; not
+  *vreme*, *življenje*, *srce*, *dekle*) and the masculine *-en*, *-an*,
+  *-it*, *-et*, *-ut*, *-rt*, *-iv* (*urejen*, *plačan*, *zavit*,
+  *marljiv*), but for the feminine and neuter nouns of Sloleks 3.1 of form
+  frequency 10 or more spelled so in the accusative (*jesen*, *ljubezen*,
+  *bolezen*, *stran*, *smrt*, *pamet*, *pesem*, *dete*, *popoldne*, *mati*
+  ...) and the possessives *naše*, *vaše*. A participle in *-o* or *-e*
+  (*lepo urejeno stanovanje*, *tesno povezano*, *močno dišeče*) is told by
+  the generated table `PARTICIPLES` (`tables/participles.txt`,
+  `is_agreeing_participle()` in `sl/readings.rs`): the 1,601 feminine
+  accusative and instrumental and neuter nominative and accusative singular
+  forms of Sloleks's participles (JOS Pd) of frequency 100 or more, without
+  a spelling a noun has a third as often or more in those cases.
 
-It is *lépo* before any other word, and after a preposition whatever
+It is *lépo* before any other word, and after a preposition whatever else
 follows (*z lepo mislijo*, *na toplo gredo*: the nouns *misel*, *greda*,
-spelled like *mislijo*, *gredo*). That leaves one place where the rule
-still follows the first report and not the dictionaries: the adverb before
-an adjective or a participle in *-n*, *-t* (*Lepo pozdravljeni*, *močno
-zadolžena*, *tesno povezana*: 124 tokens of SUK), on the stem.
+spelled like *mislijo*, *gredo*). Before a relational adjective in *-o* and
+its noun it stays the adjective (*težko finančno situacijo*, *trdo jajčno
+lupino*), as SUK has it in all 18 of its tokens of an adjective before an
+adjective; before a gradable adjective in *-o* (*težko razumljivo*, *težko
+dostopno mesto*, *slabo razvito območje*) the adverb is still read on the
+stem (10 tokens of SUK), because no ending tells *razumljivo* from *novo*.
+Found while checking: *dekle* and *finale* had been read as l-participles
+(*Lepo dekle* was *lepó*); the nouns of Sloleks whose accusative ends like
+one (*misel*, *žival*, *vrzel*, *dekle*, *finale* ...) are left out of that
+ending now.
 
 The rule is the same anywhere in the clause (*On lepo piše*, *Imaš lepo
 majico*) and for the other spellings Sloleks reads as an adverb on *-ó*
@@ -4480,13 +4513,25 @@ prosim*: *močno* 90, *težko* 85, *lepo* 32, *slabo* 21, *ostro* 14, *hudo*
 10), 50 predicatives the corpus tags as adjectives (*Težko je reči*, *je
 težko najti*, *Lepo je biti skupaj*, *Hudo bo*: SP povdk.), and 2 it gets
 wrong (*jed še toplo postrežemo*, *vse hudo spremenil v dobro*). Of the 116
-presents after an adverb the table misses one (*se močno prisesajta*).
+presents after an adverb the table misses one (*se močno prisesajta*, read
+by its ending *-a* since 2026-11-24). On 2026-11-24 the adjectives and
+participles moved 93 more tokens, all tagged adverbs and all to *-ó*
+(*močno* 32, *slabo* 15, *hudo* 11, *težko* 10, *lepo* 10, *tesno* 9 ...:
+*tesno povezana*, *lepo urejena*, *močno zadolžena*, *hudo bolan*, *težko
+pričakovani film*, and two presents the table misses, *se močno
+prisesajta*, *se močno kuja*), none wrong; of the 99 adverbs before an
+adjective 10 are left on the stem, and the 14 adjectives before one stay.
 GaMS 9B, asked on 2026-10-30, gave *lépo* in all six test sentences
 (*Hvala lepo.* included), against both the listener and the dictionaries;
 on 2026-11-18, asked to accent the listener's eight sentences and
 *Lepo pozdravljeni* and to say what *lepo* is in each, it put the stress on
 the first syllable in all nine, and called *lepo* an adverb where it
 answered, *Lepo majico nosiš* included: no help with the accent, again.
+On 2026-11-24, asked to accent *lepo* and to say what it is in *Lepo
+pozdravljeni!*, *Stanovanje je lepo urejeno.* and *Imamo lepo vreme.*, it
+wrote no accent in any of them and called *lepo* an adverb in the first
+and an adjective in the other two, *lepo urejeno* against SSKJ²'s *lepo
+oblikovane roke*.
 
 ***Čast*, *částiti*, *častíti* (2026-11-18).** A listener's report: *To je
 hiša časti.*, *Kriminalci nimajo nobene časti.* and *Časti ne moreš z
@@ -5838,7 +5883,7 @@ python3 tools/formant/slovenian_words.py generate forms.tsv \
 
 (the first step streams 13 GB of XML in about four minutes; the 275 MB zip
 is `Sloleks.3.1.zip` at the handle above; `generate` takes a minute and
-writes the fourteen tables into `src/common/languages/sl/tables/`, reading
+writes the fifteen tables into `src/common/languages/sl/tables/`, reading
 `HAND_ENTRIES` of `src/common/languages/sl/lexicon.rs` and the two SP files of
 names in `tools/formant/`; `--names-report` lists every entry of the
 tables of names with the lexicon's reading and the frequencies of the name
