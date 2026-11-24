@@ -30,7 +30,11 @@ import os
 import sys
 import types
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+# The names of the checks hold Slovenian letters (č, š, ž), which a console
+# in cp1252, as on GitHub's Windows machines, cannot print
+sys.stdout.reconfigure(encoding="utf-8")
+
+HERE =os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 ADDON = os.path.join(ROOT, "src", "platform", "windows", "nvda", "addon")
 
