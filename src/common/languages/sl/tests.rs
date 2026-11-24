@@ -1325,6 +1325,25 @@ fn slovenian_listeners_answers_of_2026_11_24_hours_without_ura() {
     );
 }
 
+/// The listener's answers of 2026-11-24, second round: the words the
+/// converter writes for a time with minutes and no ura (do sedemnajste
+/// trideset, od osmih trideset do šestnajstih, ob osmih in pet minut) keep
+/// the accents of the ordinal and of the cardinal (SSKJ², SP 2001).
+#[test]
+fn slovenian_listeners_answers_of_2026_11_24_hours_with_minutes_without_ura() {
+    let frontend = slovenian();
+    check(
+        &frontend,
+        &[
+            ("do sedemnajste trideset", "dO s'é:dəmnajstE tr'i:dEsEt"),
+            ("od osmih trideset do šestnajstih", "Od 'O:smih tr'i:dEsE dO š'é:stnajstih"),
+            ("ob osmih in pet minut", "Ob 'O:smih in p'é:t min'u:t"),
+            ("ob dvanajstih in dve minuti", "Ob dv'a:najstih in dv'é: min'u:ti"),
+            ("pred deseto trideset", "prE dEs'E:tO tr'i:dEsEt"),
+        ],
+    );
+}
+
 /// A listener's report of 2026-11-17: meja, vasi, izgovori, sprosti, petega
 #[test]
 fn slovenian_listeners_report_of_2026_11_17_meja_vasi_izgovori_sprosti() {

@@ -243,13 +243,13 @@ enum HourAfter {
     /// osmih trideset: the Jezikovna svetovalnica, "Zapis nepolne oz. necele
     /// ure", 2016: ob 8.30 "manj formalno pa 'ob osmih trideset'").
     Ob,
-    /// The cardinal in the genitive after okoli and okrog, a whole hour only
+    /// The cardinal in the genitive after okoli and okrog, and on both sides
+    /// of a range with minutes (od osmih trideset do šestnajstih)
     /// (SP 2001 okóli "priti ~ desetih"; SSKJ² okóli "pride okoli desetih,
     /// desete (ure)", okróg "pride okrog enajstih, enajste (ure)"). The forms
     /// are those of the locative: desetih, dveh, enih.
     About,
-    /// The feminine ordinal of the left-out ura with this ending, a whole
-    /// hour only: "e" after do and od (do sedemnajste), "O" after pred and med
+    /// The feminine ordinal of the left-out ura with this ending: "e" after do and od (do sedemnajste), "O" after pred and med
     /// (pred deseto, med osmo in deseto), "i" after po (po deseti). SSKJ²
     /// úra "vstajati pred šesto (uro); med tretjo in četrto (uro)", drúgi
     /// "upam, da pride po drugi (uri)"; SP 2001 the nouns of the hours,
@@ -305,47 +305,61 @@ fn time_ends_at(t: Text, pos: usize) -> bool {
         && t.is_digit(pos - 4)
 }
 
-/// The words of a clock time read as `reading` says, or nothing where that
-/// reading does not take it: minutes after a preposition other than ob. One
-/// o'clock as an ordinal is the feminine one, ene, eni, eno (Dobrovoljc 2017:
-/// "med (pol) eno in drugo; med dvanajsto in (pol) eno", prva "neprimeren";
-/// SSKJ² úra "čas od polnoči do ene").
-fn hour_words(r: &NumberReader, reading: HourAfter, hours: &str, minutes: &str) -> Option<String> {
-    let whole = minutes == "00";
-    match reading {
-        HourAfter::Ob | HourAfter::About => {
-            let hour = hour_locative(small_value(hours));
-            if whole {
-                return Some(hour.to_owned());
-            }
-            // The minutes as the clock reads them (ob osmih nič pet, ob
-            // dvanajstih nič dve), after the same short pause
-            let mut part = r.digit_group_to_words(minutes);
-            feminine_two(&mut part);
-            (reading == HourAfter::Ob).then(|| join_parts([hour.to_owned(), part]))
-        }
-        HourAfter::Ordinal(ending) if whole => Some(match (small_value(hours), ending) {
+/// The minutes after an hour said without ura: under ten with in and their
+/// noun (ob 8:05 ob osmih in pet minut, ob 12:02 ob dvanajstih in dve minuti;
+/// a Slovenian listener's answer of 2026-11-24, second round; the Jezikovna
+/// svetovalnica, "Zapis nepolne oz. necele ure", 2016: "ob osmih in trideset
+/// minut"), from ten on as the clock reads them, after the short pause of a
+/// clock time (ob osmih trideset, do sedemnajste trideset).
+fn hour_with_minutes(r: &NumberReader, hour: String, minutes: &str) -> String {
+    if minutes == "00" {
+        return hour;
+    }
+    if small_value(minutes) < 10 {
+        return format!("{hour} in {}", minutes_words(r, minutes));
+    }
+    let mut part = r.digit_group_to_words(minutes);
+    feminine_two(&mut part);
+    join_parts([hour, part])
+}
+
+/// The words of a clock time read as `reading` says, the minutes by
+/// `hour_with_minutes()`: ob 8:30 ob osmih trideset, okoli 10:30 okoli
+/// desetih trideset, do 17:30 do sedemnajste trideset, pred 10:30 pred deseto
+/// trideset (the listener's answer for do 17:30; the other prepositions by
+/// the same pattern). One o'clock as an ordinal is the feminine one, ene,
+/// eni, eno (Dobrovoljc 2017: "med (pol) eno in drugo; med dvanajsto in (pol)
+/// eno", prva "neprimeren"; SSKJ² úra "čas od polnoči do ene").
+fn hour_words(r: &NumberReader, reading: HourAfter, hours: &str, minutes: &str) -> String {
+    let hour = match reading {
+        HourAfter::Ob | HourAfter::About => hour_locative(small_value(hours)).to_owned(),
+        HourAfter::Ordinal(ending) => match (small_value(hours), ending) {
             (1, "e") => "ene".to_owned(),
             (1, "i") => "eni".to_owned(),
             (1, _) => "eno".to_owned(),
             _ => ordinal(r, hours, ending),
-        }),
-        HourAfter::Ordinal(_) => None,
-    }
+        },
+    };
+    hour_with_minutes(r, hour, minutes)
 }
 
 /// A clock time at `i` after a preposition of time, with no ura after it or
 /// after a time joined to it (those are `hour_before_ura()`'s): ob 8:30 ob
 /// osmih trideset, okoli 10:00 okoli desetih, do 17:00 do sedemnajste, pred
-/// 10:00 pred deseto (a Slovenian listener's answers of 2026-11-24; see
-/// `HourAfter`). A second time joined by a dash or do is read as after do
-/// (od 8:00 do 16:00, od 8:00–16:00: od osme do šestnajste), one joined by
-/// in, ali, oziroma or ter as the first (med 8:00 in 10:00 med osmo in
-/// deseto, ob 10:00 in 11:00 ob desetih in enajstih). Nothing where either
-/// side is not read so (od 8:30 do 16:00 stays a range of two clock times),
-/// before a unit's sign, or where a clock time stands before `prev` (8:30 do
-/// 16:00: the right side of a range). Writes the words and returns the end
-/// of what it read.
+/// 10:00 pred deseto, do 17:30 do sedemnajste trideset (a Slovenian
+/// listener's answers of 2026-11-24, both rounds; see `HourAfter`). A second
+/// whole hour joined to a whole hour by a dash or do is read as after do (od
+/// 8:00 do 16:00, od 8:00–16:00: od osme do šestnajste); where either side
+/// of such a range has minutes, after od or ob, both hours are the cardinal
+/// in -ih (od 8:30 do 16:00 od osmih trideset do šestnajstih: the listener's
+/// answer, "točno je od osmih trideset do šestnajstih"; od 8:00 do 16:30 od
+/// osmih do šestnajstih trideset by the same pattern). A time joined by in,
+/// ali, oziroma or ter is read as the first (med 8:00 in 10:00 med osmo in
+/// deseto, ob 10:00 in 11:00 ob desetih in enajstih). Nothing before a
+/// unit's sign, where a clock time stands before `prev` (8:30 do 16:00: the
+/// right side of a range), or where a period, a possible month and another
+/// period make it a date after any word but ob (do 5.11.). Writes the words
+/// and returns the end of what it read.
 fn hour_after_preposition(r: &NumberReader, t: Text, i: usize, prev: &Prev, out: &mut Out) -> Option<usize> {
     let reading = hour_after(&prev.word)?;
     let (after, hours, minutes) = clock_time_at(t, i)?;
@@ -355,7 +369,14 @@ fn hour_after_preposition(r: &NumberReader, t: Text, i: usize, prev: &Prev, out:
     {
         return None;
     }
-    let mut words = hour_words(r, reading, hours, minutes)?;
+    // do 5.11., od 1.12. do 5.12.: the day and the month
+    let date_like = |end: usize, minutes: &str| {
+        t.at(end - 3) == b'.' && t.at(end) == b'.' && (1..=12).contains(&small_value(minutes))
+    };
+    if reading != HourAfter::Ob && date_like(after, minutes) {
+        return None;
+    }
+    let mut words = hour_words(r, reading, hours, minutes);
     let mut stop = after;
     let link = if dash_at(t, after) {
         Some(("do", after + 3))
@@ -367,13 +388,21 @@ fn hour_after_preposition(r: &NumberReader, t: Text, i: usize, prev: &Prev, out:
     if let Some((link, second)) = link
         && let Some((second_end, second_hours, second_minutes)) = clock_time_at(t, second)
     {
-        // A range read as ordinals is one of whole hours (ob 8:30–9:00
-        // stays a range of two clock times)
-        if ura_after(t, second_end).is_some() || (link == "do" && (minutes != "00" || second_minutes != "00")) {
+        if ura_after(t, second_end).is_some() || date_like(second_end, second_minutes) {
             return None;
         }
-        let second_reading = if link == "do" { HourAfter::Ordinal("e") } else { reading };
-        words = format!("{words} {link} {}", hour_words(r, second_reading, second_hours, second_minutes)?);
+        let second_reading = if link != "do" {
+            reading
+        } else if minutes == "00" && second_minutes == "00" {
+            HourAfter::Ordinal("e")
+        } else if matches!(prev.word.as_str(), "od" | "ob") {
+            // A range with minutes: both hours in -ih
+            words = hour_words(r, HourAfter::About, hours, minutes);
+            HourAfter::About
+        } else {
+            return None;
+        };
+        words = format!("{words} {link} {}", hour_words(r, second_reading, second_hours, second_minutes));
         stop = second_end;
     }
     if unit_at(t, stop).is_some() {

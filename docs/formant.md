@@ -5850,6 +5850,65 @@ byte for byte what it was.
   `slovenian_listeners_report_of_2026_11_24_ob_deseti_uri`
   (`src/common/languages/sl/tests.rs`, the accents *desêti*, *sédemnajsti*),
   the `NUMERALS` rows of `tests/formant.rs`.
+- **A clock time with minutes without *ura*** (the listener's answers of
+  2026-11-24, second round, to four questions: *do 17:30* "do sedemnajste
+  trideset"; *od 8:30 do 16:00* "točno je od osmih trideset do
+  šestnajstih"; *okoli 10:00* *okoli desetih* is right; *ob 8:05* "ob osmih
+  in pet minut"). `hour_with_minutes()`, `hour_words()` and
+  `hour_after_preposition()` in `sl/numerals.rs`:
+  - Minutes under ten are said with *in* and their noun, without the short
+    pause: *ob 8:05* *ob osmih in pet minut*, *ob 8:01* *in ena minuta*, *ob
+    12:02* *ob dvanajstih in dve minuti*, *ob 08:03* *in tri minute*, *do
+    17:05* *do sedemnajste in pet minut*. From ten on as before (*ob 8:10*
+    *ob osmih deset*, *ob 8:30* *ob osmih trideset*). Lengar Verovnik 2016:
+    "ob osmih in trideset minut"; Černivec and Vranjek Ošlak 2021 ("Ujemanje:
+    ure in minute v priredno zloženi besedni zvezi"): *ob 11.02* "ob enajsti
+    uri / enajstih in dve minuti". SSKJ² has *nič pet* only in the
+    nominative (*nìč* "ura je sedem nič pet").
+  - A time with minutes after *do, od, pred, med, po*: the feminine ordinal
+    of the whole hour and the minutes: *do 17:30, do 17.30* *do sedemnajste
+    trideset*, *od 8:30* *od osme trideset*, *pred 10:30* *pred deseto
+    trideset*, *po 10:15* *po deseti petnajst*, *do 1:30* *do ene trideset*,
+    *med 8:30 in 10:00* *med osmo trideset in deseto*. Only *do 17:30* is the
+    listener's; the others follow its pattern. The dictionaries and the
+    Jezikovna svetovalnica have no example of an ordinal with bare minutes
+    after these prepositions (the nearest is Dobrovoljc 2017, "med eno in
+    petnajst minut in drugo"), so this rests on the listener's word.
+  - *okoli, okrog* with minutes as *ob*: *okoli 10:30* *okoli desetih
+    trideset* (our extension; not asked).
+  - A range joined by a dash or *do* in which either side has minutes, after
+    *od* or *ob*: both hours are the cardinal in -ih: *od 8:30 do 16:00, od
+    8.30 do 16.00, od 8:30–16:00* *od osmih trideset do šestnajstih*, *od
+    8:00 do 16:30* *od osmih do šestnajstih trideset*, *od 8:05 do 16:00* *od
+    osmih in pet minut do šestnajstih*, *ob 8:30–9:00* *ob osmih trideset do
+    devetih*. Only the first is the listener's. The cardinal after *od ...
+    do* is the dictionaries' form for whole hours: SSKJ² *ósem* "dela od
+    osmih do štirih", *pét* "čakati od petih do šestih (popoldne)", *do*
+    "dela od šestih do dveh"; Dobrovoljc 2024 ("Nestični pomišljaj med
+    neistovrstnimi sestavinami pri imenih krajev"): "*Odprto 8–12* preberemo
+    *odprto od osmih do dvanajstih*". A range of two whole hours stays *od
+    osme do šestnajste*, the listener's earlier answer for *do 17:00*
+    carried to the range; the dictionaries would have *od osmih do
+    šestnajstih* there too, which is an open question to the listener.
+  - A period, a possible month and another period after any of these words
+   but *ob* stay the date: *do 5.11.*, *od 1.12. do 5.12.*.
+  
+  Unchanged: a time before a form of *ura*, a range with no preposition
+  (*8:30–16:00* *osem trideset do šestnajst nič nič*), *proti* and *za*,
+  seconds. GaMS, asked as a second opinion, was of no use: *do 17.30* "do
+  sedemnajst trideset", *ob 8.05* "osem petnajst", *od osme do šestnajste*
+  over *od osmih do šestnajstih* (against SSKJ²), and *do sedemnajstih
+  trideset* over the listener's *do sedemnajste trideset*; it decided
+  nothing. SUK 1.1, all sentences through both builds:
+  6 differ, each a clock time with minutes after one of these prepositions
+  (*do 15.30* *do petnajste trideset*, *okoli 16.15* *okoli šestnajstih
+  petnajst*, *ob 23.05* *ob triindvajsetih in pet minut*, *med 12.00 in
+  12.15* *med dvanajsto in dvanajsto petnajst*, until then *dvanajst pika
+  petnajst*). Tests:
+  `slovenian_listeners_answers_of_2026_11_24_hours_with_minutes_without_ura`
+  in `src/common/text/numbers/tests.rs` and in
+  `src/common/languages/sl/tests.rs`, the `NUMERALS` rows of
+  `tests/formant.rs`.
 - **A clock time without *ura*** (the same listener's answers of 2026-11-24
   to the three questions: *ob 10:30 uri* *ob deseti uri in trideset minut*
   is right; *ob 8:30* "bolje *ob osmih trideset*"; *do 17:00* and *pred
@@ -5860,8 +5919,9 @@ byte for byte what it was.
   - *ob*: the hour in the locative of the cardinal and the minutes as the
     clock reads them, after the same short pause: *ob 8:30, ob 8.30, ob
     08:30* *ob osmih trideset*, *ob 20.15* *ob dvajsetih petnajst*, *ob 1:30*
-    *ob enih trideset*, *ob 12:02* *ob dvanajstih nič dve*, *ob 8:05* *ob
-    osmih nič pet* (Lengar Verovnik 2016 above: *ob 8.30* "najbolj nevtralno
+    *ob enih trideset*; minutes under ten were *ob 12:02* *ob dvanajstih
+    nič dve*, *ob 8:05* *ob osmih nič pet* until the second round below
+    (Lengar Verovnik 2016 above: *ob 8.30* "najbolj nevtralno
     'ob osmi uri in trideset minut' ali 'ob osmih in trideset minut', manj
     formalno pa 'ob osmih trideset' ali kratko in malo 'ob pol devetih'").
     A whole hour stays *ob enajstih*.
@@ -5880,13 +5940,11 @@ byte for byte what it was.
     after *do* (*od 8:00 do 16:00, od 8:00–16:00* *od osme do šestnajste*);
     by *in, ali, oziroma, ter* the second as the first (*ob 10:00 in 11:00*
     *ob desetih in enajstih*, until then *in enajst nič nič*; *ob 8:30 ali
-    9:30* *ob osmih trideset ali devetih trideset*). A range with minutes on
-    either side stays two clock times (*od 8:30 do 16:00, od 8:00 do 16:30,
-    ob 8:30–9:00*), and so does a time after a clock time (*8:00 do 16:00*),
-    so that no range is half ordinal and half clock.
+    9:30* *ob osmih trideset ali devetih trideset*). A time after a clock
+    time stays a clock time (*8:00 do 16:00*); a range with minutes on either
+    side did too until the second round below.
   
-  Unchanged: a time with minutes after any preposition but *ob* (*do 17:30*
-  *do sedemnajst trideset*), *proti* and *za* (*za 10:00* *za deset nič
+  Unchanged: *proti* and *za* (*za 10:00* *za deset nič
   nič*: no dictionary gives the hour after them), seconds (*ob 8:30:15*),
   *ob 0:30*, a unit's sign after the time. Sources:
   - SSKJ² *úra* "vstajati pred šesto (uro) / popoldne bom doma med tretjo
