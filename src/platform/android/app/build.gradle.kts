@@ -20,7 +20,7 @@ android {
         applicationId = "com.hrvojekatic.laprdus"
         minSdk = 24
         targetSdk = 37
-        versionCode = 41
+        versionCode = 42
         versionName = "2.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

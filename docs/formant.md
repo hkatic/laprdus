@@ -5797,7 +5797,8 @@ byte for byte what it was.
   by the ordinal; a time written with a period (SP: *ob 8.30*) in the context
   of a time, after *ob, od, do, med, okoli, okrog*, after *ura je*, before *h,
   ure, uri, ur, zjutraj, zvečer, dopoldne, popoldne* or in a range of times
-  (*ob osem trideset, od osem trideset do šestnajst nič nič*), so that *3.14*
+  (*ob osmih trideset* since the listener's answers of 2026-11-24, below;
+  *od osem trideset do šestnajst nič nič*), so that *3.14*
   and *3.2* stay what they were and *7.10.* with a possible month inside is
   the date; *24:00* (*štiriindvajset nič nič*). *Ura je 5* stays *ura je pet*.
 - **A clock time before *ura*** (a listener's report of 2026-11-24: *Sestanek
@@ -5825,7 +5826,8 @@ byte for byte what it was.
   uri*; *ob 08:00* *ob osmih*, until then *ob osem nič nič*; *08:30–16:00*
   had lost its *do*). Without *ura* nothing else changed: *ob 11:00* *ob
   enajstih*, *ob 8.30* *ob osem trideset*, *do 17:00* *do sedemnajst nič
-  nič* (the last two are questions to the listener). Sources: SSKJ² *úra*
+  nič* (the last two were questions to the listener, answered in the next
+  item). Sources: SSKJ² *úra*
   "sonce vzide ob peti uri [5. uri] in dvajset minut; začetek predstave ob
   dvajseti uri [20. uri] 20 h; vstajati pred šesto (uro); med tretjo in
   četrto (uro)", *desêti* "ob deseti (uri) 10 h"; SP 2001 *úra* "začetek
@@ -5848,6 +5850,82 @@ byte for byte what it was.
   `slovenian_listeners_report_of_2026_11_24_ob_deseti_uri`
   (`src/common/languages/sl/tests.rs`, the accents *desêti*, *sédemnajsti*),
   the `NUMERALS` rows of `tests/formant.rs`.
+- **A clock time without *ura*** (the same listener's answers of 2026-11-24
+  to the three questions: *ob 10:30 uri* *ob deseti uri in trideset minut*
+  is right; *ob 8:30* "bolje *ob osmih trideset*"; *do 17:00* and *pred
+  10:00* "treba reći *do sedemnajste* i *pred deseto*"). Read by
+  `hour_after_preposition()` in `sl/numerals.rs` (`HourAfter`) when no form
+  of *ura* follows the time or a time joined to it (those stay
+  `hour_before_ura()`'s), and only after these prepositions:
+  - *ob*: the hour in the locative of the cardinal and the minutes as the
+    clock reads them, after the same short pause: *ob 8:30, ob 8.30, ob
+    08:30* *ob osmih trideset*, *ob 20.15* *ob dvajsetih petnajst*, *ob 1:30*
+    *ob enih trideset*, *ob 12:02* *ob dvanajstih nič dve*, *ob 8:05* *ob
+    osmih nič pet* (Lengar Verovnik 2016 above: *ob 8.30* "najbolj nevtralno
+    'ob osmi uri in trideset minut' ali 'ob osmih in trideset minut', manj
+    formalno pa 'ob osmih trideset' ali kratko in malo 'ob pol devetih'").
+    A whole hour stays *ob enajstih*.
+  - *do, od, pred, med, po* with a whole hour: the feminine ordinal of the
+    left-out *ura* in the case of the preposition: *do 17:00* *do
+    sedemnajste*, *od 8:00* *od osme*, *pred 10:00, pred 10.00* *pred
+    deseto*, *med 8:00 in 10:00* *med osmo in deseto*, *po 10:00* *po
+    deseti*, *po 2:00* *po drugi*, *do 24:00* *do štiriindvajsete*. One
+    o'clock is the feminine *ena*: *do 1:00* *do ene*, *po 1:00* *po eni*,
+    *pred 1:00* *pred eno*, *med 12:00 in 1:00* *med dvanajsto in eno*.
+  - *okoli, okrog* with a whole hour: the cardinal in the genitive, whose
+    forms are the locative's: *okoli 10:00* *okoli desetih*, *okrog 11.00*
+    *okrog enajstih*. Here the dictionaries put the cardinal first, so this
+    is not the ordinal the listener chose after *do* and *pred*.
+  - Two times joined: by a dash or *do* both whole hours, the second read as
+    after *do* (*od 8:00 do 16:00, od 8:00–16:00* *od osme do šestnajste*);
+    by *in, ali, oziroma, ter* the second as the first (*ob 10:00 in 11:00*
+    *ob desetih in enajstih*, until then *in enajst nič nič*; *ob 8:30 ali
+    9:30* *ob osmih trideset ali devetih trideset*). A range with minutes on
+    either side stays two clock times (*od 8:30 do 16:00, od 8:00 do 16:30,
+    ob 8:30–9:00*), and so does a time after a clock time (*8:00 do 16:00*),
+    so that no range is half ordinal and half clock.
+  
+  Unchanged: a time with minutes after any preposition but *ob* (*do 17:30*
+  *do sedemnajst trideset*), *proti* and *za* (*za 10:00* *za deset nič
+  nič*: no dictionary gives the hour after them), seconds (*ob 8:30:15*),
+  *ob 0:30*, a unit's sign after the time. Sources:
+  - SSKJ² *úra* "vstajati pred šesto (uro) / popoldne bom doma med tretjo
+    in četrto (uro) med petnajsto in šestnajsto (uro)", "čas od polnoči do
+    ene"; *drúgi* "upam, da pride po drugi (uri)"; *trétji* "od doma je
+    odšla že pred tretjo (uro)"; *okóli* "pride okoli desetih, desete
+    (ure)"; *okróg* "pride okrog enajstih, enajste (ure)".
+  - SP 2001 gives every hour a feminine noun of its own: *deséta* "poklicati
+    po ~i |po 10. uri; po 22. uri|", *ôsma* "priti pred ~o |pred 8. uro|",
+    *dvájseta* "čakati do ~e |do 20. ure|", *trinájsta* "delati do ~e |do
+    13. ure|", *dvanájsta* "oglasiti se pred ~o |pred 12. uro|",
+    *sedemnájsta -e [də]* "Kliči po ~i |po 17. uri|"; *okóli* "priti ~
+    desetih".
+  - The Jezikovna svetovalnica: Dobrovoljc 2017 ("deseta ura > deseta: med
+    deveto in deseto"; one o'clock "med (pol) eno in drugo, med dvanajsto in
+    (pol) eno", *prva* "neprimeren") and Dobrovoljc 2021 ("Kosili smo med
+    petnajsto in šestnajsto, pred devetnajsto pa smo odšli v mesto").
+  
+  The words keep the adjective's accents (*desêto*, *ôsme*, *sédemnajste*,
+  SSKJ²'s first-syllable teens as before). SP's nouns of the hours are
+  marked otherwise in places (*deséta*, *sedemnájsta*), which the listener
+  has not asked about.
+  
+  What moved, read through both builds line by line:
+  - All 48,146 sentences of SUK 1.1: 27, every one an *ob* with minutes
+    (*ob 19.20* *ob devetnajstih dvajset*, *Stanje ob 12:30*). SUK has no
+    whole hour without *ura* after the other prepositions.
+  - 124,691 lines of test strings, examples of this file, `CLAUDE.md`, the
+    rules and the manuals, source comments, and the Slovenian texts of the
+    Android app and the NVDA add-on, each also with a capital, inside *To je
+    ...* and with a period: 251, every one a clock time after one of these
+    prepositions.
+  - The audio of the golden corpus's `formant` and `digits` sets, Zvonko in
+    hr, sr, bs and sl (hashes of the old and the new library): 2 of 39,196
+    differ, the Slovenian *ob 8.30* and *ob 20.15*.
+  
+  Tests: `slovenian_listeners_answers_of_2026_11_24_hours_without_ura` in
+  `src/common/text/numbers/tests.rs` and in `src/common/languages/sl/tests.rs`
+  (the accents), the `NUMERALS` rows of `tests/formant.rs`.
 - **The front end** (`is_number_word()` in `sl/readings.rs`) counts the
   oblique forms, the ordinals, the *cela* forms and the multiplicatives as
   number words, so *Meni 21* stays the menu in any case, and the noun rule of

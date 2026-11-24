@@ -1301,6 +1301,30 @@ fn slovenian_listeners_report_of_2026_11_24_ob_deseti_uri() {
     );
 }
 
+/// The same listener's answers of 2026-11-24: without ura the converter
+/// writes the hour's ordinal after do, od, pred, med and po alone (do
+/// sedemnajste, pred deseto), ob osmih trideset after ob; the words keep the
+/// accents of the adjective (desêti, ôsmi: SSKJ², SP 2001) and of the cardinal
+/// (ob ôsmih, okoli desêtih, êne).
+#[test]
+fn slovenian_listeners_answers_of_2026_11_24_hours_without_ura() {
+    let frontend = slovenian();
+    check(
+        &frontend,
+        &[
+            ("do sedemnajste", "dO s'é:dəmnajstE"),
+            ("pred deseto", "prE dEs'E:tO"),
+            ("od osme do šestnajste", "Od 'O:smE dO š'é:stnajstE"),
+            ("med osmo in deseto", "mEd 'O:smO in dEs'E:tO"),
+            ("po deseti", "pO dEs'E:ti"),
+            ("Sestanek bo ob osmih trideset", "sEst'a:nəg bO Ob 'O:smih tr'i:dEsEt"),
+            ("do ene", "dO 'E:nE"),
+            ("med dvanajsto in eno", "mE dv'a:najstO in 'E:nO"),
+            ("okoli desetih", "Ok'ó:li dEs'E:tih"),
+        ],
+    );
+}
+
 /// A listener's report of 2026-11-17: meja, vasi, izgovori, sprosti, petega
 #[test]
 fn slovenian_listeners_report_of_2026_11_17_meja_vasi_izgovori_sprosti() {

@@ -913,9 +913,82 @@ fn slovenian_listeners_report_of_2026_11_24_whole_hours_before_uri() {
         assert_eq!(numbers(Slovenian, text), expected, "{text}");
     }
     let brk = brk();
-    assert_eq!(numbers(Slovenian, "ob 8.30"), format!("ob osem{brk}trideset"));
+    assert_eq!(numbers(Slovenian, "ob 8.30"), format!("ob osmih{brk}trideset"));
     assert_eq!(numbers(Slovenian, "od 8.30 do 16.00"), format!("od osem{brk}trideset do šestnajst{brk}nič nič"));
     assert_eq!(numbers(Slovenian, "Ura je 8.30"), format!("Ura je osem{brk}trideset"));
     assert_eq!(numbers(Slovenian, "05.03."), format!("petega{brk}tretjega."));
     assert_eq!(numbers(Slovenian, "08:30–16:00"), format!("osem{brk}trideset do šestnajst{brk}nič nič"));
+}
+
+/// The Slovenian listener's answers of 2026-11-24 to the questions of the
+/// report above: without ura, ob 8:30 is ob osmih trideset (the Jezikovna
+/// svetovalnica, 2016: ob 8.30 "manj formalno pa 'ob osmih trideset'"), do
+/// 17:00 do sedemnajste and pred 10:00 pred deseto, the feminine ordinal of
+/// the left-out ura after the other prepositions (SSKJ² úra "vstajati pred
+/// šesto (uro); med tretjo in četrto (uro)"; SP 2001 deséta "poklicati po
+/// ~i", ôsma "priti pred ~o", dvájseta "čakati do ~e"; Dobrovoljc 2017 and
+/// 2021), one o'clock the feminine ena (Dobrovoljc 2017 "med dvanajsto in
+/// (pol) eno"; SSKJ² úra "od polnoči do ene"), and the cardinal after okoli
+/// and okrog (SP 2001 okóli "priti ~ desetih"; SSKJ² okrog "pride okrog
+/// enajstih, enajste (ure)").
+#[test]
+fn slovenian_listeners_answers_of_2026_11_24_hours_without_ura() {
+    let brk = brk();
+    for (text, expected) in [
+        // The listener's answers
+        ("ob 8:30", format!("ob osmih{brk}trideset")),
+        ("do 17:00", "do sedemnajste".to_owned()),
+        ("pred 10:00", "pred deseto".to_owned()),
+        ("Sestanek bo ob 8:30.", format!("Sestanek bo ob osmih{brk}trideset.")),
+        ("Pridi do 17:00, prosim.", "Pridi do sedemnajste, prosim.".to_owned()),
+        // ob and minutes, however the time is written
+        ("ob 8.30", format!("ob osmih{brk}trideset")),
+        ("ob 08:30", format!("ob osmih{brk}trideset")),
+        ("Ob 20.15 se začne.", format!("Ob dvajsetih{brk}petnajst se začne.")),
+        ("ob 1:30", format!("ob enih{brk}trideset")),
+        ("ob 12:02", format!("ob dvanajstih{brk}nič dve")),
+        ("ob 8:05", format!("ob osmih{brk}nič pet")),
+        ("ob 8:30 ali 9:30", format!("ob osmih{brk}trideset ali devetih{brk}trideset")),
+        // The other prepositions with a whole hour
+        ("od 8:00", "od osme".to_owned()),
+        ("pred 10.00", "pred deseto".to_owned()),
+        ("do 13.00", "do trinajste".to_owned()),
+        ("po 10:00", "po deseti".to_owned()),
+        ("po 2:00", "po drugi".to_owned()),
+        ("do 24:00", "do štiriindvajsete".to_owned()),
+        ("okoli 10:00", "okoli desetih".to_owned()),
+        ("okrog 11.00", "okrog enajstih".to_owned()),
+        // One o'clock
+        ("do 1:00", "do ene".to_owned()),
+        ("po 1:00", "po eni".to_owned()),
+        ("pred 1:00", "pred eno".to_owned()),
+        ("med 12:00 in 1:00", "med dvanajsto in eno".to_owned()),
+        // Two whole hours
+        ("od 8:00 do 16:00", "od osme do šestnajste".to_owned()),
+        ("od 8.00 do 16.00", "od osme do šestnajste".to_owned()),
+        ("od 8:00–16:00", "od osme do šestnajste".to_owned()),
+        ("med 8:00 in 10:00", "med osmo in deseto".to_owned()),
+        ("ob 10:00 in 11:00", "ob desetih in enajstih".to_owned()),
+        ("do 17:00 in 3 ure", "do sedemnajste in tri ure".to_owned()),
+        // Unchanged: with ura, a range with minutes, other prepositions
+        ("ob 10:30 uri", "ob deseti uri in trideset minut".to_owned()),
+        ("ob 11:00", "ob enajstih".to_owned()),
+        ("do 17:00 ure", "do sedemnajste ure".to_owned()),
+        ("od 8:00 do 16:00 ure", "od osme do šestnajste ure".to_owned()),
+        ("do 17:30", format!("do sedemnajst{brk}trideset")),
+        ("od 8:30 do 16:00", format!("od osem{brk}trideset do šestnajst{brk}nič nič")),
+        ("od 8:00 do 16:30", format!("od osem{brk}nič nič do šestnajst{brk}trideset")),
+        ("8:00 do 16:00", format!("osem{brk}nič nič do šestnajst{brk}nič nič")),
+        ("8:00–16:00", format!("osem{brk}nič nič do šestnajst{brk}nič nič")),
+        ("ob 8:30–9:00", format!("ob osem{brk}trideset do devet{brk}nič nič")),
+        ("za 10:00", format!("za deset{brk}nič nič")),
+        ("proti 10:00", format!("proti deset{brk}nič nič")),
+        ("ob 8:30:15", format!("ob osem{brk}trideset{brk}petnajst")),
+        ("ob 0:30", format!("ob nič{brk}trideset")),
+        ("do 5.11.", format!("do petega{brk}enajstega.")),
+    ] {
+        assert_eq!(numbers(Slovenian, text), expected, "{text}");
+    }
+    // Croatian keeps its own clock
+    assert_eq!(numbers(Croatian, "do 17:00"), format!("do sedamnaest{brk}nula nula"));
 }

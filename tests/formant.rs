@@ -744,8 +744,8 @@ fn slovenian_is_spoken_by_every_voice() {
         ("ob 5.00", "ob petih"),
         ("ob 17:00", "ob sedemnajstih"),
         ("ob 13", "ob trinajstih"),
-        ("ob 8.30", "ob osem \u{FDD0} trideset"),
-        ("ob 20.15", "ob dvajset \u{FDD0} petnajst"),
+        ("ob 8.30", "ob osmih \u{FDD0} trideset"),
+        ("ob 20.15", "ob dvajsetih \u{FDD0} petnajst"),
         ("od 8.30 do 16.00", "od osem \u{FDD0} trideset do šestnajst \u{FDD0} nič nič"),
         ("8.30–16.00", "osem \u{FDD0} trideset do šestnajst \u{FDD0} nič nič"),
         ("24:00", "štiriindvajset \u{FDD0} nič nič"),
@@ -757,6 +757,11 @@ fn slovenian_is_spoken_by_every_voice() {
         ("ob 10.00 uri", "ob deseti uri"),
         ("do 17:00 ure", "do sedemnajste ure"),
         ("ob 10:30 uri", "ob deseti uri in trideset minut"),
+        // The listener's answers of 2026-11-24: without ura the ordinal after
+        // do, od, pred, med, po
+        ("do 17:00", "do sedemnajste"),
+        ("pred 10:00", "pred deseto"),
+        ("od 8:00 do 16:00", "od osme do šestnajste"),
         ("3.14", "tri pika štirinajst"),
         // The listener's answers of 2026-11-03: the feminine accusative and
         // instrumental of tretji by the table of neuter nouns in -o, 1 before
