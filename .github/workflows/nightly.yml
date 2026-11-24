@@ -304,8 +304,12 @@ jobs:
           PY
           cat "${GITHUB_STEP_SUMMARY}"
 
-  # The tag has done its work. Deleted with the GITHUB_TOKEN, it starts
-  # nothing.
+  # The tag has done its work once the night has gone through (or had
+  # nothing to build): this run's tag and every older nightly tag are
+  # removed. A night that failed keeps its tag, because "Re-run failed jobs"
+  # checks the commit out by the tag's name; the next night that goes
+  # through removes it. A newer tag, of a nightly still waiting its turn, is
+  # left alone. Deleted with the GITHUB_TOKEN, a tag starts nothing.
   remove-tag:
     name: Remove the nightly tag
     needs: [check, build, linux, publish]
@@ -318,4 +322,17 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           TAG: ${{ github.ref_name }}
-        run: gh api -X DELETE "repos/${GH_REPO}/git/refs/tags/${TAG}" && echo "Removed the tag ${TAG}."
+          FAILED: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
+        run: |
+          if [ "${FAILED}" = true ]; then
+            echo "::notice::This nightly did not go through, so its tag ${TAG} stays: its failed jobs can be re-run (gh run rerun --failed). The next nightly that goes through removes it."
+            exit 0
+          fi
+          gh api "repos/${GH_REPO}/git/matching-refs/tags/nightly/" --jq '.[].ref' | sed 's|^refs/tags/||' |
+          while read -r tag; do
+            # The names hold their time (nightly/YYYYMMDD-HHMMSS), so they
+            # sort by it.
+            if [ "${tag}" = "${TAG}" ] || [[ "${tag}" < "${TAG}" ]]; then
+              gh api -X DELETE "repos/${GH_REPO}/git/refs/tags/${tag}" >/dev/null && echo "Removed the tag ${tag}."
+            fi
+          done

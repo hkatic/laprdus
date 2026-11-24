@@ -42,7 +42,7 @@ GitHub runs a `schedule` (and the "Run workflow" button) only for workflows on t
   - Puts the add-on into `nvda/` for the store (below).
   - Reads `latest.json` back and checks the SHA-256 of every file it lists.
   - Writes the run's summary: the site, the TestFlight build, and the two links for the store's form.
-- **`remove-tag`** (always) deletes the tag. Deleted with the `GITHUB_TOKEN`, it starts nothing.
+- **`remove-tag`** (always): once the night has gone through, or had nothing to build, it deletes the run's tag and every older `nightly/*` tag. The names hold their time, so they sort by it, and a newer tag of a nightly still waiting its turn is left alone. A night that failed keeps its tag: a re-run (`gh run rerun --failed`) checks the commit out by the tag's name, and the first test nightly (2026-11-24) could not be re-run because its tag was gone. Deleted with the `GITHUB_TOKEN`, a tag starts nothing.
 - **Concurrency.** The group is `nightly`, never cancelled. In the called workflows the groups hold `github.workflow` (the caller's name there) and the ref, so pushes and nightlies never cancel each other.
 - **`LAPRDUS_RELEASE_TAG`** of `linux-packages.yml` is set for `refs/tags/v*` only: a nightly tag would fail `source.sh`'s check that the tag names the version.
 
