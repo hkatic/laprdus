@@ -37,6 +37,8 @@ on:
       - ".claude/**"
       - "CLAUDE.md"
       - "AGENTS.md"
+      - "TODO.md"
+      - "ISSUES.md"
       - "**/changes-*.md"
   pull_request:
   workflow_dispatch:

@@ -30,6 +30,21 @@ This file holds what every task needs, and Claude Code loads all of it at every 
 | `cli.md` | The command-line program: usage and options |
 | `nightly.md` | The nightly builds: what starts them, the version of each platform, the download site on Cloudflare R2, TestFlight, the NVDA add-on store, the secrets |
 
+## Tracking work (`TODO.md`, `ISSUES.md`)
+
+Since 2026-11-26 the maintainer's request: two files at the root track the reports and the work on them.
+- `ISSUES.md` holds the known bugs, under "Open" and "Fixed, waiting for confirmation".
+- `TODO.md` holds the work in its order, and the questions waiting for an answer.
+
+Rules:
+- Read both before starting on a report.
+- Every fix updates them **in the same commit**: the issue moves to "Fixed, waiting for confirmation" with its commit, and the TODO item gets `[x]` and the commit.
+- An item is removed once a tester or the maintainer confirms the fix.
+- A new report from the maintainer's feedback folder (outside the repository) goes into both files before work on it starts.
+- Testers are named by role only.
+
+A change to these two files alone does not start the "Build and test" workflow.
+
 ## Architecture
 
 The engine and every program are written in Rust (migrated from C++ in November 2026). There is no C or C++ left. The golden corpus (`tests/golden/corpus.jsonl`, the texts of the former C++ test programs) and the hashes of the last C++ engine's output for it are frozen; `tools/golden/golden.py check` compares a build with them.
@@ -700,7 +715,7 @@ Two workflows build and test on GitHub's machines (free for the public repositor
 
 | Workflow | When | What |
 |----------|------|------|
-| `.github/workflows/build.yml` "Build and test" | a push to `dev` or `main` (not one that changes only `docs/`, `.claude/`, `CLAUDE.md`, `AGENTS.md` or the `changes-*.md` files), a pull request, by hand (`gh workflow run build.yml --ref dev`) | `cargo test --release --workspace` on `ubuntu-24.04`, `windows-2025` and `macos-26`. **Windows:** `cargo xtask windows` and `windows-legacy`, the NVDA add-on (`scons`), the installer (Inno Setup 6.7.1 from Chocolatey: GitHub's Windows images have none), and every Python test of `tests/windows` and `tests/nvda`; the SAPI5 and the NVDA driver tests run with a 64-bit and with a 32-bit Python, the SAPI5 test also on the legacy x64 driver. **Android:** the debug and the release APK, the unit tests, lint. **Apple:** the macOS app (Release, arm64 and x86_64) and the iPhone app without signing (`CODE_SIGNING_ALLOWED=NO`), the unit tests in an iPhone simulator. The installer, the add-on and the debug APK are kept as the run's artifacts for 14 days |
+| `.github/workflows/build.yml` "Build and test" | a push to `dev` or `main` (not one that changes only `docs/`, `.claude/`, `CLAUDE.md`, `AGENTS.md`, `TODO.md`, `ISSUES.md` or the `changes-*.md` files), a pull request, by hand (`gh workflow run build.yml --ref dev`) | `cargo test --release --workspace` on `ubuntu-24.04`, `windows-2025` and `macos-26`. **Windows:** `cargo xtask windows` and `windows-legacy`, the NVDA add-on (`scons`), the installer (Inno Setup 6.7.1 from Chocolatey: GitHub's Windows images have none), and every Python test of `tests/windows` and `tests/nvda`; the SAPI5 and the NVDA driver tests run with a 64-bit and with a 32-bit Python, the SAPI5 test also on the legacy x64 driver. **Android:** the debug and the release APK, the unit tests, lint. **Apple:** the macOS app (Release, arm64 and x86_64) and the iPhone app without signing (`CODE_SIGNING_ALLOWED=NO`), the unit tests in an iPhone simulator. The installer, the add-on and the debug APK are kept as the run's artifacts for 14 days |
 | `.github/workflows/linux-packages.yml` "Linux packages" | see `.claude/rules/linux.md` | the .deb, .rpm, Arch package and tarball, built and tested in containers of their distributions |
 | `.github/workflows/nightly.yml` "Nightly builds" | a tag `nightly/*` on `dev`, which the private repository `hkatic/laprdus-nightly-trigger` puts there at 02:00 UTC and on its "Run workflow" (nothing nightly goes to `main`); only when `dev` changed since the last nightly | the two workflows above with the nightly's version (`2.0.0-nightly.YYYYMMDD`), the nightly APK (`com.hrvojekatic.laprdus.nightly`), the notarized macOS app, the TestFlight build for the testers' groups, then the files on Cloudflare R2 with an index page and the links for the NVDA add-on store's form; the last 14 nights are kept (`.claude/rules/nightly.md`) |
 
