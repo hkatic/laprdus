@@ -11,8 +11,10 @@ The bugs themselves are described in [ISSUES.md](ISSUES.md).
 In the order the maintainer asked for:
 
 1. [x] Slovenian clock times, the listener's second answers (I-1, I-2): b915469
-2. [x] Croatian accents of the tester's 38 words (I-3): the commit "Croatian: the accents of a tester's 38 words (zarez, znak, namještaj, instrument ...)"
-3. [ ] Android: TalkBack's deleted character (I-4), then the full local rebuild and a check on the phone
+2. [x] Croatian accents of the tester's 38 words (I-3): 3f91015
+3. [x] Android: TalkBack's deleted character (I-4): the commit "TalkBack's deleted character is spelled (Tekst w je izbrisan)"
+   - [ ] On the phone: install the debug APK, delete characters with TalkBack in a text field, and read in `SpeechRequestLog` what TalkBack sends (the phone was not connected on 2026-11-26)
+   - [ ] The full local rebuild for testing steps 1 to 3
 4. [ ] "šok" read "šokej": whole-word dictionary entries next to č, ć, đ, š, ž (I-5)
 5. [ ] MP3, MP4, MPEG4, ID3 never ordinals; `MP3 128 kbps` (I-6, I-7)
 6. [ ] HSignal, ESignal (I-8)

@@ -25,6 +25,7 @@
 - Kvaliteta glasa: klizači veličina glave, dah, hrapavost i svjetlina među postavkama glasa (0-100, 50 = glas kakav jest), po uzoru na model glasovnih parametara klasičnog formantnog sintetizatora; dah ide od napetog, tvrdog glasa na 0 do šapta na 100; hrapavost 0 je potpuno miran glas, a iznad 50 jasna promuklost; svjetlina djeluje na cijeli zvuk, pa 0 ublažava i s i š; veličina glave i svjetlina djeluju i na snimljene glasove.
 - Ispravljeno: na punoj glasnoći Vlado i Đedo, a malo i Josip, izobličavali su zvuk (snimke dosežu punu razinu); čisti limiter sada ih drži tik ispod nje, a na manjoj glasnoći ostaju nepromijenjeni; isto vrijedi za najglasnije tonove pjevajućih glasova i za svaki glas na dahu 0 ili svjetlini 100.
 - Klizači kvalitete glasa imaju šire raspone, pa se čuje svaki korak: veličina glave od diva do djeteta, dah 0 napet, tvrd glas, hrapavost 0 potpuno ujednačen glas, svjetlina tamnija na 0 i oštrija na 100.
+- Ispravljeno: znak obrisan u TalkBacku čitao se kao dio rečenice („Tekst w je izbrisan” izgovaralo je *duplo ve* brzinom govora, a obrisano *a* zvučalo je kao riječ *a*). Obrisani znak sada se izgovara kao pri slovkanju ili tipkanju, glasom ili imenom slova kako je postavljeno, brzinom slovkanja, na hrvatskom, srpskom, bosanskom i slovenskom.
 
 ## Verzija 1.0.0 (build 11) — 2. rujna 2026.
 

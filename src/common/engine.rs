@@ -411,10 +411,10 @@ impl Engine {
     ) -> Result<(), Error> {
         self.cancel.clear();
         let chunk = (SAMPLE_RATE * chunk_ms / 1000) as usize;
-        if let Some((words, letter)) = split_capital_announcement(text) {
+        if let Some(announcement) = Announcement::of(text) {
             // Short: synthesized whole, then handed over in chunks.
             self.begin_utterance()?;
-            let audio = self.synthesize_capital(&words, &letter)?;
+            let audio = self.synthesize_announcement(&announcement)?;
             let handed = audio.chunks(if chunk > 0 { chunk } else { audio.len().max(1) }).try_for_each(callback);
             return if handed.is_break() { Err(Error::Cancelled) } else { Ok(()) };
         }
@@ -437,20 +437,27 @@ impl Engine {
             return Ok(Vec::new()); // valid, just no audio
         }
         if sink.is_none()
-            && let Some((words, letter)) = split_capital_announcement(text)
+            && let Some(announcement) = Announcement::of(text)
         {
-            return self.synthesize_capital(&words, &letter);
+            return self.synthesize_announcement(&announcement);
         }
         let clauses = self.segment(&self.preprocess(text));
         self.synthesize_clauses(&clauses, sink)
     }
 
-    /// A capital letter as a screen reader announces it: the words as text,
-    /// then the letter spelled, so the spelling mode, spelling speed and the
-    /// user's spelling entries apply.
-    fn synthesize_capital(&mut self, words: &str, letter: &str) -> Result<Vec<i16>, Error> {
-        let mut audio = self.speak_text(words, None)?;
-        audio.extend(self.spell(letter, true)?.0);
+    /// A character as a screen reader announces it (a capital letter, a
+    /// deleted character): the words around it as text and the character
+    /// spelled, so the spelling mode, spelling speed and the user's spelling
+    /// entries apply.
+    fn synthesize_announcement(&mut self, announcement: &Announcement) -> Result<Vec<i16>, Error> {
+        let mut audio = Vec::new();
+        if !announcement.before.is_empty() {
+            audio = self.speak_text(&announcement.before, None)?;
+        }
+        audio.extend(self.spell(&announcement.character, true)?.0);
+        if !announcement.after.is_empty() {
+            audio.extend(self.speak_text(&announcement.after, None)?);
+        }
         Ok(audio)
     }
 
@@ -848,38 +855,134 @@ impl Engine {
     }
 }
 
+/// A character a screen reader announces in words: the words before it,
+/// the character, the words after it.
+#[derive(Debug, PartialEq, Eq)]
+struct Announcement {
+    before: String,
+    character: String,
+    after: String,
+}
+
+impl Announcement {
+    /// A capital letter or a deleted character announced in words.
+    fn of(text: &str) -> Option<Self> {
+        split_capital_announcement(text).or_else(|| split_deletion_announcement(text))
+    }
+}
+
+/// The words of an announcement, without the end of a sentence.
+fn announcement_tokens(text: &str) -> Vec<&str> {
+    let text = text.trim_end_matches([' ', '\t', '\n', '\r', '.']);
+    text.split([' ', '\t', '\n', '\r']).filter(|token| !token.is_empty()).collect()
+}
+
+/// A word lowercased, Cyrillic in Latin letters; None for anything but letters.
+fn plain_word(word: &str) -> Option<String> {
+    let letters: Vec<Vec<char>> = word.chars().map(spelling_letter).collect();
+    (!letters.iter().any(Vec::is_empty)).then(|| letters.concat().into_iter().collect::<String>())
+}
+
 /// A screen reader announces a capital letter as a word or two and the
 /// letter: NVDA "veliko N" (Croatian, Serbian, Bosnian) and "cap N", TalkBack
 /// "veliko slovo N" (Croatian), "велико Н" (Serbian), "veliko N" (Serbian
 /// Latin, Bosnian) and "capital N", VoiceOver "veliko početno slovo N"
 /// (Croatian) and "cap N". They send it as text, not as a spelled character,
 /// so without this the letter is read by its name in every spelling mode, and
-/// at the speech rate. Returns the words and the letter.
-fn split_capital_announcement(text: &str) -> Option<(String, String)> {
+/// at the speech rate.
+fn split_capital_announcement(text: &str) -> Option<Announcement> {
     const FIRST: [&str; 3] = ["veliko", "cap", "capital"];
     const MORE: [&str; 3] = ["slovo", "početno", "letter"];
-    let text = text.trim_end_matches([' ', '\t', '\n', '\r', '.']);
-    let tokens: Vec<&str> = text.split([' ', '\t', '\n', '\r']).filter(|token| !token.is_empty()).collect();
+    let tokens = announcement_tokens(text);
     let (letter, words) = tokens.split_last().filter(|_| (2..=4).contains(&tokens.len()))?;
     let mut letters = letter.chars();
     if letters.next().is_none_or(|c| spelling_letter(c).is_empty()) || letters.next().is_some() {
         return None;
     }
-    // The words lowercased, Cyrillic in Latin letters.
-    let plain = |word: &str| {
-        let letters: Vec<Vec<char>> = word.chars().map(spelling_letter).collect();
-        (!letters.iter().any(Vec::is_empty)).then(|| letters.concat().into_iter().collect::<String>())
-    };
-    let known = words
-        .iter()
-        .enumerate()
-        .all(|(i, word)| plain(word).is_some_and(|word| if i == 0 { FIRST } else { MORE }.contains(&word.as_str())));
-    known.then(|| (words.join(" "), (*letter).to_owned()))
+    let known = words.iter().enumerate().all(|(i, word)| {
+        plain_word(word).is_some_and(|word| if i == 0 { FIRST } else { MORE }.contains(&word.as_str()))
+    });
+    known.then(|| Announcement { before: words.join(" "), character: (*letter).to_owned(), after: String::new() })
+}
+
+/// TalkBack's message for a deleted character (its `template_text_removed`,
+/// filled in with the deleted text; a symbol arrives as its name, a letter
+/// as itself, its case kept): "Tekst %1$s izbrisan" (Croatian; a phone has
+/// "Tekst w je izbrisan", so the je is optional), "Текст %1$s је избрисан"
+/// and "Tekst %1$s je izbrisan" (Serbian), "%1$s je izbrisan" (Bosnian),
+/// "Besedilo %1$s je izbrisano" (Slovenian), "%1$s deleted" (English), in
+/// TalkBack's `strings_compositor.xml`. The maintainer's report of
+/// 2026-11-25: the character was read as running text ("Tekst w je
+/// izbrisan" with the w as duplo ve at the speech rate, a deleted a as the
+/// conjunction), and must sound as when spelling or typing. Only one
+/// character: a deleted word stays text.
+fn split_deletion_announcement(text: &str) -> Option<Announcement> {
+    // The words before and after the character, lowercased, Cyrillic in Latin
+    const TEMPLATES: [(&[&str], &[&str]); 6] = [
+        (&["tekst"], &["izbrisan"]),
+        (&["tekst"], &["je", "izbrisan"]),
+        (&[], &["je", "izbrisan"]),
+        (&["besedilo"], &["je", "izbrisano"]),
+        (&[], &["deleted"]),
+        (&["text"], &["deleted"]),
+    ];
+    let tokens = announcement_tokens(text);
+    TEMPLATES.iter().find_map(|&(before, after)| {
+        if tokens.len() != before.len() + 1 + after.len() {
+            return None;
+        }
+        let character = tokens[before.len()];
+        let mut chars = character.chars();
+        if chars.next().is_none() || chars.next().is_some() {
+            return None;
+        }
+        let words_match = |words: &[&str], expected: &[&str]| {
+            words.iter().zip(expected).all(|(word, expected)| plain_word(word).is_some_and(|word| word == *expected))
+        };
+        (words_match(&tokens[..before.len()], before) && words_match(&tokens[before.len() + 1..], after)).then(|| {
+            Announcement {
+                before: tokens[..before.len()].join(" "),
+                character: character.to_owned(),
+                after: tokens[before.len() + 1..].join(" "),
+            }
+        })
+    })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn announcement(before: &str, character: &str, after: &str) -> Option<Announcement> {
+        Some(Announcement { before: before.to_owned(), character: character.to_owned(), after: after.to_owned() })
+    }
+
+    /// TalkBack's message for a deleted character in its four languages
+    /// and English, with the character spelled; a deleted word, a longer
+    /// sentence and the other words are text
+    #[test]
+    fn talkbacks_deleted_character_is_an_announcement() {
+        for (text, expected) in [
+            ("Tekst w je izbrisan", announcement("Tekst", "w", "je izbrisan")),
+            ("Tekst W izbrisan", announcement("Tekst", "W", "izbrisan")),
+            ("Tekst a je izbrisan.", announcement("Tekst", "a", "je izbrisan")),
+            ("Tekst č izbrisan  ", announcement("Tekst", "č", "izbrisan")),
+            ("Tekst 5 je izbrisan", announcement("Tekst", "5", "je izbrisan")),
+            ("Текст ш је избрисан", announcement("Текст", "ш", "је избрисан")),
+            ("x je izbrisan", announcement("", "x", "je izbrisan")),
+            ("Besedilo č je izbrisano", announcement("Besedilo", "č", "je izbrisano")),
+            ("b deleted", announcement("", "b", "deleted")),
+            ("Tekst zarez je izbrisan", None),
+            ("Tekst ab je izbrisan", None),
+            ("Tekst w je izbrisan iz dokumenta", None),
+            ("Tekst je izbrisan", None),
+            ("Plan B je izbrisan", None),
+            ("veliko slovo N", announcement("veliko slovo", "N", "")),
+            ("veliko N je slovo", None),
+        ] {
+            assert_eq!(Announcement::of(text), expected, "{text}");
+        }
+    }
     use crate::language::Language::{Croatian, Slovenian};
 
     /// A configuration directory of one test with these files in it, read.

@@ -74,6 +74,7 @@ Ova datoteka navodi što se za korisnike promijenilo između objavljenih inačic
 - Ispravljeno: rječnik slovkanja i rječnik emodžija uređeni u aplikaciji govorna jedinica nije koristila; sva tri korisnička rječnika sada vrijede čim se glas učita. Naglasni rječnik čita se iz iste mape.
 - Ispravljeno: aplikacija i govorna jedinica dijelile su jedan mehanizam, pa je gumb „Laprdaj!” govorio brzinom, visinom i glasnoćom posljednjeg TalkBackova zahtjeva, a odabir glasa u aplikaciji ostavljao je TalkBack bez vaših unosa iz rječnika dok se glas ponovno ne učita. Sada svaka ima svoj: gumb „Laprdaj!” govori vašim postavkama i s vašim rječnicima, a TalkBack prelazi na glas koji odaberete, s rječnicima na mjestu.
 - Unos u rječniku koji dodate, promijenite ili obrišete u aplikaciji, kao i uključivanje ili isključivanje korisničkih rječnika, u TalkBacku sada vrijedi odmah. Prije je čekalo da se glas ponovno učita.
+- Ispravljeno: znak obrisan u TalkBacku čitao se kao dio rečenice („Tekst w je izbrisan” izgovaralo je *duplo ve* brzinom govora, a obrisano *a* zvučalo je kao riječ *a*). Obrisani znak sada se izgovara kao pri slovkanju ili tipkanju, glasom ili imenom slova kako je postavljeno, brzinom slovkanja, na hrvatskom, srpskom, bosanskom i slovenskom.
 
 ### iPhone, iPad i Mac
 

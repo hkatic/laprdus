@@ -11,14 +11,6 @@ Testers are named by role only.
 
 ## Open
 
-### I-4 Android: TalkBack's deleted character is read as running text
-
-- **Where:** Android with TalkBack, every language
-- **Reported:** the maintainer, 2026-11-25
-- **Now:** "Tekst w je izbrisan" is read "tekst duplo ve je izbrisan", not as the letter is spelled. A deleted vowel is worse: in "Tekst a je izbrisan" the *a* is the unstressed conjunction.
-- **Wanted:** the deleted character spoken as when spelling or typing on the keyboard (spelling mode, spelling speed, the user's spelling entries)
-- **Notes:** TalkBack's templates (`template_text_removed`) are "Tekst %1$s izbrisan" (hr; the phone says "Tekst %1$s je izbrisan"), "Текст %1$s је избрисан" / "Tekst %1$s je izbrisan" (sr), "%1$s je izbrisan" (bs) and "Besedilo %1$s je izbrisano" (sl). A deleted symbol arrives as its name.
-
 ### I-5 "šok" is read "šokej"
 
 - **Where:** every language and platform; the bundled and the user's pronunciation dictionaries
@@ -53,6 +45,17 @@ Testers are named by role only.
 
 ## Fixed, waiting for confirmation
 
+### I-4 Android: TalkBack's deleted character was read as running text
+
+- **Where:** Android with TalkBack, every language
+- **Reported:** the maintainer, 2026-11-25
+- **Was:** "Tekst w je izbrisan" was read "tekst duplo ve je izbrisan", not as the letter is spelled. A deleted vowel is worse: in "Tekst a je izbrisan" the *a* is the unstressed conjunction.
+- **Wanted:** the deleted character spoken as when spelling or typing on the keyboard (spelling mode, spelling speed, the user's spelling entries)
+- **Notes:** TalkBack's templates (`template_text_removed`) are "Tekst %1$s izbrisan" (hr; the phone says "Tekst %1$s je izbrisan"), "Текст %1$s је избрисан" / "Tekst %1$s je izbrisan" (sr), "%1$s je izbrisan" (bs) and "Besedilo %1$s je izbrisano" (sl). A deleted symbol arrives as its name.
+- **Now:** the engine recognizes these messages (one character between the template's words) and spells the character as when spelling or typing; the words around it are read as text. A deleted word stays text.
+- **Fixed in:** the commit "TalkBack's deleted character is spelled (Tekst w je izbrisan)"
+- **To confirm:** on the phone, what TalkBack really sends (the debug build's `SpeechRequestLog`), then the maintainer by ear
+
 ### I-3 Croatian: the accents of 38 words
 
 - **Where:** Croatian only
@@ -82,7 +85,7 @@ Stress on the wrong syllable:
 
 Right syllable, but it must be long (was short): zarez, znak, naglasak, uvod, zaseban, taj, ta, nastavak, nastava, mali, savjet, kraj, spajanje, prazno, prostor, regija, pozicija (zi), redu, način, šum, disanje, umetanje (me).
 
-- **Fixed in:** the commit "Croatian: the accents of a tester's 38 words (zarez, znak, namještaj, instrument ...)"
+- **Fixed in:** 3f91015
 - **Now:** every word as the tester asked, with HJP's accent type and case forms. Four follow the tester against HJP (instrumént, pauzíra, pozícija, umétanje: HJP has instrùment, paùzīrām, pòzīcija, ùmetānje); see TODO.md. Serbian and Bosnian are unchanged.
 - **To confirm:** the Croatian tester
 

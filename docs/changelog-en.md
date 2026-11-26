@@ -74,6 +74,7 @@ This file lists what changed for users between released versions of Laprdus, on 
 - Fixed: the spelling and emoji dictionaries edited in the app were not used by the speech service; all three user dictionaries now take effect as soon as a voice is loaded. The accent dictionary is read from the same folder.
 - Fixed: the app and the speech service shared one engine, so the Speak button spoke at the rate, pitch and volume of TalkBack's last request, and choosing a voice in the app left TalkBack without your dictionary entries until a voice was loaded again. Each now has an engine of its own: the Speak button speaks with your settings and your dictionaries, and TalkBack switches to the voice you choose with your dictionaries in place.
 - A dictionary entry you add, change or delete in the app, and switching the user dictionaries on or off, now take effect in TalkBack at once. Before, they waited until a voice was loaded again.
+- Fixed: a character deleted with TalkBack was read as part of a sentence ("Tekst w je izbrisan" said *duplo ve* at the speech rate, and a deleted *a* sounded like the word *a*). The deleted character is now spoken as when spelling or typing, by its sound or its name as set, at the spelling speed, in Croatian, Serbian, Bosnian and Slovenian.
 
 ### iPhone, iPad and Mac
 

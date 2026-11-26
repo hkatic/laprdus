@@ -25,6 +25,7 @@
 - Voice quality: head size, breathiness, roughness and brightness sliders under the voice settings (0-100, 50 = the voice as it is), after the voice-parameter model of a classic formant synthesizer; breathiness runs from a pressed, hard voice at 0 to a whisper at 100; roughness 0 is a perfectly steady voice and above 50 a clear rasp; brightness acts on the whole sound, so 0 also softens s and š; head size and brightness work for the recorded voices too.
 - Fixed: at full volume Vlado and Đedo, and slightly Josip, distorted (their recordings touch full scale); a clean limiter now holds them just under it, and at lower volumes they are unchanged; the same holds the singing voices' loudest notes and every voice at breathiness 0 or brightness 100.
 - The voice quality sliders have wider ranges, so every step is heard: head size from a giant to a child, breathiness 0 a pressed, hard voice, roughness 0 a perfectly even voice, brightness duller at 0 and sharper at 100.
+- Fixed: a character deleted with TalkBack was read as part of a sentence ("Tekst w je izbrisan" said *duplo ve* at the speech rate, and a deleted *a* sounded like the word *a*). The deleted character is now spoken as when spelling or typing, by its sound or its name as set, at the spelling speed, in Croatian, Serbian, Bosnian and Slovenian.
 
 ## Version 1.0.0 (build 11) — 2 September 2026
 

@@ -5431,6 +5431,60 @@ fn a_capital_letter_announced_by_a_screen_reader_is_spelled() {
 }
 
 #[test]
+fn a_character_talkback_says_was_deleted_is_spelled() {
+    // TalkBack's message for a deleted character, "Tekst w je izbrisan"
+    // (the maintainer's report of 2026-11-25), "Tekst W izbrisan",
+    // "Текст ш је избрисан", "x je izbrisan", "Besedilo č je izbrisano",
+    // "b deleted": the words are spoken, the character is spelled as when
+    // spelling or typing, in the spelling mode and at the spelling speed.
+    // A vowel is the letter, not the conjunction a.
+    fn joined(speaker: &mut Speaker, before: &str, character: &str, after: &str) -> Vec<i16> {
+        let mut audio = if before.is_empty() { Vec::new() } else { speaker.say(before) };
+        audio.extend(speaker.spell(character));
+        audio.extend(speaker.say(after));
+        audio
+    }
+    // voice, language, text, before, character, after
+    const CASES: [(&str, &str, &str, &str, &str, &str); 9] = [
+        ("zvonko", "hr", "Tekst w je izbrisan", "Tekst", "w", "je izbrisan"),
+        ("zvonko", "hr", "Tekst W izbrisan", "Tekst", "W", "izbrisan"),
+        ("zvonko", "hr", "Tekst a je izbrisan", "Tekst", "a", "je izbrisan"),
+        ("zvonko", "hr", "Tekst b je izbrisan.", "Tekst", "b", "je izbrisan"),
+        ("zvonko", "hr", "Tekst 5 je izbrisan", "Tekst", "5", "je izbrisan"),
+        ("stojan", "sr", "Текст ш је избрисан", "Текст", "ш", "је избрисан"),
+        ("mirsad", "bs", "x je izbrisan", "", "x", "je izbrisan"),
+        ("zvonko", "sl", "Besedilo č je izbrisano", "Besedilo", "č", "je izbrisano"),
+        ("zvonko", "hr", "Tekst Š je izbrisan", "Tekst", "Š", "je izbrisan"),
+    ];
+    let mut speaker = Speaker::empty();
+    for mode in [SpellingMode::LetterSounds, SpellingMode::LetterNames] {
+        speaker.set_spelling_mode(mode);
+        for (voice, language, text, before, character, after) in CASES {
+            speaker.set_voice(voice).expect(voice);
+            assert!(speaker.set_language(language), "{language}");
+            let expected = joined(&mut speaker, before, character, after);
+            assert!(speaker.say(text) == expected, "{voice} {text:?} mode {mode:?}");
+        }
+    }
+
+    // A deleted word is text, not spelled
+    speaker.set_voice("zvonko").expect("zvonko");
+    assert!(speaker.set_language("hr"));
+    let spelled = joined(&mut speaker, "Tekst", "riječ", "je izbrisan");
+    assert!(speaker.say("Tekst riječ je izbrisan") != spelled);
+
+    // The streaming API gives the same samples
+    let mut streamed = Vec::new();
+    speaker
+        .synthesize_streaming("Tekst w je izbrisan", 46, |chunk| {
+            streamed.extend_from_slice(chunk);
+            std::ops::ControlFlow::Continue(())
+        })
+        .expect("streamed audio");
+    assert!(streamed == speaker.say("Tekst w je izbrisan"));
+}
+
+#[test]
 fn a_lone_letter_in_running_text_follows_the_spelling_mode() {
     // A screen reader reports a character inside a message ("Obrisano B",
     // "B obrisano", "Odabrano B", "veliko slovo B" split by the host): in
