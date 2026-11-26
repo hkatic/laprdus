@@ -269,6 +269,12 @@ pub(crate) static VERBS: &[&str] = &[
     // ràzmaknūt in every voice (`!` on its entry above); ràzmicati,
     // ràzmičēm
     "r/azmic=t", "r/azmič=e",
+    // A Croatian tester's list of 2026-11-26, with HJP's accents: nàpraviti
+    // nàpravīm nàpravljen (the prefixed-verb rule had napràviti), pòmicati
+    // pòmičēm pòmicānje, spájati spájānje, dísati dísānje (their falling
+    // presents are exact entries), òstavljati òstavljānje
+    "n/aprav=i", "p/omic=t", "p/omič=e", "sp/a:j=a", "d/i:s=t", "d/i:š=e",
+    "/ostavlj=a",
     // The tenth list, in every voice as the dictionaries have them:
     // prìtisnuti, prìtisnēm, prìtisni, prìtisnuo, prìtisnūt; pritískati,
     // pritískao, but prìtiskām and prìtīšćēm; ujedíniti, ujedíni,

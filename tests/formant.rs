@@ -3493,7 +3493,7 @@ fn word_class_rules_place_the_accent_of_loans_derived_nouns_and_prefixed_verbs()
         // prefixed verbs follow the infinitive
         ("pogledala", "pògledala"), // ŠR/HJP perfective, lexical exception
         ("pogledamo", "pògledamo"),
-        ("napravio", "napràvio"),
+        ("napravio", "nàpravio"), // HJP nàpraviti, in VERBS since a tester's report of 2026-11-26
         ("dočekali", "dočèkali"),
         ("iskusio", "iskùsio"),
         ("zahvalismo", "zahválismo"), // zahválismo (VERBS: zahváliti)
@@ -3511,7 +3511,7 @@ fn word_class_rules_place_the_accent_of_loans_derived_nouns_and_prefixed_verbs()
         ("voditeljica", "voditèljica"),
         ("državljanin", "držàvljanin"),
         ("državljanina", "držàvljanina"),
-        ("precizan", "precìzan"),
+        ("precizan", "prȅcizan"), // HJP prȅcīzan, a lexicon entry since a tester's report of 2026-11-26
         ("nervozna", "nervózna"),
         // the -ina rule and its exceptions
         ("balerina", "balerìna"),

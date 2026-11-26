@@ -55,7 +55,7 @@ pub(super) static ENTRIES: &[&str] = &[
     // dvȍje, trȍje, ȍba, ȍbje, dvòjica, tròjica, četvòrica, petòrica
     "dv^oje", "tr^oje", "^oba", "^obje", "dv/ojic*", "tr/ojic*",
     "četv/oric*", "pet/oric*",
-    "z^arez", "c^ije:l*", "c^e:l*",
+    "c^ije:l*", "c^e:l*",
 
     // ---- Very frequent words: tone and length ----
     "d^a:n", "d^obar", "d^obro", "d^obra", "hv/a:la", "m^oli:m",
@@ -266,9 +266,10 @@ pub(super) static ENTRIES: &[&str] = &[
     "z/aborav|a|u|om",
 
     // Words that look like forms of a verb from VERBS: sprȅman (ready) is not
-    // the participle of spremati; nàčin, nàčina are not forms of načiniti and
-    // not nouns in -ina either
-    "spr^eman", "n/ačin*",
+    // the participle of spremati; náčin, náčina (HJP; long since a tester's
+    // report of 2026-11-26) are not forms of načiniti and not nouns in -ina
+    // either
+    "spr^eman", "n/a:čin||a|u|om|i|e|ima",
 
     // "Too ..." adjectives that look like verbs from IJE_VERBS (prȅlijep)
     "pr^elijep*", "pr^etijesn*", "pr^elijen*", "pr^ebijel*", "pr^esvijetl*",
@@ -1438,4 +1439,71 @@ pub(super) static ENTRIES: &[&str] = &[
     // Školski rječnik: the adverb túžno, like the neuter túžno (HJP, Rečnik
     // Matice srpske and Wiktionary tȗžno, kept for Stojan and Mirsad)
     "t/u:žno",
+
+    // A Croatian tester's list of 2026-11-26 (ISSUES.md I-3; "A Croatian
+    // tester's list of 38 words" under "Stress" in docs/formant.md, with the
+    // sources and homographs): where the stress goes, and where
+    // the stressed vowel must be long. HJP (checked 2026-11-26) gives the
+    // accent type and the forms the tester did not name. Where HJP differs,
+    // the tester's word wins (the maintainer's decision), and the comment
+    // says so: instrument, pauzira, pozicija and umetanje, each stressed one
+    // syllable after HJP's rising accent. Croatian omits unstressed length.
+    // HJP nȁmještāj. namještaju is also the present of namještati, so it is
+    // left to the verb.
+    "n^amještaj||a|em|i|e|ima",
+    // HJP prȅcīzan, prȅcīzno (precizírati keeps its own rule)
+    "pr^ecizan", "pr^ecizn*", "pr^eciznosti",
+    // HJP zárez (until 2026-11-26 the short z^arez), znȃk with the
+    // plurals znȃci and znȁkovi, náglasak -ska -sci
+    "z/a:rez||a|u|om|i|e|ima",
+    "zn^a:k||a|u|om|e", "zn^a:c|i|ima", "zn^akov|i|a|e|ima",
+    "n/a:glasak", "n/a:glask|a|u|om|e", "n/a:glasc|i|ima", "n/a:glasaka",
+    // HJP duljìna, oktáva, metóda
+    "dulj'in*", "okt'a:v|a|e|i|u|om|ama", "met'o:d|a|e|i|u|om|ama",
+    // HJP úvod; uvodi and uvode are also the present of uvoditi
+    "/u:vod||a|u|om|ima",
+    // HJP instrùment; the tester: instrumént
+    "instrum'ent||a|u|om|i|e|ima",
+    // HJP kòrištēnje, záseban -bnī
+    "k/orištenj|e|a|u|em|ima",
+    "z/a:seban", "z/a:sebn|a|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    // HJP pauzírati, paùzīrām; the tester: pauzíra. The other forms keep
+    // the -irati rule's pauzírati, pauzíram; the stem p/auz* above had
+    // taken pauzira
+    "pauz'i:ra",
+    // HJP tȃj, tȃ
+    "t^a:j", "t^a:",
+    // HJP nástavak -āvka -āvci; nȃstava (nastave and nastavi are also forms
+    // of nastaviti and are left to the verb)
+    "n/a:stavak", "n/a:stavk|a|u|om|e", "n/a:stavc|i|ima", "n/a:stavaka",
+    "n^a:stav|a|u|om|ama",
+    // HJP nàstati, nàstao (the -al rule had read nastálu)
+    "n/astao", "n/astal|a|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    // HJP mȃl, odr. mȃlī; the adverb mȁlo is left out
+    "m^a:l||i|a|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    // HJP sávjet, próstor, rȇgija, rȇd (the tester asked for redu)
+    "s/a:vjet||a|u|om|i|e|ima",
+    "pr/o:stor||a|u|om|i|e|ima",
+    "r^e:gij|a|e|i|u|om|ama",
+    "r^e:d||a|u",
+    // HJP krȃj, the noun; the preposition krȁj is short, but the tester
+    // asked for kraj long
+    "kr^a:j",
+    // HJP prázan, prázna, the adverb prȃzno and the definite prȃznī
+    "pr/a:zan", "pr/a:zna", "pr^a:zn|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    // HJP pòzīcija; the tester: pozícija
+    "poz'i:cij|a|e|i|u|om|ama",
+    // HJP šȗm; šuma and šumu are also forms of šuma, "forest"
+    "š^u:m",
+    // HJP praznìna, pokrìven
+    "prazn'in|a|e|i|u|om|ama",
+    "pokr'iven||a|o|i|e|u|og|oga|om|ome|omu|oj|ih|im|ima",
+    // HJP ùmetati, ùmetānje; the tester: umétanje
+    "um'e:tanj|e|a|u|em|ima",
+    // HJP dísati, dȋšēm and spájati, spȃjām: the falling present (VERBS has
+    // the infinitives and the verbal nouns dísanje, spájanje)
+    "d^i:š|em|eš|e|emo|ete|u", "sp^a:j|am|aš|a|amo|ate|aj|ajmo|ajte",
+    // Control, the key, on its first syllable (the tester). The English
+    // table, shared with Serbian and Bosnian, has contról
+    "c^ontrol||a|u|om",
 ];

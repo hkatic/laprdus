@@ -1835,6 +1835,70 @@ To correct a word, add an entry to `lexicon/entries.rs` of the language
 and a later entry overrides an earlier one of the same spelling (*pròfesor* in
 Croatian, *profèsor* in Serbian and Bosnian).
 
+**A Croatian tester's list of 38 words, 26 November 2026.**
+
+The tester marked where the stress goes and where the stressed vowel must
+be long (`TODO.md`, `ISSUES.md` I-3). Each word was looked up in *Hrvatski
+jezični portal* (HJP, its search page, through the lookup of
+`tools/formant/verb_accents.py`) for the accent type where the tester gave
+only the place, and for the case and person forms the tester did not name.
+HJP agreed with the tester on 34 words. Where it does not, the tester's
+word is followed, by the maintainer's decision. All four are stressed one
+syllable after HJP's rising accent, where urban Croatian speech has the
+stress:
+
+| Word | HJP | The tester | Read now |
+|------|-----|-----------|----------|
+| instrument | *instrùment* | instruMENT | *instrumént*, every case |
+| pauzira | *pauzírati*, but *paùzīrām* | pauZIra, long | *pauzíra*; the other forms keep the -irati rule's *pauzírati, pauzíram* |
+| pozicija | *pòzīcija* | poZIcija, long | *pozícija*, every case |
+| umetanje | *ùmetati, ùmetānje* | uMEtanje, long | *umétanje*, every case; the verb is unchanged |
+
+The other 34, as HJP gives them (Croatian drops the lengths after the
+accent, as everywhere in the table):
+
+| Word | Accent | How it is entered |
+|------|--------|-------------------|
+| namještaj | *nȁmještāj* | exact noun forms; it had been read as the imperative of *namještati* (*namjéštaj*). *namještaju*, also that verb's present, is left to the verb |
+| precizno, precizan | *prȅcīzno, prȅcīzan* | exact forms and the stem *prȅcizn-*; the *-izan* rule had *precìzan* |
+| pomicanje | *pòmicati, pòmičēm, pòmicānje* | `VERBS` (`p/omic=t`, `p/omič=e`), which also gives the verbal noun |
+| control | first syllable (the tester; the key's name) | an exact Croatian entry, which wins over the English table shared with Serbian and Bosnian (*contról*). Rerunning `english_words.py` would drop the word from the shared table, and Serbian and Bosnian would then also read it on the first syllable |
+| neprekinuti | *neprèkinūt* | a rule: a negated infinitive is written apart, so *ne-* and *-nuti* are the participle (`form_of()` in `hr/stress.rs`), *neprèkinuti* like *neprèkinut*. *ne prekinuti* was already right |
+| zarez | *zárez* | exact forms; until now the short *zȁrez*. The decimal comma, read "zarez", is long too |
+| znak | *znȃk*, N pl *znȃci* / *znȁkovi* | exact forms |
+| naglasak | *náglasak, -ska, -sci* | exact forms |
+| duljina | *duljìna* | the stem *dulj'in-* |
+| oktava, metoda | *oktáva, metóda* | exact forms |
+| uvod | *úvod* | exact forms, without *uvodi, uvode* (the present of *uvoditi*) |
+| napraviti | *nàpraviti, nàpravīm, nàpravljen* | `VERBS` (`n/aprav=i`); the prefixed-verb rule had *napràviti* |
+| korištenjem | *kòrištēnje* | exact forms |
+| zaseban | *záseban, -bnī* | exact forms |
+| taj, ta | *tȃj, tȃ* | exact entries; they stay function words |
+| nastavak | *nástavak, -āvka, -āvci* | exact forms |
+| nastava | *nȃstava* | exact forms, without *nastave, nastavi* (forms of *nastaviti*) |
+| nastalu | *nàstati, nàstao* | exact forms of the participle; the *-al* rule had *nastálu* |
+| ostavljanja | *òstavljati, òstavljānje* | `VERBS` (`/ostavlj=a`) |
+| mali | *mȃl*, definite *mȃlī* | exact forms, without the adverb *mȁlo* |
+| savjet, prostor | *sávjet, próstor* | exact forms |
+| kraj | *krȃj* (the noun; the preposition *krȁj* is short, but the tester asked for *kraj* long) | an exact entry for the nominative |
+| spajanje | *spájati, spȃjām, spájānje* | `VERBS` (`sp/a:j=a`) and the falling present as exact forms, as for *spavati* |
+| prazno | *prázan, prázna*, the adverb *prȃzno*, the definite *prȃznī* | exact forms |
+| regija | *rȇgija* | exact forms |
+| redu | *rȇd* | exact entries for *red, reda, redu* |
+| način | *náčin* | exact forms, long; the stem *nàčin-* had also taken *načinio* (now *načínio*, from `VERBS`) |
+| šum | *šȗm* | only the nominative: *šuma, šumu* are also forms of *šuma* "forest" |
+| disanje | *dísati, dȋšēm, dísānje* | `VERBS` (`d/i:s=t`, `d/i:š=e`) and the falling present as exact forms |
+| praznina, pokriveni | *praznìna, pokrìven* | exact forms |
+
+Only the Croatian table changed (the maintainer's rule for this folder of
+reports); Serbian and Bosnian read every one of these words as before.
+The golden corpus, old against new library (the `formant`, `names` and
+`voices` sets): 153 of 46,426 renderings differ, all Croatian, each with
+one of these words (*zarez* 30 times as a word and in 66 decimals, *red*
+10, *kraj* 4, *prazna* 4, *ta* 3). Test:
+`a_croatian_testers_accents_of_2026_11_26` in
+`src/common/languages/tests.rs`.
+
 **Ispuna, Hrvata, vatrogasci, kafanica, laganica, muškarci, policajci and nisi,
 12 October 2026.**
 
@@ -2833,8 +2897,9 @@ are lexicon entries.
   prefix, has a thematic vowel (*a, i, u*, or *je*) before one of the
   verbal endings and at least one root syllable between the two gets the
   accent on the syllable before the thematic vowel: *poglèdati, poglèdala,
-  poglèdavši, poglèdasmo, poglèdam, poglèdate; napràvio, dočèkala,
-  iskùsio, zahvàlio, pokùšamo, požèljeti*. The long infinitives already had
+  poglèdavši, poglèdasmo, poglèdam, poglèdate; dočèkala, iskùsio,
+  zahvàlio, pokùšamo, požèljeti* (not *napraviti*: HJP *nàpraviti,
+  nàpravio*, in `VERBS` since 2026-11-26). The long infinitives already had
   that syllable from the antepenult rule; the other forms now follow the
   infinitive, as the verbs in `VERBS` do by name. The endings taken are the
   infinitive, the l-participle, the aorist and imperfect, the two verbal

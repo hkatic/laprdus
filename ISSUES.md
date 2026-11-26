@@ -11,35 +11,6 @@ Testers are named by role only.
 
 ## Open
 
-### I-3 Croatian: the accents of 38 words
-
-- **Where:** Croatian only
-- **Reported:** a Croatian tester, 2026-11-26
-- **Tester's notation:** stress on the syllable named, "long" = the stressed vowel must be long
-
-Stress on the wrong syllable:
-
-| Word | Wanted | Now |
-|---|---|---|
-| namještaj | na | mje, long |
-| precizno | pre | ci |
-| pomicanje | po | mi |
-| control | con | trol |
-| neprekinuti (one word) | pre | ki |
-| duljina | lji | du |
-| oktava | ta | ok |
-| napraviti | na | pra |
-| metoda | to, long | me |
-| instrument | ment | ru |
-| korištenjem | ko | šte, long |
-| pauzira | zi, long | pa |
-| nastalu | na | sta, long |
-| ostavljanja | o | sta |
-| praznina | ni | pra |
-| pokriveni | kri | po |
-
-Right syllable, but it must be long (today short): zarez, znak, naglasak, uvod, zaseban, taj, ta, nastavak, nastava, mali, savjet, kraj, spajanje, prazno, prostor, regija, pozicija (zi), redu, način, šum, disanje, umetanje (me).
-
 ### I-4 Android: TalkBack's deleted character is read as running text
 
 - **Where:** Android with TalkBack, every language
@@ -82,13 +53,46 @@ Right syllable, but it must be long (today short): zarez, znak, naglasak, uvod, 
 
 ## Fixed, waiting for confirmation
 
+### I-3 Croatian: the accents of 38 words
+
+- **Where:** Croatian only
+- **Reported:** a Croatian tester, 2026-11-26
+- **Tester's notation:** stress on the syllable named, "long" = the stressed vowel must be long
+
+Stress on the wrong syllable:
+
+| Word | Wanted | Was |
+|---|---|---|
+| namještaj | na | mje, long |
+| precizno | pre | ci |
+| pomicanje | po | mi |
+| control | con | trol |
+| neprekinuti (one word) | pre | ki |
+| duljina | lji | du |
+| oktava | ta | ok |
+| napraviti | na | pra |
+| metoda | to, long | me |
+| instrument | ment | ru |
+| korištenjem | ko | šte, long |
+| pauzira | zi, long | pa |
+| nastalu | na | sta, long |
+| ostavljanja | o | sta |
+| praznina | ni | pra |
+| pokriveni | kri | po |
+
+Right syllable, but it must be long (was short): zarez, znak, naglasak, uvod, zaseban, taj, ta, nastavak, nastava, mali, savjet, kraj, spajanje, prazno, prostor, regija, pozicija (zi), redu, način, šum, disanje, umetanje (me).
+
+- **Fixed in:** the commit "Croatian: the accents of a tester's 38 words (zarez, znak, namještaj, instrument ...)"
+- **Now:** every word as the tester asked, with HJP's accent type and case forms. Four follow the tester against HJP (instrumént, pauzíra, pozícija, umétanje: HJP has instrùment, paùzīrām, pòzīcija, ùmetānje); see TODO.md. Serbian and Bosnian are unchanged.
+- **To confirm:** the Croatian tester
+
 ### I-1 Slovenian: two whole hours after *od* were read as ordinals
 
 - **Where:** Slovenian, every platform
 - **Reported:** the Slovenian listener's answers of 2026-11-24 (second round on clock times, question 4)
 - **Was:** `od 8:00 do 16:00` and `od 8:00–16:00` were read "od osme do šestnajste"
 - **Now:** "od osmih do šestnajstih". With ura it stays "od osme do šestnajste ure"; `od 8:00` alone stays "od osme".
-- **Fixed in:** the commit "Slovenian: od 8:00 do 16:00 od osmih do šestnajstih, do 17:05 do sedemnajste nič pet"
+- **Fixed in:** b915469
 - **To confirm:** the Slovenian listener
 
 ### I-2 Slovenian: minutes under ten after *do*
@@ -97,5 +101,5 @@ Right syllable, but it must be long (today short): zarez, znak, naglasak, uvod, 
 - **Reported:** the same answers, question 6
 - **Was:** `do 17:05` was read "do sedemnajste in pet minut"
 - **Now:** "do sedemnajste nič pet" (`do 17:02` "nič dve"). `ob 8:05` stays "ob osmih in pet minut" (first round); od, pred, po and med keep "in pet minut" until asked (see TODO.md).
-- **Fixed in:** the same commit
+- **Fixed in:** b915469
 - **To confirm:** the Slovenian listener

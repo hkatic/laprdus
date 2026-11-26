@@ -1642,6 +1642,87 @@ fn collected_croatian_accents_preserve_stress_tone_and_vowel_quantity() {
     }
 }
 
+/// A Croatian tester's list of 2026-11-26: where the stress goes and where
+/// the stressed vowel is long, with HJP's accent type and case forms. Four
+/// follow the tester against HJP, one syllable after its rising accent
+/// (instrumént, pauzíra, pozícija, umétanje). Serbian and Bosnian keep their
+/// own readings.
+#[test]
+fn a_croatian_testers_accents_of_2026_11_26() {
+    #[rustfmt::skip]
+    let cases: &[(&str, usize, Accent, bool)] = &[
+        // The stress on another syllable
+        ("namještaj", 0, F, false), ("namještaja", 0, F, false),
+        ("precizno", 0, F, false), ("precizan", 0, F, false),
+        ("preciznost", 0, F, false),
+        ("pomicanje", 0, R, false), ("pomicati", 0, R, false),
+        ("pomičem", 0, R, false),
+        ("control", 0, F, false), ("Control", 0, F, false),
+        ("neprekinuti", 1, R, false), ("neprekinut", 1, R, false),
+        ("prekinuti", 0, R, false),
+        ("duljina", 1, R, false), ("duljine", 1, R, false),
+        ("oktava", 1, R, true), ("oktave", 1, R, true),
+        ("napraviti", 0, R, false), ("napravim", 0, R, false),
+        ("napravio", 0, R, false), ("napravljen", 0, R, false),
+        ("metoda", 1, R, true), ("metode", 1, R, true),
+        ("instrument", 2, R, false), ("instrumenta", 2, R, false),
+        ("korištenjem", 0, R, false), ("korištenje", 0, R, false),
+        ("pauzira", 2, R, true), ("pauzirati", 2, R, true),
+        ("nastalu", 0, R, false), ("nastala", 0, R, false),
+        ("nastao", 0, R, false),
+        ("ostavljanja", 0, R, false), ("ostavljati", 0, R, false),
+        ("praznina", 1, R, false),
+        ("pokriveni", 1, R, false), ("pokriven", 1, R, false),
+        // The stress where it was, now long
+        ("zarez", 0, R, true), ("zareza", 0, R, true),
+        ("znak", 0, F, true), ("znaka", 0, F, true),
+        ("znaci", 0, F, true), ("znakovi", 0, F, false),
+        ("naglasak", 0, R, true), ("naglaska", 0, R, true),
+        ("uvod", 0, R, true), ("uvoda", 0, R, true),
+        ("zaseban", 0, R, true), ("zasebno", 0, R, true),
+        ("taj", 0, F, true), ("ta", 0, F, true),
+        ("nastavak", 0, R, true), ("nastavka", 0, R, true),
+        ("nastava", 0, F, true),
+        ("mali", 0, F, true), ("mala", 0, F, true),
+        ("savjet", 0, R, true), ("savjeta", 0, R, true),
+        ("kraj", 0, F, true),
+        ("spajanje", 0, R, true), ("spajati", 0, R, true),
+        ("spajam", 0, F, true),
+        ("prazno", 0, F, true), ("prazan", 0, R, true),
+        ("prostor", 0, R, true), ("prostora", 0, R, true),
+        ("regija", 0, F, true), ("redu", 0, F, true),
+        ("pozicija", 1, R, true), ("poziciju", 1, R, true),
+        ("način", 0, R, true), ("načina", 0, R, true),
+        ("šum", 0, F, true),
+        ("disanje", 0, R, true), ("disati", 0, R, true),
+        ("dišem", 0, F, true),
+        ("umetanje", 1, R, true),
+        // Not taken by the new entries: the verbs of the homographs
+        ("namještaju", 1, R, true), ("uvodi", 1, R, false),
+        ("načinio", 1, R, false), ("pauza", 0, R, false),
+    ];
+    let frontend = Frontend::new(Language::Croatian);
+    for &(text, stress, tone, long_vowel) in cases {
+        let vowels = nuclei(&read(&frontend, text));
+        assert_eq!(stressed_count(&vowels), 1, "{text}");
+        assert!(vowels[stress].stressed, "{text}");
+        assert_eq!(vowels[stress].accent, tone, "{text}");
+        assert_eq!(vowels[stress].is_long, long_vowel, "{text}");
+        for vowel in &vowels {
+            assert!(vowel.stressed || !vowel.is_long, "{text}");
+        }
+    }
+    // Serbian and Bosnian keep their readings (instrùment, pozìcija, zȁrez)
+    for language in [Language::Serbian, Language::Bosnian] {
+        let frontend = Frontend::new(language);
+        for (text, stress, long_vowel) in [("instrument", 1, false), ("pozicija", 1, false), ("zarez", 0, false)] {
+            let vowels = nuclei(&read(&frontend, text));
+            assert!(vowels[stress].stressed, "{language:?} {text}");
+            assert_eq!(vowels[stress].is_long, long_vowel, "{language:?} {text}");
+        }
+    }
+}
+
 /// Collected homographs use nearby grammatical cues
 #[test]
 fn collected_homographs_use_nearby_grammatical_cues() {

@@ -343,8 +343,9 @@ impl<'a> StressRules<'a> {
 
     /// Prefixed verbs keep the accent of the infinitive on the root in the
     /// whole paradigm: poglèdati, poglèdala, poglèdavši, poglèdasmo,
-    /// poglèdam, poglèdate; napràviti, napràvio; iskùsiti, iskùsio;
-    /// dočèkati, dočèkala; pokùšati, pokùšamo. The long infinitives
+    /// poglèdam, poglèdate; iskùsiti, iskùsio; dočèkati, dočèkala;
+    /// pokùšati, pokùšamo (not napraviti: HJP nàpraviti, nàpravio, in VERBS
+    /// since a Croatian tester's report of 2026-11-26). The long infinitives
     /// already had their antepenult from weak(); this gives the other forms
     /// the same syllable, which is what the verbs in VERBS do by name. It
     /// takes a word that starts with a verbal prefix, has a thematic vowel
@@ -1104,7 +1105,13 @@ impl<'a> StressRules<'a> {
                 }
             }
             if form.is_none() && root.nuti {
-                if is(&[
+                if negated && is(&["nuti"]) {
+                    // A negated infinitive is written apart (ne prekinuti),
+                    // so ne- and -nuti are the participle's plural and
+                    // definite form: neprèkinūtī like neprèkinūt (HJP; a
+                    // Croatian tester's report of 2026-11-26)
+                    form = Some(Passive);
+                } else if is(&[
                     "nuti", "nuo", "nula", "nulo", "nuli", "nule", "nuh", "nusmo", "nuste", "nuše", "nuvši", "nimo",
                     "nite", "nuću", "nućeš", "nuće", "nućemo", "nućete",
                 ]) {
