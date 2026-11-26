@@ -24,7 +24,7 @@ None.
   - "ESignal" was one word, "esìgnal", with the stress of *signal* on "si", yet the maintainer heard it elsewhere.
 - **Wanted:** "H Signal" or "HaSignal"; for ESignal, the stress on "Si"
 - **Now:** one capital before a word written with a capital is a letter of its own: "ha sìgnal" ("hə sìgnal" with letter sounds), "e sìgnal", in every language; JBuilder, VActor likewise. CDom, TVom, TVjem, PCjevske, CDovima, TVGuide, PDFom stay one word. One known miss: a capitalized acronym's letters inside a word (REXX's "REstructured") is read "er estructured".
-- **Fixed in:** the commit "One capital before a capitalized word is a letter (HSignal, ESignal)"
+- **Fixed in:** 3278496
 - **To confirm:** the maintainer, by ear: is the stress of ESignal right now?
 
 ### I-7 `MP3 128 kbps` was read as one number

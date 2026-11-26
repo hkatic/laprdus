@@ -16,8 +16,8 @@ In the order the maintainer asked for:
    - [ ] On the phone: install the debug APK, delete characters with TalkBack in a text field, and read in `SpeechRequestLog` what TalkBack sends (the phone was not connected on 2026-11-26)
 4. [x] "šok" read "šokej": whole-word dictionary entries next to č, ć, đ, š, ž (I-5): 9a0852f
 5. [x] MP3, MP4, MPEG4, ID3 never ordinals; `MP3 128 kbps` (I-6, I-7): 530a91e
-6. [x] HSignal, ESignal (I-8): the commit "One capital before a capitalized word is a letter (HSignal, ESignal)"
-7. [ ] The full local rebuild; the installers and the APK for testing
+6. [x] HSignal, ESignal (I-8): 3278496
+7. [x] The full local rebuild of 3278496 (2026-11-26): dist/ for Windows and the legacy build, the NVDA add-on, the SAPI5 installer (both launched), the debug APK; every Python test of tests/nvda and tests/windows passed
 
 ## Later
 
