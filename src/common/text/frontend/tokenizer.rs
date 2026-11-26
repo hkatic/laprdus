@@ -98,6 +98,24 @@ pub fn tokenize(text: &[char], language: &dyn LanguageWords) -> Vec<Word> {
             && letter_at(pos.checked_sub(2), false)
             && letters_from(pos) >= 2
     };
+    // One capital before a word written with a capital is a letter of its
+    // own (the maintainer's report of 2026-11-25: HSignal is H Signal, not
+    // hsignal, and ESignal is stressed on its si): HSignal, ESignal, EUprava,
+    // ICloud, JBuilder, VActor. Not two capitals or more (TVGuide, PDFom,
+    // SMSati), and not an abbreviation of two letters with an ending or a
+    // suffix (CDom, TVima, CDovima, PCovski, Slovenian TVjem, PCjevske): the
+    // small letters after the second capital are at least three, begin with
+    // no j, ov or ev, and are not -ama, -ima. A capitalized acronym's letters
+    // inside a word (REXX's REstructured) cannot be told from these.
+    let initial_break = |letters: usize, pos: usize| {
+        if letters != 1 || !letter_at(pos.checked_sub(1), true) {
+            return false;
+        }
+        let small: String = text[pos + 1..].iter().take_while(|&&c| is_base_letter(c) && to_lower(c) == c).collect();
+        small.chars().count() >= 3
+            && !["j", "ov", "ev"].iter().any(|start| small.starts_with(start))
+            && !["ama", "ima"].contains(&small.as_str())
+    };
 
     for (pos, &raw) in text.iter().enumerate() {
         let c = to_lower(raw);
@@ -122,6 +140,10 @@ pub fn tokenize(text: &[char], language: &dyn LanguageWords) -> Vec<Word> {
         }
 
         if is_base_letter(c) {
+            if upper && initial_break(t.current.w.len(), pos) {
+                t.current.code = true;
+                t.flush();
+            }
             if upper && camel_break(t.current.w.len(), pos) {
                 t.current.camel = true;
                 t.flush();

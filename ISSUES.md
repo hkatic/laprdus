@@ -11,16 +11,21 @@ Testers are named by role only.
 
 ## Open
 
-### I-8 HSignal, ESignal
+None.
+
+## Fixed, waiting for confirmation
+
+### I-8 HSignal, ESignal were read as one word
 
 - **Where:** every language
 - **Reported:** the maintainer, 2026-11-25
 - **Was:**
-  - "HSignal" is one word, "hsignal".
-  - "ESignal" is one word, "esìgnal", with the stress of *signal* on "si", yet the maintainer hears it elsewhere.
+  - "HSignal" was one word, "hsignal".
+  - "ESignal" was one word, "esìgnal", with the stress of *signal* on "si", yet the maintainer heard it elsewhere.
 - **Wanted:** "H Signal" or "HaSignal"; for ESignal, the stress on "Si"
-
-## Fixed, waiting for confirmation
+- **Now:** one capital before a word written with a capital is a letter of its own: "ha sìgnal" ("hə sìgnal" with letter sounds), "e sìgnal", in every language; JBuilder, VActor likewise. CDom, TVom, TVjem, PCjevske, CDovima, TVGuide, PDFom stay one word. One known miss: a capitalized acronym's letters inside a word (REXX's "REstructured") is read "er estructured".
+- **Fixed in:** the commit "One capital before a capitalized word is a letter (HSignal, ESignal)"
+- **To confirm:** the maintainer, by ear: is the stress of ESignal right now?
 
 ### I-7 `MP3 128 kbps` was read as one number
 
@@ -29,7 +34,7 @@ Testers are named by role only.
 - **Was:** "MP tri tisuće sto dvadeset osam kbps". The rule for thousands separated by spaces joins the 3 of MP3 with 128.
 - **Wanted:** "MP tri, sto dvadeset osam kbps"
 - **Now:** "MP tri", the pause before a number after a designation, "sto dvadeset osam kbps", in every language
-- **Fixed in:** the same commit as I-6
+- **Fixed in:** 530a91e
 - **To confirm:** the maintainer
 
 ### I-6 MP3, MP4, MPEG4, ID3 were read as ordinals
@@ -42,7 +47,7 @@ Testers are named by role only.
   - `1.mp3` is read "jedan mp tri", with the period silent.
 - **Open question:** where the maintainer heard it (which app, what exact text).
 - **Now:** never an ordinal: `MPEG-4. datoteka` "MPEG četiri" (the period ends the clause), `MP 3. datoteka` "MP tri", `1.mp3` "jedan točka em pe tri", in every language. Where the maintainer heard the ordinal is still open (TODO.md); if it was another spelling, it goes here again.
-- **Fixed in:** the commit "MP3, MPEG-4, ID3 are never ordinals; MP3 128 kbps is not one number"
+- **Fixed in:** 530a91e
 - **To confirm:** the maintainer
 
 ### I-5 "šok" was read "šokej"

@@ -1828,6 +1828,41 @@ fn a_lone_consonant_letter_is_its_sound_in_letter_sound_mode() {
     assert_eq!(names(&serbian, "Обрисано Њ"), "'obrisano nj'e:");
 }
 
+/// The maintainer's report of 2026-11-25: HSignal is H Signal, not one word
+/// hsignal, and ESignal is stressed on its si. One capital before a word
+/// written with a capital is a letter of its own, read like the letter of a
+/// designation; abbreviations with a case ending stay one word.
+#[test]
+fn one_capital_before_a_capitalized_word_is_a_letter() {
+    for language in [Language::Croatian, Language::Serbian, Language::Bosnian, Language::Slovenian] {
+        let frontend = Frontend::new(language);
+        // Two words, the first a stressed letter (in Slovenian too, where a
+        // lone h written apart would be the preposition, and for a vowel,
+        // which written apart could be a conjunction: I Cloud)
+        for text in ["HSignal", "ESignal", "Pokreni HSignal", "EUprava", "ICloud", "JBuilder", "VActor"] {
+            let utterance = read(&frontend, text);
+            assert_eq!(word_starts(&utterance), text.split(' ').count() + 1, "{language:?} {text}");
+            let letter = word_nuclei(&utterance, last_word(&utterance) - 1);
+            assert!(letter[0].stressed, "{language:?} {text}");
+        }
+        for text in [
+            "TVGuide", "PDFom", "SMSati", "CDom", "TVom", "TVima", "CDovima", "PCovski", "TVjem", "PCjevske", "BiH",
+            "OKej", "Ljubav", "iPhone",
+        ] {
+            require_one_word(&read(&frontend, text), &format!("{language:?} {text}"));
+        }
+    }
+    // In Croatian the same as the letter written apart, in both modes, and
+    // ESignal with the stress of signal, on its si
+    let croatian = Frontend::new(Language::Croatian);
+    for (text, apart) in [("HSignal", "H Signal"), ("ESignal", "E Signal"), ("Pokreni HSignal", "Pokreni H Signal")] {
+        assert_eq!(names(&croatian, text), names(&croatian, apart), "{text}");
+        assert_eq!(sounds(&croatian, text), sounds(&croatian, apart), "{text}");
+    }
+    let signal = word_nuclei(&read(&croatian, "ESignal"), 1);
+    assert!(signal[0].stressed && signal[0].accent == R, "ESignal");
+}
+
 /// The letters of a designation are letters, whatever word they spell
 ///
 /// A listener's report of November 2026: "Marjan A17", a cell's contents and
