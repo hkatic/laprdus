@@ -11,33 +11,39 @@ Testers are named by role only.
 
 ## Open
 
-### I-6 MP3, MP4, MPEG4, ID3 read as ordinals
-
-- **Where:** every language
-- **Reported:** the maintainer, 2026-11-25 ("never as ordinals, in every language")
-- **Now:**
-  - Plain `MP3`, `MP4`, `MPEG4` and `ID3` are cardinals ("em pe tri").
-  - Ordinals appear in `MPEG-4. datoteka` ("MPEG četvrta datoteka"; Slovenian "četrta") and `MP 3. datoteka` ("MP treća datoteka").
-  - `1.mp3` is read "jedan mp tri", with the period silent.
-- **Open question:** where the maintainer heard it (which app, what exact text).
-
-### I-7 `MP3 128 kbps` is read as one number
-
-- **Where:** every language
-- **Found:** 2026-11-26, while checking I-6
-- **Now:** "MP tri tisuće sto dvadeset osam kbps". The rule for thousands separated by spaces joins the 3 of MP3 with 128.
-- **Wanted:** "MP tri, sto dvadeset osam kbps"
-
 ### I-8 HSignal, ESignal
 
 - **Where:** every language
 - **Reported:** the maintainer, 2026-11-25
-- **Now:**
+- **Was:**
   - "HSignal" is one word, "hsignal".
   - "ESignal" is one word, "esìgnal", with the stress of *signal* on "si", yet the maintainer hears it elsewhere.
 - **Wanted:** "H Signal" or "HaSignal"; for ESignal, the stress on "Si"
 
 ## Fixed, waiting for confirmation
+
+### I-7 `MP3 128 kbps` was read as one number
+
+- **Where:** every language
+- **Found:** 2026-11-26, while checking I-6
+- **Was:** "MP tri tisuće sto dvadeset osam kbps". The rule for thousands separated by spaces joins the 3 of MP3 with 128.
+- **Wanted:** "MP tri, sto dvadeset osam kbps"
+- **Now:** "MP tri", the pause before a number after a designation, "sto dvadeset osam kbps", in every language
+- **Fixed in:** the same commit as I-6
+- **To confirm:** the maintainer
+
+### I-6 MP3, MP4, MPEG4, ID3 were read as ordinals
+
+- **Where:** every language
+- **Reported:** the maintainer, 2026-11-25 ("never as ordinals, in every language")
+- **Was:**
+  - Plain `MP3`, `MP4`, `MPEG4` and `ID3` are cardinals ("em pe tri").
+  - Ordinals appear in `MPEG-4. datoteka` ("MPEG četvrta datoteka"; Slovenian "četrta") and `MP 3. datoteka` ("MP treća datoteka").
+  - `1.mp3` is read "jedan mp tri", with the period silent.
+- **Open question:** where the maintainer heard it (which app, what exact text).
+- **Now:** never an ordinal: `MPEG-4. datoteka` "MPEG četiri" (the period ends the clause), `MP 3. datoteka` "MP tri", `1.mp3` "jedan točka em pe tri", in every language. Where the maintainer heard the ordinal is still open (TODO.md); if it was another spelling, it goes here again.
+- **Fixed in:** the commit "MP3, MPEG-4, ID3 are never ordinals; MP3 128 kbps is not one number"
+- **To confirm:** the maintainer
 
 ### I-5 "šok" was read "šokej"
 
@@ -45,7 +51,7 @@ Testers are named by role only.
 - **Reported:** the maintainer, 2026-11-25
 - **Cause:** the bundled entry `OK` → `Okej` matches inside "šok". A whole-word entry's word boundaries know only ASCII letters, so č, ć, đ, š and ž do not count as letters.
 - **Now:** a whole-word entry's boundaries know every letter of Unicode (`is_word_boundary()` in `src/common/dictionary/pronunciation.rs`): "šok" stays "šok", "OK" is still "Okej", and an entry ending in č or ć now matches before a space too
-- **Fixed in:** the commit "Whole-word dictionary entries know every letter (šok was read šokej)"
+- **Fixed in:** 9a0852f
 - **To confirm:** the maintainer
 
 ### I-4 Android: TalkBack's deleted character was read as running text

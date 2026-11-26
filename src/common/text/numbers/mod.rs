@@ -468,9 +468,30 @@ fn is_compound(t: Text, i: usize) -> bool {
 /// ordinal ("7. listopada", "u 19. stoljeću", "1990. godine"). The period is
 /// silent and does not end the clause. Before an uppercase word the period
 /// ends the sentence as usual ("Ima ih 7. Sutra ..."); synthesizer B draws
-/// the same line. Returns the position after the period.
+/// the same line. Never the number of a name (the maintainer's report of
+/// 2026-11-25: MP3, MP4, MPEG4, ID3 are never ordinals, in any language):
+/// not after letters and a hyphen (MPEG-4. datoteka), not after MP, MPEG or
+/// ID written apart (MP 3. datoteka), and not before a file's extension
+/// glued to the period with a digit in it (1.mp3, the period read by name).
+/// Returns the position after the period.
 fn silent_dot_end(t: Text, start: usize, end: usize) -> Option<usize> {
+    /// Names of formats whose number may be written apart from them
+    const FORMAT_NAMES: [&str; 3] = ["MP", "MPEG", "ID"];
     if end - start > 4 || t.at(start) == b'0' || (start > 0 && is_word_byte(t.at(start - 1))) || t.at(end) != b'.' {
+        return None;
+    }
+    if start >= 2 && t.at(start - 1) == b'-' && is_letter_byte(t.at(start - 2)) {
+        return None;
+    }
+    let prev = t.prev_word(start);
+    if prev.end < start && FORMAT_NAMES.contains(&t.str(prev.begin, prev.end)) {
+        return None;
+    }
+    let mut glued = end + 1;
+    while is_word_byte(t.at(glued)) {
+        glued += 1;
+    }
+    if t.bytes(end + 1, glued).iter().any(u8::is_ascii_digit) {
         return None;
     }
     let mut next = end + 1;

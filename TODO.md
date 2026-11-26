@@ -14,8 +14,8 @@ In the order the maintainer asked for:
 2. [x] Croatian accents of the tester's 38 words (I-3): 3f91015
 3. [x] Android: TalkBack's deleted character (I-4): e63237e
    - [ ] On the phone: install the debug APK, delete characters with TalkBack in a text field, and read in `SpeechRequestLog` what TalkBack sends (the phone was not connected on 2026-11-26)
-4. [x] "šok" read "šokej": whole-word dictionary entries next to č, ć, đ, š, ž (I-5): the commit "Whole-word dictionary entries know every letter (šok was read šokej)"
-5. [ ] MP3, MP4, MPEG4, ID3 never ordinals; `MP3 128 kbps` (I-6, I-7)
+4. [x] "šok" read "šokej": whole-word dictionary entries next to č, ć, đ, š, ž (I-5): 9a0852f
+5. [x] MP3, MP4, MPEG4, ID3 never ordinals; `MP3 128 kbps` (I-6, I-7): the commit "MP3, MPEG-4, ID3 are never ordinals; MP3 128 kbps is not one number"
 6. [ ] HSignal, ESignal (I-8)
 7. [ ] The full local rebuild; the installers and the APK for testing
 

@@ -789,7 +789,11 @@ pub(crate) fn number_at(r: &NumberReader, t: Text, i: usize, out: &mut Out, in_r
             // thousands group is still a number after a UI label (Stanje,
             // Račun); treating it as a phone made positive balances differ
             // from negative ones, whose minus hid the preceding label.
-            if (spaced && (phone || after_name))
+            // MP3 128 kbps: the number of a name glued to its letters is not
+            // the first group of a number (the maintainer's report of
+            // 2026-11-25 on MP3, MP4, ID3; it was "tri tisuće sto ...")
+            let glued_to_letters = i > 0 && is_letter_byte(t.at(i - 1));
+            if (spaced && (phone || after_name || glued_to_letters))
                 || is_letter_byte(t.at(pos))
                 || t.at(pos) == b':'
                 || (t.at(pos) == b'.' && t.is_digit(pos + 1))

@@ -1644,9 +1644,13 @@ pub(crate) fn number_at(r: &NumberReader, t: Text, i: usize, out: &mut Out, in_r
                 before.is_ascii_digit() || last_digit(&prev.word).is_ascii_digit()
             };
         let after_name = prev.capital && !starts_clause(if prev.ahead > 0 { t.at(prev.ahead - 1) } else { b'.' });
+        // MP3 128 kbps: the number of a name glued to its letters is not the
+        // first group of a number (the maintainer's report of 2026-11-25)
+        let glued_to_letters = i > 0 && is_letter_byte(t.at(i - 1));
         if group_count > 0
             && !phone
             && !after_name
+            && !glued_to_letters
             && !t.is_separator_between_digits(pos)
             && !(is_letter_byte(t.at(pos)) || t.at(pos) == b':')
         {

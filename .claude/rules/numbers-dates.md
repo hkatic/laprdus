@@ -63,6 +63,33 @@ an identifier/range hyphen for a minus. Sources, ambiguities and limits are in
 `tests/formant.rs`, `recorded_voices_speak_currency_signs_and_localized_amounts`
 in `tests/recorded.rs`).
 
+### The numbers of names: MP3, MPEG-4, ID3 (2026-11-26)
+
+The maintainer's report of 2026-11-25: MP3, MP4, MPEG4, MP1, MP2, ID3 and
+the like must never be read as ordinals, in any language. Written together
+they never were (`MP3` *em pe tri*: a designation's letters, `LETTER_CODE_MARK`
+above), but the period of an ordinal made them one in other spellings, and
+the thousands with spaces joined them to the next number. In every language:
+
+- `silent_dot_end()` (`src/common/text/numbers/mod.rs`, the ordinal with a
+  silent period before a lowercase word) refuses the number of a name: after
+  letters and a hyphen (`MPEG-4. datoteka` was *MPEG četvrta datoteka*, now
+  *MPEG četiri*, and the period ends the clause, as after `MP3.`), after
+  *MP*, *MPEG* or *ID* written apart (`FORMAT_NAMES`: `MP 3. datoteka` was
+  *MP treća*), and before a file's extension glued to the period with a
+  digit in it (`1.mp3` was *jedan mp tri* with the period silent, now *jedan
+  točka em pe tri*, as `pjesma.mp3`). `U 3. razredu`, `7. listopada`,
+  `7.listopada`, `3.–4. mjesto` stay ordinals.
+- The thousands with spaces (`number_at()` of `hr`, `sr`, `bs` and `sl`
+  `numerals.rs`) do not start from a number glued to letters: `MP3 128 kbps`
+  was *MP tri tisuće sto dvadeset osam kbps*, now *MP tri*, the pause
+  before a number after a designation, *sto dvadeset osam kbps*.
+
+Where the maintainer heard the ordinal is still open (`TODO.md`). Test:
+`the_number_of_a_format_name_is_never_an_ordinal` in
+`src/common/text/numbers/tests.rs`. The golden corpus did not move (none of
+49,358 renderings), and of SUK 1.1 one sentence has such a shape, unchanged.
+
 ### Short pauses inside a clause: clock times, dates, cell addresses
 
 A listener's report of November 2026: a screen reader says a spreadsheet

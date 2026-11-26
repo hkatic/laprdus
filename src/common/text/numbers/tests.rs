@@ -1105,3 +1105,71 @@ fn slovenian_listeners_answers_of_2026_11_24_hours_with_minutes_without_ura() {
     // Croatian keeps its own clock
     assert_eq!(numbers(Croatian, "do 17:30"), format!("do sedamnaest{brk}trideset"));
 }
+
+/// The maintainer's report of 2026-11-25: MP3, MP4, MPEG4, MP1, MP2, ID3
+/// and the like are never read as ordinals, in any language. MPEG-4. and
+/// MP 3. before a small letter were the ordinal (MPEG četvrta datoteka, MP
+/// treća datoteka), 1.mp3 lost its period, and MP3 128 kbps joined the 3
+/// and the 128 into one number. Ordinals elsewhere stay ordinals.
+#[test]
+fn the_number_of_a_format_name_is_never_an_ordinal() {
+    let item = item();
+    for (language, cases) in [
+        (
+            Croatian,
+            [
+                ("MPEG-4. datoteka", "MPEG-četiri. datoteka".to_owned()),
+                ("MP 3. datoteka", "MP tri. datoteka".to_owned()),
+                ("ID 3. oznaka", "ID tri. oznaka".to_owned()),
+                ("1.mp3", "jedan.mp tri".to_owned()),
+                ("MP3 128 kbps", format!("MP{CODE} tri{item}sto dvadeset osam kbps")),
+                ("U 3. razredu", "U trećem razredu".to_owned()),
+                ("7.listopada", "sedmog  listopada".to_owned()),
+                ("1 000 000", "milijun".to_owned()),
+            ],
+        ),
+        (
+            Serbian,
+            [
+                ("MPEG-4. datoteka", "MPEG-četiri. datoteka".to_owned()),
+                ("MP 3. datoteka", "MP tri. datoteka".to_owned()),
+                ("ID 3. oznaka", "ID tri. oznaka".to_owned()),
+                ("1.mp3", "jedan.mp tri".to_owned()),
+                ("MP3 128 kbps", format!("MP{CODE} tri{item}sto dvadeset osam kbps")),
+                ("U 3. razredu", "U trećem razredu".to_owned()),
+                ("7.oktobra", "sedmog  oktobra".to_owned()),
+                ("1 000 000", "milion".to_owned()),
+            ],
+        ),
+        (
+            Bosnian,
+            [
+                ("MPEG-4. datoteka", "MPEG-četiri. datoteka".to_owned()),
+                ("MP 3. datoteka", "MP tri. datoteka".to_owned()),
+                ("ID 3. oznaka", "ID tri. oznaka".to_owned()),
+                ("1.mp3", "jedan.mp tri".to_owned()),
+                ("MP3 128 kbps", format!("MP{CODE} tri{item}sto dvadeset osam kbps")),
+                ("U 3. razredu", "U trećem razredu".to_owned()),
+                ("7.oktobra", "sedmog  oktobra".to_owned()),
+                ("1 000 000", "milion".to_owned()),
+            ],
+        ),
+        (
+            Slovenian,
+            [
+                ("MPEG-4. datoteka", "MPEG-štiri. datoteka".to_owned()),
+                ("MP 3. datoteka", "MP tri. datoteka".to_owned()),
+                ("ID 3. oznaka", "ID tri. oznaka".to_owned()),
+                ("1.mp3", "ena.mp tri".to_owned()),
+                ("MP3 128 kbps", format!("MP{CODE} tri{item}sto osemindvajset kbps")),
+                ("v 3. razredu", "v tretjem razredu".to_owned()),
+                ("7. oktobra", "sedmega oktobra".to_owned()),
+                ("1 000 000", "milijon".to_owned()),
+            ],
+        ),
+    ] {
+        for (text, expected) in cases {
+            assert_eq!(numbers(language, text), expected, "{language:?} {text}");
+        }
+    }
+}
