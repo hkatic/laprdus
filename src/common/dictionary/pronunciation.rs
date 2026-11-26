@@ -3,10 +3,13 @@
 //!
 //! A whole-word entry is a regular expression between word boundaries, so
 //! one entry can cover the case forms of a word: `Messenger(a|u|e|om)?` →
-//! `Mesindžer$1`. As in the dictionaries written for the C++ engine, the
-//! boundaries and the case-insensitive match know ASCII letters only: an
-//! entry that begins or ends with č, ć, đ, š or ž is matched as a whole word
-//! only next to an ASCII letter or digit.
+//! `Mesindžer$1`. The boundaries are those of `\b`, a change between a word
+//! character and any other, with every letter and digit of Unicode a word
+//! character (`is_word_boundary()`): `OK` is not found inside *šok*, and an
+//! entry that ends in č matches before a space. Until 2026-11-26 they knew
+//! ASCII letters only, as in the C++ engine, and *šok* was read *šokej* (the
+//! maintainer's report). The case-insensitive match still folds ASCII
+//! letters only, as the dictionaries written for the C++ engine expect.
 
 use super::{entries, read};
 use regex::bytes::{Regex, RegexBuilder};
@@ -28,8 +31,9 @@ pub struct DictionaryEntry {
 #[derive(Clone, Debug)]
 struct Rule {
     entry: DictionaryEntry,
-    /// The compiled whole-word pattern and its replacement; `None` for a
-    /// substring entry or a pattern that does not compile (which is skipped).
+    /// The compiled pattern of a whole-word entry (without the boundaries,
+    /// which `apply()` checks) and its replacement; `None` for a substring
+    /// entry or a pattern that does not compile (which is skipped).
     pattern: Option<(Regex, Vec<u8>)>,
 }
 
@@ -71,7 +75,7 @@ fn replacement(phoneme: &str) -> Vec<u8> {
 impl Rule {
     fn new(entry: DictionaryEntry) -> Self {
         let pattern = entry.whole_word.then(|| {
-            RegexBuilder::new(&format!(r"\b{}\b", entry.grapheme))
+            RegexBuilder::new(&format!("(?:{})", entry.grapheme))
                 .unicode(false)
                 .case_insensitive(!entry.case_sensitive)
                 .build()
@@ -85,7 +89,7 @@ impl Rule {
         let entry = &self.entry;
         if entry.whole_word {
             return match &self.pattern {
-                Some((regex, replacement)) => regex.replace_all(&text, replacement.as_slice()).into_owned(),
+                Some((regex, replacement)) => replace_whole_words(regex, replacement, &text),
                 None => text,
             };
         }
@@ -101,6 +105,58 @@ impl Rule {
         }
         text
     }
+}
+
+/// Every match of `regex` in `text` that is a whole word replaced. A match
+/// that is not one is passed over and the search goes on from its next
+/// character, so a whole word that begins inside it is still found.
+fn replace_whole_words(regex: &Regex, replacement: &[u8], text: &[u8]) -> Vec<u8> {
+    let mut out = Vec::with_capacity(text.len());
+    let (mut copied, mut at) = (0, 0);
+    while at <= text.len() {
+        let Some(captures) = regex.captures_at(text, at) else { break };
+        let found = captures.get(0).expect("the whole match");
+        let (start, end) = (found.start(), found.end());
+        if start < end && is_word_boundary(text, start) && is_word_boundary(text, end) {
+            out.extend_from_slice(&text[copied..start]);
+            captures.expand(replacement, &mut out);
+            copied = end;
+            at = end;
+        } else {
+            at = start + char_at(text, start).map_or(1, char::len_utf8);
+        }
+    }
+    out.extend_from_slice(&text[copied..]);
+    out
+}
+
+/// Whether `\b` holds at byte `i`: the characters on its two sides, the
+/// start and the end of the text being neither, are not both word characters
+/// or both not. A word character is a letter or digit of any script, or `_`.
+fn is_word_boundary(text: &[u8], i: usize) -> bool {
+    let word = |c: Option<char>| c.is_some_and(|c| c.is_alphanumeric() || c == '_');
+    word(char_before(text, i)) != word(char_at(text, i))
+}
+
+/// The character that starts at byte `i`; `None` at the end or inside a
+/// malformed sequence.
+fn char_at(text: &[u8], i: usize) -> Option<char> {
+    let rest = text.get(i..)?;
+    let length = match rest.first()? {
+        0x00..=0x7F => 1,
+        0xC0..=0xDF => 2,
+        0xE0..=0xEF => 3,
+        _ => 4,
+    };
+    std::str::from_utf8(rest.get(..length)?).ok()?.chars().next()
+}
+
+/// The character that ends at byte `i`; `None` at the start or inside a
+/// malformed sequence.
+fn char_before(text: &[u8], i: usize) -> Option<char> {
+    let head = text.get(..i)?;
+    let start = (head.len().saturating_sub(4)..head.len()).rev().find(|&k| head[k] & 0xC0 != 0x80)?;
+    std::str::from_utf8(&head[start..]).ok()?.chars().next_back()
 }
 
 fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
@@ -195,6 +251,30 @@ mod tests {
             d.apply("na messengeru i Messengerom, OK? ok. TOKEN"),
             "na Mesindžeru i Mesindžerom, Okej? ok. TOKEN"
         );
+    }
+
+    /// The maintainer's report of 2026-11-25: šok was read šokej, because
+    /// the boundaries knew ASCII letters only and OK was found after the š.
+    /// Every letter is a word character now, on both sides of an entry.
+    #[test]
+    fn whole_words_next_to_letters_of_any_script() {
+        let d = dictionary(
+            r#"{"grapheme": "OK", "phoneme": "Okej"},
+               {"grapheme": "Ivančić", "phoneme": "Ivančić-Ivo"},
+               {"grapheme": "Facebook(a|u)?", "phoneme": "Fejzbuk$1"}"#,
+        );
+        for (text, expected) in [
+            ("šok", "šok"),
+            ("Šok i ŠOK.", "Šok i ŠOK."),
+            ("Čok, oké, okč", "Čok, oké, okč"),
+            ("OK. Ok, ok!", "Okej. Okej, Okej!"),
+            ("(ok) „ok” ok\u{a0}", "(Okej) „Okej” Okej\u{a0}"),
+            ("Ivančić je tu, Ivančića nema", "Ivančić-Ivo je tu, Ivančića nema"),
+            ("na Facebooku, žFacebook", "na Fejzbuku, žFacebook"),
+            ("Шок ok", "Шок Okej"),
+        ] {
+            assert_eq!(d.apply(text), expected, "{text}");
+        }
     }
 
     #[test]

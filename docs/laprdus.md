@@ -696,6 +696,7 @@ Datoteka `user.json` koristi JSON format. Evo primjera:
 - `true` (zadano): Zamjenjuje samo kada je tekst cijela riječ
   - "TV" u "TV program" će biti zamijenjeno
   - "TV" u "Latvija" neće biti zamijenjeno (jer je dio veće riječi)
+  - "OK" u "šok" neće biti zamijenjeno: č, ć, đ, š, ž i slova svih pisama dio su riječi, a unos koji završava na č ili ć zamjenjuje se i ispred razmaka
 - `false`: Zamjenjuje i unutar drugih riječi
   - Korisno za sufikse i prefikse
 

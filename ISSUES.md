@@ -11,12 +11,6 @@ Testers are named by role only.
 
 ## Open
 
-### I-5 "šok" is read "šokej"
-
-- **Where:** every language and platform; the bundled and the user's pronunciation dictionaries
-- **Reported:** the maintainer, 2026-11-25
-- **Cause:** the bundled entry `OK` → `Okej` matches inside "šok". A whole-word entry's word boundaries know only ASCII letters, so č, ć, đ, š and ž do not count as letters.
-
 ### I-6 MP3, MP4, MPEG4, ID3 read as ordinals
 
 - **Where:** every language
@@ -45,6 +39,15 @@ Testers are named by role only.
 
 ## Fixed, waiting for confirmation
 
+### I-5 "šok" was read "šokej"
+
+- **Where:** every language and platform; the bundled and the user's pronunciation dictionaries
+- **Reported:** the maintainer, 2026-11-25
+- **Cause:** the bundled entry `OK` → `Okej` matches inside "šok". A whole-word entry's word boundaries know only ASCII letters, so č, ć, đ, š and ž do not count as letters.
+- **Now:** a whole-word entry's boundaries know every letter of Unicode (`is_word_boundary()` in `src/common/dictionary/pronunciation.rs`): "šok" stays "šok", "OK" is still "Okej", and an entry ending in č or ć now matches before a space too
+- **Fixed in:** the commit "Whole-word dictionary entries know every letter (šok was read šokej)"
+- **To confirm:** the maintainer
+
 ### I-4 Android: TalkBack's deleted character was read as running text
 
 - **Where:** Android with TalkBack, every language
@@ -53,7 +56,7 @@ Testers are named by role only.
 - **Wanted:** the deleted character spoken as when spelling or typing on the keyboard (spelling mode, spelling speed, the user's spelling entries)
 - **Notes:** TalkBack's templates (`template_text_removed`) are "Tekst %1$s izbrisan" (hr; the phone says "Tekst %1$s je izbrisan"), "Текст %1$s је избрисан" / "Tekst %1$s je izbrisan" (sr), "%1$s je izbrisan" (bs) and "Besedilo %1$s je izbrisano" (sl). A deleted symbol arrives as its name.
 - **Now:** the engine recognizes these messages (one character between the template's words) and spells the character as when spelling or typing; the words around it are read as text. A deleted word stays text.
-- **Fixed in:** the commit "TalkBack's deleted character is spelled (Tekst w je izbrisan)"
+- **Fixed in:** e63237e
 - **To confirm:** on the phone, what TalkBack really sends (the debug build's `SpeechRequestLog`), then the maintainer by ear
 
 ### I-3 Croatian: the accents of 38 words
