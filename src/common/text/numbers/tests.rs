@@ -963,10 +963,11 @@ fn slovenian_listeners_answers_of_2026_11_24_hours_without_ura() {
         ("po 1:00", "po eni".to_owned()),
         ("pred 1:00", "pred eno".to_owned()),
         ("med 12:00 in 1:00", "med dvanajsto in eno".to_owned()),
-        // Two whole hours
-        ("od 8:00 do 16:00", "od osme do šestnajste".to_owned()),
-        ("od 8.00 do 16.00", "od osme do šestnajste".to_owned()),
-        ("od 8:00–16:00", "od osme do šestnajste".to_owned()),
+        // Two whole hours (after od in -ih since the listener's second
+        // answers, question 4)
+        ("od 8:00 do 16:00", "od osmih do šestnajstih".to_owned()),
+        ("od 8.00 do 16.00", "od osmih do šestnajstih".to_owned()),
+        ("od 8:00–16:00", "od osmih do šestnajstih".to_owned()),
         ("med 8:00 in 10:00", "med osmo in deseto".to_owned()),
         ("ob 10:00 in 11:00", "ob desetih in enajstih".to_owned()),
         ("do 17:00 in 3 ure", "do sedemnajste in tri ure".to_owned()),
@@ -987,6 +988,61 @@ fn slovenian_listeners_answers_of_2026_11_24_hours_without_ura() {
     }
     // Croatian keeps its own clock
     assert_eq!(numbers(Croatian, "do 17:00"), format!("do sedamnaest{brk}nula nula"));
+}
+
+/// The Slovenian listener's answers to the seven questions of 2026-11-24's
+/// second round (questions 1, 2, 3, 5 and 7 confirmed the readings): two
+/// whole hours after od are in -ih, od 8:00 do 16:00 od osmih do šestnajstih
+/// (question 4; SSKJ² ósem "dela od osmih do štirih"), and minutes under ten
+/// after do are read as the clock reads them, do 17:05 do sedemnajste nič pet
+/// (question 6). Only do changes, the maintainer's decision: od, pred, po and
+/// med keep "in pet minut", and so does ob (the first round). ob 8:00 do 9:00
+/// stays ob osmih do devete, a question for the listener's next round.
+#[test]
+fn slovenian_listeners_second_answers_of_2026_11_24_od_osmih_and_nic_pet() {
+    let brk = brk();
+    for (text, expected) in [
+        // The questions the listener confirmed
+        ("od 8:30", format!("od osme{brk}trideset")),
+        ("pred 10:30", format!("pred deseto{brk}trideset")),
+        ("po 10:15", format!("po deseti{brk}petnajst")),
+        ("od 8:00 do 16:30", format!("od osmih do šestnajstih{brk}trideset")),
+        ("med 8:30 in 10:00", format!("med osmo{brk}trideset in deseto")),
+        ("okoli 10:30", format!("okoli desetih{brk}trideset")),
+        ("ob 8:30–9:00", format!("ob osmih{brk}trideset do devetih")),
+        // Question 4: two whole hours after od
+        ("od 8:00 do 16:00", "od osmih do šestnajstih".to_owned()),
+        ("od 8:00–16:00", "od osmih do šestnajstih".to_owned()),
+        ("Delam od 8.00 do 16.00.", "Delam od osmih do šestnajstih.".to_owned()),
+        ("od 1:00 do 2:00", "od enih do dveh".to_owned()),
+        // Question 6: minutes under ten after do
+        ("do 17:05", format!("do sedemnajste{brk}nič pet")),
+        ("do 17:02", format!("do sedemnajste{brk}nič dve")),
+        ("do 9:09", format!("do devete{brk}nič devet")),
+        ("do 1:05", format!("do ene{brk}nič pet")),
+        ("Pridi do 17.05, prosim.", format!("Pridi do sedemnajste{brk}nič pet, prosim.")),
+        // Unchanged
+        ("do 17:00", "do sedemnajste".to_owned()),
+        ("do 17:30", format!("do sedemnajste{brk}trideset")),
+        ("od 8:00", "od osme".to_owned()),
+        ("med 8:00 in 10:00", "med osmo in deseto".to_owned()),
+        ("ob 8:00 do 9:00", "ob osmih do devete".to_owned()),
+        ("ob 8:05", "ob osmih in pet minut".to_owned()),
+        ("ob 12:02", "ob dvanajstih in dve minuti".to_owned()),
+        ("od 8:05", "od osme in pet minut".to_owned()),
+        ("pred 10:05", "pred deseto in pet minut".to_owned()),
+        ("po 10:05", "po deseti in pet minut".to_owned()),
+        ("med 8:05 in 10:00", "med osmo in pet minut in deseto".to_owned()),
+        ("od 8:05 do 16:00", "od osmih in pet minut do šestnajstih".to_owned()),
+        ("od 8:00 do 16:00 ure", "od osme do šestnajste ure".to_owned()),
+        ("do 17:00 ure", "do sedemnajste ure".to_owned()),
+        ("do 5.11.", format!("do petega{brk}enajstega.")),
+    ] {
+        assert_eq!(numbers(Slovenian, text), expected, "{text}");
+    }
+    // Croatian keeps its own clock
+    assert_eq!(numbers(Croatian, "do 17:05"), format!("do sedamnaest{brk}nula pet"));
+    assert_eq!(numbers(Croatian, "od 8:00 do 16:00"), format!("od osam{brk}nula nula do šesnaest{brk}nula nula"));
 }
 
 /// The Slovenian listener's answers of 2026-11-24, second round, on a time
@@ -1014,7 +1070,7 @@ fn slovenian_listeners_answers_of_2026_11_24_hours_with_minutes_without_ura() {
         ("ob 08:03", "ob osmih in tri minute".to_owned()),
         ("ob 8.09", "ob osmih in devet minut".to_owned()),
         ("ob 8:10", format!("ob osmih{brk}deset")),
-        ("do 17:05", "do sedemnajste in pet minut".to_owned()),
+        ("do 17:05", format!("do sedemnajste{brk}nič pet")),
         // The ordinal and the minutes after the other prepositions
         ("do 17.30", format!("do sedemnajste{brk}trideset")),
         ("od 8:30", format!("od osme{brk}trideset")),
@@ -1032,8 +1088,8 @@ fn slovenian_listeners_answers_of_2026_11_24_hours_with_minutes_without_ura() {
         ("od 8:30 do 16:45", format!("od osmih{brk}trideset do šestnajstih{brk}petinštirideset")),
         ("od 8:05 do 16:00", "od osmih in pet minut do šestnajstih".to_owned()),
         ("ob 8:30–9:00", format!("ob osmih{brk}trideset do devetih")),
-        // Unchanged: whole hours, ura, no preposition, a date
-        ("od 8:00 do 16:00", "od osme do šestnajste".to_owned()),
+        // Unchanged: ura, no preposition, a date
+        ("od 8:00 do 16:00", "od osmih do šestnajstih".to_owned()),
         ("ob 8:30", format!("ob osmih{brk}trideset")),
         ("ob 10:30 uri", "ob deseti uri in trideset minut".to_owned()),
         ("do 17:30 ure", "do sedemnajste ure in trideset minut".to_owned()),

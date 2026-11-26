@@ -10,7 +10,7 @@ The bugs themselves are described in [ISSUES.md](ISSUES.md).
 
 In the order the maintainer asked for:
 
-1. [ ] Slovenian clock times, the listener's second answers (I-1, I-2)
+1. [x] Slovenian clock times, the listener's second answers (I-1, I-2): the commit "Slovenian: od 8:00 do 16:00 od osmih do šestnajstih, do 17:05 do sedemnajste nič pet"
 2. [ ] Croatian accents of the tester's 38 words (I-3)
 3. [ ] Android: TalkBack's deleted character (I-4), then the full local rebuild and a check on the phone
 4. [ ] "šok" read "šokej": whole-word dictionary entries next to č, ć, đ, š, ž (I-5)

@@ -1315,6 +1315,8 @@ fn slovenian_listeners_answers_of_2026_11_24_hours_without_ura() {
             ("do sedemnajste", "dO s'é:dəmnajstE"),
             ("pred deseto", "prE dEs'E:tO"),
             ("od osme do šestnajste", "Od 'O:smE dO š'é:stnajstE"),
+            // Two whole hours after od since the second answers (question 4)
+            ("od osmih do šestnajstih", "Od 'O:smiɣ dO š'é:stnajstih"),
             ("med osmo in deseto", "mEd 'O:smO in dEs'E:tO"),
             ("po deseti", "pO dEs'E:ti"),
             ("Sestanek bo ob osmih trideset", "sEst'a:nəg bO Ob 'O:smih tr'i:dEsEt"),
@@ -1340,6 +1342,9 @@ fn slovenian_listeners_answers_of_2026_11_24_hours_with_minutes_without_ura() {
             ("ob osmih in pet minut", "Ob 'O:smih in p'é:t min'u:t"),
             ("ob dvanajstih in dve minuti", "Ob dv'a:najstih in dv'é: min'u:ti"),
             ("pred deseto trideset", "prE dEs'E:tO tr'i:dEsEt"),
+            // Minutes under ten after do since the second answers (question 6)
+            ("do sedemnajste nič pet", "dO s'é:dəmnajstE n'ič p'é:t"),
+            ("do sedemnajste nič dve", "dO s'é:dəmnajstE n'ič dv'é:"),
         ],
     );
 }

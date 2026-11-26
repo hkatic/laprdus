@@ -761,8 +761,9 @@ fn slovenian_is_spoken_by_every_voice() {
         // do, od, pred, med, po
         ("do 17:00", "do sedemnajste"),
         ("pred 10:00", "pred deseto"),
-        ("od 8:00 do 16:00", "od osme do šestnajste"),
+        ("od 8:00 do 16:00", "od osmih do šestnajstih"),
         ("do 17:30", "do sedemnajste \u{FDD0} trideset"),
+        ("do 17:05", "do sedemnajste \u{FDD0} nič pet"),
         ("od 8:30 do 16:00", "od osmih \u{FDD0} trideset do šestnajstih"),
         ("ob 8:05", "ob osmih in pet minut"),
         ("3.14", "tri pika štirinajst"),

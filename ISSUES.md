@@ -11,20 +11,6 @@ Testers are named by role only.
 
 ## Open
 
-### I-1 Slovenian: two whole hours after *od* are read as ordinals
-
-- **Where:** Slovenian, every platform
-- **Reported:** the Slovenian listener's answers of 2026-11-24 (second round on clock times, question 4)
-- **Now:** `od 8:00 do 16:00` and `od 8:00–16:00` are read "od osme do šestnajste"
-- **Wanted:** "od osmih do šestnajstih". With ura it stays "od osme do šestnajste ure".
-
-### I-2 Slovenian: minutes under ten after *do*
-
-- **Where:** Slovenian, every platform
-- **Reported:** the same answers, question 6
-- **Now:** `do 17:05` is read "do sedemnajste in pet minut"
-- **Wanted:** "do sedemnajste nič pet". `ob 8:05` stays "ob osmih in pet minut" (first round).
-
 ### I-3 Croatian: the accents of 38 words
 
 - **Where:** Croatian only
@@ -96,4 +82,20 @@ Right syllable, but it must be long (today short): zarez, znak, naglasak, uvod, 
 
 ## Fixed, waiting for confirmation
 
-None yet.
+### I-1 Slovenian: two whole hours after *od* were read as ordinals
+
+- **Where:** Slovenian, every platform
+- **Reported:** the Slovenian listener's answers of 2026-11-24 (second round on clock times, question 4)
+- **Was:** `od 8:00 do 16:00` and `od 8:00–16:00` were read "od osme do šestnajste"
+- **Now:** "od osmih do šestnajstih". With ura it stays "od osme do šestnajste ure"; `od 8:00` alone stays "od osme".
+- **Fixed in:** the commit "Slovenian: od 8:00 do 16:00 od osmih do šestnajstih, do 17:05 do sedemnajste nič pet"
+- **To confirm:** the Slovenian listener
+
+### I-2 Slovenian: minutes under ten after *do*
+
+- **Where:** Slovenian, every platform
+- **Reported:** the same answers, question 6
+- **Was:** `do 17:05` was read "do sedemnajste in pet minut"
+- **Now:** "do sedemnajste nič pet" (`do 17:02` "nič dve"). `ob 8:05` stays "ob osmih in pet minut" (first round); od, pred, po and med keep "in pet minut" until asked (see TODO.md).
+- **Fixed in:** the same commit
+- **To confirm:** the Slovenian listener
