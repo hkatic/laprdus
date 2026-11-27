@@ -523,7 +523,7 @@ cd ../../..
 | Windows SAPI5 x86 | `dist/windows-x86/laprd32.dll` |
 | Windows CLI and Configurator | `dist/windows-x64/laprdus.exe`, `laprdgui.exe`; the same in `dist/windows-x86/` |
 | Windows 7 SP1, 8, 8.1 | `dist/windows-legacy-x64/` and `dist/windows-legacy-x86/`: the same file names |
-| Windows Installer | `installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe` |
+| Windows Installer | `installers/windows/Output/Laprdus_SAPI5_Setup_2.1.0.exe` |
 | Linux Library | `target/release/liblaprdus_capi.so` (installed as `liblaprdus.so`) |
 | Linux CLI | `target/release/laprdus` |
 | Linux Speech Dispatcher | `target/release/sd_laprdus` |
@@ -663,10 +663,10 @@ After rebuilding, launch installers for user testing:
 
 ```bash
 # Launch SAPI5 installer
-start "" "installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe"
+start "" "installers/windows/Output/Laprdus_SAPI5_Setup_2.1.0.exe"
 
 # Launch NVDA addon installer
-start "" "src/platform/windows/nvda/laprdus-2.0.0.nvda-addon"
+start "" "src/platform/windows/nvda/laprdus-2.1.0.nvda-addon"
 ```
 
 ### Android Device Testing

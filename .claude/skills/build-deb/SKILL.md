@@ -50,8 +50,8 @@ ln -sfn installers/linux/deb/debian debian && dpkg-buildpackage -us -uc -b -rfak
 ## Expected Output (single package + dev)
 
 The build creates packages in the parent directory (`..`):
-- `laprdus_2.0.0-1_amd64.deb` - Main package (CLI + library + Speech Dispatcher module + voice data + dictionaries)
-- `laprdus-dev_2.0.0-1_amd64.deb` - Development headers
+- `laprdus_2.1.0-1_amd64.deb` - Main package (CLI + library + Speech Dispatcher module + voice data + dictionaries)
+- `laprdus-dev_2.1.0-1_amd64.deb` - Development headers
 
 ## Key Design Decisions
 
@@ -77,13 +77,13 @@ The build creates packages in the parent directory (`..`):
 ## Copy to ~/Downloads
 
 ```bash
-mv ../laprdus_2.0.0-1_amd64.deb ../laprdus-dev_2.0.0-1_amd64.deb ~/Downloads/
+mv ../laprdus_2.1.0-1_amd64.deb ../laprdus-dev_2.1.0-1_amd64.deb ~/Downloads/
 ```
 
 ## Test
 
 ```bash
-sudo dpkg -i laprdus_2.0.0-1_amd64.deb
+sudo dpkg -i laprdus_2.1.0-1_amd64.deb
 laprdus -l  # List voices
 laprdus "Dobar dan"  # Speak text
 spd-say -o laprdus "Zdravo"  # Via Speech Dispatcher

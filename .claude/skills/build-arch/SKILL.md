@@ -32,10 +32,10 @@ sudo pacman -S --needed base-devel rust alsa-lib speech-dispatcher
 
 ## Build Steps
 
-The PKGBUILD takes the sources from `laprdus-2.0.0.tar.xz` next to it (top folder `laprdus-2.0.0/`). Make it from the checkout, then build:
+The PKGBUILD takes the sources from `laprdus-2.1.0.tar.xz` next to it (top folder `laprdus-2.1.0/`). Make it from the checkout, then build:
 
 ```bash
-installers/linux/ci/source.sh installers/linux/arch    # laprdus-2.0.0.tar.xz, top folder laprdus-2.0.0/
+installers/linux/ci/source.sh installers/linux/arch    # laprdus-2.1.0.tar.xz, top folder laprdus-2.1.0/
 cd installers/linux/arch && makepkg -sf && cd ../../..
 ```
 
@@ -51,7 +51,7 @@ The PKGBUILD builds with Cargo: `cargo fetch --locked` in `prepare()`, `cargo xt
 ## Expected Output (single package)
 
 One package is created in `installers/linux/arch/`:
-- `laprdus-2.0.0-1-x86_64.pkg.tar.zst` - Complete package
+- `laprdus-2.1.0-1-x86_64.pkg.tar.zst` - Complete package
 
 ## Key Design Decisions
 
@@ -66,7 +66,7 @@ One package is created in `installers/linux/arch/`:
 ## Package Contents
 
 ### laprdus
-- `/usr/lib/liblaprdus.so*` - Shared library with the C API (`liblaprdus.so.2.0.0`, links `.so.2` and `.so`)
+- `/usr/lib/liblaprdus.so*` - Shared library with the C API (`liblaprdus.so.2.1.0`, links `.so.2` and `.so`)
 - `/usr/bin/laprdus` - CLI tool
 - `/usr/share/laprdus/` - Voice data and dictionaries
 - `/usr/lib/speech-dispatcher/speech-dispatcher-modules/sd_laprdus` - Speech Dispatcher module, next to Arch's own (`sd_dummy`, `sd_espeak-ng`): Arch builds Speech Dispatcher with `--libexecdir=/usr/lib/speech-dispatcher/`, which makes this its module folder. Until 2026-11-23 the package put the module in `/usr/lib/speech-dispatcher-modules/`, the folder of older versions (`${libdir}/speech-dispatcher-modules`), which Speech Dispatcher still scans for compatibility, so it was found there too
@@ -76,13 +76,13 @@ One package is created in `installers/linux/arch/`:
 ## Copy to ~/Downloads
 
 ```bash
-cp installers/linux/arch/laprdus-2.0.0-1-x86_64.pkg.tar.zst ~/Downloads/
+cp installers/linux/arch/laprdus-2.1.0-1-x86_64.pkg.tar.zst ~/Downloads/
 ```
 
 ## Test
 
 ```bash
-sudo pacman -U installers/linux/arch/laprdus-2.0.0-1-x86_64.pkg.tar.zst
+sudo pacman -U installers/linux/arch/laprdus-2.1.0-1-x86_64.pkg.tar.zst
 laprdus -l  # List voices
 laprdus "Dobar dan"  # Speak text
 spd-say -o laprdus "Zdravo"  # Via Speech Dispatcher

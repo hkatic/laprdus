@@ -39,7 +39,7 @@ The installer carries the add-on and offers to install it on its last page, so t
 - `dist/windows-x64/`: `laprd64.dll`, `laprdus.exe`, `laprdgui.exe`
 - `dist/windows-x86/`: `laprd32.dll`, `laprdus.exe`, `laprdgui.exe`
 - `dist/windows-legacy-x64/`, `dist/windows-legacy-x86/`: the same files for Windows 7 SP1, 8 and 8.1
-- Installer: `installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe`
+- Installer: `installers/windows/Output/Laprdus_SAPI5_Setup_2.1.0.exe`
 
 ## Voice Data
 
@@ -49,11 +49,11 @@ Step 1 packs the voice data (`data/voices/Josip.bin`, `data/voices/Vlado.bin`) a
 
 After building, verify the installer exists:
 ```bash
-ls -la installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe
+ls -la installers/windows/Output/Laprdus_SAPI5_Setup_2.1.0.exe
 ```
 
 ## Launch Installer for Testing
 
 ```bash
-start "" "installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe"
+start "" "installers/windows/Output/Laprdus_SAPI5_Setup_2.1.0.exe"
 ```

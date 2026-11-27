@@ -280,7 +280,7 @@ dependencies = [
 
 [[package]]
 name = "laprdus"
-version = "2.0.0"
+version = "2.1.0"
 dependencies = [
  "regex",
  "serde_json",
@@ -288,7 +288,7 @@ dependencies = [
 
 [[package]]
 name = "laprdus-android"
-version = "2.0.0"
+version = "2.1.0"
 dependencies = [
  "jni",
  "laprdus",
@@ -296,14 +296,14 @@ dependencies = [
 
 [[package]]
 name = "laprdus-capi"
-version = "2.0.0"
+version = "2.1.0"
 dependencies = [
  "laprdus",
 ]
 
 [[package]]
 name = "laprdus-cli"
-version = "2.0.0"
+version = "2.1.0"
 dependencies = [
  "laprdus",
  "rodio",
@@ -311,7 +311,7 @@ dependencies = [
 
 [[package]]
 name = "laprdus-configurator"
-version = "2.0.0"
+version = "2.1.0"
 dependencies = [
  "embed-resource",
  "laprdus",
@@ -321,7 +321,7 @@ dependencies = [
 
 [[package]]
 name = "laprdus-sapi5"
-version = "2.0.0"
+version = "2.1.0"
 dependencies = [
  "embed-resource",
  "laprdus",
@@ -334,14 +334,14 @@ dependencies = [
 
 [[package]]
 name = "laprdus-speechd"
-version = "2.0.0"
+version = "2.1.0"
 dependencies = [
  "laprdus",
 ]
 
 [[package]]
 name = "laprdus-win7"
-version = "2.0.0"
+version = "2.1.0"
 
 [[package]]
 name = "libc"
@@ -1237,7 +1237,7 @@ dependencies = [
 
 [[package]]
 name = "xtask"
-version = "2.0.0"
+version = "2.1.0"
 dependencies = [
  "laprdus",
 ]

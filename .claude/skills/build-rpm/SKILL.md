@@ -40,7 +40,7 @@ rpmdev-setuptree
 ### 2. Create source tarball (xz compression to match spec)
 ```bash
 cd /home/hrvojekatic/.repo/hkatic/laprdus
-installers/linux/ci/source.sh ~/rpmbuild/SOURCES    # laprdus-2.0.0.tar.xz, top folder laprdus-2.0.0/
+installers/linux/ci/source.sh ~/rpmbuild/SOURCES    # laprdus-2.1.0.tar.xz, top folder laprdus-2.1.0/
 ```
 
 `source.sh` packs the working tree as Git sees it (uncommitted changes and new files included, nothing `.gitignore` leaves out) and first checks that `Cargo.toml`, `debian/changelog`, the spec and the PKGBUILD name the same version.
@@ -59,15 +59,15 @@ The spec builds with `cargo xtask build` (packs the voice data, builds the CLI, 
 
 ## Expected Output (single package + devel)
 
-- `~/rpmbuild/RPMS/x86_64/laprdus-2.0.0-1.fc*.x86_64.rpm` - Main package (CLI + library + Speech Dispatcher module + voice data + dictionaries)
-- `~/rpmbuild/RPMS/x86_64/laprdus-devel-2.0.0-1.fc*.x86_64.rpm` - Dev headers
-- `~/rpmbuild/SRPMS/laprdus-2.0.0-1.fc*.src.rpm` - Source RPM
+- `~/rpmbuild/RPMS/x86_64/laprdus-2.1.0-1.fc*.x86_64.rpm` - Main package (CLI + library + Speech Dispatcher module + voice data + dictionaries)
+- `~/rpmbuild/RPMS/x86_64/laprdus-devel-2.1.0-1.fc*.x86_64.rpm` - Dev headers
+- `~/rpmbuild/SRPMS/laprdus-2.1.0-1.fc*.src.rpm` - Source RPM
 
 ## Key Design Decisions
 
 - **Single package**: CLI, library, Speech Dispatcher module, voice data, and the dictionaries (internal.json, spelling.json, emoji.json, emoji_sl.json) are in ONE package
 - **SONAME**: Library has the soname `liblaprdus.so.2` (set by `cargo xtask build`) so RPM auto-dependency resolves correctly
-- **Versioned library**: `liblaprdus.so.2.0.0` ← `liblaprdus.so.2` ← `liblaprdus.so` (unversioned in -devel only)
+- **Versioned library**: `liblaprdus.so.2.1.0` ← `liblaprdus.so.2` ← `liblaprdus.so` (unversioned in -devel only)
 - **speechd.conf**: Auto-configured in `%post` with BEGIN/END markers, cleaned up in `%preun`. Detects SD 0.12+ autodetection mode (no uncommented AddModule lines) and only adds LanguageDefaultModule entries to avoid disabling autodetection for other modules
 - **Speech Dispatcher restart**: Uses `try-restart` for both system and user services, iterates logged-in users via `loginctl list-users`. On removal, also uses `killall speech-dispatcher` as fallback to ensure SD is fully stopped (socket activation restarts it clean)
 - **Speech Dispatcher module**: Included (`%{_libdir}/speech-dispatcher-modules/sd_laprdus`); it is a Rust program that needs no Speech Dispatcher headers to build
@@ -82,7 +82,7 @@ cp ~/rpmbuild/RPMS/x86_64/laprdus*.rpm ~/Downloads/
 ## Installation & Test
 
 ```bash
-sudo rpm -ivh ~/rpmbuild/RPMS/x86_64/laprdus-2.0.0-1.fc*.x86_64.rpm
+sudo rpm -ivh ~/rpmbuild/RPMS/x86_64/laprdus-2.1.0-1.fc*.x86_64.rpm
 laprdus -l              # List voices
 laprdus "Dobar dan"     # Speak text
 spd-say -o laprdus "Zdravo"  # Via Speech Dispatcher

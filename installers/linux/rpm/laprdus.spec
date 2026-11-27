@@ -1,7 +1,7 @@
 %global debug_package %{nil}
 
 Name:           laprdus
-Version:        2.0.0
+Version:        2.1.0
 Release:        1%{?dist}
 Summary:        Croatian/Serbian/Bosnian/Slovenian Text-to-Speech Engine
 
@@ -170,6 +170,9 @@ fi
 %{_includedir}/laprdus/
 
 %changelog
+* Fri Nov 27 2026 Hrvoje Katic <hrvoje.katic@gmail.com> - 2.1.0-1
+- In development
+
 * Wed Oct 07 2026 Hrvoje Katic <hrvoje.katic@gmail.com> - 2.0.0-1
 - Laprdus 2.0
 - New formant voices synthesized by rule: Zvonko (the default voice), Stojan and Mirsad, and ten singing voices

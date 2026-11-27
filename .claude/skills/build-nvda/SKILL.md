@@ -43,7 +43,7 @@ This stages `dist/windows-x64/` (`laprd64.dll`, `laprdus.exe`, `laprdgui.exe`) a
 
 ## Expected Output
 
-- Addon package: `src/platform/windows/nvda/laprdus-2.0.0.nvda-addon`
+- Addon package: `src/platform/windows/nvda/laprdus-2.1.0.nvda-addon`
 
 ## Automatic Resource Copying
 
@@ -69,7 +69,7 @@ ls -la src/platform/windows/nvda/laprdus-*.nvda-addon
 ## Launch Addon Installer for Testing
 
 ```bash
-start "" "src/platform/windows/nvda/laprdus-2.0.0.nvda-addon"
+start "" "src/platform/windows/nvda/laprdus-2.1.0.nvda-addon"
 ```
 
 ## CRITICAL Build Rules

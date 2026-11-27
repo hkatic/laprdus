@@ -25,7 +25,7 @@ It builds the package in a container and tests it on Debian 12, Fedora 45 and Ar
 cargo xtask dist
 ```
 
-This packs the voice data, builds the CLI, the Speech Dispatcher module and the C API library, stages the tree in `dist/linux-x86_64/laprdus-2.0.0-linux-x86_64/` together with `install.sh`, `uninstall.sh` and `README` of `installers/linux/tarball/`, and packs it. The version is the Cargo workspace's; the architecture is the host's (`x86_64`, `aarch64`).
+This packs the voice data, builds the CLI, the Speech Dispatcher module and the C API library, stages the tree in `dist/linux-x86_64/laprdus-2.1.0-linux-x86_64/` together with `install.sh`, `uninstall.sh` and `README` of `installers/linux/tarball/`, and packs it. The version is the Cargo workspace's; the architecture is the host's (`x86_64`, `aarch64`).
 
 `installers/linux/tarball/build-tarball.sh` runs the same step and copies the tarball into the directory it was started from.
 
@@ -33,17 +33,17 @@ Build dependencies: Rust 1.85 or newer, a C linker, `pkg-config` and the ALSA de
 
 ## Expected Output
 
-- `dist/linux-x86_64/laprdus-2.0.0-linux-x86_64.tar.xz`
+- `dist/linux-x86_64/laprdus-2.1.0-linux-x86_64.tar.xz`
 
 ## Tarball Contents
 
 ```
-laprdus-2.0.0-linux-x86_64/
+laprdus-2.1.0-linux-x86_64/
 ├── bin/laprdus              # CLI tool
 ├── lib/
 │   ├── liblaprdus.so        # Symlink → .so.2
-│   ├── liblaprdus.so.2      # Symlink → .so.2.0.0
-│   └── liblaprdus.so.2.0.0  # Library (with SONAME)
+│   ├── liblaprdus.so.2      # Symlink → .so.2.1.0
+│   └── liblaprdus.so.2.1.0  # Library (with SONAME)
 ├── lib/speech-dispatcher-modules/
 │   └── sd_laprdus           # Speech Dispatcher module
 ├── share/laprdus/
@@ -78,15 +78,15 @@ laprdus-2.0.0-linux-x86_64/
 ## Copy to ~/Downloads
 
 ```bash
-cp dist/linux-x86_64/laprdus-2.0.0-linux-x86_64.tar.xz ~/Downloads/
+cp dist/linux-x86_64/laprdus-2.1.0-linux-x86_64.tar.xz ~/Downloads/
 ```
 
 ## Installation
 
 ```bash
 # Extract
-tar xf laprdus-2.0.0-linux-x86_64.tar.xz
-cd laprdus-2.0.0-linux-x86_64
+tar xf laprdus-2.1.0-linux-x86_64.tar.xz
+cd laprdus-2.1.0-linux-x86_64
 
 # System-wide install (default: /usr/local, requires root)
 sudo ./install.sh

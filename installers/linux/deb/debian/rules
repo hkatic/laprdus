@@ -12,7 +12,7 @@ override_dh_auto_build:
 
 override_dh_auto_install:
 	# Everything into the main package: the library in the multiarch
-	# directory (liblaprdus.so.2.0.0 and its links), the CLI, the voice data
+	# directory (liblaprdus.so.2.1.0 and its links), the CLI, the voice data
 	# and dictionaries, the Speech Dispatcher module and its configuration.
 	cargo --locked xtask install --locked --destdir debian/laprdus \
 		--prefix /usr --libdir /usr/lib/$(DEB_HOST_MULTIARCH)

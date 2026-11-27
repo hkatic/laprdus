@@ -350,7 +350,7 @@ cargo xtask windows-legacy   # the same for Windows 7 SP1, 8 and 8.1 (dist/windo
 iscc installers/windows/laprdus_sapi5.iss
 ```
 
-Output: `dist/windows-x64/` (`laprd64.dll`, `laprdus.exe`, `laprdgui.exe`), `dist/windows-x86/` (`laprd32.dll`, `laprdus.exe`, `laprdgui.exe`), `installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe`
+Output: `dist/windows-x64/` (`laprd64.dll`, `laprdus.exe`, `laprdgui.exe`), `dist/windows-x86/` (`laprd32.dll`, `laprdus.exe`, `laprdgui.exe`), `installers/windows/Output/Laprdus_SAPI5_Setup_2.1.0.exe`
 
 #### NVDA Addon
 
@@ -387,7 +387,7 @@ cargo xtask dist
 Output:
 - `target/release/laprdus`
 - `target/release/sd_laprdus`
-- `target/release/liblaprdus_capi.so` (installed as `liblaprdus.so.2.0.0` with the links `liblaprdus.so.2` and `liblaprdus.so`)
+- `target/release/liblaprdus_capi.so` (installed as `liblaprdus.so.2.1.0` with the links `liblaprdus.so.2` and `liblaprdus.so`)
 - `dist/linux-<arch>/laprdus-<version>-linux-<arch>.tar.xz`
 
 #### macOS (CLI and C API library)
@@ -518,7 +518,7 @@ xcodebuild -scheme Laprdus -destination 'generic/platform=iOS' build -allowProvi
 |----------|--------|
 | Windows SAPI5 x64 | `dist/windows-x64/laprd64.dll` |
 | Windows SAPI5 x86 | `dist/windows-x86/laprd32.dll` |
-| Windows Installer | `installers/windows/Output/Laprdus_SAPI5_Setup_2.0.0.exe` |
+| Windows Installer | `installers/windows/Output/Laprdus_SAPI5_Setup_2.1.0.exe` |
 | Windows CLI | `dist/windows-x64/laprdus.exe`, `dist/windows-x86/laprdus.exe` |
 | NVDA Addon | `src/platform/windows/nvda/laprdus-*.nvda-addon` |
 | Linux Library | `target/release/liblaprdus_capi.so` |

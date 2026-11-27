@@ -29,7 +29,7 @@ cargo build --release -p laprdus-cli
 cargo build --release -p laprdus-speechd
 ```
 
-Output: `target/release/laprdus`, `target/release/sd_laprdus`, `target/release/liblaprdus_capi.so` (installed as `liblaprdus.so.2.0.0` with the links `liblaprdus.so.2` and `liblaprdus.so`).
+Output: `target/release/laprdus`, `target/release/sd_laprdus`, `target/release/liblaprdus_capi.so` (installed as `liblaprdus.so.2.1.0` with the links `liblaprdus.so.2` and `liblaprdus.so`).
 
 ### Linux Dependencies
 
@@ -101,10 +101,10 @@ DefaultModule laprdus  # Optional: set as default
 
 ```bash
 # Debian/Ubuntu
-sudo apt install ./laprdus_2.0.0-1_amd64.deb   # one package (apt, unlike dpkg -i, also installs speech-dispatcher): CLI, library, Speech Dispatcher module, voice data, dictionaries
+sudo apt install ./laprdus_2.1.0-1_amd64.deb   # one package (apt, unlike dpkg -i, also installs speech-dispatcher): CLI, library, Speech Dispatcher module, voice data, dictionaries
 
 # Fedora/RHEL
-sudo dnf install ./laprdus-2.0.0-1.fc*.x86_64.rpm  # one package as well
+sudo dnf install ./laprdus-2.1.0-1.fc*.x86_64.rpm  # one package as well
 
 # Arch Linux
 makepkg -si  # From PKGBUILD directory
@@ -113,8 +113,8 @@ makepkg -si  # From PKGBUILD directory
 #### From tarball
 
 ```bash
-tar xf laprdus-2.0.0-linux-x86_64.tar.xz
-cd laprdus-2.0.0-linux-x86_64
+tar xf laprdus-2.1.0-linux-x86_64.tar.xz
+cd laprdus-2.1.0-linux-x86_64
 sudo ./install.sh
 ```
 
@@ -154,7 +154,7 @@ scripts/linux-packages.sh --test-only --image debian:13 deb   # test what is bui
 
 Needs only Docker (or Podman, `DOCKER=podman`) and Git; on the Mac OrbStack, Docker Desktop or colima. `scripts/build-all.sh linux-packages [options]` runs the same.
 
-- `installers/linux/ci/source.sh` packs the working tree as Git sees it (uncommitted changes and new files included; the real index is not touched) into `dist/linux-packages/laprdus-<version>.tar.xz`, the tarball the spec's `Source0` and the PKGBUILD take, after checking that `Cargo.toml`, the head of `debian/changelog`, the spec's `Version` and the PKGBUILD's `pkgver` agree (and, with `LAPRDUS_RELEASE_TAG`, the tag). With `LAPRDUS_NIGHTLY=YYYYMMDD` (the nightly builds, `.claude/rules/nightly.md`), the tarball's copies of the three get a release below the version's own: deb `2.0.0-0~nightlyYYYYMMDD`, rpm `0.nightlyYYYYMMDD`, Arch `pkgrel=0.YYYYMMDD`. `build.sh` checks with the distribution's own comparison that a package other than `<version>-1` sorts below it.
+- `installers/linux/ci/source.sh` packs the working tree as Git sees it (uncommitted changes and new files included; the real index is not touched) into `dist/linux-packages/laprdus-<version>.tar.xz`, the tarball the spec's `Source0` and the PKGBUILD take, after checking that `Cargo.toml`, the head of `debian/changelog`, the spec's `Version` and the PKGBUILD's `pkgver` agree (and, with `LAPRDUS_RELEASE_TAG`, the tag). With `LAPRDUS_NIGHTLY=YYYYMMDD` (the nightly builds, `.claude/rules/nightly.md`), the tarball's copies of the three get a release below the version's own: deb `2.1.0-0~nightlyYYYYMMDD`, rpm `0.nightlyYYYYMMDD`, Arch `pkgrel=0.YYYYMMDD`. `build.sh` checks with the distribution's own comparison that a package other than `<version>-1` sorts below it.
 - `installers/linux/ci/build.sh <format>` builds in one container from that tarball (never in the checkout), into `dist/linux-packages/<arch>/`.
 - `installers/linux/ci/test.sh <format>` installs the package in a fresh container with the distribution's own package manager (so the dependencies must resolve, `speech-dispatcher` included; the tarball with its `install.sh` and the default prefix `/usr/local`), runs `tests/linux/test_package_install.sh` with `LAPRDUS_TEST_STRICT=1` (a skip is a failure), removes the package and checks nothing is left (the CLI, the library in the linker's cache, the module, the block in `speechd.conf`).
 
@@ -169,7 +169,7 @@ One package per format serves every system of its row: the programs are Rust and
 
 The package test checks the Speech Dispatcher module three ways: it lies in the folder where Speech Dispatcher's own modules are; it answers the module protocol (`INIT`, `SPEAK`, the text, `.`, then `QUIT` after `702 END`, since a `QUIT` stops the speech) with `705 AUDIO` blocks, which needs neither a server nor a sound card; and a Speech Dispatcher started by `spd-say` lists it (`spd-say -O`) and its voices (`spd-say -o laprdus -L`). Until 2026-11-23 the script ended after its first result (`((PASSED++))` under `set -e`), looked for the library only in `<prefix>/lib` and the module only in `/usr/lib/speech-dispatcher-modules`, and listed voices where it meant modules.
 
-**GitHub Actions** (`.github/workflows/linux-packages.yml`): one job per format and architecture (x86_64 on `ubuntu-24.04`, aarch64 on `ubuntu-24.04-arm`; free for the public repository), each running `scripts/linux-packages.sh --arch <arch> <format>`; the packages are kept as artifacts for 14 days. It runs on a push to `dev` that touches the engine, the C API, the CLI, the Linux programs, the data, the packaging or the build configuration, by hand (Actions > Linux packages > Run workflow, or `gh workflow run linux-packages.yml --ref dev`), and on a tag `v*`: then, when every job has passed, a **draft** release gets every package, the source tarball and `SHA256SUMS-linux` (added to the release if the tag has one already); the maintainer writes the notes and publishes it. A tag with a hyphen (`v2.0.0-rc1`) makes a pre-release.
+**GitHub Actions** (`.github/workflows/linux-packages.yml`): one job per format and architecture (x86_64 on `ubuntu-24.04`, aarch64 on `ubuntu-24.04-arm`; free for the public repository), each running `scripts/linux-packages.sh --arch <arch> <format>`; the packages are kept as artifacts for 14 days. It runs on a push to `dev` that touches the engine, the C API, the CLI, the Linux programs, the data, the packaging or the build configuration, by hand (Actions > Linux packages > Run workflow, or `gh workflow run linux-packages.yml --ref dev`), and on a tag `v*`: then, when every job has passed, a **draft** release gets every package, the source tarball and `SHA256SUMS-linux` (added to the release if the tag has one already); the maintainer writes the notes and publishes it. A tag with a hyphen (`v2.1.0-rc1`) makes a pre-release.
 
 #### Linux Package Testing (if building packages)
 
@@ -179,7 +179,7 @@ The packages build with Cargo (`cargo xtask build`, then `cargo xtask install --
 # Debian package (the debian directory is linked to the project root for the build)
 ln -sfn installers/linux/deb/debian debian && dpkg-buildpackage -us -uc -b -rfakeroot -d; rm -f debian
 
-# Arch package (the PKGBUILD takes laprdus-2.0.0.tar.xz next to it)
+# Arch package (the PKGBUILD takes laprdus-2.1.0.tar.xz next to it)
 installers/linux/ci/source.sh installers/linux/arch && cd installers/linux/arch && makepkg -sf
 
 # Tarball: dist/linux-<arch>/laprdus-<version>-linux-<arch>.tar.xz
@@ -219,9 +219,9 @@ The spec builds with `cargo xtask build` and installs with `cargo xtask install 
 
 **4. Output files:**
 ```
-~/rpmbuild/RPMS/x86_64/laprdus-2.0.0-1.fc*.x86_64.rpm      # Main package (CLI, library, Speech Dispatcher module, voice data, dictionaries)
-~/rpmbuild/RPMS/x86_64/laprdus-devel-2.0.0-1.fc*.x86_64.rpm # Dev headers
-~/rpmbuild/SRPMS/laprdus-2.0.0-1.fc*.src.rpm               # Source RPM
+~/rpmbuild/RPMS/x86_64/laprdus-2.1.0-1.fc*.x86_64.rpm      # Main package (CLI, library, Speech Dispatcher module, voice data, dictionaries)
+~/rpmbuild/RPMS/x86_64/laprdus-devel-2.1.0-1.fc*.x86_64.rpm # Dev headers
+~/rpmbuild/SRPMS/laprdus-2.1.0-1.fc*.src.rpm               # Source RPM
 ```
 
 **5. Copy to project directory:**
@@ -232,7 +232,7 @@ cp ~/rpmbuild/RPMS/x86_64/laprdus*.rpm ~/rpmbuild/SRPMS/laprdus*.rpm \
 
 **6. Install and test:**
 ```bash
-sudo rpm -ivh ~/rpmbuild/RPMS/x86_64/laprdus-2.0.0-1.fc*.x86_64.rpm
+sudo rpm -ivh ~/rpmbuild/RPMS/x86_64/laprdus-2.1.0-1.fc*.x86_64.rpm
 
 # Test
 laprdus -l              # List voices

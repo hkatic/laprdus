@@ -16,7 +16,7 @@
 ; the version it is built with (scons version=...), since the installer
 ; carries that file by its name. Without them both are the release's.
 #ifndef AppVersion
-  #define AppVersion "2.0.0"
+  #define AppVersion "2.1.0"
 #endif
 #ifndef AddonVersion
   #define AddonVersion AppVersion

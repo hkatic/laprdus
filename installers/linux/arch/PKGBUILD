@@ -1,7 +1,7 @@
 # Maintainer: Hrvoje Katic <hrvoje.katic@gmail.com>
 
 pkgname=laprdus
-pkgver=2.0.0
+pkgver=2.1.0
 pkgrel=1
 pkgdesc="Croatian/Serbian/Bosnian/Slovenian Text-to-Speech Engine"
 arch=('x86_64' 'aarch64')
@@ -37,7 +37,7 @@ package() {
     cd "$pkgname-$pkgver"
     export RUSTUP_TOOLCHAIN=stable
 
-    # The library (liblaprdus.so.2.0.0 and its links), the CLI, the header,
+    # The library (liblaprdus.so.2.1.0 and its links), the CLI, the header,
     # the voice data and dictionaries, the Speech Dispatcher module and its
     # configuration. Everything is built already; this only copies.
     # The module goes where Arch's own modules are (sd_dummy, sd_espeak-ng):

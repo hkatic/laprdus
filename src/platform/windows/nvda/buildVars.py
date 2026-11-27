@@ -29,7 +29,7 @@ the recorded voices Josip and Vlado, the presets Detence, Baba and Đedo, and th
 Trubač, Harmonikaš, Sevdalija, Sazlija, Lika Velebit, Solunac, Sarajevo Bembaša and Bećarac.
 The language is a separate setting, with word stress and natural sentence melody in every voice."""),
     # version
-    addon_version="2.0.0",
+    addon_version="2.1.0",
     # Brief changelog for this version
     # Translators: what's new content for the add-on version
     addon_changelog=_("""Laprdus 2.0 for NVDA.
