@@ -61,6 +61,8 @@ A nightly is a **pre-release of the version `Cargo.toml` names**: `<version>-nig
 
 **After a stable release, bump the version** (`Cargo.toml` and every file `source.sh` compares with it, `buildVars.py`, the `.iss`, Gradle, Xcode's `MARKETING_VERSION`) to the next one, so the nightlies are pre-releases of that version.
 
+**Since 2026-11-27 the nightlies come from `dev`, which is 2.1.0, while 2.0 is finished on `beta`** ("Branches" in `CLAUDE.md`). For 2.1.0 the bump was made early, when `beta` branched off, so the nightlies are pre-releases of 2.1.0 and carry the 2.0 fixes once `beta` is merged into `dev`. `nightly.yml` still builds only commits of `dev`.
+
 **Apple build numbers:** a nightly's is `<CURRENT_PROJECT_VERSION>.<number>`. When `CURRENT_PROJECT_VERSION` is raised for a release (41 → 42), upload the release before the next nightly. Otherwise the nightly's 42.612 reaches App Store Connect first, and it refuses the release's lower 42. When a version has been released on the App Store, App Store Connect closes it for new builds, and `MARKETING_VERSION` must go up.
 
 ## TestFlight: the same testers, no new link

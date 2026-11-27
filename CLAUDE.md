@@ -45,6 +45,15 @@ Rules:
 
 A change to these two files alone does not start the "Build and test" workflow.
 
+## Branches (`beta`, `dev`, `main`)
+
+Since 2026-11-27, at the maintainer's request, 2.0 is finished on a branch of its own while the next version goes on in `dev`:
+- **`beta`** holds only what goes into 2.0: fixes, no new features. It stays at version 2.0.0. A fix for 2.0 is committed on `beta`, with its `TODO.md` and `ISSUES.md` update. Afterwards `beta` is merged into `dev` (`git checkout dev && git merge beta`), never the other way.
+- **`dev`** is the next version, 2.1.0. New work goes there, and the nightly builds are made from it (`.claude/rules/nightly.md`).
+- **`main`** holds the releases.
+
+The "Build and test" workflow runs on pushes to all three; "Linux packages" runs on pushes to `dev` and `beta`.
+
 ## Architecture
 
 The engine and every program are written in Rust (migrated from C++ in November 2026). There is no C or C++ left. The golden corpus (`tests/golden/corpus.jsonl`, the texts of the former C++ test programs) and the hashes of the last C++ engine's output for it are frozen; `tools/golden/golden.py check` compares a build with them.
